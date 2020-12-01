@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.async.PackageHandler
+import com.tencent.bkrepo.helm.async.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
@@ -65,9 +65,9 @@ import org.springframework.transaction.annotation.Transactional
 import kotlin.streams.toList
 
 @Service
-class ChartManipulationServiceImpl(
-    private val packageHandler: PackageHandler
-) : AbstractService(), ChartManipulationService {
+class ChartManipulationChartServiceImpl(
+    private val helmPackageHandler: HelmPackageHandler
+) : AbstractChartService(), ChartManipulationService {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
@@ -86,7 +86,7 @@ class ChartManipulationServiceImpl(
             context.putAttribute(FULL_PATH, getChartFileFullPath(chartMetadata.name, chartMetadata.version))
             ArtifactContextHolder.getRepository().upload(context)
             // create package
-            packageHandler.createVersion(
+            helmPackageHandler.createVersion(
                 context.userId,
                 artifactInfo,
                 chartMetadata,
@@ -149,7 +149,7 @@ class ChartManipulationServiceImpl(
                 .also { publishEvent(ChartVersionDeleteEvent(this)) }
                 .also { logger.info("delete chart [$name], version: [$version] in repo [$projectId/$repoName] success.") }
             // 删除包版本
-            packageHandler.deleteVersion(context.userId, name, version, context.artifactInfo)
+            helmPackageHandler.deleteVersion(context.userId, name, version, context.artifactInfo)
         }
     }
 
@@ -160,7 +160,7 @@ class ChartManipulationServiceImpl(
         with(chartDeleteRequest) {
             val context = ArtifactRemoveContext()
             checkRepositoryExist(context.artifactInfo)
-            val originalIndexYamlMetadata = getOriginalIndexYaml()
+            val originalIndexYamlMetadata = queryOriginalIndexYaml()
             val versionList =
                 originalIndexYamlMetadata.entries[name]!!.stream().map { it.version }.toList()
             val fullPathList = mutableListOf<String>()
@@ -173,11 +173,11 @@ class ChartManipulationServiceImpl(
                 .also { publishEvent(ChartDeleteEvent(this)) }
                 .also { logger.info("delete chart [$name] in repo [$projectId/$repoName] success.") }
             // 删除包版本
-            packageHandler.deletePackage(context.userId, name, context.artifactInfo)
+            helmPackageHandler.deletePackage(context.userId, name, context.artifactInfo)
         }
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(ChartManipulationServiceImpl::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ChartManipulationChartServiceImpl::class.java)
     }
 }
