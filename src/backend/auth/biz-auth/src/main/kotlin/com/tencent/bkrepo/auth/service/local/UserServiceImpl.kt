@@ -35,10 +35,10 @@ import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.repository.RoleRepository
@@ -290,13 +290,13 @@ class UserServiceImpl constructor(
     }
 
     override fun getUserById(userId: String): User? {
-        logger.info("get user userId : [$userId]")
+        logger.debug("get user userId : [$userId]")
         val user = userRepository.findFirstByUserId(userId) ?: return null
         return transferUser(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
-        logger.info("find user userId : [$userId], pwd : [$pwd]")
+        logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()
         criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))
