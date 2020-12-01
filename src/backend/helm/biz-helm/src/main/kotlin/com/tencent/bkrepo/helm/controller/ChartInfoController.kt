@@ -36,6 +36,7 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHARTS_LIST
 import com.tencent.bkrepo.helm.service.ChartInfoService
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
@@ -52,7 +53,7 @@ class ChartInfoController(
         @ArtifactPathVariable
         artifactInfo: HelmArtifactInfo,
         @RequestParam startTime: LocalDateTime?
-    ): Map<String, Any> {
+    ): ResponseEntity<Any> {
         return chartInfoService.allChartsList(artifactInfo, startTime)
     }
 

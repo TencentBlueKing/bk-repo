@@ -61,53 +61,53 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class ChartInfoServiceImpl(
+class ChartInfoChartServiceImpl(
     private val chartRepositoryService: ChartRepositoryService
-) : AbstractService(), ChartInfoService {
+) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): Map<String, Any> {
+    override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
         if (startTime != null) {
             val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
             val indexYamlMetadata = chartRepositoryService.buildIndexYamlMetadata(nodeList, artifactInfo, true)
-            return indexYamlMetadata.entries
+            return ResponseEntity.ok().body(indexYamlMetadata.entries)
         }
         chartRepositoryService.freshIndexFile(artifactInfo)
-        val indexYamlMetadata = getOriginalIndexYaml()
+        val indexYamlMetadata = queryOriginalIndexYaml()
         return searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath())
     }
 
-    private fun searchJson(indexYamlMetadata: HelmIndexYamlMetadata, urls: String): Map<String, Any> {
+    private fun searchJson(indexYamlMetadata: HelmIndexYamlMetadata, urls: String): ResponseEntity<Any> {
         val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
         return when (urlList.size) {
             // Without name and version
             0 -> {
-                indexYamlMetadata.entries
+                ResponseEntity.ok().body(indexYamlMetadata.entries)
             }
             // query with name
             1 -> {
                 val chartName = urlList[0]
                 val chartList = indexYamlMetadata.entries[chartName]
-                chartList?.let { mapOf(chartName to chartList) } ?: CHART_NOT_FOUND
+                ResponseEntity.ok().body(chartList ?: CHART_NOT_FOUND)
             }
             // query with name and version
             2 -> {
                 val chartName = urlList[0]
                 val chartVersion = urlList[1]
-                val chartList = indexYamlMetadata.entries[chartName] ?: return NO_CHART_NAME_FOUND
-                val chartVersionList = chartList.filter { chartVersion == it.version }.toList()
-                if (chartVersionList.isNotEmpty()) {
-                    mapOf(chartName to chartVersionList)
-                } else {
-                    mapOf("error" to "no chart version found for $chartName-$chartVersion")
-                }
+                val chartList =
+                    indexYamlMetadata.entries[chartName] ?: return ResponseEntity.ok().body(NO_CHART_NAME_FOUND)
+                // val helmChartMetadata = chartList.first()
+                val helmChartMetadataList = chartList.filter { chartVersion == it.version }.toList()
+                ResponseEntity.ok()
+                    .body(if (helmChartMetadataList.isNotEmpty()) chartList.first() else mapOf("error" to "no chart version found for $chartName-$chartVersion"))
             }
             else -> {
                 // ERROR_NOT_FOUND
-                CHART_NOT_FOUND
+                ResponseEntity.ok().body(CHART_NOT_FOUND)
             }
         }
     }
@@ -177,7 +177,7 @@ class ChartInfoServiceImpl(
         const val CURRENT_PAGE = 0
         const val SIZE = 5
 
-        val logger: Logger = LoggerFactory.getLogger(ChartInfoServiceImpl::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ChartInfoChartServiceImpl::class.java)
 
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
             with(nodeDetail) {
