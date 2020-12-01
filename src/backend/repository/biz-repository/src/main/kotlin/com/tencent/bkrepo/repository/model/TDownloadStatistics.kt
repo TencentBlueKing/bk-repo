@@ -36,10 +36,10 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDate
 
-@Document("package_download_statistics")
+@Document("downloads")
 @CompoundIndexes(
     CompoundIndex(
-        name = "projectId_repoName_package_version_date_idx",
+        name = "package_version_date_idx",
         def = "{'projectId': 1, 'repoName': 1, 'key': 1, 'version': 1, 'date': 1}",
         background = true,
         unique = true
