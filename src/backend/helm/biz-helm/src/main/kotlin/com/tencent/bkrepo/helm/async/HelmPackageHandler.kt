@@ -44,7 +44,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class PackageHandler(
+class HelmPackageHandler(
     private val packageClient: PackageClient
 ) {
 
@@ -65,20 +65,20 @@ class PackageHandler(
         with(artifactInfo) {
             val packageVersionCreateRequest =
                 PackageVersionCreateRequest(
-                    projectId,
-                    repoName,
-                    name,
-                    PackageKeys.ofHelm(name),
-                    PackageType.HELM,
-                    description,
-                    version,
-                    size,
-                    null,
-                    contentPath,
-                    null,
-                    null,
-                    false,
-                    userId
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageName = name,
+                    packageKey = PackageKeys.ofHelm(name),
+                    packageType = PackageType.HELM,
+                    packageDescription = description,
+                    versionName = version,
+                    size = size,
+                    manifestPath = null,
+                    artifactPath = contentPath,
+                    stageTag = null,
+                    metadata = null,
+                    overwrite = false,
+                    createdBy = userId
                 )
             packageClient.createVersion(packageVersionCreateRequest).apply {
                 logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
@@ -113,6 +113,6 @@ class PackageHandler(
     }
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(PackageHandler::class.java)
+        val logger: Logger = LoggerFactory.getLogger(HelmPackageHandler::class.java)
     }
 }

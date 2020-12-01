@@ -68,7 +68,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
+class ChartRepositoryChartServiceImpl : AbstractChartService(), ChartRepositoryService {
 
     @Value("\${helm.registry.domain: ''}")
     private lateinit var domain: String
@@ -91,28 +91,31 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
     override fun freshIndexFile(artifactInfo: HelmArtifactInfo) {
         // 先查询index.yaml文件，如果不存在则创建，
         // 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
-        if (!exist(artifactInfo.projectId, artifactInfo.repoName, INDEX_CACHE_YAML)) {
-            val nodeList = queryNodeList(artifactInfo, false)
-            logger.info("query node list success, size [${nodeList.size}], start generate index.yaml ... ")
-            val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
-            uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("generate index.yaml success！") }
-            return
-        }
+        with(artifactInfo) {
+            if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
+                val nodeList = queryNodeList(artifactInfo, false)
+                logger.info("query node list success, size [${nodeList.size}] in repo [$projectId/$repoName], start generate index.yaml ... ")
+                val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
+                uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("fresh the index file success in repo [$projectId/$repoName]") }
+                return
+            }
 
-        val originalYamlMetadata = getOriginalIndexYaml()
-        val dateTime = originalYamlMetadata.generated.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }
-        val now = LocalDateTime.now()
-        val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
-        if (nodeList.isNotEmpty()) {
-            val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
-            logger.info(
-                "start regenerate index.yaml, original index.yaml entries size : [${indexYamlMetadata.entriesSize()}]"
-            )
-            indexYamlMetadata.generated = now.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
-            uploadIndexYamlMetadata(indexYamlMetadata).also {
+            val originalYamlMetadata = queryOriginalIndexYaml()
+            val dateTime =
+                originalYamlMetadata.generated.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }
+            val now = LocalDateTime.now()
+            val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
+            if (nodeList.isNotEmpty()) {
+                val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
                 logger.info(
-                    "regenerate index.yaml success, current index.yaml entries size : [${indexYamlMetadata.entriesSize()}]"
+                    "start refreshing the index file in repo [$projectId/$repoName], original index file entries size : [${indexYamlMetadata.entriesSize()}]"
                 )
+                indexYamlMetadata.generated = now.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
+                uploadIndexYamlMetadata(indexYamlMetadata).also {
+                    logger.info(
+                        "refresh the index file success in repo [$projectId/$repoName], current index file entries size : [${indexYamlMetadata.entriesSize()}]"
+                    )
+                }
             }
         }
     }
@@ -127,7 +130,7 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
             val indexYamlMetadata = if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
                 HelmUtils.initIndexYamlMetadata()
             } else {
-                getOriginalIndexYaml()
+                queryOriginalIndexYaml()
             }
             if (result.isNotEmpty()) {
                 val context = ArtifactQueryContext()
@@ -154,7 +157,7 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
                     } catch (ex: HelmFileNotFoundException) {
                         logger.error(
                             "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
-                                "[${artifactInfo.projectId}/${artifactInfo.repoName}] failed, ${ex.message}"
+                                "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
                         )
                     }
                 }
@@ -214,7 +217,7 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         val nodeList = queryNodeList(artifactInfo, false)
-        logger.info("query node list for full refresh index.yaml success, size [${nodeList.size}], starting full refresh index.yaml ... ")
+        logger.info("query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}], size [${nodeList.size}], starting full refresh index.yaml ... ")
         val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
         uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
     }
@@ -226,7 +229,7 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
         if (nodeList.isEmpty()) {
             throw HelmFileNotFoundException(
-                "no chart found in repository [${artifactInfo.projectId}/${artifactInfo.repoName}]"
+                "no chart found in repository [${artifactInfo.getRepoIdentify()}]"
             )
         }
         val context = ArtifactQueryContext()
@@ -248,7 +251,7 @@ class ChartRepositoryServiceImpl : AbstractService(), ChartRepositoryService {
 
     companion object {
         const val SLEEP_MILLIS = 20L
-        val logger: Logger = LoggerFactory.getLogger(ChartRepositoryServiceImpl::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ChartRepositoryChartServiceImpl::class.java)
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
