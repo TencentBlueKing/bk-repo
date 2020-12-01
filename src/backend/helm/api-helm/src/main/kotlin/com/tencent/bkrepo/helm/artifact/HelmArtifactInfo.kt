@@ -43,6 +43,7 @@ class HelmArtifactInfo(
 
         // helm upload
         const val HELM_PUSH_URL = "/api/{projectId}/{repoName}/charts"
+        const val HELM_PUSH_PLUGIN_URL = "/{projectId}/{repoName}/charts"
         const val HELM_PUSH_PROV_URL = "/api/{projectId}/{repoName}/prov"
 
         // chart delete

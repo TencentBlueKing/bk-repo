@@ -33,13 +33,14 @@ package com.tencent.bkrepo.helm.service
 
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
+import org.springframework.http.ResponseEntity
 import java.time.LocalDateTime
 
 interface ChartInfoService {
     /**
      * 查看chart列表
      */
-    fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime? = null): Map<String, Any>
+    fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime? = null): ResponseEntity<Any>
 
     /**
      * 查看chart是否存在

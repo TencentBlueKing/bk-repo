@@ -66,7 +66,7 @@ import java.time.LocalDateTime
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
-abstract class AbstractService {
+abstract class AbstractChartService {
     @Autowired
     lateinit var nodeClient: NodeClient
 
@@ -79,7 +79,7 @@ abstract class AbstractService {
     @Autowired
     lateinit var eventPublisher: ApplicationEventPublisher
 
-    fun getOriginalIndexYaml(): HelmIndexYamlMetadata {
+    fun queryOriginalIndexYaml(): HelmIndexYamlMetadata {
         val context = ArtifactQueryContext()
         context.putAttribute(FULL_PATH, HelmUtils.getIndexYamlFullPath())
         return (ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream).use { it.readYamlString() }
@@ -117,7 +117,7 @@ abstract class AbstractService {
                 lastModifyTime?.let { queryModelBuilder.rule(true, NODE_CREATE_DATE, it, OperationType.AFTER) }
             }
             val result = nodeClient.search(queryModelBuilder.build()).data ?: run {
-                ChartRepositoryServiceImpl.logger.warn("don't find node list in repository: [$projectId/$repoName].")
+                logger.warn("don't find node list in repository: [$projectId/$repoName].")
                 return emptyList()
             }
             return result.records
@@ -151,6 +151,6 @@ abstract class AbstractService {
     companion object {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
-        private val logger: Logger = LoggerFactory.getLogger(AbstractService::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
     }
 }

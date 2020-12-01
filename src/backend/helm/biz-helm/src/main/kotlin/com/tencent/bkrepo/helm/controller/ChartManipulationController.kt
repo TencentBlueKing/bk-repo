@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_DELETE_VERSION_URL
+import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PUSH_PLUGIN_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PUSH_PROV_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PUSH_URL
 import com.tencent.bkrepo.helm.pojo.HelmSuccessResponse
@@ -55,7 +56,7 @@ class ChartManipulationController(
     /**
      * helm push
      */
-    @PostMapping(HELM_PUSH_URL)
+    @PostMapping(HELM_PUSH_URL, HELM_PUSH_PLUGIN_URL)
     @ResponseStatus(HttpStatus.CREATED)
     fun upload(
         @ArtifactPathVariable artifactInfo: HelmArtifactInfo,
