@@ -83,16 +83,20 @@ class ChartInfoChartServiceImpl(
 
     private fun searchJson(indexYamlMetadata: HelmIndexYamlMetadata, urls: String): ResponseEntity<Any> {
         val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
-        return when (urlList.size) {
+        when (urlList.size) {
             // Without name and version
             0 -> {
-                ResponseEntity.ok().body(indexYamlMetadata.entries)
+                return ResponseEntity.ok().body(indexYamlMetadata.entries)
             }
             // query with name
             1 -> {
                 val chartName = urlList[0]
                 val chartList = indexYamlMetadata.entries[chartName]
-                ResponseEntity.ok().body(chartList ?: CHART_NOT_FOUND)
+                return if (chartList == null){
+                    ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(CHART_NOT_FOUND)
+                }else{
+                    ResponseEntity.ok().body(chartList)
+                }
             }
             // query with name and version
             2 -> {
@@ -100,14 +104,16 @@ class ChartInfoChartServiceImpl(
                 val chartVersion = urlList[1]
                 val chartList =
                     indexYamlMetadata.entries[chartName] ?: return ResponseEntity.ok().body(NO_CHART_NAME_FOUND)
-                // val helmChartMetadata = chartList.first()
                 val helmChartMetadataList = chartList.filter { chartVersion == it.version }.toList()
-                ResponseEntity.ok()
-                    .body(if (helmChartMetadataList.isNotEmpty()) chartList.first() else mapOf("error" to "no chart version found for $chartName-$chartVersion"))
+                return if (helmChartMetadataList.isNotEmpty()){
+                    ResponseEntity.ok().body(chartList.first())
+                }else{
+                    ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
+                }
             }
             else -> {
                 // ERROR_NOT_FOUND
-                ResponseEntity.ok().body(CHART_NOT_FOUND)
+                return ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(CHART_NOT_FOUND)
             }
         }
     }
