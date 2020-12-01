@@ -37,7 +37,7 @@
             }
         },
         async created () {
-            const urlProjectId = (location.pathname.match(/(?<=\/ui\/)[^/]*/) || [])[0]
+            const urlProjectId = (location.pathname.match(/\/ui\/[^/]+/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
             if (this.iframeMode) {
                 const script = document.createElement('script')
