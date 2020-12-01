@@ -52,7 +52,8 @@ data class HelmChartMetadata(
     var name: String,
     var sources: List<String> = emptyList(),
     var urls: List<String> = emptyList(),
-    var version: String
+    var version: String,
+    var type: String?
 ) : Comparable<HelmChartMetadata> {
 
     override fun compareTo(other: HelmChartMetadata): Int {
