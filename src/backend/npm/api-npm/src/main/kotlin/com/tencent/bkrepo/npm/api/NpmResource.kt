@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
@@ -73,7 +74,12 @@ interface NpmResource {
     @ApiOperation("unpublish version package")
     @DeleteMapping(NPM_UNPUBLISH_VERSION_MAPPING_URI, NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI)
     fun unPublishPkgWithVersion(
-        @ArtifactPathVariable artifactInfo: NpmArtifactInfo
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @PathVariable scope: String?,
+        @PathVariable name: String,
+        @PathVariable delimiter: String,
+        @PathVariable filename: String,
+        @PathVariable rev: String
     ): NpmDeleteResponse
 
     @ApiOperation("npm search")

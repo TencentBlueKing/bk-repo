@@ -70,6 +70,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.lang.StringBuilder
 
 @Service
 class NpmService @Autowired constructor(
@@ -276,11 +277,8 @@ class NpmService @Autowired constructor(
         val pkgInfo = searchPackageInfo(artifactInfo)
             ?: throw NpmArtifactNotFoundException("document not found")
         val name = pkgInfo[NAME].asString
-        pkgInfo.getAsJsonObject(VERSIONS).keySet().forEach { version ->
-            fullPathList.add(String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version))
-            fullPathList.add(String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version))
-        }
-        fullPathList.add(String.format(NPM_PKG_FULL_PATH, name))
+        fullPathList.add(".npm/$name")
+        fullPathList.add(name)
         val context = ArtifactRemoveContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
@@ -309,18 +307,24 @@ class NpmService @Autowired constructor(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    fun unPublishPkgWithVersion(artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
+    fun unPublishPkgWithVersion(
+        artifactInfo: NpmArtifactInfo,
+        pkgName: String,
+        delimiter: String,
+        filename: String,
+        rev: String
+    ): NpmDeleteResponse {
         val fullPathList = mutableListOf<String>()
-        val artifactUri = artifactInfo.artifactUri.substringAfterLast("/-/").substringBeforeLast("/-rev")
-        val pkgName = artifactUri.substringBeforeLast('-')
-        fullPathList.add("/$pkgName/-/$artifactUri")
-        fullPathList.add("/.npm/$pkgName/${artifactUri.replace(".tgz", ".json")}")
+        val repoIdentity = StringBuilder().append(artifactInfo.projectId).append("/").append(artifactInfo.repoName).toString()
+        val tgzPath = HttpContextHolder.getRequest().requestURI.substringAfterLast(repoIdentity).substringBeforeLast("/-rev")
+        fullPathList.add(tgzPath)
+        fullPathList.add(".npm/$pkgName/${tgzPath.substringAfter("/$pkgName/$delimiter/").substringBeforeLast('.').plus(".json")}")
         val context = ArtifactRemoveContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
-        logger.info("delete package $artifactUri success")
-        return NpmDeleteResponse(true, artifactUri, REV_VALUE)
+        logger.info("delete package $tgzPath success")
+        return NpmDeleteResponse(true, tgzPath.substringAfterLast("/$delimiter/"), REV_VALUE)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
