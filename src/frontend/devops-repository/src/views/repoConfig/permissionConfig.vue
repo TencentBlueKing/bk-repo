@@ -86,7 +86,7 @@
                 <bk-checkbox v-for="action in actionList" :key="action.id" class="m20" :value="action.id">{{ action.name }}</bk-checkbox>
             </bk-checkbox-group>
             <div slot="footer">
-                <bk-button :loading="loading" theme="primary" @click.stop.prevent="handleActionPermission">{{$t('submit')}}</bk-button>
+                <bk-button :loading="editActionsDialog.loading" theme="primary" @click.stop.prevent="handleActionPermission">{{$t('submit')}}</bk-button>
                 <bk-button theme="default" @click.stop="editActionsDialog.show = false">{{$t('cancel')}}</bk-button>
             </div>
         </bk-dialog>
@@ -99,10 +99,10 @@
         data () {
             return {
                 isLoading: false,
-                loading: false,
                 activeName: ['admin', 'user', 'viewer'],
                 editActionsDialog: {
                     show: false,
+                    loading: false,
                     id: '',
                     name: '',
                     title: '',
@@ -370,7 +370,8 @@
                 })
             },
             submit (type, part, section) {
-                this.loading = true
+                if (section.loading) return
+                section.loading = true
                 const fn = {
                     users: this.setUserPermission,
                     roles: this.setRolePermission,
@@ -398,7 +399,7 @@
                     await this.handlePermissionDetail(part, section.name, section.id)
                     section[part][`${type}List`] = []
                 }).finally(() => {
-                    this.loading = false
+                    section.loading = false
                 })
             },
             cancel (target) {
@@ -415,7 +416,8 @@
                 }
             },
             handleActionPermission () {
-                this.loading = true
+                if (this.editActionsDialog.loading) return
+                this.editActionsDialog.loading = true
                 this.setActionPermission({
                     body: {
                         permissionId: this.editActionsDialog.id,
@@ -429,7 +431,7 @@
                     this.editActionsDialog.show = false
                     this.handlePermissionDetail('actions', this.editActionsDialog.name, this.editActionsDialog.id)
                 }).finally(() => {
-                    this.loading = false
+                    this.editActionsDialog.loading = false
                 })
             }
         }
@@ -451,9 +453,6 @@
                 padding: 0 15px;
             }
         }
-    }
-    section + section {
-        margin-top: 20px;
     }
     .section-header {
         padding-left: 10px;
