@@ -102,17 +102,7 @@ function _M:get_addr(service_name)
             ngx.exit(503)
             return
         end
-        --local host_num = table.getn(records)
-        --local host_index = math.random(host_num)
-        --if records[host_index].port then
-        --    local target_ip = dns:query(records[host_index].target)[1].address
-        --    return target_ip, records[host_index].port
-        --else
-        --    ngx.log(ngx.ERR, "DNS answer didn't include a port")
-        --    ngx.exit(503)
-
-        -- set cache
-        router_srv_cache:set(query_subdomain, table.concat(ips, ",") .. ":" .. port, 1)
+        router_srv_cache:set(query_subdomain, table.concat(ips, ",") .. ":" .. port, 2)
     else
         local func_itor = string.gmatch(router_srv_value, "([^:]+)")
         local ips_str = func_itor()
