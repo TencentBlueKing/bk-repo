@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
+import com.tencent.bkrepo.repository.search.common.SelectFieldInterceptor
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
@@ -50,10 +51,9 @@ class NodeQueryInterpreter(
     @PostConstruct
     fun init() {
         addModelInterceptor(NodeModelInterceptor())
-        addModelInterceptor(NodeSelectInterceptor())
+        addModelInterceptor(SelectFieldInterceptor())
         addRuleInterceptor(repoTypeRuleInterceptor)
         addRuleInterceptor(repoNameRuleInterceptor)
-        addRuleInterceptor(StageTagRuleInterceptor())
         addRuleInterceptor(MetadataRuleInterceptor())
     }
 

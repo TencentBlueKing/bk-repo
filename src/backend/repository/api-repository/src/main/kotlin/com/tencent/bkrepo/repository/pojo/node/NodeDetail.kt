@@ -66,8 +66,6 @@ data class NodeDetail(
     val sha256: String? = nodeInfo.sha256,
     @ApiModelProperty("文件md5")
     val md5: String? = nodeInfo.md5,
-    @ApiModelProperty("晋级状态标签")
-    val stageTag: String? = nodeInfo.stageTag,
     @ApiModelProperty("元数据")
     val metadata: Map<String, Any> = nodeInfo.metadata.orEmpty(),
     @ApiModelProperty("所属项目id")
