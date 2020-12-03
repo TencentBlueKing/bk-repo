@@ -67,17 +67,10 @@
             font-size: 14px;
             font-weight: normal;
             div {
-                padding-right: 40px;
-                width: 140px;
+                padding-right: 50px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                &:nth-child(3n + 1) {
-                    width: 300px;
-                }
-                &:nth-child(5) {
-                    width: auto;
-                }
             }
         }
     }

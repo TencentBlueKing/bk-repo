@@ -6,7 +6,7 @@ dockerapi:
   bkssmServer: __BK_SSM_PRIVATE_URL__
   apigwServer: __BK_REPO_APIGW_URL__
   appCode: __BK_REPO_APP_CODE__
-  appSecret: __BK_REPO_APP_SECRET__
+  appSecret: __BK_REPO_APP_TOKEN__
   harbor:
     url: __BK_REPO_DOCKERAPI_HARBOR_URL__
     username: __BK_REPO_DOCKERAPI_HARBOR_USERNAME__

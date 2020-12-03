@@ -48,7 +48,7 @@
                         <div class="flex-align-center">
                             <icon size="20" :name="repoType" />
                             <span class="ml10 result-repo-name">{{result.name}}</span>
-                            <span class="ml10 package-card-data" v-if="result.type === 'MAVEN'">
+                            <span class="ml10" v-if="result.type === 'MAVEN'">
                                 [Group ID: {{ result.key.replace(/^.*\/\/(.+):.*$/, '$1') }}]
                             </span>
                             <span class="ml10">({{result.repoName}})</span>

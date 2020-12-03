@@ -59,7 +59,7 @@ class BkiamCallbackService @Autowired constructor(
     private val repositoryClient: RepositoryClient,
     private val tokenService: TokenService
 ) {
-    @Value("\${auth.iam.callbackUser}")
+    @Value("\${auth.iam.callbackUser:}")
     private val callbackUser = ""
 
     private var bufferedToken = ""
