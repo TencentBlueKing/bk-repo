@@ -131,7 +131,7 @@ if router_srv_value == nil then
     return
   end
 
-  local records, err = dns:query(query_subdomain, { qtype = dns.TYPE_SRV })
+  local records, err = dns:query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
 
   if not records then
     ngx.log(ngx.ERR, "failed to query the DNS server: ", err)
