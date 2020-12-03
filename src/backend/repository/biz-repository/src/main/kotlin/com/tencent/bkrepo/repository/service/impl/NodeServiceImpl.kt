@@ -51,7 +51,6 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
@@ -566,8 +565,7 @@ class NodeServiceImpl(
                     size = it.size,
                     sha256 = it.sha256,
                     md5 = it.md5,
-                    metadata = metadata,
-                    stageTag = metadata[SystemMetadata.STAGE.key].toString()
+                    metadata = metadata
                 )
             }
         }
