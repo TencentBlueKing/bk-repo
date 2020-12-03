@@ -33,22 +33,34 @@ package com.tencent.bkrepo.nuget.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.nuget.artifact.repository.NugetLocalRepository
+import com.tencent.bkrepo.nuget.artifact.repository.NugetRemoteRepository
+import com.tencent.bkrepo.nuget.artifact.repository.NugetVirtualRepository
 import com.tencent.bkrepo.nuget.pojo.NugetExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
+import org.springframework.stereotype.Component
 
-@Configuration
-class NugetArtifactConfigurer : ArtifactConfigurer {
+@Component
+class NugetArtifactConfigurer : ArtifactConfigurerSupport() {
 
-    override fun getRepositoryType(): RepositoryType = RepositoryType.NUGET
+    override fun getRepositoryType() = RepositoryType.NUGET
+    override fun getLocalRepository() = SpringContextUtils.getBean<NugetLocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<NugetRemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<NugetVirtualRepository>()
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/nuget")
+        }
+    }
 
-    @Bean
-    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
+    override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
             return NugetExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
         }

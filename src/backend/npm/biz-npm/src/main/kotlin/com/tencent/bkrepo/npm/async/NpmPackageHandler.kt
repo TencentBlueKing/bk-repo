@@ -49,7 +49,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class PackageHandler {
+class NpmPackageHandler {
     @Autowired
     private lateinit var packageClient: PackageClient
 
@@ -137,6 +137,6 @@ class PackageHandler {
     }
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(PackageHandler::class.java)
+        val logger: Logger = LoggerFactory.getLogger(NpmPackageHandler::class.java)
     }
 }
