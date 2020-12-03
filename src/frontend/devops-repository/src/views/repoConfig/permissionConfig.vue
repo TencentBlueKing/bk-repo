@@ -6,7 +6,7 @@
                     <icon class="mr10" size="20" :name="section.icon"></icon>
                     <span>{{ section.title }}</span>
                     <span class="mr10 permission-actions">（{{ getActions(section.actions.data) }}）</span>
-                    <i v-if="section !== admin" class="devops-icon icon-edit hover-btn" @click.stop="editActionsDialogHandler(section)"></i>
+                    <i v-if="section === user" class="devops-icon icon-edit hover-btn" @click.stop="editActionsDialogHandler(section)"></i>
                 </div>
             </header>
             <div slot="content" class="section-main">
