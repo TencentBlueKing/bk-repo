@@ -29,27 +29,20 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.artifact
+package com.tencent.bkrepo.common.security.http.core
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.http.server.ServerHttpRequest
-import org.springframework.http.server.ServerHttpResponse
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import org.springframework.beans.factory.annotation.Autowired
 
-@Configuration
-class HelmArtifactConfiguration : ArtifactConfiguration {
+/**
+ * http请求认证处理器
+ */
+abstract class AbstractHttpAuthHandler: HttpAuthHandler {
 
-    override fun getRepositoryType() = RepositoryType.HELM
+    @Autowired
+    lateinit var authenticationManager: AuthenticationManager
 
-    @Bean
-    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
-        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return HelmErrorResponse(payload.message.orEmpty())
-        }
-    }
+    @Autowired
+    lateinit var jwtProperties: JwtAuthProperties
 }

@@ -29,14 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact
+package com.tencent.bkrepo.common.service.condition
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.autoconfigure.condition.AllNestedConditions
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.cloud.client.SpringCloudApplication
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
 
-@Configuration
-class GenericArtifactConfiguration : ArtifactConfiguration {
+class OnMicroServiceCondition : AllNestedConditions(ConfigurationPhase.REGISTER_BEAN) {
 
-    override fun getRepositoryType() = RepositoryType.GENERIC
+    @ConditionalOnClass(SpringCloudApplication::class)
+    internal class FoundClass
 }

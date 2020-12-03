@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.common.security.util
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
@@ -47,6 +47,7 @@ object SecurityUtils {
     }
 
     fun getPrincipal(): String {
-        return getPlatformId()?.let { "$it-${getUserId()}" } ?: getUserId()
+        return getPlatformId()
+            ?.let { "$it-${getUserId()}" } ?: getUserId()
     }
 }

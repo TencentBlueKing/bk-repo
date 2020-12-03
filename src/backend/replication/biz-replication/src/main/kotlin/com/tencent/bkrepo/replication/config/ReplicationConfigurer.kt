@@ -29,13 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.artifact
+package com.tencent.bkrepo.replication.config
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import org.quartz.Scheduler
+import org.quartz.impl.StdSchedulerFactory
+import org.springframework.cloud.openfeign.FeignClientsConfiguration
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
 @Configuration
-class MavenArtifactConfiguration : ArtifactConfiguration {
-    override fun getRepositoryType() = RepositoryType.MAVEN
+@Import(FeignClientsConfiguration::class)
+class ReplicationConfigurer : ArtifactConfigurer {
+
+    @Bean
+    fun scheduler(): Scheduler {
+        return StdSchedulerFactory.getDefaultScheduler().apply { start() }
+    }
 }

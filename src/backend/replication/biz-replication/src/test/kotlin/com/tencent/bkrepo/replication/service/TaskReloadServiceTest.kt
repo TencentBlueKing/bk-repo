@@ -34,7 +34,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.config.ReplicationConfiguration
+import com.tencent.bkrepo.replication.config.ReplicationConfigurer
 import com.tencent.bkrepo.replication.job.ReplicationJobBean
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.setting.ExecutionPlan
@@ -67,7 +67,7 @@ import java.time.LocalDateTime
     TaskReloadService::class,
     SpringContextUtils::class,
     JobAutoConfiguration::class,
-    ReplicationConfiguration::class,
+    ReplicationConfigurer::class,
     AsyncConfiguration::class,
     TaskLogService::class
 )

@@ -37,29 +37,25 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.BadCredentialsException
-import com.tencent.bkrepo.common.security.http.HttpAuthHandler
+import com.tencent.bkrepo.common.security.http.core.AbstractHttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.http.credentials.UsernamePasswordCredentials
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.PASSWORD
 import com.tencent.bkrepo.npm.exception.NpmLoginFailException
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
 import org.springframework.http.MediaType
+import java.security.Key
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
  * npm登录handler
  */
-class NpmLoginAuthHandler(
-    private val authenticationManager: AuthenticationManager,
-    private val jwtProperties: JwtAuthProperties
-) : HttpAuthHandler {
+class NpmLoginAuthHandler: AbstractHttpAuthHandler() {
 
-    private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
+    private val signingKey: Key by lazy { JwtUtils.createSigningKey(jwtProperties.secretKey) }
 
     override fun getLoginEndpoint() = NpmArtifactInfo.NPM_ADD_USER_MAPPING_URI
 

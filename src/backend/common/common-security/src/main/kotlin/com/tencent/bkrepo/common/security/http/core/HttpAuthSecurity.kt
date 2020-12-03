@@ -29,58 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.common.security.http.core
 
-import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.security.constant.ANY_URI_PATTERN
-import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthHandler
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.http.platform.PlatformAuthHandler
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.beans.factory.annotation.Autowired
-import javax.annotation.PostConstruct
 
-@Suppress("LateinitUsage")
-class HttpAuthSecurity {
+/**
+ * HTTP请求认证Security配置
+ */
+open class HttpAuthSecurity {
 
-    @Autowired
-    private lateinit var authenticationManager: AuthenticationManager
-
-    @Autowired
-    private lateinit var serviceUserResource: ServiceUserResource
-
-    @Autowired
-    private lateinit var jwtAuthProperties: JwtAuthProperties
-
-    @Autowired
-    private lateinit var customizers: ObjectProvider<HttpAuthSecurityCustomizer>
-
-    private var anonymousEnabled: Boolean = true
-    private var basicAuthEnabled: Boolean = true
-    private var platformAuthEnabled: Boolean = true
-    private var jwtAuthEnabled: Boolean = true
+    var prefix = StringPool.EMPTY
+    var prefixEnabled: Boolean = false
+    var anonymousEnabled: Boolean = true
+    var basicAuthEnabled: Boolean = true
+    var platformAuthEnabled: Boolean = true
+    var jwtAuthEnabled: Boolean = true
+    val customizers: MutableList<HttpAuthSecurityCustomizer> = mutableListOf()
+    val authHandlerList: MutableList<HttpAuthHandler> = mutableListOf()
     private val includedPatterns: MutableSet<String> = mutableSetOf()
     private val excludedPatterns: MutableSet<String> = mutableSetOf()
-    private val authHandlerList: MutableList<HttpAuthHandler> = mutableListOf()
-    private val customizedAuthHandlerList: MutableList<HttpAuthHandler> = mutableListOf()
 
-    @PostConstruct
-    fun init() {
-        customizers.forEach { it.customize(this) }
+    /**
+     * 配置访问前缀为[prefix]
+     */
+    fun withPrefix(prefix: String): HttpAuthSecurity {
+        this.prefix = prefix.ensurePrefix(CharPool.SLASH)
+        return this
+    }
 
-        if (basicAuthEnabled) {
-            val basicAuthHandler = BasicAuthHandler(authenticationManager)
-            authHandlerList.add(basicAuthHandler)
-        }
-        if (platformAuthEnabled) {
-            authHandlerList.add(PlatformAuthHandler(authenticationManager, serviceUserResource))
-        }
-        if (jwtAuthEnabled) {
-            authHandlerList.add(JwtAuthHandler(jwtAuthProperties))
-        }
-        authHandlerList.addAll(customizedAuthHandlerList)
+    /**
+     * 配置使用访问前缀
+     */
+    fun enablePrefix(): HttpAuthSecurity {
+        this.prefixEnabled = true
+        return this
     }
 
     /**
@@ -118,10 +103,18 @@ class HttpAuthSecurity {
     }
 
     /**
+     * 添加自定义配置器[customizer]
+     */
+    fun addCustomizer(customizer: HttpAuthSecurityCustomizer): HttpAuthSecurity {
+        customizers.add(customizer)
+        return this
+    }
+
+    /**
      * 添加新的认证方式
      */
     fun addHttpAuthHandler(httpAuthHandler: HttpAuthHandler): HttpAuthSecurity {
-        customizedAuthHandlerList.add(httpAuthHandler)
+        authHandlerList.add(httpAuthHandler)
         return this
     }
 
@@ -141,22 +134,22 @@ class HttpAuthSecurity {
         return this
     }
 
-    fun isAnonymousEnabled(): Boolean {
-        return anonymousEnabled
-    }
-
     fun getIncludedPatterns(): List<String> {
         if (includedPatterns.isEmpty()) {
             includedPatterns.add(ANY_URI_PATTERN)
         }
-        return includedPatterns.toList()
+        return if (prefixEnabled) {
+            includedPatterns.map { it.ensurePrefix(prefix) }.toList()
+        } else {
+            includedPatterns.toList()
+        }
     }
 
     fun getExcludedPatterns(): List<String> {
-        return excludedPatterns.toList()
-    }
-
-    fun getAuthHandlerList(): List<HttpAuthHandler> {
-        return authHandlerList
+        return if (prefixEnabled) {
+            excludedPatterns.map { it.ensurePrefix(prefix) }.toList()
+        } else {
+            excludedPatterns.toList()
+        }
     }
 }

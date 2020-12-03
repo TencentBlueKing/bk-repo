@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
 import org.springframework.cloud.client.serviceregistry.Registration
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
 @Configuration
+@ConditionalOnMicroService
 @Import(ArtifactMetrics::class)
 class ArtifactMetricsConfiguration {
 

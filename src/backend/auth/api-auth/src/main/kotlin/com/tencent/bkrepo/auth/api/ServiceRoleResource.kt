@@ -43,6 +43,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -52,6 +53,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
+@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource")
 @RequestMapping(AUTH_ROLE_PREFIX, AUTH_SERVICE_ROLE_PREFIX, AUTH_API_ROLE_PREFIX)
 interface ServiceRoleResource {

@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.common.security.http.core
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

@@ -31,24 +31,26 @@
 
 package com.tencent.bkrepo.common.security.http.login
 
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import javax.annotation.PostConstruct
 import kotlin.reflect.jvm.javaMethod
 
-@Configuration
+// @Configuration
 class LoginConfiguration(
-    private val requestMappingHandlerMapping: RequestMappingHandlerMapping,
-    private val httpAuthSecurity: HttpAuthSecurity
+    private val objectProvider: ObjectProvider<HttpAuthSecurity>,
+    private val requestMappingHandlerMapping: RequestMappingHandlerMapping
 ) {
 
     @PostConstruct
     fun init() {
-        httpAuthSecurity.getAuthHandlerList().forEach { handler ->
-            handler.getLoginEndpoint()?.let { registerLoginEndpoint(it) }
+        objectProvider.orderedStream().forEach { HttpAuthSecurity ->
+            HttpAuthSecurity.authHandlerList.forEach { handler ->
+                handler.getLoginEndpoint()?.let { registerLoginEndpoint(it) }
+            }
         }
     }
 
@@ -61,5 +63,5 @@ class LoginConfiguration(
      * a trick method for registering request mapping dynamiclly in spring interceptor
      */
     @ResponseBody
-    private fun anonymous() { }
+    private fun anonymous() = Unit
 }

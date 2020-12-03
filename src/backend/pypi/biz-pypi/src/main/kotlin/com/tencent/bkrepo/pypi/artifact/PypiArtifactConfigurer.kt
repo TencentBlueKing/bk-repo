@@ -29,25 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.pypi.artifact
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.pypi.pojo.PypiExceptionResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Primary
+import org.springframework.http.server.ServerHttpRequest
+import org.springframework.http.server.ServerHttpResponse
 
-@Primary
 @Configuration
-class RepositoryArtifactConfiguration : ArtifactConfiguration {
+class PypiArtifactConfigurer : ArtifactConfigurer {
+
+    override fun getRepositoryType() = RepositoryType.PYPI
 
     @Bean
-    fun repositoryAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
-        return object : HttpAuthSecurityCustomizer {
-            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.includePattern("/api/**")
-            }
+    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
+        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
+            return PypiExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
         }
     }
 }

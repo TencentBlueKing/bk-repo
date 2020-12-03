@@ -30,5 +30,16 @@
  */
 
 dependencies {
-    api project(":common:common-service")
+    implementation project(":auth:biz-auth")
+    implementation project(":repository:biz-repository")
+    implementation project(":generic:biz-generic")
+    implementation project(":npm:biz-npm")
+    implementation project(":maven:biz-maven")
+}
+
+configurations.all {
+    exclude group:"org.springframework.cloud", module: "spring-cloud-starter-consul-discovery"
+    exclude group:"org.springframework.cloud", module: "spring-cloud-starter-consul-config"
+    exclude group:"org.springframework.cloud", module: "spring-cloud-starter-openfeign"
+    exclude group:"org.springframework.cloud", module: "spring-cloud-starter-netflix-hystrix"
 }

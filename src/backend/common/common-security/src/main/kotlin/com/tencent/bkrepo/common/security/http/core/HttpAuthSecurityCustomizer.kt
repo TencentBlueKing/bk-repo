@@ -29,22 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.common.security.http.core
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import org.quartz.Scheduler
-import org.quartz.impl.StdSchedulerFactory
-import org.springframework.cloud.openfeign.FeignClientsConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
-
-@Configuration
-@Import(FeignClientsConfiguration::class)
-class ReplicationConfiguration : ArtifactConfiguration {
-
-    @Bean
-    fun scheduler(): Scheduler {
-        return StdSchedulerFactory.getDefaultScheduler().apply { start() }
-    }
+/**
+ * HttpAuthSecurity 自定义配置器
+ *
+ * kotlin 1.4+ 可以使用SAM简化
+ *
+ */
+interface HttpAuthSecurityCustomizer {
+    fun customize(httpAuthSecurity: HttpAuthSecurity) { }
 }

@@ -29,44 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.npm.artifact
+package com.tencent.bkrepo.common.artifact.config
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
+import org.springframework.beans.factory.support.BeanDefinitionRegistry
+import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 
-@Configuration
-class NpmArtifactConfiguration : ArtifactConfiguration {
+abstract class ArtifactConfigurerSupport : ArtifactConfigurer, BeanDefinitionRegistryPostProcessor {
 
-    override fun getRepositoryType() = RepositoryType.NPM
-
-    @Bean
-    fun npmAuthSecurityCustomizer(
-        authenticationManager: AuthenticationManager,
-        jwtProperties: JwtAuthProperties
-    ): HttpAuthSecurityCustomizer {
-        return object : HttpAuthSecurityCustomizer {
-            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.addHttpAuthHandler(NpmLoginAuthHandler(authenticationManager, jwtProperties))
-            }
+    /**
+     * 因为common-security和common-artifact解耦，所以将各依赖源的HttpAuthSecurity动态注册到spring中，
+     * common-security会读取所有HttpAuthSecurity Bean进行统一配置
+     */
+    override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) {
+        val beanName = HttpAuthSecurity::class.java.simpleName + "#" + getRepositoryType()
+        val httpAuthSecurity = HttpAuthSecurity().apply {
+            addCustomizer(getAuthSecurityCustomizer())
         }
+        beanFactory.registerSingleton(beanName, httpAuthSecurity)
+        logger.info("Registering HttpAuthSecurity bean[$beanName].")
     }
 
-    @Bean
-    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
-        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
-        }
+    override fun postProcessBeanDefinitionRegistry(registry: BeanDefinitionRegistry) = Unit
+
+    /**
+     * 异常消息响应体格式转换器
+     */
+    override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
+        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse) = payload
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ArtifactConfigurerSupport::class.java)
     }
 }

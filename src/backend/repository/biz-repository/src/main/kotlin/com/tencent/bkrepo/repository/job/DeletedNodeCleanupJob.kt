@@ -81,7 +81,7 @@ class DeletedNodeCleanupJob(
             val query = Query.query(criteria).with(PageRequest.of(0, PAGE_SIZE))
             var deletedNodeList = nodeDao.find(query)
             while (deletedNodeList.isNotEmpty()) {
-                logger.info("Retrieved [${deletedNodeList.size}] deleted records to be clean up.")
+                logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${repo.projectId}/${repo.name}")
                 deletedNodeList.forEach { node ->
                     cleanUpNode(repo, node)
                     if (node.folder) {

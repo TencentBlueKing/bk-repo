@@ -29,28 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.rpm.artifact
+package com.tencent.bkrepo.common.service.condition
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.rpm.pojo.RpmExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.http.server.ServerHttpRequest
-import org.springframework.http.server.ServerHttpResponse
+import org.springframework.context.annotation.Conditional
+import java.lang.annotation.Inherited
 
-@Configuration
-class RpmArtifactConfiguration : ArtifactConfiguration {
-
-    override fun getRepositoryType(): RepositoryType = RepositoryType.RPM
-
-    @Bean
-    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
-        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return RpmExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
-        }
-    }
-}
+/**
+ * 在微服务架构下匹配生效
+ */
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+@Conditional(OnMicroServiceCondition::class)
+annotation class ConditionalOnMicroService
