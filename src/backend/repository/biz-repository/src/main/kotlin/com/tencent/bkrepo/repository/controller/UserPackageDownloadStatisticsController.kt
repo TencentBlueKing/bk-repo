@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
@@ -70,8 +71,10 @@ class UserPackageDownloadStatisticsController(
         @ApiParam("包版本", required = false)
         @RequestParam version: String? = null,
         @ApiParam("开始日期", required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         @RequestParam startDay: LocalDate? = null,
         @ApiParam("结束日期", required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         @RequestParam endDay: LocalDate? = null
     ): Response<DownloadStatisticsResponse> {
         with(artifactInfo) {

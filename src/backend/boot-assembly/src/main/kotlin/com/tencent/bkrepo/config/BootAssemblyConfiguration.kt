@@ -29,9 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service
+package com.tencent.bkrepo.config
 
-import org.springframework.cloud.client.SpringCloudApplication
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 
-@SpringCloudApplication
-annotation class MicroService
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@Configuration
+class BootAssemblyConfiguration {
+
+    @Bean
+    fun feignWebRegistrations(): WebMvcRegistrations {
+        return object : WebMvcRegistrations {
+            override fun getRequestMappingHandlerMapping() = BootAssemblyHandlerMapping()
+        }
+    }
+
+    @Bean
+    fun httpAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.enablePrefix()
+        }
+    }
+}

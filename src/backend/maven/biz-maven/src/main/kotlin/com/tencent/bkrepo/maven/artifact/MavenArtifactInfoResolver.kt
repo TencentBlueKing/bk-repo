@@ -39,7 +39,8 @@ import javax.servlet.http.HttpServletRequest
 @Resolver(MavenArtifactInfo::class)
 class MavenArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): MavenArtifactInfo {
-        val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri)
+        val mavenArtifactInfo =
+            MavenArtifactInfo(projectId, repoName, artifactUri)
         // 仅当上传jar包时校验地址格式
         if (artifactUri.endsWith(".jar")) {
             val paths = artifactUri.split("/")

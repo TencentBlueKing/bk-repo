@@ -29,28 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.artifact
+package com.tencent.bkrepo.common.artifact.config
 
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.pypi.pojo.PypiExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.http.server.ServerHttpRequest
-import org.springframework.http.server.ServerHttpResponse
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import org.springframework.cglib.proxy.MethodInterceptor
+import org.springframework.cglib.proxy.MethodProxy
+import java.lang.reflect.Method
 
-@Configuration
-class PypiArtifactConfiguration : ArtifactConfiguration {
+class ArtifactBeanProxy<T>(
+    private val classType: Class<T>
+): MethodInterceptor {
 
-    override fun getRepositoryType() = RepositoryType.PYPI
-
-    @Bean
-    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
-        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return PypiExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
+    @Suppress("IMPLICIT_CAST_TO_ANY")
+    override fun intercept(proxy: Any, method: Method, args: Array<out Any>?, methodProxy: MethodProxy): Any? {
+        val configurer = ArtifactContextHolder.getCurrentArtifactConfigurer()
+        val target = when(classType) {
+            ArtifactRepository::class.java -> ArtifactContextHolder.getRepository()
+            LocalRepository::class.java -> configurer.getLocalRepository()
+            RemoteRepository::class.java -> configurer.getRemoteRepository()
+            VirtualRepository::class.java -> configurer.getVirtualRepository()
+            ExceptionResponseTranslator::class.java -> configurer.getExceptionResponseTranslator()
+            else -> throw IllegalArgumentException("Unsupported proxy object[$classType]")
         }
+        return method.invoke(target, *(args ?: emptyArray()))
     }
 }

@@ -29,38 +29,48 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.docker.config
+package com.tencent.bkrepo.common.artifact.config
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
+import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.docker.auth.DockerBasicAuthLoginHandler
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 
 /**
- * config the path to validate privilege
+ * 依赖源配置器
  */
-@Configuration
-class DockerArtifactConfiguration : ArtifactConfiguration {
+interface ArtifactConfigurer {
 
-    override fun getRepositoryType() = RepositoryType.DOCKER
+    /**
+     * 依赖源类型[RepositoryType]
+     */
+    fun getRepositoryType(): RepositoryType
 
-    @Bean
-    fun dockerAuthSecurityCustomizer(
-        authenticationManager: AuthenticationManager,
-        jwtProperties: JwtAuthProperties
-    ): HttpAuthSecurityCustomizer {
-        return object : HttpAuthSecurityCustomizer {
-            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.disableBasicAuth()
-                    .addHttpAuthHandler(DockerBasicAuthLoginHandler(authenticationManager, jwtProperties))
-                    .excludePattern("/v2/_catalog")
-                    .excludePattern("/v2/*/*/*/tags/list")
-            }
-        }
-    }
+    /**
+     * 本地仓库实现逻辑[LocalRepository]
+     */
+    fun getLocalRepository(): LocalRepository
+
+    /**
+     * 远程仓库实现逻辑[RemoteRepository]
+     */
+    fun getRemoteRepository(): RemoteRepository
+
+    /**
+     * 虚拟仓库实现逻辑[VirtualRepository]
+     */
+    fun getVirtualRepository(): VirtualRepository
+
+    /**
+     * HttpAuthSecurity 自定义配置器
+     */
+    fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer
+
+    /**
+     * 异常消息响应体格式转换器
+     */
+    fun getExceptionResponseTranslator(): ExceptionResponseTranslator
+
 }

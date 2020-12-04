@@ -29,46 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.common.security.http.core
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
-import javax.annotation.PostConstruct
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
  * Http请求认证拦截器
  */
-class HttpAuthInterceptor : HandlerInterceptorAdapter() {
-
-    // 拦截器中使用了FeignClient，不能使用构造器注入，否则会有循环依赖错误
-    @Suppress("LateinitUsage")
-    @Autowired
-    private lateinit var httpAuthSecurity: HttpAuthSecurity
+class HttpAuthInterceptor(
+    private val httpAuthSecurity: HttpAuthSecurity
+) : HandlerInterceptorAdapter() {
 
     private val pathMatcher = AntPathMatcher()
 
-    @PostConstruct
-    private fun init() {
-        if (httpAuthSecurity.getAuthHandlerList().isEmpty()) {
-            logger.warn("No http auth handler was configured.")
-        }
-        httpAuthSecurity.getAuthHandlerList().forEach {
-            logger.info("Initializing http auth handler[${it::class.simpleName}].")
-        }
-    }
-
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val requestUri = request.requestURI
-        httpAuthSecurity.getAuthHandlerList().forEach { authHandler ->
-            val isLoginRequest = authHandler.getLoginEndpoint()?.let { pathMatcher.match(it, requestUri) } ?: false
+        httpAuthSecurity.authHandlerList.forEach { authHandler ->
+            val isLoginRequest = authHandler.getLoginEndpoint()?.let {
+                pathMatcher.match(httpAuthSecurity.formatEndPoint(it), requestUri)
+            } ?: false
             // 拦截所有请求或当前为LoginEndpoint请求，表示需要认证处理
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {
                 try {
@@ -92,7 +80,7 @@ class HttpAuthInterceptor : HandlerInterceptorAdapter() {
             }
         }
         // 没有合适的认证handler或为匿名用户
-        if (httpAuthSecurity.isAnonymousEnabled()) {
+        if (httpAuthSecurity.anonymousEnabled) {
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
             return true
         } else {

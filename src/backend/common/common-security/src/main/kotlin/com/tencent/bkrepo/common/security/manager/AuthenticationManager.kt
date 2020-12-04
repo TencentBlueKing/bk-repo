@@ -33,28 +33,57 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.pojo.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.http.HttpAuthProperties
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import javax.annotation.PostConstruct
 
 /**
  * 认证管理器
  */
+@Component
 class AuthenticationManager(
     private val serviceUserResource: ServiceUserResource,
     private val serviceAccountResource: ServiceAccountResource,
     private val httpAuthProperties: HttpAuthProperties
 ) {
 
+    /**
+     * 校验普通用户类型账户
+     * @throws AuthenticationException 校验失败
+     */
     fun checkUserAccount(uid: String, token: String): String {
         if (preCheck()) return uid
         val response = serviceUserResource.checkUserToken(uid, token)
         return if (response.data == true) uid else throw AuthenticationException("Authorization value check failed")
     }
 
+    /**
+     * 校验平台账户
+     * @throws AuthenticationException 校验失败
+     */
     fun checkPlatformAccount(accessKey: String, secretKey: String): String {
         val response = serviceAccountResource.checkCredential(accessKey, secretKey)
         return response.data ?: throw AuthenticationException("AccessKey/SecretKey check failed.")
+    }
+
+    /**
+     * 普通用户类型账户
+     */
+    fun createUserAccount(userId: String) {
+        val request = CreateUserRequest(userId = userId, name = userId)
+        serviceUserResource.createUser(request)
+    }
+
+    /**
+     * 根据用户id[userId]查询用户信息
+     * 当用户不存在时返回`null`
+     */
+    fun findUserAccount(userId: String): User? {
+        return serviceUserResource.detail(userId).data
     }
 
     private fun preCheck(): Boolean {

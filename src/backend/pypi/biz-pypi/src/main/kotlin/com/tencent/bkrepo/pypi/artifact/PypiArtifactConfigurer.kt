@@ -29,29 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.composer.artifact
+package com.tencent.bkrepo.pypi.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.composer.pojo.ComposerExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.pypi.artifact.repository.PypiLocalRepository
+import com.tencent.bkrepo.pypi.artifact.repository.PypiRemoteRepository
+import com.tencent.bkrepo.pypi.artifact.repository.PypiVirtualRepository
+import com.tencent.bkrepo.pypi.pojo.PypiExceptionResponse
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
+import org.springframework.stereotype.Component
 
-@Configuration
-class ComposerArtifactConfiguration : ArtifactConfiguration {
+@Component
+class PypiArtifactConfigurer : ArtifactConfigurerSupport() {
 
-    override fun getRepositoryType() = RepositoryType.COMPOSER
+    override fun getRepositoryType() = RepositoryType.PYPI
+    override fun getLocalRepository() = SpringContextUtils.getBean<PypiLocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<PypiRemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<PypiVirtualRepository>()
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/pypi")
+        }
+    }
 
-    @Bean
-    fun exceptionResponseTranslator() = object :
-        ExceptionResponseTranslator {
+    override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return ComposerExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
+            return PypiExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
         }
     }
 }

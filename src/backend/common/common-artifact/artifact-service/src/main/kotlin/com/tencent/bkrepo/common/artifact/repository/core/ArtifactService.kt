@@ -29,14 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.common.artifact.repository.core
 
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 
 /**
- * 公共远程仓库
+ * ArtifactService 抽象类
  */
-// @Primary
-@Component
-class CommonRemoteRepository : RemoteRepository()
+open class ArtifactService {
+
+    @Qualifier("artifactRepository")
+    @Autowired
+    lateinit var repository: ArtifactRepository
+}

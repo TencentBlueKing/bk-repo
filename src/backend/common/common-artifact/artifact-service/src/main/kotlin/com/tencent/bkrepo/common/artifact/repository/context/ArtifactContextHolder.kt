@@ -34,22 +34,21 @@ package com.tencent.bkrepo.common.artifact.repository.context
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_CONFIGURER
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
-import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.springframework.beans.factory.ObjectProvider
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
@@ -59,86 +58,125 @@ import javax.servlet.http.HttpServletRequest
 @Suppress("LateinitUsage")
 @Component
 class ArtifactContextHolder(
-    artifactConfiguration: ArtifactConfiguration,
-    repositoryClient: RepositoryClient,
-    localRepository: ObjectProvider<LocalRepository>,
-    remoteRepository: ObjectProvider<RemoteRepository>,
-    virtualRepository: ObjectProvider<VirtualRepository>,
-    compositeRepository: ObjectProvider<CompositeRepository>
+    artifactConfigurers: List<ArtifactConfigurer>,
+    compositeRepository: CompositeRepository,
+    repositoryClient: RepositoryClient
 ) {
 
     init {
-        Companion.artifactConfiguration = artifactConfiguration
-        Companion.repositoryClient = repositoryClient
-        Companion.localRepository = localRepository
-        Companion.remoteRepository = remoteRepository
-        Companion.virtualRepository = virtualRepository
+        Companion.artifactConfigurers = artifactConfigurers
         Companion.compositeRepository = compositeRepository
+        Companion.repositoryClient = repositoryClient
+        require(artifactConfigurers.isNotEmpty()) { "No ArtifactConfigurer found!" }
+        artifactConfigurers.forEach {
+            artifactConfigurerMap[it.getRepositoryType()] = it
+        }
     }
 
     companion object {
-        lateinit var artifactConfiguration: ArtifactConfiguration
+        private lateinit var artifactConfigurers: List<ArtifactConfigurer>
+        private lateinit var compositeRepository: CompositeRepository
         private lateinit var repositoryClient: RepositoryClient
-        private lateinit var localRepository: ObjectProvider<LocalRepository>
-        private lateinit var remoteRepository: ObjectProvider<RemoteRepository>
-        private lateinit var virtualRepository: ObjectProvider<VirtualRepository>
-        private lateinit var compositeRepository: ObjectProvider<CompositeRepository>
+
+        private val logger = LoggerFactory.getLogger(ArtifactContextHolder::class.java)
+        private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
         private val repositoryDetailCache = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(60, TimeUnit.SECONDS)
             .build<RepositoryId, RepositoryDetail>()
 
-        fun getRepository(repositoryCategory: RepositoryCategory? = null): ArtifactRepository {
-            return when (repositoryCategory ?: getRepoDetail()!!.category) {
-                RepositoryCategory.LOCAL -> localRepository.`object`
-                RepositoryCategory.REMOTE -> remoteRepository.`object`
-                RepositoryCategory.VIRTUAL -> virtualRepository.`object`
-                RepositoryCategory.COMPOSITE -> compositeRepository.`object`
+        /**
+         * 获取当前服务对应的[ArtifactConfigurer]
+         */
+        fun getCurrentArtifactConfigurer(): ArtifactConfigurer {
+            if (artifactConfigurerMap.size == 1) {
+                return artifactConfigurers.first()
+            }
+            val request = HttpContextHolder.getRequest()
+            val artifactConfigurer = request.getAttribute(ARTIFACT_CONFIGURER)
+            if (artifactConfigurer != null) {
+                require(artifactConfigurer is ArtifactConfigurer)
+                return artifactConfigurer
+            }
+            val service = request.requestURI.trimStart(CharPool.SLASH).split(CharPool.SLASH).first()
+            val type = RepositoryType.ofValueOrDefault(service)
+            val currentConfigurer = artifactConfigurerMap[type]
+            checkNotNull(currentConfigurer) { "Artifact service [$type] not found" }
+            request.setAttribute(ARTIFACT_CONFIGURER, currentConfigurer)
+            return currentConfigurer
+        }
+
+        /**
+         * 根据仓库类型[category]获取对应仓库实现类
+         * 如果[category]为`null`，会根据path variable提取仓库并查询category
+         */
+        fun getRepository(category: RepositoryCategory? = null): ArtifactRepository {
+            val currentArtifactConfigurer = getCurrentArtifactConfigurer()
+            return when (category ?: getRepoDetail()!!.category) {
+                RepositoryCategory.LOCAL -> currentArtifactConfigurer.getLocalRepository()
+                RepositoryCategory.REMOTE -> currentArtifactConfigurer.getRemoteRepository()
+                RepositoryCategory.VIRTUAL -> currentArtifactConfigurer.getVirtualRepository()
+                RepositoryCategory.COMPOSITE -> compositeRepository
             }
         }
 
+        /**
+         * 根据当前请求获取对应仓库详情
+         * 如果请求为空，则返回`null`
+         */
         fun getRepoDetail(): RepositoryDetail? {
             val request = HttpContextHolder.getRequestOrNull() ?: return null
             val repositoryAttribute = request.getAttribute(REPO_KEY)
-            return if (repositoryAttribute == null) {
-                val repositoryId = getRepositoryId(request)
-                val repoDetail = repositoryDetailCache.getIfPresent(repositoryId) ?: run {
-                    queryRepoDetail(repositoryId).apply { repositoryDetailCache.put(repositoryId, this) }
-                }
-                request.setAttribute(REPO_KEY, repoDetail)
-                repoDetail
-            } else {
+            if (repositoryAttribute != null) {
                 require(repositoryAttribute is RepositoryDetail)
-                repositoryAttribute
+                return repositoryAttribute
             }
+            val repositoryId = getRepositoryId(request)
+            val repoDetail = repositoryDetailCache.getIfPresent(repositoryId) ?: run {
+                queryRepoDetail(repositoryId).apply { repositoryDetailCache.put(repositoryId, this) }
+            }
+            request.setAttribute(REPO_KEY, repoDetail)
+            return repoDetail
         }
 
+        /**
+         * 根据请求[request]获取[RepositoryId]
+         * 解析path variable得到projectId和repoName，并保存在request的attributes中
+         */
         private fun getRepositoryId(request: HttpServletRequest): RepositoryId {
             val artifactInfoAttribute = request.getAttribute(ARTIFACT_INFO_KEY)
-            return if (artifactInfoAttribute == null) {
-                val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
-                require(uriAttribute is Map<*, *>)
-                val projectId = uriAttribute[PROJECT_ID].toString()
-                val repoName = uriAttribute[REPO_NAME].toString()
-                RepositoryId(projectId, repoName)
-            } else {
+            if (artifactInfoAttribute != null) {
                 require(artifactInfoAttribute is ArtifactInfo)
-                RepositoryId(artifactInfoAttribute.projectId, artifactInfoAttribute.repoName)
+                return RepositoryId(artifactInfoAttribute.projectId, artifactInfoAttribute.repoName)
             }
+            val uriAttribute = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE)
+            require(uriAttribute is Map<*, *>)
+            val projectId = uriAttribute[PROJECT_ID].toString()
+            val repoName = uriAttribute[REPO_NAME].toString()
+            return RepositoryId(projectId, repoName)
         }
 
+        /**
+         * 根据[repositoryId]查询仓库详情
+         * 当对应仓库不存在，抛[ArtifactNotFoundException]异常
+         */
         private fun queryRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
-                val repoType = artifactConfiguration.getRepositoryType().name
+                val repoType = getCurrentArtifactConfigurer().getRepositoryType().name
                 val response = repositoryClient.getRepoDetail(projectId, repoName, repoType)
                 return response.data ?: throw ArtifactNotFoundException("Repository[$repositoryId] not found")
             }
         }
     }
 
+    /**
+     * 仓库标识类
+     */
     data class RepositoryId(val projectId: String, val repoName: String) {
         override fun toString(): String {
             return StringBuilder(projectId).append(CharPool.SLASH).append(repoName).toString()
         }
     }
+
+
 }

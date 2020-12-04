@@ -29,11 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.opdata.config
 
-/**
- * HttpAuthSecurity 配置器
- */
-interface HttpAuthSecurityCustomizer {
-    fun customize(httpAuthSecurity: HttpAuthSecurity) { }
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+class OpDataConfigurer : ArtifactConfigurer {
+
+    @Bean
+    fun opDataAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
+        return object : HttpAuthSecurityCustomizer {
+            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+                httpAuthSecurity.disableJwtAuth()
+            }
+        }
+    }
 }

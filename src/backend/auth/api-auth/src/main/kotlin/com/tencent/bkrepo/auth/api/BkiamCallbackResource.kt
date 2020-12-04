@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -46,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["BKIAM_USER"], description = "蓝鲸权限中心回调接口")
+@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "BkiamUserResource")
 @RequestMapping("/external/bkiam/callback")
 interface BkiamCallbackResource {

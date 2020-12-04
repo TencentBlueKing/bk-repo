@@ -29,28 +29,46 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.rpm.artifact
+package com.tencent.bkrepo.docker.config
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.rpm.pojo.RpmExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.docker.auth.DockerBasicAuthLoginHandler
+import com.tencent.bkrepo.docker.errors.DockerV2Errors
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
+import org.springframework.stereotype.Component
 
-@Configuration
-class RpmArtifactConfiguration : ArtifactConfiguration {
+/**
+ * config the path to validate privilege
+ */
+@Component
+class DockerArtifactConfigurer : ArtifactConfigurerSupport() {
 
-    override fun getRepositoryType(): RepositoryType = RepositoryType.RPM
-
-    @Bean
-    fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {
+    override fun getRepositoryType() = RepositoryType.DOCKER
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            val authenticationManager = httpAuthSecurity.authenticationManager!!
+            val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
+            val dockerLoginHandler = DockerBasicAuthLoginHandler(authenticationManager, jwtAuthProperties)
+            httpAuthSecurity.addHttpAuthHandler(dockerLoginHandler)
+                .excludePattern("/v2/_catalog")
+                .excludePattern("/v2/*/*/*/tags/list")
+        }
+    }
+    override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return RpmExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
+            return DockerV2Errors.internalError(payload.message)
         }
     }
 }

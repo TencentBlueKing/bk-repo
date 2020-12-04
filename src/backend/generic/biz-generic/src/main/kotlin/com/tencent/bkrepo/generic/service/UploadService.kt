@@ -38,11 +38,11 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.security.http.SecurityUtils
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -67,19 +67,17 @@ import org.springframework.stereotype.Service
 class UploadService(
     private val nodeClient: NodeClient,
     private val storageService: StorageService
-) {
+): ArtifactService() {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun delete(userId: String, artifactInfo: GenericArtifactInfo) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
         logger.info("User[${SecurityUtils.getPrincipal()}] delete artifact[$artifactInfo] success.")
     }

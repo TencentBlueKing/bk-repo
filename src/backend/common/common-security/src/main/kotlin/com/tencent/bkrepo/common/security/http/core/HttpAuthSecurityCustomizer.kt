@@ -29,23 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.common.security.http.core
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurity
-import com.tencent.bkrepo.common.security.http.HttpAuthSecurityCustomizer
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-
-@Configuration
-class OpDataConfiguration : ArtifactConfiguration {
-
-    @Bean
-    fun opDataAuthSecurityCustomizer(): HttpAuthSecurityCustomizer {
-        return object : HttpAuthSecurityCustomizer {
-            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.disableJwtAuth()
-            }
-        }
-    }
+/**
+ * HttpAuthSecurity 自定义配置器
+ *
+ * kotlin 1.4+ 可以使用SAM简化
+ *
+ */
+interface HttpAuthSecurityCustomizer {
+    fun customize(httpAuthSecurity: HttpAuthSecurity) { }
 }
