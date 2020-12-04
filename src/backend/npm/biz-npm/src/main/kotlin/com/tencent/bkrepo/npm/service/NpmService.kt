@@ -30,6 +30,7 @@ import com.tencent.bkrepo.npm.constants.ERROR_MAP
 import com.tencent.bkrepo.npm.constants.FILE_DASH
 import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
 import com.tencent.bkrepo.npm.constants.LATEST
+import com.tencent.bkrepo.npm.constants.LENGTH
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.npm.constants.REV
 import com.tencent.bkrepo.npm.constants.REV_VALUE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SHASUM
+import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
@@ -170,6 +172,7 @@ class NpmService @Autowired constructor(
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
         val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
+        versionJsonObj.getAsJsonObject(DIST).addProperty(SIZE,attributesMap[LENGTH] as Long)
         val packageJsonWithVersionFile = ArtifactFileFactory.build(
             GsonUtils.gson.toJson(versionJsonObj).byteInputStream()
         )
@@ -211,6 +214,7 @@ class NpmService @Autowired constructor(
         val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
         attributesMap[NPM_PKG_TGZ_FILE_FULL_PATH] = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, distTags.second)
         attributesMap[APPLICATION_OCTET_STEAM] = mutableMap.get(CONTENT_TYPE).asString
+        attributesMap[LENGTH] = mutableMap.get(LENGTH).asLong
         jsonObj.remove(ATTACHMENTS)
         return mutableMap
     }

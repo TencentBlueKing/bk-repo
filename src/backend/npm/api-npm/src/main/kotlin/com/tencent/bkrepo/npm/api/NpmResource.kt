@@ -22,7 +22,6 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -46,8 +45,7 @@ interface NpmResource {
     @GetMapping(
         NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI,
         NPM_PACKAGE_INFO_MAPPING_URI,
-        NPM_PACKAGE_VERSION_INFO_MAPPING_URI,
-        produces = [MediaType.APPLICATION_JSON_VALUE]
+        NPM_PACKAGE_VERSION_INFO_MAPPING_URI
     )
     fun searchPackageInfo(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo
