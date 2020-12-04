@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.service.async
 
-import org.slf4j.LoggerFactory
 import org.springframework.boot.task.TaskExecutorCustomizer
 import org.springframework.boot.task.TaskSchedulerCustomizer
 import org.springframework.context.annotation.Bean

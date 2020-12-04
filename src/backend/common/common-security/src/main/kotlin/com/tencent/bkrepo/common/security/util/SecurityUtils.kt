@@ -29,14 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact
+package com.tencent.bkrepo.common.security.util
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
+import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 
-@Configuration
-class GenericArtifactConfiguration : ArtifactConfiguration {
+object SecurityUtils {
 
-    override fun getRepositoryType() = RepositoryType.GENERIC
+    fun getUserId(): String {
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+    }
+
+    fun getPlatformId(): String? {
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(PLATFORM_KEY) as? String
+    }
+
+    fun getPrincipal(): String {
+        return getPlatformId()
+            ?.let { "$it-${getUserId()}" } ?: getUserId()
+    }
 }

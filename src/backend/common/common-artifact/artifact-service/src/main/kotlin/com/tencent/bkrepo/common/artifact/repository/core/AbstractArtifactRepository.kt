@@ -47,7 +47,7 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
-import com.tencent.bkrepo.common.security.http.SecurityUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
