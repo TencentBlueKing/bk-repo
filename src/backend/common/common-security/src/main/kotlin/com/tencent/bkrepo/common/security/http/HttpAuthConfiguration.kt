@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import org.springframework.beans.factory.ObjectProvider
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -58,7 +57,6 @@ class HttpAuthConfiguration(
 ) {
 
     @Bean
-    @ConditionalOnMissingBean
     fun httpAuthWebMvcConfigurer() = object : WebMvcConfigurer {
         override fun addInterceptors(registry: InterceptorRegistry) {
             httpAuthSecurity.stream().forEach {

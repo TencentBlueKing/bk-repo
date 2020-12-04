@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.security.constant.ANY_URI_PATTERN
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 
 /**
  * HTTP请求认证Security配置
@@ -47,6 +49,8 @@ open class HttpAuthSecurity {
     var basicAuthEnabled: Boolean = true
     var platformAuthEnabled: Boolean = true
     var jwtAuthEnabled: Boolean = true
+    var authenticationManager: AuthenticationManager? = null
+    var jwtAuthProperties: JwtAuthProperties? = null
     val customizers: MutableList<HttpAuthSecurityCustomizer> = mutableListOf()
     val authHandlerList: MutableList<HttpAuthHandler> = mutableListOf()
     private val includedPatterns: MutableSet<String> = mutableSetOf()
@@ -151,5 +155,9 @@ open class HttpAuthSecurity {
         } else {
             excludedPatterns.toList()
         }
+    }
+
+    fun formatEndPoint(endpoint: String): String {
+        return if (prefixEnabled) prefix + endpoint else endpoint
     }
 }

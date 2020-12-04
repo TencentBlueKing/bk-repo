@@ -31,36 +31,44 @@
 
 package com.tencent.bkrepo.docker.config
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.docker.auth.DockerBasicAuthLoginHandler
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.docker.errors.DockerV2Errors
+import org.springframework.http.server.ServerHttpRequest
+import org.springframework.http.server.ServerHttpResponse
+import org.springframework.stereotype.Component
 
 /**
  * config the path to validate privilege
  */
-@Configuration
-class DockerArtifactConfigurer : ArtifactConfigurer {
+@Component
+class DockerArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.DOCKER
-
-    @Bean
-    fun dockerAuthSecurityCustomizer(
-        authenticationManager: AuthenticationManager,
-        jwtProperties: JwtAuthProperties
-    ): HttpAuthSecurityCustomizer {
-        return object : HttpAuthSecurityCustomizer {
-            override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-                httpAuthSecurity.disableBasicAuth()
-                    .addHttpAuthHandler(DockerBasicAuthLoginHandler(authenticationManager, jwtProperties))
-                    .excludePattern("/v2/_catalog")
-                    .excludePattern("/v2/*/*/*/tags/list")
-            }
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            val authenticationManager = httpAuthSecurity.authenticationManager!!
+            val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
+            val dockerLoginHandler = DockerBasicAuthLoginHandler(authenticationManager, jwtAuthProperties)
+            httpAuthSecurity.addHttpAuthHandler(dockerLoginHandler)
+                .excludePattern("/v2/_catalog")
+                .excludePattern("/v2/*/*/*/tags/list")
+        }
+    }
+    override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
+        override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
+            return DockerV2Errors.internalError(payload.message)
         }
     }
 }

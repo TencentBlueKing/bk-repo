@@ -33,23 +33,34 @@ package com.tencent.bkrepo.composer.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.composer.artifact.repository.ComposerLocalRepository
+import com.tencent.bkrepo.composer.artifact.repository.ComposerRemoteRepository
+import com.tencent.bkrepo.composer.artifact.repository.ComposerVirtualRepository
 import com.tencent.bkrepo.composer.pojo.ComposerExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
+import org.springframework.stereotype.Component
 
-@Configuration
-class ComposerArtifactConfigurer : ArtifactConfigurer {
+@Component
+class ComposerArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.COMPOSER
+    override fun getLocalRepository() = SpringContextUtils.getBean<ComposerLocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<ComposerRemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<ComposerVirtualRepository>()
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/composer")
+        }
+    }
 
-    @Bean
-    fun exceptionResponseTranslator() = object :
-        ExceptionResponseTranslator {
+    override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
             return ComposerExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
         }

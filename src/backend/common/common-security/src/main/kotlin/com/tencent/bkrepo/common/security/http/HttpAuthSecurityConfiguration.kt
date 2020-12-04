@@ -65,6 +65,8 @@ class HttpAuthSecurityConfiguration(
     }
 
     private fun configHttpAuthSecurity(httpAuthSecurity: HttpAuthSecurity) {
+        httpAuthSecurity.authenticationManager = authenticationManager
+        httpAuthSecurity.jwtAuthProperties = jwtAuthProperties
         unifiedCustomizer.ifAvailable?.let { httpAuthSecurity.addCustomizer(it) }
         httpAuthSecurity.customizers.forEach {
             it.customize(httpAuthSecurity)
@@ -84,7 +86,7 @@ class HttpAuthSecurityConfiguration(
     private fun registerLoginHandler(httpAuthSecurity: HttpAuthSecurity) {
         httpAuthSecurity.authHandlerList.forEach { handler ->
             handler.getLoginEndpoint()?.let {
-                val loginEndpoint = if (httpAuthSecurity.prefixEnabled) httpAuthSecurity.prefix + it else it
+                val loginEndpoint = httpAuthSecurity.formatEndPoint(it)
                 registerLoginEndpoint(loginEndpoint)
             }
         }

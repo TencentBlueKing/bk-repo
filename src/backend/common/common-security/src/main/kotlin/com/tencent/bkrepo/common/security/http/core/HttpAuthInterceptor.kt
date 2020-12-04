@@ -54,7 +54,9 @@ class HttpAuthInterceptor(
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val requestUri = request.requestURI
         httpAuthSecurity.authHandlerList.forEach { authHandler ->
-            val isLoginRequest = authHandler.getLoginEndpoint()?.let { pathMatcher.match(it, requestUri) } ?: false
+            val isLoginRequest = authHandler.getLoginEndpoint()?.let {
+                pathMatcher.match(httpAuthSecurity.formatEndPoint(it), requestUri)
+            } ?: false
             // 拦截所有请求或当前为LoginEndpoint请求，表示需要认证处理
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {
                 try {

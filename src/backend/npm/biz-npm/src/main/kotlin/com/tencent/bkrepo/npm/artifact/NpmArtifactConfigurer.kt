@@ -48,7 +48,7 @@ import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Component
 
 @Component
-class NpmArtifactConfigurer: ArtifactConfigurerSupport() {
+class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NPM
     override fun getLocalRepository() = SpringContextUtils.getBean<NpmLocalRepository>()
@@ -56,9 +56,13 @@ class NpmArtifactConfigurer: ArtifactConfigurerSupport() {
     override fun getVirtualRepository() = SpringContextUtils.getBean<NpmVirtualRepository>()
     override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            httpAuthSecurity.withPrefix("/npm").addHttpAuthHandler(NpmLoginAuthHandler())
+            val authenticationManager = httpAuthSecurity.authenticationManager!!
+            val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
+            val npmLoginAuthHandler = NpmLoginAuthHandler(authenticationManager, jwtAuthProperties)
+            httpAuthSecurity.withPrefix("/npm").addHttpAuthHandler(npmLoginAuthHandler)
         }
     }
+
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
             return NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
