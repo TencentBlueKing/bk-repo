@@ -29,13 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.nuget.pojo
+package com.tencent.bkrepo.nuget.model
 
-data class NupkgVersion(
-    val id: String,
-    val version: String
-) {
-    override fun toString(): String {
-        return "$id.$version.nupkg"
-    }
-}
+data class NugetExceptionResponse(
+    val status: String,
+    val error: String?
+)

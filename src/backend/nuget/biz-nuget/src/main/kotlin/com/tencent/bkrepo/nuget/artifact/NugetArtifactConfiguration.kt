@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.nuget.pojo.NugetExceptionResponse
+import com.tencent.bkrepo.nuget.model.NugetExceptionResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
@@ -46,6 +46,18 @@ import org.springframework.http.server.ServerHttpResponse
 class NugetArtifactConfiguration : ArtifactConfiguration {
 
     override fun getRepositoryType(): RepositoryType = RepositoryType.NUGET
+
+    // @Bean
+    // fun npmAuthSecurityCustomizer(
+    //     authenticationManager: AuthenticationManager,
+    //     jwtProperties: JwtAuthProperties
+    // ): HttpAuthSecurityCustomizer {
+    //     return object : HttpAuthSecurityCustomizer {
+    //         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+    //             httpAuthSecurity.disableBasicAuth()
+    //         }
+    //     }
+    // }
 
     @Bean
     fun exceptionResponseTranslator() = object : ExceptionResponseTranslator {

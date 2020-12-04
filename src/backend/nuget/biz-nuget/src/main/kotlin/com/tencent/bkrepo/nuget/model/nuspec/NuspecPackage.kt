@@ -29,15 +29,42 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.nuget.api
+package com.tencent.bkrepo.nuget.model.nuspec
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo.Companion.NUGET_RESOURCE
-import org.springframework.web.bind.annotation.PutMapping
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 
-interface NugetResource {
+/**
+ * nuspec package xml file
+ */
+@JacksonXmlRootElement(localName = "package")
+data class NuspecPackage(
+    @JacksonXmlProperty(isAttribute = true)
+    val xmlns: String?,
+    val metadata: NuspecMetadata,
+    val files: MutableList<NuspecFile>?
+)
 
-    @PutMapping(NUGET_RESOURCE)
-    fun push(@ArtifactPathVariable nugetArtifactInfo: NugetArtifactInfo): String
-}
+// data class NupkgMetadata(
+//     // Required elements (id version description authors)
+//     // Specifies the minimum version of the NuGet client that can install this package
+//     @JacksonXmlProperty(isAttribute = true)
+//     val minClientVersion: String?,
+//     val id: String,
+//     val version: String,
+//     val description: String,
+//     val authors: String,
+//     val title: String?,
+//     val owners: String?,
+//     val requireLicenseAcceptance: Boolean,
+//     val licenseUrl: String?,
+//     val projectUrl: String?,
+//     val iconUrl: String?,
+//     val summary: String?,
+//     val language: String?,
+//     val dependencies: MutableList<Dependency>? = mutableListOf()
+// ){
+//     fun isValid():Boolean{
+//         return id.isNotBlank() && version.isNotBlank()
+//     }
+// }
