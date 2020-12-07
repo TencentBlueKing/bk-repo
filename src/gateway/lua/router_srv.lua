@@ -121,8 +121,8 @@ local router_srv_value = router_srv_cache:get(query_subdomain)
 if router_srv_value == nil then
   local dns, err = resolver:new {
     nameservers = dnsIps,
-    retrans = 2,
-    timeout = 250
+    retrans = 5,
+    timeout = 2000
   }
 
   if not dns then
