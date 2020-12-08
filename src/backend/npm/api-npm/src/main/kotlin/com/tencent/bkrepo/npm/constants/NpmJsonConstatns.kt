@@ -21,7 +21,7 @@ const val ATTACHMENTS = "_attachments"
 const val CONTENT_TYPE = "content_type"
 const val DATA = "data"
 const val LENGTH = "length"
-const val SIZE = "size"
+const val SIZE = "packageSize"
 
 const val METADATA = "metadata"
 const val MAINTAINERS = "maintainers"
