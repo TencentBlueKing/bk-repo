@@ -33,13 +33,12 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import javax.annotation.PostConstruct
 
 /**
  * 认证管理器
