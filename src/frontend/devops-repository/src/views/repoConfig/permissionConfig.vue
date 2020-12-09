@@ -48,8 +48,13 @@
                                     multiple
                                     display-tag
                                     searchable
-                                    enable-virtual-scroll
+                                    :enable-virtual-scroll="filterSelectOptions(section[part], part).length > 3000"
                                     :list="filterSelectOptions(section[part], part)">
+                                    <bk-option v-for="option in filterSelectOptions(section[part], part)"
+                                        :key="option.id"
+                                        :id="option.id"
+                                        :name="option.name">
+                                    </bk-option>
                                 </bk-select>
                             </template>
                             <i v-if="section[part].addList.length"
