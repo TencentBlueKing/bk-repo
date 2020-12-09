@@ -32,13 +32,9 @@
 package com.tencent.bkrepo.common.service.exception
 
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
-import com.netflix.client.ClientException
-import com.netflix.hystrix.exception.HystrixRuntimeException
-import com.netflix.hystrix.exception.HystrixRuntimeException.FailureType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.StatusCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logBusinessException
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logSystemException
@@ -56,17 +52,10 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 /**
- * 统一异常处理
+ * 全局统一异常处理
  */
 @RestControllerAdvice
 class GlobalExceptionHandler {
-
-    @ExceptionHandler(ExternalErrorCodeException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleException(exception: ExternalErrorCodeException): Response<Void> {
-        logBusinessException(exception, "[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
-        return ResponseBuilder.fail(exception.errorCode, exception.errorMessage.orEmpty())
-    }
 
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -150,32 +139,11 @@ class GlobalExceptionHandler {
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }
 
-    @ExceptionHandler(HystrixRuntimeException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: HystrixRuntimeException): Response<Void> {
-        var causeMessage = exception.cause?.message
-        var messageCode = CommonMessageCode.SERVICE_CALL_ERROR
-        if (exception.failureType == FailureType.COMMAND_EXCEPTION) {
-            val throwable = exception.cause?.cause
-            if (throwable is ClientException) {
-                causeMessage = throwable.errorMessage
-            }
-        } else if (exception.failureType == FailureType.SHORTCIRCUIT) {
-            messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
-        }
-        logSystemException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage")
-        return response(messageCode)
-    }
-
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: Exception): Response<Void> {
         logSystemException(exception)
-        return response(CommonMessageCode.SYSTEM_ERROR)
-    }
-
-    private fun response(messageCode: MessageCode): Response<Void> {
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
-        return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(CommonMessageCode.SYSTEM_ERROR, null)
+        return ResponseBuilder.fail(CommonMessageCode.SYSTEM_ERROR.getCode(), errorMessage)
     }
 }

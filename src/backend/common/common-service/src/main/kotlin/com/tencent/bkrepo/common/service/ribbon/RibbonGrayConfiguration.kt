@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.service.ribbon
 
+import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import org.springframework.beans.factory.config.ConfigurableBeanFactory
 import org.springframework.boot.autoconfigure.AutoConfigureBefore
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -43,6 +44,7 @@ import org.springframework.context.annotation.Scope
 
 @Configuration
 @ConditionalOnProperty(value = ["ribbon.gray.enabled"])
+@ConditionalOnMicroService
 @AutoConfigureBefore(RibbonClientConfiguration::class)
 @EnableConfigurationProperties(RibbonGrayProperties::class)
 class RibbonGrayConfiguration {

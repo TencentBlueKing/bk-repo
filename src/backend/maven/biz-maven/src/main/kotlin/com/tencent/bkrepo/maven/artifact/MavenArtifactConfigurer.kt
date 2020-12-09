@@ -29,16 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.config
+package com.tencent.bkrepo.maven.artifact
 
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.maven.artifact.repository.MavenLocalRepository
+import com.tencent.bkrepo.maven.artifact.repository.MavenRemoteRepository
+import com.tencent.bkrepo.maven.artifact.repository.MavenVirtualRepository
+import org.springframework.stereotype.Component
 
 /**
- * 依赖源配置类
+ * Maven 依赖源配置
  */
-interface ArtifactConfiguration {
-    /**
-     * 获取依赖源类型[RepositoryType]
-     */
-    fun getRepositoryType(): RepositoryType = RepositoryType.NONE
+@Component
+class MavenArtifactConfigurer: ArtifactConfigurerSupport() {
+
+    override fun getRepositoryType() = RepositoryType.MAVEN
+    override fun getLocalRepository() = SpringContextUtils.getBean<MavenLocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<MavenRemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<MavenVirtualRepository>()
+
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/maven")
+        }
+    }
 }

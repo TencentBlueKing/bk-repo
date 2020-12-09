@@ -74,10 +74,10 @@ class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAw
                     require(instance is ArtifactInfoResolver)
                     if (!resolverMap.containsKey(annotation.value)) {
                         resolverMap.register(annotation.value, instance, annotation.default)
-                        val value = annotation.value
-                        val beanClassName = beanDefinition.beanClassName
+                        val type = annotation.value.simpleName
+                        val resolver = clazz.simpleName
                         val isDefault = annotation.default
-                        logger.info("Registering ArtifactInfo resolver: $value -> $beanClassName(default: $isDefault).")
+                        logger.info("Registering ArtifactInfo resolver[$resolver(default: $isDefault) -> $type].")
                     }
                 }
             }

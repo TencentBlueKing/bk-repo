@@ -32,13 +32,16 @@
 package com.tencent.bkrepo.common.service.feign
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import feign.RequestInterceptor
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@ConditionalOnMicroService
 @EnableFeignClients(basePackages = ["com.tencent.bkrepo"])
 class ClientConfiguration {
 
@@ -54,4 +57,11 @@ class ClientConfiguration {
 
     @Bean
     fun errorCodeDecoder() = ErrorCodeDecoder()
+
+    @Bean
+    fun feignWebRegistrations(): WebMvcRegistrations {
+        return object : WebMvcRegistrations {
+            override fun getRequestMappingHandlerMapping() = FeignFilterRequestMappingHandlerMapping()
+        }
+    }
 }

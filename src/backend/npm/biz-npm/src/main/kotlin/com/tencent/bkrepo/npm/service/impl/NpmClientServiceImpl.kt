@@ -45,7 +45,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.async.NpmDependentHandler
-import com.tencent.bkrepo.npm.async.PackageHandler
+import com.tencent.bkrepo.npm.async.NpmPackageHandler
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.LATEST
@@ -88,7 +88,7 @@ import kotlin.system.measureTimeMillis
 class NpmClientServiceImpl(
     private val npmDependentHandler: NpmDependentHandler,
     private val metadataClient: MetadataClient,
-    private val packageHandler: PackageHandler,
+    private val npmPackageHandler: NpmPackageHandler,
     private val npmProperties: NpmProperties
 ) : NpmClientService, AbstractNpmService() {
 
@@ -253,7 +253,7 @@ class NpmClientServiceImpl(
         ArtifactContextHolder.getRepository().remove(context)
         logger.info("userId [$userId] delete version [$version] for package [$name] success.")
         // 删除包管理中对应的version
-        packageHandler.deleteVersion(userId, name, version, artifactInfo)
+        npmPackageHandler.deleteVersion(userId, name, version, artifactInfo)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -269,7 +269,7 @@ class NpmClientServiceImpl(
             logger.info("userId [$userId] delete package [$name] success.")
         }
         npmDependentHandler.updatePackageDependents(userId, artifactInfo, packageMetaData, NpmOperationAction.UNPUBLISH)
-        packageHandler.deletePackage(userId, name, artifactInfo)
+        npmPackageHandler.deletePackage(userId, name, artifactInfo)
     }
 
     private fun searchLatestVersionMetadata(artifactInfo: NpmArtifactInfo, name: String): NpmVersionMetadata {
@@ -336,7 +336,7 @@ class NpmClientServiceImpl(
                 NpmOperationAction.PUBLISH
             )
             val versionMetadata = npmPackageMetaData.versions.map.values.iterator().next()
-            packageHandler.createVersion(userId, artifactInfo, versionMetadata, size)
+            npmPackageHandler.createVersion(userId, artifactInfo, versionMetadata, size)
         } catch (exception: IOException) {
             val version = NpmUtils.getLatestVersionFormDistTags(npmPackageMetaData.distTags)
             logger.error(

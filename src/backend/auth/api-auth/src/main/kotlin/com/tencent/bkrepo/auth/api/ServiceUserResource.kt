@@ -47,6 +47,7 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -60,6 +61,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import javax.servlet.http.HttpServletResponse
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
+@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceUserResource")
 @RequestMapping(AUTH_USER_PREFIX, AUTH_API_USER_PREFIX, AUTH_SERVICE_USER_PREFIX)
 interface ServiceUserResource {

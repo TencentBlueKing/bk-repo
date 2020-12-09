@@ -29,22 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.config
+package com.tencent.bkrepo.common.service.condition
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfiguration
-import org.quartz.Scheduler
-import org.quartz.impl.StdSchedulerFactory
-import org.springframework.cloud.openfeign.FeignClientsConfiguration
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import org.springframework.boot.autoconfigure.condition.AllNestedConditions
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.cloud.client.SpringCloudApplication
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
 
-@Configuration
-@Import(FeignClientsConfiguration::class)
-class ReplicationConfiguration : ArtifactConfiguration {
+class OnMicroServiceCondition : AllNestedConditions(ConfigurationPhase.REGISTER_BEAN) {
 
-    @Bean
-    fun scheduler(): Scheduler {
-        return StdSchedulerFactory.getDefaultScheduler().apply { start() }
-    }
+    @ConditionalOnClass(SpringCloudApplication::class)
+    internal class FoundClass
 }

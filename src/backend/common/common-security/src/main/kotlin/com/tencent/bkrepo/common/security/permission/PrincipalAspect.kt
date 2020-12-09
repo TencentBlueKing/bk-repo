@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.security.permission
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.http.SecurityUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around

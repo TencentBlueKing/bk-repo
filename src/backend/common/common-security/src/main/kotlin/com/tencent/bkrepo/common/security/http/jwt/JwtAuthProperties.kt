@@ -34,8 +34,19 @@ package com.tencent.bkrepo.common.security.http.jwt
 import org.springframework.boot.context.properties.ConfigurationProperties
 import java.time.Duration
 
+/**
+ * jwt 认证相关属性
+ */
 @ConfigurationProperties("security.auth.jwt")
 data class JwtAuthProperties(
+
+    /**
+     * 加密密钥
+     */
     var secretKey: String = "secret@key",
+
+    /**
+     * 过期时间，[Duration.ZERO]代表永不过期
+     */
     var expiration: Duration = Duration.ZERO
 )

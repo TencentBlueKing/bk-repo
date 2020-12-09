@@ -29,14 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.http
+package com.tencent.bkrepo.replication.config
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
+import org.quartz.Scheduler
+import org.quartz.impl.StdSchedulerFactory
+import org.springframework.cloud.openfeign.FeignClientsConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
-@ConfigurationProperties("security.auth")
-data class HttpAuthProperties(
-    /**
-     * 是否开启认证
-     */
-    var enabled: Boolean = true
-)
+@Configuration
+@Import(FeignClientsConfiguration::class)
+class ReplicationConfigurer : ArtifactConfigurer {
+
+    @Bean
+    fun scheduler(): Scheduler {
+        return StdSchedulerFactory.getDefaultScheduler().apply { start() }
+    }
+}

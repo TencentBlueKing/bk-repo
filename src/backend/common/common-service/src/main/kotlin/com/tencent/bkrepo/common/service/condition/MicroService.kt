@@ -29,14 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.common.service.condition
 
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import org.springframework.stereotype.Component
+import org.springframework.cloud.client.SpringCloudApplication
 
-/**
- * 公共远程仓库
- */
-// @Primary
-@Component
-class CommonRemoteRepository : RemoteRepository()
+@SpringCloudApplication
+annotation class MicroService

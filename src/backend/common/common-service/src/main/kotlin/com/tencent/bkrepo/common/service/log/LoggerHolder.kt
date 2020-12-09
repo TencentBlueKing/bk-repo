@@ -74,12 +74,12 @@ object LoggerHolder {
         val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val platformId = request?.getAttribute(PLATFORM_KEY)
         val principal = platformId?.let { "$it-$userId" } ?: userId
-        val accessChannel = determineAccessChannel(request)
+        val channel = determineAccessChannel(request)
         val uri = request?.requestURI
         val method = request?.method
         val exceptionMessage = message ?: exception.message.orEmpty()
         val exceptionName = exception.javaClass.simpleName
-        val fullMessage = "[$principal] $method [$uri] by [$accessChannel] failed[$exceptionName]: $exceptionMessage"
+        val fullMessage = "User[$principal] $method [$uri] from [$channel] failed[$exceptionName]: $exceptionMessage"
         if (systemError) {
             exceptionLogger.error(fullMessage, exception)
         } else {
@@ -96,7 +96,7 @@ object LoggerHolder {
                 "MicroService"
             }
             else -> {
-                "UserApi"
+                "Api"
             }
         }
     }

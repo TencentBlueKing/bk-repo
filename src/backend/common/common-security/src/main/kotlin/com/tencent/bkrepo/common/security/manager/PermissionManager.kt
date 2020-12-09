@@ -42,18 +42,16 @@ import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AccessDeniedException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.http.HttpAuthProperties
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
 /**
  * 权限管理类
  */
-@Component
 class PermissionManager(
     private val repositoryClient: RepositoryClient,
     private val permissionResource: ServicePermissionResource,
