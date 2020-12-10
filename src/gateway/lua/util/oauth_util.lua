@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 _M = {}
 
-function _M:get_ticket(bk_ticket)
+function _M:get_ticket(bk_ticket, input_type)
     local user_cache = ngx.shared.user_info_store
     local user_cache_value = user_cache:get(bk_ticket)
     if user_cache_value == nil then
@@ -31,14 +31,23 @@ function _M:get_ticket(bk_ticket)
         httpc:connect(config.oauth.ip, config.oauth.port)
 
         --- 组装请求body
-        local requestBody = {
-            env_name = config.oauth.env, 
-            app_code = config.oauth.app_code, 
-            app_secret = config.oauth.app_secret, 
-            grant_type =  "authorization_code",  
-            id_provider = "bk_login_ied", 
-            bk_ticket = bk_ticket
-        }
+        local requestBody = nil
+        if input_type == "ticket" then
+            requestBody = {
+                env_name = config.oauth.env,
+                app_code = config.oauth.app_code,
+                app_secret = config.oauth.app_secret,
+                grant_type = "authorization_code",
+                id_provider = "bk_login_ied",
+                bk_ticket = bk_ticket
+            }
+        else
+            requestBody = {
+                grant_type = "authorization_code",
+                id_provider = "bk_login",
+                bk_token = bk_ticket
+            }
+        end
 
         --- 转换请求内容
         local requestBodyJson = json.encode(requestBody)
@@ -51,14 +60,26 @@ function _M:get_ticket(bk_ticket)
         --- 发送请求
         -- local url = config.oauth.scheme .. config.oauth.ip  .. config.oauth.loginUrl .. bk_token
         local url = config.oauth.url
+        local httpHeaders = nil
+        if input_type == "ticket" then
+            httpHeaders = {
+                ["Host"] = config.oauth.host,
+                ["Accept"] = "application/json",
+                ["Content-Type"] = "application/json"
+            }
+        else
+            httpHeaders = {
+                ["Host"] = config.oauth.host,
+                ["Accept"] = "application/json",
+                ["Content-Type"] = "application/json",
+                ["X-BK-APP-CODE"] = config.oauth.app_code,
+                ["X-BK-APP-SECRET"] = config.oauth.app_secret
+            }
+        end
         local res, err = httpc:request({
             path = url,
             method = "POST",
-            headers = {
-            ["Host"] = config.oauth.host,
-            ["Accept"] = "application/json",
-            ["Content-Type"] = "application/json"
-            }, 
+            headers = httpHeaders,
             body = requestBodyJson
         })
         --- 判断是否出错了
@@ -80,7 +101,7 @@ function _M:get_ticket(bk_ticket)
         --- 转换JSON的返回数据为TABLE
         local result = json.decode(responseBody)
         --- 判断JSON转换是否成功
-        if result == nil then 
+        if result == nil then
             ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
             ngx.exit(500)
             return
@@ -99,7 +120,6 @@ function _M:get_ticket(bk_ticket)
         ngx.log(ngx.STDERR, "has user info:", user_cache_value)
         return json.decode(user_cache_value).data
     end
-
 end
 
 function _M:verify_bkrepo_token(access_token)
@@ -215,6 +235,5 @@ function _M:verify_token(access_token)
     result.data.access_token = access_token
     return result.data
 end
-
 
 return _M
