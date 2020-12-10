@@ -63,7 +63,7 @@ data class NodeCreateRequest(
     @ApiModelProperty("文件md5")
     val md5: String? = null,
     @ApiModelProperty("元数据信息")
-    val metadata: Map<String, String>? = null,
+    val metadata: Map<String, Any>? = null,
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER,
     override val createdBy: String? = null,
