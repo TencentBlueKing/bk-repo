@@ -31,5 +31,5 @@
 
 package com.tencent.bkrepo.replication.config
 
-const val DEFAULT_VERSION = "0.0.1"
+const val DEFAULT_VERSION = "1.0.0"
 const val NODE_REQUEST = "request"

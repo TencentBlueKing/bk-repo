@@ -72,7 +72,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
                 .addFormDataPart("md5", request.md5!!)
                 .addFormDataPart("userId", request.operator)
             request.metadata?.forEach { (key, value) ->
-                builder.addFormDataPart("metadata[$key]", value)
+                builder.addFormDataPart("metadata[$key]", value as String)
             }
             val url = "$normalizedUrl/replica/file/${request.projectId}/${request.repoName}/${request.fullPath}"
             val requestBody = builder.build()
