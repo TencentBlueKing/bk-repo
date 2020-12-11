@@ -29,37 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.monitor.controller
+package com.tencent.bkrepo.common.service.actuator
 
-import com.tencent.bkrepo.monitor.metrics.MetricEndpoint
-import com.tencent.bkrepo.monitor.metrics.MetricInfo
-import com.tencent.bkrepo.monitor.service.MetricSourceService
-import org.springframework.http.MediaType
-import org.springframework.http.codec.ServerSentEvent
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Flux
+import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
+import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
+import org.springframework.cloud.client.serviceregistry.Registration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-@RestController
-@RequestMapping("/monitor")
-class InstanceMetricsController(val metricSourceService: MetricSourceService) {
+@Configuration
+class ActuatorConfiguration {
 
-    @GetMapping(path = ["/metrics/{metricName}"], produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun metricsStream(@PathVariable metricName: String): Flux<MetricInfo> {
-        val metricEndpoint = MetricEndpoint.ofMetricName(metricName)
-        return metricSourceService.getMetricSource(metricEndpoint)
-    }
-
-    @GetMapping(path = ["/metrics"], produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun metricsStream(): Flux<ServerSentEvent<MetricInfo>> {
-        return metricSourceService.getMergedSource().map { transformServerSendEvent(it) }
-    }
-
-    private fun transformServerSendEvent(metricInfo: MetricInfo): ServerSentEvent<MetricInfo> {
-        return ServerSentEvent.builder(metricInfo)
-            .event(metricInfo.name)
-            .build()
+    @Bean
+    @ConditionalOnMicroService
+    fun metricsCommonTags(registration: Registration): MeterRegistryCustomizer<MeterRegistry> {
+        return MeterRegistryCustomizer { registry: MeterRegistry ->
+            registry.config().commonTags("service", registration.serviceId)
+                .commonTags("instance", "${registration.host}-${registration.instanceId}")
+        }
     }
 }

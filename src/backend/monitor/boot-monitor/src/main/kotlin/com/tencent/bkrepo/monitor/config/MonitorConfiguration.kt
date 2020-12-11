@@ -50,32 +50,19 @@ import javax.annotation.PostConstruct
 @Configuration
 @EnableAdminServer
 @EnableConfigurationProperties(MonitorProperties::class, InfluxExportProperties::class)
-class MonitorConfiguration {
+class MonitorConfiguration(
+    private val objectMapper: ObjectMapper,
+    private val adminJacksonModule: SimpleModule
+) {
 
     /**
      * adapt for moment.js
      */
     @PostConstruct
-    fun customObjectMapper(
-        objectMapper: ObjectMapper,
-        adminJacksonModule: SimpleModule
-    ) {
+    fun customObjectMapper() {
         objectMapper.registerModule(adminJacksonModule)
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     }
-
-    // @Bean
-    // fun monitorWebMvcConfigurer(
-    //     executor: ThreadPoolTaskExecutor
-    // ): WebMvcConfigurer {
-    //     return object : WebMvcConfigurer {
-    //         override fun configureAsyncSupport(configurer: AsyncSupportConfigurer) {
-    //             super.configureAsyncSupport(configurer)
-    //             configurer.setDefaultTimeout(60 * 1000L)
-    //             configurer.setTaskExecutor(taskAsyncExecutor as AsyncTaskExecutor)
-    //         }
-    //     }
-    // }
 
     @Bean
     fun instanceIdGenerator(): InstanceIdGenerator = InstanceIdGenerator {

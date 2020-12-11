@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.artifact.metrics
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -48,12 +49,10 @@ class ArtifactMetrics(
     var uploadingCount = AtomicInteger(0)
     var downloadingCount = AtomicInteger(0)
 
-    lateinit var uploadedCounter: Counter
-    lateinit var downloadedCounter: Counter
-    lateinit var uploadedBytesCounter: Counter
-    lateinit var uploadedConsumeCounter: Counter
-    lateinit var downloadedBytesCounter: Counter
-    lateinit var downloadedConsumeCounter: Counter
+    lateinit var uploadedSizeCounter: Counter
+    lateinit var uploadedConsumeTimer: Timer
+    lateinit var downloadedSizeCounter: Counter
+    lateinit var downloadedConsumeTimer: Timer
 
     override fun bindTo(meterRegistry: MeterRegistry) {
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount, { it.get().toDouble() })
@@ -64,28 +63,24 @@ class ArtifactMetrics(
             .description(ARTIFACT_DOWNLOADING_COUNT_DESC)
             .register(meterRegistry)
 
-        uploadedCounter = Counter.builder(ARTIFACT_UPLOADED_COUNT)
-            .description(ARTIFACT_UPLOADED_COUNT_DESC)
+        uploadedSizeCounter = Counter.builder(ARTIFACT_UPLOADED_CONSUME)
+            .description(ARTIFACT_UPLOADED_CONSUME_DESC)
+            .tag("type", "size")
             .register(meterRegistry)
 
-        downloadedCounter = Counter.builder(ARTIFACT_DOWNLOADED_COUNT)
-            .description(ARTIFACT_DOWNLOADED_COUNT_DESC)
+        uploadedConsumeTimer = Timer.builder(ARTIFACT_UPLOADED_CONSUME)
+            .description(ARTIFACT_UPLOADED_CONSUME_DESC)
+            .tag("type", "timer")
             .register(meterRegistry)
 
-        uploadedBytesCounter = Counter.builder(ARTIFACT_UPLOADED_BYTES_COUNT)
-            .description(ARTIFACT_UPLOADED_BYTES_COUNT_DESC)
+        downloadedSizeCounter = Counter.builder(ARTIFACT_DOWNLOADED_CONSUME)
+            .description(ARTIFACT_DOWNLOADED_CONSUME_DESC)
+            .tag("type", "size")
             .register(meterRegistry)
 
-        uploadedConsumeCounter = Counter.builder(ARTIFACT_UPLOADED_CONSUME_COUNT)
-            .description(ARTIFACT_UPLOADED_CONSUME_COUNT_DESC)
-            .register(meterRegistry)
-
-        downloadedBytesCounter = Counter.builder(ARTIFACT_DOWNLOADED_BYTES_COUNT)
-            .description(ARTIFACT_DOWNLOADED_BYTES_COUNT_DESC)
-            .register(meterRegistry)
-
-        downloadedConsumeCounter = Counter.builder(ARTIFACT_DOWNLOADED_CONSUME_COUNT)
-            .description(ARTIFACT_DOWNLOADED_CONSUME_COUNT_DESC)
+        downloadedConsumeTimer = Timer.builder(ARTIFACT_DOWNLOADED_CONSUME)
+            .description(ARTIFACT_DOWNLOADED_CONSUME_DESC)
+            .tag("type", "timer")
             .register(meterRegistry)
 
         Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor.threadPoolExecutor, { it.activeCount.toDouble() })
