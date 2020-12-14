@@ -31,17 +31,20 @@
 
 package com.tencent.bkrepo.common.artifact.health
 
-import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.springframework.boot.actuate.health.AbstractHealthIndicator
 import org.springframework.boot.actuate.health.Health
 import org.springframework.stereotype.Component
 
 @Component("storageHealthIndicator")
 class StorageHealthIndicator(
-    private val storageService: StorageService
+    private val storageHealthMonitor: StorageHealthMonitor
 ) : AbstractHealthIndicator() {
     override fun doHealthCheck(builder: Health.Builder) {
-        storageService.checkHealth()
-        builder.up()
+        if (storageHealthMonitor.health.get()) {
+            builder.up()
+        } else {
+            builder.down()
+        }
     }
 }

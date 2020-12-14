@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.monitor.export
 
-import com.tencent.bkrepo.monitor.metrics.MetricInfo
+import com.tencent.bkrepo.monitor.metrics.MetricsInfo
 
 interface MetricsExporter {
-    fun export(metricInfo: MetricInfo)
+    fun export(metricsInfo: MetricsInfo)
 }

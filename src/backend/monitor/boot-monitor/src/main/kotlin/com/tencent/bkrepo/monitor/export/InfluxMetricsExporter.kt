@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.monitor.export
 
-import com.tencent.bkrepo.monitor.metrics.MetricInfo
-import com.tencent.bkrepo.monitor.service.MetricSourceService
+import com.tencent.bkrepo.monitor.metrics.MetricsInfo
+import com.tencent.bkrepo.monitor.processor.MetricsInfoProcessor
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -42,7 +42,7 @@ import reactor.core.publisher.Flux
 
 @Component
 class InfluxMetricsExporter(
-    metricSourceService: MetricSourceService,
+    metricsInfoProcessor: MetricsInfoProcessor,
     private val influxExportProperties: InfluxExportProperties
 ) {
 
@@ -60,16 +60,16 @@ class InfluxMetricsExporter(
                 builder.defaultHeaders { it.setBasicAuth(username.orEmpty(), password.orEmpty()) }
             }
             webClient = builder.build()
-            metricSourceService.getMergedSource().window(step).subscribe { exportMetricSource(it) }
+            metricsInfoProcessor.getFlux().window(step).subscribe { exportMetricSource(it) }
         }
     }
 
-    private fun exportMetricSource(metricSource: Flux<MetricInfo>) {
+    private fun exportMetricSource(metricsFlux: Flux<MetricsInfo>) {
         if (!influxExportProperties.enabled) {
             return
         }
         createDatabaseIfNecessary()
-        val stringSource = metricSource.map { converter.convert(it) }
+        val stringSource = metricsFlux.map { converter.convert(it) }
         webClient.post()
             .uri(influxEndpoint)
             .contentType(MediaType.TEXT_PLAIN)

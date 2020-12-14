@@ -34,9 +34,14 @@ repositories {
 }
 
 dependencies {
-    api project(":common:common-service")
     api "de.codecentric:spring-boot-admin-starter-server:2.3.0"
     api "org.springframework.boot:spring-boot-starter-security"
+    api "org.springframework.cloud:spring-cloud-starter-consul-discovery"
+    api "org.springframework.cloud:spring-cloud-starter-consul-config"
+    api "org.springframework.boot:spring-boot-starter-undertow"
+    api("org.springframework.boot:spring-boot-starter-web") {
+        exclude module: "spring-boot-starter-tomcat"
+    }
 }
 
 task npmInstall(type: Exec) {

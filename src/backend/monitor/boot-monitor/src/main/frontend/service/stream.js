@@ -29,5 +29,20 @@
  * SOFTWARE.
  */
 
-export const healthEventSource = new EventSource("monitor/health");
-export const metricsEventSource = new EventSource("monitor/metrics");
+let healthEventSource
+let metricsEventSource
+
+export function getHealthEventSource() {
+    if(!healthEventSource) {
+        healthEventSource = new EventSource("monitor/health");
+    }
+    return healthEventSource;
+}
+
+
+export function getMetricsEventSource() {
+    if(!metricsEventSource) {
+        metricsEventSource = new EventSource("monitor/metrics");
+    }
+    return metricsEventSource;
+}

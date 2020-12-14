@@ -29,62 +29,66 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.monitor.service
+package com.tencent.bkrepo.monitor.processor
 
 import com.tencent.bkrepo.monitor.config.MonitorProperties
-import com.tencent.bkrepo.monitor.metrics.HealthEndpoint
-import com.tencent.bkrepo.monitor.metrics.HealthInfo
+import com.tencent.bkrepo.monitor.metrics.MetricEndpoint
+import com.tencent.bkrepo.monitor.metrics.MetricsInfo
 import de.codecentric.boot.admin.server.services.InstanceRegistry
 import de.codecentric.boot.admin.server.web.client.InstanceWebClient
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
+import reactor.core.publisher.ReplayProcessor
 import javax.annotation.PreDestroy
 
 @Component
-class HealthSourceService(
+class MetricsInfoProcessor(
     private val monitorProperties: MonitorProperties,
-    private val instanceRegistry: InstanceRegistry,
-    instanceWebClientBuilder: InstanceWebClient.Builder
+    private val instanceWebClientBuilder: InstanceWebClient.Builder,
+    private val instanceRegistry: InstanceRegistry
 ) {
+
     @Value("\${service.prefix:repo-}")
     private val servicePrefix: String = "repo-"
 
     @Value("\${service.suffix:}")
     private val serviceSuffix: String = ""
-    private val instanceWebClient = instanceWebClientBuilder.build()
-    val healthSourceMap: MutableMap<HealthEndpoint, InstanceHealthSource> = mutableMapOf()
+
+    private val processor = ReplayProcessor.create<MetricsInfo>(HISTORY_SIZE)
+    private val metricSourceMap: MutableMap<MetricEndpoint, InstanceMetricSource> = mutableMapOf()
 
     init {
-        monitorProperties.health.forEach { (healthName, applicationListString) ->
-            val healthEndpoint = HealthEndpoint.ofHealthName(healthName)
+        monitorProperties.metrics.forEach { (metricName, applicationListString) ->
+            val metricEndpoint = MetricEndpoint.ofMetricName(metricName)
             val trimmedApplicationListString = applicationListString.trim()
             val includeAll = trimmedApplicationListString.isEmpty() || trimmedApplicationListString == "*"
             val applicationList = trimmedApplicationListString.split(",").map { resolveServiceName(it) }.distinct()
-            val healthSource = InstanceHealthSource(
-                healthEndpoint,
+            val metricSource = InstanceMetricSource(
+                metricEndpoint,
                 includeAll,
                 applicationList,
                 monitorProperties.interval,
                 instanceRegistry,
-                instanceWebClient
+                instanceWebClientBuilder.build(),
+                processor
             )
-            healthSourceMap[healthEndpoint] = healthSource
+            metricSourceMap[metricEndpoint] = metricSource
         }
     }
 
-    fun getHealthSource(health: HealthEndpoint) = healthSourceMap[health]?.healthSource ?: Flux.empty()
+    fun getFlux(): Flux<MetricsInfo> = processor
 
-    fun getMergedSource(): Flux<HealthInfo> {
-        return Flux.merge(Flux.fromIterable(healthSourceMap.entries).map { it.value.healthSource })
-    }
-
-    fun resolveServiceName(original: String): String {
+    private fun resolveServiceName(original: String): String {
         return "$servicePrefix${original.trim()}$serviceSuffix"
     }
 
     @PreDestroy
     private fun stop() {
-        healthSourceMap.forEach { (_, source) -> source.stop() }
+        metricSourceMap.forEach { (_, source) -> source.stop() }
+    }
+
+    companion object {
+        private const val HISTORY_SIZE = 8192
     }
 }

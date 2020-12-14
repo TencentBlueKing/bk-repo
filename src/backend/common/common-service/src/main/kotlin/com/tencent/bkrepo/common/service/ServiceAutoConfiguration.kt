@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.service
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.common.service.exception.ServiceExceptionHandler
@@ -54,6 +55,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnWebApplication
 @Import(
+    ActuatorConfiguration::class,
     SwaggerConfiguration::class,
     GlobalExceptionHandler::class,
     ServiceExceptionHandler::class,
