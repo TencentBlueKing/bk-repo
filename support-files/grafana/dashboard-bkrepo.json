@@ -71,7 +71,7 @@
         "dashLength": 10,
         "dashes": false,
         "datasource": "${DS_INFLUXDB-BKREPO}",
-        "description": "IO传输平均吞吐",
+        "description": "IO传输平均流量",
         "fieldConfig": {
           "defaults": {
             "custom": {}
@@ -233,7 +233,7 @@
         "timeFrom": null,
         "timeRegions": [],
         "timeShift": null,
-        "title": "IO传输平均吞吐",
+        "title": "IO传输平均流量",
         "tooltip": {
           "shared": true,
           "sort": 0,
