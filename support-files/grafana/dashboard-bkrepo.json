@@ -190,7 +190,7 @@
             "measurement": "artifact_uploaded_consume",
             "orderByTime": "ASC",
             "policy": "default",
-            "query": "SELECT mean(\"value\") FROM \"artifact_downloaded_consume\" WHERE (\"service\" =~ /^$service$/ AND \"instance\" =~ /^$instance$/) AND $timeFilter GROUP BY time($__interval) fill(linear)",
+            "query": "SELECT mean(\"value\")/60 FROM \"artifact_uploaded_consume\" WHERE (\"service\" =~ /^$service$/ AND \"instance\" =~ /^$instance$/) AND $timeFilter GROUP BY time($__interval) fill(linear)",
             "rawQuery": false,
             "refId": "B",
             "resultFormat": "time_series",
