@@ -69,13 +69,13 @@
                         <div class="section-sub-main mt10">
                             <div class="permission-tag" v-for="tag in filterDeleteTagList(section[part])" :key="tag">
                                 {{ getName(part, tag) }}
-                                <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(section[part], tag)"></i>
+                                <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(tag, part, section)"></i>
                             </div>
                         </div>
-                        <div v-if="section[part].deleteList && section[part].deleteList.length">
+                        <!-- <div v-if="section[part].deleteList && section[part].deleteList.length">
                             <bk-button :loading="section.loading" theme="primary" @click="submit('delete', part, section)">{{$t('save')}}</bk-button>
                             <bk-button class="ml10" theme="default" @click="cancel(section[part])">{{$t('cancel')}}</bk-button>
-                        </div>
+                        </div> -->
                     </div>
                 </template>
             </div>
@@ -297,8 +297,9 @@
             handleShowAddArea (target) {
                 target.showAddArea = !target.showAddArea
             },
-            handleDeleteTag (target, tag) {
-                target.deleteList.push(tag)
+            handleDeleteTag (tag, part, section) {
+                section[part].deleteList.push(tag)
+                this.submit('delete', part, section)
             },
             initTree (treeTarget, { data: disabled = [], addList: add = [] } = {}) {
                 treeTarget.setData(this.departmentTree)
@@ -395,7 +396,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (type === 'add' ? this.$t('add') : this.$t('save')) + this.$t('success')
+                        message: (type === 'add' ? this.$t('add') : this.$t('delete')) + this.$t('success')
                     })
                     this.handlePermissionDetail(part, section.name, section.id).then(() => {
                         section[part][`${type}List`] = []

@@ -33,9 +33,9 @@
                 >
                     <bk-table-column :label="$t('fileName')">
                         <template slot-scope="props">
-                            <div class="flex-align-center">
+                            <div class="flex-align-center fine-name">
                                 <icon size="24" :name="props.row.folder ? 'folder' : getIconName(props.row.name)" />
-                                <div class="ml10 fine-name" :title="props.row.name">{{props.row.name}}</div>
+                                <div class="ml10" :title="props.row.name">{{props.row.name}}</div>
                             </div>
                         </template>
                     </bk-table-column>
@@ -763,18 +763,15 @@
         .repo-generic-table {
             flex: 1;
             font-size: 0;
-            /deep/ tbody {
-                cursor: pointer;
-            }
             .bk-table {
                 margin-bottom: 10px;
                 border-bottom: 1px solid $borderWeightColor;
             }
             .fine-name {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 250px;
+                padding: 7px 0;
+                svg {
+                    flex: none;
+                }
             }
         }
     }
