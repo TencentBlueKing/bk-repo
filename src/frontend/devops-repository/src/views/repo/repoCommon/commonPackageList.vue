@@ -139,7 +139,7 @@
 @import '@/scss/conf';
 .common-package-list-container {
     .common-package-main {
-        height: calc(100% - 42px);
+        max-height: calc(100% - 42px);
         overflow-y: auto;
         flex: 1;
         border-bottom: 1px solid $borderWeightColor;

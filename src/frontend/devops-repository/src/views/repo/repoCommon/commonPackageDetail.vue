@@ -4,7 +4,7 @@
             <icon size="80" name="default-docker" />
             <div class="ml20 common-package-title flex-column">
                 <span class="mb10 title" :title="pkg.name">{{ pkg.name }}
-                    <span class="ml10 subtitle" v-if="pkg.type === 'MAVEN'"> (Group ID: {{ pkg.key.replace(/^.*\/\/(.+):.*$/, '$1') }})</span>
+                    <span class="ml10 subtitle repo-tag" v-if="pkg.type === 'MAVEN'">{{ pkg.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
                 </span>
                 <div class="flex-align-center">
                     <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
@@ -307,8 +307,10 @@
                 font-size: 20px;
                 color: $fontBoldColor;
                 .subtitle {
+                    color: $fontColor;
                     font-weight: normal;
                     font-size: 14px;
+                    cursor: pointer;
                 }
             }
         }

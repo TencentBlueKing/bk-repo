@@ -17,7 +17,10 @@
                 searchable
                 :clearable="false"
                 placeholder="请选择项目"
-                @change="changeProject">
+                @change="changeProject"
+                :enable-virtual-scroll="projectList && projectList.length > 3000"
+                :list="projectList"
+            >
                 <bk-option v-for="option in projectList"
                     :key="option.id"
                     :id="option.id"
@@ -56,6 +59,7 @@
     }
 </script>
 <style lang="scss" scoped>
+@import '@/scss/conf';
 .bkrepo-header {
     height: 50px;
     padding: 0 20px;
@@ -63,12 +67,32 @@
     background-color:  #191929;
     color: white;
     .bkre-project-select {
-        border: 0 none;
-        width: 200px;
-        font-size: 14px;
-        color: white;
-        /deep/ .bk-select-angle {
+        $headerBgColor: #191929;
+        $dropdownBorder: #2a2a42;
+        width: 233px;
+        color: $fontColor;
+        border-color: $dropdownBorder;
+        background-color: $headerBgColor;
+
+        &:hover,
+        &.active,
+        &.is-focus {
+            border-color: $dropdownBorder !important;
+            background-color: black;
+            color: white !important;
+            box-shadow: none;
+        }
+        .bk-select-angle {
             color: white;
+            top: 7px;
+        }
+        .bk-tooltip-ref {
+            outline: none;
+        }
+        .bk-select-dropdown .bk-select-name {
+            color: $fontLigtherColor;
+            font-size: 14px;
+            outline: none;
         }
     }
     .bkrepo-logo {
