@@ -360,6 +360,7 @@ class NpmService @Autowired constructor(
         return NpmSuccessResponse.createTagSuccess()
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun deleteDistTags(artifactInfo: NpmArtifactInfo) {
         val context = ArtifactSearchContext()
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
