@@ -21,13 +21,10 @@ const { i18n, setLocale } = createLocale(require.context('@locale/repository/', 
 
 Vue.component('Icon', Icon)
 
-Vue.use(focus)
 Vue.use(bkMagic)
 
 Vue.prototype.$setLocale = setLocale
 Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
-
-window.Vue = Vue
 
 window.repositoryVue = new Vue({
     el: '#app',
