@@ -350,6 +350,7 @@ class NpmService @Autowired constructor(
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
+        logger.info("handling request for add dist tag [$tag], version: [$version] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}].")
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
@@ -370,7 +371,7 @@ class NpmService @Autowired constructor(
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
         if (LATEST == tag) {
-            logger.warn("dist tag for latest cannot be deleted")
+            logger.warn("dist tag for [latest] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}] cannot be deleted.")
             return
         }
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
