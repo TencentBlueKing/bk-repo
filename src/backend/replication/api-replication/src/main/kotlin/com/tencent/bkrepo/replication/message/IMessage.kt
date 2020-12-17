@@ -42,4 +42,3 @@ import com.tencent.bkrepo.replication.message.node.NodeCreatedMessage
 interface IMessage {
     fun getMessageType(): String
 }
-
