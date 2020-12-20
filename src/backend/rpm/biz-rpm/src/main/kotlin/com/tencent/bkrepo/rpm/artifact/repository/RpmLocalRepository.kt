@@ -3,18 +3,21 @@ package com.tencent.bkrepo.rpm.artifact.repository
 import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.repository.RpmLocalConfiguration
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactTransferContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.context.*
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -521,6 +524,27 @@ class RpmLocalRepository(
                 }
             }
         }
+    }
+
+    fun extList(context: ArtifactListContext, page: Int, size: Int): Page<String> {
+        val artifactInfo = context.artifactInfo
+        val artifactUri = artifactInfo.artifactUri
+        val path = if(artifactUri.endsWith("/")) artifactUri else "$artifactUri/"
+        val rule1 = mutableListOf<Rule>(
+                Rule.QueryRule("projectId", artifactInfo.projectId, OperationType.EQ),
+                Rule.QueryRule("repoName", artifactInfo.repoName, OperationType.EQ),
+                Rule.QueryRule("path", path, OperationType.EQ),
+                Rule.QueryRule("fullPath", path, OperationType.NE),
+                Rule.QueryRule("name", "repodata", OperationType.NE)
+        )
+        val queryModel = QueryModel(
+                page = PageLimit(page, size),
+                sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
+                select = mutableListOf("name"),
+                rule = Rule.NestedRule(rule1, Rule.NestedRule.RelationType.AND)
+        )
+        val pages = nodeClient.query(queryModel).data!!
+        return Page(page, size, pages.count,  pages.records.map { it["name"] as String })
     }
 
     companion object {
