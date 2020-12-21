@@ -28,7 +28,7 @@
                                     :display-tag="true"
                                     :tag-fixed-height="false"
                                     :show-empty="false"
-                                    @toggle="show => toggleTreeSelect(show, $refs[`${section.name}Tree`][0], section[part].data)"
+                                    @toggle="show => show && initTree($refs[`${section.name}Tree`][0], section[part])"
                                     @tab-remove="({ id }) => $refs[`${section.name}Tree`][0].setChecked(id, { emitEvent: true, checked: false })"
                                     @clear="$refs[`${section.name}Tree`][0].removeChecked({ emitEvent: false })">
                                     <bk-big-tree
@@ -36,7 +36,7 @@
                                         show-checkbox
                                         :check-strictly="false"
                                         show-link-line
-                                        :lazy-method="(node) => handleDepartmentTreeNode(node, $refs[`${section.name}Tree`][0], section[part].data)"
+                                        :lazy-method="(node) => handleDepartmentTreeNode(node, $refs[`${section.name}Tree`][0], section[part])"
                                         @check-change="ids => changeAddDepartments(section[part], ids)">
                                     </bk-big-tree>
                                 </bk-select>
@@ -69,13 +69,13 @@
                         <div class="section-sub-main mt10">
                             <div class="permission-tag" v-for="tag in filterDeleteTagList(section[part])" :key="tag">
                                 {{ getName(part, tag) }}
-                                <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(section[part], tag)"></i>
+                                <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(tag, part, section)"></i>
                             </div>
                         </div>
-                        <div v-if="section[part].deleteList && section[part].deleteList.length">
+                        <!-- <div v-if="section[part].deleteList && section[part].deleteList.length">
                             <bk-button :loading="section.loading" theme="primary" @click="submit('delete', part, section)">{{$t('save')}}</bk-button>
                             <bk-button class="ml10" theme="default" @click="cancel(section[part])">{{$t('cancel')}}</bk-button>
-                        </div>
+                        </div> -->
                     </div>
                 </template>
             </div>
@@ -273,7 +273,13 @@
                     return target
                 }, {})
             })
-            this.handleDepartmentTreeNode()
+            // 根节点
+            this.getRepoDepartmentList({
+                username: this.userInfo.username
+            }).then(res => {
+                this.handleFlatDepartment(res)
+                this.departmentTree = res.map(v => ({ ...v, has_children: true }))
+            })
             this.handlePermissionDetail()
         },
         methods: {
@@ -291,14 +297,18 @@
             handleShowAddArea (target) {
                 target.showAddArea = !target.showAddArea
             },
-            handleDeleteTag (target, tag) {
-                target.deleteList.push(tag)
+            handleDeleteTag (tag, part, section) {
+                section[part].deleteList.push(tag)
+                this.submit('delete', part, section)
             },
-            toggleTreeSelect (show, treeTarget, disabled) {
-                show && treeTarget.setData(this.departmentTree)
+            initTree (treeTarget, { data: disabled = [], addList: add = [] } = {}) {
+                treeTarget.setData(this.departmentTree)
                 disabled.forEach(id => {
                     treeTarget.setChecked(id)
                     treeTarget.setDisabled(id)
+                })
+                add.forEach(id => {
+                    treeTarget.setChecked(id)
                 })
             },
             changeAddDepartments (treeTarget, ids) {
@@ -309,48 +319,35 @@
                     this.$set(this.flatDepartment, v.id, v)
                 })
             },
-            async handleDepartmentTreeNode (node, root, disabled) {
-                if (!node) {
-                    // 初始化
-                    this.getRepoDepartmentList({
-                        username: this.userInfo.username
-                    }).then(res => {
-                        this.handleFlatDepartment(res)
-                        this.departmentTree = res.map(v => ({ ...v, has_children: true }))
+            async handleDepartmentTreeNode (node, root, data) {
+                // 叶节点
+                if (!node.data.has_children) return ({ data: [], leaf: [] })
+                // 枝节点
+                const res = await this.getRepoDepartmentList({
+                    username: this.userInfo.username,
+                    departmentId: node.id
+                })
+                this.handleFlatDepartment(res)
+                this.$nextTick(() => {
+                    let target = this.departmentTree
+                    node.parents.forEach(parent => {
+                        target = (target.children || target).find(v => v.id === parent.id).children
                     })
-                } else {
-                    // 初始化
-                    if (!node.data.has_children) return ({ data: [], leaf: [] })
-                    const res = await this.getRepoDepartmentList({
-                        username: this.userInfo.username,
-                        departmentId: node.id
-                    })
-                    this.handleFlatDepartment(res)
-                    this.$nextTick(() => {
-                        let target = this.departmentTree
-                        node.parents.forEach(parent => {
-                            target = (target.children || target).find(v => v.id === parent.id).children
-                        })
-                        target = target.find(v => v.id === node.id)
-                        target.children = res
-                        if (root) {
-                            root.setData(this.departmentTree)
-                            root.setExpanded([node.id])
-                            disabled.forEach(id => {
-                                root.setChecked(id)
-                                root.setDisabled(id)
-                            })
-                        }
-                    })
-                    return {
-                        data: [],
-                        leaf: res.filter(v => !v.has_children).map(w => w.id)
+                    target = target.find(v => v.id === node.id)
+                    target.children = res
+                    if (root) {
+                        this.initTree(root, data)
+                        root.setExpanded([node.id])
                     }
+                })
+                return {
+                    data: [],
+                    leaf: res.filter(v => !v.has_children).map(w => w.id)
                 }
             },
-            async handlePermissionDetail (target, origin, id) {
+            handlePermissionDetail (target, origin, id) {
                 this.isLoading = true
-                await this.getPermissionDetail({
+                return this.getPermissionDetail({
                     projectId: this.projectId,
                     repoName: this.repoName
                 }).then(res => {
@@ -396,13 +393,14 @@
                         permissionId: section.id,
                         [key]: value
                     }
-                }).then(async res => {
+                }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: (type === 'add' ? this.$t('add') : this.$t('save')) + this.$t('success')
+                        message: (type === 'add' ? this.$t('add') : this.$t('delete')) + this.$t('success')
                     })
-                    await this.handlePermissionDetail(part, section.name, section.id)
-                    section[part][`${type}List`] = []
+                    this.handlePermissionDetail(part, section.name, section.id).then(() => {
+                        section[part][`${type}List`] = []
+                    })
                 }).finally(() => {
                     section.loading = false
                 })

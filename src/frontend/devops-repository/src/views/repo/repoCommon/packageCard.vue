@@ -2,16 +2,16 @@
     <div class="package-card-container flex-align-center">
         <div class="package-card-main flex-column">
             <div class="package-card-name flex-align-center">
-                <icon class="mr10" size="20" :name="cardIcon" />
+                <icon class="mr10" size="14" :name="cardIcon" />
                 {{ cardData.name }}
-                <span class="ml10 package-card-data" v-if="cardData.type === 'MAVEN'"> (Group ID: {{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }})</span>
+                <span class="ml10 repo-tag" v-if="cardData.type === 'MAVEN'">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
             </div>
             <div class="package-card-data flex-align-center">
-                <div :title="cardData.latest">{{ `${$t('latestVersion')}: ${cardData.latest}` }}</div>
-                <div>{{ `${$t('versionCount')}: ${cardData.versions}` }}</div>
-                <div>{{ `${$t('downloads')}: ${cardData.downloads}` }}</div>
-                <div>{{ `${$t('lastModifiedDate')}: ${formatDate(cardData.lastModifiedDate)}` }}</div>
-                <div>{{ `${$t('lastModifiedBy')}: ${userList[cardData.lastModifiedBy] ? userList[cardData.lastModifiedBy].name : cardData.lastModifiedBy}` }}</div>
+                <div class="flex-align-center" :title="cardData.latest"><icon class="mr5" size="16" name="latest-version" />{{ cardData.latest }}</div>
+                <div class="flex-align-center"><icon class="mr5" size="16" name="versions" />{{ cardData.versions }}</div>
+                <div class="flex-align-center"><icon class="mr5" size="16" name="downloads" />{{ cardData.downloads }}</div>
+                <div class="flex-align-center"><icon class="mr5" size="16" name="time" />{{ formatDate(cardData.lastModifiedDate) }}</div>
+                <div class="flex-align-center"><icon class="mr5" size="16" name="updater" />{{ userList[cardData.lastModifiedBy] ? userList[cardData.lastModifiedBy].name : cardData.lastModifiedBy }}</div>
             </div>
         </div>
         <i class="devops-icon icon-delete package-card-delete hover-btn" @click.stop="deleteCard"></i>
@@ -60,17 +60,36 @@
         height: 100%;
         justify-content: space-around;
         .package-card-name {
-            font-size: 16px;
+            color: #222222;
+            font-size: 12px;
             font-weight: bold;
+            .repo-tag {
+                font-weight: normal;
+            }
         }
         .package-card-data {
+            color: $fontWeightColor;
             font-size: 14px;
             font-weight: normal;
             div {
-                padding-right: 50px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+                &:nth-child(1) {
+                    flex-basis: 250px;
+                }
+                &:nth-child(2) {
+                    flex-basis: 120px;
+                }
+                &:nth-child(3) {
+                    flex-basis: 140px;
+                }
+                &:nth-child(4) {
+                    flex-basis: 275px;
+                }
+                &:nth-child(5) {
+                    flex-basis: 175px;
+                }
             }
         }
     }
