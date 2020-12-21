@@ -44,7 +44,7 @@ import java.time.format.DateTimeFormatter
 @Component
 class NpmRemoteRepository : RemoteRepository() {
 
-    @Value("\${npm.tarball.prefix}")
+    @Value("\${npm.tarball.prefix: ''}")
     private val tarballPrefix: String = StringPool.SLASH
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {

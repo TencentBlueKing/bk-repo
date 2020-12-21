@@ -40,8 +40,16 @@ class NpmResourceImpl : NpmResource {
         return npmService.updatePkg(artifactInfo, body)
     }
 
-    override fun unPublishPkgWithVersion(artifactInfo: NpmArtifactInfo): NpmDeleteResponse {
-        return npmService.unPublishPkgWithVersion(artifactInfo)
+    override fun unPublishPkgWithVersion(
+        artifactInfo: NpmArtifactInfo,
+        scope: String?,
+        name: String,
+        delimiter: String,
+        filename: String,
+        rev: String
+    ): NpmDeleteResponse {
+        val pkgName = scope?.let { String.format("%s/%s",it,name) } ?: name
+        return npmService.unPublishPkgWithVersion(artifactInfo, pkgName, delimiter, filename, rev)
     }
 
     override fun search(artifactInfo: NpmArtifactInfo, searchRequest: MetadataSearchRequest): NpmSearchResponse {
