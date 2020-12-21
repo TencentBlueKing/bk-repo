@@ -35,12 +35,12 @@ import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Token
-import com.tencent.bkrepo.auth.pojo.TokenResult
-import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
@@ -115,7 +115,7 @@ class UserServiceImpl constructor(
     }
 
     override fun listUser(rids: List<String>): List<User> {
-        logger.info("list user rids : [$rids]")
+        logger.debug("list user rids : [$rids]")
         return if (rids.isEmpty()) {
             userRepository.findAll().map { transferUser(it) }
         } else {
@@ -238,7 +238,12 @@ class UserServiceImpl constructor(
                 // conv time
                 expiredTime = expiredTime!!.plusHours(8)
             }
-            val userToken = Token(name = name, id = id, createdAt = now, expiredAt = expiredTime)
+            val userToken = Token(
+                name = name,
+                id = id,
+                createdAt = now,
+                expiredAt = expiredTime
+            )
             update.addToSet(TUser::tokens.name, userToken)
             mongoTemplate.upsert(query, update, TUser::class.java)
             val userInfo = getUserById(userId)
@@ -261,7 +266,13 @@ class UserServiceImpl constructor(
         val tokens = userInfo!!.tokens
         val result = mutableListOf<TokenResult>()
         tokens.forEach {
-            result.add(TokenResult(it.name, it.createdAt, it.expiredAt))
+            result.add(
+                TokenResult(
+                    it.name,
+                    it.createdAt,
+                    it.expiredAt
+                )
+            )
         }
         return result
     }
@@ -279,13 +290,13 @@ class UserServiceImpl constructor(
     }
 
     override fun getUserById(userId: String): User? {
-        logger.info("get user userId : [$userId]")
+        logger.debug("get user userId : [$userId]")
         val user = userRepository.findFirstByUserId(userId) ?: return null
         return transferUser(user)
     }
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
-        logger.info("find user userId : [$userId], pwd : [$pwd]")
+        logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()
         criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))

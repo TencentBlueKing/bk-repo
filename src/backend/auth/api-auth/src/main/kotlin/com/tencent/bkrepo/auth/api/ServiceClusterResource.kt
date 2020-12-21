@@ -32,15 +32,16 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PREFIX
-import com.tencent.bkrepo.auth.pojo.AddClusterRequest
-import com.tencent.bkrepo.auth.pojo.Cluster
-import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.AddClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.Cluster
+import com.tencent.bkrepo.auth.pojo.cluster.UpdateClusterRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -50,6 +51,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_CLUSTER"], description = "服务-集群管理接口")
+@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceClustersource")
 @RequestMapping(AUTH_CLUSTER_PREFIX)
 interface ServiceClusterResource {

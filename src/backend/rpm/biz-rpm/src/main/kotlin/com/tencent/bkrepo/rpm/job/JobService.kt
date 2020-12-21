@@ -80,6 +80,7 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.RandomAccessFile
+import java.io.FileOutputStream
 
 @Component
 class JobService(
@@ -88,6 +89,15 @@ class JobService(
     private val storageService: StorageService,
     private val storageManager: StorageManager
 ) {
+
+    /**
+     * 查询下所有rpm仓库
+     */
+    fun getAllRpmRepo(): List<RepositoryDetail>? {
+        val repoPage = repositoryClient.pageByType(0, 10, "RPM").data
+        val total = (repoPage?.totalRecords ?: 10).toInt()
+        return repositoryClient.pageByType(0, total + 1, "RPM").data?.records
+    }
 
     /**
      * 查询仓库下所有repodata目录
@@ -155,7 +165,7 @@ class JobService(
     fun flushRepoMdXML(repo: RepositoryDetail, repoDataPath: String) {
         val targetIndexList = findIndexXml(repo, repoDataPath)
         val repoDataList = mutableListOf<RepoIndex>()
-        val regex = Regex("-filelists.xml.gz|-others|-primary")
+        val regex = Regex("-filelists\\.xml\\.gz|-others\\.xml\\.gz|-primary\\.xml\\.gz")
         for (index in targetIndexList) {
             repoDataList.add(
                 if ((index.name).contains(regex)) {
@@ -294,7 +304,10 @@ class JobService(
         val queryModel = QueryModel(
             page = PageLimit(1, 1),
             sort = Sort(listOf("lastModifiedDate"), Sort.Direction.DESC),
-            select = mutableListOf(),
+            select = mutableListOf(
+                "projectId", "repoName", "fullPath", "name", "path", "metadata",
+                "sha256", "md5", "size", "folder", "lastModifiedDate", "lastModifiedBy", "createdDate", "createdBy"
+            ),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
         if (logger.isDebugEnabled) {
@@ -330,7 +343,7 @@ class JobService(
     fun initIndex(repo: RepositoryDetail, repodataPath: String, indexType: IndexType) {
         val initStr = when (indexType) {
             IndexType.PRIMARY -> {
-                "<?xml version=\"1.0\"?>\n" +
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                     "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
                     ".edu/metadata/rpm\" packages=\"0\">\n" +
                     "</metadata>"
@@ -346,11 +359,15 @@ class JobService(
                     "</metadata>"
             }
         }
-        val initIndexGZFile = ByteArrayInputStream(initStr.toByteArray()).gZip()
+        val initIndexFile = File.createTempFile("initIndex", IndexType.OTHERS.value)
+        FileOutputStream(initIndexFile).use { fos ->
+            fos.write(initStr.toByteArray())
+            fos.flush()
+        }
         try {
-            storeXmlGZNode(repo, initIndexGZFile, repodataPath, indexType)
+            storeXmlGZNode(repo, initIndexFile, repodataPath, indexType)
         } finally {
-            initIndexGZFile.delete()
+            initIndexFile.delete()
         }
     }
 
@@ -374,21 +391,21 @@ class JobService(
         when (repeat) {
             ArtifactRepeat.NONE -> {
                 logger.info("insert index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}")
-                val markContent = resolveIndexXml(markNodeInfo) ?: return 0
+                val markContent = resolveIndexXml(markNodeInfo, indexType) ?: return 0
                 return XmlStrUtils.insertPackageIndex(randomAccessFile, markContent)
             }
             ArtifactRepeat.DELETE -> {
                 logger.info("delete index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 val rpmVersion = markNodeInfo.metadata!!.toRpmVersion(markNodeInfo.fullPath)
-                val locationStr = getLocationStr(indexType, rpmVersion, locationStr)
-                return XmlStrUtils.deletePackageIndex(randomAccessFile, indexType, locationStr)
+                val uniqueStr = getLocationStr(indexType, rpmVersion, locationStr)
+                return XmlStrUtils.deletePackageIndex(randomAccessFile, indexType, uniqueStr)
             }
             ArtifactRepeat.FULLPATH -> {
                 logger.info("replace index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 val rpmVersion = markNodeInfo.metadata!!.toRpmVersion(markNodeInfo.fullPath)
-                val locationStr = getLocationStr(indexType, rpmVersion, locationStr)
-                val markContent = resolveIndexXml(markNodeInfo) ?: return 0
-                return XmlStrUtils.updatePackageIndex(randomAccessFile, indexType, locationStr, markContent)
+                val uniqueStr = getLocationStr(indexType, rpmVersion, locationStr)
+                val markContent = resolveIndexXml(markNodeInfo, indexType) ?: return 0
+                return XmlStrUtils.updatePackageIndex(randomAccessFile, indexType, uniqueStr, markContent)
             }
             ArtifactRepeat.FULLPATH_SHA256 -> {
                 logger.info("skip index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
@@ -397,6 +414,9 @@ class JobService(
         }
     }
 
+    /**
+     * 在索引中可以唯一确定一个包的识别字段
+     */
     private fun getLocationStr(
         indexType: IndexType,
         rpmVersion: RpmVersion,
@@ -415,10 +435,10 @@ class JobService(
         }
     }
 
-    private fun resolveIndexXml(indexNodeInfo: NodeInfo): ByteArray? {
+    private fun resolveIndexXml(indexNodeInfo: NodeInfo, indexType: IndexType): ByteArray? {
         storageService.load(indexNodeInfo.sha256!!, Range.full(indexNodeInfo.size), null).use { inputStream ->
             val content = inputStream!!.readBytes()
-            return if (XStreamUtil.checkMarkFile(content)) {
+            return if (XStreamUtil.checkMarkFile(content, indexType)) {
                 content
             } else {
                 null
@@ -426,6 +446,9 @@ class JobService(
         }
     }
 
+    /**
+     *
+     */
     private fun resolveNode(mapData: Map<String, Any?>): NodeInfo {
         return NodeInfo(
             createdBy = mapData["createdBy"] as String,
@@ -449,6 +472,9 @@ class JobService(
         )
     }
 
+    /**
+     * 查询带处理的节点
+     */
     fun listMarkNodes(
         repo: RepositoryDetail,
         repodataPath: String,
@@ -467,7 +493,10 @@ class JobService(
         val queryModel = QueryModel(
             page = PageLimit(1, limit),
             sort = Sort(listOf("lastModifiedDate"), Sort.Direction.ASC),
-            select = mutableListOf(),
+            select = mutableListOf(
+                "projectId", "repoName", "fullPath", "name", "path", "metadata",
+                "sha256", "md5", "size", "folder", "lastModifiedDate", "lastModifiedBy", "createdDate", "createdBy"
+            ),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
         if (logger.isDebugEnabled) {
@@ -498,9 +527,16 @@ class JobService(
             var changeCount = 0
             RandomAccessFile(unzipedIndexTempFile, "rw").use { randomAccessFile ->
                 markNodes.forEach { markNode ->
-                    // rpm包相对标记文件的位置
+                    // rpm构件位置
                     val locationStr = markNode.fullPath.replace("/repodata/${indexType.value}", "")
-                    val locationHref = locationStr.removePrefix(repodataPath.removeSuffix("repodata"))
+                    val repodataDepth = getRpmRepoConf(repo.projectId, repo.name).repodataDepth
+                    // 保存在索引中的相对路径
+                    val pathList = locationStr.removePrefix("/").split("/")
+                    val stringBuilder = StringBuilder()
+                    for (i in repodataDepth until pathList.size) {
+                        stringBuilder.append("/").append(pathList[i])
+                    }
+                    val locationHref = stringBuilder.toString().removePrefix("/")
                     logger.debug("locationStr: $locationStr, locationHref: $locationHref")
                     with(markNode) { logger.info("process mark node[$projectId|$repoName|$fullPath]") }
                     val repeat = ArtifactRepeat.valueOf(markNode.metadata?.get("repeat") as String? ?: "FULLPATH_SHA256")

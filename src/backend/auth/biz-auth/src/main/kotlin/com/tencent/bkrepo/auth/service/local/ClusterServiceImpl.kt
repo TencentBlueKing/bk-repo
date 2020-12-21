@@ -33,9 +33,9 @@ package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TCluster
-import com.tencent.bkrepo.auth.pojo.AddClusterRequest
-import com.tencent.bkrepo.auth.pojo.Cluster
-import com.tencent.bkrepo.auth.pojo.UpdateClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.AddClusterRequest
+import com.tencent.bkrepo.auth.pojo.cluster.Cluster
+import com.tencent.bkrepo.auth.pojo.cluster.UpdateClusterRequest
 import com.tencent.bkrepo.auth.repository.ClusterRepository
 import com.tencent.bkrepo.auth.service.ClusterService
 import com.tencent.bkrepo.auth.util.CertTrust

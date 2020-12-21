@@ -104,8 +104,8 @@
             deletePackageHandler (pkg) {
                 this.$bkInfo({
                     type: 'error',
-                    title: this.$t('deletePackageTitle', [pkg.type, pkg.name]),
-                    subTitle: this.$t('deletePackageSubTitle', [pkg.name]),
+                    title: this.$t('deletePackageTitle'),
+                    subTitle: this.$t('deletePackageSubTitle'),
                     showFooter: true,
                     confirmFn: () => {
                         this.deletePackage({
@@ -139,7 +139,7 @@
 @import '@/scss/conf';
 .common-package-list-container {
     .common-package-main {
-        height: calc(100% - 42px);
+        max-height: calc(100% - 42px);
         overflow-y: auto;
         flex: 1;
         border-bottom: 1px solid $borderWeightColor;

@@ -34,15 +34,15 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -52,6 +52,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
+@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource")
 @RequestMapping(AUTH_ROLE_PREFIX, AUTH_SERVICE_ROLE_PREFIX, AUTH_API_ROLE_PREFIX)
 interface ServiceRoleResource {
@@ -114,10 +115,8 @@ interface ServiceRoleResource {
     @ApiOperation("根据类型和项目id查询角色")
     @GetMapping("/list")
     fun listRole(
-        @ApiParam(value = "角色类型")
-        @RequestParam type: RoleType? = null,
         @ApiParam(value = "项目ID")
-        @RequestParam projectId: String? = null,
+        @RequestParam projectId: String,
         @ApiParam(value = "仓库名")
         @RequestParam repoName: String? = null
     ): Response<List<Role>>

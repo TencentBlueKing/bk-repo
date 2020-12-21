@@ -55,7 +55,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 /**
  * 存储自动配置
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableRetry
 @EnableConfigurationProperties(StorageProperties::class)
 class StorageAutoConfiguration {

@@ -36,14 +36,15 @@ import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Token
-import com.tencent.bkrepo.auth.pojo.TokenResult
-import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
-import com.tencent.bkrepo.auth.pojo.User
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -74,15 +75,36 @@ class ServiceUserResourceImpl @Autowired constructor(
     override fun createUserToProject(request: CreateUserToProjectRequest): Response<Boolean> {
         userService.createUserToProject(request)
         val createRoleRequest =
-            CreateRoleRequest(PROJECT_MANAGE_ID, PROJECT_MANAGE_NAME, RoleType.PROJECT, request.projectId, null, true)
+            CreateRoleRequest(
+                PROJECT_MANAGE_ID,
+                PROJECT_MANAGE_NAME,
+                RoleType.PROJECT,
+                request.projectId,
+                null,
+                true
+            )
         val roleId = roleService.createRole(createRoleRequest)
         userService.addUserToRole(request.userId, roleId!!)
         return ResponseBuilder.success(true)
     }
 
-    override fun listUser(rids: List<String>): Response<List<User>> {
-        val result = userService.listUser(rids)
+    override fun listUser(rids: List<String>?): Response<List<UserResult>> {
+        var params = emptyList<String>()
+        rids?.let {
+            params = rids
+        }
+        val result = userService.listUser(params).map {
+            UserResult(it.userId, it.name)
+        }
         return ResponseBuilder.success(result)
+    }
+
+    override fun listAllUser(rids: List<String>?): Response<List<User>> {
+        var params = emptyList<String>()
+        rids?.let {
+            params = rids
+        }
+        return ResponseBuilder.success(userService.listUser(params))
     }
 
     override fun deleteById(uid: String): Response<Boolean> {
@@ -128,7 +150,14 @@ class ServiceUserResourceImpl @Autowired constructor(
         // add user to project first
         projectId?.let {
             val createRoleRequest =
-                CreateRoleRequest(PROJECT_MANAGE_ID, PROJECT_MANAGE_NAME, RoleType.PROJECT, projectId, null, true)
+                CreateRoleRequest(
+                    PROJECT_MANAGE_ID,
+                    PROJECT_MANAGE_NAME,
+                    RoleType.PROJECT,
+                    projectId,
+                    null,
+                    true
+                )
             val roleId = roleService.createRole(createRoleRequest)
             userService.addUserToRole(uid, roleId!!)
         }

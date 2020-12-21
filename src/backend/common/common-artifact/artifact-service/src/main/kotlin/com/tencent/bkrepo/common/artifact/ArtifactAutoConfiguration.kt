@@ -31,10 +31,11 @@
 
 package com.tencent.bkrepo.common.artifact
 
+import com.tencent.bkrepo.common.artifact.config.ArtifactBeanRegistrar
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventListener
 import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
@@ -56,9 +56,10 @@ import org.springframework.context.annotation.PropertySource
 @ConditionalOnWebApplication
 @PropertySource("classpath:common-artifact.properties")
 @Import(
+    ArtifactBeanRegistrar::class,
     ResolverConfiguration::class,
     ExceptionConfiguration::class,
-    ArtifactMetricsConfiguration::class,
+    ArtifactMetrics::class,
     ArtifactHealthConfiguration::class,
     ArtifactContextHolder::class,
     ArtifactPermissionCheckHandler::class,
@@ -67,7 +68,6 @@ import org.springframework.context.annotation.PropertySource
 class ArtifactAutoConfiguration {
 
     @Bean
-    @ConditionalOnBean(LocalRepository::class)
     @ConditionalOnMissingBean
     fun compositeRepository(
         localRepository: LocalRepository,

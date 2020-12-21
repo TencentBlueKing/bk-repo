@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth
 
-import com.tencent.bkrepo.auth.pojo.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -96,19 +96,13 @@ class RoleServiceTest {
         val id = roleService.createRole(buildRoleRequest(projectId = "test_projectId"))
         val id1 = roleService.createRole(buildRoleRequest(projectId = "test_projectId_001", repoName = "test_name"))
         val id2 = roleService.createRole(buildRoleRequest(type = RoleType.REPO, repoName = "test_repo"))
-        val listRoleByProject = roleService.listRoleByProject(null, null, null)
-        Assertions.assertTrue(listRoleByProject.size == 4)
-        val listRoleByProject1 = roleService.listRoleByProject(RoleType.PROJECT, null, null)
-        Assertions.assertTrue(listRoleByProject1.size == 3)
-        val listRoleByProject2 = roleService.listRoleByProject(RoleType.REPO, null, null)
-        Assertions.assertTrue(listRoleByProject2.size == 1)
-        val listRoleByProject3 = roleService.listRoleByProject(null, projectId, null)
+        val listRoleByProject3 = roleService.listRoleByProject(projectId, null)
         Assertions.assertTrue(listRoleByProject3.size == 2)
-        val listRoleByProject4 = roleService.listRoleByProject(RoleType.REPO, projectId, null)
+        val listRoleByProject4 = roleService.listRoleByProject(projectId, null)
         Assertions.assertTrue(listRoleByProject4.size == 1)
-        val listRoleByProject5 = roleService.listRoleByProject(RoleType.PROJECT, projectId, null)
+        val listRoleByProject5 = roleService.listRoleByProject(projectId, null)
         Assertions.assertTrue(listRoleByProject5.size == 1)
-        val listRoleByProject6 = roleService.listRoleByProject(RoleType.REPO, projectId, "test_repo")
+        val listRoleByProject6 = roleService.listRoleByProject(projectId, "test_repo")
         Assertions.assertTrue(listRoleByProject6.size == 1)
         // has problems -> The last if condition never goes in
         // val listRoleByProject7 = roleService.listRoleByProject(null, "test_projectId_001", "test_repo")
@@ -156,6 +150,13 @@ class RoleServiceTest {
         repoName: String? = null,
         admin: Boolean = false
     ): CreateRoleRequest {
-        return CreateRoleRequest(roleId, roleName, type, projectId, repoName, admin)
+        return CreateRoleRequest(
+            roleId,
+            roleName,
+            type,
+            projectId,
+            repoName,
+            admin
+        )
     }
 }

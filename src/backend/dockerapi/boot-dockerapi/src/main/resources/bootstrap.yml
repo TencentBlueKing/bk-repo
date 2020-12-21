@@ -21,4 +21,4 @@ dockerapi:
   realm: bkrepo
 
 service:
-  name:dockerapi
+  name: dockerapi

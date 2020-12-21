@@ -46,19 +46,19 @@
                         v-for="result in resultList"
                         :key="result.repoName + result.key">
                         <div class="flex-align-center">
-                            <icon size="20" :name="repoType" />
+                            <icon size="14" :name="repoType" />
                             <span class="ml10 result-repo-name">{{result.name}}</span>
-                            <span class="ml10 package-card-data" v-if="result.type === 'MAVEN'">
-                                [Group ID: {{ result.key.replace(/^.*\/\/(.+):.*$/, '$1') }}]
+                            <span class="ml10 repo-tag" v-if="result.type === 'MAVEN'">
+                                {{ result.key.replace(/^.*\/\/(.+):.*$/, '$1') }}
                             </span>
                             <span class="ml10">({{result.repoName}})</span>
                         </div>
                         <div class="result-card flex-align-center">
-                            <div :title="result.latest">{{ `${$t('latestVersion')}: ${result.latest}` }}</div>
-                            <div>{{ `${$t('versionCount')}: ${result.versions}` }}</div>
-                            <div>{{ `${$t('downloads')}: ${result.downloads}` }}</div>
-                            <div>{{ `${$t('lastModifiedDate')}: ${formatDate(result.lastModifiedDate)}` }}</div>
-                            <div>{{ `${$t('lastModifiedBy')}: ${userList[result.lastModifiedBy] ? userList[result.lastModifiedBy].name : result.lastModifiedBy}` }}</div>
+                            <div class="flex-align-center" :title="result.latest"><icon class="mr5" size="16" name="latest-version" />{{ result.latest }}</div>
+                            <div class="flex-align-center"><icon class="mr5" size="16" name="versions" />{{ result.versions }}</div>
+                            <div class="flex-align-center"><icon class="mr5" size="16" name="downloads" />{{ result.downloads }}</div>
+                            <div class="flex-align-center"><icon class="mr5" size="16" name="time" />{{ formatDate(result.lastModifiedDate) }}</div>
+                            <div class="flex-align-center"><icon class="mr5" size="16" name="updater" />{{ userList[result.lastModifiedBy] ? userList[result.lastModifiedBy].name : result.lastModifiedBy }}</div>
                         </div>
                     </div>
                 </main>
@@ -243,23 +243,36 @@
                     border-color: $iconPrimaryColor;
                 }
                 .result-repo-name {
-                    font-size: 16px;
+                    color: #222222;
+                    font-size: 12px;
                     font-weight: bold;
                 }
+                
+                .repo-tag {
+                    font-weight: normal;
+                }
                 .result-card {
+                    color: $fontWeightColor;
                     font-size: 14px;
                     font-weight: normal;
                     div {
-                        padding-right: 40px;
-                        width: 140px;
                         overflow: hidden;
                         text-overflow: ellipsis;
                         white-space: nowrap;
-                        &:nth-child(3n + 1) {
-                            width: 300px;
+                        &:nth-child(1) {
+                            flex-basis: 250px;
+                        }
+                        &:nth-child(2) {
+                            flex-basis: 120px;
+                        }
+                        &:nth-child(3) {
+                            flex-basis: 140px;
+                        }
+                        &:nth-child(4) {
+                            flex-basis: 275px;
                         }
                         &:nth-child(5) {
-                            width: auto;
+                            flex-basis: 175px;
                         }
                     }
                 }

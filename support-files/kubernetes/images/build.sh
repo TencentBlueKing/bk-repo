@@ -14,6 +14,7 @@ mkdir -p tmp
 
 ## 编译frontend
 info "编译frontend..."
+yarn --cwd $root_dir/src/frontend install
 yarn --cwd $root_dir/src/frontend run public
 info "编译frontend完成"
 
@@ -41,6 +42,9 @@ gradle -p $root_dir/src/backend build \
 -x :pypi:build \
 -x :pypi:boot-pypi:build \
 -x :pypi:biz-pypi:build \
+-x :nuget:build \
+-x :nuget:boot-nuget:build \
+-x :nuget:biz-nuget:build \
 -x :replication:build \
 -x :replication:boot-replication:build \
 -x :replication:biz-replication:build

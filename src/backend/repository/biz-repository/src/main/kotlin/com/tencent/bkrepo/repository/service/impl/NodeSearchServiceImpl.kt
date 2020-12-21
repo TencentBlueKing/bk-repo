@@ -33,7 +33,6 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.constant.SystemMetadata
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -73,16 +72,8 @@ class NodeSearchServiceImpl(
             it[NodeInfo::lastModifiedDate.name]?.let { lastModifiedDate ->
                 it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate)
             }
-            val metadata = it[NodeInfo::metadata.name]?.let { metadata ->
-                convert(metadata as List<Map<String, String>>)
-            }
-            if (context.selectMetadata) {
-                it[NodeInfo::metadata.name] = metadata
-            } else {
-                it.remove(NodeInfo::metadata.name)
-            }
-            if (context.selectStageTag) {
-                it[NodeInfo::stageTag.name] = metadata?.get(SystemMetadata.STAGE.key)
+            it[NodeInfo::metadata.name]?.let { metadata ->
+                it[NodeInfo::metadata.name] = convert(metadata as List<Map<String, Any>>)
             }
         }
         val countQuery = Query.of(query).limit(0).skip(0)
@@ -93,9 +84,9 @@ class NodeSearchServiceImpl(
     }
 
     companion object {
-        fun convert(metadataList: List<Map<String, String>>): Map<String, String> {
+        fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
             return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
-                .map { it.getValue("key") to it.getValue("value") }
+                .map { it.getValue("key").toString() to it.getValue("value") }
                 .toMap()
         }
 

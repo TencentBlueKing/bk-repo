@@ -64,9 +64,9 @@ class BkiamServiceImpl @Autowired constructor(
         resourceId: String
     ): Boolean {
         logger.info("validateResourcePermission, userId: $userId, projectId: $projectId, systemCode: $systemCode, resourceType: $resourceType, action: $action, resourceId: $resourceId")
-        val action = BkiamUtils.buildAction(resourceType, action)
+        val resourceAction = BkiamUtils.buildAction(resourceType, action)
         if (systemCode == SystemCode.BK_REPO && resourceType == ResourceType.PROJECT) {
-            return authHelper.isAllowed(userId, action)
+            return authHelper.isAllowed(userId, resourceAction)
         }
 
         val instanceDTO = InstanceDTO()
@@ -79,7 +79,7 @@ class BkiamServiceImpl @Autowired constructor(
         path.id = projectId
         instanceDTO.path = path
 
-        return authHelper.isAllowed(userId, action, instanceDTO)
+        return authHelper.isAllowed(userId, resourceAction, instanceDTO)
     }
 
     override fun listResourceByPermission(
@@ -90,9 +90,8 @@ class BkiamServiceImpl @Autowired constructor(
         action: PermissionAction
     ): List<String> {
         logger.info("listResourceByPermission, userId: $userId, projectId: $projectId, systemCode: $systemCode, resourceType: $resourceType, action: $action")
-        val action = BkiamUtils.buildAction(resourceType, action)
         val actionDto = ActionDTO()
-        actionDto.id = action
+        actionDto.id = BkiamUtils.buildAction(resourceType, action)
         val expression = (policyService.getPolicyByAction(userId, actionDto, null) ?: return emptyList())
         logger.debug("listResourceByPermission, expression: $expression")
         if (expression.operator == null && expression.content == null) {

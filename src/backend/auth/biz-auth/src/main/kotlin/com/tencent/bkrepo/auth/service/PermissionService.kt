@@ -31,13 +31,17 @@
 
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.ListRepoPermissionRequest
-import com.tencent.bkrepo.auth.pojo.Permission
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 
 interface PermissionService {
     fun checkPermission(request: CheckPermissionRequest): Boolean
@@ -46,23 +50,25 @@ interface PermissionService {
 
     fun createPermission(request: CreatePermissionRequest): Boolean
 
-    fun listPermission(resourceType: ResourceType?, projectId: String?, repoName: String?): List<Permission>
+    fun listPermission(projectId: String, repoName: String?): List<Permission>
+
+    fun listBuiltinPermission(projectId: String, repoName: String): List<Permission>
 
     fun deletePermission(id: String): Boolean
 
-    fun updateIncludePath(id: String, path: List<String>): Boolean
+    fun updateIncludePath(request: UpdatePermissionPathRequest): Boolean
 
-    fun updateExcludePath(id: String, path: List<String>): Boolean
+    fun updateExcludePath(request: UpdatePermissionPathRequest): Boolean
 
-    fun updateRepoPermission(id: String, repos: List<String>): Boolean
+    fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean
 
-    fun updateUserPermission(id: String, uid: String, actions: List<PermissionAction>): Boolean
+    fun updatePermissionUser(request: UpdatePermissionUserRequest): Boolean
 
-    fun removeUserPermission(id: String, uid: String): Boolean
+    fun updatePermissionRole(request: UpdatePermissionRoleRequest): Boolean
 
-    fun updateRolePermission(id: String, rid: String, actions: List<PermissionAction>): Boolean
+    fun updatePermissionDepartment(request: UpdatePermissionDepartmentRequest): Boolean
 
-    fun removeRolePermission(id: String, rid: String): Boolean
+    fun updatePermissionAction(request: UpdatePermissionActionRequest): Boolean
 
     fun registerResource(request: RegisterResourceRequest)
 }

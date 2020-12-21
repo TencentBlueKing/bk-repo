@@ -43,7 +43,8 @@ open class SelectFieldInterceptor : QueryModelInterceptor {
     override fun intercept(queryModel: QueryModel, context: QueryContext): QueryModel {
         val newSelect = queryModel.select?.toMutableList()
         newSelect?.let {
-            for (constraint in getConstraintFields()) {
+            val constraintsFields = getConstraintFields()
+            for (constraint in constraintsFields) {
                 it.remove(constraint)
             }
         }

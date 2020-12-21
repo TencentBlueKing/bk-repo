@@ -38,10 +38,8 @@ import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
 import java.time.Duration
 
-@Component
 class ServiceAuthManager(
     properties: ServiceAuthProperties
 ) {

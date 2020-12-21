@@ -34,18 +34,20 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_USER_PREFIX
-import com.tencent.bkrepo.auth.pojo.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.CreateUserToProjectRequest
-import com.tencent.bkrepo.auth.pojo.Token
-import com.tencent.bkrepo.auth.pojo.TokenResult
-import com.tencent.bkrepo.auth.pojo.UpdateUserRequest
-import com.tencent.bkrepo.auth.pojo.User
+import com.tencent.bkrepo.auth.pojo.token.Token
+import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -59,6 +61,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import javax.servlet.http.HttpServletResponse
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
+@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceUserResource")
 @RequestMapping(AUTH_USER_PREFIX, AUTH_API_USER_PREFIX, AUTH_SERVICE_USER_PREFIX)
 interface ServiceUserResource {
@@ -76,9 +79,15 @@ interface ServiceUserResource {
     ): Response<Boolean>
 
     @ApiOperation("用户列表")
-    @PostMapping("/list")
+    @GetMapping("/list")
     fun listUser(
-        @RequestBody rids: List<String> = emptyList()
+        @RequestBody rids: List<String>?
+    ): Response<List<UserResult>>
+
+    @ApiOperation("用户列表")
+    @GetMapping("/listall")
+    fun listAllUser(
+        @RequestBody rids: List<String>?
     ): Response<List<User>>
 
     @ApiOperation("删除用户")

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.docker
 
-import com.tencent.bkrepo.common.service.MicroService
+import com.tencent.bkrepo.common.service.condition.MicroService
 import org.springframework.boot.runApplication
 
 @MicroService

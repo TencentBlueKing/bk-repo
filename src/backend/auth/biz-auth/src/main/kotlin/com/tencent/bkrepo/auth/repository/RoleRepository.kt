@@ -38,10 +38,8 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface RoleRepository : MongoRepository<TRole, String> {
-    fun findByType(type: RoleType): List<TRole>
-    fun findByProjectId(projectId: String): List<TRole>
     fun findByTypeAndProjectId(type: RoleType, projectId: String): List<TRole>
-    fun findByRepoNameAndProjectId(repoName: String, projectId: String): List<TRole>
+    fun findByProjectIdAndRepoNameAndType(projectId: String, repoName: String, type: RoleType): List<TRole>
     fun findFirstByRoleIdAndProjectId(roleId: String, projectId: String): TRole?
     fun findFirstById(Id: String): TRole?
     fun findFirstByIdAndProjectIdAndType(Id: String, projectId: String, type: RoleType): TRole?

@@ -31,12 +31,10 @@
 
 package com.tencent.bkrepo.replication.job
 
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.PermissionSet
-import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.User
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
@@ -351,18 +349,17 @@ class ReplicationJobBean(
                 createUserRoleRelationShip(this, remoteRoleId, userIdList)
             }
             // 同步权限数据
-            val resourceType = if (isRepo) ResourceType.REPO else ResourceType.PROJECT
-            val localPermissionList = repoDataService.listPermission(resourceType, remoteProjectId, remoteRepoName)
+            val localPermissionList = repoDataService.listPermission(remoteProjectId, remoteRepoName)
             val remotePermissionList =
-                replicationClient.listPermission(authToken, resourceType, localProjectId, localRepoName).data!!
+                replicationClient.listPermission(authToken, localProjectId, localRepoName).data!!
 
             localPermissionList.forEach { permission ->
                 // 过滤已存在的权限
                 if (!containsPermission(permission, remotePermissionList)) {
                     // 创建用户
                     permission.users.forEach {
-                        if (!traversedUserList.contains(it.id)) {
-                            createUser(this, it.id)
+                        if (!traversedUserList.contains(it)) {
+                            createUser(this, it)
                         }
                     }
                     createPermission(this, permission, roleIdMap)
@@ -423,9 +420,7 @@ class ReplicationJobBean(
     private fun createPermission(context: ReplicationContext, permission: Permission, roleIdMap: Map<String, String>) {
         with(context) {
             // 查询角色对应id
-            val roles = permission.roles.map {
-                PermissionSet(roleIdMap[it.id] ?: error("Can not find corresponding role id[${it.id}]."), it.action)
-            }
+            val roles = permission.roles
             // 创建权限
             val request = CreatePermissionRequest(
                 resourceType = permission.resourceType,
@@ -475,9 +470,10 @@ class ReplicationJobBean(
         remoteRepoName: String? = null
     ): ReplicationRepoDetail {
         return with(localRepoInfo) {
+            val repoDetail = repoDataService.getRepositoryDetail(projectId, name)
             val fileCount = repoDataService.countFileNode(this)
             ReplicationRepoDetail(
-                localRepoDetail = this,
+                localRepoDetail = repoDetail!!,
                 fileCount = fileCount,
                 remoteRepoName = remoteRepoName ?: this.name
             )

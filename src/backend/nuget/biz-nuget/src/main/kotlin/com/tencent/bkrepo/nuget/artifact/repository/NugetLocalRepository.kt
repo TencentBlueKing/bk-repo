@@ -34,6 +34,8 @@ package com.tencent.bkrepo.nuget.artifact.repository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.nuget.util.ArtifactFileUtils.getNupkgFullPath
+import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.nuget.constants.FULL_PATH

@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.replication.handler.event
 
-import com.tencent.bkrepo.common.stream.message.repo.RepoCreatedMessage
-import com.tencent.bkrepo.common.stream.message.repo.RepoDeletedMessage
-import com.tencent.bkrepo.common.stream.message.repo.RepoUpdatedMessage
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.message.repo.RepoCreatedMessage
+import com.tencent.bkrepo.replication.message.repo.RepoDeletedMessage
+import com.tencent.bkrepo.replication.message.repo.RepoUpdatedMessage
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 

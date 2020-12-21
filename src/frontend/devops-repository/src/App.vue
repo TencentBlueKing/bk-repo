@@ -37,7 +37,7 @@
             }
         },
         async created () {
-            const urlProjectId = (location.pathname.match(/(?<=\/ui\/)[^/]*/) || [])[0]
+            const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
             if (this.iframeMode) {
                 const script = document.createElement('script')
@@ -68,10 +68,10 @@
                     this.getUserInfo()
                 }
                 localStorage.setItem('projectId', urlProjectId || localProjectId || '')
-                this.$router.replace({
+                !urlProjectId && this.$router.replace({
                     name: 'repoList',
                     params: {
-                        projectId: urlProjectId || localProjectId
+                        projectId: urlProjectId || localProjectId || ''
                     }
                 })
             } else {

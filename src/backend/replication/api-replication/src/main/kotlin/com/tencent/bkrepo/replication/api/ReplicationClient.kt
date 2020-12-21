@@ -31,11 +31,10 @@
 
 package com.tencent.bkrepo.replication.api
 
-import com.tencent.bkrepo.auth.pojo.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.Permission
-import com.tencent.bkrepo.auth.pojo.Role
-import com.tencent.bkrepo.auth.pojo.User
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
@@ -118,7 +117,6 @@ interface ReplicationClient {
     @GetMapping("/permission/list")
     fun listPermission(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestParam resourceType: ResourceType,
         @RequestParam projectId: String,
         @RequestParam repoName: String? = null
     ): Response<List<Permission>>

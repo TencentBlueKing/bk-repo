@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
-import com.tencent.bkrepo.auth.pojo.Token
+import com.tencent.bkrepo.auth.pojo.token.Token
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document

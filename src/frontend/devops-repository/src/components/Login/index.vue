@@ -118,11 +118,8 @@
 }
 .login-form {
     margin: 40px 0 30px;
-    .login-input {
-        width: 300px;
-    }
     .login-button {
-        width: 300px;
+        width: 100%;
         height: 40px;
         font-size: 12px;
         margin-top: 20px;

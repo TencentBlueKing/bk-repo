@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.service.RepoDataService
 import com.tencent.bkrepo.replication.service.TaskService
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -50,6 +51,16 @@ abstract class AbstractHandler {
 
     @Autowired
     lateinit var taskService: TaskService
+
+    fun convertReplicationRepo(localRepoInfo: RepositoryDetail, remoteRepoName: String? = null): ReplicationRepoDetail {
+        return with(localRepoInfo) {
+            ReplicationRepoDetail(
+                localRepoDetail = repoDataService.getRepositoryDetail(projectId, name)!!,
+                fileCount = repoDataService.countFileNode(this),
+                remoteRepoName = remoteRepoName ?: this.name
+            )
+        }
+    }
 
     fun convertReplicationRepo(localRepoInfo: RepositoryInfo, remoteRepoName: String? = null): ReplicationRepoDetail {
         return with(localRepoInfo) {

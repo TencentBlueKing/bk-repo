@@ -38,8 +38,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.BYTES
 import com.tencent.bkrepo.common.api.constant.StringPool.NO_CACHE
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_BYTES_COUNT
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADED_CONSUME_COUNT
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
@@ -47,9 +46,9 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpMethod
@@ -64,6 +63,7 @@ import javax.servlet.http.HttpServletResponse
 object ArtifactResourceWriter {
 
     private val logger = LoggerFactory.getLogger(ArtifactResourceWriter::class.java)
+    private val artifactMetrics: ArtifactMetrics = SpringContextUtils.getBean()
 
     private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
         add("yaml", MediaTypes.APPLICATION_YAML)
@@ -126,8 +126,8 @@ object ArtifactResourceWriter {
                 inputStream.copyTo(response.outputStream, STREAM_BUFFER_SIZE)
             }.apply {
                 val throughput = Throughput(first, second)
-                Metrics.counter(ARTIFACT_DOWNLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
-                Metrics.counter(ARTIFACT_DOWNLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+                artifactMetrics.downloadedSizeCounter.increment(throughput.bytes.toDouble())
+                artifactMetrics.downloadedConsumeTimer.record(throughput.duration)
                 logger.info("Response artifact file, $throughput.")
             }
         } catch (exception: IOException) {

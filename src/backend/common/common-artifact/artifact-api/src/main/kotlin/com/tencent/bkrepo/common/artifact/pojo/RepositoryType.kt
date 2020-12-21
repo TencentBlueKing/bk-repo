@@ -44,5 +44,12 @@ enum class RepositoryType {
     HELM,
     COMPOSER,
     RPM,
-    NUGET
+    NUGET;
+
+    companion object {
+        fun ofValueOrDefault(type: String): RepositoryType {
+            val upperCase = type.toUpperCase()
+            return values().find { it.name == upperCase } ?: NONE
+        }
+    }
 }

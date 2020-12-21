@@ -35,9 +35,17 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 
+/**
+ * 异常消息响应体格式转换器
+ */
 interface ExceptionResponseTranslator {
+
     /**
      * 转换异常消息响应体
+     *
+     * @param payload 错误响应
+     * @param request HTTP 请求
+     * @param response HTTP 响应
      */
     fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any
 }

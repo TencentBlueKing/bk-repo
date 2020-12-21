@@ -35,9 +35,9 @@ import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
-import com.tencent.bkrepo.auth.pojo.Account
-import com.tencent.bkrepo.auth.pojo.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.CredentialSet
+import com.tencent.bkrepo.auth.pojo.account.Account
+import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService

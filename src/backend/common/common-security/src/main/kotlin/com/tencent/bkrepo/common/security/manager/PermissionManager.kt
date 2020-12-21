@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
@@ -42,18 +42,16 @@ import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AccessDeniedException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.http.HttpAuthProperties
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
 /**
  * 权限管理类
  */
-@Component
 class PermissionManager(
     private val repositoryClient: RepositoryClient,
     private val permissionResource: ServicePermissionResource,

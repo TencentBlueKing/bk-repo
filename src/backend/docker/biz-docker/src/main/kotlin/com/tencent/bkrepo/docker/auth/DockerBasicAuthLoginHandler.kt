@@ -72,7 +72,11 @@ class DockerBasicAuthLoginHandler(
         super.onAuthenticateSuccess(request, response, userId)
     }
 
-    override fun onAuthenticateFailed(request: HttpServletRequest, response: HttpServletResponse, authenticationException: AuthenticationException) {
+    override fun onAuthenticateFailed(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        authenticationException: AuthenticationException
+    ) {
         logger.warn("Authenticate failed: [$authenticationException]")
         response.status = HttpStatus.UNAUTHORIZED.value
         response.contentType = MediaType.APPLICATION_JSON_VALUE

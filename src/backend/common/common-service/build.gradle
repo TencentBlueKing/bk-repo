@@ -34,6 +34,7 @@ dependencies {
 
     api "io.springfox:springfox-swagger2"
     api "io.github.openfeign:feign-okhttp"
+    api "io.micrometer:micrometer-registry-influx"
     api "org.springframework.boot:spring-boot-starter-actuator"
     api "org.springframework.cloud:spring-cloud-starter-consul-discovery"
     api "org.springframework.cloud:spring-cloud-starter-consul-config"

@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.replication.handler.event
 
-import com.tencent.bkrepo.common.stream.message.metadata.MetadataDeletedMessage
-import com.tencent.bkrepo.common.stream.message.metadata.MetadataSavedMessage
 import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.message.metadata.MetadataDeletedMessage
+import com.tencent.bkrepo.replication.message.metadata.MetadataSavedMessage
 import org.springframework.context.event.EventListener
 
 /**
