@@ -345,18 +345,22 @@ class NpmService @Autowired constructor(
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun addDistTags(artifactInfo: NpmArtifactInfo, body: String): NpmSuccessResponse {
+        val version = body.replace("\"", "")
         val context = ArtifactSearchContext()
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
+        logger.info("handling request for add dist tag [$tag], version: [$version] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}].")
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
-        pkgInfo.getAsJsonObject(DISTTAGS).addProperty(tag, body.replace("\"", ""))
-        val artifactFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
-        val uploadContext = ArtifactUploadContext(artifactFile)
-        uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
-        repository.upload(uploadContext)
+        if ((LATEST == tag && pkgInfo.getAsJsonObject(VERSIONS).has(version)) || LATEST != tag) {
+            pkgInfo.getAsJsonObject(DISTTAGS).addProperty(tag, version)
+            val artifactFile = ArtifactFileFactory.build(GsonUtils.gson.toJson(pkgInfo).byteInputStream())
+            val uploadContext = ArtifactUploadContext(artifactFile)
+            uploadContext.contextAttributes[OCTET_STREAM + "_full_path"] = String.format(NPM_PKG_FULL_PATH, name)
+            repository.upload(uploadContext)
+        }
         return NpmSuccessResponse.createTagSuccess()
     }
 
@@ -366,6 +370,10 @@ class NpmService @Autowired constructor(
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
+        if (LATEST == tag) {
+            logger.warn("dist tag for [latest] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}] cannot be deleted.")
+            return
+        }
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
