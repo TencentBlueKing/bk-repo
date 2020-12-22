@@ -60,9 +60,9 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         contentType: String,
         artifactFile: ArtifactFile
     ): ResponseEntity<Any> {
-        if (userId == ANONYMOUS_USER) {
-            throw AuthenticationException()
-        }
+        // if (userId == ANONYMOUS_USER) {
+        //     throw AuthenticationException()
+        // }
         val uId = UserUtil.getContextUserId(userId)
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
         val pathContext = RequestContext(uId, projectId, repoName, name)
@@ -76,9 +76,9 @@ class ManifestImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoServi
         repoName: String,
         reference: String
     ): ResponseEntity<Any> {
-        if (userId == ANONYMOUS_USER) {
-            throw AuthenticationException()
-        }
+        // if (userId == ANONYMOUS_USER) {
+        //     throw AuthenticationException()
+        // }
         val name = PathUtil.artifactName(request, MANIFEST_PATTERN, projectId, repoName)
         val uId = UserUtil.getContextUserId(userId)
         val pathContext = RequestContext(uId, projectId, repoName, name)
