@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import org.springframework.cglib.proxy.MethodInterceptor
 import org.springframework.cglib.proxy.MethodProxy
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 class ArtifactBeanProxy<T>(
@@ -56,6 +57,10 @@ class ArtifactBeanProxy<T>(
             ExceptionResponseTranslator::class.java -> configurer.getExceptionResponseTranslator()
             else -> throw IllegalArgumentException("Unsupported proxy object[$classType]")
         }
-        return method.invoke(target, *(args ?: emptyArray()))
+        try {
+            return method.invoke(target, *(args ?: emptyArray()))
+        } catch (exception: InvocationTargetException) {
+            throw exception.targetException
+        }
     }
 }
