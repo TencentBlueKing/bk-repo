@@ -245,17 +245,17 @@ class NpmService @Autowired constructor(
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             val npmMetaData = repository.search(context) as? JsonObject
                 ?: throw NpmArtifactNotFoundException("document [$scopePkg] not found in repo [$projectId/$repoName]")
-            try {
-                val latestPackageVersion = npmMetaData.getAsJsonObject(DISTTAGS)[LATEST].asString
-                val npmArtifactInfo = NpmArtifactInfo(
-                    projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
-                )
-                return searchVersionMetadata(npmArtifactInfo)
-            } catch (exception: IllegalStateException){
+            val distTagsObject = npmMetaData.getAsJsonObject(DISTTAGS)
+            if (!distTagsObject.has(LATEST)){
                 val message = "the dist tag [latest] is not found in package [$scopePkg] in repo [$projectId/$repoName]"
                 logger.error(message)
                 throw NpmTagNotExistException(message)
             }
+            val latestPackageVersion = distTagsObject[LATEST].asString
+            val npmArtifactInfo = NpmArtifactInfo(
+                projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
+            )
+            return searchVersionMetadata(npmArtifactInfo)
         }
     }
 
