@@ -46,6 +46,7 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_FULL_PATH
 import com.tencent.bkrepo.npm.constants.PACKAGE
 import com.tencent.bkrepo.npm.constants.PKG_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.constants.TARBALL
 import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSION
@@ -314,7 +315,8 @@ class NpmLocalRepository : LocalRepository() {
     private fun addPackageVersion(
         cachePackageJson: JsonObject,
         remoteJson: JsonObject,
-        failVersionSet: Set<String>
+        failVersionSet: Set<String>,
+        versionSizeMap: Map<String, Long>
     ): JsonObject {
         val differentVersionSet = mutableSetOf<String>()
         val pkgName = cachePackageJson[NAME].asString
@@ -345,12 +347,16 @@ class NpmLocalRepository : LocalRepository() {
         if (remoteVersionsSet.size > 0) {
             // 说明有版本更新,将新增的版本迁移过来
             remoteVersionsSet.forEach { version ->
+                val localDistObject = localVersions.getAsJsonObject(version).getAsJsonObject(DIST)
                 val versionJson = remoteVersions.getAsJsonObject(version)
                 val versionTime = remoteJson.getAsJsonObject(TIME)[version].asString
                 // 以自身为准，如果已经存在该版本则比较时间，将最新的迁移过来
                 if (!cacheVersionsSet.contains(version)) {
                     localVersions.add(version, versionJson)
                     cachePackageJson.getAsJsonObject(TIME).addProperty(version, versionTime)
+                    if(!localDistObject.has(SIZE)){
+                        localDistObject.addProperty(SIZE, versionSizeMap[version])
+                    }
                     remoteDistTags.entrySet().forEach {
                         if (version == it.value.asString) {
                             localDistTags.addProperty(it.key, version)
@@ -362,6 +368,9 @@ class NpmLocalRepository : LocalRepository() {
                     if (TimeUtil.compareTime(versionTime, localVersionTime)) {
                         localVersions.add(version, versionJson)
                         cachePackageJson.getAsJsonObject(TIME).addProperty(version, versionTime)
+                        if(!localDistObject.has(SIZE)){
+                            localDistObject.addProperty(SIZE, versionSizeMap[version])
+                        }
                         remoteDistTags.entrySet().forEach {
                             if (version == it.value.asString) {
                                 localDistTags.addProperty(it.key, version)
@@ -371,6 +380,9 @@ class NpmLocalRepository : LocalRepository() {
                     }
                     // 兼容历史数据的dist-tags迁移问题
                     if (TimeUtil.isTimeNotBefore(versionTime, localVersionTime)) {
+                        if(!localDistObject.has(SIZE)){
+                            localDistObject.addProperty(SIZE, versionSizeMap[version])
+                        }
                         remoteDistTags.entrySet().forEach {
                             if (version == it.value.asString && localDistTags.keySet().contains(it.key)) {
                                 localDistTags.addProperty(it.key, version)
@@ -384,12 +396,24 @@ class NpmLocalRepository : LocalRepository() {
         return cachePackageJson
     }
 
-    private fun comparePackageJson(remoteJson: JsonObject, failVersionSet: Set<String>): JsonObject? {
+    private fun comparePackageJson(
+        remoteJson: JsonObject,
+        failVersionSet: Set<String>,
+        versionSizeMap: Map<String, Long>
+    ): JsonObject? {
         if (failVersionSet.isEmpty()) return remoteJson
         val pkgName = remoteJson[NAME].asString
         val remoteVersions = remoteJson.getAsJsonObject(VERSIONS)
         val remoteVersionsSet = remoteVersions.keySet()
         remoteVersionsSet.removeAll(failVersionSet)
+
+        //给dist添加size
+        remoteVersionsSet.forEach {
+            val distObject = remoteVersions.getAsJsonObject(it).getAsJsonObject(DIST)
+            if (!distObject.has(SIZE)){
+                distObject.addProperty(SIZE, versionSizeMap[it])
+            }
+        }
 
         val remoteDistTags = remoteJson.getAsJsonObject(DISTTAGS)
         val remoteTimeJsons = remoteJson.getAsJsonObject(TIME)
@@ -435,6 +459,7 @@ class NpmLocalRepository : LocalRepository() {
         val versions = remotePackageJson.getAsJsonObject(VERSIONS)
         var count = 0
         val totalSize = versions.keySet().size
+        var versionSizeMap: Map<String, Long> = mutableMapOf()
 
         // 每个版本进行比对同步
         versions.keySet().forEach { version ->
@@ -442,8 +467,8 @@ class NpmLocalRepository : LocalRepository() {
                 measureTimeMillis {
                     val versionJson = versions.getAsJsonObject(version)
                     val tarball = versionJson.getAsJsonObject(DIST).get(TARBALL).asString
-                    storeVersionArtifact(context, versionJson)
-                    storeTgzArtifact(context, tarball, name)
+                    versionSizeMap = storeTgzArtifact(context, tarball, name, version)
+                    storeVersionArtifact(context, versionJson, versionSizeMap)
                 }.apply {
                     logger.info(
                         "migrate npm package [$name] for version [$version] success, elapse $this ms.  process rate: [${++count}/${totalSize}]"
@@ -458,7 +483,7 @@ class NpmLocalRepository : LocalRepository() {
         }
         val failVersionSet =
             migrationFailDataDetailInfo.versionSet.stream().map { it.version }.collect(Collectors.toSet())
-        putPackageJsonFile(context, name, failVersionSet, remotePackageJson)
+        putPackageJsonFile(context, name, failVersionSet, remotePackageJson, versionSizeMap)
         return migrationFailDataDetailInfo
     }
 
@@ -466,7 +491,8 @@ class NpmLocalRepository : LocalRepository() {
         context: ArtifactMigrateContext,
         name: String,
         failVersionSet: Set<String>,
-        remotePackageJson: JsonObject
+        remotePackageJson: JsonObject,
+        versionSizeMap: Map<String, Long>
     ) {
         // 查找最新版本的package.json文件
         var cacheArtifact: InputStream? = null
@@ -477,9 +503,9 @@ class NpmLocalRepository : LocalRepository() {
         val newPackageJson = (if (cacheArtifact != null) {
             val cachePackageJson = GsonUtils.transferInputStreamToJson(cacheArtifact!!)
             // 对比合并package.json，去除掉迁移失败的版本
-            addPackageVersion(cachePackageJson, remotePackageJson, failVersionSet)
+            addPackageVersion(cachePackageJson, remotePackageJson, failVersionSet, versionSizeMap)
         } else {
-            comparePackageJson(remotePackageJson, failVersionSet)
+            comparePackageJson(remotePackageJson, failVersionSet, versionSizeMap)
         }) ?: return
         // store package json file
         val newArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(newPackageJson))
@@ -501,9 +527,16 @@ class NpmLocalRepository : LocalRepository() {
         }
     }
 
-    private fun storeVersionArtifact(context: ArtifactMigrateContext, versionJson: JsonObject) {
+    private fun storeVersionArtifact(
+        context: ArtifactMigrateContext,
+        versionJson: JsonObject,
+        versionSizeMap: Map<String, Long>
+    ) {
         val name = versionJson[NAME].asString
         val version = versionJson[VERSION].asString
+        if (!versionJson.getAsJsonObject(DIST).has(SIZE)) {
+            versionJson.getAsJsonObject(DIST).addProperty(SIZE, versionSizeMap[version])
+        }
         val versionArtifactFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(versionJson))
         val fullPath = String.format(NPM_PKG_VERSION_FULL_PATH, name, name, version)
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
@@ -524,7 +557,14 @@ class NpmLocalRepository : LocalRepository() {
     /**
      * 存储tgz文件
      */
-    private fun storeTgzArtifact(context: ArtifactMigrateContext, tarball: String, name: String) {
+    private fun storeTgzArtifact(
+        context: ArtifactMigrateContext,
+        tarball: String,
+        name: String,
+        version: String
+    ): Map<String, Long> {
+        // 包的大小信息
+        val tgzSizeInfoMap = mutableMapOf<String, Long>()
         var response: Response? = null
         val tgzFilePath = tarball.substring(tarball.indexOf(name))
         context.contextAttributes[NPM_FILE_FULL_PATH] = "/$tgzFilePath"
@@ -533,7 +573,7 @@ class NpmLocalRepository : LocalRepository() {
             logger.info(
                 "package [$name] with tgz file [$tgzFilePath] is already exists in repository, skip migration."
             )
-            return
+            return mutableMapOf()
         }
         try {
             measureTimeMillis {
@@ -541,6 +581,7 @@ class NpmLocalRepository : LocalRepository() {
                 if (checkResponse(response!!)) {
                     val artifactFile = createTempFile(response?.body()!!)
                     putArtifact(context, artifactFile)
+                    tgzSizeInfoMap[version] = artifactFile.getSize()
                     artifactFile.delete()
                 }
             }.apply {
@@ -554,6 +595,7 @@ class NpmLocalRepository : LocalRepository() {
         } finally {
             response?.body()?.close()
         }
+        return tgzSizeInfoMap
     }
 
     private fun getCacheArtifact(context: ArtifactTransferContext): ArtifactInputStream? {
