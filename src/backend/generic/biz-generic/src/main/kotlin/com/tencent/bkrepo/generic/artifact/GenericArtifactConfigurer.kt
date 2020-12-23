@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import org.springframework.stereotype.Component
 
 @Component
-class GenericArtifactConfigurer: ArtifactConfigurerSupport() {
+class GenericArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.GENERIC
     override fun getLocalRepository() = SpringContextUtils.getBean<GenericLocalRepository>()

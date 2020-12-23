@@ -152,8 +152,8 @@ class TaskService(
     }
 
     fun delete(taskKey: String) {
-        val task =
-            taskRepository.findByKey(taskKey) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
+        val task = taskRepository.findByKey(taskKey)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
         taskRepository.delete(task)
         if (task.type == ReplicationType.FULL) {
             taskLogRepository.deleteByTaskKey(taskKey)

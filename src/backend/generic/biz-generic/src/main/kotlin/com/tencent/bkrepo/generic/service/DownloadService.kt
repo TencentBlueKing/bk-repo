@@ -43,7 +43,7 @@ import org.springframework.stereotype.Service
  * 通用文件下载服务类
  */
 @Service
-class DownloadService: ArtifactService() {
+class DownloadService : ArtifactService() {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun download(artifactInfo: GenericArtifactInfo) {

@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.replication.handler.event
 
-
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.message.project.ProjectCreatedMessage
 import org.springframework.context.event.EventListener

@@ -58,7 +58,6 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
-import javax.servlet.http.HttpServletResponse
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @Primary
@@ -200,8 +199,7 @@ interface ServiceUserResource {
         @ApiParam(value = "用户id")
         @RequestParam("uid") uid: String,
         @ApiParam(value = "用户token")
-        @RequestParam("token") token: String,
-        response: HttpServletResponse
+        @RequestParam("token") token: String
     ): Response<Boolean>
 
     @ApiOperation("获取用户信息")
