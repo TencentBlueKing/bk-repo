@@ -44,12 +44,12 @@ import java.lang.reflect.Method
 
 class ArtifactBeanProxy<T>(
     private val classType: Class<T>
-): MethodInterceptor {
+) : MethodInterceptor {
 
     @Suppress("IMPLICIT_CAST_TO_ANY")
     override fun intercept(proxy: Any, method: Method, args: Array<out Any>?, methodProxy: MethodProxy): Any? {
         val configurer = ArtifactContextHolder.getCurrentArtifactConfigurer()
-        val target = when(classType) {
+        val target = when (classType) {
             ArtifactRepository::class.java -> ArtifactContextHolder.getRepository()
             LocalRepository::class.java -> configurer.getLocalRepository()
             RemoteRepository::class.java -> configurer.getRemoteRepository()

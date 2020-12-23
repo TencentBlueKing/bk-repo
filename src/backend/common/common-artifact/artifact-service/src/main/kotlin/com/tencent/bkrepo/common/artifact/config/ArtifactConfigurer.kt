@@ -72,5 +72,4 @@ interface ArtifactConfigurer {
      * 异常消息响应体格式转换器
      */
     fun getExceptionResponseTranslator(): ExceptionResponseTranslator
-
 }

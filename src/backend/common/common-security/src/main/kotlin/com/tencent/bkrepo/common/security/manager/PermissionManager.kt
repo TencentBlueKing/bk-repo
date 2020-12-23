@@ -33,10 +33,10 @@ package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
-import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -82,10 +82,7 @@ class PermissionManager(
     }
 
     fun checkPrincipal(userId: String, principalType: PrincipalType) {
-        if (!httpAuthProperties.enabled) {
-            if (logger.isDebugEnabled) {
-                logger.debug("Auth disabled, skip checking principal")
-            }
+        if (preCheck()) {
             return
         }
         // 匿名用户，提示登录

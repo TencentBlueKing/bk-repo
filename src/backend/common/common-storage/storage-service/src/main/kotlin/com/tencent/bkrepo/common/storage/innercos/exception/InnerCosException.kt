@@ -35,6 +35,6 @@ package com.tencent.bkrepo.common.storage.innercos.exception
  * Inner Cos 相关异常.
  */
 open class InnerCosException(message: String? = null, cause: Throwable? = null) : RuntimeException(message, cause) {
-    constructor(message: String?): this(message, null)
-    constructor(cause: Throwable?): this(null, cause)
+    constructor(message: String?) : this(message, null)
+    constructor(cause: Throwable?) : this(null, cause)
 }

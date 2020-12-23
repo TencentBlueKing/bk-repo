@@ -59,7 +59,6 @@ class MonitorController(
         }
     }
 
-
     @GetMapping("/metrics", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
     fun metricsStream(): Flux<ServerSentEvent<MetricsInfo>> {
         return metricsInfoProcessor.getFlux().map {

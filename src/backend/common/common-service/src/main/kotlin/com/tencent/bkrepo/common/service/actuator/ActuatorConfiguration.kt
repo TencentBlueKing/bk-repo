@@ -39,10 +39,10 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@ConditionalOnMicroService
 class ActuatorConfiguration {
 
     @Bean
-    @ConditionalOnMicroService
     fun metricsCommonTags(registration: Registration): MeterRegistryCustomizer<MeterRegistry> {
         return MeterRegistryCustomizer { registry: MeterRegistry ->
             registry.config().commonTags("service", registration.serviceId)

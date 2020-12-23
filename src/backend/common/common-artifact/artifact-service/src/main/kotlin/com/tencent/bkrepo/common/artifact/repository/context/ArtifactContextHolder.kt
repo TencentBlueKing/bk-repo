@@ -177,6 +177,4 @@ class ArtifactContextHolder(
             return StringBuilder(projectId).append(CharPool.SLASH).append(repoName).toString()
         }
     }
-
-
 }
