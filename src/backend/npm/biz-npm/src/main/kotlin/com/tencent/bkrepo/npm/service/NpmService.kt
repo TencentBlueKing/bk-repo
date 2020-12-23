@@ -54,6 +54,7 @@ import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
+import com.tencent.bkrepo.npm.exception.NpmTagNotExistException
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
@@ -172,7 +173,7 @@ class NpmService @Autowired constructor(
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
         val versionJsonObj = jsonObj.getAsJsonObject(VERSIONS).getAsJsonObject(distTags.second)
-        versionJsonObj.getAsJsonObject(DIST).addProperty(SIZE,attributesMap[LENGTH] as Long)
+        versionJsonObj.getAsJsonObject(DIST).addProperty(SIZE, attributesMap[LENGTH] as Long)
         val packageJsonWithVersionFile = ArtifactFileFactory.build(
             GsonUtils.gson.toJson(versionJsonObj).byteInputStream()
         )
@@ -243,12 +244,18 @@ class NpmService @Autowired constructor(
             context.contextAttributes[NPM_FILE_FULL_PATH] = fullPath
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             val npmMetaData = repository.search(context) as? JsonObject
-                ?: throw NpmArtifactNotFoundException("document not found!")
-            val latestPackageVersion = npmMetaData.getAsJsonObject(DISTTAGS)[LATEST].asString
-            val npmArtifactInfo = NpmArtifactInfo(
-                projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
-            )
-            return searchVersionMetadata(npmArtifactInfo)
+                ?: throw NpmArtifactNotFoundException("document [$scopePkg] not found in repo [$projectId/$repoName]")
+            try {
+                val latestPackageVersion = npmMetaData.getAsJsonObject(DISTTAGS)[LATEST].asString
+                val npmArtifactInfo = NpmArtifactInfo(
+                    projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
+                )
+                return searchVersionMetadata(npmArtifactInfo)
+            } catch (exception: IllegalStateException){
+                val message = "the dist tag [latest] is not found in package [$scopePkg] in repo [$projectId/$repoName]"
+                logger.error(message)
+                throw NpmTagNotExistException(message)
+            }
         }
     }
 
@@ -319,10 +326,14 @@ class NpmService @Autowired constructor(
         rev: String
     ): NpmDeleteResponse {
         val fullPathList = mutableListOf<String>()
-        val repoIdentity = StringBuilder().append(artifactInfo.projectId).append("/").append(artifactInfo.repoName).toString()
-        val tgzPath = HttpContextHolder.getRequest().requestURI.substringAfterLast(repoIdentity).substringBeforeLast("/-rev")
+        val repoIdentity =
+            StringBuilder().append(artifactInfo.projectId).append("/").append(artifactInfo.repoName).toString()
+        val tgzPath =
+            HttpContextHolder.getRequest().requestURI.substringAfterLast(repoIdentity).substringBeforeLast("/-rev")
         fullPathList.add(tgzPath)
-        fullPathList.add(".npm/$pkgName/${tgzPath.substringAfter("/$pkgName/$delimiter/").substringBeforeLast('.').plus(".json")}")
+        fullPathList.add(
+            ".npm/$pkgName/${tgzPath.substringAfter("/$pkgName/$delimiter/").substringBeforeLast('.').plus(".json")}"
+        )
         val context = ArtifactRemoveContext()
         context.contextAttributes[NPM_FILE_FULL_PATH] = fullPathList
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)

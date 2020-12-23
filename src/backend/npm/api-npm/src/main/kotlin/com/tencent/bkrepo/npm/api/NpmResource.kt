@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.npm.api
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo.Companion.NPM_PACKAGE_DIST_TAG_ADD_MAPPING_URI
@@ -43,9 +44,10 @@ interface NpmResource {
 
     @ApiOperation("search package.json info")
     @GetMapping(
-        NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI,
+        value = [NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI,
         NPM_PACKAGE_INFO_MAPPING_URI,
-        NPM_PACKAGE_VERSION_INFO_MAPPING_URI
+        NPM_PACKAGE_VERSION_INFO_MAPPING_URI],
+        produces = [MediaTypes.APPLICATION_JSON]
     )
     fun searchPackageInfo(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo
