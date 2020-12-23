@@ -324,6 +324,10 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun isBlobExists(context: RequestContext, digest: DockerDigest): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("check blob exist [$context, $digest]")
+        if (!artifactRepo.canWrite(context)) {
+            logger.warn("unable to upload manifest [$context]")
+            return DockerV2Errors.unauthorizedUpload()
+        }
         if (isEmptyBlob(digest)) {
             logger.info("check is empty blob [$context, $digest]")
             return emptyBlobHeadResponse()
