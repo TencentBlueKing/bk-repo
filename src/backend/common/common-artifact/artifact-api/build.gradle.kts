@@ -31,4 +31,5 @@
 
 dependencies {
     implementation(project(":common:common-api"))
+    compileOnly("com.google.guava:guava")
 }

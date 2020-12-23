@@ -68,6 +68,11 @@ data class StorageProperties(
     var isResolveLazily: Boolean = true,
 
     /**
+     * 文件接收限速
+     */
+    var rateLimit: DataSize = DataSize.ofBytes(-1),
+
+    /**
      * 存储类型
      */
     var type: StorageType = StorageType.FILESYSTEM,
