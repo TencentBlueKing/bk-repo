@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
+import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
 import com.tencent.bkrepo.common.storage.filesystem.FileLockExecutor
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
@@ -53,6 +55,7 @@ class CleanupFileVisitor(
             val size = attributes.size()
             FileLockExecutor.executeInLock(filePath.toFile()) {
                 Files.delete(filePath)
+                logger.info("Clean up expired file[$filePath], size[$size].")
             }
             cleanupResult.fileCount += 1
             cleanupResult.size += size
@@ -64,6 +67,7 @@ class CleanupFileVisitor(
     override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
         if (!Files.isSameFile(rootPath, dirPath) && !Files.list(dirPath).iterator().hasNext()) {
             Files.delete(dirPath)
+            logger.info("Clean up empty folder[$dirPath].")
             cleanupResult.folderCount += 1
         }
         return FileVisitResult.CONTINUE
@@ -78,5 +82,9 @@ class CleanupFileVisitor(
         val lastModifiedTime = attributes.lastModifiedTime().toMillis()
         val expiredTime = System.currentTimeMillis() - Duration.ofDays(expireDays.toLong()).toMillis()
         return lastAccessTime < expiredTime && lastModifiedTime < expiredTime
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
     }
 }

@@ -34,6 +34,8 @@ package com.tencent.bkrepo.repository.job
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.service.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
@@ -44,7 +46,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class FileSynchronizeJob(
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val storageCredentialService: StorageCredentialService
 ) {
 
     @Scheduled(cron = "0 0 0 ? * 6")
@@ -52,11 +55,22 @@ class FileSynchronizeJob(
     @SchedulerLock(name = "FileSynchronizeJob", lockAtMostFor = "P7D")
     fun run() {
         logger.info("Starting to synchronize file.")
+        // cleanup default storage
+        syncOnStorage()
+        // cleanup extended storage
+        storageCredentialService.list().forEach { syncOnStorage(it) }
+        logger.info("Synchronize file completed.")
+    }
+
+    private fun syncOnStorage(storage: StorageCredentials? = null) {
+        val key = storage?.key ?: "default"
+        logger.info("Starting to synchronize file on storage[$key]")
         executeAndMeasureTime {
-            storageService.synchronizeFile()
+            storageService.synchronizeFile(storage)
         }.apply {
+            logger.info("Synchronize file on storage[$key] completed.")
             logger.info(
-                "Synchronize file success. Walked [${first.totalCount}] files totally, " +
+                "Walked [${first.totalCount}] files totally, " +
                     "synchronized[${first.synchronizedCount}], " +
                     "error[${first.errorCount}], ignored[${first.ignoredCount}], " +
                     "[${first.totalSize}] bytes totally, elapse [${second.seconds}] s."

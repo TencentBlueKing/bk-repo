@@ -29,7 +29,16 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":common:common-api"))
-    compileOnly("com.google.guava:guava")
-}
+package com.tencent.bkrepo.replication.config
+
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
+
+@ConfigurationProperties("replication")
+data class ReplicationProperties(
+
+    /**
+     * 文件发送限速
+     */
+    var rateLimit: DataSize = DataSize.ofBytes(-1)
+)

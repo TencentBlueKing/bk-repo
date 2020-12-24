@@ -66,7 +66,8 @@ open class OctetStreamArtifactFile(
         val path = storageCredentials.upload.location.toPath()
         val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
         val enableTransfer = storageProperties.monitor.enableTransfer
-        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer)
+        val rateLimit = storageProperties.rateLimit
+        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer, rateLimit)
         listener = DigestCalculateListener()
         if (!storageProperties.isResolveLazily) {
             init()
@@ -131,7 +132,7 @@ open class OctetStreamArtifactFile(
         if (hasInitialized && !isInMemory()) {
             try {
                 Files.deleteIfExists(receiver.getFilePath())
-            } catch (e: NoSuchFileException) { // already deleted
+            } catch (ignored: NoSuchFileException) { // already deleted
             }
         }
     }
@@ -140,7 +141,7 @@ open class OctetStreamArtifactFile(
         return hasInitialized
     }
 
-    fun init() {
+    private fun init() {
         if (hasInitialized) {
             return
         }

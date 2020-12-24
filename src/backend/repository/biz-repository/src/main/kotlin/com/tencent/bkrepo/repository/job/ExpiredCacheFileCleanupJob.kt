@@ -34,6 +34,8 @@ package com.tencent.bkrepo.repository.job
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.service.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -43,16 +45,30 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ExpiredCacheFileCleanupJob(
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val storageCredentialService: StorageCredentialService
 ) {
 
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
-    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT10H")
+    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT1D")
     fun cleanUp() {
-        logger.info("Starting to clean up expired cache files.")
+        logger.info("Starting to clean up temp and expired cache files.")
+        // cleanup default storage
+        cleanUpOnStorage()
+        // cleanup extended storage
+        storageCredentialService.list().forEach {
+            cleanUpOnStorage(it)
+        }
+        logger.info("Clean up completed.")
+    }
+
+    private fun cleanUpOnStorage(storage: StorageCredentials? = null) {
+        val key = storage?.key ?: "default"
+        logger.info("Starting to clean up on storage [$key].")
         executeAndMeasureTime {
-            storageService.cleanUp()
+            storageService.cleanUp(storage)
         }.apply {
+            logger.info("Clean up on storage[$key] completed.")
             logger.info(
                 "[${first.getTotal()}] expired cache and temp files has been clean up" +
                     ", file[${first.fileCount}], folder[${first.folderCount}]" +
