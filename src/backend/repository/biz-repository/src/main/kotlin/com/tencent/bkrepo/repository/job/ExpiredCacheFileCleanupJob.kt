@@ -47,7 +47,7 @@ class ExpiredCacheFileCleanupJob(
 ) {
 
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
-    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT10H")
+    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT1D")
     fun cleanUp() {
         logger.info("Starting to clean up expired cache files.")
         executeAndMeasureTime {
