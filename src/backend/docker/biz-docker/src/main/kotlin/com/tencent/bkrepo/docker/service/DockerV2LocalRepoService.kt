@@ -187,7 +187,7 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun getManifest(context: RequestContext, reference: String): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("get manifest params [$context,$reference]")
-        packageRepo.addDownloadStatic(context, reference)
+        // packageRepo.addDownloadStatic(context, reference)
         return try {
             val digest = DockerDigest(reference)
             manifestProcess.getManifestByDigest(context, digest, httpHeaders)
@@ -324,6 +324,10 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun isBlobExists(context: RequestContext, digest: DockerDigest): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("check blob exist [$context, $digest]")
+        if (!artifactRepo.canWrite(context)) {
+            logger.warn("unable to upload manifest [$context]")
+            return DockerV2Errors.unauthorizedUpload()
+        }
         if (isEmptyBlob(digest)) {
             logger.info("check is empty blob [$context, $digest]")
             return emptyBlobHeadResponse()
