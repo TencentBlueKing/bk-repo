@@ -5,51 +5,29 @@ import java.io.InputStream
 
 /**
  * 支持限速的输入流
+ * @param delegate 实际操作的输入流
+ * @param rate 限制每秒读取的字节数
  */
 @Suppress("UnstableApiUsage")
 class RateLimitInputStream (
-    private val source: InputStream,
+    delegate: InputStream,
     rate: Long
-): InputStream() {
+): DelegateInputStream(delegate) {
 
-    private val rateLimiter: RateLimiter? = if (rate > 0) RateLimiter.create(rate.toDouble()) else null
-
-    override fun skip(n: Long): Long {
-        return source.skip(n)
-    }
-
-    override fun available(): Int {
-        return source.available()
-    }
-
-    override fun reset() {
-        source.reset()
-    }
-
-    override fun close() {
-        source.close()
-    }
-
-    override fun mark(readlimit: Int) {
-        source.mark(readlimit)
-    }
-
-    override fun markSupported(): Boolean {
-        return source.markSupported()
-    }
+    private val rateLimiter = rate.takeIf { it > 0 }?.let { RateLimiter.create(rate.toDouble()) }
 
     override fun read(): Int {
         rateLimiter?.acquire()
-        return source.read()
+        return super.read()
     }
 
-    override fun read(b: ByteArray): Int {
-        rateLimiter?.acquire(b.size)
-        return source.read(b)
+    override fun read(byteArray: ByteArray): Int {
+        rateLimiter?.acquire(byteArray.size)
+        return super.read(byteArray)
     }
 
-    override fun read(b: ByteArray, off: Int, len: Int): Int {
+    override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
         rateLimiter?.acquire(len)
-        return source.read(b, off, len)
+        return super.read(byteArray, off, len)
     }
 }

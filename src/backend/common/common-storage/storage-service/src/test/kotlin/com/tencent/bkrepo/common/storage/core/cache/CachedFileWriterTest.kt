@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.storage.core.cache
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -70,7 +70,7 @@ internal class CachedFileWriterTest {
             repeat(count) {
                 val thread = thread {
                     cyclicBarrier.await()
-                    val inputStream = randomString.byteInputStream().toArtifactStream(Range.full(size))
+                    val inputStream = randomString.byteInputStream().artifactStream(Range.full(size))
                     val out = ByteArrayOutputStream()
 
                     val listener = CachedFileWriter(cachePath, filename, tempPath)

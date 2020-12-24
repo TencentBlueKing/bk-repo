@@ -80,7 +80,7 @@ class CachedFileWriter(
         }
     }
 
-    override fun close() {
+    override fun finish() {
         if (lock != null) {
             outputStream.flush()
             outputStream.closeQuietly()

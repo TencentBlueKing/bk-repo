@@ -131,16 +131,9 @@ object ArtifactResourceWriter {
                 logger.info("Response artifact file, $throughput.")
             }
         } catch (exception: IOException) {
-            val message = exception.message.orEmpty()
-            when {
-                message.contains("Connection reset by peer") -> {
-                    LoggerHolder.logBusinessException(exception, "Stream response failed[Connection reset by peer]")
-                }
-                message.contains("Broken pipe") -> {
-                    LoggerHolder.logBusinessException(exception, "Stream response failed[Broken pipe]")
-                }
-                else -> throw exception
-            }
+            if (IOExceptionUtils.isClientBroken(exception)) {
+                LoggerHolder.logBusinessException(exception, "Receive artifact stream failed: ${exception.message}")
+            } else throw exception
         }
     }
 

@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.storage.core.simple
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
@@ -63,7 +63,7 @@ class SimpleStorageService : AbstractStorageService() {
         range: Range,
         credentials: StorageCredentials
     ): ArtifactInputStream? {
-        return fileStorage.load(path, filename, range, credentials)?.toArtifactStream(range)
+        return fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {

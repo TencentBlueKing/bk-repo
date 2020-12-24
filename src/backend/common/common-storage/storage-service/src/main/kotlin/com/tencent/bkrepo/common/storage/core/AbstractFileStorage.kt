@@ -37,13 +37,12 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
-import com.tencent.bkrepo.common.storage.monitor.Throughput
+import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import java.io.File
 import java.io.InputStream
-import kotlin.system.measureNanoTime
 
 /**
  * 文件存储接口
@@ -71,10 +70,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
         val client = getClient(storageCredentials)
         val size = file.length()
-        val nanoTime = measureNanoTime {
-            store(path, name, file, client)
-        }
-        val throughput = Throughput(size, nanoTime)
+        val throughput = measureThroughput(size) { store(path, name, file, client) }
         logger.info("Success to persist file [$name], $throughput.")
     }
 
@@ -86,10 +82,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         storageCredentials: StorageCredentials
     ) {
         val client = getClient(storageCredentials)
-        val nanoTime = measureNanoTime {
-            store(path, name, inputStream, size, client)
-        }
-        val throughput = Throughput(size, nanoTime)
+        val throughput = measureThroughput(size) { store(path, name, inputStream, size, client) }
         logger.info("Success to persist stream [$name], $throughput.")
     }
 

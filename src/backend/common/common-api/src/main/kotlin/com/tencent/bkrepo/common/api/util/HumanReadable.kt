@@ -36,22 +36,23 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object HumanReadable {
-
+    private const val NANOS_PER_SECOND = 1000_000_000L
+    private const val BYTES_PER_KB = 1024.0
     private val sizeUnits = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
     private val sizeFormat = DecimalFormat("#,##0.#").apply { maximumFractionDigits = 2 }
 
     fun size(bytes: Long): String {
         var size = bytes.toDouble()
         var index = 0
-        while (size >= 1024) {
-            size /= 1024.0
+        while (size >= BYTES_PER_KB) {
+            size /= BYTES_PER_KB
             index += 1
         }
         return "${sizeFormat.format(size)} ${sizeUnits[index]}"
     }
 
     fun throughput(bytes: Long, nano: Long): String {
-        val speed = bytes.toDouble() / nano * 1000 * 1000 * 1000
+        val speed = bytes.toDouble() / nano * NANOS_PER_SECOND
         return size(speed.toLong()) + "/s"
     }
 
@@ -66,13 +67,15 @@ object HumanReadable {
     }
 
     private fun chooseUnit(nano: Long): TimeUnit {
-        if (TimeUnit.DAYS.convert(nano, TimeUnit.NANOSECONDS) > 0) return TimeUnit.DAYS
-        if (TimeUnit.HOURS.convert(nano, TimeUnit.NANOSECONDS) > 0) return TimeUnit.HOURS
-        if (TimeUnit.MINUTES.convert(nano, TimeUnit.NANOSECONDS) > 0) return TimeUnit.MINUTES
-        if (TimeUnit.SECONDS.convert(nano, TimeUnit.NANOSECONDS) > 0) return TimeUnit.SECONDS
-        if (TimeUnit.MILLISECONDS.convert(nano, TimeUnit.NANOSECONDS) > 0) return TimeUnit.MILLISECONDS
-        if (TimeUnit.MICROSECONDS.convert(nano, TimeUnit.NANOSECONDS) > 0) return TimeUnit.MICROSECONDS
-        return TimeUnit.NANOSECONDS
+        return when {
+            TimeUnit.DAYS.convert(nano, TimeUnit.NANOSECONDS) > 0 -> TimeUnit.DAYS
+            TimeUnit.HOURS.convert(nano, TimeUnit.NANOSECONDS) > 0 -> TimeUnit.HOURS
+            TimeUnit.MINUTES.convert(nano, TimeUnit.NANOSECONDS) > 0 -> TimeUnit.MINUTES
+            TimeUnit.SECONDS.convert(nano, TimeUnit.NANOSECONDS) > 0 -> TimeUnit.SECONDS
+            TimeUnit.MILLISECONDS.convert(nano, TimeUnit.NANOSECONDS) > 0 -> TimeUnit.MILLISECONDS
+            TimeUnit.MICROSECONDS.convert(nano, TimeUnit.NANOSECONDS) > 0 -> TimeUnit.MICROSECONDS
+            else -> TimeUnit.NANOSECONDS
+        }
     }
 
     private fun abbreviate(unit: TimeUnit): String {

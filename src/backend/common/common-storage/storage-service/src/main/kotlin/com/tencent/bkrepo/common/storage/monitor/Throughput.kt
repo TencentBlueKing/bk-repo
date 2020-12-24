@@ -43,9 +43,16 @@ data class Throughput(
     val duration: Duration = Duration.of(time, unit)
 
     override fun toString(): String {
-        return with(HumanReadable) {
+        with(HumanReadable) {
             val nanoTime = duration.toNanos()
-            "size: ${size(bytes)}, elapse: ${time(nanoTime)}, average: ${throughput(bytes, nanoTime)}"
+            return "size: ${size(bytes)}, elapse: ${time(nanoTime)}, average: ${throughput(bytes, nanoTime)}"
         }
     }
+}
+
+public inline fun measureThroughput(bytes: Long, block: () -> Unit): Throughput {
+    val start = System.nanoTime()
+    block()
+    val time = System.nanoTime() - start
+    return Throughput(bytes = bytes, time = time)
 }
