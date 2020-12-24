@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.docker.auth
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
@@ -77,6 +79,11 @@ class DockerBasicAuthLoginHandler(
         response: HttpServletResponse,
         authenticationException: AuthenticationException
     ) {
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
+        authorizationHeader?.let {
+            logger.info("empty user pull,push ,change to  [$authorizationHeader]")
+            return onAuthenticateSuccess(request, response, ANONYMOUS_USER)
+        }
         logger.warn("Authenticate failed: [$authenticationException]")
         response.status = HttpStatus.UNAUTHORIZED.value
         response.contentType = MediaType.APPLICATION_JSON_VALUE
