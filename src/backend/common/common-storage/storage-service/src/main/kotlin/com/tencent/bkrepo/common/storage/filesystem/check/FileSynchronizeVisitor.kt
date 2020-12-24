@@ -95,7 +95,7 @@ class FileSynchronizeVisitor(
         val path = fileLocator.locate(filename)
         val file = filePath.toFile()
         fileStorage.store(path, filename, file, credential)
-        logger.info("Synchronize file[$filename] success")
+        logger.info("Synchronize file[$filename] success.")
         return file.length()
     }
 
