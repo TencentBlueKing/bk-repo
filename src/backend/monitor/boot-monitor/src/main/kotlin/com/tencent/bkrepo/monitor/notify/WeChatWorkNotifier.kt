@@ -68,22 +68,22 @@ class WeChatWorkNotifier(
         val message = mutableMapOf<String, Any>()
         message["msgtype"] = "markdown"
         message["markdown"] = mapOf("content" to content)
-        chatId?.let { message["chatid"] = chatId!! }
-        visibleToUser?.let { message["visible_to_user"] = visibleToUser!! }
+        chatId?.let { message["chatid"] = it }
+        visibleToUser?.let { message["visible_to_user"] = it }
         return Mono.fromRunnable { restTemplate.postForObject(buildUrl(), message, String::class.java) }
     }
 
     override fun doNotify(event: InstanceEvent, instance: Instance): Mono<Void> {
+        require(event is InstanceStatusChangedEvent)
         val content = createContent(event, instance)
         notifyMessage(content)
         return notifyMessage(content)
     }
 
-    private fun createContent(event: InstanceEvent, instance: Instance): String {
+    private fun createContent(event: InstanceStatusChangedEvent, instance: Instance): String {
         val application = instance.registration.name
         val instanceId = instance.id
         val from = getLastStatus(event.instance)
-        require(event is InstanceStatusChangedEvent)
         val to = event.statusInfo.status
         val currentDate = LocalDateTime.now()
         return MESSAGE_TEMPLATE.format(application, instanceId, clusterName, from, to, currentDate)

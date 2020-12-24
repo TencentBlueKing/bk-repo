@@ -47,7 +47,7 @@ import org.springframework.beans.factory.support.GenericBeanDefinition
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class ArtifactBeanRegistrar: BeanDefinitionRegistryPostProcessor {
+class ArtifactBeanRegistrar : BeanDefinitionRegistryPostProcessor {
 
     override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) = Unit
 
@@ -58,14 +58,13 @@ class ArtifactBeanRegistrar: BeanDefinitionRegistryPostProcessor {
     /**
      * 注册代理bean
      */
-    private fun registerArtifactProxyBeans(registry : BeanDefinitionRegistry) {
+    private fun registerArtifactProxyBeans(registry: BeanDefinitionRegistry) {
         registerBean(LocalRepository::class.java, registry)
         registerBean(RemoteRepository::class.java, registry)
         registerBean(VirtualRepository::class.java, registry)
         registerBean(ArtifactRepository::class.java, registry)
         registerBean(ExceptionResponseTranslator::class.java, registry)
     }
-
 
     /**
      * 注册动态代理bean

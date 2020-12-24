@@ -92,9 +92,9 @@ class ChartInfoChartServiceImpl(
             1 -> {
                 val chartName = urlList[0]
                 val chartList = indexYamlMetadata.entries[chartName]
-                return if (chartList == null){
+                return if (chartList == null) {
                     ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(CHART_NOT_FOUND)
-                }else{
+                } else {
                     ResponseEntity.ok().body(chartList)
                 }
             }
@@ -105,9 +105,9 @@ class ChartInfoChartServiceImpl(
                 val chartList =
                     indexYamlMetadata.entries[chartName] ?: return ResponseEntity.ok().body(NO_CHART_NAME_FOUND)
                 val helmChartMetadataList = chartList.filter { chartVersion == it.version }.toList()
-                return if (helmChartMetadataList.isNotEmpty()){
+                return if (helmChartMetadataList.isNotEmpty()) {
                     ResponseEntity.ok().body(chartList.first())
-                }else{
+                } else {
                     ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
                 }
             }

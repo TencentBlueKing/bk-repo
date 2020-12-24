@@ -61,7 +61,7 @@ class DigestCalculateListener : StreamReceiveListener {
     }
 
     fun getSha256(): String {
-        return md5 ?: throw ArtifactReceiveException("Artifact stream has not received.")
+        return sha256 ?: throw ArtifactReceiveException("Artifact stream has not received.")
     }
 
     private fun hexToString(byteArray: ByteArray, length: Int): String {

@@ -32,16 +32,40 @@
 package com.tencent.bkrepo.monitor.controller
 
 import com.tencent.bkrepo.monitor.config.MonitorProperties
+import com.tencent.bkrepo.monitor.metrics.HealthInfo
+import com.tencent.bkrepo.monitor.metrics.MetricsInfo
+import com.tencent.bkrepo.monitor.processor.HealthInfoProcessor
+import com.tencent.bkrepo.monitor.processor.MetricsInfoProcessor
+import org.springframework.http.MediaType
+import org.springframework.http.codec.ServerSentEvent
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/monitor")
 class MonitorController(
+    private val healthInfoProcessor: HealthInfoProcessor,
+    private val metricsInfoProcessor: MetricsInfoProcessor,
     private val monitorProperties: MonitorProperties
 ) {
-    @GetMapping("config")
-    fun getConfig() = Mono.just(monitorProperties)
+
+    @GetMapping("/health", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun healthStream(): Flux<ServerSentEvent<HealthInfo>> {
+        return healthInfoProcessor.getFlux().map {
+            ServerSentEvent.builder(it).event(it.name).build()
+        }
+    }
+
+    @GetMapping("/metrics", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun metricsStream(): Flux<ServerSentEvent<MetricsInfo>> {
+        return metricsInfoProcessor.getFlux().map {
+            ServerSentEvent.builder(it).event(it.name).build()
+        }
+    }
+
+    @GetMapping("/config")
+    fun getConfig(): Mono<MonitorProperties> = Mono.just(monitorProperties)
 }

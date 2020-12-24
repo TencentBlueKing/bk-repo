@@ -64,7 +64,6 @@ class DockerArtifactConfigurer : ArtifactConfigurerSupport() {
             httpAuthSecurity.addHttpAuthHandler(dockerLoginHandler)
                 .excludePattern("/v2/_catalog")
                 .excludePattern("/v2/*/*/*/tags/list")
-                .excludePattern("/v2")
         }
     }
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {

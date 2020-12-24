@@ -167,7 +167,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传成功回调
      */
     open fun onUploadSuccess(context: ArtifactUploadContext) {
-        artifactMetrics.uploadedCounter.increment()
         publisher.publishEvent(ArtifactUploadedEvent(context))
         val artifactInfo = context.artifactInfo
         logger.info("User[${SecurityUtils.getPrincipal()}] upload artifact[$artifactInfo] success")
@@ -206,7 +205,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 下载成功回调
      */
     open fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
-        artifactMetrics.downloadedCounter.increment()
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadStatisticsClient.add(it) }

@@ -67,7 +67,7 @@ import org.springframework.stereotype.Service
 class UploadService(
     private val nodeClient: NodeClient,
     private val storageService: StorageService
-): ArtifactService() {
+) : ArtifactService() {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {

@@ -34,15 +34,14 @@ package com.tencent.bkrepo.common.artifact.resolve.file.stream
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRandomName
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_BYTES_COUNT
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADED_CONSUME_COUNT
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
-import io.micrometer.core.instrument.Metrics
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.File
@@ -61,6 +60,7 @@ open class OctetStreamArtifactFile(
     private var sha1: String? = null
     private val listener: DigestCalculateListener
     private val receiver: SmartStreamReceiver
+    private val artifactMetrics: ArtifactMetrics = SpringContextUtils.getBean()
 
     init {
         val path = storageCredentials.upload.location.toPath()
@@ -152,11 +152,10 @@ open class OctetStreamArtifactFile(
                 }
             }
             val throughput = receiver.receive(source, listener)
-            hasInitialized = true
-
-            Metrics.counter(ARTIFACT_UPLOADED_BYTES_COUNT).increment(throughput.bytes.toDouble())
-            Metrics.counter(ARTIFACT_UPLOADED_CONSUME_COUNT).increment(throughput.duration.toMillis().toDouble())
+            artifactMetrics.uploadedSizeCounter.increment(throughput.bytes.toDouble())
+            artifactMetrics.uploadedConsumeTimer.record(throughput.duration)
             logger.info("Receive artifact file, $throughput.")
+            hasInitialized = true
         } finally {
             monitor.remove(receiver)
         }

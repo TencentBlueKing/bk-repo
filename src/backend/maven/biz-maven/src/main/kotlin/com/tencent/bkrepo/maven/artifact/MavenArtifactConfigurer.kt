@@ -45,7 +45,7 @@ import org.springframework.stereotype.Component
  * Maven 依赖源配置
  */
 @Component
-class MavenArtifactConfigurer: ArtifactConfigurerSupport() {
+class MavenArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.MAVEN
     override fun getLocalRepository() = SpringContextUtils.getBean<MavenLocalRepository>()

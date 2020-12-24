@@ -31,9 +31,7 @@
 
 package com.tencent.bkrepo.docker.resource
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.docker.api.Manifest
 import com.tencent.bkrepo.docker.constant.MANIFEST_PATTERN
 import com.tencent.bkrepo.docker.context.RequestContext
