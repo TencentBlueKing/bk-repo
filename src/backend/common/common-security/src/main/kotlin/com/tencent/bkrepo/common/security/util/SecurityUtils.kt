@@ -36,18 +36,29 @@ import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 
+/**
+ * SecurityUtils工具类
+ */
 object SecurityUtils {
 
+    /**
+     * 获取userId
+     */
     fun getUserId(): String {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
     }
 
+    /**
+     * 获取platform account id
+     */
     fun getPlatformId(): String? {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(PLATFORM_KEY) as? String
     }
 
+    /**
+     * 获取principle
+     */
     fun getPrincipal(): String {
-        return getPlatformId()
-            ?.let { "$it-${getUserId()}" } ?: getUserId()
+        return getPlatformId()?.let { "$it-${getUserId()}" } ?: getUserId()
     }
 }

@@ -36,20 +36,17 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool.BYTES
 import com.tencent.bkrepo.common.api.constant.StringPool.NO_CACHE
-import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
-import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpMethod
 import org.springframework.web.util.UriUtils
@@ -62,16 +59,13 @@ import javax.servlet.http.HttpServletResponse
 
 object ArtifactResourceWriter {
 
-    private val logger = LoggerFactory.getLogger(ArtifactResourceWriter::class.java)
-    private val artifactMetrics: ArtifactMetrics = SpringContextUtils.getBean()
-
     private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
         add("yaml", MediaTypes.APPLICATION_YAML)
         add("tgz", MediaTypes.APPLICATION_TGZ)
         add("ico", MediaTypes.APPLICATION_ICO)
     }
 
-    fun write(resource: ArtifactResource) {
+    fun write(resource: ArtifactResource): Throughput {
         val request = HttpContextHolder.getRequest()
         val response = HttpContextHolder.getResponse()
         val artifact = resource.artifact
@@ -93,13 +87,7 @@ object ArtifactResourceWriter {
             response.setHeader(HttpHeaders.ETAG, resolveETag(it))
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
-        resource.inputStream.use {
-            if (request.method != HttpMethod.HEAD.name) {
-                writeRangeStream(it, response)
-            } else {
-                logger.info("Skip writing data to response body because of HEAD request")
-            }
-        }
+        return resource.inputStream.use { writeRangeStream(it, request, response) }
     }
 
     private fun resolveStatus(request: HttpServletRequest): Int {
@@ -120,19 +108,19 @@ object ArtifactResourceWriter {
         return localDateTime.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli()
     }
 
-    private fun writeRangeStream(inputStream: ArtifactInputStream, response: HttpServletResponse) {
+    private fun writeRangeStream(
+        inputStream: ArtifactInputStream,
+        request: HttpServletRequest,
+        response: HttpServletResponse
+    ): Throughput {
+        if (request.method == HttpMethod.HEAD.name) {
+            return Throughput.EMPTY
+        }
         try {
-            executeAndMeasureNanoTime {
-                inputStream.copyTo(response.outputStream, STREAM_BUFFER_SIZE)
-            }.apply {
-                val throughput = Throughput(first, second)
-                artifactMetrics.downloadedSizeCounter.increment(throughput.bytes.toDouble())
-                artifactMetrics.downloadedConsumeTimer.record(throughput.duration)
-                logger.info("Response artifact file, $throughput.")
-            }
+            return measureThroughput { inputStream.copyTo(response.outputStream, STREAM_BUFFER_SIZE) }
         } catch (exception: IOException) {
             if (IOExceptionUtils.isClientBroken(exception)) {
-                LoggerHolder.logBusinessException(exception, "Receive artifact stream failed: ${exception.message}")
+                throw ArtifactResponseException(exception.message.orEmpty())
             } else throw exception
         }
     }

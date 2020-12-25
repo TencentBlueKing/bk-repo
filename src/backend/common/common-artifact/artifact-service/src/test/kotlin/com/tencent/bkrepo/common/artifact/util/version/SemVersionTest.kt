@@ -29,11 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.util.version
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
+import org.junit.jupiter.api.Test
+
+class SemVersionTest {
+
+    @Test
+    fun testSemVer() {
+        println(SemVersion.parse("0.0.1"))
+        println(SemVersion.parse("0.1"))
+        println(SemVersion.parse("0.1.1"))
+        println(SemVersion.parse("0"))
+        println(SemVersion.parse("1.0"))
+        println(SemVersion.parse("1.1.0"))
+        println(SemVersion.parse("1"))
+        println(SemVersion.parse("1.1-alpha-2"))
+    }
+
+    @Test
+    fun testSemVerOrdinal() {
+        println(SemVersion.parse("0.0.1").ordinal(4))
+        println(SemVersion.parse("1.0.1").ordinal(4))
+        println(SemVersion.parse("1.2.1").ordinal(4))
+        println(SemVersion.parse("1.2.1-SNAPSHOT").ordinal(4))
+    }
 }

@@ -32,42 +32,46 @@
 package com.tencent.bkrepo.common.security.http
 
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
+import com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.http.platform.PlatformAuthHandler
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.bind.annotation.ResponseBody
-import org.springframework.web.servlet.mvc.method.RequestMappingInfo
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
-import javax.annotation.PostConstruct
-import kotlin.reflect.jvm.javaMethod
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class HttpAuthSecurityConfiguration(
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>,
     private val unifiedCustomizer: ObjectProvider<HttpAuthSecurityCustomizer>,
-    private val requestMappingHandlerMapping: RequestMappingHandlerMapping,
     private val authenticationManager: AuthenticationManager,
     private val jwtAuthProperties: JwtAuthProperties
 ) {
 
-    @PostConstruct
-    fun init() {
-        httpAuthSecurity.orderedStream().forEach { httpAuthSecurity ->
-            configHttpAuthSecurity(httpAuthSecurity)
-            registerLoginHandler(httpAuthSecurity)
+    @Bean
+    fun httpAuthWebMvcConfigurer() = object : WebMvcConfigurer {
+        override fun addInterceptors(registry: InterceptorRegistry) {
+            httpAuthSecurity.stream().forEach {
+                configHttpAuthSecurity(it)
+                val httpAuthInterceptor = HttpAuthInterceptor(it)
+                registry.addInterceptor(httpAuthInterceptor)
+                    .addPathPatterns(it.getIncludedPatterns())
+                    .excludePathPatterns(it.getExcludedPatterns())
+            }
         }
     }
 
     private fun configHttpAuthSecurity(httpAuthSecurity: HttpAuthSecurity) {
         httpAuthSecurity.authenticationManager = authenticationManager
         httpAuthSecurity.jwtAuthProperties = jwtAuthProperties
-        unifiedCustomizer.ifAvailable?.let { httpAuthSecurity.addCustomizer(it) }
+        unifiedCustomizer.stream().forEach {
+            it.customize(httpAuthSecurity)
+        }
         httpAuthSecurity.customizers.forEach {
             it.customize(httpAuthSecurity)
         }
@@ -81,30 +85,5 @@ class HttpAuthSecurityConfiguration(
         if (httpAuthSecurity.jwtAuthEnabled) {
             httpAuthSecurity.addHttpAuthHandler(JwtAuthHandler(jwtAuthProperties))
         }
-    }
-
-    private fun registerLoginHandler(httpAuthSecurity: HttpAuthSecurity) {
-        httpAuthSecurity.authHandlerList.forEach { handler ->
-            handler.getLoginEndpoint()?.let {
-                val loginEndpoint = httpAuthSecurity.formatEndPoint(it)
-                registerLoginEndpoint(loginEndpoint)
-            }
-        }
-    }
-
-    private fun registerLoginEndpoint(endpoint: String) {
-        val mappingInfo = RequestMappingInfo.paths(endpoint).build()
-        requestMappingHandlerMapping.registerMapping(mappingInfo, this, this::anonymous.javaMethod!!)
-        logger.info("Registering login handler[$endpoint].")
-    }
-
-    /**
-     * a trick method for registering request mapping dynamiclly in spring interceptor
-     */
-    @ResponseBody
-    private fun anonymous() = Unit
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(HttpAuthSecurityConfiguration::class.java)
     }
 }

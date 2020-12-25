@@ -42,6 +42,7 @@ import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.io.IOException
 
@@ -52,6 +53,7 @@ class WebHookService {
 
     private val jsonMediaType = MediaType.parse(MediaTypes.APPLICATION_JSON)
 
+    @Async
     fun hook(context: ArtifactContext, type: ArtifactEventType) {
         // CompositeConfiguration extends LocalConfiguration
         val configuration = when (context.repositoryDetail.category) {
@@ -69,7 +71,7 @@ class WebHookService {
     private fun remoteCall(webHookSetting: WebHookSetting, requestBody: RequestBody) {
         try {
             val builder = Request.Builder().url(webHookSetting.url).post(requestBody)
-            webHookSetting.headers?.forEach { key, value -> builder.addHeader(key, value) }
+            webHookSetting.headers?.forEach { (key, value) -> builder.addHeader(key, value) }
             val request = builder.build()
             val response = httpClient.newCall(request).execute()
             assert(response.isSuccessful)

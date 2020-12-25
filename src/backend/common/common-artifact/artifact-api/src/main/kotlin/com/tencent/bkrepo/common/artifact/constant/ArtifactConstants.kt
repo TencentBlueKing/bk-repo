@@ -75,3 +75,8 @@ const val PUBLIC_PROXY_REPO_NAME = "%s-%s"
  * 私有源代理仓库名称, <RepoName>-<ChannelName>
  */
 const val PRIVATE_PROXY_REPO_NAME = "%s-%s"
+
+/**
+ * 默认storage key
+ */
+const val DEFAULT_STORAGE_KEY = "default"

@@ -29,11 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.util.version
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
+object SemVersionParser {
+
+    /**
+     * 语义化版本正则表达式
+     */
+    private const val PATTERN = "(?<major>0|[1-9]\\d*)?(?:\\.)?(?<minor>0|[1-9]\\d*)?(?:\\.)?" +
+        "(?<patch>0|[1-9]\\d*)?(?:-(?<prerelease>[\\dA-z\\-]+(?:\\.[\\dA-z\\-]+)*))?" +
+        "(?:\\+(?<buildmetadata>[\\dA-z\\-]+(?:\\.[\\dA-z\\-]+)*))?"
+
+    private val regex = Regex(PATTERN)
+
+    fun parse(input: String): SemVersion {
+        val match = regex.find(input) ?: throw IllegalArgumentException("Invalid version string [$input]")
+        val major = parseIntOrZero(match.groups["major"]?.value)
+        val minor = parseIntOrZero(match.groups["minor"]?.value)
+        val patch = parseIntOrZero(match.groups["patch"]?.value)
+        val preRelease = match.groups["prerelease"]?.value
+        val buildMetadata = match.groups["buildmetadata"]?.value
+        return SemVersion(major, minor, patch, preRelease, buildMetadata)
+    }
+
+    private fun parseIntOrZero(input: String?): Int {
+        return input?.toInt() ?: 0
+    }
 }

@@ -29,11 +29,35 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.event.listener
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
+import com.tencent.bkrepo.common.artifact.event.ArtifactRemovedEvent
+import com.tencent.bkrepo.common.artifact.event.ArtifactUpdatedEvent
+import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
+import com.tencent.bkrepo.common.artifact.webhook.WebHookService
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
+
+/**
+ * 构件WebHook事件监听器
+ */
+@Component
+class ArtifactWebHookListener(
+    private val webHookService: WebHookService
+) {
+
+    @EventListener(ArtifactUploadedEvent::class)
+    fun listen(event: ArtifactUploadedEvent) {
+        webHookService.hook(event.context, event.type)
+    }
+
+    @EventListener(ArtifactRemovedEvent::class)
+    fun listen(event: ArtifactRemovedEvent) {
+        webHookService.hook(event.context, event.type)
+    }
+
+    @EventListener(ArtifactUpdatedEvent::class)
+    fun listen(event: ArtifactUpdatedEvent) {
+        webHookService.hook(event.context, event.type)
+    }
 }

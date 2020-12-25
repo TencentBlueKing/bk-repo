@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.HumanReadable.NANOS_PER_SECOND
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 
@@ -48,11 +49,26 @@ data class Throughput(
             return "size: ${size(bytes)}, elapse: ${time(nanoTime)}, average: ${throughput(bytes, nanoTime)}"
         }
     }
+
+    fun average(): Long {
+        return (bytes.toDouble() / duration.toNanos() * NANOS_PER_SECOND).toLong()
+    }
+
+    companion object {
+        val EMPTY = Throughput(0, 0)
+    }
 }
 
-public inline fun measureThroughput(bytes: Long, block: () -> Unit): Throughput {
+inline fun measureThroughput(bytes: Long, block: () -> Unit): Throughput {
     val start = System.nanoTime()
     block()
+    val time = System.nanoTime() - start
+    return Throughput(bytes = bytes, time = time)
+}
+
+inline fun measureThroughput(block: () -> Long): Throughput {
+    val start = System.nanoTime()
+    val bytes = block()
     val time = System.nanoTime() - start
     return Throughput(bytes = bytes, time = time)
 }

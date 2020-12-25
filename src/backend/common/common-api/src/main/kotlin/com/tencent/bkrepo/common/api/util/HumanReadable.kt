@@ -36,7 +36,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object HumanReadable {
-    private const val NANOS_PER_SECOND = 1000_000_000L
+    const val NANOS_PER_SECOND = 1000_000_000L
     private const val BYTES_PER_KB = 1024.0
     private val sizeUnits = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
     private val sizeFormat = DecimalFormat("#,##0.#").apply { maximumFractionDigits = 2 }

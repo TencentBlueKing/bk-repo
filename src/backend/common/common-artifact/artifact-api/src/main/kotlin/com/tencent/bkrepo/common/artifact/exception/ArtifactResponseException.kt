@@ -29,11 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.exception
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
-}
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+
+/**
+ * 构件响应异常
+ */
+open class ArtifactResponseException(
+    message: String
+) : ArtifactException(HttpStatus.BAD_REQUEST, "Response artifact stream failed: $message")

@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component
 /**
  * 存储Manager
  *
- * 虽然[StorageService]提供了构件存储服务，但我们保存一个文件节点需要两步操作:
+ * 虽然[StorageService]提供了构件存储服务，但保存一个文件节点需要两步操作:
  *   1. [StorageService]保存文件数据
  *   2. [NodeClient]微服务调用创建文件节点
  * 这样会存在几个问题:
@@ -52,6 +52,7 @@ import org.springframework.stereotype.Component
  *
  * 所以提供StorageManager，简化依赖源的操作并减少错误率
  */
+@Suppress("TooGenericExceptionCaught")
 @Component
 class StorageManager(
     private val storageService: StorageService,
@@ -72,12 +73,10 @@ class StorageManager(
             return nodeClient.createNode(request).data!!
         } catch (exception: RuntimeException) {
             // 当文件有创建，则删除文件
-            if (affectedCount == 1) {
-                try {
-                    storageService.delete(request.sha256!!, storageCredentials)
-                } catch (exception: RuntimeException) {
-                    logger.error("Failed to delete new created file[${request.sha256}]", exception)
-                }
+            if (affectedCount == 1) try {
+                storageService.delete(request.sha256!!, storageCredentials)
+            } catch (exception: RuntimeException) {
+                logger.error("Failed to delete new created file[${request.sha256}]", exception)
             }
             // 异常往上抛
             throw exception

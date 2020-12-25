@@ -84,10 +84,11 @@ class ListViewServiceImpl(
                 HeaderItem("Name"),
                 HeaderItem("Created by"),
                 HeaderItem("Last modified"),
-                HeaderItem("Size")
+                HeaderItem("Size"),
+                HeaderItem("Sha256")
             )
             val itemList = nodeList.map { NodeListViewItem.from(it) }.sorted()
-            val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size)) }
+            val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256)) }
             writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
         } else {
             val context = ArtifactDownloadContext(useDisposition = false)
@@ -105,10 +106,11 @@ class ListViewServiceImpl(
             HeaderItem("Last modified"),
             HeaderItem("Category"),
             HeaderItem("Type"),
-            HeaderItem("Public")
+            HeaderItem("Public"),
+            HeaderItem("Storage")
         )
         val rowList = itemList.sorted().map {
-            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.category, it.type, it.public))
+            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.category, it.type, it.public, it.storage))
         }
         val listViewObject = ListViewObject(title, headerList, rowList, FOOTER, true)
         writePageContent(listViewObject)

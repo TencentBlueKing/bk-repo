@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.artifact
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactBeanRegistrar
-import com.tencent.bkrepo.common.artifact.event.ArtifactEventListener
+import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
@@ -43,7 +43,6 @@ import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
-import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
@@ -63,6 +62,7 @@ import org.springframework.context.annotation.PropertySource
     ArtifactHealthConfiguration::class,
     ArtifactContextHolder::class,
     ArtifactPermissionCheckHandler::class,
+    ArtifactEventConfiguration::class,
     StorageManager::class
 )
 class ArtifactAutoConfiguration {
@@ -76,10 +76,4 @@ class ArtifactAutoConfiguration {
     ): CompositeRepository {
         return CompositeRepository(localRepository, remoteRepository, proxyChannelClient)
     }
-
-    @Bean
-    fun artifactEventListener(webHookService: WebHookService) = ArtifactEventListener(webHookService)
-
-    @Bean
-    fun webHookService() = WebHookService()
 }

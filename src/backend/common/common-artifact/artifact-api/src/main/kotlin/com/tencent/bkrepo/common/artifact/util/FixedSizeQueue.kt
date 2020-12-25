@@ -29,11 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.util
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
+import java.util.LinkedList
+
+/**
+ * 基于[LinkedList]实现的固定容量队列
+ * 当容量超过限制，会移除最先加入的元素
+ */
+class FixedSizeQueue<E>(private val limit: Int) : LinkedList<E>() {
+
+    init {
+        require(limit > 0) { "limit must be greater zero." }
+    }
+
+    override fun add(element: E): Boolean {
+        super.add(element)
+        while (size > limit) {
+            super.remove()
+        }
+        return true
+    }
+
+    companion object {
+        /**
+         *
+         * Create a new [FixedSizeQueue] with the specified maximum size.
+         *
+         * @param maxSize The maximum size, i.e. the maximum number of items to keep. Must be greater zero.
+         * @return The [FixedSizeQueue].
+         */
+        fun <E> create(maxSize: Int): FixedSizeQueue<E> {
+            return FixedSizeQueue(maxSize)
+        }
+    }
 }

@@ -29,11 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.event.listener
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
+import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
+import org.slf4j.LoggerFactory
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
+
+/**
+ * 构件存储事件监听器
+ */
+@Component
+class ArtifactStorageListener {
+
+    @EventListener(StoreFailureEvent::class)
+    fun listen(event: StoreFailureEvent) {
+        event.apply {
+            logger.error("[StoreFailureEvent]Failed to store file[$filename] on [$storageCredentials].", exception)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ArtifactStorageListener::class.java)
+    }
 }

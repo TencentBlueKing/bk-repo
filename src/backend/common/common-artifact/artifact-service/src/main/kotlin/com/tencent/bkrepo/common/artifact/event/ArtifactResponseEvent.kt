@@ -31,9 +31,15 @@
 
 package com.tencent.bkrepo.common.artifact.event
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
-}
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.monitor.Throughput
+
+/**
+ * 构件响应事件
+ */
+data class ArtifactResponseEvent(
+    val artifactResource: ArtifactResource,
+    val throughput: Throughput,
+    val storageCredentials: StorageCredentials?
+)

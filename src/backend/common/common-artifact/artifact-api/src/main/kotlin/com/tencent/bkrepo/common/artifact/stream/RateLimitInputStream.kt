@@ -9,10 +9,10 @@ import java.io.InputStream
  * @param rate 限制每秒读取的字节数
  */
 @Suppress("UnstableApiUsage")
-class RateLimitInputStream (
+class RateLimitInputStream(
     delegate: InputStream,
     rate: Long
-): DelegateInputStream(delegate) {
+) : DelegateInputStream(delegate) {
 
     private val rateLimiter = rate.takeIf { it > 0 }?.let { RateLimiter.create(rate.toDouble()) }
 

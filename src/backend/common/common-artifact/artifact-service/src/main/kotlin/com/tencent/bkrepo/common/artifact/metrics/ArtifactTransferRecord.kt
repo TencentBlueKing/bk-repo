@@ -29,43 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.artifact.webhook.WebHookService
-import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
-import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
+import org.influxdb.annotation.Measurement
+import java.time.LocalDateTime
 
-/**
- * 构件相关事件监听器
- */
-class ArtifactEventListener(
-    private val webHookService: WebHookService
+@Measurement(name = "artifact_transfer_record", database = "bkrepo")
+data class ArtifactTransferRecord(
+    val type: String,
+    val startTime: LocalDateTime,
+    val endTime: LocalDateTime,
+    val elapsed: Long,
+    val bytes: Long,
+    val average: Long,
+    val storage: String,
+    val sha256: String
 ) {
-
-    @EventListener(StoreFailureEvent::class)
-    fun listen(event: StoreFailureEvent) {
-        event.apply {
-            logger.error("[StoreFailureEvent]failed to store file[$filename] on [$storageCredentials].", exception)
-        }
-    }
-
-    @EventListener(ArtifactUploadedEvent::class)
-    fun listen(event: ArtifactUploadedEvent) {
-        webHookService.hook(event.context, event.type)
-    }
-
-    @EventListener(ArtifactRemovedEvent::class)
-    fun listen(event: ArtifactRemovedEvent) {
-        webHookService.hook(event.context, event.type)
-    }
-
-    @EventListener(ArtifactUpdatedEvent::class)
-    fun listen(event: ArtifactUpdatedEvent) {
-        webHookService.hook(event.context, event.type)
-    }
-
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactEventListener::class.java)
+        const val RECEIVE = "RECEIVE"
+        const val RESPONSE = "RESPONSE"
     }
 }

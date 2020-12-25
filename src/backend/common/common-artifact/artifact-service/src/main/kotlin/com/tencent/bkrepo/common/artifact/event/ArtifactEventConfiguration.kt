@@ -31,9 +31,18 @@
 
 package com.tencent.bkrepo.common.artifact.event
 
-enum class ArtifactEventType {
-    UPLOADED,
-    UPDATED,
-    REMOVED,
-    DOWNLOADED
-}
+import com.tencent.bkrepo.common.artifact.event.listener.ArtifactStorageListener
+import com.tencent.bkrepo.common.artifact.event.listener.ArtifactTransferListener
+import com.tencent.bkrepo.common.artifact.event.listener.ArtifactWebHookListener
+import com.tencent.bkrepo.common.artifact.webhook.WebHookService
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
+
+@Configuration(proxyBeanMethods = false)
+@Import(
+    ArtifactWebHookListener::class,
+    ArtifactTransferListener::class,
+    ArtifactStorageListener::class,
+    WebHookService::class
+)
+class ArtifactEventConfiguration
