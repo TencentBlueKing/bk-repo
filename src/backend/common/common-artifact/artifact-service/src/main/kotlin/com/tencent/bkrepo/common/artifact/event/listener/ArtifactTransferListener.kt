@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.artifact.event.listener
 
-import com.tencent.bkrepo.common.artifact.constant.DEFAULT_KEY
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
