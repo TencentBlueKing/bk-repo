@@ -50,4 +50,9 @@ interface StreamReadListener {
      * 数据接收完成通知
      */
     fun finish()
+
+    /**
+     * 流关闭通知
+     */
+    fun close()
 }

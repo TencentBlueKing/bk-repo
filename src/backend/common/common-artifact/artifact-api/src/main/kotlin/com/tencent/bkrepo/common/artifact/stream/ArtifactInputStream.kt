@@ -76,15 +76,18 @@ class ArtifactInputStream(
     }
 
     override fun close() {
-        notifyFinish()
         super.close()
+        listenerList.forEach { it.close() }
     }
 
     /**
      * 添加流读取监听器[listener]
      */
     fun addListener(listener: StreamReadListener) {
-        require(!range.isPartialContent()) { "ArtifactInputStream is partial content, maybe cause data inconsistent" }
+        if (range.isPartialContent()) {
+            listener.close()
+            throw IllegalArgumentException("ArtifactInputStream is partial content, maybe cause data inconsistent")
+        }
         listenerList.add(listener)
     }
 
