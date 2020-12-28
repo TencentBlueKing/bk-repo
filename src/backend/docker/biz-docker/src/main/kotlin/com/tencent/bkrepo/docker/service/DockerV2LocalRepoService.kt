@@ -187,7 +187,7 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun getManifest(context: RequestContext, reference: String): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("get manifest params [$context,$reference]")
-        // packageRepo.addDownloadStatic(context, reference)
+        packageRepo.addDownloadStatic(context, reference)
         return try {
             val digest = DockerDigest(reference)
             manifestProcess.getManifestByDigest(context, digest, httpHeaders)
@@ -295,20 +295,20 @@ class DockerV2LocalRepoService @Autowired constructor(
         with(context) {
             val request =
                 PackageVersionCreateRequest(
-                    projectId,
-                    repoName,
-                    artifactName,
-                    PackageKeys.ofDocker(artifactName),
-                    PackageType.DOCKER,
-                    null,
-                    tag,
-                    uploadResult.second,
-                    manifestPath,
-                    null,
-                    null,
-                    null,
-                    true,
-                    artifactRepo.userId
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageName = artifactName,
+                    packageKey = PackageKeys.ofDocker(artifactName),
+                    packageType = PackageType.DOCKER,
+                    packageDescription = null,
+                    versionName = tag,
+                    size = uploadResult.second,
+                    manifestPath = manifestPath,
+                    artifactPath = null,
+                    stageTag = null,
+                    metadata = null,
+                    overwrite = true,
+                    createdBy = artifactRepo.userId
                 )
             packageRepo.createVersion(request)
         }
