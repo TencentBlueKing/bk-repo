@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
@@ -49,6 +50,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class HttpAuthSecurityConfiguration(
     private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>,
     private val unifiedCustomizer: ObjectProvider<HttpAuthSecurityCustomizer>,
+    @Lazy
     private val authenticationManager: AuthenticationManager,
     private val jwtAuthProperties: JwtAuthProperties
 ) {

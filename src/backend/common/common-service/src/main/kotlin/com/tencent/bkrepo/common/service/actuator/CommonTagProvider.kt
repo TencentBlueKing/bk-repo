@@ -29,10 +29,15 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":common:common-api"))
-    implementation(project(":common:common-artifact:artifact-api"))
-    compileOnly("javax.servlet:javax.servlet-api")
-    compileOnly("org.springframework:spring-web")
-}
+package com.tencent.bkrepo.common.service.actuator
 
+/**
+ * 提供metrics的公共tag
+ */
+interface CommonTagProvider {
+
+    /**
+     * 返回公共tag
+     */
+    fun provide(): Map<String, String>
+}

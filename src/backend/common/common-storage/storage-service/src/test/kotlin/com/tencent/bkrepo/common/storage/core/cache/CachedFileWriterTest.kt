@@ -111,7 +111,7 @@ internal class CachedFileWriterTest {
                     out.write(buffer, 0, bytes)
                     bytesCopied += bytes
                     bytes = it.read(buffer)
-                    if (bytesCopied > size/2) {
+                    if (bytesCopied > size / 2) {
                         throw IOException()
                     }
                 }
@@ -122,17 +122,16 @@ internal class CachedFileWriterTest {
         Assertions.assertFalse { Files.exists(cachePath.resolve(filename)) }
     }
 
-
     @Test
     fun `test part range`() {
         Assertions.assertFalse { Files.exists(cachePath.resolve(filename)) }
 
         val size = 1024 * 1024 * 1L
         val randomString = StringPool.randomString(size.toInt())
-        val range = Range(0, size/2, size)
+        val range = Range(0, size / 2, size)
         val inputStream = randomString.byteInputStream().artifactStream(range)
         val listener = CachedFileWriter(cachePath, filename, tempPath)
-        assertThrows<IllegalArgumentException> { inputStream.addListener(listener)}
+        assertThrows<IllegalArgumentException> { inputStream.addListener(listener) }
     }
 
     @Test

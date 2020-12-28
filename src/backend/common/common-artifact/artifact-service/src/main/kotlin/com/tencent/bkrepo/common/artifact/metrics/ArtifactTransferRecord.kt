@@ -31,18 +31,27 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import org.influxdb.annotation.Column
 import org.influxdb.annotation.Measurement
-import java.time.LocalDateTime
+import org.influxdb.annotation.TimeColumn
+import java.time.Instant
 
-@Measurement(name = "artifact_transfer_record", database = "bkrepo")
+@Measurement(name = "artifact_transfer_record")
 data class ArtifactTransferRecord(
+    @TimeColumn
+    @Column(name = "time")
+    val time: Instant,
+    @Column(name = "type", tag = true)
     val type: String,
-    val startTime: LocalDateTime,
-    val endTime: LocalDateTime,
-    val elapsed: Long,
-    val bytes: Long,
-    val average: Long,
+    @Column(name = "storage", tag = true)
     val storage: String,
+    @Column(name = "elapsed")
+    val elapsed: Long,
+    @Column(name = "bytes")
+    val bytes: Long,
+    @Column(name = "average")
+    val average: Long,
+    @Column(name = "sha256")
     val sha256: String
 ) {
     companion object {

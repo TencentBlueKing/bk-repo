@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.artifact.config.ArtifactBeanRegistrar
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -58,11 +58,11 @@ import org.springframework.context.annotation.PropertySource
     ArtifactBeanRegistrar::class,
     ResolverConfiguration::class,
     ExceptionConfiguration::class,
-    ArtifactMetrics::class,
     ArtifactHealthConfiguration::class,
     ArtifactContextHolder::class,
     ArtifactPermissionCheckHandler::class,
     ArtifactEventConfiguration::class,
+    ArtifactMetricsConfiguration::class,
     StorageManager::class
 )
 class ArtifactAutoConfiguration {

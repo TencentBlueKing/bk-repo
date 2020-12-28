@@ -36,19 +36,22 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
+import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.util.FixedSizeQueue
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * 构件传输事件监听器
  */
 @Component
 class ArtifactTransferListener(
-    private val artifactMetrics: ArtifactMetrics
+    private val artifactMetrics: ArtifactMetrics,
+    private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
 ) {
 
     private var queue = FixedSizeQueue.create<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -60,11 +63,9 @@ class ArtifactTransferListener(
             artifactMetrics.uploadedConsumeTimer.record(throughput.duration)
             logger.info("Receive artifact file, $throughput.")
 
-            val now = LocalDateTime.now()
             val record = ArtifactTransferRecord(
+                time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
-                endTime = now,
-                startTime = now.minusNanos(throughput.time),
                 elapsed = throughput.time,
                 bytes = throughput.bytes,
                 average = throughput.average(),
@@ -82,11 +83,9 @@ class ArtifactTransferListener(
             artifactMetrics.downloadedConsumeTimer.record(throughput.duration)
             logger.info("Response artifact file, $throughput.")
 
-            val now = LocalDateTime.now()
             val record = ArtifactTransferRecord(
+                time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
-                endTime = now,
-                startTime = now.minusNanos(throughput.time),
                 elapsed = throughput.time,
                 bytes = throughput.bytes,
                 average = throughput.average(),
@@ -97,11 +96,11 @@ class ArtifactTransferListener(
         }
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY)
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun export() {
         val current = queue
         queue = FixedSizeQueue.create(QUEUE_LIMIT)
-        logger.debug("Export [${current.size}] transfer records to influxdb")
+        influxMetricsExporter.ifAvailable?.export(current)
     }
 
     companion object {

@@ -29,10 +29,26 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":common:common-api"))
-    implementation(project(":common:common-artifact:artifact-api"))
-    compileOnly("javax.servlet:javax.servlet-api")
-    compileOnly("org.springframework:spring-web")
-}
+package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
+
+@Configuration
+@Import(ArtifactMetrics::class)
+class ArtifactMetricsConfiguration {
+
+    @Bean
+    @ConditionalOnBean(InfluxProperties::class)
+    fun influxMetricsExporter(
+        influxProperties: InfluxProperties,
+        commonTagProvider: ObjectProvider<CommonTagProvider>
+    ): InfluxMetricsExporter {
+        return InfluxMetricsExporter(influxProperties, commonTagProvider)
+    }
+}

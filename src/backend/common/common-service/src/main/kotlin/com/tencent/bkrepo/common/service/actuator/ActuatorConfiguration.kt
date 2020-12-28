@@ -43,10 +43,21 @@ import org.springframework.context.annotation.Configuration
 class ActuatorConfiguration {
 
     @Bean
-    fun metricsCommonTags(registration: Registration): MeterRegistryCustomizer<MeterRegistry> {
-        return MeterRegistryCustomizer { registry: MeterRegistry ->
-            registry.config().commonTags("service", registration.serviceId)
-                .commonTags("instance", "${registration.host}-${registration.instanceId}")
+    fun metricsCommonTags(commonTagProvider: CommonTagProvider): MeterRegistryCustomizer<MeterRegistry> {
+        return MeterRegistryCustomizer { registry ->
+            commonTagProvider.provide().forEach {
+                registry.config().commonTags(it.key, it.value)
+            }
+        }
+    }
+
+    @Bean
+    fun commonTagProvider(registration: Registration) = object : CommonTagProvider {
+        override fun provide(): Map<String, String> {
+            return mapOf(
+                "service" to registration.serviceId,
+                "instance" to "${registration.host}-${registration.instanceId}"
+            )
         }
     }
 }
