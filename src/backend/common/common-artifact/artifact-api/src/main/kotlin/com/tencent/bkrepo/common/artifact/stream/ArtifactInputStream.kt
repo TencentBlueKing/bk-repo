@@ -14,7 +14,7 @@ class ArtifactInputStream(
             if (this >= 0) {
                 listenerList.forEach { it.data(this) }
             } else {
-                notifyClose()
+                notifyFinish()
             }
         }
     }
@@ -24,7 +24,7 @@ class ArtifactInputStream(
             if (this >= 0) {
                 listenerList.forEach { it.data(b, this) }
             } else {
-                notifyClose()
+                notifyFinish()
             }
         }
     }
@@ -34,14 +34,14 @@ class ArtifactInputStream(
             if (this >= 0) {
                 listenerList.forEach { it.data(b, this) }
             } else {
-                notifyClose()
+                notifyFinish()
             }
         }
     }
 
     override fun close() {
-        listenerList.forEach { it.close() }
         delegate.close()
+        listenerList.forEach { it.close() }
     }
 
     override fun skip(n: Long) = delegate.skip(n)
@@ -50,13 +50,22 @@ class ArtifactInputStream(
     override fun mark(readlimit: Int) = delegate.mark(readlimit)
     override fun markSupported(): Boolean = delegate.markSupported()
 
+    /**
+     * 添加流读取监听器[listener]
+     */
     fun addListener(listener: StreamReadListener) {
-        require(!range.isPartialContent()) { "ArtifactInputStream is partial content, may be result in data inconsistent" }
+        if (range.isPartialContent()) {
+            listener.close()
+            throw IllegalArgumentException("ArtifactInputStream is partial content, maybe cause data inconsistent")
+        }
         listenerList.add(listener)
     }
 
-    private fun notifyClose() {
-        listenerList.forEach { it.close() }
+    /**
+     * 通知各个listener流读取完成
+     */
+    private fun notifyFinish() {
+        listenerList.forEach { it.finish() }
     }
 }
 
@@ -67,5 +76,14 @@ fun InputStream.toArtifactStream(range: Range): ArtifactInputStream {
 interface StreamReadListener {
     fun data(i: Int)
     fun data(buffer: ByteArray, length: Int)
+
+    /**
+     * 流读取完成
+     */
+    fun finish()
+
+    /**
+     * 流关闭
+     */
     fun close()
 }
