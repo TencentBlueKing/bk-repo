@@ -51,6 +51,7 @@ class InfluxMetricsExporter(
     private val influxDB: InfluxDB
 
     init {
+        logger.info("Initializing InfluxMetricsExporter.")
         with(influxProperties) {
             val builder = HttpClientBuilderFactory.create()
             influxDB = InfluxDBImpl(uri, userName.orEmpty(), password.orEmpty(), builder)

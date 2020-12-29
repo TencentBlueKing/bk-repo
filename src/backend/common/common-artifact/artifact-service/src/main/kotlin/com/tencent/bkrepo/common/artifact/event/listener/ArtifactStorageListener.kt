@@ -39,7 +39,6 @@ import org.springframework.stereotype.Component
 /**
  * 构件存储事件监听器
  */
-@Component
 class ArtifactStorageListener {
 
     @EventListener(StoreFailureEvent::class)

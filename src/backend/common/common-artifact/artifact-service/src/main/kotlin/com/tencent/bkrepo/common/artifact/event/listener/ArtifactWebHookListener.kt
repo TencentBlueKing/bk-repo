@@ -41,7 +41,6 @@ import org.springframework.stereotype.Component
 /**
  * 构件WebHook事件监听器
  */
-@Component
 class ArtifactWebHookListener(
     private val webHookService: WebHookService
 ) {

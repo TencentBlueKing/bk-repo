@@ -48,7 +48,6 @@ import java.time.Instant
 /**
  * 构件传输事件监听器
  */
-@Component
 class ArtifactTransferListener(
     private val artifactMetrics: ArtifactMetrics,
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>

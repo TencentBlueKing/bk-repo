@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.repository.core
+package com.tencent.bkrepo.common.artifact.repository.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -38,7 +38,6 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
 /**
  * 存储Manager
@@ -53,7 +52,6 @@ import org.springframework.stereotype.Component
  * 所以提供StorageManager，简化依赖源的操作并减少错误率
  */
 @Suppress("TooGenericExceptionCaught")
-@Component
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient

@@ -29,13 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.health
+package com.tencent.bkrepo.common.artifact.exception
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 
 @Configuration
 @Import(
-    StorageHealthIndicator::class
+    DefaultArtifactExceptionHandler::class,
+    ArtifactExceptionResponseAdvice::class
 )
-class ArtifactHealthConfiguration
+class ArtifactExceptionConfiguration

@@ -52,10 +52,13 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
+import org.springframework.stereotype.Service
 
 /**
  * 组合仓库抽象逻辑
  */
+@Service
 class CompositeRepository(
     private val localRepository: LocalRepository,
     private val remoteRepository: RemoteRepository,

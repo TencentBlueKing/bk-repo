@@ -29,14 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.exception
+package com.tencent.bkrepo.common.artifact.metrics
 
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import org.springframework.boot.actuate.health.AbstractHealthIndicator
+import org.springframework.boot.actuate.health.Health
+import org.springframework.stereotype.Component
 
-@Configuration
-@Import(
-    DefaultArtifactExceptionHandler::class,
-    ArtifactExceptionResponseAdvice::class
-)
-class ExceptionConfiguration
+@Component("storageHealthIndicator")
+class StorageHealthIndicator(
+    private val storageHealthMonitor: StorageHealthMonitor
+) : AbstractHealthIndicator() {
+    override fun doHealthCheck(builder: Health.Builder) {
+        if (storageHealthMonitor.health.get()) {
+            builder.up()
+        } else {
+            builder.down()
+        }
+    }
+}

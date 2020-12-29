@@ -31,49 +31,27 @@
 
 package com.tencent.bkrepo.common.artifact
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactBeanRegistrar
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
-import com.tencent.bkrepo.common.artifact.exception.ExceptionConfiguration
-import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
+import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
-import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
-import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.core.StorageManager
-import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.resolve.ResolverConfiguration
-import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
+import com.tencent.bkrepo.common.artifact.resolve.ArtifactResolverConfiguration
+import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxMetricsExportAutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.PropertySource
 
 @Configuration
+@AutoConfigureAfter(InfluxMetricsExportAutoConfiguration::class)
 @ConditionalOnWebApplication
 @PropertySource("classpath:common-artifact.properties")
 @Import(
-    ArtifactBeanRegistrar::class,
-    ResolverConfiguration::class,
-    ExceptionConfiguration::class,
-    ArtifactHealthConfiguration::class,
-    ArtifactContextHolder::class,
-    ArtifactPermissionCheckHandler::class,
+    ArtifactContextConfiguration::class,
     ArtifactEventConfiguration::class,
+    ArtifactExceptionConfiguration::class,
     ArtifactMetricsConfiguration::class,
-    StorageManager::class
+    ArtifactResolverConfiguration::class
 )
-class ArtifactAutoConfiguration {
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun compositeRepository(
-        localRepository: LocalRepository,
-        remoteRepository: RemoteRepository,
-        proxyChannelClient: ProxyChannelClient
-    ): CompositeRepository {
-        return CompositeRepository(localRepository, remoteRepository, proxyChannelClient)
-    }
-}
+class ArtifactAutoConfiguration

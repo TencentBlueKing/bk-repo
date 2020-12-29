@@ -43,18 +43,16 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
-import org.springframework.stereotype.Service
 import java.io.IOException
 
-@Service
-class WebHookService {
+open class WebHookService {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
 
     private val jsonMediaType = MediaType.parse(MediaTypes.APPLICATION_JSON)
 
     @Async
-    fun hook(context: ArtifactContext, type: ArtifactEventType) {
+    open fun hook(context: ArtifactContext, type: ArtifactEventType) {
         // CompositeConfiguration extends LocalConfiguration
         val configuration = when (context.repositoryDetail.category) {
             RepositoryCategory.LOCAL -> context.getLocalConfiguration()

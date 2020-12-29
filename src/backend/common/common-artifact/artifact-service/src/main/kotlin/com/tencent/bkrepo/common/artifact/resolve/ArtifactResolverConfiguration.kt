@@ -48,7 +48,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 @Import(ArtifactFileFactory::class)
-class ResolverConfiguration {
+class ArtifactResolverConfiguration {
 
     @Bean
     fun artifactArgumentResolveConfigurer(): WebMvcConfigurer {
