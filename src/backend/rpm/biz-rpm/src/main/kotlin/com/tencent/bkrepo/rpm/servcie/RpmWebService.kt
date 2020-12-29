@@ -2,11 +2,14 @@ package com.tencent.bkrepo.rpm.servcie
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.RepositoryHolder
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
+import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import org.springframework.stereotype.Service
 
 @Service
@@ -17,5 +20,12 @@ class RpmWebService {
         val context = ArtifactRemoveContext()
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         repository.remove(context)
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun extList(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo, page: Int, size: Int): Page<String> {
+        val context = ArtifactListContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        return (repository as RpmLocalRepository).extList(context, page, size)
     }
 }
