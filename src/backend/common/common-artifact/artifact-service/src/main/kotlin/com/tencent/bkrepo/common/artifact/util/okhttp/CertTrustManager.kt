@@ -41,6 +41,9 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
+/**
+ * SSL证书管理器
+ */
 object CertTrustManager {
 
     private const val TLS = "TLS"

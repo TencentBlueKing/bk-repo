@@ -70,8 +70,7 @@ fun String.encode(): String {
 /**
  * 重试函数，times表示重试次数，加上第一次执行，总共会执行times+1次，
  */
-// TooGenericExceptionCaught: 无法预知block具体异常类型
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught") // 无法预知block具体异常类型
 inline fun <R> retry(times: Int, delayInSeconds: Long = 10, block: (Int) -> R): R {
     var retries = 0
     while (true) {

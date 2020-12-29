@@ -29,29 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.version
+package com.tencent.bkrepo.common.artifact.metrics
 
-import org.junit.jupiter.api.Test
+import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
-class SemVerTest {
+@Configuration
+@Import(
+    ArtifactMetrics::class,
+    StorageHealthIndicator::class
+)
+class ArtifactMetricsConfiguration {
 
-    @Test
-    fun testSemVer() {
-        println(SemVer.parse("0.0.1"))
-        println(SemVer.parse("0.1"))
-        println(SemVer.parse("0.1.1"))
-        println(SemVer.parse("0"))
-        println(SemVer.parse("1.0"))
-        println(SemVer.parse("1.1.0"))
-        println(SemVer.parse("1"))
-        println(SemVer.parse("1.1-alpha-2"))
-    }
-
-    @Test
-    fun testSemVerOrdinal() {
-        println(SemVer.parse("0.0.1").ordinal(4))
-        println(SemVer.parse("1.0.1").ordinal(4))
-        println(SemVer.parse("1.2.1").ordinal(4))
-        println(SemVer.parse("1.2.1-SNAPSHOT").ordinal(4))
+    @Bean
+    @ConditionalOnBean(InfluxProperties::class)
+    fun influxMetricsExporter(
+        influxProperties: InfluxProperties,
+        commonTagProvider: ObjectProvider<CommonTagProvider>
+    ): InfluxMetricsExporter {
+        return InfluxMetricsExporter(influxProperties, commonTagProvider)
     }
 }

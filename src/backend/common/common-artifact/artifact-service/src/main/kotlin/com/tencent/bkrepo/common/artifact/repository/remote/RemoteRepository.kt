@@ -45,7 +45,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.toArtifactStream
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
@@ -163,7 +163,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val artifactFile = createTempFile(response.body()!!)
         val node = cacheArtifactFile(context, artifactFile)
         val size = artifactFile.getSize()
-        val artifactStream = artifactFile.getInputStream().toArtifactStream(Range.full(size))
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
     }
 

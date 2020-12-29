@@ -36,6 +36,10 @@ import okhttp3.Credentials
 import okhttp3.Interceptor
 import okhttp3.Response
 
+/**
+ * OKHTTP Basic Auth认证拦截器
+ * 向请求头添加header: "Authorization: Basic Base64($username:$password)"
+ */
 class BasicAuthInterceptor(user: String, password: String) : Interceptor {
 
     private val credentials = Credentials.basic(user, password)

@@ -37,6 +37,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
@@ -62,7 +63,7 @@ object CosHttpClient {
                 if (it.isSuccessful) {
                     return handler.handle(it)
                 } else {
-                    if (it.code() == 404) {
+                    if (it.code() == HTTP_NOT_FOUND) {
                         val handle404Result = handler.handle404()
                         if (handle404Result != null) {
                             return handle404Result

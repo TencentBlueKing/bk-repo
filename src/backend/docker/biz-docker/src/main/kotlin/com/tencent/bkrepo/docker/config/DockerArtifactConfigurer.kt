@@ -62,6 +62,7 @@ class DockerArtifactConfigurer : ArtifactConfigurerSupport() {
             val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
             val dockerLoginHandler = DockerBasicAuthLoginHandler(authenticationManager, jwtAuthProperties)
             httpAuthSecurity.addHttpAuthHandler(dockerLoginHandler)
+                .withPrefix("/docker")
                 .excludePattern("/v2/_catalog")
                 .excludePattern("/v2/*/*/*/tags/list")
         }

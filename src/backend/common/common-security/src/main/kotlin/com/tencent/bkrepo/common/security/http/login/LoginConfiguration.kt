@@ -32,24 +32,33 @@
 package com.tencent.bkrepo.common.security.http.login
 
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.context.annotation.Configuration
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 import javax.annotation.PostConstruct
 import kotlin.reflect.jvm.javaMethod
 
-// @Configuration
+@Configuration(proxyBeanMethods = false)
 class LoginConfiguration(
-    private val objectProvider: ObjectProvider<HttpAuthSecurity>,
+    private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>,
     private val requestMappingHandlerMapping: RequestMappingHandlerMapping
 ) {
 
     @PostConstruct
     fun init() {
-        objectProvider.orderedStream().forEach { HttpAuthSecurity ->
-            HttpAuthSecurity.authHandlerList.forEach { handler ->
-                handler.getLoginEndpoint()?.let { registerLoginEndpoint(it) }
+        httpAuthSecurity.stream().forEach {
+            registerLoginHandler(it)
+        }
+    }
+
+    private fun registerLoginHandler(httpAuthSecurity: HttpAuthSecurity) {
+        httpAuthSecurity.authHandlerList.forEach { handler ->
+            handler.getLoginEndpoint()?.let {
+                val loginEndpoint = httpAuthSecurity.formatEndPoint(it)
+                registerLoginEndpoint(loginEndpoint)
             }
         }
     }
@@ -57,6 +66,7 @@ class LoginConfiguration(
     private fun registerLoginEndpoint(endpoint: String) {
         val mappingInfo = RequestMappingInfo.paths(endpoint).build()
         requestMappingHandlerMapping.registerMapping(mappingInfo, this, this::anonymous.javaMethod!!)
+        logger.info("Registering login handler[$endpoint].")
     }
 
     /**
@@ -64,4 +74,8 @@ class LoginConfiguration(
      */
     @ResponseBody
     private fun anonymous() = Unit
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(LoginConfiguration::class.java)
+    }
 }

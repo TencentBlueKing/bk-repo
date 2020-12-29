@@ -54,7 +54,7 @@ class ArtifactFileMethodArgumentResolver : HandlerMethodArgumentResolver {
         container: ModelAndViewContainer?,
         nativeWebRequest: NativeWebRequest,
         factory: WebDataBinderFactory?
-    ): Any? {
+    ): Any {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)!!
         return resolveOctetStream(request)
     }
