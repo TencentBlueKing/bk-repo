@@ -27,8 +27,6 @@ import com.tencent.bkrepo.npm.constants.DATA
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.DISTTAGS
 import com.tencent.bkrepo.npm.constants.ERROR_MAP
-import com.tencent.bkrepo.npm.constants.FILE_DASH
-import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.LENGTH
 import com.tencent.bkrepo.npm.constants.MODIFIED
@@ -69,7 +67,6 @@ import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.lang.StringBuilder
@@ -103,7 +100,7 @@ class NpmService @Autowired constructor(
                 NpmSuccessResponse.updatePkgSuccess()
             }
             else -> {
-                val message = "Unknown npm put/update request, check the debug logs for further information."
+                val message = "Unknown npm put/update request, check the warn logs for further information."
                 logger.warn(message)
                 throw NpmBadRequestException(message)
             }
@@ -160,6 +157,9 @@ class NpmService @Autowired constructor(
     }
 
     private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
+        val name = jsonObj[NAME].asString
+        if (!jsonObj.has(DISTTAGS) || jsonObj.getAsJsonObject(DISTTAGS).keySet().isEmpty())
+            throw NpmBadRequestException("Missing dist-tags labels, aborting upload [$name]")
         val distTags = jsonObj.getAsJsonObject(DISTTAGS)
         distTags.entrySet().forEach {
             return Pair(it.key, it.value.asString)
@@ -216,14 +216,9 @@ class NpmService @Autowired constructor(
         val distTags = getDistTags(jsonObj)!!
         val name = jsonObj.get(NAME).asString
         logger.info("current pkgName : $name ,current version : ${distTags.second}")
-        val attachKey = "$name$FILE_DASH${distTags.second}$FILE_SUFFIX"
-        val attachJsonObject = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
+        val attachJsonObject = jsonObj.getAsJsonObject(ATTACHMENTS).entrySet().iterator().next().value.asJsonObject
         attributesMap[NPM_PKG_TGZ_FILE_FULL_PATH] = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, distTags.second)
-        attributesMap[APPLICATION_OCTET_STEAM] = if (attachJsonObject.has(CONTENT_TYPE)) {
-            attachJsonObject.get(CONTENT_TYPE).asString
-        } else {
-            MediaType.APPLICATION_OCTET_STREAM_VALUE
-        }
+        attributesMap[APPLICATION_OCTET_STEAM] = attachJsonObject.get(CONTENT_TYPE).asString
         attributesMap[LENGTH] = attachJsonObject.get(LENGTH).asLong
         jsonObj.remove(ATTACHMENTS)
         return attachJsonObject
@@ -378,7 +373,10 @@ class NpmService @Autowired constructor(
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
-        logger.info("handling request for add dist tag [$tag], version: [$version] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}].")
+        logger.info(
+            "handling request for add dist tag [$tag], version: [$version] with " +
+                "package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}]."
+        )
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
@@ -399,7 +397,10 @@ class NpmService @Autowired constructor(
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
         if (LATEST == tag) {
-            logger.warn("dist tag for [latest] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}] cannot be deleted.")
+            logger.warn(
+                "dist tag for [latest] with package [$name] " +
+                    "in repo [${artifactInfo.projectId}/${artifactInfo.repoName}] cannot be deleted."
+            )
             return
         }
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
@@ -416,7 +417,10 @@ class NpmService @Autowired constructor(
         val logger: Logger = LoggerFactory.getLogger(NpmService::class.java)
 
         fun isUploadRequest(npmPackageMetaData: JsonObject): Boolean {
-            return npmPackageMetaData.has(ATTACHMENTS)
+            val hasAttachment = npmPackageMetaData.has(ATTACHMENTS)
+            if (!hasAttachment) return false
+            val attachment = npmPackageMetaData[ATTACHMENTS]
+            return attachment != null && attachment.isJsonObject && attachment.asJsonObject.entrySet().isNotEmpty()
         }
 
         fun isDeprecateRequest(npmPackageMetaData: JsonObject): Boolean {
