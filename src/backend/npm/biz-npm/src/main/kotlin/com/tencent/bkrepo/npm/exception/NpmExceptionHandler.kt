@@ -27,10 +27,17 @@ import java.util.concurrent.ExecutionException
 @RestControllerAdvice
 class NpmExceptionHandler {
 
+    @ExceptionHandler(NpmBadRequestException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerBadRequestException(exception: NpmBadRequestException) {
+        val responseObject = NpmErrorResponse("bad request", exception.message)
+        npmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(ExecutionException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerExecutionException(exception: ExecutionException) {
-        val responseObject = NpmErrorResponse("bad request", exception.message.orEmpty())
+        val responseObject = NpmErrorResponse("execution exception", exception.message.orEmpty())
         npmResponse(responseObject, exception)
     }
 

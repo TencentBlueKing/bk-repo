@@ -50,10 +50,10 @@ import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SHASUM
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.constants.TIME
-import com.tencent.bkrepo.npm.constants.VERSION
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
+import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.exception.NpmTagNotExistException
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmMetaData
@@ -64,21 +64,19 @@ import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.GsonUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.lang.StringBuilder
 
 @Service
 class NpmService @Autowired constructor(
-    private val npmDependentHandler: NpmDependentHandler,
-    private val metadataClient: MetadataClient
+    private val npmDependentHandler: NpmDependentHandler
 ) {
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -87,39 +85,46 @@ class NpmService @Autowired constructor(
         body.takeIf { StringUtils.isNotBlank(it) } ?: throw ArtifactNotFoundException("request body not found!")
         val jsonObj = JsonParser.parseString(body).asJsonObject
         val artifactFileMap = ArtifactFileMap()
-        return if (jsonObj.has(ATTACHMENTS)) {
-            val attributesMap = mutableMapOf<String, Any>()
-            buildTgzFile(artifactFileMap, jsonObj, attributesMap)
-            buildPkgVersionFile(artifactFileMap, jsonObj, attributesMap)
-            buildPkgFile(artifactInfo, artifactFileMap, jsonObj)
-            val context = ArtifactUploadContext(artifactFileMap)
-            context.contextAttributes = attributesMap
-            val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
-            repository.upload(context)
-            npmDependentHandler.updatePkgDepts(userId, artifactInfo, jsonObj, NpmOperationAction.PUBLISH)
-            NpmSuccessResponse.createEntitySuccess()
-        } else {
-            unPublishOperation(artifactInfo, jsonObj)
-            NpmSuccessResponse.updatePkgSuccess()
+        return when {
+            isUploadRequest(jsonObj) -> {
+                val attributesMap = mutableMapOf<String, Any>()
+                buildTgzFile(artifactFileMap, jsonObj, attributesMap)
+                buildPkgVersionFile(artifactFileMap, jsonObj, attributesMap)
+                buildPkgFile(artifactInfo, artifactFileMap, jsonObj)
+                val context = ArtifactUploadContext(artifactFileMap)
+                context.contextAttributes = attributesMap
+                val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+                repository.upload(context)
+                npmDependentHandler.updatePkgDepts(userId, artifactInfo, jsonObj, NpmOperationAction.PUBLISH)
+                NpmSuccessResponse.createEntitySuccess()
+            }
+            isDeprecateRequest(jsonObj) -> {
+                unPublishOperation(artifactInfo, jsonObj)
+                NpmSuccessResponse.updatePkgSuccess()
+            }
+            else -> {
+                val message = "Unknown npm put/update request, check the debug logs for further information."
+                logger.warn(message)
+                throw NpmBadRequestException(message)
+            }
         }
     }
 
+    /**
+     * deprecated
+     */
     private fun unPublishOperation(artifactInfo: NpmArtifactInfo, jsonObj: JsonObject) {
-        // 非publish操作 deprecate等操作
-        val versions = jsonObj.getAsJsonObject(VERSIONS)
-        versions.keySet().forEach {
+        with(artifactInfo) {
             val name = jsonObj.get(NAME).asString
-            val version = versions.getAsJsonObject(it)[VERSION].asString
-            val metaData = buildMetaData(versions[it].asJsonObject)
-            val tgzFullPath = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-            metadataClient.save(
-                MetadataSaveRequest(
-                    artifactInfo.projectId,
-                    artifactInfo.repoName,
-                    tgzFullPath,
-                    metaData
-                )
-            )
+            logger.info("handling deprecated request for npm package [$name] in repo [$projectId/$repoName]")
+            val artifactFileMap = ArtifactFileMap()
+            val packageJsonFile = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(jsonObj))
+            artifactFileMap[NPM_PACKAGE_JSON_FILE] = packageJsonFile
+            val context = ArtifactUploadContext(artifactFileMap)
+            context.contextAttributes[NPM_PKG_JSON_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
+            val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+            repository.upload(context)
+            packageJsonFile.delete()
         }
     }
 
@@ -212,12 +217,16 @@ class NpmService @Autowired constructor(
         val name = jsonObj.get(NAME).asString
         logger.info("current pkgName : $name ,current version : ${distTags.second}")
         val attachKey = "$name$FILE_DASH${distTags.second}$FILE_SUFFIX"
-        val mutableMap = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
+        val attachJsonObject = jsonObj.getAsJsonObject(ATTACHMENTS).getAsJsonObject(attachKey)
         attributesMap[NPM_PKG_TGZ_FILE_FULL_PATH] = String.format(NPM_PKG_TGZ_FULL_PATH, name, name, distTags.second)
-        attributesMap[APPLICATION_OCTET_STEAM] = mutableMap.get(CONTENT_TYPE).asString
-        attributesMap[LENGTH] = mutableMap.get(LENGTH).asLong
+        attributesMap[APPLICATION_OCTET_STEAM] = if (attachJsonObject.has(CONTENT_TYPE)) {
+            attachJsonObject.get(CONTENT_TYPE).asString
+        } else {
+            MediaType.APPLICATION_OCTET_STREAM_VALUE
+        }
+        attributesMap[LENGTH] = attachJsonObject.get(LENGTH).asLong
         jsonObj.remove(ATTACHMENTS)
-        return mutableMap
+        return attachJsonObject
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -245,17 +254,17 @@ class NpmService @Autowired constructor(
             val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
             val npmMetaData = repository.search(context) as? JsonObject
                 ?: throw NpmArtifactNotFoundException("document [$scopePkg] not found in repo [$projectId/$repoName]")
-            try {
-                val latestPackageVersion = npmMetaData.getAsJsonObject(DISTTAGS)[LATEST].asString
-                val npmArtifactInfo = NpmArtifactInfo(
-                    projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
-                )
-                return searchVersionMetadata(npmArtifactInfo)
-            } catch (exception: IllegalStateException){
+            val distTagsObject = npmMetaData.getAsJsonObject(DISTTAGS)
+            if (!distTagsObject.has(LATEST)) {
                 val message = "the dist tag [latest] is not found in package [$scopePkg] in repo [$projectId/$repoName]"
                 logger.error(message)
                 throw NpmTagNotExistException(message)
             }
+            val latestPackageVersion = distTagsObject[LATEST].asString
+            val npmArtifactInfo = NpmArtifactInfo(
+                projectId, repoName, artifactUri, scope, pkgName, latestPackageVersion
+            )
+            return searchVersionMetadata(npmArtifactInfo)
         }
     }
 
@@ -405,5 +414,21 @@ class NpmService @Autowired constructor(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(NpmService::class.java)
+
+        fun isUploadRequest(npmPackageMetaData: JsonObject): Boolean {
+            return npmPackageMetaData.has(ATTACHMENTS)
+        }
+
+        fun isDeprecateRequest(npmPackageMetaData: JsonObject): Boolean {
+            val iterator = npmPackageMetaData.getAsJsonObject(VERSIONS).entrySet().iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                val npmMetadata = entry.value.asJsonObject
+                if (npmMetadata.has("deprecated")) {
+                    return true
+                }
+            }
+            return false
+        }
     }
 }
