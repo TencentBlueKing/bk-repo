@@ -26,7 +26,8 @@ import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.DATA
 import com.tencent.bkrepo.npm.constants.DIST
 import com.tencent.bkrepo.npm.constants.DISTTAGS
-import com.tencent.bkrepo.npm.constants.ERROR_MAP import com.tencent.bkrepo.npm.constants.LATEST
+import com.tencent.bkrepo.npm.constants.ERROR_MAP
+import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.LENGTH
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NAME
@@ -156,6 +157,9 @@ class NpmService @Autowired constructor(
     }
 
     private fun getDistTags(jsonObj: JsonObject): Pair<String, String>? {
+        val name = jsonObj[NAME].asString
+        if (!jsonObj.has(DISTTAGS) || jsonObj.getAsJsonObject(DISTTAGS).keySet().isEmpty())
+            throw NpmBadRequestException("Missing dist-tags labels, aborting upload [$name]")
         val distTags = jsonObj.getAsJsonObject(DISTTAGS)
         distTags.entrySet().forEach {
             return Pair(it.key, it.value.asString)
@@ -369,7 +373,10 @@ class NpmService @Autowired constructor(
         val uriInfo = artifactInfo.artifactUri.split(DISTTAGS)
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
-        logger.info("handling request for add dist tag [$tag], version: [$version] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}].")
+        logger.info(
+            "handling request for add dist tag [$tag], version: [$version] with " +
+                "package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}]."
+        )
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
         val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
         val pkgInfo = repository.search(context) as JsonObject
@@ -390,7 +397,10 @@ class NpmService @Autowired constructor(
         val name = uriInfo[0].trimStart('/').trimEnd('/')
         val tag = uriInfo[1].trimStart('/')
         if (LATEST == tag) {
-            logger.warn("dist tag for [latest] with package [$name] in repo [${artifactInfo.projectId}/${artifactInfo.repoName}] cannot be deleted.")
+            logger.warn(
+                "dist tag for [latest] with package [$name] " +
+                    "in repo [${artifactInfo.projectId}/${artifactInfo.repoName}] cannot be deleted."
+            )
             return
         }
         context.contextAttributes[NPM_FILE_FULL_PATH] = String.format(NPM_PKG_FULL_PATH, name)
