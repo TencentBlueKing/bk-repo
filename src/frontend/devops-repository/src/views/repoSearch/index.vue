@@ -78,7 +78,7 @@
     </div>
 </template>
 <script>
-    import emptyData from '@/components/emptyData'
+    import emptyData from '@/components/EmptyData'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
     import { formatDate } from '@/utils'

@@ -11,7 +11,7 @@ const createRouter = (store) => {
     })
 
     router.beforeEach((to, from, next) => {
-        if (!from.name && to.name === 'repoList') {
+        if (MODE_CONFIG === 'ci' && !from.name && to.name === 'repoList') {
             const projectId = to.params.projectId
             const repositoryHistory = JSON.parse(localStorage.getItem('repositoryHistory') || '{}')[projectId] || { type: 'generic', name: 'custom' }
             if (repositoryHistory.type === 'generic') {

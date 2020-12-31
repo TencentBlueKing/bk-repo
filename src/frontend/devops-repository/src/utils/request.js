@@ -21,7 +21,7 @@ function errorHandler (error) {
 
 request.interceptors.response.use(response => {
     const { data: { code, data, message, status }, status: httpStatus } = response
-    if (httpStatus === 401) {
+    if (httpStatus === 401 || httpStatus === 402) {
         if (MODE_CONFIG === 'ci') {
             window.postMessage({
                 action: 'toggleLoginDialog'
@@ -31,12 +31,17 @@ request.interceptors.response.use(response => {
             window.repositoryVue.$store.commit('SHOW_LOGIN_DIALOG')
         }
         return Promise.reject() // eslint-disable-line
-    } else if (httpStatus === 500 || httpStatus === 503) {
+    } else if (httpStatus === 403) {
+        return Promise.reject({ // eslint-disable-line
+            status: httpStatus,
+            message: '未获得授权'
+        })
+    } else if (httpStatus === 500 || httpStatus === 503 || httpStatus === 512) {
         return Promise.reject({ // eslint-disable-line
             status: httpStatus,
             message: '服务维护中，请稍候...'
         })
-    } else if (httpStatus === 400) {
+    } else if (httpStatus === 400 || httpStatus === 404) {
         return Promise.reject({ // eslint-disable-line
             status: httpStatus,
             message

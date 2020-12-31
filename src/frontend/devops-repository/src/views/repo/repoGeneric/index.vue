@@ -699,10 +699,10 @@
                         '/web' + url,
                         '_self'
                     )
-                }).catch(() => {
+                }).catch(e => {
                     this.$bkMessage({
                         theme: 'error',
-                        message: this.$t('fileNotExist')
+                        message: e.status !== 404 ? e.message : this.$t('fileNotExist')
                     })
                 })
             },
