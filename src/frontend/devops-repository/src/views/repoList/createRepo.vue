@@ -96,7 +96,7 @@
                         },
                         {
                             regex: /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repoName'),
+                            message: this.$t('repoName') + this.$t('include') + this.$t('repoNamePlacehodler'),
                             trigger: 'blur'
                         },
                         {

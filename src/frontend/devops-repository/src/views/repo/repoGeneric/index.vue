@@ -247,7 +247,7 @@
                         },
                         {
                             regex: /^((\w|-|\.){1,50}\/)*((\w|-|\.){1,50})$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('folder') + this.$t('path'),
+                            message: this.$t('folder') + this.$t('path') + this.$t('include') + this.$t('folderNamePlacehodler'),
                             trigger: 'blur'
                         }
                     ],
@@ -259,7 +259,7 @@
                         },
                         {
                             regex: /^(\w|-|\.){1,50}$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('fileName'),
+                            message: this.$t('fileName') + this.$t('include') + this.$t('folderNamePlacehodler'),
                             trigger: 'blur'
                         }
                     ],
