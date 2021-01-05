@@ -78,7 +78,7 @@
     </div>
 </template>
 <script>
-    import emptyData from '@/components/emptyData'
+    import emptyData from '@/components/EmptyData'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@/store/publicEnum'
     import { formatDate } from '@/utils'
@@ -207,7 +207,8 @@
                     flex-direction: column;
                     .top-right-selected {
                         position: absolute;
-                        margin: -70px -70px 0 0;
+                        top: 0;
+                        right: 0;
                         border-width: 16px;
                         border-style: solid;
                         border-color: $primaryColor $primaryColor transparent transparent;
