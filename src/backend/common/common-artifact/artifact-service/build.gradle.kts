@@ -38,4 +38,5 @@ dependencies {
     api(project(":common:common-storage:storage-service"))
 
     api("org.springframework.boot:spring-boot-starter-aop")
+    api("org.influxdb:influxdb-java")
 }

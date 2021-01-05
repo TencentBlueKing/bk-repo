@@ -32,12 +32,15 @@
 package com.tencent.bkrepo.common.artifact.stream
 
 import java.io.Closeable
+import java.io.File
+import java.io.InputStream
 import java.nio.channels.FileLock
 
 /**
  * Returns the default buffer size when working with buffered streams.
  */
 const val STREAM_BUFFER_SIZE: Int = 8 * 1024
+const val EOF = -1
 
 fun Closeable.closeQuietly() {
     try {
@@ -52,5 +55,27 @@ fun FileLock.releaseQuietly() {
             this.release()
         }
     } catch (ignored: Throwable) {
+    }
+}
+
+fun InputStream.artifactStream(range: Range): ArtifactInputStream {
+    return if (this is ArtifactInputStream) this else ArtifactInputStream(this, range)
+}
+
+fun InputStream.rateLimit(rate: Long): RateLimitInputStream {
+    return if (this is RateLimitInputStream) this else RateLimitInputStream(this, rate)
+}
+
+fun InputStream.bound(range: Range): InputStream {
+    return if (range.isPartialContent()) {
+        BoundedInputStream(this, range.length)
+    } else this
+}
+
+fun File.bound(range: Range): InputStream {
+    return if (range.isPartialContent()) {
+        this.inputStream().apply { skip(range.start) }.bound(range)
+    } else {
+        this.inputStream()
     }
 }

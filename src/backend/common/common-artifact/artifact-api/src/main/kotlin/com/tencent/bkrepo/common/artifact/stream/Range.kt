@@ -35,11 +35,12 @@ import kotlin.math.min
 
 /**
  * 文件范围
- * [startPosition]代表起始位置，从0开始
- * [endPosition]代表结束位置，最大值为[total]-1
- * [total]代表文件总长度
+ * @param startPosition 起始位置，从0开始
+ * @param endPosition 结束位置，最大值为[total]-1
+ * @param total 文件总长度
  */
 class Range(startPosition: Long, endPosition: Long, val total: Long) {
+
     /**
      * 起始位置
      */
@@ -86,9 +87,6 @@ class Range(startPosition: Long, endPosition: Long, val total: Long) {
     }
 
     companion object {
-        @Deprecated(message = "Replace with Range.full", replaceWith = ReplaceWith("full"))
-        fun ofFull(total: Long) = Range(0, total - 1, total)
-
         /**
          * 创建长度为[total]的完整范围
          */

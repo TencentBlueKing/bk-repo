@@ -52,8 +52,8 @@ class DigestCalculateListener : StreamReceiveListener {
     }
 
     override fun finished() {
-        md5 = hexToString(md5Digest.digest(), 32)
-        sha256 = hexToString(sha256Digest.digest(), 64)
+        md5 = hexToString(md5Digest.digest(), MD5_LENGTH)
+        sha256 = hexToString(sha256Digest.digest(), SHA256_LENGTH)
     }
 
     fun getMd5(): String {
@@ -66,7 +66,13 @@ class DigestCalculateListener : StreamReceiveListener {
 
     private fun hexToString(byteArray: ByteArray, length: Int): String {
         val hashInt = BigInteger(1, byteArray)
-        val hashText = hashInt.toString(16)
+        val hashText = hashInt.toString(HASH_RADIX)
         return if (hashText.length < length) "0".repeat(length - hashText.length) + hashText else hashText
+    }
+
+    companion object {
+        private const val HASH_RADIX = 16
+        private const val MD5_LENGTH = 32
+        private const val SHA256_LENGTH = 64
     }
 }

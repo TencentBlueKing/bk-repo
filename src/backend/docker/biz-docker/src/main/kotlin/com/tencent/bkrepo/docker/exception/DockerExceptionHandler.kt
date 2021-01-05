@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.docker.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -50,7 +51,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import javax.ws.rs.core.MediaType
 
 /**
  * docker repo exception handler
@@ -73,7 +73,7 @@ class DockerExceptionHandler {
             AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, scopeStr)
         )
         response.status = HttpStatus.UNAUTHORIZED.value()
-        response.contentType = MediaType.APPLICATION_JSON
+        response.contentType = APPLICATION_JSON
         response.writer.print(ERROR_MESSAGE.format("UNAUTHORIZED", "authentication required", "BAD_CREDENTIAL"))
         response.writer.flush()
     }

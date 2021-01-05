@@ -50,19 +50,19 @@ class CachedFileWriter(
 ) : StreamReadListener {
 
     private val lockFilePath = tempPath.resolve(filename.plus(LOCK_SUFFIX))
-    private val outputStream: FileOutputStream
     private val channel: FileChannel
+    private var outputStream: FileOutputStream? = null
     private var lock: FileLock? = null
 
     init {
         Files.createDirectories(tempPath)
         channel = FileChannel.open(lockFilePath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-        outputStream = lockFilePath.toFile().outputStream()
         try {
             lock = channel.tryLock()
+            outputStream = lockFilePath.toFile().outputStream()
             assert(lock != null)
         } catch (ignored: Exception) {
-            outputStream.closeQuietly()
+            outputStream?.closeQuietly()
             channel.closeQuietly()
             lock = null
         }
@@ -70,23 +70,33 @@ class CachedFileWriter(
 
     override fun data(i: Int) {
         if (lock != null) {
-            outputStream.write(i)
+            outputStream?.write(i)
         }
     }
 
     override fun data(buffer: ByteArray, length: Int) {
         if (lock != null) {
-            outputStream.write(buffer, 0, length)
+            outputStream?.write(buffer, 0, length)
+        }
+    }
+
+    override fun finish() {
+        if (lock != null) {
+            outputStream?.flush()
+            outputStream?.closeQuietly()
+            channel.closeQuietly()
+            val cacheFilePath = cachePath.resolve(filename).apply { createFile() }
+            Files.move(lockFilePath, cacheFilePath, StandardCopyOption.REPLACE_EXISTING)
+            lock?.releaseQuietly()
+            lock = null
         }
     }
 
     override fun close() {
         if (lock != null) {
-            outputStream.flush()
-            outputStream.closeQuietly()
+            outputStream?.flush()
+            outputStream?.closeQuietly()
             channel.closeQuietly()
-            val cacheFilePath = cachePath.resolve(filename).apply { createFile() }
-            Files.move(lockFilePath, cacheFilePath, StandardCopyOption.REPLACE_EXISTING)
             lock?.releaseQuietly()
             lock = null
         }

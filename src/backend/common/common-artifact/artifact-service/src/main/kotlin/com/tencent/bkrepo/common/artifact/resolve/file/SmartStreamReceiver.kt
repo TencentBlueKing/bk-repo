@@ -32,8 +32,9 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
-import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
 import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
@@ -43,7 +44,6 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.nio.channels.ClosedChannelException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.measureNanoTime
@@ -66,7 +66,7 @@ class SmartStreamReceiver(
 
     fun receive(source: InputStream, listener: StreamReceiveListener): Throughput {
         try {
-            val input = RateLimitInputStream(source, rateLimit?.toBytes() ?: -1)
+            val input = source.rateLimit(rateLimit?.toBytes() ?: -1)
             var bytesCopied: Long = 0
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             val nanoTime = measureNanoTime {
@@ -87,21 +87,11 @@ class SmartStreamReceiver(
             listener.finished()
             return Throughput(bytesCopied, nanoTime)
         } catch (exception: IOException) {
-            cleanTempFile()
-            val message = exception.message.orEmpty()
-            when {
-                message.contains("Connection reset by peer") -> {
-                    throw ArtifactReceiveException(message)
-                }
-                message.contains("Remote peer closed connection") -> {
-                    throw ArtifactReceiveException(message)
-                }
-                exception is ClosedChannelException -> {
-                    throw ArtifactReceiveException("Channel closed")
-                }
-                else -> throw exception
-            }
+            if (IOExceptionUtils.isClientBroken(exception)) {
+                throw ArtifactReceiveException(exception.message.orEmpty())
+            } else throw exception
         } finally {
+            cleanTempFile()
             cleanOriginalOutputStream()
         }
     }

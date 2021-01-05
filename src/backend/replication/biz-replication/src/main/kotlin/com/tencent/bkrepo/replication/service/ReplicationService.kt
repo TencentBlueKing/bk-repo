@@ -33,7 +33,7 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
@@ -67,7 +67,7 @@ class ReplicationService(
             // 查询文件
             val localRepoDetail = currentRepoDetail.localRepoDetail
             val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, localRepoDetail)
-            val rateLimitInputStream = RateLimitInputStream(inputStream, replicationProperties.rateLimit.toBytes())
+            val rateLimitInputStream = inputStream.rateLimit(replicationProperties.rateLimit.toBytes())
             val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM, rateLimitInputStream, request.size!!)
             val fullPath = encode(request.fullPath, "utf-8")
             val builder = MultipartBody.Builder()

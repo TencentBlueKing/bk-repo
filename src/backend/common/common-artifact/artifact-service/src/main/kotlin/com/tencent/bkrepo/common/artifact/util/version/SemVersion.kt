@@ -31,27 +31,19 @@
 
 package com.tencent.bkrepo.common.artifact.util.version
 
+import kotlin.math.min
 import kotlin.math.pow
 
-data class SemVer(
+/**
+ * 语义化版本
+ */
+data class SemVersion(
     val major: Int = 0,
     val minor: Int = 0,
     val patch: Int = 0,
     val preRelease: String? = null,
     val buildMetadata: String? = null
-) {
-
-    init {
-        require(major >= 0) { "Major version must be a positive number" }
-        require(minor >= 0) { "Minor version must be a positive number" }
-        require(patch >= 0) { "Patch version must be a positive number" }
-        preRelease?.let {
-            require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" }
-        }
-        buildMetadata?.let {
-            require(it.matches(Regex("""[\dA-z\-]+(?:\.[\dA-z\-]+)*"""))) { "Pre-release version is not valid" }
-        }
-    }
+) : Comparable<SemVersion> {
 
     /**
      * Build the version name string.
@@ -74,42 +66,47 @@ data class SemVer(
      */
     fun ordinal(maxDigitsPerComponent: Int = 4): Long {
         require(maxDigitsPerComponent > 0)
-        val max = 10.0.pow(maxDigitsPerComponent) - 1
-        require(patch < 10.0.pow(maxDigitsPerComponent))
-        require(minor < 10.0.pow(maxDigitsPerComponent))
-        var ordinal = 0.0
-        ordinal += if (major > max) max else major * 10.0.pow(maxDigitsPerComponent * 3)
-        ordinal += if (minor > max) max else major * 10.0.pow(maxDigitsPerComponent * 3)
-        ordinal += if (patch > max) max else patch * 10.0.pow(maxDigitsPerComponent * 2)
-        ordinal += if (preRelease == null) 10.0.pow(maxDigitsPerComponent * 1) - 1 else 0.0
-        return ordinal.toLong()
+        val unit = BASE.pow(maxDigitsPerComponent).toInt()
+        val max = unit - 1
+        var ordinal = 0L
+        ordinal += min(major, max)
+        ordinal *= unit
+        ordinal += min(minor, max)
+        ordinal *= unit
+        ordinal += min(patch, max)
+        ordinal *= unit
+        ordinal += if (preRelease == null) max else 0
+        return ordinal
+    }
+
+    override fun compareTo(other: SemVersion): Int {
+        var result = major - other.major
+        if (result == 0) {
+            result = minor - other.minor
+        }
+        if (result == 0) {
+            result = patch - other.patch
+        }
+        if (result == 0) {
+            result = preRelease.orEmpty().compareTo(other.preRelease.orEmpty())
+        }
+        if (result == 0) {
+            result = buildMetadata.orEmpty().compareTo(other.buildMetadata.orEmpty())
+        }
+        return result
     }
 
     companion object {
 
-        /**
-         * 语义化版本正则表达式
-         */
-        private const val SEM_VER_REGEX = "(0|[1-9]\\d*)?(?:\\.)?(0|[1-9]\\d*)?(?:\\.)?(0|[1-9]\\d*)?" +
-            "(?:-([\\dA-z\\-]+(?:\\.[\\dA-z\\-]+)*))?(?:\\+([\\dA-z\\-]+(?:\\.[\\dA-z\\-]+)*))?"
-
-        private val pattern = Regex(SEM_VER_REGEX)
+        private const val BASE = 10.0
 
         /**
-         * Parse the version string to [SemVer] data object.
+         * Parse the version string to [SemVersion] data object.
          * @param version version string.
          * @throws IllegalArgumentException if the version is not valid.
          */
-        fun parse(version: String): SemVer {
-            val result = pattern.matchEntire(version)
-                ?: throw IllegalArgumentException("Invalid version string [$version]")
-            return SemVer(
-                major = if (result.groupValues[1].isEmpty()) 0 else result.groupValues[1].toInt(),
-                minor = if (result.groupValues[2].isEmpty()) 0 else result.groupValues[2].toInt(),
-                patch = if (result.groupValues[3].isEmpty()) 0 else result.groupValues[3].toInt(),
-                preRelease = if (result.groupValues[4].isEmpty()) null else result.groupValues[4],
-                buildMetadata = if (result.groupValues[5].isEmpty()) null else result.groupValues[5]
-            )
+        fun parse(version: String): SemVersion {
+            return SemVersionParser.parse(version)
         }
     }
 }

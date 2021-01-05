@@ -32,10 +32,7 @@
 dependencies {
     implementation(project(":common:common-api"))
     implementation(project(":common:common-artifact:artifact-api"))
-    implementation(project(":common:common-query:query-api"))
-    implementation(project(":common:common-storage:storage-api"))
     compileOnly("javax.servlet:javax.servlet-api")
     compileOnly("org.springframework:spring-web")
-    api("javax.ws.rs:jsr311-api:1.1.1")
 }
 

@@ -29,22 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.health
+package com.tencent.bkrepo.common.artifact.repository
 
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
-import org.springframework.boot.actuate.health.AbstractHealthIndicator
-import org.springframework.boot.actuate.health.Health
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.common.artifact.config.ArtifactBeanRegistrar
+import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
+import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.storage.StorageManager
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
-@Component("storageHealthIndicator")
-class StorageHealthIndicator(
-    private val storageHealthMonitor: StorageHealthMonitor
-) : AbstractHealthIndicator() {
-    override fun doHealthCheck(builder: Health.Builder) {
-        if (storageHealthMonitor.health.get()) {
-            builder.up()
-        } else {
-            builder.down()
-        }
-    }
-}
+@Configuration
+@Import(
+    ArtifactBeanRegistrar::class,
+    ArtifactContextHolder::class,
+    StorageManager::class,
+    ArtifactPermissionCheckHandler::class,
+    CompositeRepository::class
+)
+class ArtifactContextConfiguration

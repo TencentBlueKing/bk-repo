@@ -31,7 +31,7 @@
 
 dependencies {
     api(project(":docker:api-docker"))
+    api(project(":common:common-query:query-api"))
     api(project(":common:common-artifact:artifact-service"))
-    api("com.auth0:java-jwt:3.8.3")
     api("javax.ws.rs:jsr311-api:1.1.1")
 }

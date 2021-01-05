@@ -49,12 +49,16 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
+import org.springframework.stereotype.Service
 
 /**
  * 组合仓库抽象逻辑
  */
+@Service
 class CompositeRepository(
     private val localRepository: LocalRepository,
     private val remoteRepository: RemoteRepository,
@@ -105,8 +109,12 @@ class CompositeRepository(
     /**
      * 下载成功后，如果是从本地下载，应该记录下载统计
      */
-    override fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
-        localRepository.onDownloadSuccess(context, artifactResource)
+    override fun onDownloadSuccess(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource,
+        throughput: Throughput
+    ) {
+        localRepository.onDownloadSuccess(context, artifactResource, throughput)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {

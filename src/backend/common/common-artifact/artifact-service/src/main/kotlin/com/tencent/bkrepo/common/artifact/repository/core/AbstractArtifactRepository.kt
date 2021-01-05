@@ -31,8 +31,11 @@
 
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
+import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
@@ -44,11 +47,13 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
+import com.tencent.bkrepo.common.artifact.repository.storage.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
@@ -102,7 +107,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             this.onUploadSuccess(context)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
-        } catch (exception: Exception) {
+        } catch (exception: RuntimeException) {
             this.onUploadFailed(context, exception)
         } finally {
             this.onUploadFinished(context)
@@ -115,11 +120,15 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             this.onDownloadValidate(context)
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
-            ArtifactResourceWriter.write(artifactResponse)
-            this.onDownloadSuccess(context, artifactResponse)
+            val throughput = ArtifactResourceWriter.write(artifactResponse)
+            this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (validateException: ArtifactValidateException) {
             this.onValidateFailed(context, validateException)
-        } catch (exception: Exception) {
+        } catch (responseException: ArtifactResponseException) {
+            val principal = SecurityUtils.getPrincipal()
+            val artifactInfo = context.artifactInfo
+            logger.warn("User[$principal] download artifact[$artifactInfo] failed, ${responseException.message}")
+        } catch (exception: RuntimeException) {
             this.onDownloadFailed(context, exception)
         } finally {
             this.onDownloadFinished(context)
@@ -204,12 +213,20 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     /**
      * 下载成功回调
      */
-    open fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
+    open fun onDownloadSuccess(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource,
+        throughput: Throughput
+    ) {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadStatisticsClient.add(it) }
             }
         }
+        if (throughput != Throughput.EMPTY) {
+            publisher.publishEvent(ArtifactResponseEvent(artifactResource, throughput, context.storageCredentials))
+        }
+        publisher.publishEvent(ArtifactDownloadedEvent(context))
         logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
     }
 

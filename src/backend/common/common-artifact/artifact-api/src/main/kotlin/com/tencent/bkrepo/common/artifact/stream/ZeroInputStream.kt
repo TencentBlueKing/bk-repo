@@ -34,10 +34,16 @@ package com.tencent.bkrepo.common.artifact.stream
 import java.io.InputStream
 
 /**
- * 由固定数字0构成的输入流
+ * 由固定数字0构成的输入流, [size]代表流长度，-1表示无限长
  * 用于测试以及健康检查时快速生成数据
  */
-class ZeroInputStream(private var size: Long = -1) : InputStream() {
+class ZeroInputStream(
+    private val size: Long = -1
+) : InputStream() {
+
+    /**
+     * 表示已经读取的自己数量
+     */
     private var read = 0
 
     override fun read(): Int {

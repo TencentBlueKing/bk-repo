@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
@@ -62,8 +63,12 @@ class NpmRemoteRepository(
     private val executor: ThreadPoolTaskExecutor
 ) : RemoteRepository() {
 
-    override fun onDownloadSuccess(context: ArtifactDownloadContext, artifactResource: ArtifactResource) {
-        super.onDownloadSuccess(context, artifactResource)
+    override fun onDownloadSuccess(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource,
+        throughput: Throughput
+    ) {
+        super.onDownloadSuccess(context, artifactResource, throughput)
         // 存储package-version.json文件
         executor.execute { cachePackageVersionMetadata(context) }
     }

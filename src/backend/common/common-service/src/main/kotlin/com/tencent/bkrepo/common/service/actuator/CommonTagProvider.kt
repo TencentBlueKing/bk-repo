@@ -29,13 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.health
+package com.tencent.bkrepo.common.service.actuator
 
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+/**
+ * 提供metrics的公共tag
+ */
+interface CommonTagProvider {
 
-@Configuration
-@Import(
-    StorageHealthIndicator::class
-)
-class ArtifactHealthConfiguration
+    /**
+     * 返回公共tag
+     */
+    fun provide(): Map<String, String>
+}

@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.util.version.SemVer
+import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.dao.PackageDao
@@ -271,7 +271,7 @@ class PackageServiceImpl(
      */
     private fun calculateOrdinal(versionName: String): Long {
         return try {
-            SemVer.parse(versionName).ordinal()
+            SemVersion.parse(versionName).ordinal()
         } catch (exception: IllegalArgumentException) {
             LOWEST_ORDINAL
         }

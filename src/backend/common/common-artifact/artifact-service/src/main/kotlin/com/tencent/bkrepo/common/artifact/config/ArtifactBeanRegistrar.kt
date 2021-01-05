@@ -44,9 +44,7 @@ import org.springframework.beans.factory.support.BeanDefinitionReaderUtils
 import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor
 import org.springframework.beans.factory.support.GenericBeanDefinition
-import org.springframework.context.annotation.Configuration
 
-@Configuration
 class ArtifactBeanRegistrar : BeanDefinitionRegistryPostProcessor {
 
     override fun postProcessBeanFactory(beanFactory: ConfigurableListableBeanFactory) = Unit

@@ -36,9 +36,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
 import com.tencent.bkrepo.common.security.permission.Principal
-import org.springframework.stereotype.Component
 
-@Component
 class ArtifactPermissionCheckHandler(
     private val permissionManager: PermissionManager
 ) : PermissionCheckHandler {
