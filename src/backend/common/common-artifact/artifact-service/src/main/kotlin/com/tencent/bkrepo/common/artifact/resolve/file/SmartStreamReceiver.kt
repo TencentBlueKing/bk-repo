@@ -87,11 +87,11 @@ class SmartStreamReceiver(
             listener.finished()
             return Throughput(bytesCopied, nanoTime)
         } catch (exception: IOException) {
+            cleanTempFile()
             if (IOExceptionUtils.isClientBroken(exception)) {
                 throw ArtifactReceiveException(exception.message.orEmpty())
             } else throw exception
         } finally {
-            cleanTempFile()
             cleanOriginalOutputStream()
         }
     }
