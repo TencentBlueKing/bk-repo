@@ -40,6 +40,7 @@
             const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
             if (this.iframeMode) {
+                window.Vue = Vue
                 const script = document.createElement('script')
                 script.type = 'text/javascript'
                 script.src = DEVOPS_SITE_URL + '/console/static/devops-utils.js'
