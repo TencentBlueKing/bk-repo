@@ -96,7 +96,7 @@
                         },
                         {
                             regex: /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('repoName'),
+                            message: this.$t('repoName') + this.$t('include') + this.$t('repoNamePlacehodler'),
                             trigger: 'blur'
                         },
                         {
@@ -215,7 +215,8 @@
                     flex-direction: column;
                     .top-right-selected {
                         position: absolute;
-                        margin: -70px -70px 0 0;
+                        top: 0;
+                        right: 0;
                         border-width: 16px;
                         border-style: solid;
                         border-color: $primaryColor $primaryColor transparent transparent;

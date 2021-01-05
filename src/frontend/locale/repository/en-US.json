@@ -52,6 +52,7 @@
     "pleaseSelect": "请选择",
     "pleaseInput": "请输入",
     "legit": "合法的" ,
+    "include": "只能包含",
     "ticket": "凭证",
     "guide": "使用指引",
     "file": "文件",
@@ -131,5 +132,6 @@
     "repodataDepth": "索引目录深度",
     "groupXmlSet": "分组文件名",
     "permissionConfig": "权限管理",
-    "noPermission": "未获得授权"
+    "noPermission": "未获得授权",
+    "logout": "退出"
 }
