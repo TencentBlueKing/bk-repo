@@ -31,6 +31,12 @@
 
 package com.tencent.bkrepo.rpm
 
+<<<<<<< HEAD
+=======
+const val XML = "xml"
+const val GZ = "gz"
+const val GROUPS = "groups"
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 const val REPODATA = "repodata"
 const val REPOMD_XML = "repomd.xml"
 const val FILELISTS_XML = "filelists.xml"

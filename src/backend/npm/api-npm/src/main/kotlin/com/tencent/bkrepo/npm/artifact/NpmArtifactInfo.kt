@@ -47,9 +47,15 @@ class NpmArtifactInfo(
         const val NPM_UNPUBLISH_MAPPING_URI = "/{projectId}/{repoName}/*/-rev/{rev}"
         const val NPM_UNPUBLISH_SCOPE_MAPPING_URI = "/{projectId}/{repoName}/*/*/-rev/{rev}"
 
+<<<<<<< HEAD
         const val NPM_UNPUBLISH_VERSION_MAPPING_URI = "/**/{projectId}/{repoName}/{name}/-/{filename}/-rev/{rev}"
         const val NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI =
             "/**/{projectId}/{repoName}/{scope}/{name}/-/{scope}/{filename}/-rev/{rev}"
+=======
+        const val NPM_UNPUBLISH_VERSION_MAPPING_URI = "/**/{projectId}/{repoName}/{name}/{delimiter:-|download}/{filename}/-rev/{rev}"
+        const val NPM_UNPUBLISH_VERSION_SCOPE_MAPPING_URI =
+            "/**/{projectId}/{repoName}/{scope}/{name}/{delimiter:-|download}/{scope}/{filename}/-rev/{rev}"
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 
         // package uri model
         const val NPM_SCOPE_PACKAGE_VERSION_INFO_MAPPING_URI =

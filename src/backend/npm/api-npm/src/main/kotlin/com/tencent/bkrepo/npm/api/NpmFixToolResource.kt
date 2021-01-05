@@ -34,6 +34,7 @@ package com.tencent.bkrepo.npm.api
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.pojo.fixtool.DateTimeFormatResponse
+import com.tencent.bkrepo.npm.pojo.fixtool.PackageMetadataFixResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.GetMapping
@@ -47,4 +48,14 @@ interface NpmFixToolResource {
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         pkgName: String
     ): DateTimeFormatResponse
+<<<<<<< HEAD
 }
+=======
+
+    @ApiOperation("修复历史数据dist对象中增加packageSize字段")
+    @GetMapping("/{projectId}/{repoName}/fixPackageSizeField")
+    fun fixPackageSizeField(
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo
+    ): PackageMetadataFixResponse
+}
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4

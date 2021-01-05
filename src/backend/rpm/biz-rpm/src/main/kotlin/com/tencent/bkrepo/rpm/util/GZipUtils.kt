@@ -50,6 +50,7 @@ object GZipUtils {
 
     /**
      * 将输入流写入临时 gzip 压缩文件
+<<<<<<< HEAD
      */
     fun InputStream.gZip(): File {
         this.use {
@@ -76,6 +77,34 @@ object GZipUtils {
     /**
      * 将 gzip 输入流解压到临时文件
      */
+=======
+     */
+    fun InputStream.gZip(): File {
+        this.use {
+            val file = File.createTempFile("rpm_", "_xml.gz")
+            GZIPOutputStream(FileOutputStream(file)).use { gzipOutputStream ->
+                var len: Int
+                val buffer = ByteArray(1 * 1024 * 1024)
+                while (this.read(buffer).also { len = it } > 0) {
+                    gzipOutputStream.write(buffer, 0, len)
+                }
+                gzipOutputStream.flush()
+            }
+            return file
+        }
+    }
+
+    /**
+     * 将文件压缩为临时 gzip 文件
+     */
+    fun File.gZip(): File {
+        return this.inputStream().gZip()
+    }
+
+    /**
+     * 将 gzip 输入流解压到临时文件
+     */
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     fun InputStream.unGzipInputStream(): File {
         GZIPInputStream(this).use { gZIPInputStream ->
             val file = File.createTempFile("rpm_", ".xmlStream")
@@ -85,6 +114,10 @@ object GZipUtils {
                 while (gZIPInputStream.read(buffer).also { len = it } > 0) {
                     bufferedOutputStream.write(buffer, 0, len)
                 }
+<<<<<<< HEAD
+=======
+                bufferedOutputStream.flush()
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
             }
             return file
         }

@@ -42,7 +42,10 @@ data class RpmVersion(
     val epoch: String,
     val ver: String,
     val rel: String
+<<<<<<< HEAD
 
+=======
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 ) {
     override fun toString(): String {
         return "$name-$ver-$rel.$arch.rpm"

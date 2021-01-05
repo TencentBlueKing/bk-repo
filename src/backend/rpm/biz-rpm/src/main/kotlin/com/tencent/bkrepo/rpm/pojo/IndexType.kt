@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
@@ -29,6 +30,8 @@
  * SOFTWARE.
  */
 
+=======
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 package com.tencent.bkrepo.rpm.pojo
 
 enum class IndexType(val value: String) {

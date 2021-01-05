@@ -1,3 +1,4 @@
+<<<<<<< HEAD:src/backend/pypi/biz-pypi/src/main/kotlin/com/tencent/bkrepo/pypi/artifact/Constant.kt
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
@@ -30,6 +31,9 @@
  */
 
 package com.tencent.bkrepo.pypi.artifact
+=======
+package com.tencent.bkrepo.pypi
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4:src/backend/pypi/biz-pypi/src/main/kotlin/com/tencent/bkrepo/pypi/Constant.kt
 
 const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
 const val FLUSH_CACHE_EXPIRE = 60 * 24

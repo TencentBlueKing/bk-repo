@@ -52,6 +52,13 @@ class RpmDebugService {
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun initMark(rpmArtifactInfo: RpmArtifactInfo) {
+        val context = ArtifactSearchContext()
+        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        (repository as RpmLocalRepository).initMark(context)
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun flushAllRepomd(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactContext()
         (ArtifactContextHolder.getRepository() as RpmLocalRepository).flushAllRepoData(context)

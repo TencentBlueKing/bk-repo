@@ -31,6 +31,10 @@
 
 package com.tencent.bkrepo.pypi.artifact.url
 
+<<<<<<< HEAD
+=======
+import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import org.apache.commons.lang.StringUtils
 import javax.servlet.http.HttpServletRequest
 
@@ -47,4 +51,17 @@ object UrlPatternUtil {
         }
         return metadata
     }
+<<<<<<< HEAD
+=======
+
+    fun fileUpload(
+        projectId: String,
+        repoName: String,
+        request: HttpServletRequest
+    ): PypiArtifactInfo {
+        val packageName: String = request.getParameter("name")
+        val version: String = request.getParameter("version")
+        return PypiArtifactInfo(projectId, repoName, "/$packageName/$version")
+    }
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 }

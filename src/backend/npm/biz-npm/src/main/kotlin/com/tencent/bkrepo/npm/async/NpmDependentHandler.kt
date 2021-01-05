@@ -108,7 +108,6 @@ class NpmDependentHandler {
                 operator = userId
             )
         )
-        logger.info("unPublish dependent for [$name] success.")
     }
 
     companion object {

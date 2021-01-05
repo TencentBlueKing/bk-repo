@@ -49,12 +49,6 @@ class RpmExceptionHandler {
         return RpmExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
     }
 
-    @ExceptionHandler(RpmIndexTypeResolveException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: RpmIndexTypeResolveException): RpmExceptionResponse {
-        return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
-    }
-
     @ExceptionHandler(RpmIndexNotFoundException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: RpmIndexNotFoundException): RpmExceptionResponse {

@@ -46,6 +46,7 @@ class RpmArtifactInfo(
         const val RPM_CONFIGURATION = "/configuration/{projectId}/{repoName}/**"
         const val RPM_DEBUG_FLUSH = "/flush/{projectId}/{repoName}/**"
         const val RPM_DEBUG_ALL_FLUSH = "/flushAll/{projectId}/{repoName}/"
+<<<<<<< HEAD
 
         // RPM 产品接口
         const val RPM_EXT_DETAIL = "/version/detail/{projectId}/{repoName}"
@@ -66,5 +67,8 @@ class RpmArtifactInfo(
         } else {
             super.getArtifactFullPath()
         }
+=======
+        const val RPM_EXT_LIST = "/list/{projectId}/{repoName}/**"
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     }
 }

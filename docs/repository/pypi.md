@@ -31,7 +31,11 @@ password = password
 
 
 #### Upload:
+<<<<<<< HEAD
 配置仓库地址和认证信息:$HOME/.pypirc
+=======
+配置仓库地址和认证信息
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 ```txt
 [distutils]
 index-servers =

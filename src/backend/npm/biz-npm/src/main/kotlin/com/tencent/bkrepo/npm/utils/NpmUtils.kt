@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
@@ -117,3 +118,22 @@ object NpmUtils {
         return newTarball.toString()
     }
 }
+=======
+package com.tencent.bkrepo.npm.utils
+
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import java.lang.StringBuilder
+
+object NpmUtils {
+    fun buildPackageTgzTarball(oldTarball: String, tarballPrefix:String, name: String):String{
+        val tgzSuffix = name + oldTarball.substringAfter(name)
+        val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)
+        val newTarball = StringBuilder()
+        npmPrefixHeader?.let {
+            newTarball.append(it.trimEnd('/')).append('/').append(tgzSuffix.trimStart('/'))
+        } ?: newTarball.append(tarballPrefix.trimEnd('/')).append('/').append(tgzSuffix.trimStart('/'))
+        return newTarball.toString()
+    }
+}
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4

@@ -53,7 +53,11 @@ data class Repomd(
     @XStreamAlias("xmlns:rpm")
     val rpm: String = "http://linux.duke.edu/metadata/rpm"
 
+<<<<<<< HEAD
     fun toXml(): String {
+=======
+    fun toXml(): String{
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         val outputStream = ByteArrayOutputStream()
         val writer: Writer = OutputStreamWriter(outputStream, "UTF-8")
         writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n")

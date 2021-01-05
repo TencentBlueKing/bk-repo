@@ -39,10 +39,17 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+<<<<<<< HEAD
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.FLUSH_CACHE_EXPIRE
 import com.tencent.bkrepo.pypi.artifact.REMOTE_HTML_CACHE_FULL_PATH
 import com.tencent.bkrepo.pypi.artifact.XML_RPC_URI
+=======
+import com.tencent.bkrepo.pypi.FLUSH_CACHE_EXPIRE
+import com.tencent.bkrepo.pypi.REMOTE_HTML_CACHE_FULL_PATH
+import com.tencent.bkrepo.pypi.XML_RPC_URI
+import com.tencent.bkrepo.pypi.artifact.xml.Value
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
@@ -95,10 +102,18 @@ class PypiRemoteRepository : RemoteRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
+<<<<<<< HEAD
         val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
         while (node == null) {
+=======
+        var node = nodeClient.detail(projectId, repoName, fullPath).data
+        // TODO 加入重试机制
+        if (node == null) {
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
             cacheRemoteRepoList(context)
+            node = nodeClient.detail(projectId, repoName, fullPath).data
         }
+<<<<<<< HEAD
         node.takeIf { !it.folder } ?: return null
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
         val date = LocalDateTime.parse(node.lastModifiedDate, format)
@@ -119,6 +134,22 @@ class PypiRemoteRepository : RemoteRepository() {
             }
         }
         return stringBuilder.toString()
+=======
+        node?.let { node ->
+            node.takeIf { !it.folder } ?: return null
+            val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+            val date = LocalDateTime.parse(node.lastModifiedDate, format)
+            val currentTime = LocalDateTime.now()
+            val duration = Duration.between(date, currentTime).toMinutes()
+            GlobalScope.launch {
+                if (duration > FLUSH_CACHE_EXPIRE) {
+                    cacheRemoteRepoList(context)
+                }
+            }.start()
+            return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
+        }
+        return null
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     }
 
     /**

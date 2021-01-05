@@ -33,6 +33,11 @@ package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.findPackageIndex
+<<<<<<< HEAD
+=======
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.indexOf
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.updatePackageCount
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -49,7 +54,11 @@ class XmlStrUtilsTest {
         val uri = "/7/os/x86_64/hello-world-1-1.x86_64.rpm"
         val depth = 3
         val repodataUri = XmlStrUtils.resolveRepodataUri(uri, depth)
+<<<<<<< HEAD
         Assertions.assertEquals("7/os/x86_64/", repodataUri.repoDataPath)
+=======
+        Assertions.assertEquals("7/os/x86_64/", repodataUri.repodataPath)
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         Assertions.assertEquals("hello-world-1-1.x86_64.rpm", repodataUri.artifactRelativePath)
 
         val uri2 = "/7/hello-world-1-1.x86_64.rpm"
@@ -110,8 +119,76 @@ class XmlStrUtilsTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun test() {
         val file = File("${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master-20200921636887-1-x86_64.rpm")
         println(XStreamUtil.checkMarkFile(file.inputStream().readBytes(), IndexType.PRIMARY))
+=======
+    fun updatePackageCountTest() {
+        val start = System.currentTimeMillis()
+        val file = File("/Downloads/60M.xml")
+        val randomAccessFile = RandomAccessFile(file, "rw")
+        updatePackageCount(randomAccessFile, IndexType.PRIMARY, 0, true)
+        println(System.currentTimeMillis() - start)
+    }
+
+    @Test
+    fun packagesModifyTest01() {
+        val regex = "^<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
+            ".edu/metadata/rpm\" packages=\"(\\d+)\">$"
+        val str = "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
+            ".edu/metadata/rpm\" packages=\"\">"
+        val matcher = Pattern.compile(regex).matcher(str)
+        if (matcher.find()) {
+            println(matcher.group(1).toInt())
+        }
+    }
+
+    @Test
+    fun indexOfTest() {
+        val file = File("/Users/weaving/Downloads/filelist/21e8c7280184d7428e4fa259c669fa4b2cfef05f-filelists.xml")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val index = indexOf(randomAccessFile, """<package pkgid="cb764f7906736425286341f6c5939347b01c5c17" name="httpd" arch="x86_64">""")
+        Assertions.assertEquals(287, index)
+    }
+
+    @Test
+    fun indexPackageTest() {
+        val file = File("others.xml")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val prefixStr = "  <package pkgid="
+        val locationStr =
+            """name="trpc-go-helloword">
+    <version epoch="0" ver="0.0.1" rel="1"/>"""
+        val suffixStr = "</package>"
+        val xmlIndex = findPackageIndex(randomAccessFile, prefixStr, locationStr, suffixStr)
+        if (xmlIndex != null) {
+            println(xmlIndex.prefixIndex)
+            println(xmlIndex.locationIndex)
+            println(xmlIndex.suffixIndex)
+            println(xmlIndex.suffixEndIndex)
+        }
+    }
+
+    @Test
+    fun updateFileTest() {
+        val file = File("others.xml")
+        XmlStrUtils.updatePackageXml(RandomAccessFile(file, "rw"), 3, 1, "a".toByteArray())
+    }
+
+    @Test
+    fun resolvePackageCountTest() {
+        val file = File("${System.getenv("HOME")}/Downloads/63da8904a2791e4965dcda350b26ffa3d1eda27b-primary")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val count = XmlStrUtils.resolvePackageCount(randomAccessFile, IndexType.PRIMARY)
+        print("count: $count")
+    }
+
+    @Test
+    fun test() {
+        val file = File("${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master-20200921636887-1-x86_64.rpm")
+        println(XStreamUtil.checkMarkFile(file.inputStream().readBytes()))
+
+>>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     }
 }
