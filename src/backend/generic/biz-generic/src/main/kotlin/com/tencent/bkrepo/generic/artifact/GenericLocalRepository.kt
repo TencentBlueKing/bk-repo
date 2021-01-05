@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.ATTRIBUTE_OCTET_STREAM_MD5
@@ -14,6 +15,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
@@ -24,7 +26,10 @@ import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.URLDecoder
+import java.util.*
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -123,6 +128,7 @@ class GenericLocalRepository : LocalRepository() {
      */
     private fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
         val metadata = mutableMapOf<String, String>()
+        // case insensitive
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
@@ -132,6 +138,27 @@ class GenericLocalRepository : LocalRepository() {
                 }
             }
         }
+        // case sensitive, base64 metadata
+        request.getHeader(BKREPO_META)?.let {
+            try {
+                val metadataUrl = String(Base64.getDecoder().decode(it))
+                val parts = metadataUrl.split(StringPool.AND)
+                parts.forEach { part ->
+                    val pair = part.trim().split(StringPool.EQUAL, limit = 2)
+                    if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
+                        val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
+                        val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
+                        metadata[key] = value
+                    }
+                }
+            } catch (exception: IllegalArgumentException) {
+                logger.warn("$it is not in valid Base64 scheme.")
+            }
+        }
         return metadata
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
     }
 }
