@@ -15,7 +15,7 @@
     "description": "描述",
     "submit": "提交",
     "cancel": "取消",
-    "folderNamePlacehodler": "支持英文字母、数字、中划线、下划线、点，最长支持50个字符",
+    "folderNamePlacehodler": "英文字母、数字、中划线、下划线、点，最长支持50个字符",
     "repoNamePlacehodler": "英文字母开头，支持英文字母、数字、中划线、下划线，总长度2-32位",
     "repoDescriptionPlacehodler": "请输入仓库描述，最多200个字符",
     "repoConfig": "仓库配置",
@@ -52,6 +52,7 @@
     "pleaseSelect": "请选择",
     "pleaseInput": "请输入",
     "legit": "合法的" ,
+    "include": "只能包含",
     "ticket": "凭证",
     "guide": "使用指引",
     "file": "文件",
@@ -130,5 +131,7 @@
     "enableFileLists": "启用FileLists",
     "repodataDepth": "索引目录深度",
     "groupXmlSet": "分组文件名",
-    "permissionConfig": "权限管理"
+    "permissionConfig": "权限管理",
+    "noPermission": "未获得授权",
+    "logout": "退出"
 }

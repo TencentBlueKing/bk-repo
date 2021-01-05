@@ -137,7 +137,7 @@
     </bk-tab>
 </template>
 <script>
-    import emptyData from '@/components/emptyData'
+    import emptyData from '@/components/EmptyData'
     import CodeArea from '@/components/CodeArea'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@/utils'
