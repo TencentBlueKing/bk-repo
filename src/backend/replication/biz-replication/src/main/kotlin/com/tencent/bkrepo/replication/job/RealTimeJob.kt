@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.replication.job
 
+import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_SOURCE
+import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_STREAM
 import com.tencent.bkrepo.replication.handler.NodeEventConsumer
 import com.tencent.bkrepo.replication.model.TOperateLog
 import com.tencent.bkrepo.repository.pojo.log.OperateType
@@ -38,8 +40,10 @@ import com.tencent.bkrepo.repository.pojo.log.ResourceType
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.mapping.Document
+import org.springframework.data.mongodb.core.messaging.ChangeStreamRequest
 import org.springframework.data.mongodb.core.messaging.DefaultMessageListenerContainer
 import org.springframework.data.mongodb.core.messaging.MessageListener
 import org.springframework.data.mongodb.core.messaging.MessageListenerContainer
@@ -64,6 +68,9 @@ class RealTimeJob {
 
     private lateinit var container: MessageListenerContainer
 
+    @Value("\${replication.source:'log'}")
+    private var source: String = DEFAULT_REPLICA_SOURCE
+
     @Scheduled(cron = "00 */30 * * * ?")
     fun ping() {
         if (!container.isRunning) {
@@ -79,8 +86,13 @@ class RealTimeJob {
             try {
                 if (!isRunning) {
                     container = DefaultMessageListenerContainer(template)
-                    val request = getTailCursorRequest()
-                    container.register(request, TOperateLog::class.java)
+                    if (source == DEFAULT_REPLICA_STREAM) {
+                        val request = getChangeStreamRequest()
+                        container.register(request, TOperateLog::class.java)
+                    } else {
+                        val request = getTailCursorRequest()
+                        container.register(request, TOperateLog::class.java)
+                    }
                     container.start()
                     logger.info("try to start status :[${container.isRunning}]")
                 }
@@ -96,13 +108,35 @@ class RealTimeJob {
         }
     }
 
+    private fun getChangeStreamRequest(): ChangeStreamRequest<Any> {
+        val listener = buildListener()
+        // val pipeline = Pipeline.build
+        return ChangeStreamRequest.builder()
+            .collection(collectionName)
+            .publishTo(listener)
+            .filter()
+            .build()
+    }
+
     private fun getTailCursorRequest(): TailableCursorRequest<Any> {
-        val query = Query.query(
+        val query = buildQuery()
+        val listener = buildListener()
+        return TailableCursorRequest.builder()
+            .collection(collectionName)
+            .filter(query)
+            .publishTo(listener)
+            .build()
+    }
+
+    private fun buildQuery(): Query {
+        return Query.query(
             Criteria.where(TOperateLog::createdDate.name).gte(LocalDateTime.now()).and(TOperateLog::resourceType.name)
                 .`is`(ResourceType.NODE)
         )
+    }
 
-        val listener = MessageListener<Document, TOperateLog> {
+    private fun buildListener(): MessageListener<Document, TOperateLog> {
+        return MessageListener<Document, TOperateLog> {
             val body = it.body
             body?.let {
                 when (body.operateType) {
@@ -127,11 +161,6 @@ class RealTimeJob {
                 }
             }
         }
-        return TailableCursorRequest.builder()
-            .collection(collectionName)
-            .filter(query)
-            .publishTo(listener)
-            .build()
     }
 
     fun getContainerStatus(): Boolean {
