@@ -51,12 +51,12 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.Cookie
-import javax.servlet.http.HttpServletResponse
 
 @RestController
 class ServiceUserResourceImpl @Autowired constructor(
@@ -89,22 +89,14 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun listUser(rids: List<String>?): Response<List<UserResult>> {
-        var params = emptyList<String>()
-        rids?.let {
-            params = rids
-        }
-        val result = userService.listUser(params).map {
+        val result = userService.listUser(rids.orEmpty()).map {
             UserResult(it.userId, it.name)
         }
         return ResponseBuilder.success(result)
     }
 
     override fun listAllUser(rids: List<String>?): Response<List<User>> {
-        var params = emptyList<String>()
-        rids?.let {
-            params = rids
-        }
-        return ResponseBuilder.success(userService.listUser(params))
+        return ResponseBuilder.success(userService.listUser(rids.orEmpty()))
     }
 
     override fun deleteById(uid: String): Response<Boolean> {
@@ -181,7 +173,7 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    override fun loginUser(uid: String, token: String, response: HttpServletResponse): Response<Boolean> {
+    override fun loginUser(uid: String, token: String): Response<Boolean> {
         userService.findUserByUserToken(uid, token) ?: run {
             logger.info("user not match [$uid]")
             return ResponseBuilder.success(false)
@@ -190,7 +182,7 @@ class ServiceUserResourceImpl @Autowired constructor(
         val cookie = Cookie(BKREPO_TICKET, ticket)
         cookie.path = "/"
         cookie.maxAge = 60 * 60 * 24
-        response.addCookie(cookie)
+        HttpContextHolder.getResponse().addCookie(cookie)
         return ResponseBuilder.success(true)
     }
 

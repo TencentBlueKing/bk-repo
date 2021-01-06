@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.docker.constant.DOCKER_CREATE_BY
@@ -327,11 +326,11 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file can be read
      */
     fun canRead(context: RequestContext): Boolean {
-        val projectP = checkProjectRepoPermission(context, ResourceType.PROJECT, PermissionAction.READ)
-        if (projectP) {
+        val repoPermission = checkProjectRepoPermission(context, ResourceType.REPO, PermissionAction.READ)
+        if (repoPermission) {
             return true
         }
-        return checkProjectRepoPermission(context, ResourceType.REPO, PermissionAction.READ)
+        return checkProjectRepoPermission(context, ResourceType.PROJECT, PermissionAction.READ)
     }
 
     /**
@@ -340,11 +339,11 @@ class DockerArtifactRepo @Autowired constructor(
      * @return Boolean is the file can be write
      */
     fun canWrite(context: RequestContext): Boolean {
-        val projectP = checkProjectRepoPermission(context, ResourceType.PROJECT, PermissionAction.WRITE)
-        if (projectP) {
+        val repoPermission = checkProjectRepoPermission(context, ResourceType.REPO, PermissionAction.WRITE)
+        if (repoPermission) {
             return true
         }
-        return checkProjectRepoPermission(context, ResourceType.REPO, PermissionAction.WRITE)
+        return checkProjectRepoPermission(context, ResourceType.PROJECT, PermissionAction.WRITE)
     }
 
     /**
@@ -367,7 +366,7 @@ class DockerArtifactRepo @Autowired constructor(
                 context.projectId,
                 context.repoName
             )
-        } catch (e: PermissionException) {
+        } catch (e: Exception) {
             logger.debug("user: [$userId] ,check  permission fail [$context]")
             return false
         }

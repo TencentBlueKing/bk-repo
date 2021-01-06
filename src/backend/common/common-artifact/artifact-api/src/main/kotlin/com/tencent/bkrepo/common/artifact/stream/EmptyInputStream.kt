@@ -41,10 +41,10 @@ class EmptyInputStream : InputStream() {
     override fun read() = -1
     override fun read(buf: ByteArray) = -1
     override fun read(buf: ByteArray, off: Int, len: Int): Int = -1
-    override fun reset() {}
+    override fun reset() = Unit
     override fun skip(n: Long) = 0L
-    override fun close() {}
-    override fun mark(readLimit: Int) {}
+    override fun close() = Unit
+    override fun mark(readLimit: Int) = Unit
     override fun markSupported() = true
 
     companion object {

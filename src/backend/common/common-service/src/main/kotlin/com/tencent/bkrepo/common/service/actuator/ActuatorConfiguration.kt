@@ -39,14 +39,25 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@ConditionalOnMicroService
 class ActuatorConfiguration {
 
     @Bean
-    @ConditionalOnMicroService
-    fun metricsCommonTags(registration: Registration): MeterRegistryCustomizer<MeterRegistry> {
-        return MeterRegistryCustomizer { registry: MeterRegistry ->
-            registry.config().commonTags("service", registration.serviceId)
-                .commonTags("instance", "${registration.host}-${registration.instanceId}")
+    fun metricsCommonTags(commonTagProvider: CommonTagProvider): MeterRegistryCustomizer<MeterRegistry> {
+        return MeterRegistryCustomizer { registry ->
+            commonTagProvider.provide().forEach {
+                registry.config().commonTags(it.key, it.value)
+            }
+        }
+    }
+
+    @Bean
+    fun commonTagProvider(registration: Registration) = object : CommonTagProvider {
+        override fun provide(): Map<String, String> {
+            return mapOf(
+                "service" to registration.serviceId,
+                "instance" to "${registration.host}-${registration.instanceId}"
+            )
         }
     }
 }

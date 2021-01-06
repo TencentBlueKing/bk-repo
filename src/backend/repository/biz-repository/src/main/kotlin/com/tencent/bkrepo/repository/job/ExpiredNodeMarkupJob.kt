@@ -53,8 +53,8 @@ class ExpiredNodeMarkupJob(
     private val nodeService: NodeService
 ) {
 
-    @Scheduled(cron = "0 0 0/3 * * ?")
-    @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT1H")
+    @Scheduled(cron = "0 0 0/6 * * ?")
+    @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT6H")
     fun markUp() {
         logger.info("Starting to mark up expired nodes.")
         var markupCount = 0L
@@ -64,7 +64,7 @@ class ExpiredNodeMarkupJob(
         for (sequence in 0 until SHARDING_COUNT) {
             val collectionName = nodeDao.parseSequenceToCollectionName(sequence)
             var page = 0
-            query.with(PageRequest.of(page, 1000))
+            query.with(PageRequest.of(page, PAGE_SIZE))
             var deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
             while (deletedNodeList.isNotEmpty()) {
                 logger.info("Retrieved [${deletedNodeList.size}] expired records to be clean up.")
@@ -73,7 +73,7 @@ class ExpiredNodeMarkupJob(
                     markupCount += 1
                 }
                 page += 1
-                query.with(PageRequest.of(page, 1000))
+                query.with(PageRequest.of(page, PAGE_SIZE))
                 deletedNodeList = mongoTemplate.find(query, TNode::class.java, collectionName)
             }
         }
@@ -83,5 +83,6 @@ class ExpiredNodeMarkupJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val PAGE_SIZE = 1000
     }
 }

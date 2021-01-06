@@ -1,20 +1,43 @@
-apply(plugin = "signing")
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-val isReleaseVersion = !version.toString().endsWith("SNAPSHOT")
-
-configure<PublishingExtension> {
-    publications {
-        plugins.findPlugin(JavaPlugin::class.java)?.let {
-            create<MavenPublication>("jar") {
-                from(components["java"])
-            }
-        }
-        plugins.findPlugin(JavaPlatformPlugin::class.java)?.let {
-            create<MavenPublication>("pom") {
-                from(components["javaPlatform"])
-            }
-        }
-
+listOf(
+    ":common:common-api",
+    ":common:common-artifact:artifact-api",
+    ":common:common-query:query-api",
+    ":generic:api-generic",
+    ":repository:api-repository"
+).map { project(it) }.forEach {
+    it.apply(plugin = "com.tencent.devops.publish")
+    it.configure<PublishingExtension> {
         publications.withType<MavenPublication> {
             pom {
                 name.set(project.name)
@@ -42,27 +65,5 @@ configure<PublishingExtension> {
             }
         }
     }
-
-    configure<SigningExtension> {
-        val signingKey: String? by project
-        val signingKeyId: String? by project
-        val signingPassword: String? by project
-        useInMemoryPgpKeys( signingKeyId, signingKey, signingPassword)
-        setRequired({ isReleaseVersion && gradle.taskGraph.hasTask("upload")})
-        sign(publications)
-    }
 }
 
-extensions.findByType(JavaPluginExtension::class.java)?.run {
-    withJavadocJar()
-    withSourcesJar()
-}
-
-tasks {
-    withType<Jar> {
-        manifest {
-            attributes("Implementation-Title" to (project.description ?: project.name))
-            attributes("Implementation-Version" to project.version)
-        }
-    }
-}

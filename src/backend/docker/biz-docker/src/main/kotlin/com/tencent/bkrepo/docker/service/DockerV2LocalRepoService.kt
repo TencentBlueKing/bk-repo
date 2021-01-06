@@ -295,20 +295,20 @@ class DockerV2LocalRepoService @Autowired constructor(
         with(context) {
             val request =
                 PackageVersionCreateRequest(
-                    projectId,
-                    repoName,
-                    artifactName,
-                    PackageKeys.ofDocker(artifactName),
-                    PackageType.DOCKER,
-                    null,
-                    tag,
-                    uploadResult.second,
-                    manifestPath,
-                    null,
-                    null,
-                    null,
-                    true,
-                    artifactRepo.userId
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageName = artifactName,
+                    packageKey = PackageKeys.ofDocker(artifactName),
+                    packageType = PackageType.DOCKER,
+                    packageDescription = null,
+                    versionName = tag,
+                    size = uploadResult.second,
+                    manifestPath = manifestPath,
+                    artifactPath = null,
+                    stageTag = null,
+                    metadata = null,
+                    overwrite = true,
+                    createdBy = artifactRepo.userId
                 )
             packageRepo.createVersion(request)
         }
@@ -324,6 +324,10 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun isBlobExists(context: RequestContext, digest: DockerDigest): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("check blob exist [$context, $digest]")
+        if (!artifactRepo.canWrite(context)) {
+            logger.warn("unable to upload manifest [$context]")
+            return DockerV2Errors.unauthorizedUpload()
+        }
         if (isEmptyBlob(digest)) {
             logger.info("check is empty blob [$context, $digest]")
             return emptyBlobHeadResponse()

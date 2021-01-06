@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.repo
 
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -41,7 +42,8 @@ data class RepoListViewItem(
     val lastModified: String,
     val category: String,
     val type: String,
-    val public: String
+    val public: String,
+    val storage: String
 ) : Comparable<RepoListViewItem> {
 
     override fun compareTo(other: RepoListViewItem): Int {
@@ -57,7 +59,16 @@ data class RepoListViewItem(
                 val localDateTime = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
                 val lastModified = formatters.format(localDateTime)
                 val public = public.toString()
-                return RepoListViewItem(normalizedName, lastModified, createdBy, category.name, type.name, public)
+                val storage = storageCredentialsKey ?: DEFAULT_STORAGE_KEY
+                return RepoListViewItem(
+                    name = normalizedName,
+                    createdBy = lastModified,
+                    lastModified = createdBy,
+                    category = category.name,
+                    type = type.name,
+                    public = public,
+                    storage = storage
+                )
             }
         }
     }

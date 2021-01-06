@@ -101,16 +101,22 @@ class UserServiceImpl constructor(
         query.addCriteria(Criteria.where("name").`is`(request.projectId))
         val result = mongoTemplate.count(query, "project")
         if (result == 0L) {
-            logger.warn("user [${request.projectId}]  not exist.")
+            logger.warn("project [${request.projectId}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PROJECT_NOT_EXIST)
         }
         // user not exist, create user
-        val userResult = createUser(convCreateUserRequest(request))
-        if (!userResult) {
-            logger.warn("create user fail [$userResult]")
-            return false
+        try {
+            val userResult = createUser(convCreateUserRequest(request))
+            if (!userResult) {
+                logger.warn("create user fail [$userResult]")
+                return false
+            }
+        } catch (exception: ErrorCodeException) {
+            if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
+                return true
+            }
+            throw  exception
         }
-
         return true
     }
 

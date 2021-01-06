@@ -47,7 +47,10 @@ import org.springframework.util.ClassUtils
 /**
  * 自动扫描[Resolver]注解
  */
-class ResolverScannerRegistrar : ImportBeanDefinitionRegistrar, ResourceLoaderAware, BeanClassLoaderAware,
+class ResolverScannerRegistrar :
+    ImportBeanDefinitionRegistrar,
+    ResourceLoaderAware,
+    BeanClassLoaderAware,
     EnvironmentAware {
 
     private var resourceLoader: ResourceLoader? = null

@@ -33,6 +33,8 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
@@ -55,15 +57,19 @@ import org.springframework.stereotype.Service
 import java.net.URLEncoder.encode
 
 @Service
-class ReplicationService(val repoDataService: RepoDataService) {
+class ReplicationService(
+    private val repoDataService: RepoDataService,
+    private val replicationProperties: ReplicationProperties
+) {
 
     fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
             val localRepoDetail = currentRepoDetail.localRepoDetail
             val inputStream = repoDataService.getFile(request.sha256!!, request.size!!, localRepoDetail)
+            val rateLimitInputStream = inputStream.rateLimit(replicationProperties.rateLimit.toBytes())
+            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM, rateLimitInputStream, request.size!!)
             val fullPath = encode(request.fullPath, "utf-8")
-            val fileRequestBody = RequestBodyUtil.create(MEDIA_TYPE_STREAM, inputStream, request.size!!)
             val builder = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", fullPath, fileRequestBody)
@@ -107,9 +113,7 @@ class ReplicationService(val repoDataService: RepoDataService) {
         fullPath: String
     ): Boolean {
         with(context) {
-            return replicationClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: run {
-                return false
-            }
+            return replicationClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: false
         }
     }
 

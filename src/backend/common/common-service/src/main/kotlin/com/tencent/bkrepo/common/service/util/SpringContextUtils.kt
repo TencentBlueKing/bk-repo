@@ -46,8 +46,7 @@ class SpringContextUtils : ApplicationContextAware {
 
     companion object {
 
-        // LateinitUsage: 静态成员通过init构造函数初始化
-        @Suppress("LateinitUsage")
+        @Suppress("LateinitUsage") // 静态成员通过init构造函数初始化
         private lateinit var applicationContext: ApplicationContext
 
         /**
@@ -96,6 +95,14 @@ class SpringContextUtils : ApplicationContextAware {
         @Throws(BeansException::class)
         fun <T : Annotation> getBeansWithAnnotation(clazz: Class<T>): List<Any> {
             return applicationContext.getBeansWithAnnotation(clazz).values.toList()
+        }
+
+        /**
+         * 发送事件
+         * @param event – the event to publish
+         */
+        fun publishEvent(event: Any) {
+            applicationContext.publishEvent(event)
         }
     }
 }

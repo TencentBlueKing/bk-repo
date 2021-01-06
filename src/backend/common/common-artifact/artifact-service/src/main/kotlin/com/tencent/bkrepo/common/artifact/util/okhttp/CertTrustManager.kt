@@ -41,6 +41,9 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 
+/**
+ * SSL证书管理器
+ */
 object CertTrustManager {
 
     private const val TLS = "TLS"
@@ -76,7 +79,7 @@ object CertTrustManager {
         val algorithm = TrustManagerFactory.getDefaultAlgorithm()
         val trustManagerFactory = TrustManagerFactory.getInstance(algorithm).apply { init(keyStore) }
         val trustManagers = trustManagerFactory.trustManagers
-        check(trustManagers.size == 1) { "Unexpected default trust managers size: ${trustManagers.size}"}
+        check(trustManagers.size == 1) { "Unexpected default trust managers size: ${trustManagers.size}" }
         val firstTrustManager = trustManagers.first()
         check(firstTrustManager is X509TrustManager) { "Unexpected default trust managers:$firstTrustManager" }
         return firstTrustManager

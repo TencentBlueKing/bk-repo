@@ -33,8 +33,8 @@ package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRandomName
+import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
@@ -42,13 +42,15 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
-import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 
+/**
+ * application/octet-stream流类型ArtifactFile
+ */
 open class OctetStreamArtifactFile(
     private val source: InputStream,
     private val monitor: StorageHealthMonitor,
@@ -60,13 +62,13 @@ open class OctetStreamArtifactFile(
     private var sha1: String? = null
     private val listener: DigestCalculateListener
     private val receiver: SmartStreamReceiver
-    private val artifactMetrics: ArtifactMetrics = SpringContextUtils.getBean()
 
     init {
         val path = storageCredentials.upload.location.toPath()
         val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
         val enableTransfer = storageProperties.monitor.enableTransfer
-        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer)
+        val rateLimit = storageProperties.rateLimit
+        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer, rateLimit)
         listener = DigestCalculateListener()
         if (!storageProperties.isResolveLazily) {
             init()
@@ -131,7 +133,7 @@ open class OctetStreamArtifactFile(
         if (hasInitialized && !isInMemory()) {
             try {
                 Files.deleteIfExists(receiver.getFilePath())
-            } catch (e: NoSuchFileException) { // already deleted
+            } catch (ignored: NoSuchFileException) { // already deleted
             }
         }
     }
@@ -140,7 +142,7 @@ open class OctetStreamArtifactFile(
         return hasInitialized
     }
 
-    fun init() {
+    private fun init() {
         if (hasInitialized) {
             return
         }
@@ -152,16 +154,10 @@ open class OctetStreamArtifactFile(
                 }
             }
             val throughput = receiver.receive(source, listener)
-            artifactMetrics.uploadedSizeCounter.increment(throughput.bytes.toDouble())
-            artifactMetrics.uploadedConsumeTimer.record(throughput.duration)
-            logger.info("Receive artifact file, $throughput.")
             hasInitialized = true
+            SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
         } finally {
             monitor.remove(receiver)
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(OctetStreamArtifactFile::class.java)
     }
 }

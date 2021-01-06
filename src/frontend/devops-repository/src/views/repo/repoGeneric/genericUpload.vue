@@ -41,8 +41,7 @@
         },
         methods: {
             ...mapActions([
-                'uploadArtifactory',
-                'checkFileExist'
+                'uploadArtifactory'
             ]),
             uploadFile (file, progressHandler) {
                 this.loading = true
@@ -80,18 +79,23 @@
                 const { file, progressHandler } = await this.$refs.artifactoryUpload.getFiles()
                 if (!file.overwrite) {
                     this.loading = true
-                    await this.checkFileExist({
-                        projectId: this.$route.params.projectId,
-                        repoName: this.$route.query.name,
-                        fullPath: `${this.fullPath}/${file.name}`
-                    }).then(() => {
-                        this.uploadFile(file, progressHandler)
-                    }).catch(() => {
+                    const url = `/generic/${this.$route.params.projectId}/${this.$route.query.name}/${encodeURIComponent(`${this.fullPath}/${file.name}`)}`
+                    this.$ajax.head(url).then(() => {
                         this.$bkMessage({
                             theme: 'error',
                             message: this.$t('fileExist')
                         })
                         this.loading = false
+                    }).catch(e => {
+                        if (e.status === 404) {
+                            this.uploadFile(file, progressHandler)
+                        } else if (e.status === 403) {
+                            this.$bkMessage({
+                                theme: 'error',
+                                message: e.message
+                            })
+                            this.loading = false
+                        }
                     })
                 } else {
                     this.uploadFile(file, progressHandler)

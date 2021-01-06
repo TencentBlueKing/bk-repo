@@ -74,7 +74,7 @@
                 <bk-button class="detail-btn" theme="primary" @click.stop="showDetail()">{{ $t('showDetail') }}</bk-button>
                 <div class="actions-btn flex-column">
                     <template v-if="selectedRow.fullPath !== selectedTreeNode.fullPath || query">
-                        <template v-if="repoName === 'custom'">
+                        <template v-if="MODE_CONFIG === 'standalone' || repoName === 'custom'">
                             <bk-button @click.stop="renameRes()" text theme="primary">
                                 <i class="mr5 devops-icon icon-edit"></i>
                                 {{ $t('rename') }}
@@ -104,7 +104,7 @@
                         </template>
                     </template>
                     <template v-else>
-                        <template v-if="repoName === 'custom'">
+                        <template v-if="MODE_CONFIG === 'standalone' || repoName === 'custom'">
                             <bk-button @click.stop="addFolder()" text theme="primary">
                                 <i class="mr5 devops-icon icon-folder-plus"></i>
                                 {{$t('create') + $t('folder')}}
@@ -247,7 +247,7 @@
                         },
                         {
                             regex: /^((\w|-|\.){1,50}\/)*((\w|-|\.){1,50})$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('folder') + this.$t('path'),
+                            message: this.$t('folder') + this.$t('path') + this.$t('include') + this.$t('folderNamePlacehodler'),
                             trigger: 'blur'
                         }
                     ],
@@ -259,7 +259,7 @@
                         },
                         {
                             regex: /^(\w|-|\.){1,50}$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('fileName'),
+                            message: this.$t('fileName') + this.$t('include') + this.$t('folderNamePlacehodler'),
                             trigger: 'blur'
                         }
                     ],
@@ -699,10 +699,10 @@
                         '/web' + url,
                         '_self'
                     )
-                }).catch(() => {
+                }).catch(e => {
                     this.$bkMessage({
                         theme: 'error',
-                        message: this.$t('fileNotExist')
+                        message: e.status !== 404 ? e.message : this.$t('fileNotExist')
                     })
                 })
             },

@@ -31,41 +31,23 @@
 
 package com.tencent.bkrepo.common.security.http
 
-import com.tencent.bkrepo.common.security.http.core.HttpAuthInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import org.springframework.beans.factory.ObjectProvider
+import com.tencent.bkrepo.common.security.http.login.LoginConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 /**
  * HTTP 请求认证配置类
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(
     HttpAuthProperties::class,
     JwtAuthProperties::class
 )
-@Import(HttpAuthSecurityConfiguration::class)
-class HttpAuthConfiguration(
-    private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
-) {
-
-    @Bean
-    fun httpAuthWebMvcConfigurer() = object : WebMvcConfigurer {
-        override fun addInterceptors(registry: InterceptorRegistry) {
-            httpAuthSecurity.stream().forEach {
-                val httpAuthInterceptor = HttpAuthInterceptor(it)
-                registry.addInterceptor(httpAuthInterceptor)
-                    .addPathPatterns(it.getIncludedPatterns())
-                    .excludePathPatterns(it.getExcludedPatterns())
-            }
-        }
-    }
-
-}
+@Import(
+    LoginConfiguration::class,
+    HttpAuthSecurityConfiguration::class
+)
+class HttpAuthConfiguration

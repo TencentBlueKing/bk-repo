@@ -39,16 +39,17 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
 import org.springframework.cglib.proxy.MethodInterceptor
 import org.springframework.cglib.proxy.MethodProxy
+import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
 class ArtifactBeanProxy<T>(
     private val classType: Class<T>
-): MethodInterceptor {
+) : MethodInterceptor {
 
     @Suppress("IMPLICIT_CAST_TO_ANY")
     override fun intercept(proxy: Any, method: Method, args: Array<out Any>?, methodProxy: MethodProxy): Any? {
         val configurer = ArtifactContextHolder.getCurrentArtifactConfigurer()
-        val target = when(classType) {
+        val target = when (classType) {
             ArtifactRepository::class.java -> ArtifactContextHolder.getRepository()
             LocalRepository::class.java -> configurer.getLocalRepository()
             RemoteRepository::class.java -> configurer.getRemoteRepository()
@@ -56,6 +57,10 @@ class ArtifactBeanProxy<T>(
             ExceptionResponseTranslator::class.java -> configurer.getExceptionResponseTranslator()
             else -> throw IllegalArgumentException("Unsupported proxy object[$classType]")
         }
-        return method.invoke(target, *(args ?: emptyArray()))
+        try {
+            return method.invoke(target, *(args ?: emptyArray()))
+        } catch (exception: InvocationTargetException) {
+            throw exception.targetException
+        }
     }
 }

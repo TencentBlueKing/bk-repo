@@ -58,15 +58,6 @@ object PackageKeys {
     }
 
     /**
-     * 生成name格式key
-     *
-     * 例子: {schema}://test
-     */
-    fun ofName(schema: String, name: String): String {
-        return StringBuilder(schema).append(SEPARATOR).append(name).toString()
-    }
-
-    /**
      * 生成docker格式key
      *
      * 例子: docker://test
@@ -98,7 +89,7 @@ object PackageKeys {
      * 例子: rpm://test
      */
     fun ofRpm(path: String, name: String): String {
-        return if (!path.isBlank()) {
+        return if (path.isNotBlank()) {
             StringBuilder(RPM).append(SEPARATOR).append(path)
                 .append(StringPool.SLASH)
                 .append(name)
@@ -188,6 +179,15 @@ object PackageKeys {
     }
 
     /**
+     * 生成name格式key
+     *
+     * 例子: {schema}://test
+     */
+    private fun ofName(schema: String, name: String): String {
+        return StringBuilder(schema).append(SEPARATOR).append(name).toString()
+    }
+
+    /**
      * 解析nuget格式的key
      *
      * 例子: nuget://test  ->  test
@@ -201,7 +201,7 @@ object PackageKeys {
      *
      * 例子: {schema}://test  ->  test
      */
-    fun resolveName(schema: String, nameKey: String): String {
+    private fun resolveName(schema: String, nameKey: String): String {
         val prefix = StringBuilder(schema).append(SEPARATOR).toString()
         return nameKey.substringAfter(prefix)
     }

@@ -44,7 +44,8 @@ data class NodeListViewItem(
     val lastModified: String,
     val createdBy: String,
     val size: String,
-    val folder: Boolean
+    val folder: Boolean,
+    val sha256: String
 ) : Comparable<NodeListViewItem> {
 
     override fun compareTo(other: NodeListViewItem): Int {
@@ -60,7 +61,15 @@ data class NodeListViewItem(
             val normalizedSize = if (nodeInfo.folder) "-" else HumanReadable.size(nodeInfo.size)
             val localDateTime = LocalDateTime.parse(nodeInfo.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             val lastModified = formatters.format(localDateTime)
-            return NodeListViewItem(normalizedName, lastModified, nodeInfo.createdBy, normalizedSize, nodeInfo.folder)
+            val sha256 = if (nodeInfo.folder) "-" else nodeInfo.sha256.orEmpty()
+            return NodeListViewItem(
+                name = normalizedName,
+                lastModified = lastModified,
+                createdBy = nodeInfo.createdBy,
+                size = normalizedSize,
+                folder = nodeInfo.folder,
+                sha256 = sha256
+            )
         }
     }
 }

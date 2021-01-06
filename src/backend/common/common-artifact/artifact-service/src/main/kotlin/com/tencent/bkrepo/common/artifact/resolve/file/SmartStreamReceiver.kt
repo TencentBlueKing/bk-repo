@@ -33,15 +33,17 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import org.slf4j.LoggerFactory
+import org.springframework.util.unit.DataSize
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.nio.channels.ClosedChannelException
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.system.measureNanoTime
@@ -50,7 +52,8 @@ class SmartStreamReceiver(
     private val fileSizeThreshold: Long,
     private val filename: String,
     private var path: Path,
-    private val enableTransfer: Boolean
+    private val enableTransfer: Boolean,
+    private val rateLimit: DataSize? = null
 ) : StorageHealthMonitor.Observer {
     private val contentBytes = ByteArrayOutputStream(DEFAULT_BUFFER_SIZE)
     private var outputStream: OutputStream = contentBytes
@@ -63,18 +66,19 @@ class SmartStreamReceiver(
 
     fun receive(source: InputStream, listener: StreamReceiveListener): Throughput {
         try {
+            val input = source.rateLimit(rateLimit?.toBytes() ?: -1)
             var bytesCopied: Long = 0
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
             val nanoTime = measureNanoTime {
-                source.use {
-                    var bytes = source.read(buffer)
+                input.use {
+                    var bytes = input.read(buffer)
                     while (bytes >= 0) {
                         checkFallback()
                         outputStream.write(buffer, 0, bytes)
                         listener.data(buffer, 0, bytes)
                         bytesCopied += bytes
                         checkThreshold(bytesCopied)
-                        bytes = source.read(buffer)
+                        bytes = input.read(buffer)
                     }
                 }
             }
@@ -84,19 +88,9 @@ class SmartStreamReceiver(
             return Throughput(bytesCopied, nanoTime)
         } catch (exception: IOException) {
             cleanTempFile()
-            val message = exception.message.orEmpty()
-            when {
-                message.contains("Connection reset by peer") -> {
-                    throw ArtifactReceiveException(message)
-                }
-                message.contains("Remote peer closed connection") -> {
-                    throw ArtifactReceiveException(message)
-                }
-                exception is ClosedChannelException -> {
-                    throw ArtifactReceiveException("Channel closed")
-                }
-                else -> throw exception
-            }
+            if (IOExceptionUtils.isClientBroken(exception)) {
+                throw ArtifactReceiveException(exception.message.orEmpty())
+            } else throw exception
         } finally {
             cleanOriginalOutputStream()
         }

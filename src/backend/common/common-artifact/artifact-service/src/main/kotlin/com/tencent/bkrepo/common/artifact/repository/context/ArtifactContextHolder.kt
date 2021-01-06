@@ -48,15 +48,11 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 
-// LateinitUsage: 静态成员通过init构造函数初始化
-@Suppress("LateinitUsage")
-@Component
+@Suppress("LateinitUsage") // 静态成员通过init构造函数初始化
 class ArtifactContextHolder(
     artifactConfigurers: List<ArtifactConfigurer>,
     compositeRepository: CompositeRepository,
@@ -78,7 +74,6 @@ class ArtifactContextHolder(
         private lateinit var compositeRepository: CompositeRepository
         private lateinit var repositoryClient: RepositoryClient
 
-        private val logger = LoggerFactory.getLogger(ArtifactContextHolder::class.java)
         private val artifactConfigurerMap = mutableMapOf<RepositoryType, ArtifactConfigurer>()
         private val repositoryDetailCache = CacheBuilder.newBuilder()
             .maximumSize(1000)
@@ -177,6 +172,4 @@ class ArtifactContextHolder(
             return StringBuilder(projectId).append(CharPool.SLASH).append(repoName).toString()
         }
     }
-
-
 }

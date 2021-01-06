@@ -54,7 +54,7 @@ class BootAssemblyHandlerMapping : RequestMappingHandlerMapping() {
     }
 
     override fun registerHandlerMethod(handler: Any, method: Method, mapping: RequestMappingInfo) {
-        updateMapping(mapping, method)?.let{
+        updateMapping(mapping, method)?.let {
             super.registerHandlerMethod(handler, method, it)
         }
     }

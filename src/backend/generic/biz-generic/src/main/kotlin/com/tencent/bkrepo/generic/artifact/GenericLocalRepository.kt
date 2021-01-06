@@ -198,7 +198,6 @@ class GenericLocalRepository : LocalRepository() {
         return metadata
     }
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
     }
