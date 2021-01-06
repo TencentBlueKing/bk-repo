@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.nuget.model
 
-data class NugetExceptionResponse(
+data class NugetErrorResponse(
     val status: String,
     val error: String?
 )

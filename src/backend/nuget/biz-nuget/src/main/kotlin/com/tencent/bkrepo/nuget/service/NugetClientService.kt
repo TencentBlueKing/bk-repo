@@ -2,7 +2,7 @@ package com.tencent.bkrepo.nuget.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.model.search.NuGetSearchRequest
+import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 
 interface NugetClientService {
 
@@ -25,4 +25,9 @@ interface NugetClientService {
      * find packages By id
      */
     fun findPackagesById(artifactInfo: NugetArtifactInfo, searchRequest: NuGetSearchRequest)
+
+    /**
+     * 删除 [packageId].[packageVersion].nupkg 包
+     */
+    fun delete(userId: String, artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String)
 }

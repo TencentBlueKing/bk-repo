@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.nuget.util
 
+import com.github.zafarkhaja.semver.Version
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.nuget.model.nuspec.Dependency
 import com.tencent.bkrepo.nuget.model.nuspec.NuspecMetadata
@@ -8,6 +9,11 @@ import com.tencent.bkrepo.nuget.model.v3.RegistrationCatalogEntry
 import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
 import com.tencent.bkrepo.nuget.model.v3.RegistrationLeaf
 import com.tencent.bkrepo.nuget.model.v3.RegistrationPage
+import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
+import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseData
+import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseDataVersion
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
@@ -55,7 +61,7 @@ object NugetV3RegistrationUtils {
         }
     }
 
-    fun metadataToRegistrationCatalogEntry(
+    private fun metadataToRegistrationCatalogEntry(
         nupkgMetadata: NuspecMetadata,
         v3RegistrationUrl: String,
         dependencyGroups: List<DependencyGroups>?
@@ -136,5 +142,65 @@ object NugetV3RegistrationUtils {
             return versionCount % versionCountPrePage
         }
         return versionCountPrePage
+    }
+
+    private fun isPreRelease(version: String):Boolean{
+        return try {
+            val v = Version.valueOf(version)
+            v.preReleaseVersion.isNotEmpty()
+        }catch (ex: Exception){
+            logger.trace("could not parse version: [$version] as semver2.")
+            true
+        }
+    }
+
+    fun versionListToSearchResponse(
+        sortedPackageVersionList: List<PackageVersion>,
+        packageSummary: PackageSummary,
+        searchRequest: SearchRequest,
+        v3RegistrationUrl: String
+    ): SearchResponseData {
+        val latestVersionPackage = sortedPackageVersionList.last()
+        val searchResponseDataVersionList =
+            sortedPackageVersionList.filter { searchRequest.prerelease || !isPreRelease(latestVersionPackage.name) }
+                .map { buildSearchResponseDataVersion(it, packageSummary.name, v3RegistrationUrl) }
+        val writeValueAsString = JsonUtils.objectMapper.writeValueAsString(latestVersionPackage.metadata)
+        val nuspecMetadata = JsonUtils.objectMapper.readValue(writeValueAsString, NuspecMetadata::class.java)
+        return buildSearchResponseData(v3RegistrationUrl, searchResponseDataVersionList, nuspecMetadata, packageSummary)
+    }
+
+    private fun buildSearchResponseData(
+        v3RegistrationUrl: String,
+        searchResponseDataVersionList: List<SearchResponseDataVersion>,
+        nuspecMetadata: NuspecMetadata,
+        packageSummary: PackageSummary
+    ): SearchResponseData {
+        with(nuspecMetadata){
+            return SearchResponseData(
+                id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, id),
+                version = version,
+                packageId = id,
+                description = description,
+                versions = searchResponseDataVersionList,
+                authors = authors.split(','),
+                iconUrl = iconUrl?.let { URI.create(it) },
+                licenseUrl = licenseUrl?.let { URI.create(it) },
+                owners = owners?.split(','),
+                projectUrl = projectUrl?.let { URI.create(it) },
+                registration = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, id),
+                summary = summary,
+                tags = tags?.split(','),
+                title = title,
+                totalDownloads = packageSummary.downloads.toInt(),
+                verified = false,
+                packageTypes = emptyList()
+            )
+        }
+    }
+
+    private fun buildSearchResponseDataVersion(packageVersion: PackageVersion, packageId: String, v3RegistrationUrl: String): SearchResponseDataVersion {
+        with(packageVersion){
+            return SearchResponseDataVersion(NugetUtils.buildRegistrationLeafUrl(v3RegistrationUrl, packageId, name), name, downloads.toInt())
+        }
     }
 }

@@ -2,6 +2,8 @@ package com.tencent.bkrepo.nuget.service
 
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
+import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
+import com.tencent.bkrepo.nuget.model.v3.search.SearchResponse
 
 interface NugetV3ClientService {
     /**
@@ -18,4 +20,9 @@ interface NugetV3ClientService {
      * 下载 [packageId].[packageVersion].nupkg 包
      */
     fun download(artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String)
+
+    /**
+     * 根绝[searchRequest]里面的条件进行搜索
+     */
+    fun search(artifactInfo: NugetArtifactInfo, searchRequest: SearchRequest): SearchResponse
 }

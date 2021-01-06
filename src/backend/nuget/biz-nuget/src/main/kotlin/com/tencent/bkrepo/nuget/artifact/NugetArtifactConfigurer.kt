@@ -42,10 +42,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.nuget.artifact.repository.NugetLocalRepository
 import com.tencent.bkrepo.nuget.artifact.repository.NugetRemoteRepository
 import com.tencent.bkrepo.nuget.artifact.repository.NugetVirtualRepository
-import com.tencent.bkrepo.nuget.pojo.NugetExceptionResponse
-import com.tencent.bkrepo.nuget.model.NugetExceptionResponse
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.nuget.model.NugetErrorResponse
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Component
@@ -65,7 +62,7 @@ class NugetArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return NugetExceptionResponse(StringPool.EMPTY, payload.message.orEmpty())
+            return NugetErrorResponse(StringPool.EMPTY, payload.message.orEmpty())
         }
     }
 }

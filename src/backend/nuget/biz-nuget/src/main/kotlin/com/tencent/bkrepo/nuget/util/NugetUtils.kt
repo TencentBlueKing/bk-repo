@@ -7,6 +7,10 @@ import java.util.StringJoiner
 
 object NugetUtils {
 
+    fun getNupkgFullPath(id: String, version: String): String {
+        return String.format("/%s/%s.%s.nupkg", id, id, version).toLowerCase()
+    }
+
     fun getNupkgFileName(id: String, version: String): String {
         return String.format("%s.%s.nupkg", id, version).toLowerCase()
     }
@@ -22,7 +26,7 @@ object NugetUtils {
     }
 
     fun buildPackageContentUrl(v3RegistrationUrl: String, packageId: String, version: String): URI {
-        val packageContentUrl= StringJoiner("/").add(UrlFormatter.formatUrl(v3RegistrationUrl.removeSuffix("registration-semver2")))
+        val packageContentUrl= StringJoiner("/").add(UrlFormatter.formatUrl(v3RegistrationUrl.removeSuffix("registration-semver2").plus("flatcontainer")))
             .add(packageId).add(version).add(getNupkgFileName(packageId, version))
         return URI.create(packageContentUrl.toString())
     }

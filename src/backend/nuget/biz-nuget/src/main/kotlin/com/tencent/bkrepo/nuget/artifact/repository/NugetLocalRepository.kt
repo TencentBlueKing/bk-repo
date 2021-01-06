@@ -32,15 +32,17 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.nuget.util.ArtifactFileUtils.getNupkgFullPath
-import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.nuget.constants.FULL_PATH
 import com.tencent.bkrepo.nuget.constants.METADATA
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
@@ -65,5 +67,21 @@ class NugetLocalRepository : LocalRepository() {
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
+    }
+
+    override fun remove(context: ArtifactRemoveContext) {
+        val repositoryDetail = context.repositoryDetail
+        val projectId = repositoryDetail.projectId
+        val repoName = repositoryDetail.name
+        val fullPath = context.getAttribute<List<*>>(FULL_PATH)
+        val userId = context.userId
+        fullPath?.forEach {
+            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
+            logger.info("delete artifact $it success in repo [${context.artifactInfo.getRepoIdentify()}].")
+        }
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(NugetLocalRepository::class.java)
     }
 }

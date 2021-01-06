@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.nuget.model.search
+package com.tencent.bkrepo.nuget.model.v2.search
 
 data class NuGetSearchRequest(
     val filter: String? = null,

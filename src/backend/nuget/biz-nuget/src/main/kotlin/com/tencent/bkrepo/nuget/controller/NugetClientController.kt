@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.nuget.controller
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.model.search.NuGetSearchRequest
+import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 import com.tencent.bkrepo.nuget.service.NugetClientService
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
@@ -46,7 +48,7 @@ import org.springframework.web.bind.annotation.RestController
 class NugetClientController(
     private val nugetClientService: NugetClientService
 ) {
-    @GetMapping("/{projectId}/{repoName}", produces = ["application/xml;charset=utf-8"])
+    @GetMapping("/{projectId}/{repoName}", produces = [APPLICATION_JSON])
     fun getServiceDocument(
         @ArtifactPathVariable artifactInfo: NugetArtifactInfo
     ): String {
@@ -78,5 +80,15 @@ class NugetClientController(
         searchRequest: NuGetSearchRequest
     ) {
         nugetClientService.findPackagesById(artifactInfo, searchRequest)
+    }
+
+    @DeleteMapping("/{projectId}/{repoName}/{packageId}/{packageVersion}")
+    fun delete(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: NugetArtifactInfo,
+        @PathVariable packageId: String,
+        @PathVariable packageVersion: String
+    ) {
+        nugetClientService.delete(userId, artifactInfo, packageId, packageVersion)
     }
 }

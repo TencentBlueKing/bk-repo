@@ -4,17 +4,18 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.async.NugetPackageHandler
+import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.constants.FULL_PATH
 import com.tencent.bkrepo.nuget.constants.HTTP_V2_BASE_URL
 import com.tencent.bkrepo.nuget.exception.NugetException
-import com.tencent.bkrepo.nuget.model.NupkgVersion
-import com.tencent.bkrepo.nuget.model.search.NuGetSearchRequest
+import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 import com.tencent.bkrepo.nuget.service.NugetClientService
 import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspec
 import com.tencent.bkrepo.nuget.util.NugetUtils
@@ -25,7 +26,7 @@ import java.io.IOException
 @Service
 class NugetClientServiceImpl(
     private val nugetPackageHandler: NugetPackageHandler
-) : NugetClientService {
+) : NugetClientService, NugetAbstractService() {
 
     override fun getServiceDocument(artifactInfo: NugetArtifactInfo): String {
         return try {
@@ -49,16 +50,16 @@ class NugetClientServiceImpl(
         }
         val context = ArtifactUploadContext(artifactFile)
         val nupkgPackage = artifactFile.getInputStream().use { it.resolverNuspec() }
-        val nupkgVersion = with(nupkgPackage.metadata) { NupkgVersion(id, version) }
-        context.putAttribute(FULL_PATH, nupkgVersion)
+        val nupkgFullPath = with(nupkgPackage.metadata) { NugetUtils.getNupkgFileName(id, version) }
+        context.putAttribute(FULL_PATH, nupkgFullPath)
         ArtifactContextHolder.getRepository().upload(context)
         nugetPackageHandler.createPackageVersion(userId, artifactInfo, nupkgPackage.metadata, artifactFile.getSize())
         logger.info(
-            "user [$userId] publish nuget package [${nupkgVersion.id}] with version [${nupkgVersion.version}] " +
-                "success to repo [${artifactInfo.getRepoIdentify()}]"
+            "user [$userId] publish nuget package [${nupkgPackage.metadata.id}] with version " +
+                "[${nupkgPackage.metadata.version}] success to repo [${artifactInfo.getRepoIdentify()}]"
         )
         artifactFile.delete()
-        return "Successfully published NuPkg to: $nupkgVersion"
+        return "Successfully published NuPkg to: $nupkgFullPath"
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -70,6 +71,25 @@ class NugetClientServiceImpl(
     }
 
     override fun findPackagesById(artifactInfo: NugetArtifactInfo, searchRequest: NuGetSearchRequest) {
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.DELETE)
+    override fun delete(userId: String, artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String) {
+        logger.info("handling delete package version request for package [$packageId] and version [$packageVersion] " +
+            "in repo [${artifactInfo.getRepoIdentify()}]")
+        with(artifactInfo) {
+            val nupkgFullPath = NugetUtils.getNupkgFullPath(packageId, packageVersion)
+            if (!exist(projectId, repoName, nupkgFullPath)) {
+                throw ArtifactNotFoundException("can not find version [$packageVersion] for package [$packageId]")
+            }
+            val context = ArtifactRemoveContext()
+            context.putAttribute(FULL_PATH, listOf(nupkgFullPath))
+            ArtifactContextHolder.getRepository().remove(context)
+            logger.info("userId [$userId] delete version [$packageVersion] for package [$packageId] " +
+                "in repo [${this.getRepoIdentify()}] success.")
+            // 删除包管理中对应的version
+            nugetPackageHandler.deleteVersion(userId, packageId, packageVersion, artifactInfo)
+        }
     }
 
     companion object {
