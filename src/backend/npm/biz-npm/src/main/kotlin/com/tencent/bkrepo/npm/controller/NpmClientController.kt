@@ -56,7 +56,6 @@ import org.springframework.web.bind.annotation.RestController
  * npm 客户端操作指令
  */
 @RestController
-@RequestMapping("")
 class NpmClientController(
     private val npmClientService: NpmClientService
 ) {
@@ -236,14 +235,15 @@ class NpmClientController(
      * npm unpublish package@1.0.0
      */
     @DeleteMapping(
-        "/**/{projectId}/{repoName}/{name}/-/{filename}/-rev/{rev}",
-        "/**/{projectId}/{repoName}/@{scope}/{name}/-/@{scope}/{filename}/-rev/{rev}"
+        "/**/{projectId}/{repoName}/{name}/{separator:-|download}/{filename}/-rev/{rev}",
+        "/**/{projectId}/{repoName}/@{scope}/{name}/{separator:-|download}/@{scope}/{filename}/-rev/{rev}"
     )
     fun deleteVersion(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @PathVariable scope: String?,
         @PathVariable name: String,
+        @PathVariable separator: String,
         @PathVariable filename: String,
         @PathVariable rev: String
     ): NpmDeleteResponse {

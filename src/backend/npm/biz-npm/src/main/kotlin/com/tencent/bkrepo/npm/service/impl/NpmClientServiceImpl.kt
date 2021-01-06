@@ -67,7 +67,6 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
 import com.tencent.bkrepo.npm.properties.NpmProperties
-import com.tencent.bkrepo.npm.service.AbstractNpmService
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
@@ -246,14 +245,22 @@ class NpmClientServiceImpl(
         val version = NpmUtils.analyseVersionFromPackageName(filename, name)
         logger.info("handling delete version [$version] request for package [$name]")
         val fullPathList = mutableListOf<String>()
-        fullPathList.add(NpmUtils.getTgzPath(name, version))
-        fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
-        val context = ArtifactRemoveContext()
-        context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
-        ArtifactContextHolder.getRepository().remove(context)
-        logger.info("userId [$userId] delete version [$version] for package [$name] success.")
-        // 删除包管理中对应的version
-        npmPackageHandler.deleteVersion(userId, name, version, artifactInfo)
+        val tgzPath = HttpContextHolder.getRequest().requestURI.substringAfterLast(artifactInfo.getRepoIdentify())
+            .substringBeforeLast("/-rev")
+        with(artifactInfo) {
+            if (!exist(projectId, repoName, tgzPath)) {
+                throw NpmArtifactNotFoundException("can not find version [$version] for package [$name]")
+            }
+            fullPathList.add(tgzPath)
+            // fullPathList.add(NpmUtils.getTgzPath(name, version))
+            fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
+            val context = ArtifactRemoveContext()
+            context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
+            ArtifactContextHolder.getRepository().remove(context)
+            logger.info("userId [$userId] delete version [$version] for package [$name] success.")
+            // 删除包管理中对应的version
+            npmPackageHandler.deleteVersion(userId, name, version, artifactInfo)
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -421,7 +428,7 @@ class NpmClientServiceImpl(
         val fullPath = "${versionMetadata.name}/-/$filename"
         with(artifactInfo) {
             if (exist(projectId, repoName, fullPath)) {
-                throw NpmArtifactExistException("cannot publish pre-existing version ${versionMetadata.version}")
+                throw NpmArtifactExistException("You cannot publish over the previously published versions: ${versionMetadata.version}.")
             }
             logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
             try {
