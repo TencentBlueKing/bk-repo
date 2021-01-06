@@ -40,7 +40,6 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
@@ -51,7 +50,7 @@ class HelmPackageHandler(
     /**
      * 创建包版本
      */
-    @Async
+    // @Async
     fun createVersion(
         userId: String,
         artifactInfo: ArtifactInfo,
@@ -89,7 +88,7 @@ class HelmPackageHandler(
     /**
      * 删除包
      */
-    @Async
+    // @Async
     fun deletePackage(userId: String, name: String, artifactInfo: ArtifactInfo) {
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
@@ -102,7 +101,7 @@ class HelmPackageHandler(
     /**
      * 删除版本
      */
-    @Async
+    // @Async
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: ArtifactInfo) {
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
