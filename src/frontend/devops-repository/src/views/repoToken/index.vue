@@ -5,7 +5,7 @@
                 {{ $t('token') }}
             </div>
             <div class="repo-token-operation">
-                <bk-button theme="default" @click="toRepo">
+                <bk-button theme="default" @click="$router.back()">
                     {{$t('returnBack')}}
                 </bk-button>
             </div>
@@ -78,21 +78,6 @@
                 } else {
                     return formatDate(time)
                 }
-            },
-            toRepo () {
-                const route = this.$route
-                const projectId = route.params.projectId
-                const repositoryHistory = JSON.parse(localStorage.getItem('repositoryHistory') || '{}')[projectId] || { type: 'generic', name: 'custom' }
-                this.$router.push({
-                    name: 'repoCommon',
-                    params: {
-                        ...route.params,
-                        repoType: repositoryHistory.type
-                    },
-                    query: {
-                        name: repositoryHistory.name
-                    }
-                })
             },
             getToken () {
                 this.isLoading = true
