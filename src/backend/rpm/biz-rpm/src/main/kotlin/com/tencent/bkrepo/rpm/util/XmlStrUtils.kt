@@ -34,11 +34,7 @@ package com.tencent.bkrepo.rpm.util
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
 import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.pojo.IndexType
-<<<<<<< HEAD
 import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
-=======
-import com.tencent.bkrepo.rpm.pojo.RepodataUri
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import com.tencent.bkrepo.rpm.pojo.XmlIndex
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
@@ -55,7 +51,8 @@ object XmlStrUtils {
     private const val METADATA_SUFFIX = "</metadata>"
 
     /**
-     * 插入索引
+     * 在原有xml索引文件开头写入新的内容
+     * 返回更新后xml
      */
     fun insertPackageIndex(randomAccessFile: RandomAccessFile, markContent: ByteArray): Int {
         val insertIndex = randomAccessFile.length() - METADATA_SUFFIX.length
@@ -64,7 +61,7 @@ object XmlStrUtils {
     }
 
     /**
-     * 替换索引
+     * 针对重复节点则替换相应数据
      */
     fun updatePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String, markContent: ByteArray): Int {
         logger.info("updatePackageIndex: indexType: $indexType, locationStr: ${locationStr.replace("\n", "")}")
@@ -94,14 +91,10 @@ object XmlStrUtils {
     }
 
     /**
-<<<<<<< HEAD
      * 删除包对应的索引
      * [indexType] 索引类型
      * [file] 需要删除内容的索引文件
      * [location] rpm构件相对repodata的目录
-=======
-     * 删除索引
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
      */
     fun deletePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String): Int {
         logger.info("deletePackageIndex: indexType: $indexType, locationStr: ${locationStr.replace("\n", "")}")
@@ -126,17 +119,11 @@ object XmlStrUtils {
     }
 
     /**
-     * 按照仓库设置的 repodata 深度分割请求参数
+     * 按照仓库设置的repodata深度 分割请求参数
      */
-<<<<<<< HEAD
     fun resolveRepodataUri(uri: String, depth: Int): RepoDataPojo {
         val uriList = uri.removePrefix("/").removeSuffix("/").split("/")
         val repodataPath = StringBuilder("/")
-=======
-    fun resolveRepodataUri(uri: String, depth: Int): RepodataUri {
-        val uriList = uri.removePrefix("/").split("/")
-        val repodataPath = StringBuilder()
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         for (i in 0 until depth) {
             repodataPath.append(uriList[i]).append("/")
         }
