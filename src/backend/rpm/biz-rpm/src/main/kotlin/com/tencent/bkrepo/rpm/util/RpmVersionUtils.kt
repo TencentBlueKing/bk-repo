@@ -33,10 +33,7 @@ package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
 import com.tencent.bkrepo.rpm.exception.RpmRequestParamMissException
-<<<<<<< HEAD
 import com.tencent.bkrepo.rpm.pojo.RpmPackagePojo
-=======
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 
 object RpmVersionUtils {
@@ -44,13 +41,14 @@ object RpmVersionUtils {
     /**
      * filename解析rpm构件版本信息
      */
+    @Deprecated("作为备选项保留")
     fun resolverRpmVersion(filename: String): RpmVersion {
         try {
             val strList = filename.split("-")
             val suffixFormat = strList.last()
             val suffixList = suffixFormat.split(".")
-            val arch = suffixList[1]
             val rel = suffixList[0]
+            val arch = suffixFormat.removePrefix("$rel.").removeSuffix(".rpm")
             val ver = strList[strList.size - 2]
             val name = filename.removeSuffix("-$ver-$suffixFormat")
             return RpmVersion(name, arch, "0", ver, rel)
@@ -59,7 +57,7 @@ object RpmVersionUtils {
         }
     }
 
-<<<<<<< HEAD
+    @Deprecated("作为备选项保留")
     fun String.toRpmPackagePojo(): RpmPackagePojo {
         val path = this.substringBeforeLast("/").removePrefix("/")
         val rpmArtifactName = this.substringAfterLast("/")
@@ -71,8 +69,6 @@ object RpmVersionUtils {
         )
     }
 
-=======
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     fun RpmVersion.toMetadata(): MutableMap<String, String> {
         return mutableMapOf(
             "name" to this.name,
@@ -83,7 +79,6 @@ object RpmVersionUtils {
         )
     }
 
-<<<<<<< HEAD
     fun Map<String, Any>.toRpmVersion(artifactUri: String): RpmVersion {
         return RpmVersion(
             this["name"] as String? ?: throw RpmArtifactMetadataResolveException(
@@ -101,15 +96,6 @@ object RpmVersionUtils {
             this["rel"] as String? ?: throw RpmArtifactMetadataResolveException(
                 "$artifactUri: not found metadata.rel value"
             )
-=======
-    fun Map<String, String>.toRpmVersion(artifactUri: String): RpmVersion {
-        return RpmVersion(
-            this["name"] ?: throw RpmArtifactMetadataResolveException("$artifactUri: not found metadata.name value"),
-            this["arch"] ?: throw RpmArtifactMetadataResolveException("$artifactUri: not found metadata.arch value"),
-            this["epoch"] ?: throw RpmArtifactMetadataResolveException("$artifactUri: not found metadata.epoch value"),
-            this["ver"] ?: throw RpmArtifactMetadataResolveException("$artifactUri: not found metadata.ver value"),
-            this["rel"] ?: throw RpmArtifactMetadataResolveException("$artifactUri: not found metadata.rel value")
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         )
     }
 }

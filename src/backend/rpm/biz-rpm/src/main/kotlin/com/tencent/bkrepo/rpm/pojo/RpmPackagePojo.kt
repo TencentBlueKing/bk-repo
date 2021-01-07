@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
@@ -30,20 +29,19 @@
  * SOFTWARE.
  */
 
-=======
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 package com.tencent.bkrepo.rpm.pojo
 
+/**
+ * [path]
+ * [name]
+ * [version]
+ */
 data class RpmPackagePojo(
     val path: String,
     val name: String,
     val version: String
-<<<<<<< HEAD
 ) {
     override fun toString(): String {
         return "/$path/$name-$version"
     }
 }
-=======
-)
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4

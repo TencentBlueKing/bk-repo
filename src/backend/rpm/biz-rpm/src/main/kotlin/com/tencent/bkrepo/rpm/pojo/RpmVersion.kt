@@ -31,8 +31,13 @@
 
 package com.tencent.bkrepo.rpm.pojo
 
+/**
+ * 以 `httpd-2.4.6-93.el7.centos.x86_64.rpm` 为例
+ */
 data class RpmVersion(
+    // 包名:httpd
     val name: String,
+    // 包发行平台:el7.centos.x86_64
     val arch: String,
     /*
     rpm包中`epoch`不会在文件名上显示，所以在文件系统中也就无法保存只有`epoch`值不同的包。
@@ -40,14 +45,19 @@ data class RpmVersion(
      */
     @Deprecated("")
     val epoch: String,
+    // 版本:2.4.6
     val ver: String,
+    // 93
     val rel: String
-<<<<<<< HEAD
 
-=======
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 ) {
     override fun toString(): String {
         return "$name-$ver-$rel.$arch.rpm"
+    }
+
+    fun toRpmPackagePojo(fullPath: String): RpmPackagePojo {
+        val path = fullPath.substringBeforeLast("/")
+        val version = "$ver-$rel.$arch"
+        return RpmPackagePojo(path, name, version)
     }
 }

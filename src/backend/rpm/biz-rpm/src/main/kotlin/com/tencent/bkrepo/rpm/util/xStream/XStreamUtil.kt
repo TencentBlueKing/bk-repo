@@ -35,19 +35,12 @@ import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmEntry
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmFile
-<<<<<<< HEAD
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageChangeLog
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackageFileList
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
 import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
 import com.thoughtworks.xstream.XStream
 import com.thoughtworks.xstream.XStreamException
-=======
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmMetadata
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmPackage
-import com.tencent.bkrepo.rpm.util.xStream.repomd.Repomd
-import com.thoughtworks.xstream.XStream
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import org.slf4j.LoggerFactory
 
 object XStreamUtil {
@@ -69,16 +62,11 @@ object XStreamUtil {
         return xStream.fromXML(xml)
     }
 
-<<<<<<< HEAD
     fun checkMarkFile(markFileContent: ByteArray, indexType: IndexType): Boolean {
-=======
-    fun checkMarkFile(markFileContent: ByteArray): Boolean {
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         return try {
             val xStream = XStream()
             XStream.setupDefaultSecurity(xStream)
             xStream.autodetectAnnotations(true)
-<<<<<<< HEAD
             val clazz = when (indexType) {
                 IndexType.FILELISTS -> RpmPackageFileList::class.java
                 IndexType.OTHERS -> RpmPackageChangeLog::class.java
@@ -88,23 +76,13 @@ object XStreamUtil {
             xStream.allowTypes(
                 arrayOf(
                     clazz,
-=======
-            xStream.alias("package", RpmPackage::class.java)
-            xStream.allowTypes(
-                arrayOf(
-                    RpmPackage::class.java,
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
                     RpmEntry::class.java,
                     RpmFile::class.java
                 )
             )
             xStream.fromXML(markFileContent.inputStream())
             true
-<<<<<<< HEAD
         } catch (e: XStreamException) {
-=======
-        } catch (e: Exception) {
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
             logger.warn("checkMarkFile error: ${e.message}")
             false
         }

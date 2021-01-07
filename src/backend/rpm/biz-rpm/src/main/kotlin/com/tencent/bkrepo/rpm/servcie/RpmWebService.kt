@@ -33,49 +33,44 @@ package com.tencent.bkrepo.rpm.servcie
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-<<<<<<< HEAD
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-=======
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactListContext
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
 import org.springframework.stereotype.Service
 
 @Service
-class RpmWebService {
+class RpmWebService : ArtifactService() {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun deletePackage(rpmArtifactInfo: RpmArtifactInfo, packageKey: String) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
-<<<<<<< HEAD
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun delete(rpmArtifactInfo: RpmArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun artifactDetail(rpmArtifactInfo: RpmArtifactInfo, packageKey: String, version: String?): Any? {
         val context = ArtifactQueryContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
-=======
+    }
+
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun extList(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo, page: Int, size: Int): Page<String> {
-        val context = ArtifactListContext()
-        val repository = RepositoryHolder.getRepository(context.repositoryInfo.category)
+        val context = ArtifactSearchContext()
+        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         return (repository as RpmLocalRepository).extList(context, page, size)
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     }
 }

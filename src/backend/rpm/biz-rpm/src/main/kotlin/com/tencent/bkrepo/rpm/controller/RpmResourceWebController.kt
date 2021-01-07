@@ -31,23 +31,12 @@
 
 package com.tencent.bkrepo.rpm.controller
 
-<<<<<<< HEAD
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.rpm.api.RpmWebResource
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.servcie.RpmWebService
-=======
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import com.tencent.bkrepo.rpm.servcie.RpmWebService
-import io.swagger.annotations.ApiParam
-import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -55,7 +44,6 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class RpmResourceWebController(
-<<<<<<< HEAD
     private val rpmWebService: RpmWebService
 ) : RpmWebResource {
     override fun deletePackage(rpmArtifactInfo: RpmArtifactInfo, packageKey: String): Response<Void> {
@@ -70,23 +58,9 @@ class RpmResourceWebController(
 
     override fun artifactDetail(rpmArtifactInfo: RpmArtifactInfo, packageKey: String, version: String?): Response<Any?> {
         return ResponseBuilder.success(rpmWebService.artifactDetail(rpmArtifactInfo, packageKey, version))
-=======
-        private val rpmWebService: RpmWebService
-) {
-    @DeleteMapping(RpmArtifactInfo.RPM, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        rpmWebService.delete(rpmArtifactInfo)
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     }
 
-    @GetMapping(RpmArtifactInfo.RPM_EXT_LIST)
-    fun list(
-            @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
-            @ApiParam(value = "当前页", required = true, defaultValue = "0")
-            @RequestParam page: Int = 0,
-            @ApiParam(value = "分页大小", required = true, defaultValue = "20")
-            @RequestParam size: Int = 20
-    ): Page<String> {
-        return rpmWebService.extList(rpmArtifactInfo, page, size)
+    override fun list(rpmArtifactInfo: RpmArtifactInfo, page: Int, size: Int): Response<Page<String>> {
+        return ResponseBuilder.success(rpmWebService.extList(rpmArtifactInfo, page, size))
     }
 }

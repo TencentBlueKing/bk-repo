@@ -36,7 +36,6 @@ import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.servcie.RpmDebugService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -58,14 +57,13 @@ class RpmDebugController(
         rpmDebugService.flushAllRepomd(rpmArtifactInfo)
     }
 
-<<<<<<< HEAD
     @DeleteMapping(RpmArtifactInfo.RPM)
     fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
         rpmDebugService.delete(rpmArtifactInfo)
-=======
-    @PutMapping(RpmArtifactInfo.RPM_DEBUG_FLUSH)
-    fun initMark(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        rpmDebugService.initMark(rpmArtifactInfo)
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
+    }
+
+    @GetMapping("/package/compensation")
+    fun compensation() {
+        rpmDebugService.compensation()
     }
 }

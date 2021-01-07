@@ -36,12 +36,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-<<<<<<< HEAD
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-=======
-import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.common.artifact.hash.sha256
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -124,13 +119,10 @@ class PypiLocalRepository(
         val filename = (artifactFile as MultipartArtifactFile).getOriginalFilename()
         val sha256 = artifactFile.getFileSha256()
         val md5 = artifactFile.getFileMd5()
-<<<<<<< HEAD
         val name: String = context.request.getParameter("name")
         val version: String = context.request.getParameter("version")
         val artifactFullPath = "/$name/$version/$filename"
 
-=======
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
             repoName = repositoryDetail.name,
@@ -145,7 +137,6 @@ class PypiLocalRepository(
         )
     }
 
-<<<<<<< HEAD
     override fun onUpload(context: ArtifactUploadContext) {
         val nodeCreateRequest = buildNodeCreateRequest(context)
         val artifactFile = context.getArtifactFile("content")
@@ -201,38 +192,6 @@ class PypiLocalRepository(
             val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
             if (nodeList != null) {
                 return XmlUtil.nodeLis2Values(nodeList)
-=======
-    override fun searchNodeList(context: ArtifactSearchContext, xmlString: String): MutableList<Value>? {
-        val searchArgs = XmlUtil.getSearchArgs(xmlString)
-        val packageName = searchArgs["packageName"]
-        val summary = searchArgs["summary"]
-        if (packageName != null && summary != null) {
-            with(context.artifactInfo) {
-                val projectId = Rule.QueryRule("projectId", projectId)
-                val repoName = Rule.QueryRule("repoName", repoName)
-                val packageQuery = Rule.QueryRule("metadata.name", "*$packageName*", OperationType.MATCH)
-                val summaryQuery = Rule.QueryRule("metadata.summary", "*$summary*", OperationType.MATCH)
-                val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-                val matchQuery = Rule.NestedRule(
-                    mutableListOf(packageQuery, summaryQuery),
-                    Rule.NestedRule.RelationType.OR
-                )
-                val rule = Rule.NestedRule(
-                    mutableListOf(repoName, projectId, filetypeQuery, matchQuery),
-                    Rule.NestedRule.RelationType.AND
-                )
-
-                val queryModel = QueryModel(
-                    page = PageLimit(pageLimitCurrent, pageLimitSize),
-                    sort = Sort(listOf("name"), Sort.Direction.ASC),
-                    select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                    rule = rule
-                )
-                val nodeList: List<Map<String, Any>>? = nodeClient.query(queryModel).data?.records
-                if (nodeList != null) {
-                    return XmlUtil.nodeLis2Values(nodeList)
-                }
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
             }
         }
         return mutableListOf()
