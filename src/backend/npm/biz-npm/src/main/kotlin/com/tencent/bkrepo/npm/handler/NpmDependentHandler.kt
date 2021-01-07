@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.npm.async
+package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData

@@ -162,13 +162,8 @@ class ModuleDepsService(
 
     fun deleteAllByName(depsDeleteRequest: DepsDeleteRequest, soft: Boolean = true) {
         with(depsDeleteRequest) {
-<<<<<<< HEAD
             if (!exist(projectId, repoName, name, deps)) {
                 logger.warn("npm package dependents with name [${depsDeleteRequest.deps}] not exists.")
-=======
-            if (!exist(projectId, repoName, name, deps)){
-                logger.warn("package [$deps] don't have dependents info.")
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
                 return
             }
             val depsQuery = depsQuery(this)

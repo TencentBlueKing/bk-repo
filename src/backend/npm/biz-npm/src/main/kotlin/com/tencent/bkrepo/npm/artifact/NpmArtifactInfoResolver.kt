@@ -33,10 +33,7 @@ package com.tencent.bkrepo.npm.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-<<<<<<< HEAD
-=======
 import com.tencent.bkrepo.npm.constants.FILE_SEPARATOR
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.servlet.http.HttpServletRequest
@@ -49,47 +46,10 @@ class NpmArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): NpmArtifactInfo {
-<<<<<<< HEAD
         return NpmArtifactInfo(projectId, repoName, artifactUri)
     }
 
     companion object {
-=======
-        val uri = URLDecoder.decode(request.requestURI, characterEncoding)
-
-        val pathElements = LinkedList<String>()
-        val stringTokenizer = StringTokenizer(uri.substringBefore(DELIMITER), FILE_SEPARATOR)
-        while (stringTokenizer.hasMoreTokens()) {
-            pathElements.add(stringTokenizer.nextToken())
-        }
-        if (pathElements.size < 2) {
-            logger.debug(
-                "Cannot build NpmArtifactInfo from '{}'. The pkgName are unreadable.",
-                uri
-            )
-            return NpmArtifactInfo(projectId, repoName, artifactUri)
-        }
-        val isScope = pathElements[2].contains(AT)
-        val scope = if (isScope) pathElements[2] else StringPool.EMPTY
-        val pkgName = if (isScope){
-            require(pathElements.size > 3) {
-                val message = "npm resolver artifact error with requestURI [${request.requestURI}]"
-                logger.error(message)
-                throw IllegalArgumentException(message)
-            }
-            pathElements[3]
-        } else pathElements[2]
-
-        val version =
-            if (pathElements.size > 4) pathElements[4] else (if (!isScope && pathElements.size == 4) pathElements[3] else StringPool.EMPTY)
-        return NpmArtifactInfo(projectId, repoName, artifactUri, scope, pkgName, version)
-    }
-
-    companion object {
-        const val characterEncoding: String = "utf-8"
-        const val DELIMITER: String = "/-rev"
-        const val AT: Char = '@'
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         val logger: Logger = LoggerFactory.getLogger(NpmArtifactInfo::class.java)
     }
 }

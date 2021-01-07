@@ -29,13 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.npm.pojo
+package com.tencent.bkrepo.npm.model.properties
 
 import com.fasterxml.jackson.databind.JsonNode
 
 data class PackageProperties(
     val license: JsonNode?,
-    val description: String?,
     val keywords: JsonNode?,
     val name: String,
     val version: String,

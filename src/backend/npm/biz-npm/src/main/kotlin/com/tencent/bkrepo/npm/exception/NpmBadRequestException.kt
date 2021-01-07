@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
@@ -33,8 +32,3 @@
 package com.tencent.bkrepo.npm.exception
 
 class NpmBadRequestException(message: String) : NpmException(message)
-=======
-package com.tencent.bkrepo.npm.exception
-
-class NpmBadRequestException(message: String) : NpmException(message)
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4

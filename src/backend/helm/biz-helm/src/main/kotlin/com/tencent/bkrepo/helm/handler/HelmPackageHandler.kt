@@ -29,82 +29,67 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.npm.async
+package com.tencent.bkrepo.helm.handler
 
-import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
-import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
-import com.tencent.bkrepo.npm.pojo.PackageProperties
-import com.tencent.bkrepo.npm.utils.BeanUtils
-import com.tencent.bkrepo.npm.utils.NpmUtils
+import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
+import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class NpmPackageHandler {
-    @Autowired
-    private lateinit var packageClient: PackageClient
+class HelmPackageHandler(
+    private val packageClient: PackageClient
+) {
 
     /**
      * 创建包版本
      */
     fun createVersion(
         userId: String,
-        artifactInfo: NpmArtifactInfo,
-        versionMetaData: NpmVersionMetadata,
-        size: Long
+        artifactInfo: ArtifactInfo,
+        chartInfo: HelmChartMetadata,
+        size: Long,
+        isOverwrite: Boolean = false
     ) {
-        versionMetaData.apply {
-            val name = this.name!!
-            val description = this.description
-            val version = this.version!!
-            val manifestPath = getManifestPath(name, version)
-            val contentPath = getContentPath(name, version)
-            val metadata = buildProperties(this)
-            with(artifactInfo) {
-                val packageVersionCreateRequest = PackageVersionCreateRequest(
+        val name = chartInfo.name
+        val description = chartInfo.description
+        val version = chartInfo.version
+        val contentPath = HelmUtils.getChartFileFullPath(name, version)
+        with(artifactInfo) {
+            val packageVersionCreateRequest =
+                PackageVersionCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
                     packageName = name,
-                    packageKey = PackageKeys.ofNpm(name),
-                    packageType = PackageType.NPM,
+                    packageKey = PackageKeys.ofHelm(name),
+                    packageType = PackageType.HELM,
                     packageDescription = description,
                     versionName = version,
                     size = size,
-                    manifestPath = manifestPath,
+                    manifestPath = null,
                     artifactPath = contentPath,
                     stageTag = null,
-                    metadata = metadata,
-                    overwrite = false,
+                    metadata = null,
+                    overwrite = isOverwrite,
                     createdBy = userId
                 )
-                packageClient.createVersion(packageVersionCreateRequest).apply {
-                    logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
-                }
+            packageClient.createVersion(packageVersionCreateRequest).apply {
+                logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
             }
         }
-    }
-
-    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): Map<String, String> {
-        return npmVersionMetadata?.let {
-            val value = JsonUtils.objectMapper.writeValueAsString(it)
-            val npmProperties = JsonUtils.objectMapper.readValue(value, PackageProperties::class.java)
-            BeanUtils.beanToMap(npmProperties)
-        } ?: emptyMap()
     }
 
     /**
      * 删除包
      */
-    fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+    fun deletePackage(userId: String, name: String, artifactInfo: ArtifactInfo) {
+        val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
             packageClient.deletePackage(projectId, repoName, packageKey).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
@@ -115,8 +100,8 @@ class NpmPackageHandler {
     /**
      * 删除版本
      */
-    fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+    fun deleteVersion(userId: String, name: String, version: String, artifactInfo: ArtifactInfo) {
+        val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
                 logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
@@ -124,15 +109,7 @@ class NpmPackageHandler {
         }
     }
 
-    fun getManifestPath(name: String, version: String): String {
-        return NpmUtils.getVersionPackageMetadataPath(name, version)
-    }
-
-    fun getContentPath(name: String, version: String): String {
-        return String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
-    }
-
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(NpmPackageHandler::class.java)
+        val logger: Logger = LoggerFactory.getLogger(HelmPackageHandler::class.java)
     }
 }

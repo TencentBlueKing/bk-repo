@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.async.HelmPackageHandler
+import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
@@ -33,10 +33,10 @@ class FixToolServiceImpl(
         // 查找所有仓库
         logger.info("starting add package manager function to historical data")
         val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
-            logger.warn("no npm repository found, return.")
+            logger.warn("no helm repository found, return.")
             return emptyList()
         }
-        logger.info("find [${repositoryList.size}] NPM repository ${repositoryList.map { it.projectId to it.name }}")
+        logger.info("find [${repositoryList.size}] HELM repository ${repositoryList.map { it.projectId to it.name }}")
         repositoryList.forEach {
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
             packageManagerList.add(packageManagerResponse.copy(projectId = it.projectId, repoName = it.name))
@@ -89,7 +89,7 @@ class FixToolServiceImpl(
         }
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
         logger.info(
-            "Repair npm package metadata file in repo [$projectId/$repoName], " +
+            "Repair helm package metadata file in repo [$projectId/$repoName], " +
                 "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
         )
         return PackageManagerResponse(

@@ -67,7 +67,9 @@ class HelmLocalRepository : LocalRepository() {
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
         val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
-        if (isExist && !isOverwrite(fullPath, isForce)) {
+        val isOverwrite = isOverwrite(fullPath, isForce)
+        context.putAttribute("isOverwrite", isOverwrite)
+        if (isExist && !isOverwrite) {
             throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
         }
     }
