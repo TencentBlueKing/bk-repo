@@ -44,7 +44,7 @@ const val FILE_SUFFIX = ".tgz"
 
 const val ATTRIBUTE_OCTET_STREAM_SHA1 = "artifact.sha1.octet-stream"
 
-const val NPM_METADATA = "npm_metadata"
+// const val NPM_METADATA = "npm_metadata"
 
 // fileName
 const val NPM_PACKAGE_TGZ_FILE = "npm_package_tgz_file"

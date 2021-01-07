@@ -65,7 +65,6 @@ class NpmExceptionHandler {
         npmResponse(responseObject, exception)
     }
 
-<<<<<<< HEAD
     @ExceptionHandler(NpmRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerRepoNotFoundException(exception: NpmRepoNotFoundException) {
@@ -73,8 +72,6 @@ class NpmExceptionHandler {
         npmResponse(responseObject, exception)
     }
 
-=======
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
     @ExceptionHandler(ExecutionException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerExecutionException(exception: ExecutionException) {
@@ -141,8 +138,6 @@ class NpmExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handlerNpmArtifactExistException(exception: NpmArtifactExistException) {
         val responseObject = NpmErrorResponse(exception.message, "forbidden")
-<<<<<<< HEAD
-=======
         npmResponse(responseObject, exception)
     }
 
@@ -150,7 +145,6 @@ class NpmExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerNpmTagNotExistException(exception: NpmTagNotExistException) {
         val responseObject = NpmErrorResponse("not found", exception.message)
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
         npmResponse(responseObject, exception)
     }
 
