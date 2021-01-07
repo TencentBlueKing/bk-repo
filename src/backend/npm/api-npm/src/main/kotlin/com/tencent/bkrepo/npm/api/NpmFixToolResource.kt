@@ -52,7 +52,7 @@ interface NpmFixToolResource {
 
     @ApiOperation("修复package管理功能")
     @GetMapping("/fixPackageVersion")
-    fun fixPackageVersion(): List<PackageManagerResponse>
+    fun fixPackageManager(): List<PackageManagerResponse>
 
     @ApiOperation("修复历史数据dist对象中增加packageSize字段")
     @GetMapping("/{projectId}/{repoName}/fixPackageSizeField")
