@@ -41,5 +41,6 @@ enum class PackageType {
     NPM,
     HELM,
     COMPOSER,
-    RPM
+    RPM,
+    NUGET
 }

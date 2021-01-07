@@ -29,47 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.npm.service
+package com.tencent.bkrepo.nuget.model
 
-import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-
-// LateinitUsage: 抽象类中使用构造器注入会造成不便
-@Suppress("LateinitUsage")
-abstract class AbstractNpmService {
-
-    @Autowired
-    lateinit var nodeClient: NodeClient
-
-    @Autowired
-    lateinit var repositoryClient: RepositoryClient
-
-    @Autowired
-    lateinit var packageClient: PackageClient
-
-    /**
-     * 查询仓库是否存在
-     */
-    fun checkRepositoryExist(projectId: String, repoName: String) {
-        repositoryClient.getRepoDetail(projectId, repoName, "NPM").data ?: run {
-            logger.error("check repository [$repoName] in projectId [$projectId] failed!")
-            throw NpmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
-        }
-    }
-
-    /**
-     * check node exists
-     */
-    fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
-    }
-
-    companion object {
-        val logger: Logger = LoggerFactory.getLogger(AbstractNpmService::class.java)
-    }
-}
+data class NugetErrorResponse(
+    val status: String,
+    val error: String?
+)

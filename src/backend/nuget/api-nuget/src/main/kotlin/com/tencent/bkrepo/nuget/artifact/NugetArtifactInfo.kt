@@ -39,10 +39,6 @@ class NugetArtifactInfo(
     artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
-        const val NUGET_RESOURCE = "/{projectId}/{repoName}/**"
-    }
-
-    override fun getArtifactFullPath(): String {
-        return super.getArtifactFullPath()
+        const val NUGET_RESOURCE = "ext/{projectId}/{repoName}/**"
     }
 }

@@ -44,6 +44,7 @@ object PackageKeys {
     private const val RPM = "rpm"
     private const val PYPI = "pypi"
     private const val COMPOSER = "composer"
+    private const val NUGET = "nuget"
     private const val SEPARATOR = "://"
 
     /**
@@ -117,6 +118,14 @@ object PackageKeys {
     }
 
     /**
+     * 生成nuget格式key
+     * 例子: nuget://test
+     */
+    fun ofNuget(name: String): String {
+        return ofName(NUGET, name)
+    }
+
+    /**
      * 解析npm格式的key
      *
      * 例子: npm://test  ->  test
@@ -176,6 +185,15 @@ object PackageKeys {
      */
     private fun ofName(schema: String, name: String): String {
         return StringBuilder(schema).append(SEPARATOR).append(name).toString()
+    }
+
+    /**
+     * 解析nuget格式的key
+     *
+     * 例子: nuget://test  ->  test
+     */
+    fun resolveNuget(nugetKey: String): String {
+        return resolveName(NUGET, nugetKey)
     }
 
     /**
