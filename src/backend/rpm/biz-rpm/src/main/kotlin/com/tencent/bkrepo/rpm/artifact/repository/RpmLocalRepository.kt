@@ -33,7 +33,6 @@ package com.tencent.bkrepo.rpm.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -726,7 +725,7 @@ class RpmLocalRepository(
             )
             val nodeInfoPage = nodeClient.listNodePage(repo.projectId, repo.name, rpmNodePath, nodeListOption).data
                 ?: break@loop
-            if(nodeInfoPage.records.isEmpty()) break@loop
+            if (nodeInfoPage.records.isEmpty()) break@loop
             logger.info("compensation: found ${nodeInfoPage.records.size} , totalRecords: ${nodeInfoPage.totalRecords}")
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {
@@ -745,30 +744,30 @@ class RpmLocalRepository(
             val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
             val version = try {
                 packageClient.findVersionByName(
-                        nodeInfo.projectId, nodeInfo.repoName, packageKey, rpmPackagePojo.version).data
+                    nodeInfo.projectId, nodeInfo.repoName, packageKey, rpmPackagePojo.version
+                ).data
             } catch (e: ExternalErrorCodeException) {
                 null
             }
             if (version == null) {
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
-                        projectId = nodeInfo.projectId,
-                        repoName = nodeInfo.repoName,
-                        packageName = rpmPackagePojo.name,
-                        packageKey = packageKey,
-                        packageType = PackageType.RPM,
-                        packageDescription = "compensation",
-                        versionName = rpmPackagePojo.version,
-                        size = nodeInfo.size,
-                        manifestPath = null,
-                        artifactPath = nodeInfo.fullPath,
-                        overwrite = true,
-                        createdBy = "compensation"
+                    projectId = nodeInfo.projectId,
+                    repoName = nodeInfo.repoName,
+                    packageName = rpmPackagePojo.name,
+                    packageKey = packageKey,
+                    packageType = PackageType.RPM,
+                    packageDescription = "compensation",
+                    versionName = rpmPackagePojo.version,
+                    size = nodeInfo.size,
+                    manifestPath = null,
+                    artifactPath = nodeInfo.fullPath,
+                    overwrite = true,
+                    createdBy = "compensation"
                 )
                 packageClient.createVersion(packageVersionCreateRequest)
                 logger.info("Success create version $packageVersionCreateRequest")
             }
         }
-
     }
 
     fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?) {
