@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.async
+package com.tencent.bkrepo.helm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -50,12 +50,12 @@ class HelmPackageHandler(
     /**
      * 创建包版本
      */
-    // @Async
     fun createVersion(
         userId: String,
         artifactInfo: ArtifactInfo,
         chartInfo: HelmChartMetadata,
-        size: Long
+        size: Long,
+        isOverwrite: Boolean = false
     ) {
         val name = chartInfo.name
         val description = chartInfo.description
@@ -76,7 +76,7 @@ class HelmPackageHandler(
                     artifactPath = contentPath,
                     stageTag = null,
                     metadata = null,
-                    overwrite = false,
+                    overwrite = isOverwrite,
                     createdBy = userId
                 )
             packageClient.createVersion(packageVersionCreateRequest).apply {
@@ -88,7 +88,6 @@ class HelmPackageHandler(
     /**
      * 删除包
      */
-    // @Async
     fun deletePackage(userId: String, name: String, artifactInfo: ArtifactInfo) {
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
@@ -101,7 +100,6 @@ class HelmPackageHandler(
     /**
      * 删除版本
      */
-    // @Async
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: ArtifactInfo) {
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
