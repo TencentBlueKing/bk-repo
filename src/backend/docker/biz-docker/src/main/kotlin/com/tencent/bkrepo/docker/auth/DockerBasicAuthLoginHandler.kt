@@ -79,11 +79,11 @@ class DockerBasicAuthLoginHandler(
         response: HttpServletResponse,
         authenticationException: AuthenticationException
     ) {
-        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
-        authorizationHeader?.let {
-            logger.info("empty user pull,push ,change to  [$authorizationHeader]")
+        request.getHeader(HttpHeaders.AUTHORIZATION) ?: run {
+            logger.info("empty user pull,push ,change to  [$this]")
             return onAuthenticateSuccess(request, response, ANONYMOUS_USER)
         }
+        
         logger.warn("Authenticate failed: [$authenticationException]")
         response.status = HttpStatus.UNAUTHORIZED.value
         response.contentType = MediaType.APPLICATION_JSON_VALUE
