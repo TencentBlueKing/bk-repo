@@ -169,7 +169,7 @@
 .repo-search-container {
     height: 100%;
     .repo-search-header {
-        height: 60px;
+        height: 50px;
         padding: 0 20px;
         display: flex;
         align-items: center;

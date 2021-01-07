@@ -51,15 +51,17 @@ import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.user.BasicInfo
 import com.tencent.bkrepo.npm.pojo.user.DependenciesInfo
+import com.tencent.bkrepo.npm.pojo.user.DownloadCount
+import com.tencent.bkrepo.npm.pojo.user.NpmPackageLatestVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.VersionDependenciesInfo
 import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
-import com.tencent.bkrepo.npm.service.AbstractNpmService
 import com.tencent.bkrepo.npm.service.ModuleDepsService
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.service.NpmWebService
 import com.tencent.bkrepo.npm.utils.NpmUtils
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetric
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
@@ -263,5 +265,28 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 )
             }
         }
+
+        // fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
+        //     with(downloadStatisticsMetric) {
+        //         return DownloadCount(description, count)
+        //     }
+        // }
+        //
+        // fun convert(nodeDetail: NodeDetail): NpmPackageLatestVersionInfo {
+        //     with(nodeDetail) {
+        //         return NpmPackageLatestVersionInfo(
+        //             createdBy,
+        //             createdDate,
+        //             lastModifiedBy,
+        //             lastModifiedDate,
+        //             name,
+        //             size,
+        //             null,
+        //             stageTag,
+        //             projectId,
+        //             repoName
+        //         )
+        //     }
+        // }
     }
 }

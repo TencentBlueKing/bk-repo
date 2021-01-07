@@ -45,7 +45,6 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
@@ -56,7 +55,6 @@ class NpmPackageHandler {
     /**
      * 创建包版本
      */
-    @Async
     fun createVersion(
         userId: String,
         artifactInfo: NpmArtifactInfo,
@@ -72,20 +70,20 @@ class NpmPackageHandler {
             val metadata = buildProperties(this)
             with(artifactInfo) {
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
-                    projectId,
-                    repoName,
-                    name,
-                    PackageKeys.ofNpm(name),
-                    PackageType.NPM,
-                    description,
-                    version,
-                    size,
-                    manifestPath,
-                    contentPath,
-                    null,
-                    metadata,
-                    false,
-                    userId
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageName = name,
+                    packageKey = PackageKeys.ofNpm(name),
+                    packageType = PackageType.NPM,
+                    packageDescription = description,
+                    versionName = version,
+                    size = size,
+                    manifestPath = manifestPath,
+                    artifactPath = contentPath,
+                    stageTag = null,
+                    metadata = metadata,
+                    overwrite = false,
+                    createdBy = userId
                 )
                 packageClient.createVersion(packageVersionCreateRequest).apply {
                     logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
@@ -105,7 +103,6 @@ class NpmPackageHandler {
     /**
      * 删除包
      */
-    @Async
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
         with(artifactInfo) {
@@ -118,7 +115,6 @@ class NpmPackageHandler {
     /**
      * 删除版本
      */
-    @Async
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
         with(artifactInfo) {

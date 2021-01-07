@@ -29,13 +29,42 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.nuget.pojo
+package com.tencent.bkrepo.nuget.model.nuspec
 
-data class NupkgVersion(
-    val id: String,
-    val version: String
-) {
-    override fun toString(): String {
-        return "$id.$version.nupkg"
-    }
-}
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+
+/**
+ * nuspec package xml file
+ */
+@JacksonXmlRootElement(localName = "package")
+data class NuspecPackage(
+    @JacksonXmlProperty(isAttribute = true)
+    val xmlns: String?,
+    val metadata: NuspecMetadata,
+    val files: MutableList<NuspecFile>?
+)
+
+// data class NupkgMetadata(
+//     // Required elements (id version description authors)
+//     // Specifies the minimum version of the NuGet client that can install this package
+//     @JacksonXmlProperty(isAttribute = true)
+//     val minClientVersion: String?,
+//     val id: String,
+//     val version: String,
+//     val description: String,
+//     val authors: String,
+//     val title: String?,
+//     val owners: String?,
+//     val requireLicenseAcceptance: Boolean,
+//     val licenseUrl: String?,
+//     val projectUrl: String?,
+//     val iconUrl: String?,
+//     val summary: String?,
+//     val language: String?,
+//     val dependencies: MutableList<Dependency>? = mutableListOf()
+// ){
+//     fun isValid():Boolean{
+//         return id.isNotBlank() && version.isNotBlank()
+//     }
+// }

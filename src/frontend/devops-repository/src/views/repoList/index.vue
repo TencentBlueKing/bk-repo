@@ -193,7 +193,8 @@
     padding: 0 20px;
     background-color: white;
     .repo-list-header {
-        height: 60px;
+        height: 50px;
+        margin-bottom: 10px;
         display: flex;
         align-items: center;
         .repo-list-search {
