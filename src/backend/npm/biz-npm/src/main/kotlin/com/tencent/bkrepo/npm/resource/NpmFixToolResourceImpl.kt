@@ -53,7 +53,7 @@ class NpmFixToolResourceImpl @Autowired constructor(
         return npmFixToolService.fixPackageSizeField(artifactInfo)
     }
 
-    override fun fixPackageVersion(): List<PackageManagerResponse> {
-        return npmFixToolService.fixPackageVersion()
+    override fun fixPackageManager(): List<PackageManagerResponse> {
+        return npmFixToolService.fixPackageManager()
     }
 }

@@ -51,5 +51,5 @@ interface NpmFixToolService {
     /**
      * 历史数据增加package功能
      */
-    fun fixPackageVersion(): List<PackageManagerResponse>
+    fun fixPackageManager(): List<PackageManagerResponse>
 }

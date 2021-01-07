@@ -202,7 +202,7 @@ class NpmFixToolServiceImpl(
     /**
      * 历史数据增加package功能
      */
-    override fun fixPackageVersion(): List<PackageManagerResponse> {
+    override fun fixPackageManager(): List<PackageManagerResponse> {
         val packageManagerList = mutableListOf<PackageManagerResponse>()
         // 查找所有仓库
         logger.info("starting add package manager function to historical data")
@@ -288,11 +288,11 @@ class NpmFixToolServiceImpl(
         while (iterator.hasNext()) {
             val next = iterator.next()
             val dist = next.value.dist!!
-            val size = if (!dist.any().containsKey("packageSize")) {
+            val size = if (!dist.any().containsKey(SIZE)) {
                 val queryTgzNode = queryTgzNode(projectId, repoName, packageName)
                 queryTgzNode[next.key]?.size!!
             } else {
-                dist.any()["packageSize"] as Long
+                dist.any()[SIZE].toString().toLong()
             }
             try {
                 npmPackageHandler.createVersion(userId, artifactInfo, next.value, size)
