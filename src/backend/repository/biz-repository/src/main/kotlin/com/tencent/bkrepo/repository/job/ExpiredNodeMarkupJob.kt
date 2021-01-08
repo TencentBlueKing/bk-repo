@@ -53,9 +53,9 @@ class ExpiredNodeMarkupJob(
     private val nodeService: NodeService
 ) {
 
-    @Scheduled(cron = "0 0 0/6 * * ?")
+    @Scheduled(cron = "0 0 0/6 * * ?") // 凌晨开始，6小时执行一次
     @SchedulerLock(name = "ExpiredNodeMarkupJob", lockAtMostFor = "PT6H")
-    fun markUp() {
+    fun cleanup() {
         logger.info("Starting to mark up expired nodes.")
         var markupCount = 0L
         val startTimeMillis = System.currentTimeMillis()

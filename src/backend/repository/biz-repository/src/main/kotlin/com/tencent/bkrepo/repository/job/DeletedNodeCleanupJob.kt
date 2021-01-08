@@ -59,9 +59,9 @@ class DeletedNodeCleanupJob(
     private val repositoryProperties: RepositoryProperties
 ) {
 
-    @Scheduled(cron = "0 0 2/6 * * ?")
+    @Scheduled(cron = "0 0 2/6 * * ?") // 2点开始，6小时执行一次
     @SchedulerLock(name = "DeletedNodeCleanupJob", lockAtMostFor = "PT6H")
-    fun cleanUp() {
+    fun cleanup() {
         logger.info("Starting to clean up deleted nodes.")
         val reserveDays = repositoryProperties.deletedNodeReserveDays
         if (reserveDays < 0) {

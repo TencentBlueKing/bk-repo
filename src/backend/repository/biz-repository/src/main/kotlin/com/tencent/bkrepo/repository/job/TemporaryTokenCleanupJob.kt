@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,51 +33,40 @@ package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
+import com.tencent.bkrepo.repository.model.TTemporaryToken
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
- * 清理缓存文件定时任务
+ * Temporary token 清理任务
  */
 @Component
-class ExpiredCacheFileCleanupJob(
-    private val storageService: StorageService,
-    private val storageCredentialService: StorageCredentialService
+class TemporaryTokenCleanupJob(
+    private val temporaryTokenDao: TemporaryTokenDao
 ) {
 
-    @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
-    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "P7D")
+    @Scheduled(cron = "0 0 3 * * ?") // 每天凌晨3点执行
+    @SchedulerLock(name = "TemporaryTokenCleanupJob", lockAtMostFor = "PT1H")
     fun cleanup() {
-        logger.info("Starting to clean up temp and expired cache files.")
-        // cleanup default storage
-        cleanUpOnStorage()
-        // cleanup extended storage
-        storageCredentialService.list().forEach {
-            cleanUpOnStorage(it)
-        }
-        logger.info("Clean up completed.")
-    }
-
-    private fun cleanUpOnStorage(storage: StorageCredentials? = null) {
-        val key = storage?.key ?: "default"
-        logger.info("Starting to clean up on storage [$key].")
+        logger.info("Starting to clean up expired temporary token.")
         executeAndMeasureTime {
-            storageService.cleanUp(storage)
+            val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
+            val query = Query.query(where(TTemporaryToken::expireDate).lt(expireDate))
+            temporaryTokenDao.remove(query)
         }.apply {
-            logger.info("Clean up on storage[$key] completed.")
             logger.info(
-                "[${first.getTotal()}] expired cache and temp files has been clean up" +
-                    ", file[${first.fileCount}], folder[${first.folderCount}]" +
-                    ", [${first.size}] bytes totally, elapse [${second.seconds}] s."
+                "[${first.deletedCount}] expired temporary token has been clean up, elapse [${second.seconds}] s."
             )
         }
     }
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val RESERVE_DAYS = 7L
     }
 }
