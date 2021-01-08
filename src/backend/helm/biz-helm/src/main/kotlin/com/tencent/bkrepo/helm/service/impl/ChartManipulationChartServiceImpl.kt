@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.async.HelmPackageHandler
+import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
@@ -85,12 +85,14 @@ class ChartManipulationChartServiceImpl(
             val chartMetadata = parseChartFileInfo(artifactFileMap)
             context.putAttribute(FULL_PATH, getChartFileFullPath(chartMetadata.name, chartMetadata.version))
             ArtifactContextHolder.getRepository().upload(context)
+
             // create package
             helmPackageHandler.createVersion(
                 context.userId,
                 artifactInfo,
                 chartMetadata,
-                context.getLongAttribute(SIZE)!!
+                context.getLongAttribute(SIZE)!!,
+                context.getBooleanAttribute("isOverwrite") ?: false
             )
         }
         if (keys.contains(PROV)) {

@@ -168,6 +168,7 @@ class GenericLocalRepository : LocalRepository() {
      */
     private fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
         val metadata = mutableMapOf<String, String>()
+        // case insensitive
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {

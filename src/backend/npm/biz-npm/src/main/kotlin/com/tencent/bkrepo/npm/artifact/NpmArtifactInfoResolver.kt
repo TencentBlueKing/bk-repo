@@ -33,6 +33,7 @@ package com.tencent.bkrepo.npm.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.npm.constants.FILE_SEPARATOR
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import javax.servlet.http.HttpServletRequest

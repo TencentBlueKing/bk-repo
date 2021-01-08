@@ -73,7 +73,7 @@ object UrlFormatter {
         if (url.isBlank()) {
             throw IllegalArgumentException("Url should not be blank")
         }
-        if (!url.startsWith(HTTP) || !url.startsWith(HTTPS)) {
+        if (!url.startsWith(HTTP) && !url.startsWith(HTTPS)) {
             url = HTTP + url
         }
         return url

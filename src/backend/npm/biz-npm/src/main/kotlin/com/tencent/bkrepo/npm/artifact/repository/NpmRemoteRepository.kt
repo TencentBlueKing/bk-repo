@@ -76,7 +76,6 @@ class NpmRemoteRepository(
     private fun cachePackageVersionMetadata(context: ArtifactDownloadContext) {
         with(context) {
             val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
-
             val versionMetadataFullPath = NpmUtils.getVersionPackageMetadataPath(packageInfo.first, packageInfo.second)
             if (nodeClient.checkExist(projectId, repoName, versionMetadataFullPath).data!!) {
                 logger.info("version metadata [$versionMetadataFullPath] is already exits in the repo [$projectId/$repoName]")

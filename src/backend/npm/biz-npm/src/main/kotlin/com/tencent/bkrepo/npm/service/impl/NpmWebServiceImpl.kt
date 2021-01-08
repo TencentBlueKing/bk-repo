@@ -55,7 +55,6 @@ import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.VersionDependenciesInfo
 import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
-import com.tencent.bkrepo.npm.service.AbstractNpmService
 import com.tencent.bkrepo.npm.service.ModuleDepsService
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.service.NpmWebService
@@ -263,5 +262,28 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 )
             }
         }
+
+        // fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
+        //     with(downloadStatisticsMetric) {
+        //         return DownloadCount(description, count)
+        //     }
+        // }
+        //
+        // fun convert(nodeDetail: NodeDetail): NpmPackageLatestVersionInfo {
+        //     with(nodeDetail) {
+        //         return NpmPackageLatestVersionInfo(
+        //             createdBy,
+        //             createdDate,
+        //             lastModifiedBy,
+        //             lastModifiedDate,
+        //             name,
+        //             size,
+        //             null,
+        //             stageTag,
+        //             projectId,
+        //             repoName
+        //         )
+        //     }
+        // }
     }
 }

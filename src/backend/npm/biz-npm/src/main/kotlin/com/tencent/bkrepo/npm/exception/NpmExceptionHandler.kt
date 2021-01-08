@@ -141,6 +141,13 @@ class NpmExceptionHandler {
         npmResponse(responseObject, exception)
     }
 
+    @ExceptionHandler(NpmTagNotExistException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handlerNpmTagNotExistException(exception: NpmTagNotExistException) {
+        val responseObject = NpmErrorResponse("not found", exception.message)
+        npmResponse(responseObject, exception)
+    }
+
     private fun npmResponse(responseObject: NpmErrorResponse, exception: NpmException) {
         logNpmException(exception)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)

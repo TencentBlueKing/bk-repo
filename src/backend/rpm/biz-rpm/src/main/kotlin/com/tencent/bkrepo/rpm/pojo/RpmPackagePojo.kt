@@ -31,6 +31,11 @@
 
 package com.tencent.bkrepo.rpm.pojo
 
+/**
+ * [path]
+ * [name]
+ * [version]
+ */
 data class RpmPackagePojo(
     val path: String,
     val name: String,

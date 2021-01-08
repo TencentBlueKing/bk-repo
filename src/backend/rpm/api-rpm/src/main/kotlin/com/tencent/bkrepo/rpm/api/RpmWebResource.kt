@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.rpm.api
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -67,4 +69,13 @@ interface RpmWebResource {
         @RequestParam packageKey: String,
         @RequestParam version: String?
     ): Response<Any?>
+
+    @GetMapping(RpmArtifactInfo.RPM_EXT_LIST)
+    fun list(
+        @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
+        @ApiParam(value = "当前页", required = true, defaultValue = "0")
+        @RequestParam page: Int = 0,
+        @ApiParam(value = "分页大小", required = true, defaultValue = "20")
+        @RequestParam size: Int = 20
+    ): Response<Page<String>>
 }

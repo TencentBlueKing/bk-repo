@@ -446,9 +446,6 @@ class JobService(
         }
     }
 
-    /**
-     *
-     */
     private fun resolveNode(mapData: Map<String, Any?>): NodeInfo {
         return NodeInfo(
             createdBy = mapData["createdBy"] as String,

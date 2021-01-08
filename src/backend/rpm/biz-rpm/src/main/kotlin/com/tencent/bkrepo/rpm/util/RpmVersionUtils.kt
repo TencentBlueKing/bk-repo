@@ -41,13 +41,14 @@ object RpmVersionUtils {
     /**
      * filename解析rpm构件版本信息
      */
+    @Deprecated("作为备选项保留")
     fun resolverRpmVersion(filename: String): RpmVersion {
         try {
             val strList = filename.split("-")
             val suffixFormat = strList.last()
             val suffixList = suffixFormat.split(".")
-            val arch = suffixList[1]
             val rel = suffixList[0]
+            val arch = suffixFormat.removePrefix("$rel.").removeSuffix(".rpm")
             val ver = strList[strList.size - 2]
             val name = filename.removeSuffix("-$ver-$suffixFormat")
             return RpmVersion(name, arch, "0", ver, rel)
@@ -56,6 +57,7 @@ object RpmVersionUtils {
         }
     }
 
+    @Deprecated("作为备选项保留")
     fun String.toRpmPackagePojo(): RpmPackagePojo {
         val path = this.substringBeforeLast("/").removePrefix("/")
         val rpmArtifactName = this.substringAfterLast("/")

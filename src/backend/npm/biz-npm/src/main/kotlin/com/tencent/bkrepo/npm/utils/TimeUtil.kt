@@ -63,4 +63,10 @@ object TimeUtil {
         val newLocalDateTime = LocalDateTime.parse(newTime, DateTimeFormatter.ISO_DATE_TIME)
         return oldLocalDateTime.isAfter(newLocalDateTime)
     }
+
+    fun isTimeNotBefore(oldTime: String, newTime: String): Boolean {
+        val oldLocalDateTime = LocalDateTime.parse(oldTime, DateTimeFormatter.ISO_DATE_TIME)
+        val newLocalDateTime = LocalDateTime.parse(newTime, DateTimeFormatter.ISO_DATE_TIME)
+        return !oldLocalDateTime.isBefore(newLocalDateTime)
+    }
 }

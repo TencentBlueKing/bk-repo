@@ -33,6 +33,7 @@ package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.XmlStrUtils.findPackageIndex
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.indexOf
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -66,6 +67,15 @@ class XmlStrUtilsTest {
     }
 
     @Test
+    fun updatePackageCountTest() {
+        val start = System.currentTimeMillis()
+        val file = File("/Downloads/60M.xml")
+        val randomAccessFile = RandomAccessFile(file, "rw")
+        XmlStrUtils.updatePackageCount(randomAccessFile, IndexType.PRIMARY, 0, true)
+        println(System.currentTimeMillis() - start)
+    }
+
+    @Test
     fun packagesModifyTest01() {
         val regex = "^<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke" +
             ".edu/metadata/rpm\" packages=\"(\\d+)\">$"
@@ -75,6 +85,14 @@ class XmlStrUtilsTest {
         if (matcher.find()) {
             println(matcher.group(1).toInt())
         }
+    }
+
+    @Test
+    fun indexOfTest() {
+        val file = File("/Users/weaving/Downloads/filelist/21e8c7280184d7428e4fa259c669fa4b2cfef05f-filelists.xml")
+        val randomAccessFile = RandomAccessFile(file, "r")
+        val index = indexOf(randomAccessFile, """<package pkgid="cb764f7906736425286341f6c5939347b01c5c17" name="httpd" arch="x86_64">""")
+        Assertions.assertEquals(287, index)
     }
 
     @Test

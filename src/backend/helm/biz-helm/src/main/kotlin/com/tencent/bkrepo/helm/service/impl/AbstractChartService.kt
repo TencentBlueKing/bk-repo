@@ -151,6 +151,6 @@ abstract class AbstractChartService {
     companion object {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
-        private val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
+        val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
     }
 }

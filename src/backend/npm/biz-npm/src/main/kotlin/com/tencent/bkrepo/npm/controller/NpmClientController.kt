@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.npm.controller
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -56,7 +57,6 @@ import org.springframework.web.bind.annotation.RestController
  * npm 客户端操作指令
  */
 @RestController
-@RequestMapping("")
 class NpmClientController(
     private val npmClientService: NpmClientService
 ) {
@@ -95,7 +95,7 @@ class NpmClientController(
     /**
      * query package.json info
      */
-    @GetMapping("/{projectId}/{repoName}/{name}")
+    @GetMapping("/{projectId}/{repoName}/{name}", produces = [MediaTypes.APPLICATION_JSON])
     fun packageInfo(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @PathVariable name: String
@@ -103,7 +103,7 @@ class NpmClientController(
         return npmClientService.packageInfo(artifactInfo, name)
     }
 
-    @GetMapping("/{projectId}/{repoName}/@{scope}/{name}")
+    @GetMapping("/{projectId}/{repoName}/@{scope}/{name}", produces = [MediaTypes.APPLICATION_JSON])
     fun packageInfo(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @PathVariable scope: String,
@@ -116,7 +116,7 @@ class NpmClientController(
     /**
      * query package-version.json info
      */
-    @GetMapping("/{projectId}/{repoName}/{name}/{version}")
+    @GetMapping("/{projectId}/{repoName}/{name}/{version}", produces = [MediaTypes.APPLICATION_JSON])
     fun packageVersion(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @PathVariable name: String,
@@ -125,7 +125,9 @@ class NpmClientController(
         return npmClientService.packageVersionInfo(artifactInfo, name, version)
     }
 
-    @GetMapping("/{projectId}/{repoName}/@{scope}/{name}/{version}")
+    @GetMapping(
+        "/{projectId}/{repoName}/@{scope}/{name}/{version}", produces = [MediaTypes.APPLICATION_JSON]
+    )
     fun packageVersion(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @PathVariable scope: String,
@@ -193,9 +195,10 @@ class NpmClientController(
         @PathVariable scope: String?,
         @PathVariable name: String,
         @PathVariable tag: String
-    ) {
+    ): NpmSuccessResponse {
         val pkgName = if (scope.isNullOrBlank()) name else String.format("@%s/%s", scope, name)
         npmClientService.addDistTags(userId, artifactInfo, pkgName, tag)
+        return NpmSuccessResponse.createTagSuccess()
     }
 
     /**
@@ -236,14 +239,15 @@ class NpmClientController(
      * npm unpublish package@1.0.0
      */
     @DeleteMapping(
-        "/**/{projectId}/{repoName}/{name}/-/{filename}/-rev/{rev}",
-        "/**/{projectId}/{repoName}/@{scope}/{name}/-/@{scope}/{filename}/-rev/{rev}"
+        "/**/{projectId}/{repoName}/{name}/{separator:-|download}/{filename}/-rev/{rev}",
+        "/**/{projectId}/{repoName}/@{scope}/{name}/{separator:-|download}/@{scope}/{filename}/-rev/{rev}"
     )
     fun deleteVersion(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         @PathVariable scope: String?,
         @PathVariable name: String,
+        @PathVariable separator: String,
         @PathVariable filename: String,
         @PathVariable rev: String
     ): NpmDeleteResponse {

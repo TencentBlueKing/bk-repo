@@ -44,30 +44,29 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.async.NpmDependentHandler
-import com.tencent.bkrepo.npm.async.NpmPackageHandler
+import com.tencent.bkrepo.npm.handler.NpmDependentHandler
+import com.tencent.bkrepo.npm.handler.NpmPackageHandler
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
-import com.tencent.bkrepo.npm.constants.NPM_METADATA
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
+import com.tencent.bkrepo.npm.exception.NpmTagNotExistException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
-import com.tencent.bkrepo.npm.pojo.PackageProperties
+import com.tencent.bkrepo.npm.model.properties.PackageProperties
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
 import com.tencent.bkrepo.npm.properties.NpmProperties
-import com.tencent.bkrepo.npm.service.AbstractNpmService
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
@@ -218,16 +217,25 @@ class NpmClientServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun addDistTags(userId: String, artifactInfo: NpmArtifactInfo, name: String, tag: String) {
-        logger.info("handling add distTags [$tag] request for package [$name]")
+        logger.info("handling add distTags [$tag] request for package [$name] in repo [${artifactInfo.getRepoIdentify()}]")
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
         val version = objectMapper.readValue(HttpContextHolder.getRequest().inputStream, String::class.java)
-        packageMetaData.distTags.getMap()[tag] = version
-        doPackageFileUpload(userId, artifactInfo, packageMetaData)
+        if ((LATEST == tag && packageMetaData.versions.map.containsKey(version)) || LATEST != tag) {
+            packageMetaData.distTags.getMap()[tag] = version
+            doPackageFileUpload(userId, artifactInfo, packageMetaData)
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun deleteDistTags(userId: String, artifactInfo: NpmArtifactInfo, name: String, tag: String) {
-        logger.info("handling delete distTags [$tag] request for package [$name]")
+        logger.info("handling delete distTags [$tag] request for package [$name] in repo [${artifactInfo.getRepoIdentify()}]")
+        if (LATEST == tag) {
+            logger.warn(
+                "dist tag for [latest] with package [$name] " +
+                    "in repo [${artifactInfo.getRepoIdentify()}] cannot be deleted."
+            )
+            return
+        }
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
         packageMetaData.distTags.getMap().remove(tag)
         doPackageFileUpload(userId, artifactInfo, packageMetaData)
@@ -235,7 +243,7 @@ class NpmClientServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun updatePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String) {
-        logger.info("handling update package request for package [$name]")
+        logger.info("handling update package request for package [$name] in repo [${artifactInfo.getRepoIdentify()}]")
         val packageMetadata =
             objectMapper.readValue(HttpContextHolder.getRequest().inputStream, NpmPackageMetaData::class.java)
         doPackageFileUpload(userId, artifactInfo, packageMetadata)
@@ -246,14 +254,22 @@ class NpmClientServiceImpl(
         val version = NpmUtils.analyseVersionFromPackageName(filename, name)
         logger.info("handling delete version [$version] request for package [$name]")
         val fullPathList = mutableListOf<String>()
-        fullPathList.add(NpmUtils.getTgzPath(name, version))
-        fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
-        val context = ArtifactRemoveContext()
-        context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
-        ArtifactContextHolder.getRepository().remove(context)
-        logger.info("userId [$userId] delete version [$version] for package [$name] success.")
-        // 删除包管理中对应的version
-        npmPackageHandler.deleteVersion(userId, name, version, artifactInfo)
+        val tgzPath = HttpContextHolder.getRequest().requestURI.substringAfterLast(artifactInfo.getRepoIdentify())
+            .substringBeforeLast("/-rev")
+        with(artifactInfo) {
+            if (!exist(projectId, repoName, tgzPath)) {
+                throw NpmArtifactNotFoundException("can not find version [$version] for package [$name]")
+            }
+            fullPathList.add(tgzPath)
+            // fullPathList.add(NpmUtils.getTgzPath(name, version))
+            fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
+            val context = ArtifactRemoveContext()
+            context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
+            ArtifactContextHolder.getRepository().remove(context)
+            logger.info("userId [$userId] delete version [$version] for package [$name] success.")
+            // 删除包管理中对应的version
+            npmPackageHandler.deleteVersion(userId, name, version, artifactInfo)
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -282,7 +298,13 @@ class NpmClientServiceImpl(
                 ArtifactContextHolder.getRepository().query(context) as? InputStream
                     ?: throw NpmArtifactNotFoundException("document not found")
             val npmPackageMetaData = inputStream.use { objectMapper.readValue(it, NpmPackageMetaData::class.java) }
-            val latestVersion = npmPackageMetaData.distTags.getMap()["latest"] ?: error("")
+            val distTags = npmPackageMetaData.distTags
+            if (!distTags.getMap().containsKey(LATEST)){
+                val message = "the dist tag [latest] is not found in package [$name] in repo [${artifactInfo.getRepoIdentify()}]"
+                logger.error(message)
+                throw NpmTagNotExistException(message)
+            }
+            val latestVersion = distTags.getMap()[LATEST]!!
             return searchVersionMetadata(artifactInfo, name, latestVersion)
         } catch (exception: IOException) {
             val message = "Unable to get npm metadata for package $name and version latest"
@@ -421,7 +443,7 @@ class NpmClientServiceImpl(
         val fullPath = "${versionMetadata.name}/-/$filename"
         with(artifactInfo) {
             if (exist(projectId, repoName, fullPath)) {
-                throw NpmArtifactExistException("cannot publish pre-existing version ${versionMetadata.version}")
+                throw NpmArtifactExistException("You cannot publish over the previously published versions: ${versionMetadata.version}.")
             }
             logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
             try {
@@ -432,7 +454,7 @@ class NpmClientServiceImpl(
                 context.putAttribute("attachments.content_type", attachmentEntry.value.contentType!!)
                 context.putAttribute("attachments.length", attachmentEntry.value.length!!)
                 context.putAttribute("name", NPM_PACKAGE_TGZ_FILE)
-                context.putAttribute(NPM_METADATA, buildProperties(versionMetadata))
+                // context.putAttribute(NPM_METADATA, buildProperties(versionMetadata))
                 // 将attachments移除
                 npmPackageMetaData.attachments = null
                 ArtifactContextHolder.getRepository().upload(context)
@@ -447,7 +469,6 @@ class NpmClientServiceImpl(
         return npmVersionMetadata?.let {
             val npmProperties = PackageProperties(
                 it.license,
-                it.description,
                 it.keywords,
                 it.name!!,
                 it.version!!,
