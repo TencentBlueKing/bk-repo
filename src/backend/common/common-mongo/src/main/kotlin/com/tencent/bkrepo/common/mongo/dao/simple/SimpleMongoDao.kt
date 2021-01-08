@@ -35,7 +35,9 @@ import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 /**
  * mongodb simple类型数据访问层抽象类，其行为和mongoTemplate一致
@@ -47,6 +49,16 @@ abstract class SimpleMongoDao<E> : AbstractMongoDao<E>() {
     @Suppress("LateinitUsage")
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
+
+    /**
+     * 根据主键"_id"删除记录
+     */
+    fun removeById(id: String) {
+        if (id.isBlank()) {
+            return
+        }
+        this.remove(Query.query(Criteria.where(ID).isEqualTo(id)))
+    }
 
     override fun determineMongoTemplate(): MongoTemplate {
         return mongoTemplate

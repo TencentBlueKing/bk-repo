@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 /**
  * 构件上传context，依赖源可根据需求继承
@@ -44,6 +45,16 @@ open class ArtifactUploadContext : ArtifactContext {
 
     private var artifactFileMap: ArtifactFileMap
     private var artifactFile: ArtifactFile? = null
+
+    constructor(
+        repo: RepositoryDetail,
+        artifactFile: ArtifactFile
+    ) {
+        this.repositoryDetail = repo
+        this.artifactFile = artifactFile
+        this.artifactFileMap = ArtifactFileMap()
+        this.artifactFileMap[OCTET_STREAM] = artifactFile
+    }
 
     constructor(artifactFile: ArtifactFile) {
         this.artifactFile = artifactFile

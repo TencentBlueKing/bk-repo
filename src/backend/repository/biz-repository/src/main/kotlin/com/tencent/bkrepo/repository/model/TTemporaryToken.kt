@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.message
+package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.repository.pojo.token.TokenType
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 构件相关错误码
+ * 临时访问token
  */
-enum class ArtifactMessageCode(private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND("artifact.project.notfound"),
-    PROJECT_EXISTED("artifact.project.existed"),
-    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
-    REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
-    NODE_NOT_FOUND("artifact.node.notfound"),
-    NODE_PATH_INVALID("artifact.node.path.invalid"),
-    NODE_EXISTED("artifact.node.existed"),
-    NODE_CONFLICT("artifact.node.conflict"),
-    NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
-    STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
-    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
-    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
-    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 10
-}
+@Document("temporary_token")
+@CompoundIndexes(
+    CompoundIndex(def = "{'token': 1, 'type': 1}", background = true)
+)
+data class TTemporaryToken (
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+    var projectId: String,
+    var repoName: String,
+    var fullPath: String,
+    var token: String,
+    var authorizedUserList: Set<String>,
+    var authorizedIpList: Set<String>,
+    var expireDate: LocalDateTime? = null,
+    var disposable: Boolean,
+    var type: TokenType
+)

@@ -29,30 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.message
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.TemporaryTokenClient
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.repository.service.TemporaryTokenService
+import org.springframework.web.bind.annotation.RestController
 
 /**
- * 构件相关错误码
+ * 临时token服务接口实现类
  */
-enum class ArtifactMessageCode(private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND("artifact.project.notfound"),
-    PROJECT_EXISTED("artifact.project.existed"),
-    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
-    REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
-    NODE_NOT_FOUND("artifact.node.notfound"),
-    NODE_PATH_INVALID("artifact.node.path.invalid"),
-    NODE_EXISTED("artifact.node.existed"),
-    NODE_CONFLICT("artifact.node.conflict"),
-    NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
-    STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
-    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
-    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
-    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
+@RestController
+class TemporaryTokenController(
+    private val temporaryTokenService: TemporaryTokenService
+) : TemporaryTokenClient {
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 10
+    override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
+        return ResponseBuilder.success(temporaryTokenService.createToken(request))
+    }
+
+    override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
+        return ResponseBuilder.success(temporaryTokenService.getTokenInfo(token))
+    }
+
+    override fun deleteToken(token: String): Response<Void> {
+        temporaryTokenService.deleteToken(token)
+        return ResponseBuilder.success()
+    }
 }

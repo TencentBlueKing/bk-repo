@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.message
+package com.tencent.bkrepo.repository.dao
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.model.TTemporaryToken
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
 /**
- * 构件相关错误码
+ * 临时token数据访问层
  */
-enum class ArtifactMessageCode(private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND("artifact.project.notfound"),
-    PROJECT_EXISTED("artifact.project.existed"),
-    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
-    REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
-    NODE_NOT_FOUND("artifact.node.notfound"),
-    NODE_PATH_INVALID("artifact.node.path.invalid"),
-    NODE_EXISTED("artifact.node.existed"),
-    NODE_CONFLICT("artifact.node.conflict"),
-    NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
-    STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
-    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
-    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
-    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
+@Repository
+class TemporaryTokenDao : SimpleMongoDao<TTemporaryToken>() {
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 10
+    /**
+     * 根据[token]查找临时token信息
+     */
+    fun findByToken(token: String): TTemporaryToken? {
+        if (token.isBlank()) {
+            return null
+        }
+        val query = Query(TTemporaryToken::token.isEqualTo(token))
+        return this.findOne(query)
+    }
+
+    /**
+     * 根据[token]删除临时token信息
+     */
+    fun deleteByToken(token: String) {
+        if (token.isBlank()) {
+            return
+        }
+        val query = Query(TTemporaryToken::token.isEqualTo(token))
+        this.remove(query)
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,33 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.pojo.token
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
-import com.tencent.bkrepo.repository.service.StorageCredentialService
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Principal(PrincipalType.ADMIN)
-@RestController
-@RequestMapping("/api/storage/credentials")
-class UserStorageCredentialsResourceImpl(
-    private val storageCredentialService: StorageCredentialService
-) {
-
-    @PostMapping
-    fun create(
-        @RequestAttribute userId: String,
-        @RequestBody storageCredentialsCreateRequest: StorageCredentialsCreateRequest
-    ): Response<Void> {
-        storageCredentialService.create(userId, storageCredentialsCreateRequest)
-        return ResponseBuilder.success()
-    }
-}
+@ApiModel("临时token信息")
+data class TemporaryTokenInfo (
+    @ApiModelProperty("项目")
+    val projectId: String,
+    @ApiModelProperty("仓库")
+    val repoName: String,
+    @ApiModelProperty("授权路径")
+    val fullPath: String,
+    @ApiModelProperty("token")
+    val token: String,
+    @ApiModelProperty("授权用户")
+    val authorizedUserList: Set<String>,
+    @ApiModelProperty("授权IP")
+    val authorizedIpList: Set<String>,
+    @ApiModelProperty("过期时间")
+    val expireDate: String?,
+    @ApiModelProperty("是否为一次性token")
+    var disposable: Boolean,
+    @ApiModelProperty("token类型")
+    val type: TokenType
+)

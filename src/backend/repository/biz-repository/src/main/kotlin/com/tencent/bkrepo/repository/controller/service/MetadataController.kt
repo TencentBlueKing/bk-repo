@@ -29,47 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
-import com.tencent.bkrepo.repository.service.ProjectService
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.service.MetadataService
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 项目服务接口实现类
+ * 元数据服务接口实现类
  */
 @RestController
-class ProjectController(
-    private val projectService: ProjectService
-) : ProjectClient {
+class MetadataController(
+    private val metadataService: MetadataService
+) : MetadataClient {
 
-    override fun getProjectInfo(name: String): Response<ProjectInfo?> {
-        return ResponseBuilder.success(projectService.getProjectInfo(name))
+    override fun listMetadata(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
+        return ResponseBuilder.success(metadataService.listMetadata(projectId, repoName, fullPath))
     }
 
-    override fun listProject(): Response<List<ProjectInfo>> {
-        return ResponseBuilder.success(projectService.listProject())
+    override fun saveMetadata(request: MetadataSaveRequest): Response<Void> {
+        metadataService.saveMetadata(request)
+        return ResponseBuilder.success()
     }
 
-    override fun rangeQuery(request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>> {
-        return ResponseBuilder.success(projectService.rangeQuery(request))
+    override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
+        metadataService.deleteMetadata(request)
+        return ResponseBuilder.success()
     }
 
-    override fun createProject(request: ProjectCreateRequest): Response<ProjectInfo> {
-        return ResponseBuilder.success(projectService.createProject(request))
+    override fun save(request: MetadataSaveRequest): Response<Void> {
+        return saveMetadata(request)
     }
 
-    override fun query(name: String): Response<ProjectInfo?> {
-        return getProjectInfo(name)
-    }
-
-    override fun create(request: ProjectCreateRequest): Response<ProjectInfo> {
-        return createProject(request)
+    override fun delete(request: MetadataDeleteRequest): Response<Void> {
+        return deleteMetadata(request)
     }
 }

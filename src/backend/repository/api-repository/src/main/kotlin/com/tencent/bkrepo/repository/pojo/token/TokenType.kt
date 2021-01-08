@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,29 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
-
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.service.StageService
-import org.springframework.web.bind.annotation.RestController
+package com.tencent.bkrepo.repository.pojo.token
 
 /**
- * 晋级服务接口实现类
+ * token 类型
  */
-@RestController
-class StageController(
-    private val stageService: StageService
-) : StageClient {
-
-    override fun query(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        version: String
-    ): Response<List<String>> {
-        val tagList = stageService.query(projectId, repoName, packageKey, version)
-        return ResponseBuilder.success(tagList)
-    }
+enum class TokenType {
+    UPLOAD,
+    DOWNLOAD
 }

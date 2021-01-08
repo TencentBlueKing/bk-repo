@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,30 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.message
+package com.tencent.bkrepo.repository.pojo.token
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 构件相关错误码
- */
-enum class ArtifactMessageCode(private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND("artifact.project.notfound"),
-    PROJECT_EXISTED("artifact.project.existed"),
-    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
-    REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
-    NODE_NOT_FOUND("artifact.node.notfound"),
-    NODE_PATH_INVALID("artifact.node.path.invalid"),
-    NODE_EXISTED("artifact.node.existed"),
-    NODE_CONFLICT("artifact.node.conflict"),
-    NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
-    STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
-    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
-    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
-    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 10
-}
+@ApiModel("创建临时token请求")
+data class TemporaryTokenCreateRequest (
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String,
+    @ApiModelProperty("授权路径列表")
+    val fullPathSet: Set<String>,
+    @ApiModelProperty("授权用户")
+    val authorizedUserSet: Set<String> = emptySet(),
+    @ApiModelProperty("授权IP")
+    val authorizedIpSet: Set<String> = emptySet(),
+    @ApiModelProperty("有效时间，单位秒")
+    val expireSeconds: Long = 0,
+    @ApiModelProperty("是否为一次性token")
+    var disposable: Boolean = false,
+    @ApiModelProperty("token类型")
+    val type: TokenType
+)

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.DOUBLE_DOT
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.NODE_PATH_INVALID
@@ -214,7 +215,7 @@ object PathUtils {
     /**
      * 解析文件后缀
      */
-    fun resolveExtension(fileName: String): String? {
+    fun resolveExtension(fileName: String): String {
         return fileName.trim().substring(fileName.lastIndexOf(DOT_SEPARATOR) + 1)
     }
 
@@ -223,6 +224,14 @@ object PathUtils {
      */
     fun isRoot(path: String): Boolean {
         return path == ROOT || path.isBlank()
+    }
+
+    /**
+     * 判断路径[path]是否为[parent]的子目录
+     */
+    fun isSubPath(path: String, parent: String): Boolean {
+        val formatParent = parent.ensurePrefix(UNIX_SEPARATOR)
+        return path.startsWith(formatParent)
     }
 
     /**

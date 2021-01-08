@@ -29,24 +29,44 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.repository.service.ProxyChannelService
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-/**
- * 代理源服务接口实现类
- */
-@RestController
-class ProxyChannelController(
-    private val proxyChannelService: ProxyChannelService
-) : ProxyChannelClient {
+@Api("临时token服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "TemporaryTokenClient")
+@RequestMapping("/service/temporary/token")
+interface TemporaryTokenClient {
 
-    override fun getById(id: String): Response<ProxyChannelInfo?> {
-        return ResponseBuilder.success(proxyChannelService.findById(id))
-    }
+    @ApiOperation("创建临时token")
+    @PostMapping("/create")
+    fun createToken(
+        @RequestBody request: TemporaryTokenCreateRequest
+    ): Response<List<TemporaryTokenInfo>>
+
+    @ApiOperation("查询临时token信息")
+    @GetMapping("/info/{token}")
+    fun getTokenInfo(
+        @PathVariable token: String
+    ): Response<TemporaryTokenInfo?>
+
+    @ApiOperation("删除临时token信息")
+    @DeleteMapping("/delete/{token}")
+    fun deleteToken(
+        @PathVariable token: String
+    ): Response<Void>
 }
