@@ -33,26 +33,18 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
-import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.model.TTemporaryToken
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.repository.pojo.token.TokenType
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.TemporaryTokenService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -114,54 +106,6 @@ class TemporaryTokenServiceImpl(
             }
             artifactInfo.getArtifactFullPath()
         }
-    }
-
-    /**
-     * 校验[token]是否有效
-     * @param token 待校验token
-     * @param userId 访问用户id
-     * @param artifactInfo 访问构件信息
-     * @param type 访问类型
-     */
-    private fun findAndCheckToken(
-        token: String,
-        userId: String,
-        artifactInfo: ArtifactInfo,
-        type: TokenType
-    ): TTemporaryToken {
-        val query = Query.query(where(TShareRecord::token).isEqualTo(token))
-        val temporaryToken = mongoTemplate.findOne(query, TTemporaryToken::class.java)
-            ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        // 校验过期时间
-        if (temporaryToken.expireDate?.isBefore(LocalDateTime.now()) == true) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
-        }
-        // 校验类型
-        if (temporaryToken.type != type) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验项目
-        if (temporaryToken.projectId != artifactInfo.projectId) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验仓库
-        if (temporaryToken.repoName != artifactInfo.repoName) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验路径
-        if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), temporaryToken.fullPath)) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验用户
-        if (temporaryToken.authorizedUserList.isNotEmpty() && userId !in temporaryToken.authorizedUserList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验ip
-        val clientIp = HttpContextHolder.getClientAddress()
-        if (temporaryToken.authorizedIpList.isNotEmpty() && clientIp !in temporaryToken.authorizedIpList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        return temporaryToken
     }
 
     companion object {
