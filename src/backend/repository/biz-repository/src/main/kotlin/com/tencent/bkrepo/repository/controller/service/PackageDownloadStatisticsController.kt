@@ -29,43 +29,48 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.service.MetadataService
+import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
+import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
+import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDate
 
-/**
- * 元数据服务接口实现类
- */
 @RestController
-class MetadataController(
-    private val metadataService: MetadataService
-) : MetadataClient {
+class PackageDownloadStatisticsController(
+    private val packageDownloadStatisticsService: PackageDownloadStatisticsService
+) : PackageDownloadStatisticsClient {
 
-    override fun listMetadata(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
-        return ResponseBuilder.success(metadataService.listMetadata(projectId, repoName, fullPath))
-    }
-
-    override fun saveMetadata(request: MetadataSaveRequest): Response<Void> {
-        metadataService.saveMetadata(request)
+    override fun add(statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void> {
+        packageDownloadStatisticsService.add(statisticsAddRequest)
         return ResponseBuilder.success()
     }
 
-    override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
-        metadataService.deleteMetadata(request)
-        return ResponseBuilder.success()
+    override fun query(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String?,
+        startDay: LocalDate?,
+        endDay: LocalDate?
+    ): Response<DownloadStatisticsResponse> {
+        return ResponseBuilder.success(
+            packageDownloadStatisticsService.query(projectId, repoName, packageKey, version, startDay, endDay)
+        )
     }
 
-    override fun save(request: MetadataSaveRequest): Response<Void> {
-        return saveMetadata(request)
-    }
-
-    override fun delete(request: MetadataDeleteRequest): Response<Void> {
-        return deleteMetadata(request)
+    override fun queryForSpecial(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): Response<DownloadStatisticsMetricResponse> {
+        return ResponseBuilder.success(
+            packageDownloadStatisticsService.queryForSpecial(projectId, repoName, packageKey)
+        )
     }
 }

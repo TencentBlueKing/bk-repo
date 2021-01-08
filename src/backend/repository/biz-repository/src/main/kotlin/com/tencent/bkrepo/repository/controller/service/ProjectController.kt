@@ -29,33 +29,47 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.controller.service
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
-import com.tencent.bkrepo.repository.service.StorageCredentialService
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.repository.service.ProjectService
 import org.springframework.web.bind.annotation.RestController
 
-@Principal(PrincipalType.ADMIN)
+/**
+ * 项目服务接口实现类
+ */
 @RestController
-@RequestMapping("/api/storage/credentials")
-class UserStorageCredentialsResourceImpl(
-    private val storageCredentialService: StorageCredentialService
-) {
+class ProjectController(
+    private val projectService: ProjectService
+) : ProjectClient {
 
-    @PostMapping
-    fun create(
-        @RequestAttribute userId: String,
-        @RequestBody storageCredentialsCreateRequest: StorageCredentialsCreateRequest
-    ): Response<Void> {
-        storageCredentialService.create(userId, storageCredentialsCreateRequest)
-        return ResponseBuilder.success()
+    override fun getProjectInfo(name: String): Response<ProjectInfo?> {
+        return ResponseBuilder.success(projectService.getProjectInfo(name))
+    }
+
+    override fun listProject(): Response<List<ProjectInfo>> {
+        return ResponseBuilder.success(projectService.listProject())
+    }
+
+    override fun rangeQuery(request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>> {
+        return ResponseBuilder.success(projectService.rangeQuery(request))
+    }
+
+    override fun createProject(request: ProjectCreateRequest): Response<ProjectInfo> {
+        return ResponseBuilder.success(projectService.createProject(request))
+    }
+
+    override fun query(name: String): Response<ProjectInfo?> {
+        return getProjectInfo(name)
+    }
+
+    override fun create(request: ProjectCreateRequest): Response<ProjectInfo> {
+        return createProject(request)
     }
 }

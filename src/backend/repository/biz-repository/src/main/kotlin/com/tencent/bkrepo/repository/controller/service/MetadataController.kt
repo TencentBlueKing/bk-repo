@@ -29,29 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.service.StageService
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.service.MetadataService
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * 晋级服务接口实现类
+ * 元数据服务接口实现类
  */
 @RestController
-class StageController(
-    private val stageService: StageService
-) : StageClient {
+class MetadataController(
+    private val metadataService: MetadataService
+) : MetadataClient {
 
-    override fun query(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        version: String
-    ): Response<List<String>> {
-        val tagList = stageService.query(projectId, repoName, packageKey, version)
-        return ResponseBuilder.success(tagList)
+    override fun listMetadata(projectId: String, repoName: String, fullPath: String): Response<Map<String, Any>> {
+        return ResponseBuilder.success(metadataService.listMetadata(projectId, repoName, fullPath))
+    }
+
+    override fun saveMetadata(request: MetadataSaveRequest): Response<Void> {
+        metadataService.saveMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
+        metadataService.deleteMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    override fun save(request: MetadataSaveRequest): Response<Void> {
+        return saveMetadata(request)
+    }
+
+    override fun delete(request: MetadataDeleteRequest): Response<Void> {
+        return deleteMetadata(request)
     }
 }

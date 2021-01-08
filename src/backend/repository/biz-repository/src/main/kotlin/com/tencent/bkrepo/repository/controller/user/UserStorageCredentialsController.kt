@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,48 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller
+package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
-import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.service.StorageCredentialService
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDate
 
+@Principal(PrincipalType.ADMIN)
 @RestController
-class PackageDownloadStatisticsController(
-    private val packageDownloadStatisticsService: PackageDownloadStatisticsService
-) : PackageDownloadStatisticsClient {
+@RequestMapping("/api/storage/credentials")
+class UserStorageCredentialsController(
+    private val storageCredentialService: StorageCredentialService
+) {
 
-    override fun add(statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void> {
-        packageDownloadStatisticsService.add(statisticsAddRequest)
+    @PostMapping
+    fun create(
+        @RequestAttribute userId: String,
+        @RequestBody storageCredentialsCreateRequest: StorageCredentialsCreateRequest
+    ): Response<Void> {
+        storageCredentialService.create(userId, storageCredentialsCreateRequest)
         return ResponseBuilder.success()
-    }
-
-    override fun query(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        version: String?,
-        startDay: LocalDate?,
-        endDay: LocalDate?
-    ): Response<DownloadStatisticsResponse> {
-        return ResponseBuilder.success(
-            packageDownloadStatisticsService.query(projectId, repoName, packageKey, version, startDay, endDay)
-        )
-    }
-
-    override fun queryForSpecial(
-        projectId: String,
-        repoName: String,
-        packageKey: String
-    ): Response<DownloadStatisticsMetricResponse> {
-        return ResponseBuilder.success(
-            packageDownloadStatisticsService.queryForSpecial(projectId, repoName, packageKey)
-        )
     }
 }
