@@ -111,7 +111,10 @@ class ChartInfoChartServiceImpl(
                 }.toList()
                 logger.info("cccccccccccccccc [$helmChartMetadataList]")
                 return if (helmChartMetadataList.isNotEmpty()) {
-                    ResponseEntity.ok().body(chartList.first())
+                    require(helmChartMetadataList.size == 1){
+                        "find more than one version [$chartVersion] in package [$chartName]."
+                    }
+                    ResponseEntity.ok().body(helmChartMetadataList.first())
                 } else {
                     ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
                 }
