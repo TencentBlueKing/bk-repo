@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
@@ -50,6 +51,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
@@ -130,7 +132,7 @@ class PackageServiceImpl(
             val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
             val newVersion = if (oldVersion != null) {
                 if (!overwrite) {
-                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, versionName)
+                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, versionName)
                 }
                 // overwrite
                 oldVersion.apply {
@@ -168,6 +170,8 @@ class PackageServiceImpl(
             tPackage.description = packageDescription
             tPackage.latest = versionName
             packageDao.save(tPackage)
+
+            logger.info("Create package version[${newVersion}] success")
         }
     }
 
@@ -221,6 +225,83 @@ class PackageServiceImpl(
         return Page(pageNumber + 1, query.limit, totalRecords, packageList)
     }
 
+    override fun populatePackage(request: PackagePopulateRequest) {
+        with(request) {
+            // 先查询包是否存在，不存在先创建包
+            val tPackage = findOrCreatePackage(request)
+            var latestVersion = packageVersionDao.findLatest(tPackage.id!!)
+            // 检查版本是否存在
+            versionList.forEach {
+                if (packageVersionDao.findByName(tPackage.id!!, it.name) == null) {
+                    logger.info("Package version[${tPackage.name}-${it.name}] existed, skip populating.")
+                } else {
+                    val newVersion = TPackageVersion(
+                        createdBy = it.createdBy,
+                        createdDate = it.createdDate,
+                        lastModifiedBy = it.lastModifiedBy,
+                        lastModifiedDate = it.lastModifiedDate,
+                        packageId = tPackage.id!!,
+                        name = it.name,
+                        size = it.size,
+                        ordinal = calculateOrdinal(it.name),
+                        downloads = it.downloads,
+                        manifestPath = it.manifestPath,
+                        artifactPath = it.artifactPath,
+                        stageTag = it.stageTag.orEmpty(),
+                        metadata = MetadataUtils.fromMap(it.metadata)
+                    )
+                    packageVersionDao.save(newVersion)
+                    tPackage.versions += 1
+                    tPackage.downloads += it.downloads
+
+                    if (latestVersion == null) {
+                        latestVersion = newVersion
+                    } else if (it.createdDate.isAfter(latestVersion?.createdDate)) {
+                        latestVersion = newVersion
+                    }
+                    logger.info("Create package version[${newVersion}] success")
+                }
+            }
+            // 更新包
+            tPackage.latest = latestVersion?.name ?: tPackage.latest
+            packageDao.save(tPackage)
+            logger.info("Update package version[${tPackage}] success")
+        }
+    }
+
+    /**
+     * 查找包，不存在则创建
+     *
+     */
+    private fun findOrCreatePackage(request: PackagePopulateRequest): TPackage {
+        with(request) {
+            return packageDao.findByKey(projectId, repoName, key) ?: run {
+                val tPackage = TPackage(
+                    createdBy = createdBy,
+                    createdDate = createdDate,
+                    lastModifiedBy = lastModifiedBy,
+                    lastModifiedDate = lastModifiedDate,
+                    projectId = projectId,
+                    repoName = repoName,
+                    name = name,
+                    description = description,
+                    key = key,
+                    type = type,
+                    downloads = 0,
+                    versions = 0
+                )
+                try {
+                    packageDao.save(tPackage)
+                    logger.info("Create package[$tPackage] success")
+                    return tPackage
+                } catch (exception: DuplicateKeyException) {
+                    logger.warn("Create package[$tPackage] error: [${exception.message}]")
+                    packageDao.findByKey(projectId, repoName, key)!!
+                }
+            }
+        }
+    }
+
     /**
      * 查找包，不存在则创建
      */
@@ -255,7 +336,7 @@ class PackageServiceImpl(
      */
     private fun checkPackage(projectId: String, repoName: String, packageKey: String): TPackage {
         return packageDao.findByKey(projectId, repoName, packageKey)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey)
+            ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, packageKey)
     }
 
     /**
@@ -263,7 +344,7 @@ class PackageServiceImpl(
      */
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, versionName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, versionName)
     }
 
     /**

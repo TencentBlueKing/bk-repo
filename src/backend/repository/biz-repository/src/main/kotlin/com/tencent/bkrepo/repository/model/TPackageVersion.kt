@@ -60,7 +60,7 @@ data class TPackageVersion(
     var manifestPath: String? = null,
     var artifactPath: String? = null,
     var stageTag: List<String>,
-    var metadata: List<TMetadata>? = null
+    var metadata: List<TMetadata>
 ) {
     companion object {
         const val VERSION_NAME_IDX = "version_name_idx"
