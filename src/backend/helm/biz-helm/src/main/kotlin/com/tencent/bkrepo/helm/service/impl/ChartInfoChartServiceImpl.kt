@@ -104,7 +104,12 @@ class ChartInfoChartServiceImpl(
                 val chartVersion = urlList[1]
                 val chartList =
                     indexYamlMetadata.entries[chartName] ?: return ResponseEntity.ok().body(NO_CHART_NAME_FOUND)
-                val helmChartMetadataList = chartList.filter { chartVersion == it.version }.toList()
+                val helmChartMetadataList = chartList.filter {
+                    logger.info("aaaaaaaaaaaaaa [$chartVersion]")
+                    logger.info("bbbbbbbbbbbbbb [${it.version}]")
+                    chartVersion == it.version
+                }.toList()
+                logger.info("cccccccccccccccc [$helmChartMetadataList]")
                 return if (helmChartMetadataList.isNotEmpty()) {
                     ResponseEntity.ok().body(chartList.first())
                 } else {
