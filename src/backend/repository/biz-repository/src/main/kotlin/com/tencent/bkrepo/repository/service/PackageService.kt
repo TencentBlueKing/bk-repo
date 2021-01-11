@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 
 /**
@@ -160,4 +161,11 @@ interface PackageService {
      * 根据[queryModel]搜索包
      */
     fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>>
+
+    /**
+     * 填充包版本数据
+     *
+     * @param request 包版本填充请求
+     */
+    fun populatePackage(request: PackagePopulateRequest)
 }

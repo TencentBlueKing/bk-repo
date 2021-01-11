@@ -29,34 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.message
+package com.tencent.bkrepo.repository.pojo.packages.request
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-/**
- * 构件相关错误码
- */
-enum class ArtifactMessageCode(private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND("artifact.project.notfound"),
-    PROJECT_EXISTED("artifact.project.existed"),
-    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
-    REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
-    NODE_NOT_FOUND("artifact.node.notfound"),
-    NODE_PATH_INVALID("artifact.node.path.invalid"),
-    NODE_EXISTED("artifact.node.existed"),
-    NODE_CONFLICT("artifact.node.conflict"),
-    NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
-    STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
-    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
-    PACKAGE_NOT_FOUND("artifact.package.notfound"),
-    PACKAGE_EXISTED("artifact.package.existed"),
-    VERSION_NOT_FOUND("artifact.version.notfound"),
-    VERSION_EXISTED("artifact.version.existed"),
-    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
-    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
+data class PopulatedPackageVersion(
+    @ApiModelProperty("创建者")
+    val createdBy: String,
+    @ApiModelProperty("创建时间")
+    val createdDate: LocalDateTime,
+    @ApiModelProperty("修改者")
+    val lastModifiedBy: String,
+    @ApiModelProperty("修改时间")
+    val lastModifiedDate: LocalDateTime,
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 10
-}
+    @ApiModelProperty("版本名称")
+    val name: String,
+    @ApiModelProperty("版本大小")
+    val size: Long,
+    @ApiModelProperty("下载次数")
+    var downloads: Long,
+    @ApiModelProperty("版本描述文件路径")
+    var manifestPath: String? = null,
+    @ApiModelProperty("版本内容文件路径")
+    var artifactPath: String? = null,
+    @ApiModelProperty("版本构件阶段")
+    val stageTag: List<String>? = null,
+    @ApiModelProperty("版本元数据")
+    val metadata: Map<String, Any>? = null
+)

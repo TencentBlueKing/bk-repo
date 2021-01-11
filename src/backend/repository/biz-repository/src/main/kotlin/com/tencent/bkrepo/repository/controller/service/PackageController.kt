@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.service.PackageService
 import org.springframework.web.bind.annotation.RestController
@@ -105,5 +106,10 @@ class PackageController(
     ): Response<Page<PackageSummary>> {
         val pageResult = packageService.listPackagePage(projectId, repoName, option)
         return ResponseBuilder.success(pageResult)
+    }
+
+    override fun populatePackage(request: PackagePopulateRequest): Response<Void> {
+        packageService.populatePackage(request)
+        return ResponseBuilder.success()
     }
 }
