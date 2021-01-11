@@ -195,11 +195,11 @@ class FileSystemClient(private val root: String) {
             val rootPath = Paths.get(root)
             val visitor = CleanupFileVisitor(rootPath, expireDays)
             Files.walkFileTree(rootPath, visitor)
-            visitor.cleanupResult
+            visitor.result
         }
     }
 
-    fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {
+    private fun transfer(input: ReadableByteChannel, output: FileChannel, size: Long, append: Boolean = false) {
         val startPosition: Long = if (append) output.size() else 0L
         var bytesCopied: Long
         var totalCopied = 0L
