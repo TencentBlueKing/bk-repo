@@ -104,7 +104,9 @@ class ChartInfoChartServiceImpl(
                 val chartVersion = urlList[1]
                 val chartList =
                     indexYamlMetadata.entries[chartName] ?: return ResponseEntity.ok().body(NO_CHART_NAME_FOUND)
-                val helmChartMetadataList = chartList.filter { chartVersion == it.version }.toList()
+                val helmChartMetadataList = chartList.filter {
+                    chartVersion == it.version
+                }.toList()
                 return if (helmChartMetadataList.isNotEmpty()) {
                     require(helmChartMetadataList.size == 1){
                         "find more than one version [$chartVersion] in package [$chartName]."
