@@ -40,8 +40,6 @@ import com.tencent.bkrepo.repository.job.FileSynchronizeJob
 import com.tencent.bkrepo.repository.job.NodeDeletedCorrectionJob
 import com.tencent.bkrepo.repository.job.RootNodeCleanupJob
 import com.tencent.bkrepo.repository.job.StorageInstanceMigrationJob
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -55,17 +53,16 @@ class SystemJobController(
     private val storageInstanceMigrationJob: StorageInstanceMigrationJob,
     private val fileReferenceCleanupJob: FileReferenceCleanupJob,
     private val rootNodeCleanupJob: RootNodeCleanupJob,
-    private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
-    private val mongoTemplate: MongoTemplate
+    private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob
 ) {
 
-    @GetMapping("/synchronizeFile")
+    @PostMapping("/synchronizeFile")
     fun synchronizeFile(): Response<Void> {
         fileSynchronizeJob.run()
         return ResponseBuilder.success()
     }
 
-    @GetMapping("/migrate/{projectId}/{repoName}/{newKey}")
+    @PostMapping("/migrate/{projectId}/{repoName}/{newKey}")
     fun migrate(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
@@ -75,9 +72,9 @@ class SystemJobController(
         return ResponseBuilder.success()
     }
 
-    @GetMapping("/cleanup/reference")
+    @PostMapping("/cleanup/reference")
     fun cleanupFileReference(): Response<Void> {
-        fileReferenceCleanupJob.cleanUp()
+        fileReferenceCleanupJob.cleanup()
         return ResponseBuilder.success()
     }
 
