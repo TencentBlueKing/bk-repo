@@ -68,12 +68,7 @@ class ExpiredCacheFileCleanupJob(
         executeAndMeasureTime {
             storageService.cleanUp(storage)
         }.apply {
-            logger.info("Clean up on storage[$key] completed.")
-            logger.info(
-                "[${first.getTotal()}] expired cache and temp files has been clean up" +
-                    ", file[${first.fileCount}], folder[${first.folderCount}]" +
-                    ", [${first.size}] bytes totally, elapse [${second.seconds}] s."
-            )
+            logger.info("Clean up on storage[$key] completed, elapse [${second.seconds}] s.")
         }
     }
 
