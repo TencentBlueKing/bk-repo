@@ -19,7 +19,13 @@ export default new Vuex.Store({
         ],
         projectList: [],
         userList: {},
-        userInfo: {},
+        userInfo: {
+            username: '',
+            name: '',
+            email: '',
+            phone: '',
+            admin: true
+        },
         dockerDomain: ''
     },
     getters: {
@@ -59,7 +65,10 @@ export default new Vuex.Store({
             state.userList = data
         },
         SET_USER_INFO (state, data) {
-            state.userInfo = data
+            state.userInfo = {
+                ...state.userInfo,
+                ...data
+            }
         },
         SET_DOCKER_DOMAIN (state, data) {
             state.dockerDomain = data

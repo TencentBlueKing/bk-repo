@@ -81,7 +81,7 @@
                 })
             } else {
                 this.isLoading = true
-                await Promise.all([this.ajaxUserInfo(), this.getProjectList()])
+                await Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()])
                 if (!(urlProjectId && this.projectList.find(v => v.id === urlProjectId))) {
                     let projectId = ''
                     if (this.projectList.find(v => v.id === localProjectId)) {
@@ -109,7 +109,7 @@
         },
         methods: {
             ...mapMutations(['SET_USER_INFO', 'SET_USER_LIST']),
-            ...mapActions(['getProjectList', 'ajaxUserInfo']),
+            ...mapActions(['getRepoUserList', 'getProjectList', 'ajaxUserInfo']),
             goHome (projectId) {
                 const params = projectId ? { projectId } : {}
                 this.$router.replace({

@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import cookie from 'js-cookie'
 
 import repoGeneric from './repoGeneric'
 import repoCommon from './repoCommon'
@@ -92,5 +93,9 @@ export default {
                 }
             }))
         })
+    },
+    logout () {
+        cookie.remove('bkrepo_ticket')
+        location.reload()
     }
 }
