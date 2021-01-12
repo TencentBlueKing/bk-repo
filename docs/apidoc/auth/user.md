@@ -113,6 +113,68 @@
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
 
+
+### 创建用户到仓库管理员
+
+- API: POST /auth/api/user/create/repo
+- API 名称: create_user_to_repo
+- 功能说明：
+	- 中文：创建用户为仓库管理员
+	- English：create user to repo
+
+- input body:
+
+``` json
+{
+    "admin":true,
+    "name":"string",
+    "pwd":"string",
+    "userId":"string",
+    "asstUsers":[
+        "owen",
+        "necr"
+    ],
+    "group":true,
+    "projectId":"test",
+    "repoName":"generic"
+}
+```
+
+
+- input 字段说明
+
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|name|string|是|无|用户名|the  name|
+|pwd|string|是|无|用户密码|the user password|
+|userId|string|是|无|用户id|the user id|
+|admin|bool|否|false|是否管理员|is admin|
+|asstUsers|string array|否|[]|关联用户|association user|
+|group|boot |否|false|是否群组账号|is group user|
+|projectId|string|是|无|关联到的项目|the association project|
+|repoName|string|是|无|关联到的仓库|the association repo|
+
+- output:
+
+```
+{
+"code": 0,
+"message": null,
+"data": true,
+"traceId": ""
+}
+
+```
+
+- output 字段说明
+
+| 字段|类型|说明|Description|
+|---|---|---|---|
+|code|bool|错误编码。 0表示success，>0表示失败错误 |0:success, other: failure|
+|message|result message|错误消息 |the failure message |
+|data | bool | result data |the data for response|
+|traceId|string|请求跟踪id|the trace id|
+
 ### 用户列表
 
 - API:GET /auth/api/user/list
@@ -296,7 +358,8 @@
 {
     "admin":true,
     "name":"string",
-    "pwd":"string"
+    "pwd":"string",
+    "asstUsers":["owen"]
 }
 ```
 
@@ -309,6 +372,7 @@
 |pwd|string|是|无|用户密码|the user password|
 |uid|string|是|无|用户id|the user id|
 |admin|bool|否|false|是否管理员|is admin|
+|asstUsers|string array|否|false|关联用户|asst users|
 
 - output:
 

@@ -31,10 +31,11 @@
 
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
-import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 
@@ -45,6 +46,8 @@ interface UserService {
     fun createUser(request: CreateUserRequest): Boolean
 
     fun createUserToProject(request: CreateUserToProjectRequest): Boolean
+
+    fun createUserToRepo(request: CreateUserToRepoRequest): Boolean
 
     fun listUser(rids: List<String>): List<User>
 
