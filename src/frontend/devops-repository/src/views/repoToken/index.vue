@@ -118,14 +118,14 @@
 @import '@/scss/conf';
 .repo-token-container {
     height: 100%;
-    .repo-token-header {
-        height: 50px;
-        padding: 0 20px;
-        display: flex;
-        align-items: center;
-        font-size: 14px;
-        background-color: white;
-    }
+    // .repo-token-header {
+    //     height: 50px;
+    //     padding: 0 20px;
+    //     display: flex;
+    //     align-items: center;
+    //     font-size: 14px;
+    //     background-color: white;
+    // }
     .repo-token-operation {
         flex: 1;
         display: flex;
@@ -134,7 +134,7 @@
     }
     .repo-token-main {
         height: 100%;
-        // height: calc(100% - 80px);
+        // height: calc(100% - 70px);
         // margin-top: 20px;
         // padding: 20px;
         // background-color: white;

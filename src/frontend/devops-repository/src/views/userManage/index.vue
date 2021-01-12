@@ -40,7 +40,7 @@
         background-color: white;
     }
     .user-manage-main {
-        height: calc(100% - 80px);
+        height: calc(100% - 70px);
         margin-top: 20px;
         padding: 20px;
         background-color: white;
