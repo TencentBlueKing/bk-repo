@@ -58,7 +58,7 @@
             :width="500">
             <div class="show-userlist-content" slot="content">
                 <div class="add-user flex-align-center">
-                    <div style="flex:1;">
+                    <div style="width:280px">
                         <bk-select class="select-user" multiple show-select-all v-model="editRoleUsers.addUsers"
                             placeholder="请选择用户" searchable>
                             <bk-option v-for="option in Object.values(userList)"
@@ -310,6 +310,7 @@
     }
     .show-userlist-content{
         height: 100%;
+        min-height: 400px;
         padding: 20px;
     }
     .show-resource-content{

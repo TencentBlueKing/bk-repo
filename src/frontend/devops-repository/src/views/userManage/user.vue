@@ -21,6 +21,7 @@
             :data="userList"
             :outer-border="false"
             :row-border="false"
+            row-key="userId"
             size="small"
         >
             <bk-table-column :label="$t('account')" prop="userId" width="200"></bk-table-column>
@@ -164,9 +165,11 @@
                 'createUser',
                 'editUser',
                 'deleteUser',
-                'checkUserId'
+                'checkUserId',
+                'getRepoUserList'
             ]),
             asynCheckUserId () {
+                if (!this.editUserDialog.add) return true
                 return this.checkUserId({
                     userId: this.editUserDialog.userId
                 }).then(res => !res)
@@ -224,6 +227,8 @@
                     this.editUserDialog.show = false
                     this.handlerPaginationChange()
                 }).finally(() => {
+                    // 更新用户列表缓存
+                    this.editUserDialog.add && this.getRepoUserList()
                     this.editUserDialog.loading = false
                 })
             },
@@ -267,6 +272,7 @@
                         message: `${locked ? '已' : '未'}锁定`
                     })
                 }).finally(() => {
+                    this.getRepoUserList()
                     this.handlerPaginationChange()
                 })
             }

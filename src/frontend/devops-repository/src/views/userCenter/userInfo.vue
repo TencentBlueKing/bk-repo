@@ -154,6 +154,11 @@
         computed: {
             ...mapState(['userInfo'])
         },
+        created () {
+            this.getUserInfo({
+                userId: this.userInfo.username
+            })
+        },
         methods: {
             ...mapActions([
                 'logout',
