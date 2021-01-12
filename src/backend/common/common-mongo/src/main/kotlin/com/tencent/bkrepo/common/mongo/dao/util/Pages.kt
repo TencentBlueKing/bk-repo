@@ -43,7 +43,7 @@ import org.springframework.data.domain.PageRequest
  */
 object Pages {
 
-    private const val PAGE_SIZE_LIMIT = 1000
+    private const val PAGE_SIZE_LIMIT = 10000
 
     /**
      * 根据页码[page]和分页大小[size]构造[PageRequest]
