@@ -54,7 +54,6 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -745,49 +744,34 @@ class RpmLocalRepository(
             val rpmVersion = nodeMetadata.toRpmVersion(nodeInfo.fullPath)
             val rpmPackagePojo = rpmVersion.toRpmPackagePojo(nodeInfo.fullPath)
             val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
-            val version = try {
-                packageClient.findVersionByName(
-                    nodeInfo.projectId, nodeInfo.repoName, packageKey, rpmPackagePojo.version
-                ).data
-            } catch (e: ExternalErrorCodeException) {
-                null
-            }
-            if (version == null) {
-                val downloadCount = packageDownloadStatisticsClient.query(
-                    nodeInfo.projectId,
-                    nodeInfo.repoName,
-                    packageKey = packageKey,
-                    version = rpmPackagePojo.version
-                ).data?.count
-                val packagePopulateRequest = PackagePopulateRequest(
-                    createdBy = nodeInfo.createdBy,
-                    createdDate = LocalDateTime.parse(nodeInfo.createdDate),
-                    lastModifiedBy = nodeInfo.lastModifiedBy,
-                    lastModifiedDate = LocalDateTime.parse(nodeInfo.lastModifiedDate),
-                    projectId = nodeInfo.projectId,
-                    repoName = nodeInfo.repoName,
-                    key = packageKey,
-                    name = rpmPackagePojo.name,
-                    type = PackageType.RPM,
-                    description = null,
-                    versionList = listOf(
-                        PopulatedPackageVersion(
-                            createdBy = nodeInfo.createdBy,
-                            createdDate = LocalDateTime.parse(nodeInfo.createdDate),
-                            lastModifiedBy = nodeInfo.lastModifiedBy,
-                            lastModifiedDate = LocalDateTime.parse(nodeInfo.lastModifiedDate),
-                            name = rpmPackagePojo.version,
-                            size = nodeInfo.size,
-                            downloads = downloadCount ?: 0L,
-                            manifestPath = null,
-                            artifactPath = nodeInfo.fullPath
-                        )
+            val packagePopulateRequest = PackagePopulateRequest(
+                createdBy = nodeInfo.createdBy,
+                createdDate = LocalDateTime.parse(nodeInfo.createdDate),
+                lastModifiedBy = nodeInfo.lastModifiedBy,
+                lastModifiedDate = LocalDateTime.parse(nodeInfo.lastModifiedDate),
+                projectId = nodeInfo.projectId,
+                repoName = nodeInfo.repoName,
+                key = packageKey,
+                name = rpmPackagePojo.name,
+                type = PackageType.RPM,
+                description = null,
+                versionList = listOf(
+                    PopulatedPackageVersion(
+                        createdBy = nodeInfo.createdBy,
+                        createdDate = LocalDateTime.parse(nodeInfo.createdDate),
+                        lastModifiedBy = nodeInfo.lastModifiedBy,
+                        lastModifiedDate = LocalDateTime.parse(nodeInfo.lastModifiedDate),
+                        name = rpmPackagePojo.version,
+                        size = nodeInfo.size,
+                        downloads = 0L,
+                        manifestPath = null,
+                        artifactPath = nodeInfo.fullPath
                     )
-
                 )
-                packageClient.populatePackage(packagePopulateRequest)
-                logger.info("Success create version $packagePopulateRequest")
-            }
+
+            )
+            packageClient.populatePackage(packagePopulateRequest)
+            logger.info("Success create version $packagePopulateRequest")
         }
     }
 
