@@ -36,5 +36,6 @@ package com.tencent.bkrepo.repository.pojo.token
  */
 enum class TokenType {
     UPLOAD,
-    DOWNLOAD
+    DOWNLOAD,
+    ALL
 }

@@ -50,8 +50,8 @@ data class TemporaryTokenInfo (
     val authorizedIpList: Set<String>,
     @ApiModelProperty("过期时间")
     val expireDate: String?,
-    @ApiModelProperty("是否为一次性token")
-    var disposable: Boolean,
+    @ApiModelProperty("允许下载次数")
+    var permits: Int?,
     @ApiModelProperty("token类型")
     val type: TokenType
 )
