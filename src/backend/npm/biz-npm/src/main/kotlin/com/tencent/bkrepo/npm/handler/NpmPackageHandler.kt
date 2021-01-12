@@ -42,7 +42,6 @@ import com.tencent.bkrepo.npm.model.properties.PackageProperties
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
@@ -58,9 +57,6 @@ import java.time.LocalDateTime
 class NpmPackageHandler {
     @Autowired
     private lateinit var packageClient: PackageClient
-
-    @Autowired
-    private lateinit var downloadStatisticsClient: PackageDownloadStatisticsClient
 
     /**
      * 包版本数据填充
@@ -86,7 +82,6 @@ class NpmPackageHandler {
                     dist.any()[SIZE].toString().toLong()
                 }
                 with(tgzNodeInfo) {
-                    val downloadCount = downloadStatisticsClient.query(projectId, repoName, PackageKeys.ofNpm(name), version).data?.count ?: 0
                     val populatedPackageVersion = PopulatedPackageVersion(
                         createdBy = createdBy,
                         createdDate = LocalDateTime.parse(createdDate),
@@ -94,7 +89,7 @@ class NpmPackageHandler {
                         lastModifiedDate = LocalDateTime.parse(lastModifiedDate),
                         name = version,
                         size = size,
-                        downloads = downloadCount,
+                        downloads = 0,
                         manifestPath = getManifestPath(name, version),
                         artifactPath = getContentPath(name, version),
                         metadata = buildProperties(next.value)
