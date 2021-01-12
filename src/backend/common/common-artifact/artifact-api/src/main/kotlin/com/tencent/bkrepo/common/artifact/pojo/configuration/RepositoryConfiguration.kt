@@ -47,12 +47,13 @@ import io.swagger.annotations.ApiModelProperty
     defaultImpl = LocalConfiguration::class
 )
 @JsonSubTypes(
+    JsonSubTypes.Type(value = LocalConfiguration::class, name = "rpm-local"),// 兼容处理
     JsonSubTypes.Type(value = LocalConfiguration::class, name = LocalConfiguration.type),
     JsonSubTypes.Type(value = RemoteConfiguration::class, name = RemoteConfiguration.type),
     JsonSubTypes.Type(value = VirtualConfiguration::class, name = VirtualConfiguration.type),
     JsonSubTypes.Type(value = CompositeConfiguration::class, name = CompositeConfiguration.type)
 )
-abstract class RepositoryConfiguration {
+open class RepositoryConfiguration {
     /**
      * 设置项
      * 不同类型仓库可以通过该字段进行差异化配置

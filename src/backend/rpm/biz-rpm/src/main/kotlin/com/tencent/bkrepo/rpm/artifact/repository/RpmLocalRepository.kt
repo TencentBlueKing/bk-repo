@@ -67,7 +67,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.rpm.INDEXER
 import com.tencent.bkrepo.rpm.NO_INDEXER
@@ -113,6 +115,7 @@ import org.springframework.util.StopWatch
 import java.io.ByteArrayInputStream
 import java.io.FileInputStream
 import java.nio.channels.Channels
+import java.time.LocalDateTime
 
 @Component
 class RpmLocalRepository(
@@ -750,22 +753,40 @@ class RpmLocalRepository(
                 null
             }
             if (version == null) {
-                val packageVersionCreateRequest = PackageVersionCreateRequest(
+                val downloadCount = packageDownloadStatisticsClient.query(
+                    nodeInfo.projectId,
+                    nodeInfo.repoName,
+                    packageKey = packageKey,
+                    version = rpmPackagePojo.version
+                ).data?.count
+                val packagePopulateRequest = PackagePopulateRequest(
+                    createdBy = nodeInfo.createdBy,
+                    createdDate = LocalDateTime.parse(nodeInfo.createdDate),
+                    lastModifiedBy = nodeInfo.lastModifiedBy,
+                    lastModifiedDate = LocalDateTime.parse(nodeInfo.lastModifiedDate),
                     projectId = nodeInfo.projectId,
                     repoName = nodeInfo.repoName,
-                    packageName = rpmPackagePojo.name,
-                    packageKey = packageKey,
-                    packageType = PackageType.RPM,
-                    packageDescription = "compensation",
-                    versionName = rpmPackagePojo.version,
-                    size = nodeInfo.size,
-                    manifestPath = null,
-                    artifactPath = nodeInfo.fullPath,
-                    overwrite = true,
-                    createdBy = "compensation"
+                    key = packageKey,
+                    name = rpmPackagePojo.name,
+                    type = PackageType.RPM,
+                    description = null,
+                    versionList = listOf(
+                        PopulatedPackageVersion(
+                            createdBy = nodeInfo.createdBy,
+                            createdDate = LocalDateTime.parse(nodeInfo.createdDate),
+                            lastModifiedBy = nodeInfo.lastModifiedBy,
+                            lastModifiedDate = LocalDateTime.parse(nodeInfo.lastModifiedDate),
+                            name = rpmPackagePojo.version,
+                            size = nodeInfo.size,
+                            downloads = downloadCount ?: 0L,
+                            manifestPath = null,
+                            artifactPath = nodeInfo.fullPath
+                        )
+                    )
+
                 )
-                packageClient.createVersion(packageVersionCreateRequest)
-                logger.info("Success create version $packageVersionCreateRequest")
+                packageClient.populatePackage(packagePopulateRequest)
+                logger.info("Success create version $packagePopulateRequest")
             }
         }
     }

@@ -232,7 +232,7 @@ class PackageServiceImpl(
             var latestVersion = packageVersionDao.findLatest(tPackage.id!!)
             // 检查版本是否存在
             versionList.forEach {
-                if (packageVersionDao.findByName(tPackage.id!!, it.name) == null) {
+                if (packageVersionDao.findByName(tPackage.id!!, it.name) != null) {
                     logger.info("Package version[${tPackage.name}-${it.name}] existed, skip populating.")
                 } else {
                     val newVersion = TPackageVersion(

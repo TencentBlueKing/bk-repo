@@ -40,6 +40,7 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.PermissionSet
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -89,7 +90,18 @@ abstract class AbstractServiceImpl constructor(
         }
     }
 
-    fun convCreateUserRequest(request: CreateUserToProjectRequest): CreateUserRequest {
+    fun convCreateProjectUserRequest(request: CreateUserToProjectRequest): CreateUserRequest {
+        return CreateUserRequest(
+            request.userId,
+            request.name,
+            request.pwd,
+            request.admin,
+            request.asstUsers,
+            request.group
+        )
+    }
+
+    fun convCreateRepoUserRequest(request: CreateUserToRepoRequest): CreateUserRequest {
         return CreateUserRequest(
             request.userId,
             request.name,

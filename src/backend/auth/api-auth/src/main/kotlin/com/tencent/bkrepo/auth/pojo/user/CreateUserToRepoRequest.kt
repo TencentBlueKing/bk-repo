@@ -29,34 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.auth.pojo.user
 
-import com.tencent.bkrepo.repository.pojo.token.TokenType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 临时访问token
- */
-@Document("temporary_token")
-@CompoundIndexes(
-    CompoundIndex(def = "{'token': 1, 'type': 1}", background = true)
-)
-data class TTemporaryToken (
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    var projectId: String,
-    var repoName: String,
-    var fullPath: String,
-    var token: String,
-    var authorizedUserList: Set<String>,
-    var authorizedIpList: Set<String>,
-    var expireDate: LocalDateTime? = null,
-    var permits: Int? = null,
-    var type: TokenType
+data class CreateUserToRepoRequest(
+    @ApiModelProperty("用户id")
+    val userId: String,
+    @ApiModelProperty("用户名")
+    val name: String,
+    @ApiModelProperty("密码")
+    val pwd: String? = null,
+    @ApiModelProperty("管理员")
+    val admin: Boolean = false,
+    @ApiModelProperty("关联用户")
+    val asstUsers: List<String> = emptyList(),
+    @ApiModelProperty("群组账号")
+    val group: Boolean = false,
+    @ApiModelProperty("项目ID")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String
 )

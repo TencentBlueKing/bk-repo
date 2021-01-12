@@ -62,7 +62,7 @@ class RpmDebugController(
         rpmDebugService.delete(rpmArtifactInfo)
     }
 
-    @GetMapping("/package/compensation")
+    @GetMapping("/ext/package/populate")
     fun compensation() {
         rpmDebugService.compensation()
     }
