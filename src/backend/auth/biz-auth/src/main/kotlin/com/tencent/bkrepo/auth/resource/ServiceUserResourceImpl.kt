@@ -35,6 +35,8 @@ import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
@@ -42,6 +44,7 @@ import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserResult
@@ -81,6 +84,22 @@ class ServiceUserResourceImpl @Autowired constructor(
                 RoleType.PROJECT,
                 request.projectId,
                 null,
+                true
+            )
+        val roleId = roleService.createRole(createRoleRequest)
+        userService.addUserToRole(request.userId, roleId!!)
+        return ResponseBuilder.success(true)
+    }
+
+    override fun createUserToRepo(request: CreateUserToRepoRequest): Response<Boolean> {
+        userService.createUserToRepo(request)
+        val createRoleRequest =
+            CreateRoleRequest(
+                REPO_MANAGE_ID,
+                REPO_MANAGE_NAME,
+                RoleType.REPO,
+                request.projectId,
+                request.repoName,
                 true
             )
         val roleId = roleService.createRole(createRoleRequest)
