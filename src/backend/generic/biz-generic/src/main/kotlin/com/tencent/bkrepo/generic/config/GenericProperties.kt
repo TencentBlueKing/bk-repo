@@ -29,34 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.generic.config
 
-import com.tencent.bkrepo.repository.pojo.token.TokenType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-/**
- * 临时访问token
- */
-@Document("temporary_token")
-@CompoundIndexes(
-    CompoundIndex(def = "{'token': 1, 'type': 1}", background = true)
-)
-data class TTemporaryToken (
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    var projectId: String,
-    var repoName: String,
-    var fullPath: String,
-    var token: String,
-    var authorizedUserList: Set<String>,
-    var authorizedIpList: Set<String>,
-    var expireDate: LocalDateTime? = null,
-    var permits: Int? = null,
-    var type: TokenType
+@ConfigurationProperties(prefix = "generic")
+data class GenericProperties(
+    var host: String = "localhost"
 )

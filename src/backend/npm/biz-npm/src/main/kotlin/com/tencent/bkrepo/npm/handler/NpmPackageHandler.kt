@@ -35,22 +35,91 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
+import com.tencent.bkrepo.npm.constants.SIZE
+import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.model.properties.PackageProperties
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 @Component
 class NpmPackageHandler {
     @Autowired
     private lateinit var packageClient: PackageClient
+
+    @Autowired
+    private lateinit var downloadStatisticsClient: PackageDownloadStatisticsClient
+
+    /**
+     * 包版本数据填充
+     * [nodeInfo] package.json的node节点信息
+     */
+    fun populatePackage(
+        nodeInfo: NodeInfo,
+        packageMetaData: NpmPackageMetaData,
+        tgzNodeInfoMap: Map<String, NodeInfo>
+    ) {
+        val versionList = mutableListOf<PopulatedPackageVersion>()
+        with(packageMetaData) {
+            val name = this.name.orEmpty()
+            val iterator = packageMetaData.versions.map.entries.iterator()
+            while (iterator.hasNext()) {
+                val next = iterator.next()
+                val version = next.key
+                val tgzNodeInfo = tgzNodeInfoMap[version] ?: error("")
+                val dist = next.value.dist!!
+                val size = if (!dist.any().containsKey(SIZE)) {
+                    tgzNodeInfoMap[next.key]?.size!!
+                } else {
+                    dist.any()[SIZE].toString().toLong()
+                }
+                with(tgzNodeInfo) {
+                    val downloadCount = downloadStatisticsClient.query(projectId, repoName, PackageKeys.ofNpm(name), version).data?.count ?: 0
+                    val populatedPackageVersion = PopulatedPackageVersion(
+                        createdBy = createdBy,
+                        createdDate = LocalDateTime.parse(createdDate),
+                        lastModifiedBy = lastModifiedBy,
+                        lastModifiedDate = LocalDateTime.parse(lastModifiedDate),
+                        name = version,
+                        size = size,
+                        downloads = downloadCount,
+                        manifestPath = getManifestPath(name, version),
+                        artifactPath = getContentPath(name, version),
+                        metadata = buildProperties(next.value)
+                    )
+                    versionList.add(populatedPackageVersion)
+                }
+            }
+            with(nodeInfo) {
+                val packagePopulateRequest = PackagePopulateRequest(
+                    createdBy = nodeInfo.createdBy,
+                    createdDate = LocalDateTime.parse(createdDate),
+                    lastModifiedBy = nodeInfo.lastModifiedBy,
+                    lastModifiedDate = LocalDateTime.parse(lastModifiedDate),
+                    projectId = nodeInfo.projectId,
+                    repoName = nodeInfo.repoName,
+                    name = name,
+                    key = PackageKeys.ofNpm(name),
+                    type = PackageType.NPM,
+                    description = packageMetaData.description.orEmpty(),
+                    versionList = versionList
+                )
+                packageClient.populatePackage(packagePopulateRequest)
+            }
+        }
+    }
 
     /**
      * 创建包版本

@@ -69,4 +69,10 @@ interface TemporaryTokenClient {
     fun deleteToken(
         @PathVariable token: String
     ): Response<Void>
+
+    @ApiOperation("减少token 允许访问次数")
+    @PostMapping("/permits/decrement/{token}")
+    fun decrementPermits(
+        @PathVariable token: String
+    ): Response<Void>
 }

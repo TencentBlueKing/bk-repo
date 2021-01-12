@@ -8,8 +8,8 @@ Content-Type: application/json
   "repoName": "{{repo}}",
   "fullPathSet": ["/"],
   "expireSeconds": 3600,
-  "disposable": true,
-  "type": "DOWNLOAD"
+  "permits": 1,
+  "type": "ALL"
 }
 
 > {%
@@ -42,7 +42,7 @@ Authorization: Basic {{username}} {{password}}
     });
 %}
 
-### 创建一次性长传临时token
+### 创建一次性上传临时token
 POST http://{{genericHost}}/temporary/token/create
 Authorization: Basic {{username}} {{password}}
 Content-Type: application/json
@@ -52,6 +52,20 @@ Content-Type: application/json
   "repoName": "{{repo}}",
   "fullPathSet": ["/"],
   "expireSeconds": 3600,
-  "disposable": true,
+  "permits": 1,
   "type": "UPLOAD"
+}
+
+### 创建一次性下载临时url
+POST http://{{genericHost}}/temporary/url/create
+Authorization: Basic {{username}} {{password}}
+Content-Type: application/json
+
+{
+  "projectId": "{{project}}",
+  "repoName": "{{repo}}",
+  "fullPathSet": ["/test.txt"],
+  "expireSeconds": 3600,
+  "permits": 1,
+  "type": "DOWNLOAD"
 }

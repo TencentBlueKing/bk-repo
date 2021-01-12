@@ -29,34 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.generic.pojo
 
-import com.tencent.bkrepo.repository.pojo.token.TokenType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 临时访问token
- */
-@Document("temporary_token")
-@CompoundIndexes(
-    CompoundIndex(def = "{'token': 1, 'type': 1}", background = true)
-)
-data class TTemporaryToken (
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    var projectId: String,
-    var repoName: String,
-    var fullPath: String,
-    var token: String,
-    var authorizedUserList: Set<String>,
-    var authorizedIpList: Set<String>,
-    var expireDate: LocalDateTime? = null,
-    var permits: Int? = null,
-    var type: TokenType
+@ApiModel("临时访问url")
+data class TemporaryAccessUrl (
+    @ApiModelProperty("项目")
+    val projectId: String,
+    @ApiModelProperty("仓库")
+    val repoName: String,
+    @ApiModelProperty("授权路径")
+    val fullPath: String,
+    @ApiModelProperty("url")
+    val url: String,
+    @ApiModelProperty("授权用户")
+    val authorizedUserList: Set<String>,
+    @ApiModelProperty("授权IP")
+    val authorizedIpList: Set<String>,
+    @ApiModelProperty("过期时间")
+    val expireDate: String?,
+    @ApiModelProperty("允许下载次数")
+    var permits: Int?,
+    @ApiModelProperty("token类型")
+    val type: String
 )

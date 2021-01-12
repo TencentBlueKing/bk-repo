@@ -36,9 +36,12 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.generic.config.GenericProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
 
-@Component
+@Configuration
+@EnableConfigurationProperties(GenericProperties::class)
 class GenericArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.GENERIC
