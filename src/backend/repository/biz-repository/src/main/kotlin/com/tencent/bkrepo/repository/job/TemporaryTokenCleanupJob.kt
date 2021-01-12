@@ -56,7 +56,9 @@ class TemporaryTokenCleanupJob(
         logger.info("Starting to clean up expired temporary token.")
         executeAndMeasureTime {
             val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
-            val query = Query.query(where(TTemporaryToken::expireDate).lt(expireDate))
+            val criteria = where(TTemporaryToken::expireDate).lt(expireDate)
+                .orOperator(where(TTemporaryToken::permits).lt(1))
+            val query = Query.query(criteria)
             temporaryTokenDao.remove(query)
         }.apply {
             logger.info(
