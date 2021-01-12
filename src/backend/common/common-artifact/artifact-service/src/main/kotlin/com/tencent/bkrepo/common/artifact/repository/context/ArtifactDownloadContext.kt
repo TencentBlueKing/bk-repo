@@ -40,5 +40,5 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 open class ArtifactDownloadContext(
     repo: RepositoryDetail? = null,
     artifact: ArtifactInfo? = null,
-    val useDisposition: Boolean = true
+    var useDisposition: Boolean = true
 ) : ArtifactContext(repo, artifact)
