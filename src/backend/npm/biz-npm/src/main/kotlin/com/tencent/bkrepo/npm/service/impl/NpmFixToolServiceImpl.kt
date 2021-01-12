@@ -3,10 +3,10 @@ package com.tencent.bkrepo.npm.service.impl
 import com.google.gson.JsonObject
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -18,7 +18,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.DIST
@@ -205,15 +204,16 @@ class NpmFixToolServiceImpl(
     override fun fixPackageManager(): List<PackageManagerResponse> {
         val packageManagerList = mutableListOf<PackageManagerResponse>()
         // 查找所有仓库
-        logger.info("starting add package manager function to historical data")
+        logger.info("starting add package manager function to historical data.")
         val repositoryList = repositoryClient.pageByType(0, 1000, "NPM").data?.records ?: run {
             logger.warn("no npm repository found, return.")
             return emptyList()
         }
-        logger.info("find [${repositoryList.size}] NPM repository ${repositoryList.map { it.projectId to it.name }}")
-        repositoryList.forEach {
+        val npmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
+        logger.info("find [${npmLocalRepositoryList.size}] NPM local repository ${repositoryList.map { it.projectId to it.name }}")
+        npmLocalRepositoryList.forEach {
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
-            packageManagerList.add(packageManagerResponse.copy(projectId = it.projectId, repoName = it.name))
+            packageManagerList.add(packageManagerResponse)
         }
         return packageManagerList
     }
@@ -232,7 +232,14 @@ class NpmFixToolServiceImpl(
         var packageMetadataList = packageMetadataPage.records.map { resolveNode(it) }
         if (packageMetadataList.isEmpty()) {
             logger.info("no package found in repo [$projectId/$repoName], skip.")
-            return PackageManagerResponse(totalCount = 0, successCount = 0, failedCount = 0, failedSet = emptySet())
+            return PackageManagerResponse(
+                projectId = projectId,
+                repoName = repoName,
+                totalCount = 0,
+                successCount = 0,
+                failedCount = 0,
+                failedSet = emptySet()
+            )
         }
         while (packageMetadataList.isNotEmpty()) {
             packageMetadataList.forEach {
@@ -243,7 +250,7 @@ class NpmFixToolServiceImpl(
                 val packageName = it.fullPath.removePrefix("/.npm/").removeSuffix("/package.json")
                 try {
                     // 添加包管理
-                    doAddPackageManager(it.createdBy, projectId, repoName, packageName, it)
+                    doAddPackageManager(projectId, repoName, packageName, it)
                     logger.info("Success to add package manager for [$packageName] in repo [$projectId/$repoName].")
                     successCount += 1
                 } catch (exception: RuntimeException) {
@@ -266,6 +273,8 @@ class NpmFixToolServiceImpl(
                 "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
         )
         return PackageManagerResponse(
+            projectId = projectId,
+            repoName = repoName,
             totalCount = totalCount,
             successCount = successCount,
             failedCount = failedCount,
@@ -274,43 +283,16 @@ class NpmFixToolServiceImpl(
     }
 
     private fun doAddPackageManager(
-        userId: String,
         projectId: String,
         repoName: String,
         packageName: String,
         nodeInfo: NodeInfo
     ) {
-        val artifactInfo = NpmArtifactInfo(projectId, repoName, "")
         val packageMetaData = storageService.load(nodeInfo.sha256!!, Range.full(nodeInfo.size), null)
             ?.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
             ?: throw IllegalStateException("src package json not found in repo [$projectId/$repoName]")
-        val iterator = packageMetaData.versions.map.entries.iterator()
-        while (iterator.hasNext()) {
-            val next = iterator.next()
-            val dist = next.value.dist!!
-            val size = if (!dist.any().containsKey(SIZE)) {
-                val queryTgzNode = queryTgzNode(projectId, repoName, packageName)
-                queryTgzNode[next.key]?.size!!
-            } else {
-                dist.any()[SIZE].toString().toLong()
-            }
-            try {
-                npmPackageHandler.createVersion(userId, artifactInfo, next.value, size)
-            } catch (exception: ExternalErrorCodeException) {
-                if (exception.errorMessage == CommonMessageCode.RESOURCE_EXISTED.getKey()) {
-                    logger.warn(
-                        "the package manager for [$packageName] with version [${next.key}] is already exists" +
-                            " in repo [$projectId/$repoName], skip."
-                    )
-                    return
-                }
-                logger.error(
-                    "add package manager for [$packageName] with version [${next.key}] failed " +
-                        "in repo [$projectId/$repoName]."
-                )
-                throw exception
-            }
-        }
+        val tgzNodeInfoMap = queryTgzNode(projectId, repoName, packageName)
+        npmPackageHandler.populatePackage(nodeInfo, packageMetaData, tgzNodeInfoMap)
         logger.info("add package manager for package [$packageName] success in repo [$projectId/$repoName]")
     }
 
