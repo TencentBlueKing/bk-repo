@@ -78,7 +78,9 @@ class PackageDownloadStatisticsServiceImpl(
                 logger.warn("DuplicateKeyException: " + exception.message.orEmpty())
                 mongoTemplate.upsert(query, update, TDownloadStatistics::class.java)
             }
-            logger.info("Create artifact download statistics [$statisticsAddRequest] success.")
+            if (logger.isDebugEnabled) {
+                logger.debug("Create artifact download statistics [$statisticsAddRequest] success.")
+            }
         }
     }
 
@@ -90,7 +92,12 @@ class PackageDownloadStatisticsServiceImpl(
         startDay: LocalDate?,
         endDay: LocalDate?
     ): DownloadStatisticsResponse {
-        logger.info("query package download metric request: [projectId: $projectId, repoName: $repoName, packageKey: $packageKey, version: $version, startDay: $startDay, endDay: $endDay].")
+        if (logger.isDebugEnabled) {
+            logger.debug("query package download metric request: " +
+                "[projectId: $projectId, repoName: $repoName, packageKey: $packageKey," +
+                " version: $version, startDay: $startDay, endDay: $endDay]."
+            )
+        }
         packageKey.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
             CommonMessageCode.PARAMETER_MISSING,
             "packageKey"
@@ -121,7 +128,11 @@ class PackageDownloadStatisticsServiceImpl(
         repoName: String,
         packageKey: String
     ): DownloadStatisticsMetricResponse {
-        logger.info("query package download metric for special date period request: [projectId: $projectId, repoName: $repoName, packageKey: $packageKey].")
+        if (logger.isDebugEnabled) {
+            logger.debug("query package download metric for special date period request: " +
+                "[projectId: $projectId, repoName: $repoName, packageKey: $packageKey]."
+            )
+        }
         packageKey.takeIf { it.isNotBlank() } ?: throw ErrorCodeException(
             CommonMessageCode.PARAMETER_MISSING,
             "packageKey"
