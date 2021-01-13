@@ -43,8 +43,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -722,8 +722,8 @@ class RpmLocalRepository(
                 pageSize = 200,
                 includeFolder = false,
                 includeMetadata = true,
-                deep = true,
-                sort = true
+                deep = false,
+                sort = false
             )
             val nodeInfoPage = nodeClient.listNodePage(repo.projectId, repo.name, rpmNodePath, nodeListOption).data
                 ?: break@loop
