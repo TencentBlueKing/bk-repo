@@ -91,7 +91,7 @@ class NpmPackageHandler {
                         size = size,
                         downloads = 0,
                         manifestPath = getManifestPath(name, version),
-                        artifactPath = getContentPath(name, version),
+                        artifactPath = fullPath,
                         metadata = buildProperties(next.value)
                     )
                     versionList.add(populatedPackageVersion)
