@@ -145,7 +145,7 @@ class NpmLocalRepository(
         if (node == null || node.folder) return null
         return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
             .also {
-                logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]!")
+                logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]")
             }
     }
 
