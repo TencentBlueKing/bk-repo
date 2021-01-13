@@ -707,13 +707,7 @@ class RpmLocalRepository(
     }
 
     private fun compensationPackage(repo: RepositoryDetail, repoDataPath: String) {
-        // 统计所有节点数量
         val rpmNodePath = repoDataPath.removeSuffix("/").removeSuffix("repodata").removeSuffix("/")
-        val rpmNodeSum = nodeClient.countFileNode(repo.projectId, repo.name, rpmNodePath).data ?: return
-        val repodataSum = nodeClient.countFileNode(repo.projectId, repo.name, repoDataPath).data ?: 0
-        //  与`repodata` 目录同级的rpm 节点
-        val rpmNodes = rpmNodeSum - repodataSum
-        logger.info("${repo.projectId}/${repo.name} Found rpm artifact: $rpmNodes")
         var i = 0
         loop@ while (true) {
             ++i

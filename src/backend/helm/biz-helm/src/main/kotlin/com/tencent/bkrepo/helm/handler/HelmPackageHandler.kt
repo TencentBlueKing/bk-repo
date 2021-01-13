@@ -36,16 +36,48 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 @Component
 class HelmPackageHandler(
     private val packageClient: PackageClient
 ) {
+
+    /**
+     * 包版本数据填充
+     * [nodeInfo] 某个节点的node节点信息
+     */
+    fun populatePackage(
+        packageVersionList: List<PopulatedPackageVersion>,
+        nodeInfo: NodeInfo,
+        name: String,
+        description: String
+    ) {
+        with(nodeInfo) {
+            val packagePopulateRequest = PackagePopulateRequest(
+                createdBy = nodeInfo.createdBy,
+                createdDate = LocalDateTime.parse(createdDate),
+                lastModifiedBy = nodeInfo.lastModifiedBy,
+                lastModifiedDate = LocalDateTime.parse(lastModifiedDate),
+                projectId = nodeInfo.projectId,
+                repoName = nodeInfo.repoName,
+                name = name,
+                key = PackageKeys.ofHelm(name),
+                type = PackageType.HELM,
+                description = description,
+                versionList = packageVersionList
+            )
+            packageClient.populatePackage(packagePopulateRequest)
+        }
+    }
 
     /**
      * 创建包版本

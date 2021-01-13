@@ -65,7 +65,7 @@ import org.springframework.transaction.annotation.Transactional
 import kotlin.streams.toList
 
 @Service
-class ChartManipulationChartServiceImpl(
+class ChartManipulationServiceImpl(
     private val helmPackageHandler: HelmPackageHandler
 ) : AbstractChartService(), ChartManipulationService {
 
@@ -180,6 +180,6 @@ class ChartManipulationChartServiceImpl(
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(ChartManipulationChartServiceImpl::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ChartManipulationServiceImpl::class.java)
     }
 }
