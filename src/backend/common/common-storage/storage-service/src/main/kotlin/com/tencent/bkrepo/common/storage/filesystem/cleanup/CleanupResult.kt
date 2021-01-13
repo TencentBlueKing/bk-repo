@@ -31,10 +31,18 @@
 
 package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
+
 data class CleanupResult(
-    var fileCount: Long = 0,
-    var folderCount: Long = 0,
-    var size: Long = 0
+    var totalFile: Long = 0,
+    var totalFolder: Long = 0,
+    var totalSize: Long = 0,
+    var cleanupFile: Long = 0,
+    var cleanupFolder: Long = 0,
+    var cleanupSize: Long = 0
 ) {
-    fun getTotal() = fileCount + folderCount
+    override fun toString(): String {
+        return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
+            "files deleted, $cleanupFile/$totalFolder dirs deleted."
+    }
 }

@@ -53,6 +53,7 @@ import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
+import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.exception.NpmArtifactExistException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmBadRequestException
@@ -299,8 +300,9 @@ class NpmClientServiceImpl(
                     ?: throw NpmArtifactNotFoundException("document not found")
             val npmPackageMetaData = inputStream.use { objectMapper.readValue(it, NpmPackageMetaData::class.java) }
             val distTags = npmPackageMetaData.distTags
-            if (!distTags.getMap().containsKey(LATEST)){
-                val message = "the dist tag [latest] is not found in package [$name] in repo [${artifactInfo.getRepoIdentify()}]"
+            if (!distTags.getMap().containsKey(LATEST)) {
+                val message =
+                    "the dist tag [latest] is not found in package [$name] in repo [${artifactInfo.getRepoIdentify()}]"
                 logger.error(message)
                 throw NpmTagNotExistException(message)
             }
@@ -349,8 +351,8 @@ class NpmClientServiceImpl(
         try {
             val size = attachments.getMap().values.iterator().next().length!!.toLong()
             handlerAttachmentsUpload(userId, artifactInfo, npmPackageMetaData)
-            handlerPackageFileUpload(userId, artifactInfo, npmPackageMetaData)
-            handlerVersionFileUpload(userId, artifactInfo, npmPackageMetaData)
+            handlerPackageFileUpload(userId, artifactInfo, npmPackageMetaData, size)
+            handlerVersionFileUpload(userId, artifactInfo, npmPackageMetaData, size)
             npmDependentHandler.updatePackageDependents(
                 userId,
                 artifactInfo,
@@ -371,12 +373,16 @@ class NpmClientServiceImpl(
     private fun handlerPackageFileUpload(
         userId: String,
         artifactInfo: NpmArtifactInfo,
-        npmPackageMetaData: NpmPackageMetaData
+        npmPackageMetaData: NpmPackageMetaData,
+        size: Long
     ) {
         with(artifactInfo) {
             val packageFullPath = NpmUtils.getPackageMetadataPath(npmPackageMetaData.name!!)
             val gmtTime = TimeUtil.getGMTTime()
             val npmMetadata = npmPackageMetaData.versions.map.values.iterator().next()
+            if (!npmMetadata.dist!!.any().containsKey(SIZE)) {
+                npmMetadata.dist!!.set(SIZE, size)
+            }
             // 第一次上传
             if (!exist(projectId, repoName, packageFullPath)) {
                 npmPackageMetaData.time.add(CREATED, gmtTime)
@@ -415,10 +421,14 @@ class NpmClientServiceImpl(
     private fun handlerVersionFileUpload(
         userId: String,
         artifactInfo: NpmArtifactInfo,
-        npmPackageMetaData: NpmPackageMetaData
+        npmPackageMetaData: NpmPackageMetaData,
+        size: Long
     ) {
         with(artifactInfo) {
             val npmMetadata = npmPackageMetaData.versions.map.values.iterator().next()
+            if (!npmMetadata.dist!!.any().containsKey(SIZE)) {
+                npmMetadata.dist!!.set(SIZE, size)
+            }
             val fullPath = NpmUtils.getVersionPackageMetadataPath(npmMetadata.name!!, npmMetadata.version!!)
             val inputStream = objectMapper.writeValueAsString(npmMetadata).byteInputStream()
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }

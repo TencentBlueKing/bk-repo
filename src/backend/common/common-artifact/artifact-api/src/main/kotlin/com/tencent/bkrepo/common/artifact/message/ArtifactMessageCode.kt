@@ -48,7 +48,13 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     NODE_CONFLICT("artifact.node.conflict"),
     NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
     STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
-    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error");
+    STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
+    PACKAGE_NOT_FOUND("artifact.package.notfound"),
+    PACKAGE_EXISTED("artifact.package.existed"),
+    VERSION_NOT_FOUND("artifact.version.notfound"),
+    VERSION_EXISTED("artifact.version.existed"),
+    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
+    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key

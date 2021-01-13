@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.mongo.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.MongoCollectionUtils.getPreferredCollectionName
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -174,6 +175,11 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
     abstract fun determineCollectionName(aggregation: Aggregation): String
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AbstractMongoDao::class.java)
+        val logger: Logger = LoggerFactory.getLogger(AbstractMongoDao::class.java)
+
+        /**
+         * mongodb 默认id字段
+         */
+        const val ID = "_id"
     }
 }

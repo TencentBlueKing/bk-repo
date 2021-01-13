@@ -50,8 +50,8 @@ class ExpiredCacheFileCleanupJob(
 ) {
 
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
-    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "PT1D")
-    fun cleanUp() {
+    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "P7D")
+    fun cleanup() {
         logger.info("Starting to clean up temp and expired cache files.")
         // cleanup default storage
         cleanUpOnStorage()
@@ -68,12 +68,7 @@ class ExpiredCacheFileCleanupJob(
         executeAndMeasureTime {
             storageService.cleanUp(storage)
         }.apply {
-            logger.info("Clean up on storage[$key] completed.")
-            logger.info(
-                "[${first.getTotal()}] expired cache and temp files has been clean up" +
-                    ", file[${first.fileCount}], folder[${first.folderCount}]" +
-                    ", [${first.size}] bytes totally, elapse [${second.seconds}] s."
-            )
+            logger.info("Clean up on storage[$key] completed, elapse [${second.seconds}] s.")
         }
     }
 

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.service.util
 
-import com.google.common.net.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
@@ -62,8 +62,23 @@ object HttpContextHolder {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
         return if (requestAttributes is ServletRequestAttributes) {
             val request = requestAttributes.request
-            val header = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
-            if (header.isNullOrBlank()) request.remoteAddr else StringTokenizer(header, ",").nextToken()
+            var address = request.getHeader(HttpHeaders.X_FORWARDED_FOR)
+            address = if (address.isNullOrBlank()) {
+                request.getHeader(HttpHeaders.X_REAL_IP)
+            } else {
+                StringTokenizer(address, StringPool.COMMA).nextToken()
+            }
+            if (address.isNullOrBlank()) {
+                address = request.getHeader(HttpHeaders.PROXY_CLIENT_IP)
+            }
+            if (address.isNullOrBlank()) {
+                address = request.remoteAddr
+            }
+            if (address.isNullOrBlank()) {
+                address = StringPool.UNKNOWN
+            }
+            // 对于通过多个代理的情况，第一个IP为客户端真实IP，多个IP按照','分割
+            return address
         } else StringPool.UNKNOWN
     }
 }

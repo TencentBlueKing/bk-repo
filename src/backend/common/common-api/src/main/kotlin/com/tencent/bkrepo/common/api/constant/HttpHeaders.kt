@@ -88,4 +88,8 @@ object HttpHeaders {
     const val VIA = "Via"
     const val WARNING = "Warning"
     const val WWW_AUTHENTICATE = "WWW-Authenticate"
+    const val X_FORWARDED_FOR = "X-Forwarded-For"
+    const val X_REAL_IP = "X-REAL-IP"
+    const val PROXY_CLIENT_IP = "Proxy-Client-IP"
+
 }

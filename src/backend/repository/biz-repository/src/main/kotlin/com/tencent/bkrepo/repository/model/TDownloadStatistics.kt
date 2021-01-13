@@ -36,7 +36,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDate
 
-@Document("downloads")
+@Document("package_downloads")
 @CompoundIndexes(
     CompoundIndex(
         name = "package_version_date_idx",

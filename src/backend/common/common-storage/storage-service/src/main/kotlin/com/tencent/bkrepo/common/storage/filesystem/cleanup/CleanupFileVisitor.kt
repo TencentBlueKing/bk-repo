@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
+import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
 import com.tencent.bkrepo.common.storage.filesystem.FileLockExecutor
 import org.slf4j.LoggerFactory
@@ -42,33 +43,39 @@ import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Duration
 
+@Suppress("UnstableApiUsage")
 class CleanupFileVisitor(
     private val rootPath: Path,
     private val expireDays: Int
 ) : SimpleFileVisitor<Path>() {
 
-    val cleanupResult = CleanupResult()
+    val result = CleanupResult()
+    private val rateLimiter = RateLimiter.create(permitsPerSecond)
 
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
+        val size = attributes.size()
+        result.totalFile += 1
+        result.totalSize += 1
         if (isExpired(attributes, expireDays)) {
-            val size = attributes.size()
+            rateLimiter.acquire()
             FileLockExecutor.executeInLock(filePath.toFile()) {
                 Files.delete(filePath)
-                logger.info("Clean up expired file[$filePath], size[$size].")
             }
-            cleanupResult.fileCount += 1
-            cleanupResult.size += size
+            result.cleanupFile += 1
+            result.cleanupSize += size
+            logger.info("Clean up file[$filePath], size[$size], summary: $result")
         }
         return FileVisitResult.CONTINUE
     }
 
     @Throws(IOException::class)
     override fun postVisitDirectory(dirPath: Path, exc: IOException?): FileVisitResult {
+        result.totalFolder += 1
         if (!Files.isSameFile(rootPath, dirPath) && !Files.list(dirPath).iterator().hasNext()) {
             Files.delete(dirPath)
-            logger.info("Clean up empty folder[$dirPath].")
-            cleanupResult.folderCount += 1
+            logger.info("Clean up folder[$dirPath].")
+            result.cleanupFolder += 1
         }
         return FileVisitResult.CONTINUE
     }
@@ -86,5 +93,6 @@ class CleanupFileVisitor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(JOB_LOGGER_NAME)
+        private const val permitsPerSecond = 30.0
     }
 }

@@ -39,7 +39,7 @@ import java.time.LocalDateTime
 @Document("module_deps")
 @CompoundIndexes(
     CompoundIndex(
-        name = "projectId_repoName_name_deps_idx",
+        name = "name_deps_idx",
         def = "{'projectId': 1, 'repoName': 1, 'name': 1, 'deps': 1}",
         background = true
     )

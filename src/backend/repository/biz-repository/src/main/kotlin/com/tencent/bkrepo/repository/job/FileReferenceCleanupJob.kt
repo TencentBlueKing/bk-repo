@@ -54,9 +54,9 @@ class FileReferenceCleanupJob(
     private val storageCredentialService: StorageCredentialService
 ) {
 
-    @Scheduled(cron = "0 0 4/6 * * ?")
+    @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次
     @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT6H")
-    fun cleanUp() {
+    fun cleanup() {
         logger.info("Starting to clean up file reference.")
         var totalCount = 0L
         var cleanupCount = 0L
