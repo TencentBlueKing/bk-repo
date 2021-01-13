@@ -68,7 +68,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ChartRepositoryChartServiceImpl : AbstractChartService(), ChartRepositoryService {
+class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryService {
 
     @Value("\${helm.registry.domain: ''}")
     private lateinit var domain: String
@@ -251,7 +251,7 @@ class ChartRepositoryChartServiceImpl : AbstractChartService(), ChartRepositoryS
 
     companion object {
         const val SLEEP_MILLIS = 20L
-        val logger: Logger = LoggerFactory.getLogger(ChartRepositoryChartServiceImpl::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ChartRepositoryServiceImpl::class.java)
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
