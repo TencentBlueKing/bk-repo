@@ -40,8 +40,8 @@ class FixToolServiceImpl(
     private val helmPackageHandler: HelmPackageHandler,
     private val chartRepositoryService: ChartRepositoryService
 ) : FixToolService, AbstractChartService() {
-    override fun fixPackageVersion(): List<PackageManagerResponse> {
 
+    override fun fixPackageVersion(): List<PackageManagerResponse> {
         val packageManagerList = mutableListOf<PackageManagerResponse>()
         // 查找所有仓库
         logger.info("starting add package manager function to historical data")
@@ -52,7 +52,6 @@ class FixToolServiceImpl(
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
         logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${repositoryList.map { it.projectId to it.name }}")
         helmLocalRepositoryList.forEach {
-            freshIndexYaml(it.projectId, it.name)
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
             packageManagerList.add(packageManagerResponse)
         }
@@ -62,7 +61,7 @@ class FixToolServiceImpl(
     /**
      * 刷新仓库的index.yaml文件
      */
-    private fun freshIndexYaml(projectId: String, repoName: String){
+    private fun freshIndexYaml(projectId: String, repoName: String) {
         val helmArtifactInfo = HelmArtifactInfo(projectId, repoName, "")
         // 刷新index.yaml索引文件，避免上传包没有刷新到索引文件导致漏掉
         val request = HttpContextHolder.getRequest()
@@ -78,6 +77,21 @@ class FixToolServiceImpl(
         var totalCount = 0L
         val failedSet = mutableSetOf<String>()
         val startTime = LocalDateTime.now()
+
+        try {
+            freshIndexYaml(projectId, repoName)
+        }catch (exception: RuntimeException){
+            logger.error("fresh index file for repo [$projectId/$repoName] failed, skip. message: ", exception)
+            return PackageManagerResponse(
+                projectId = projectId,
+                repoName = repoName,
+                totalCount = 0,
+                successCount = 0,
+                failedCount = 0,
+                failedSet = emptySet(),
+                description = "fresh index file for repo [$projectId/$repoName] failed."
+            )
+        }
 
         // 查询索引文件
         val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
