@@ -32,8 +32,8 @@
 package com.tencent.bkrepo.helm.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -153,7 +153,7 @@ class HelmLocalRepository : LocalRepository() {
         if (node == null || node.folder) return null
         return storageService.load(
             node.sha256!!, Range.full(node.size), context.storageCredentials
-        )?.also { logger.info("search artifact [$fullPath] success!") }
+        )?.also { logger.info("search artifact [$fullPath] success") }
     }
 
     override fun remove(context: ArtifactRemoveContext) {
