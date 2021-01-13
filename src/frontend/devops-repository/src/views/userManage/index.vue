@@ -8,10 +8,10 @@
         </header>
         <main class="user-manage-main">
             <bk-tab class="user-manage-tab" type="unborder-card">
-                <bk-tab-panel name="user" :label="$t('user')">
+                <bk-tab-panel v-if="MODE_CONFIG === 'standalone'" name="user" :label="$t('user')">
                     <User />
                 </bk-tab-panel>
-                <bk-tab-panel render-directive="if" name="userGroup" :label="$t('userGroup')">
+                <bk-tab-panel :render-directive="MODE_CONFIG === 'standalone' ? 'if' : 'show'" name="userGroup" :label="$t('userGroup')">
                     <Role />
                 </bk-tab-panel>
             </bk-tab>
