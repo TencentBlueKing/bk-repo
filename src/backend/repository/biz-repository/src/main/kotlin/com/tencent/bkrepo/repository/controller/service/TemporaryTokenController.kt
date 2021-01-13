@@ -59,4 +59,9 @@ class TemporaryTokenController(
         temporaryTokenService.deleteToken(token)
         return ResponseBuilder.success()
     }
+
+    override fun decrementPermits(token: String): Response<Void> {
+        temporaryTokenService.decrementPermits(token)
+        return ResponseBuilder.success()
+    }
 }

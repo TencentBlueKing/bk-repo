@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_PREVIEW
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
@@ -64,6 +66,14 @@ import javax.servlet.http.HttpServletRequest
 
 @Component
 class GenericLocalRepository : LocalRepository() {
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW)
+        if (preview) {
+            context.useDisposition = false
+        }
+    }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)

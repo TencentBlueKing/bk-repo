@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.util.version
 
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class SemVersionTest {
@@ -49,9 +50,11 @@ class SemVersionTest {
 
     @Test
     fun testSemVerOrdinal() {
-        println(SemVersion.parse("0.0.1").ordinal(4))
-        println(SemVersion.parse("1.0.1").ordinal(4))
-        println(SemVersion.parse("1.2.1").ordinal(4))
-        println(SemVersion.parse("1.2.1-SNAPSHOT").ordinal(4))
+        Assertions.assertEquals(19999, SemVersion.parse("0.0.1").ordinal(4))
+        Assertions.assertEquals(1000000019999, SemVersion.parse("1.0.1").ordinal(4))
+        Assertions.assertEquals(1000200019999, SemVersion.parse("1.2.1").ordinal(4))
+        Assertions.assertEquals(1000200010000, SemVersion.parse("1.2.1-SNAPSHOT").ordinal(4))
+        Assertions.assertEquals(3000300129999, SemVersion.parse("3.3.12").ordinal(4))
+        Assertions.assertEquals(1000100019999, SemVersion.parse("1.1.1").ordinal(4))
     }
 }

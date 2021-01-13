@@ -39,7 +39,7 @@ import java.time.LocalDateTime
 @Document("migration_error_data")
 @CompoundIndexes(
     CompoundIndex(
-        name = "projectId_repoName_error_data_idx",
+        name = "error_data_idx",
         def = "{'projectId': 1, 'repoName': 1, 'counter': 1}",
         background = true
     )

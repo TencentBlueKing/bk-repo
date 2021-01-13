@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.TemporaryTokenService
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -56,13 +56,12 @@ import java.util.UUID
 @Service
 class TemporaryTokenServiceImpl(
     private val temporaryTokenDao: TemporaryTokenDao,
-    private val nodeService: NodeService,
-    private val mongoTemplate: MongoTemplate
+    private val nodeService: NodeService
 ) : TemporaryTokenService, ArtifactService() {
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
         with(request) {
-            return formatAndCheckFullPath(projectId, repoName, fullPathSet).map {
+            return validateAndNormalize(this).map {
                 val temporaryToken = TTemporaryToken(
                     projectId = projectId,
                     repoName = repoName,
@@ -71,7 +70,7 @@ class TemporaryTokenServiceImpl(
                     authorizedUserList = request.authorizedUserSet,
                     authorizedIpList = request.authorizedIpSet,
                     token = generateToken(),
-                    disposable = disposable,
+                    permits = permits,
                     type = type,
                     createdBy = SecurityUtils.getUserId(),
                     createdDate = LocalDateTime.now(),
@@ -95,16 +94,24 @@ class TemporaryTokenServiceImpl(
         logger.info("Delete temporary token[$token] success.")
     }
 
+    override fun decrementPermits(token: String) {
+        temporaryTokenDao.decrementPermits(token)
+        logger.info("Decrement permits of token[$token] success.")
+    }
+
     /**
-     * 格式化[fullPathSet]并校验节点是否存在
+     * 验证数据格式，比格式化fullPath
      */
-    private fun formatAndCheckFullPath(projectId: String, repoName: String, fullPathSet: Set<String>): List<String> {
-        return fullPathSet.map {
-            val artifactInfo = DefaultArtifactInfo(projectId, repoName, it)
-            if (!nodeService.checkExist(artifactInfo)) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+    private fun validateAndNormalize(request: TemporaryTokenCreateRequest): List<String> {
+        with(request) {
+            Preconditions.checkArgument(permits == null || permits!! > 0, "permits")
+            return fullPathSet.map {
+                val artifactInfo = DefaultArtifactInfo(projectId, repoName, it)
+                if (!nodeService.checkExist(artifactInfo)) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+                }
+                artifactInfo.getArtifactFullPath()
             }
-            artifactInfo.getArtifactFullPath()
         }
     }
 
@@ -131,7 +138,7 @@ class TemporaryTokenServiceImpl(
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     type = it.type,
-                    disposable = it.disposable
+                    permits = it.permits
                 )
             }
         }

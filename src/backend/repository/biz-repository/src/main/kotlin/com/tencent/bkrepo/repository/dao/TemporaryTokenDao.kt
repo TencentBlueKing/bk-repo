@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.model.TTemporaryToken
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
@@ -63,5 +64,20 @@ class TemporaryTokenDao : SimpleMongoDao<TTemporaryToken>() {
         }
         val query = Query(TTemporaryToken::token.isEqualTo(token))
         this.remove(query)
+    }
+
+    /**
+     * 减少[token]的允许访问次数，当次数小于1，直接删除
+     */
+    fun decrementPermits(token: String) {
+        if (token.isBlank()) {
+            return
+        }
+        val query = Query(TTemporaryToken::token.isEqualTo(token))
+        val update = Update().apply { inc(TTemporaryToken::permits.name, -1) }
+        val old = this.determineMongoTemplate().findAndModify(query, update, TTemporaryToken::class.java)
+        if (old?.permits != null && old.permits!! <= 1) {
+            this.removeById(old.id!!)
+        }
     }
 }

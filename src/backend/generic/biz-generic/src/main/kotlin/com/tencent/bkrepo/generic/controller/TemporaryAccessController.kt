@@ -39,9 +39,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
+import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
+import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.repository.pojo.token.TokenType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -63,10 +64,21 @@ class TemporaryAccessController(
     fun createToken(
         @RequestAttribute userId: String,
         @RequestBody request: TemporaryTokenCreateRequest
-    ): Response<List<TemporaryTokenInfo>> {
+    ): Response<List<TemporaryAccessToken>> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
             return temporaryAccessService.createToken(request)
+        }
+    }
+
+    @PostMapping("/url/create")
+    fun createUrl(
+        @RequestAttribute userId: String,
+        @RequestBody request: TemporaryTokenCreateRequest
+    ): Response<List<TemporaryAccessUrl>> {
+        with(request) {
+            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            return temporaryAccessService.createUrl(request)
         }
     }
 
@@ -77,9 +89,7 @@ class TemporaryAccessController(
     ) {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
         temporaryAccessService.download(artifactInfo)
-        if (tokenInfo.disposable) {
-            temporaryAccessService.invalidateToken(tokenInfo.token)
-        }
+        temporaryAccessService.decrementPermits(tokenInfo)
     }
 
     @PutMapping("/upload/$GENERIC_MAPPING_URI")
@@ -90,8 +100,6 @@ class TemporaryAccessController(
     ) {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         temporaryAccessService.upload(artifactInfo, file)
-        if (tokenInfo.disposable) {
-            temporaryAccessService.invalidateToken(tokenInfo.token)
-        }
+        temporaryAccessService.decrementPermits(tokenInfo)
     }
 }
