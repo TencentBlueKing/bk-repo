@@ -91,12 +91,10 @@ object NodeQueryHelper {
     ): Query {
         val query = Query(nodeListCriteria(projectId, repoName, path, option))
         if (option.sort) {
-            query.with(
-                Sort.by(
-                    Sort.Order(Sort.Direction.DESC, TNode::folder.name),
-                    Sort.Order(Sort.Direction.ASC, TNode::fullPath.name)
-                )
-            )
+            query.with(Sort.by(Sort.Direction.ASC, TNode::fullPath.name))
+            if (option.includeFolder) {
+                query.with(Sort.by(Sort.Direction.DESC, TNode::folder.name))
+            }
         }
         if (!option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)

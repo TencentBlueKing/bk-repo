@@ -39,5 +39,5 @@ import org.springframework.context.annotation.Configuration
 data class RepositoryProperties(
     var deletedNodeReserveDays: Long = 14,
     var defaultStorageCredentialsKey: String? = null,
-    var listCountLimit: Long = 1000L
+    var listCountLimit: Long = 100000L
 )
