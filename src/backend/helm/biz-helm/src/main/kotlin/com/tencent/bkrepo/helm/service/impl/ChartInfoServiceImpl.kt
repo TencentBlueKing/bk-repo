@@ -66,7 +66,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class ChartInfoChartServiceImpl(
+class ChartInfoServiceImpl(
     private val chartRepositoryService: ChartRepositoryService
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -188,7 +188,7 @@ class ChartInfoChartServiceImpl(
         const val CURRENT_PAGE = 0
         const val SIZE = 5
 
-        val logger: Logger = LoggerFactory.getLogger(ChartInfoChartServiceImpl::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ChartInfoServiceImpl::class.java)
 
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
             with(nodeDetail) {
