@@ -34,7 +34,6 @@ if config.mode == "standalone" or config.mode == "" or config.mode == nil then
         return
     end
     if bkrepo_token == nil then
-        ngx.log(ngx.STDERR, "failed to read user request bkrepo_ticket: ", bkrepo_err)
         ngx.exit(401)
         return
     end
@@ -47,7 +46,6 @@ elseif bk_token ~= nil then
 else
     local devops_access_token = ngx.var.http_x_devops_access_token
     if bk_ticket == nil and devops_access_token == nil then
-        ngx.log(ngx.STDERR, "failed to read user request bk_ticket or devops_access_token: ", err)
         ngx.exit(401)
         return
     end
