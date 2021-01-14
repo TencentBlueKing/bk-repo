@@ -33,11 +33,9 @@ package com.tencent.bkrepo.rpm.servcie
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -57,12 +55,6 @@ class RpmDebugService : ArtifactService() {
     fun flushAllRepomd(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactContext()
         (repository as RpmLocalRepository).flushAllRepoData(context)
-    }
-
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        val context = ArtifactRemoveContext()
-        repository.remove(context)
     }
 
     fun compensation() {
