@@ -31,7 +31,8 @@
 
 package com.tencent.bkrepo.rpm.util
 
-import com.tencent.bkrepo.rpm.exception.RpmArtifactMetadataResolveException
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.rpm.exception.RpmRequestParamMissException
 import com.tencent.bkrepo.rpm.pojo.RpmPackagePojo
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
@@ -81,19 +82,24 @@ object RpmVersionUtils {
 
     fun Map<String, Any>.toRpmVersion(artifactUri: String): RpmVersion {
         return RpmVersion(
-            this["name"] as String? ?: throw RpmArtifactMetadataResolveException(
+            this["name"] as String? ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
                 "$artifactUri: not found metadata.name value"
             ),
-            this["arch"] as String? ?: throw RpmArtifactMetadataResolveException(
+            this["arch"] as String? ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
                 "$artifactUri: not found metadata.arch value"
             ),
-            this["epoch"] as String? ?: throw RpmArtifactMetadataResolveException(
+            this["epoch"] as String? ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
                 "$artifactUri: not found metadata.epoch value"
             ),
-            this["ver"] as String? ?: throw RpmArtifactMetadataResolveException(
+            this["ver"] as String? ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
                 "$artifactUri: not found metadata.ver value"
             ),
-            this["rel"] as String? ?: throw RpmArtifactMetadataResolveException(
+            this["rel"] as String? ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
                 "$artifactUri: not found metadata.rel value"
             )
         )

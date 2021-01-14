@@ -451,8 +451,6 @@ class RpmLocalRepository(
                                 createdBy = context.userId
                             )
                         )
-                        metadata["packageKey"] = packageKey
-                        metadata["version"] = rpmPackagePojo.version
                         rpmNodeCreateRequest(context, metadata)
                     }
                     XML -> {
@@ -524,12 +522,11 @@ class RpmLocalRepository(
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND)
         }
         val metadata = node.metadata
-        val packageKey = metadata["packageKey"] as String? ?: throw RpmArtifactMetadataResolveException(
-            "${context.projectId} | ${context.repoName} | $fullPath: not found metadata.packageKey value"
-        )
-        val version = metadata["version"] as String? ?: throw RpmArtifactMetadataResolveException(
-            "${context.projectId} | ${context.repoName} | $fullPath: not found metadata.version value"
-        )
+        val rpmVersion = metadata.toRpmVersion(fullPath)
+        val rpmPackagePojo = rpmVersion.toRpmPackagePojo(fullPath)
+        val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
+        val version = rpmPackagePojo.version
+
         removeRpmArtifact(node, packageKey, context, packageKey, version)
     }
 
