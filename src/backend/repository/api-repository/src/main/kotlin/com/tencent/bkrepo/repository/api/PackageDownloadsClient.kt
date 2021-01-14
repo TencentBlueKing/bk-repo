@@ -29,25 +29,37 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.download
+package com.tencent.bkrepo.repository.api
 
-import com.fasterxml.jackson.annotation.JsonInclude
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("日、周、月 返回下载统计量")
-data class DownloadStatisticsMetricResponse(
-    @ApiModelProperty("所属项目id")
-    val projectId: String,
-    @ApiModelProperty("所属仓库名称")
-    val repoName: String,
-    @ApiModelProperty("包唯一Key")
-    val packageKey: String,
-    // @ApiModelProperty("包名称")
-    // val name: String,
-    @ApiModelProperty("包版本")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    val version: String?,
-    @ApiModelProperty("时间段下载量")
-    val statisticsMetrics: List<DownloadStatisticsMetric>
-)
+@Api("包下载统计服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDownloadsClient")
+@RequestMapping("/service/package/downloads/")
+interface PackageDownloadsClient {
+
+    @ApiOperation("记录包下载")
+    @PostMapping("/record")
+    fun record(@RequestBody record: PackageDownloadRecord): Response<Void>
+
+    @ApiOperation("查询包下载记录明细")
+    @PostMapping("/details")
+    fun queryDetails(@RequestBody request: DownloadsQueryRequest): Response<PackageDownloadsDetails>
+
+    @ApiOperation("查询包下载总览")
+    @PostMapping("/summary")
+    fun querySummary(@RequestBody request: DownloadsQueryRequest): Response<PackageDownloadsSummary>
+}

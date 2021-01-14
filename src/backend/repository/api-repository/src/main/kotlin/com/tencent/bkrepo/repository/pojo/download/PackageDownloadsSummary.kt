@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,20 +32,27 @@
 package com.tencent.bkrepo.repository.pojo.download
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.Api
+import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@Api("构建下载量信息")
-data class DownloadStatisticsResponse(
+@ApiModel("包下载总览统计")
+data class PackageDownloadsSummary (
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")
     val repoName: String,
-    @ApiModelProperty("包名称")
+    @ApiModelProperty("包唯一Key")
+    val packageKey: String,
+    @ApiModelProperty("包显示名称")
     val packageName: String,
     @ApiModelProperty("包版本")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val version: String?,
-    @ApiModelProperty("下载量")
-    val count: Long
+    @ApiModelProperty("今日下载数")
+    val today: Long,
+    @ApiModelProperty("本周下载数")
+    val thisWeek: Long,
+    @ApiModelProperty("本月下载数")
+    val thisMonth: Long
 )
+

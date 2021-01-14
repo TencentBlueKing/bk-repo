@@ -76,11 +76,15 @@ class DownloadStatsMigrationJob(
                     val versionList = versionPage.records
                     // 遍历版本
                     versionList.forEach { version ->
-                        logger.info("Migrate version[${pkg.projectId}/${pkg.repoName}/${pkg.name}]-${version.name}")
+                        logger.info("Migrate version[${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}]")
                         // 查询下载统计
                         val request = buildLegacyQueryRequest(pkg, version)
                         val legacyDownloads = queryLegacyDownloads(request)
                         logger.info("Find [${legacyDownloads.size}] legacy download stats.")
+                        println(legacyDownloads)
+                        legacyDownloads.forEach {
+
+                        }
                         // TODO("迁移到新的表")
                     }
                 }

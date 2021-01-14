@@ -31,9 +31,12 @@
 
 package com.tencent.bkrepo.npm.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
@@ -57,6 +60,7 @@ class UserNpmController(
     private val npmWebService: NpmWebService
 ) {
 
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     @ApiOperation("查询包的版本详情")
     @GetMapping("/version/detail/{projectId}/{repoName}")
     fun detailVersion(
@@ -71,6 +75,7 @@ class UserNpmController(
         return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, packageKey, version))
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包")
     @DeleteMapping("/package/delete/{projectId}/{repoName}")
     fun deletePackage(
@@ -90,6 +95,7 @@ class UserNpmController(
         }
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping("/version/delete/{projectId}/{repoName}")
     fun deleteVersion(

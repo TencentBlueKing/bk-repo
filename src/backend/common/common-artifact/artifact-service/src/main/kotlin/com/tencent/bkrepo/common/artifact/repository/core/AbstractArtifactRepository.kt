@@ -56,9 +56,9 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
+import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -94,7 +94,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var packageDownloadStatisticsClient: PackageDownloadStatisticsClient
+    lateinit var packageDownloadsClient: PackageDownloadsClient
 
     @Autowired
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
@@ -220,7 +220,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     ) {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
-                taskAsyncExecutor.execute { packageDownloadStatisticsClient.add(it) }
+                taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
             }
         }
         if (throughput != Throughput.EMPTY) {
@@ -238,7 +238,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     open fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         return null
     }
 

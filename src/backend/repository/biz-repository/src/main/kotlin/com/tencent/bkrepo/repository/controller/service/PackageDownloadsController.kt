@@ -33,44 +33,29 @@ package com.tencent.bkrepo.repository.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
-import com.tencent.bkrepo.repository.service.PackageDownloadStatisticsService
+import com.tencent.bkrepo.repository.api.PackageDownloadsClient
+import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.repository.service.PackageDownloadsService
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDate
 
 @RestController
-class PackageDownloadStatisticsController(
-    private val packageDownloadStatisticsService: PackageDownloadStatisticsService
-) : PackageDownloadStatisticsClient {
+class PackageDownloadsController(
+    private val packageDownloadsService: PackageDownloadsService
+) : PackageDownloadsClient {
 
-    override fun add(statisticsAddRequest: DownloadStatisticsAddRequest): Response<Void> {
-        packageDownloadStatisticsService.add(statisticsAddRequest)
+    override fun record(record: PackageDownloadRecord): Response<Void> {
+        packageDownloadsService.record(record)
         return ResponseBuilder.success()
     }
 
-    override fun query(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        version: String?,
-        startDay: LocalDate?,
-        endDay: LocalDate?
-    ): Response<DownloadStatisticsResponse> {
-        return ResponseBuilder.success(
-            packageDownloadStatisticsService.query(projectId, repoName, packageKey, version, startDay, endDay)
-        )
+    override fun queryDetails(request: DownloadsQueryRequest): Response<PackageDownloadsDetails> {
+        return ResponseBuilder.success(packageDownloadsService.queryDetails(request))
     }
 
-    override fun queryForSpecial(
-        projectId: String,
-        repoName: String,
-        packageKey: String
-    ): Response<DownloadStatisticsMetricResponse> {
-        return ResponseBuilder.success(
-            packageDownloadStatisticsService.queryForSpecial(projectId, repoName, packageKey)
-        )
+    override fun querySummary(request: DownloadsQueryRequest): Response<PackageDownloadsSummary> {
+        return ResponseBuilder.success(packageDownloadsService.querySummary(request))
     }
 }
