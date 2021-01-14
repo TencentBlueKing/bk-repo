@@ -35,10 +35,10 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.job.DownloadStatsMigrationJob
 import com.tencent.bkrepo.repository.job.FileReferenceCleanupJob
 import com.tencent.bkrepo.repository.job.FileSynchronizeJob
 import com.tencent.bkrepo.repository.job.NodeDeletedCorrectionJob
+import com.tencent.bkrepo.repository.job.PackageDownloadsMigrationJob
 import com.tencent.bkrepo.repository.job.RootNodeCleanupJob
 import com.tencent.bkrepo.repository.job.StorageInstanceMigrationJob
 import org.springframework.web.bind.annotation.PathVariable
@@ -55,7 +55,7 @@ class SystemJobController(
     private val fileReferenceCleanupJob: FileReferenceCleanupJob,
     private val rootNodeCleanupJob: RootNodeCleanupJob,
     private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
-    private val downloadStatsMigrationJob: DownloadStatsMigrationJob
+    private val packageDownloadsMigrationJob: PackageDownloadsMigrationJob
 ) {
 
     @PostMapping("/sync/file")
@@ -94,7 +94,7 @@ class SystemJobController(
 
     @PostMapping("/migrate/downloads")
     fun migrateDownloads(): Response<Void> {
-        downloadStatsMigrationJob.migrate()
+        packageDownloadsMigrationJob.migrate()
         return ResponseBuilder.success()
     }
 }

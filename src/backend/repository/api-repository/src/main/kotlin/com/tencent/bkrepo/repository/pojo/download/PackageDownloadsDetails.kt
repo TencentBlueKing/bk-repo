@@ -31,25 +31,11 @@
 
 package com.tencent.bkrepo.repository.pojo.download
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDate
 
 @ApiModel("包下载明细记录")
 data class PackageDownloadsDetails (
-    @ApiModelProperty("所属项目id")
-    val projectId: String,
-    @ApiModelProperty("所属仓库名称")
-    val repoName: String,
-    @ApiModelProperty("包唯一Key")
-    val packageKey: String,
-    @ApiModelProperty("包显示名称")
-    val packageName: String,
-    @ApiModelProperty("包版本")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    val version: String?,
-    @ApiModelProperty("每日明细")
-    val details: Map<LocalDate, Int>
+    @ApiModelProperty("每天下载数量, key格式为yyyy-mm-dd")
+    val details: Map<String, Long>
 )
-

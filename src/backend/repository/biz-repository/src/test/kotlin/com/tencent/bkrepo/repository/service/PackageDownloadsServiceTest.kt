@@ -41,7 +41,7 @@ import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -104,7 +104,7 @@ class PackageDownloadsServiceTest @Autowired constructor(
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
-        val result = packageDownloadsService.queryDetails(DownloadsQueryRequest(
+        val result = packageDownloadsService.queryDetails(DetailsQueryRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             packageKey = UT_PACKAGE_KEY,
