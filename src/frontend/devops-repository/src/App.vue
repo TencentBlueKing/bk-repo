@@ -1,9 +1,9 @@
 <template>
     <div id="app" class="flex-column" v-bkloading="{ isLoading }">
-        <Header v-if="!iframeMode" />
+        <Header v-if="mode !== 'ci'" />
         <main class="bkrepo-main-container"
             :style="{
-                height: iframeMode ? '100%' : 'calc(100% - 50px)'
+                height: mode === 'ci' ? '100%' : 'calc(100% - 50px)'
             }">
             <router-view></router-view>
         </main>
@@ -22,12 +22,14 @@
         components: { Login, Header },
         data () {
             return {
-                isLoading: false,
-                iframeMode: MODE_CONFIG === 'ci'
+                isLoading: false
             }
         },
         computed: {
             ...mapState(['projectList']),
+            mode () {
+                return MODE_CONFIG
+            },
             projectId () {
                 return this.$route.params.projectId
             }
@@ -43,7 +45,7 @@
 
             const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
-            if (this.iframeMode) {
+            if (this.mode === 'ci') {
                 window.Vue = Vue
                 const script = document.createElement('script')
                 script.type = 'text/javascript'

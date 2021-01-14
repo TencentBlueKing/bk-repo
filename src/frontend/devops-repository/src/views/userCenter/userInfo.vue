@@ -21,7 +21,7 @@
                 <bk-form-item v-for="item in formItem" :key="item.key" :label="item.label">
                     <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
                         <span>{{userInfo[item.key] || '--'}}</span>
-                        <i v-if="!editItem.key" class="ml20 devops-icon icon-edit hover-btn" @click="editUserInfo(item)"></i>
+                        <i v-if="mode === 'standalone' && !editItem.key" class="ml20 devops-icon icon-edit hover-btn" @click="editUserInfo(item)"></i>
                     </div>
                     <div v-else class="flex-align-center">
                         <bk-input v-model="editItem.value"></bk-input>
@@ -152,12 +152,10 @@
             }
         },
         computed: {
-            ...mapState(['userInfo'])
-        },
-        created () {
-            this.getUserInfo({
-                userId: this.userInfo.username
-            })
+            ...mapState(['userInfo']),
+            mode () {
+                return MODE_CONFIG
+            }
         },
         methods: {
             ...mapActions([

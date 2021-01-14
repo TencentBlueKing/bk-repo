@@ -12,7 +12,7 @@
             <i class="user-search-btn devops-icon icon-search" @click="handlerPaginationChange"></i>
             <div class="create-user flex-align-center">
                 <bk-checkbox v-model="showAdmin" @change="handlerPaginationChange">仅查看管理员</bk-checkbox>
-                <bk-button class="ml20" theme="primary" @click.stop="showCreateUser">{{ $t('create') + $t('user') }}</bk-button>
+                <bk-button v-if="mode === 'standalone'" class="ml20" theme="primary" @click.stop="showCreateUser">{{ $t('create') + $t('user') }}</bk-button>
             </div>
         </div>
         <bk-table
@@ -30,16 +30,19 @@
             <bk-table-column :label="$t('createdDate')">
                 <span slot-scope="props">{{formatDate(props.row.createdDate)}}</span>
             </bk-table-column>
-            <bk-table-column label="管理员" width="100">
-                <span slot-scope="props">{{props.row.admin ? '是' : '否'}}</span>
+            <bk-table-column label="账号权限">
+                <div slot-scope="props" class="flex-align-center">
+                    <bk-switcher class="mr10" :key="props.row.id" v-model="props.row.admin" @change="changeAdminStatus(props.row)"></bk-switcher>
+                    <div>{{props.row.admin ? '管理员' : '普通用户'}}</div>
+                </div>
             </bk-table-column>
             <bk-table-column :label="$t('account') + $t('status')">
                 <div slot-scope="props" class="flex-align-center">
-                    <bk-switcher :key="props.row.id" v-model="props.row.locked" @change="changeUserStatus(props.row)"></bk-switcher>
-                    <div class="ml10">{{`${props.row.locked ? '已' : '未'}锁定`}}</div>
+                    <bk-switcher v-if="mode === 'standalone'" class="mr10" :key="props.row.id" v-model="props.row.locked" @change="changeUserStatus(props.row)"></bk-switcher>
+                    <div>{{`${props.row.locked ? '已' : '未'}锁定`}}</div>
                 </div>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="150">
+            <bk-table-column v-if="mode === 'standalone'" :label="$t('operation')" width="150">
                 <div slot-scope="props" class="flex-align-center">
                     <i class="mr20 devops-icon icon-edit hover-btn" @click="showEditUser(props.row)"></i>
                     <!-- <i class="devops-icon icon-delete hover-btn" @click="deleteUser(props.row)"></i> -->
@@ -77,9 +80,6 @@
                 <bk-form-item class="mt30" label="电话">
                     <bk-input v-model="editUserDialog.phone"></bk-input>
                 </bk-form-item>
-                <bk-form-item class="mt30">
-                    <bk-checkbox v-model="editUserDialog.admin">管理员身份</bk-checkbox>
-                </bk-form-item>
             </bk-form>
             <div slot="footer">
                 <bk-button :loading="editUserDialog.loading" theme="primary" @click.stop.prevent="confirm">{{$t('submit')}}</bk-button>
@@ -89,7 +89,7 @@
     </div>
 </template>
 <script>
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@/utils'
     export default {
         name: 'user',
@@ -112,8 +112,7 @@
                     userId: '',
                     name: '',
                     email: '',
-                    phone: '',
-                    admin: false
+                    phone: ''
                 },
                 rules: {
                     userId: [
@@ -155,6 +154,12 @@
                 }
             }
         },
+        computed: {
+            ...mapState(['userInfo']),
+            mode () {
+                return MODE_CONFIG
+            }
+        },
         created () {
             this.handlerPaginationChange()
         },
@@ -166,7 +171,8 @@
                 'editUser',
                 'deleteUser',
                 'checkUserId',
-                'getRepoUserList'
+                'getRepoUserList',
+                'getUserInfo'
             ]),
             asynCheckUserId () {
                 if (!this.editUserDialog.add) return true
@@ -202,22 +208,20 @@
                     userId: '',
                     name: '',
                     email: '',
-                    phone: '',
-                    admin: false
+                    phone: ''
                 }
             },
             async confirm () {
                 await this.$refs.editUserDialog.validate()
                 this.editUserDialog.loading = true
-                const { userId, name, email, phone, admin } = this.editUserDialog
+                const { userId, name, email, phone } = this.editUserDialog
                 const fn = this.editUserDialog.add ? this.createUser : this.editUser
                 fn({
                     body: {
                         userId,
                         name,
                         email,
-                        phone,
-                        admin
+                        phone
                     }
                 }).then(res => {
                     this.$bkMessage({
@@ -225,6 +229,7 @@
                         message: (this.editUserDialog.add ? '新建用户' : '编辑用户') + this.$t('success')
                     })
                     this.editUserDialog.show = false
+                    this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
                     this.handlerPaginationChange()
                 }).finally(() => {
                     // 更新用户列表缓存
@@ -270,6 +275,22 @@
                     this.$bkMessage({
                         theme: 'success',
                         message: `${locked ? '已' : '未'}锁定`
+                    })
+                }).finally(() => {
+                    this.getRepoUserList()
+                    this.handlerPaginationChange()
+                })
+            },
+            changeAdminStatus ({ userId, admin }) {
+                this.editUser({
+                    body: {
+                        userId,
+                        admin
+                    }
+                }).then(res => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: `设置为${admin ? '管理员' : '普通用户'}`
                     })
                 }).finally(() => {
                     this.getRepoUserList()

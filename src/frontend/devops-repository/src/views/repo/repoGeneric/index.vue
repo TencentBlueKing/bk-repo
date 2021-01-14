@@ -74,7 +74,7 @@
                 <bk-button class="detail-btn" theme="primary" @click.stop="showDetail()">{{ $t('showDetail') }}</bk-button>
                 <div class="actions-btn flex-column">
                     <template v-if="selectedRow.fullPath !== selectedTreeNode.fullPath || query">
-                        <template v-if="MODE_CONFIG !== 'ci' || repoName === 'custom'">
+                        <template v-if="mode !== 'ci' || repoName === 'custom'">
                             <bk-button @click.stop="renameRes()" text theme="primary">
                                 <i class="mr5 devops-icon icon-edit"></i>
                                 {{ $t('rename') }}
@@ -104,7 +104,7 @@
                         </template>
                     </template>
                     <template v-else>
-                        <template v-if="MODE_CONFIG !== 'ci' || repoName === 'custom'">
+                        <template v-if="mode !== 'ci' || repoName === 'custom'">
                             <bk-button @click.stop="addFolder()" text theme="primary">
                                 <i class="mr5 devops-icon icon-folder-plus"></i>
                                 {{$t('create') + $t('folder')}}
@@ -311,6 +311,9 @@
         },
         computed: {
             ...mapState(['userList', 'genericTree']),
+            mode () {
+                return MODE_CONFIG
+            },
             projectId () {
                 return this.$route.params.projectId
             },
