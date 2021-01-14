@@ -34,8 +34,8 @@ package com.tencent.bkrepo.docker.artifact
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.PackageDownloadStatisticsClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.api.PackageDownloadsClient
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -45,7 +45,7 @@ import org.springframework.stereotype.Service
 @Service
 class DockerPackageRepo @Autowired constructor(
     private val packageClient: PackageClient,
-    private val packageDownloadStatisticsClient: PackageDownloadStatisticsClient
+    private val packageDownloadsClient: PackageDownloadsClient
 ) {
 
     /**
@@ -109,14 +109,13 @@ class DockerPackageRepo @Autowired constructor(
      */
     fun addDownloadStatic(context: RequestContext, version: String): Boolean {
         with(context) {
-            val request = DownloadStatisticsAddRequest(
+            val request = PackageDownloadRecord(
                 projectId,
                 repoName,
                 PackageKeys.ofDocker(artifactName),
-                artifactName,
                 version
             )
-            return packageDownloadStatisticsClient.add(request).isOk()
+            return packageDownloadsClient.record(request).isOk()
         }
     }
 }

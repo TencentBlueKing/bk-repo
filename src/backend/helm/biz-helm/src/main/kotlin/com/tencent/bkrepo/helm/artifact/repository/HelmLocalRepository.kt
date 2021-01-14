@@ -48,7 +48,7 @@ import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.Logger
@@ -129,13 +129,13 @@ class HelmLocalRepository : LocalRepository() {
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         val name = context.getStringAttribute(NAME).orEmpty()
         val version = context.getStringAttribute(VERSION).orEmpty()
         // 下载index.yaml不进行下载次数统计
         if (name.isEmpty() && version.isEmpty()) return null
         with(context) {
-            return DownloadStatisticsAddRequest(projectId, repoName, PackageKeys.ofHelm(name), name, version)
+            return PackageDownloadRecord(projectId, repoName, PackageKeys.ofHelm(name), version)
         }
     }
 

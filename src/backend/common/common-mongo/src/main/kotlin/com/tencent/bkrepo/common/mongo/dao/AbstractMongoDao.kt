@@ -35,6 +35,7 @@ import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils.getPreferredCollectionName
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
@@ -132,7 +133,15 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao upsert: [$query], [$update]")
         }
-        return determineMongoTemplate().upsert(query, update, determineCollectionName(query))
+        val mongoTemplate = determineMongoTemplate()
+        val collectionName = determineCollectionName(query)
+        return try {
+            mongoTemplate.upsert(query, update, collectionName)
+        } catch (exception: DuplicateKeyException) {
+            // retry because upsert operation is not atomic
+            logger.warn("Upsert error[DuplicateKeyException]: " + exception.message.orEmpty())
+            determineMongoTemplate().upsert(query, update, collectionName)
+        }
     }
 
     override fun count(query: Query): Long {

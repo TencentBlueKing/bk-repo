@@ -129,7 +129,8 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试创建文件")
     fun testCreateFile() {
-        nodeService.createNode(createRequest("/1/2/3.txt", folder = false, size = 100, metadata = mapOf("key" to "value")))
+        val request = createRequest("/1/2/3.txt", folder = false, size = 100, metadata = mapOf("key" to "value"))
+        nodeService.createNode(request)
         val node = nodeService.getNodeDetail(node("/1/2/3.txt"))!!
         assertEquals(UT_USER, node.createdBy)
         assertNotNull(node.createdDate)
@@ -148,7 +149,8 @@ class NodeServiceTest @Autowired constructor(
     @Test
     @DisplayName("测试创建目录")
     fun testCreateDir() {
-        nodeService.createNode(createRequest("/1/2/3.txt", folder = true, size = 100, metadata = mapOf("key" to "value")))
+        val request = createRequest("/1/2/3.txt", folder = true, size = 100, metadata = mapOf("key" to "value"))
+        nodeService.createNode(request)
         val node = nodeService.getNodeDetail(node("/1/2/3.txt"))!!
         assertEquals(UT_USER, node.createdBy)
         assertNotNull(node.createdDate)

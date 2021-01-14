@@ -58,7 +58,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -470,7 +470,7 @@ class RpmLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
             return if (fullPath.endsWith(".rpm")) {
@@ -483,10 +483,7 @@ class RpmLocalRepository(
                     fullPath.toRpmPackagePojo()
                 }
                 val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
-                return DownloadStatisticsAddRequest(
-                    projectId, repoName,
-                    packageKey, rpmPackagePojo.name, rpmPackagePojo.version
-                )
+                return PackageDownloadRecord(projectId, repoName, packageKey, rpmPackagePojo.version)
             } else {
                 null
             }
@@ -519,7 +516,7 @@ class RpmLocalRepository(
         val fullPath = context.artifactInfo.getArtifactFullPath()
         val node = with(context) {
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         }
         val metadata = node.metadata
         val rpmVersion = metadata.toRpmVersion(fullPath)

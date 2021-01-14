@@ -62,7 +62,7 @@ import com.tencent.bkrepo.composer.util.JsonUtil.wrapperJson
 import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
 import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -458,7 +458,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
             val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return null
@@ -468,11 +468,11 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
             val version = node.metadata["version"] ?: throw ComposerArtifactMetadataException(
                 "${artifactInfo.getArtifactFullPath()} : not found metadata.version value"
             )
-            val name = PackageKeys.resolveComposer(packageKey.toString())
             return if (fullPath.endsWith("")) {
-                return DownloadStatisticsAddRequest(
+                return PackageDownloadRecord(
                     projectId, repoName,
-                    packageKey.toString(), name, version.toString()
+                    packageKey.toString(),
+                    version.toString()
                 )
             } else {
                 null

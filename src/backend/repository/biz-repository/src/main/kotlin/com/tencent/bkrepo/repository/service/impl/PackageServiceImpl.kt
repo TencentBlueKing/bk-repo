@@ -132,7 +132,7 @@ class PackageServiceImpl(
             val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
             val newVersion = if (oldVersion != null) {
                 if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, versionName)
+                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, packageName,  versionName)
                 }
                 // overwrite
                 oldVersion.apply {
@@ -204,14 +204,12 @@ class PackageServiceImpl(
         ArtifactContextHolder.getRepository().download(context)
     }
 
-    override fun addDownloadMetric(projectId: String, repoName: String, packageKey: String, versionName: String) {
+    override fun addDownloadRecord(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
         tPackageVersion.downloads += 1
-        tPackageVersion.lastModifiedDate = LocalDateTime.now()
         packageVersionDao.save(tPackageVersion)
         tPackage.downloads += 1
-        tPackage.lastModifiedDate = LocalDateTime.now()
         packageDao.save(tPackage)
     }
 
@@ -344,7 +342,7 @@ class PackageServiceImpl(
      */
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
-            ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, versionName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, packageId, versionName)
     }
 
     /**
