@@ -527,7 +527,7 @@ class RpmLocalRepository(
         val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
         val version = rpmPackagePojo.version
 
-        removeRpmArtifact(node, packageKey, context, packageKey, version)
+        removeRpmArtifact(node, fullPath, context, packageKey, version)
     }
 
     fun removeByPackageKey(packageKey: String, context: ArtifactRemoveContext) {
