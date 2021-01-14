@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,18 +35,20 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDate
 
-@ApiModel("包下载记录查询请求")
-data class DownloadsQueryRequest(
+@ApiModel("包下载记录迁移请求")
+data class DownloadsMigrationRequest(
     @ApiModelProperty("所属项目", required = true)
     val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
     val repoName: String,
     @ApiModelProperty("包唯一key", required = true)
     val packageKey: String,
-    @ApiModelProperty("包版本，不提供则查询所有包版本数据", required = false)
-    val packageVersion: String? = null,
-    @ApiModelProperty("查询起始日期，默认为今天", required = false)
-    val fromDate: LocalDate? = null,
-    @ApiModelProperty("查询截止日期，默认为今天", required = false)
-    val toDate: LocalDate? = null
+    @ApiModelProperty("包名称", required = true)
+    val packageName: String,
+    @ApiModelProperty("包版本", required = true)
+    val packageVersion: String,
+    @ApiModelProperty("日期", required = true)
+    val date: LocalDate,
+    @ApiModelProperty("下载数量", required = true)
+    val count: Long
 )

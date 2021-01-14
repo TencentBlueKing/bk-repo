@@ -31,10 +31,12 @@
 
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DownloadsMigrationRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
 
 interface PackageDownloadsService {
 
@@ -46,16 +48,23 @@ interface PackageDownloadsService {
     fun record(record: PackageDownloadRecord)
 
     /**
+     * 数据迁移
+     *
+     * @param request 迁移请求
+     */
+    fun migrate(request: DownloadsMigrationRequest)
+
+    /**
      * 查询包下载记录详情
      *
      * @param request 包下载记录查询请求
      */
-    fun queryDetails(request: DownloadsQueryRequest): PackageDownloadsDetails
+    fun queryDetails(request: DetailsQueryRequest): PackageDownloadsDetails
 
     /**
      * 查询包下载记录总览
      *
      * @param request 包下载记录查询请求
      */
-    fun querySummary(request: DownloadsQueryRequest): PackageDownloadsSummary
+    fun querySummary(request: SummaryQueryRequest): PackageDownloadsSummary
 }

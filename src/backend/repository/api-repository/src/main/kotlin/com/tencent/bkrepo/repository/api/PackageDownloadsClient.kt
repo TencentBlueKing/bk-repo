@@ -33,10 +33,11 @@ package com.tencent.bkrepo.repository.api
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
@@ -57,9 +58,9 @@ interface PackageDownloadsClient {
 
     @ApiOperation("查询包下载记录明细")
     @PostMapping("/details")
-    fun queryDetails(@RequestBody request: DownloadsQueryRequest): Response<PackageDownloadsDetails>
+    fun queryDetails(@RequestBody request: DetailsQueryRequest): Response<PackageDownloadsDetails>
 
     @ApiOperation("查询包下载总览")
     @PostMapping("/summary")
-    fun querySummary(@RequestBody request: DownloadsQueryRequest): Response<PackageDownloadsSummary>
+    fun querySummary(@RequestBody request: SummaryQueryRequest): Response<PackageDownloadsSummary>
 }

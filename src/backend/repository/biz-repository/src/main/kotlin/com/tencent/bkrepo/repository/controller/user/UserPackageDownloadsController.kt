@@ -36,9 +36,10 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
 import com.tencent.bkrepo.repository.service.PackageDownloadsService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -60,7 +61,7 @@ class UserPackageDownloadsController(
     @PostMapping("/details")
     fun queryDetails(
         @RequestAttribute userId: String,
-        @RequestBody request: DownloadsQueryRequest
+        @RequestBody request: DetailsQueryRequest
     ): Response<PackageDownloadsDetails> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
@@ -72,7 +73,7 @@ class UserPackageDownloadsController(
     @PostMapping("/summary")
     fun querySummary(
         @RequestAttribute userId: String,
-        @RequestBody request: DownloadsQueryRequest
+        @RequestBody request: SummaryQueryRequest
     ): Response<PackageDownloadsSummary> {
         with(request) {
             permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
