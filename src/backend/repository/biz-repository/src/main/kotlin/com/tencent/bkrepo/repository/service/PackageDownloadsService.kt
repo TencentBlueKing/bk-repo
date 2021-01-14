@@ -31,48 +31,31 @@
 
 package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
-import java.time.LocalDate
+import com.tencent.bkrepo.repository.pojo.download.DownloadsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 
-interface PackageDownloadStatisticsService {
+interface PackageDownloadsService {
 
-    fun add(statisticsAddRequest: DownloadStatisticsAddRequest)
+    /**
+     * 记录包下载
+     *
+     * @param record 包下载记录
+     */
+    fun record(record: PackageDownloadRecord)
 
-    fun query(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        version: String?,
-        startDay: LocalDate?,
-        endDay: LocalDate?
-    ): DownloadStatisticsResponse
+    /**
+     * 查询包下载记录详情
+     *
+     * @param request 包下载记录查询请求
+     */
+    fun queryDetails(request: DownloadsQueryRequest): PackageDownloadsDetails
 
-    fun queryForSpecial(
-        projectId: String,
-        repoName: String,
-        packageKey: String
-    ): DownloadStatisticsMetricResponse
-
-    fun queryMonthDownloadCount(
-        projectId: String,
-        repoName: String,
-        packageId: String,
-        today: LocalDate
-    ): Long
-
-    fun queryWeekDownloadCount(
-        projectId: String,
-        repoName: String,
-        packageId: String,
-        today: LocalDate
-    ): Long
-
-    fun queryTodayDownloadCount(
-        projectId: String,
-        repoName: String,
-        packageId: String,
-        today: LocalDate
-    ): Long
+    /**
+     * 查询包下载记录总览
+     *
+     * @param request 包下载记录查询请求
+     */
+    fun querySummary(request: DownloadsQueryRequest): PackageDownloadsSummary
 }

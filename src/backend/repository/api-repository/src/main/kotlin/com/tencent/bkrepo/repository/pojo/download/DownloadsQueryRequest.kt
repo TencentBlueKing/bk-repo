@@ -29,21 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.download.service
+package com.tencent.bkrepo.repository.pojo.download
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDate
 
-@ApiModel("创建包下载统计次数")
-data class DownloadStatisticsAddRequest(
+@ApiModel("包下载记录查询请求")
+data class DownloadsQueryRequest(
     @ApiModelProperty("所属项目", required = true)
     val projectId: String,
     @ApiModelProperty("仓库名称", required = true)
     val repoName: String,
     @ApiModelProperty("包唯一key", required = true)
     val packageKey: String,
-    @ApiModelProperty("包名称", required = true)
-    val name: String,
-    @ApiModelProperty("包版本", required = true)
-    val version: String
+    @ApiModelProperty("包版本，不提供则查询所有包版本数据", required = false)
+    val packageVersion: String? = null,
+    @ApiModelProperty("查询起始日期，默认为今天", required = false)
+    val fromDate: LocalDate? = null,
+    @ApiModelProperty("查询截止日期，默认为今天", required = false)
+    val toDate: LocalDate? = null
 )

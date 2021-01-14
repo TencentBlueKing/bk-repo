@@ -78,7 +78,7 @@ import com.tencent.bkrepo.pypi.util.XmlUtils
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -661,14 +661,14 @@ class PypiLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
             val pypiPackagePojo = fullPath.toPypiPackagePojo()
             val packageKey = PackageKeys.ofPypi(pypiPackagePojo.name)
-            return DownloadStatisticsAddRequest(
+            return PackageDownloadRecord(
                 projectId, repoName,
-                packageKey, pypiPackagePojo.name, pypiPackagePojo.version
+                packageKey, pypiPackagePojo.version
             )
         }
     }

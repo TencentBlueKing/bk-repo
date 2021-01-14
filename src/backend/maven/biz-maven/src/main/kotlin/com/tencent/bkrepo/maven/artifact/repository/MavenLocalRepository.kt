@@ -52,7 +52,7 @@ import com.tencent.bkrepo.maven.pojo.MavenPom
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
 import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -270,7 +270,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
             return if (fullPath.endsWith(".pom")) {
@@ -279,7 +279,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
                 val artifactId = mavenGAVC.artifactId
                 val groupId = mavenGAVC.groupId.formatSeparator("/", ".")
                 val packageKey = PackageKeys.ofGav(groupId, artifactId)
-                DownloadStatisticsAddRequest(projectId, repoName, packageKey, artifactId, version)
+                PackageDownloadRecord(projectId, repoName, packageKey, version)
             } else {
                 null
             }
