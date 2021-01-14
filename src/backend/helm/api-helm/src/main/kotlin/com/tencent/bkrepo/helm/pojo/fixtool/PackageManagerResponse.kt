@@ -9,5 +9,6 @@ data class PackageManagerResponse (
     val totalCount: Long,
     val successCount: Long,
     val failedCount: Long,
-    val failedSet: Set<String>
+    val failedSet: Set<String>,
+    val description: String? = null
 )
