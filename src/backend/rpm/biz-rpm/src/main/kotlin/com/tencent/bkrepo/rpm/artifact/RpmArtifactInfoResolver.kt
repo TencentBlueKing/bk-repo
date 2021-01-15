@@ -34,8 +34,10 @@ package com.tencent.bkrepo.rpm.artifact
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
+@Component
 @Resolver(RpmArtifactInfo::class)
 class RpmArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(

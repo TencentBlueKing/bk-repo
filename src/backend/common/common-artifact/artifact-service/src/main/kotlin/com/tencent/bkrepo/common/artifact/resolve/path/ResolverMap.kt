@@ -33,20 +33,36 @@ package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
+import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
-class ResolverMap : LinkedHashMap<KClass<out ArtifactInfo>, ArtifactInfoResolver>() {
+class ResolverMap(
+    resolverList: List<ArtifactInfoResolver>
+) : LinkedHashMap<KClass<out ArtifactInfo>, ArtifactInfoResolver>() {
 
     private var defaultResolver: ArtifactInfoResolver? = null
+
+    init {
+        resolverList.forEach { register(it) }
+    }
 
     fun getResolver(key: KClass<out ArtifactInfo>): ArtifactInfoResolver {
         return super.get(key) ?: defaultResolver ?: throw ArtifactResolveException("No artifact resolver matched.")
     }
 
-    fun register(key: KClass<out ArtifactInfo>, resolver: ArtifactInfoResolver, default: Boolean) {
-        if (default) {
+    private fun register(resolver: ArtifactInfoResolver) {
+        val annotation = resolver.javaClass.getAnnotation(Resolver::class.java)
+        val type = annotation.value
+        val name = resolver.javaClass.simpleName
+        val isDefault = annotation.default
+        if (isDefault) {
             this.defaultResolver = resolver
         }
-        super.put(key, resolver)
+        super.put(type, resolver)
+        logger.info("Registering ArtifactInfo resolver[$name -> ${type.simpleName}]($isDefault).")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ResolverMap::class.java)
     }
 }
