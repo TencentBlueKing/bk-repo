@@ -33,6 +33,7 @@ listOf(
     ":common:common-api",
     ":common:common-artifact:artifact-api",
     ":common:common-query:query-api",
+    ":common:common-storage:storage-api",
     ":generic:api-generic",
     ":repository:api-repository"
 ).map { project(it) }.forEach {
@@ -66,4 +67,3 @@ listOf(
         }
     }
 }
-
