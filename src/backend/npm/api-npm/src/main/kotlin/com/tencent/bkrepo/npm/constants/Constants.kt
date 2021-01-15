@@ -42,9 +42,10 @@ const val FILE_SEPARATOR = "/"
 const val FILE_DASH = "-"
 const val FILE_SUFFIX = ".tgz"
 
+const val TGZ_FULL_PATH_WITH_DASH_SEPARATOR = "/-/"
+
 const val ATTRIBUTE_OCTET_STREAM_SHA1 = "artifact.sha1.octet-stream"
 
-// const val NPM_METADATA = "npm_metadata"
 
 // fileName
 const val NPM_PACKAGE_TGZ_FILE = "npm_package_tgz_file"
@@ -57,6 +58,7 @@ const val NPM_PKG_VERSION_JSON_FILE_FULL_PATH = NPM_PACKAGE_VERSION_JSON_FILE + 
 const val NPM_PKG_JSON_FILE_FULL_PATH = NPM_PACKAGE_JSON_FILE + "_full_path"
 // full path value
 const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
+const val NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH = "/%s/download/%s-%s.tgz"
 const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
 const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
 
