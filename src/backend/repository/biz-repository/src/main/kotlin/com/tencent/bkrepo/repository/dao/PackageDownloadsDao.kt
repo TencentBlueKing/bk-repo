@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,25 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.download
+package com.tencent.bkrepo.repository.dao
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.model.TPackageDownloads
+import org.springframework.stereotype.Repository
 
-@Api("日、周、月 返回下载统计量")
-data class DownloadStatisticsMetricResponse(
-    @ApiModelProperty("所属项目id")
-    val projectId: String,
-    @ApiModelProperty("所属仓库名称")
-    val repoName: String,
-    @ApiModelProperty("包唯一Key")
-    val packageKey: String,
-    // @ApiModelProperty("包名称")
-    // val name: String,
-    @ApiModelProperty("包版本")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    val version: String?,
-    @ApiModelProperty("时间段下载量")
-    val statisticsMetrics: List<DownloadStatisticsMetric>
-)
+/**
+ * 包下载统计数据访问层
+ */
+@Repository
+class PackageDownloadsDao : SimpleMongoDao<TPackageDownloads>()

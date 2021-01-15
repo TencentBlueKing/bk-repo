@@ -51,24 +51,24 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.npm.handler.NpmDependentHandler
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.METADATA
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
+import com.tencent.bkrepo.npm.handler.NpmDependentHandler
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfo
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
-import com.tencent.bkrepo.npm.properties.NpmProperties
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
+import com.tencent.bkrepo.npm.properties.NpmProperties
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.OkHttpUtil
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
@@ -145,18 +145,18 @@ class NpmLocalRepository(
         if (node == null || node.folder) return null
         return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
             .also {
-                logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]!")
+                logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]")
             }
     }
 
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         with(context) {
             val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
             with(packageInfo) {
-                return DownloadStatisticsAddRequest(projectId, repoName, PackageKeys.ofNpm(first), first, second)
+                return PackageDownloadRecord(projectId, repoName, PackageKeys.ofNpm(first), second)
             }
         }
     }

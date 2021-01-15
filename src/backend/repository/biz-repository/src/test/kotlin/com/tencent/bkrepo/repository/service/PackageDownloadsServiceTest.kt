@@ -41,7 +41,8 @@ import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
@@ -66,8 +67,8 @@ import kotlin.concurrent.thread
     PackageDao::class,
     PackageVersionDao::class
 )
-class PackageDownloadStatisticsServiceTest @Autowired constructor(
-    private val packageDownloadStatisticsService: PackageDownloadStatisticsService,
+class PackageDownloadsServiceTest @Autowired constructor(
+    private val packageDownloadsService: PackageDownloadsService,
     private val packageService: PackageService,
     private val mongoTemplate: MongoTemplate
 ) : ServiceBaseTest() {
@@ -98,36 +99,25 @@ class PackageDownloadStatisticsServiceTest @Autowired constructor(
         repeat(count) {
             val thread = thread {
                 cyclicBarrier.await()
-                packageDownloadStatisticsService.add(request)
+                packageDownloadsService.record(request)
             }
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
-        val result = packageDownloadStatisticsService.query(
+        val result = packageDownloadsService.queryDetails(DetailsQueryRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             packageKey = UT_PACKAGE_KEY,
-            version = null,
-            startDay = LocalDate.now(),
-            endDay = LocalDate.now()
-        )
-        Assertions.assertEquals(count.toLong(), result.count)
+            packageVersion = null,
+            fromDate = LocalDate.now(),
+            toDate = LocalDate.now()
+        ))
+        println(result)
+
+        val packageInfo = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)!!
+        Assertions.assertEquals(count.toLong(), packageInfo.downloads)
     }
 
-    @Test
-    @DisplayName("查询下载量相关测试")
-    fun testQueryForSpecial() {
-        packageDownloadStatisticsService.queryForSpecial(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
-    }
-
-    @Test
-    @DisplayName("查询下载量相关测试")
-    fun testQuery() {
-        packageDownloadStatisticsService.query(
-            UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, null, LocalDate.now().minusDays(1),
-            LocalDate.now().plusDays(5)
-        )
-    }
 
     private fun buildPackageCreateRequest(
         projectId: String = UT_PROJECT_ID,
@@ -161,13 +151,12 @@ class PackageDownloadStatisticsServiceTest @Autowired constructor(
         packageName: String = UT_PACKAGE_NAME,
         packageKey: String = UT_PACKAGE_KEY,
         version: String = UT_PACKAGE_VERSION
-    ): DownloadStatisticsAddRequest {
-        return DownloadStatisticsAddRequest(
+    ): PackageDownloadRecord {
+        return PackageDownloadRecord(
             projectId = projectId,
             repoName = repoName,
-            name = packageName,
             packageKey = packageKey,
-            version = version
+            packageVersion = version
         )
     }
 }

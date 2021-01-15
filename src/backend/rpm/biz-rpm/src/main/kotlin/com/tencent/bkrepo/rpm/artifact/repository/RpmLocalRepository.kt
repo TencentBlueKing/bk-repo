@@ -58,7 +58,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -451,8 +451,6 @@ class RpmLocalRepository(
                                 createdBy = context.userId
                             )
                         )
-                        metadata["packageKey"] = packageKey
-                        metadata["version"] = rpmPackagePojo.version
                         rpmNodeCreateRequest(context, metadata)
                     }
                     XML -> {
@@ -472,7 +470,7 @@ class RpmLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): DownloadStatisticsAddRequest? {
+    ): PackageDownloadRecord? {
         with(context) {
             val fullPath = context.artifactInfo.getArtifactFullPath()
             return if (fullPath.endsWith(".rpm")) {
@@ -485,10 +483,7 @@ class RpmLocalRepository(
                     fullPath.toRpmPackagePojo()
                 }
                 val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
-                return DownloadStatisticsAddRequest(
-                    projectId, repoName,
-                    packageKey, rpmPackagePojo.name, rpmPackagePojo.version
-                )
+                return PackageDownloadRecord(projectId, repoName, packageKey, rpmPackagePojo.version)
             } else {
                 null
             }
@@ -521,16 +516,15 @@ class RpmLocalRepository(
         val fullPath = context.artifactInfo.getArtifactFullPath()
         val node = with(context) {
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
         }
         val metadata = node.metadata
-        val packageKey = metadata["packageKey"] as String? ?: throw RpmArtifactMetadataResolveException(
-            "${context.projectId} | ${context.repoName} | $fullPath: not found metadata.packageKey value"
-        )
-        val version = metadata["version"] as String? ?: throw RpmArtifactMetadataResolveException(
-            "${context.projectId} | ${context.repoName} | $fullPath: not found metadata.version value"
-        )
-        removeRpmArtifact(node, packageKey, context, packageKey, version)
+        val rpmVersion = metadata.toRpmVersion(fullPath)
+        val rpmPackagePojo = rpmVersion.toRpmPackagePojo(fullPath)
+        val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
+        val version = rpmPackagePojo.version
+
+        removeRpmArtifact(node, fullPath, context, packageKey, version)
     }
 
     fun removeByPackageKey(packageKey: String, context: ArtifactRemoveContext) {
@@ -613,8 +607,6 @@ class RpmLocalRepository(
 
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
         packageClient.deleteVersion(projectId, repoName, packageKey, version)
-        val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
-        if (page.records.isEmpty()) packageClient.deletePackage(projectId, repoName, packageKey)
     }
 
     /**
@@ -707,13 +699,7 @@ class RpmLocalRepository(
     }
 
     private fun compensationPackage(repo: RepositoryDetail, repoDataPath: String) {
-        // 统计所有节点数量
         val rpmNodePath = repoDataPath.removeSuffix("/").removeSuffix("repodata").removeSuffix("/")
-        val rpmNodeSum = nodeClient.countFileNode(repo.projectId, repo.name, rpmNodePath).data ?: return
-        val repodataSum = nodeClient.countFileNode(repo.projectId, repo.name, repoDataPath).data ?: 0
-        //  与`repodata` 目录同级的rpm 节点
-        val rpmNodes = rpmNodeSum - repodataSum
-        logger.info("${repo.projectId}/${repo.name} Found rpm artifact: $rpmNodes")
         var i = 0
         loop@ while (true) {
             ++i

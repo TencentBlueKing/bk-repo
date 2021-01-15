@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,29 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.repository.pojo.download
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDate
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Document("package_downloads")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "package_version_date_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'key': 1, 'version': 1, 'date': 1}",
-        background = true,
-        unique = true
-    )
-)
-data class TDownloadStatistics(
-    var id: String? = null,
-    var projectId: String,
-    var repoName: String,
-    var key: String,
-    var name: String,
-    var version: String,
-    var date: LocalDate,
-    var count: Long
+@ApiModel("包下载记录")
+data class PackageDownloadRecord(
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("包唯一key", required = true)
+    val packageKey: String,
+    @ApiModelProperty("包版本", required = true)
+    val packageVersion: String
 )

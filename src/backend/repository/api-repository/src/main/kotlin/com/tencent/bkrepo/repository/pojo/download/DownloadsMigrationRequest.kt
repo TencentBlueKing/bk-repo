@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,50 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.pojo.download
 
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsMetricResponse
-import com.tencent.bkrepo.repository.pojo.download.DownloadStatisticsResponse
-import com.tencent.bkrepo.repository.pojo.download.service.DownloadStatisticsAddRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDate
 
-interface PackageDownloadStatisticsService {
-
-    fun add(statisticsAddRequest: DownloadStatisticsAddRequest)
-
-    fun query(
-        projectId: String,
-        repoName: String,
-        packageKey: String,
-        version: String?,
-        startDay: LocalDate?,
-        endDay: LocalDate?
-    ): DownloadStatisticsResponse
-
-    fun queryForSpecial(
-        projectId: String,
-        repoName: String,
-        packageKey: String
-    ): DownloadStatisticsMetricResponse
-
-    fun queryMonthDownloadCount(
-        projectId: String,
-        repoName: String,
-        packageId: String,
-        today: LocalDate
-    ): Long
-
-    fun queryWeekDownloadCount(
-        projectId: String,
-        repoName: String,
-        packageId: String,
-        today: LocalDate
-    ): Long
-
-    fun queryTodayDownloadCount(
-        projectId: String,
-        repoName: String,
-        packageId: String,
-        today: LocalDate
-    ): Long
-}
+@ApiModel("包下载记录迁移请求")
+data class DownloadsMigrationRequest(
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("包唯一key", required = true)
+    val packageKey: String,
+    @ApiModelProperty("包名称", required = true)
+    val packageName: String,
+    @ApiModelProperty("包版本", required = true)
+    val packageVersion: String,
+    @ApiModelProperty("日期", required = true)
+    val date: LocalDate,
+    @ApiModelProperty("下载数量", required = true)
+    val count: Long
+)

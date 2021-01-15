@@ -29,13 +29,42 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.download
+package com.tencent.bkrepo.repository.service
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DownloadsMigrationRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
 
-data class DownloadStatisticsMetric(
-    @ApiModelProperty("时间段")
-    val description: String,
-    @ApiModelProperty("下载量")
-    val count: Long
-)
+interface PackageDownloadsService {
+
+    /**
+     * 记录包下载
+     *
+     * @param record 包下载记录
+     */
+    fun record(record: PackageDownloadRecord)
+
+    /**
+     * 数据迁移
+     *
+     * @param request 迁移请求
+     */
+    fun migrate(request: DownloadsMigrationRequest)
+
+    /**
+     * 查询包下载记录详情
+     *
+     * @param request 包下载记录查询请求
+     */
+    fun queryDetails(request: DetailsQueryRequest): PackageDownloadsDetails
+
+    /**
+     * 查询包下载记录总览
+     *
+     * @param request 包下载记录查询请求
+     */
+    fun querySummary(request: SummaryQueryRequest): PackageDownloadsSummary
+}

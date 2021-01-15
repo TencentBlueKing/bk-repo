@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,38 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.rpm.controller
+package com.tencent.bkrepo.repository.pojo.download
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.rpm.api.RpmResource
-import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import com.tencent.bkrepo.rpm.servcie.RpmService
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@RestController
-class RpmResourceController(
-    private val rpmService: RpmService
-) : RpmResource {
-    override fun deploy(rpmArtifactInfo: RpmArtifactInfo, artifactFile: ArtifactFile) {
-        rpmService.deploy(rpmArtifactInfo, artifactFile)
-    }
-
-    override fun install(rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.install(rpmArtifactInfo)
-    }
-
-    override fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        rpmService.addGroups(rpmArtifactInfo, groups)
-    }
-
-    override fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        rpmService.deleteGroups(rpmArtifactInfo, groups)
-    }
-
-    @DeleteMapping(RpmArtifactInfo.RPM)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.delete(rpmArtifactInfo)
-    }
-}
+@ApiModel("包下载明细记录")
+data class PackageDownloadsDetails (
+    @ApiModelProperty("每天下载数量, key格式为yyyy-mm-dd")
+    val details: Map<String, Long>
+)

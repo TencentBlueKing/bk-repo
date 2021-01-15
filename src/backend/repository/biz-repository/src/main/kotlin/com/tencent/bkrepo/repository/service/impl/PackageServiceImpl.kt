@@ -132,7 +132,7 @@ class PackageServiceImpl(
             val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
             val newVersion = if (oldVersion != null) {
                 if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, versionName)
+                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, packageName,  versionName)
                 }
                 // overwrite
                 oldVersion.apply {
@@ -176,21 +176,26 @@ class PackageServiceImpl(
     }
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String) {
-        val tPackage = checkPackage(projectId, repoName, packageKey)
+        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
         packageVersionDao.deleteByPackageId(tPackage.id!!)
         packageDao.deleteByKey(projectId, repoName, packageKey)
+        logger.info("Delete package [$projectId/$repoName/$packageKey] success")
     }
 
     override fun deleteVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
-        val tPackage = checkPackage(projectId, repoName, packageKey)
-        val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
+        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
+        val tPackageVersion = packageVersionDao.findByName(projectId, versionName) ?: return
         packageVersionDao.deleteByName(tPackageVersion.packageId, tPackageVersion.name)
-        if (tPackage.latest == tPackageVersion.name) {
-            val latestVersion = packageVersionDao.findLatest(tPackage.id!!)
+        if (tPackage.versions <= 1L) {
+            packageDao.removeById(tPackage.id.orEmpty())
+            logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
+        } else if (tPackage.latest == tPackageVersion.name) {
+            tPackage.versions -= 1
+            val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
             tPackage.latest = latestVersion?.name.orEmpty()
+            packageDao.save(tPackage)
         }
-        tPackage.versions -= 1
-        packageDao.save(tPackage)
+        logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
     }
 
     override fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
@@ -204,14 +209,12 @@ class PackageServiceImpl(
         ArtifactContextHolder.getRepository().download(context)
     }
 
-    override fun addDownloadMetric(projectId: String, repoName: String, packageKey: String, versionName: String) {
+    override fun addDownloadRecord(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val tPackageVersion = checkPackageVersion(tPackage.id!!, versionName)
         tPackageVersion.downloads += 1
-        tPackageVersion.lastModifiedDate = LocalDateTime.now()
         packageVersionDao.save(tPackageVersion)
         tPackage.downloads += 1
-        tPackage.lastModifiedDate = LocalDateTime.now()
         packageDao.save(tPackage)
     }
 
@@ -344,7 +347,7 @@ class PackageServiceImpl(
      */
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
-            ?: throw ErrorCodeException(ArtifactMessageCode.PACKAGE_NOT_FOUND, versionName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, packageId, versionName)
     }
 
     /**

@@ -33,11 +33,10 @@ plugins {
     id("com.tencent.devops.boot") version "0.0.2"
     id("com.tencent.devops.publish") version "0.0.2" apply false
 }
-apply(from = rootProject.file("gradle/publish.gradle.kts"))
 
 allprojects {
     group = "com.tencent.bkrepo"
-    version = "0.8.30"
+    version = "1.0.0-SNAPSHOT"
 
     apply(plugin = "com.tencent.devops.boot")
     dependencyManagement {
@@ -55,3 +54,5 @@ allprojects {
         exclude(group = "commons-logging", module = "commons-logging")
     }
 }
+
+apply(from = rootProject.file("gradle/publish.gradle.kts"))

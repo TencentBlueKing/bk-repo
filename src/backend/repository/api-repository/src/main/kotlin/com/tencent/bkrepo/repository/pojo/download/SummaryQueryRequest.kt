@@ -29,38 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.rpm.controller
+package com.tencent.bkrepo.repository.pojo.download
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.rpm.api.RpmResource
-import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import com.tencent.bkrepo.rpm.servcie.RpmService
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@RestController
-class RpmResourceController(
-    private val rpmService: RpmService
-) : RpmResource {
-    override fun deploy(rpmArtifactInfo: RpmArtifactInfo, artifactFile: ArtifactFile) {
-        rpmService.deploy(rpmArtifactInfo, artifactFile)
-    }
-
-    override fun install(rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.install(rpmArtifactInfo)
-    }
-
-    override fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        rpmService.addGroups(rpmArtifactInfo, groups)
-    }
-
-    override fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        rpmService.deleteGroups(rpmArtifactInfo, groups)
-    }
-
-    @DeleteMapping(RpmArtifactInfo.RPM)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.delete(rpmArtifactInfo)
-    }
-}
+@ApiModel("包下载总览查询请求")
+data class SummaryQueryRequest(
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("包唯一key", required = true)
+    val packageKey: String,
+    @ApiModelProperty("包版本，不提供则查询所有包版本数据", required = false)
+    val packageVersion: String? = null
+)

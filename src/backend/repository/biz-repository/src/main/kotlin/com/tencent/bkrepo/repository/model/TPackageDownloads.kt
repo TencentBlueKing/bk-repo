@@ -29,38 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.rpm.controller
+package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.rpm.api.RpmResource
-import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import com.tencent.bkrepo.rpm.servcie.RpmService
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
 
-@RestController
-class RpmResourceController(
-    private val rpmService: RpmService
-) : RpmResource {
-    override fun deploy(rpmArtifactInfo: RpmArtifactInfo, artifactFile: ArtifactFile) {
-        rpmService.deploy(rpmArtifactInfo, artifactFile)
-    }
-
-    override fun install(rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.install(rpmArtifactInfo)
-    }
-
-    override fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        rpmService.addGroups(rpmArtifactInfo, groups)
-    }
-
-    override fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
-        rpmService.deleteGroups(rpmArtifactInfo, groups)
-    }
-
-    @DeleteMapping(RpmArtifactInfo.RPM)
-    fun delete(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
-        rpmService.delete(rpmArtifactInfo)
-    }
-}
+@Document("package_downloads")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "package_version_date_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'key': 1, 'version': 1, 'date': 1}",
+        background = true,
+        unique = true
+    )
+)
+data class TPackageDownloads(
+    var id: String? = null,
+    var projectId: String,
+    var repoName: String,
+    var key: String,
+    var name: String,
+    var version: String,
+    var date: String,
+    var count: Long
+)
