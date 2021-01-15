@@ -37,8 +37,8 @@ import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
+import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.util.IDUtil
@@ -84,7 +84,7 @@ class AccountServiceImpl constructor(
     }
 
     override fun listAccount(): List<Account> {
-        logger.info("list  account ")
+        logger.debug("list  account ")
         return accountRepository.findAllBy().map { transfer(it) }
     }
 
@@ -138,7 +138,7 @@ class AccountServiceImpl constructor(
     }
 
     override fun listCredentials(appId: String): List<CredentialSet> {
-        logger.info("list  credential appId : {} ", appId)
+        logger.debug("list  credential appId : {} ", appId)
         val account = accountRepository.findOneByAppId(appId) ?: run {
             logger.warn("update account [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
@@ -187,7 +187,7 @@ class AccountServiceImpl constructor(
     }
 
     override fun checkCredential(accessKey: String, secretKey: String): String? {
-        logger.info("check  credential  accessKey : [$accessKey] , secretKey: [$secretKey]")
+        logger.debug("check  credential  accessKey : [$accessKey] , secretKey: []")
         val query = Query.query(
             Criteria.where("credentials.secretKey").`is`(secretKey)
                 .and("credentials.accessKey").`is`(accessKey)
