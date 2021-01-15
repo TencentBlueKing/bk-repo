@@ -69,13 +69,12 @@ class ServiceAuthManager(
     }
 
     private fun generateSecurityToken(): String {
-        token = JwtUtils.generateToken(signingKey, Duration.ofMillis(TOKEN_EXPIRATION))
-        return token.orEmpty()
+        return JwtUtils.generateToken(signingKey, Duration.ofMillis(TOKEN_EXPIRATION))
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(ServiceAuthManager::class.java)
         private const val TOKEN_EXPIRATION = 10 * 60 * 1000L
-        private const val REFRESH_DELAY = TOKEN_EXPIRATION - 1000L
+        private const val REFRESH_DELAY = TOKEN_EXPIRATION - 60 * 1000L
     }
 }

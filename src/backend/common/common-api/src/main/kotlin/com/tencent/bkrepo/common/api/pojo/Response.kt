@@ -45,7 +45,7 @@ data class Response<out T>(
     @ApiModelProperty("数据")
     val data: T? = null,
     @ApiModelProperty("链路追踪id")
-    val traceId: String
+    val traceId: String? = null
 ) {
     @JsonIgnore
     fun isOk(): Boolean {
