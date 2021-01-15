@@ -31,8 +31,6 @@
 
 package com.tencent.bkrepo.npm.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -41,10 +39,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
 import com.tencent.bkrepo.npm.exception.NpmArgumentNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
@@ -84,7 +82,9 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         if (!packageMetadata.versions.map.keys.contains(version)) {
             throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
         }
-        val fullPath = NpmUtils.getTgzPath(name, version)
+        val pathWithDash = packageMetadata.versions.map[version]?.dist?.tarball?.substringAfter(name)
+            ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
+        val fullPath = NpmUtils.getTgzPath(name, version, pathWithDash)
         with(artifactInfo) {
             checkRepositoryExist(projectId, repoName)
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
