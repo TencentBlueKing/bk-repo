@@ -39,7 +39,6 @@ object HumanReadable {
     const val NANOS_PER_SECOND = 1000_000_000L
     private const val BYTES_PER_KB = 1024.0
     private val sizeUnits = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB")
-    private val sizeFormat = DecimalFormat("#,##0.#").apply { maximumFractionDigits = 2 }
 
     fun size(bytes: Long): String {
         var size = bytes.toDouble()
@@ -48,7 +47,7 @@ object HumanReadable {
             size /= BYTES_PER_KB
             index += 1
         }
-        return "${sizeFormat.format(size)} ${sizeUnits[index]}"
+        return "${DecimalFormat("0.##").format(size)} ${sizeUnits[index]}"
     }
 
     fun throughput(bytes: Long, nano: Long): String {
