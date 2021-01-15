@@ -451,8 +451,9 @@ class NpmClientServiceImpl(
         val versionMetadata = npmPackageMetaData.versions.map.values.iterator().next()
         val filename = attachmentEntry.key
         val fullPath = "${versionMetadata.name}/-/$filename"
+        val withDownloadFullPath = "${versionMetadata.name}/download/$filename"
         with(artifactInfo) {
-            if (exist(projectId, repoName, fullPath)) {
+            if (exist(projectId, repoName, fullPath) || exist(projectId, repoName, withDownloadFullPath)) {
                 throw NpmArtifactExistException("You cannot publish over the previously published versions: ${versionMetadata.version}.")
             }
             logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
