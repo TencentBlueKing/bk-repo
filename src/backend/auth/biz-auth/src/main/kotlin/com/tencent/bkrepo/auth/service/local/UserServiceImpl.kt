@@ -311,7 +311,7 @@ class UserServiceImpl constructor(
     }
 
     override fun removeToken(userId: String, name: String): Boolean {
-        logger.info("remove token userId : [$userId] ,token : [$name]")
+        logger.info("remove token userId : [$userId] ,name : [$name]")
         checkUserExist(userId)
         val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
         val s = BasicDBObject()
