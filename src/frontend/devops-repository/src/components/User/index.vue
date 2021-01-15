@@ -3,7 +3,7 @@
         <span>{{ userInfo.name || userInfo.username }}</span>
         <i class="ml5 bk-icon icon-angle-down"></i>
         <ul class="user-menu">
-            <li v-if="userInfo.username !== 'admin'" class="flex-align-center">
+            <li class="flex-align-center">
                 <router-link class="hover-btn" :to="{ name: 'userCenter' }">{{ $t('userCenter') }}</router-link>
             </li>
             <li v-if="userInfo.admin" class="flex-align-center">
