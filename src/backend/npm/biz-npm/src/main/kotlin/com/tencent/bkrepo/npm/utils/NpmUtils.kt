@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
@@ -52,8 +53,12 @@ object NpmUtils {
         return NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version)
     }
 
-    fun getTgzPath(name: String, version: String): String {
-        return NPM_PKG_TGZ_FULL_PATH.format(name, name, version)
+    fun getTgzPath(name: String, version: String, pathWithDash: Boolean = true): String {
+        return if (pathWithDash) {
+            NPM_PKG_TGZ_FULL_PATH.format(name, name, version)
+        } else {
+            NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH.format(name, name, version)
+        }
     }
 
     fun analyseVersionFromPackageName(filename: String, name: String): String {
