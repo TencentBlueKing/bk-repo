@@ -607,8 +607,6 @@ class RpmLocalRepository(
 
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
         packageClient.deleteVersion(projectId, repoName, packageKey, version)
-        val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
-        if (page.records.isEmpty()) packageClient.deletePackage(projectId, repoName, packageKey)
     }
 
     /**
