@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
@@ -102,7 +101,6 @@ abstract class AbstractStorageService : StorageService {
     }
 
     override fun load(digest: String, range: Range, storageCredentials: StorageCredentials?): ArtifactInputStream? {
-        if (range.isEmpty()) return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {

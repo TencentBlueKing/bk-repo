@@ -111,11 +111,9 @@ class HelmLocalRepository : LocalRepository() {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
         with(context) {
             val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-            if (node == null || node.folder) return null
-            node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
+            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            node!!.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
-            val range = resolveRange(context, node.size)
-            val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
             return ArtifactResource(
                 inputStream,
                 artifactInfo.getResponseName(),
