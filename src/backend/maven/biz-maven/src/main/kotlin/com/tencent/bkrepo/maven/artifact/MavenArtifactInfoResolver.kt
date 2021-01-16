@@ -34,8 +34,10 @@ package com.tencent.bkrepo.maven.artifact
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
+@Component
 @Resolver(MavenArtifactInfo::class)
 class MavenArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): MavenArtifactInfo {

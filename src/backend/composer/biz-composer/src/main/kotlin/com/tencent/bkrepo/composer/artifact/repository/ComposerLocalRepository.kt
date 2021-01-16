@@ -218,10 +218,9 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         with(context) {
             val artifactPath = artifactInfo.getArtifactFullPath().removePrefix("/$DIRECT_DISTS")
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactPath).data
-            if (node == null || node.folder) return null
-            val range = resolveRange(context, node.size)
-            val inputStream = storageService.load(node.sha256!!, range, storageCredentials) ?: return null
-            return ArtifactResource(inputStream, artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, useDisposition)
+            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            val responseName = artifactInfo.getResponseName()
+            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 

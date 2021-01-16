@@ -37,8 +37,10 @@ import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.ArtifactFileMapMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.ArtifactFileMethodArgumentResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumentResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -51,10 +53,25 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class ArtifactResolverConfiguration {
 
     @Bean
-    fun artifactArgumentResolveConfigurer(): WebMvcConfigurer {
+    fun defaultArtifactInfoResolver() = DefaultArtifactInfoResolver()
+
+    @Bean
+    fun resolverMap(resolverList: List<ArtifactInfoResolver>) = ResolverMap(resolverList)
+
+    @Bean
+    fun artifactInfoMethodArgumentResolver(resolverMap: ResolverMap) = ArtifactInfoMethodArgumentResolver(resolverMap)
+
+    @Bean
+    fun artifactFileMethodArgumentResolver() = ArtifactFileMethodArgumentResolver()
+
+    @Bean
+    fun artifactFileMapMethodArgumentResolver() = ArtifactFileMapMethodArgumentResolver()
+
+    @Bean
+    fun artifactArgumentResolveConfigurer(resolver: ArtifactInfoMethodArgumentResolver): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
-                resolvers.add(artifactInfoMethodArgumentResolver())
+                resolvers.add(resolver)
                 resolvers.add(artifactFileMethodArgumentResolver())
                 resolvers.add(artifactFileMapMethodArgumentResolver())
             }
@@ -67,21 +84,7 @@ class ArtifactResolverConfiguration {
     }
 
     @Bean
-    fun artifactInfoMethodArgumentResolver() = ArtifactInfoMethodArgumentResolver()
-
-    @Bean
-    fun artifactFileMethodArgumentResolver() = ArtifactFileMethodArgumentResolver()
-
-    @Bean
-    fun artifactFileMapMethodArgumentResolver() = ArtifactFileMapMethodArgumentResolver()
-
-    @Bean
     fun uploadConfigElement(storageProperties: StorageProperties): UploadConfigElement {
         return UploadConfigElement(storageProperties)
-    }
-
-    @Bean
-    fun storageHealthMonitor(storageProperties: StorageProperties): StorageHealthMonitor {
-        return StorageHealthMonitor(storageProperties)
     }
 }

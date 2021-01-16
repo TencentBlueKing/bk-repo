@@ -31,9 +31,17 @@
 
 package com.tencent.bkrepo.common.artifact.repository.storage
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.ArtifactException
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -79,6 +87,29 @@ class StorageManager(
             // 异常往上抛
             throw exception
         }
+    }
+
+    /**
+     * 加载ArtifactInputStream
+     * 如果node为null，则返回null
+     * 如果为head请求则返回empty input stream
+     */
+    fun loadArtifactInputStream(
+        node: NodeDetail?,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        if (node == null || node.folder) return null
+        try {
+            val request = HttpContextHolder.getRequestOrNull()
+            val range = request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
+            if (request?.method == HttpMethod.HEAD.name) {
+                return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+            }
+            return storageService.load(node.sha256.orEmpty(), range, storageCredentials)
+        } catch (exception: IllegalArgumentException) {
+            throw ArtifactException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+        }
+
     }
 
     companion object {

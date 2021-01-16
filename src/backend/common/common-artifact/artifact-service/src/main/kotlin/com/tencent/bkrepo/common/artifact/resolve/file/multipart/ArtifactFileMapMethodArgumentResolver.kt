@@ -58,7 +58,7 @@ class ArtifactFileMapMethodArgumentResolver : HandlerMethodArgumentResolver {
         container: ModelAndViewContainer?,
         nativeWebRequest: NativeWebRequest,
         factory: WebDataBinderFactory?
-    ): Any? {
+    ): Any {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)!!
         val artifactFileMap = ArtifactFileMap()
         if (request is MultipartHttpServletRequest) {

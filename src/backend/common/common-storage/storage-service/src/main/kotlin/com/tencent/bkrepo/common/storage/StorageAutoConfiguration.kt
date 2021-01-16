@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.storage.event.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.hdfs.HDFSStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.s3.S3Storage
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -85,6 +86,11 @@ class StorageAutoConfiguration {
         val storageService = if (cacheEnabled) CacheStorageService(threadPoolTaskExecutor) else SimpleStorageService()
         logger.info("Initializing StorageService[${storageService::class.simpleName}].")
         return storageService
+    }
+
+    @Bean
+    fun storageHealthMonitor(storageProperties: StorageProperties): StorageHealthMonitor {
+        return StorageHealthMonitor(storageProperties)
     }
 
     @Bean

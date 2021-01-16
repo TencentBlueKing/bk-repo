@@ -33,8 +33,10 @@ package com.tencent.bkrepo.helm.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
+@Component
 @Resolver(HelmArtifactInfo::class)
 class HelmArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(
