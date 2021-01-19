@@ -65,7 +65,13 @@ class BkAuthConfig {
      * 蓝盾平台用户 appId
      */
     @Value("\${auth.devops.appId:}")
-    var appId: String = ""
+    var devopsAppId: String = ""
+
+    /**
+     * 蓝盾平台用户 appId
+     */
+    @Value("\${auth.bkrepo.appId:}")
+    var bkrepoAppId: String = ""
 
     /**
      * 是否开启蓝盾用户权限认证开关

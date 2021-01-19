@@ -72,16 +72,27 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.info("checkDevopsPermission, appId: $appId, userId: $uid, projectId: $projectId, repoName: $repoName, path: $path, action: $action")
+            logger.info("checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, repoName: $repoName, path: $path, action: $action")
             if (projectId.isNullOrBlank() || repoName.isNullOrBlank() /* || path.isNullOrBlank() */) {
                 logger.warn("invalid request")
                 return false
             }
             var hasPermission = false
+
+            if (appId == bkAuthConfig.bkrepoAppId) {
+                if (request.uid == ANONYMOUS_USER) {
+                    logger.warn("no anonymous access")
+                    return false
+                }
+                hasPermission = checkProjectPermission(uid, projectId!!)
+                logger.info("checkDevopsPermissionResult: $appId|$uid|$projectId|$hasPermission")
+                return hasPermission
+            }
+
             if (request.uid != ANONYMOUS_USER && repoName != REPORT) {
                 try {
                     hasPermission = checkProjectPermission(uid, projectId!!)
-                    logger.info("checkDevopsPermissionResult: $uid|$projectId|$hasPermission")
+                    logger.info("checkDevopsPermissionResult: $appId|$uid|$projectId|$hasPermission")
                 } catch (e: Exception) {
                     logger.warn("checkout auth error:", e)
                 }
@@ -137,14 +148,14 @@ class BkAuthPermissionServiceImpl constructor(
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.info("check permission  request : [$request] ")
-        // devops 权限校验
-        if (request.resourceType == ResourceType.REPO && request.appId == bkAuthConfig.appId && isDevopsRepo(request.repoName!!)) {
+        // devops/web权限校验
+        if (request.resourceType == ResourceType.REPO && isDevopsRepo(request.repoName!!) &&
+            (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)) {
             return checkDevopsPermission(request)
         }
-        if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.appId) {
+        if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {
             return true
         }
-
         return super.checkPermission(request)
     }
 
