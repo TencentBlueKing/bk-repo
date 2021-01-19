@@ -23,7 +23,7 @@
     "code" : 0,
     "message" : null,
     "data" : [object],
-    "traceId" : ""
+    "traceId" : null
   }
   ```
 
