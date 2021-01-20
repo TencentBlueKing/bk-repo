@@ -3,8 +3,6 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readYamlString
-import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
-import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -13,17 +11,13 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
-import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.service.FixToolService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
@@ -37,8 +31,7 @@ import java.time.LocalDateTime
 @Service
 class FixToolServiceImpl(
     private val storageService: StorageService,
-    private val helmPackageHandler: HelmPackageHandler,
-    private val chartRepositoryService: ChartRepositoryService
+    private val helmPackageHandler: HelmPackageHandler
 ) : FixToolService, AbstractChartService() {
 
     override fun fixPackageVersion(): List<PackageManagerResponse> {
@@ -58,18 +51,6 @@ class FixToolServiceImpl(
         return packageManagerList
     }
 
-    /**
-     * 刷新仓库的index.yaml文件
-     */
-    private fun freshIndexYaml(projectId: String, repoName: String) {
-        val helmArtifactInfo = HelmArtifactInfo(projectId, repoName, "")
-        // 刷新index.yaml索引文件，避免上传包没有刷新到索引文件导致漏掉
-        val request = HttpContextHolder.getRequest()
-        request.setAttribute(ARTIFACT_INFO_KEY, helmArtifactInfo)
-        request.setAttribute(REPO_KEY, repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data!!)
-        chartRepositoryService.freshIndexFile(helmArtifactInfo)
-    }
-
     private fun addPackageManager(projectId: String, repoName: String): PackageManagerResponse {
         // 查询仓库下面的所有package的包
         var successCount = 0L
@@ -79,86 +60,87 @@ class FixToolServiceImpl(
         val startTime = LocalDateTime.now()
 
         try {
-            freshIndexYaml(projectId, repoName)
-        }catch (exception: RuntimeException){
-            logger.error("fresh index file for repo [$projectId/$repoName] failed, skip. message: ", exception)
+            // 查询索引文件
+            val nodeDetail =
+                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
+                    logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
+                    throw HelmFileNotFoundException("the file index-cache.yaml not found in repo [$projectId/$repoName]")
+                }
+            // sleep 0.1s
+            Thread.sleep(100)
+            val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+                logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+                throw HelmFileNotFoundException("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+            }
+            val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
+            if (helmIndexYamlMetadata.entries.isEmpty()) {
+                return PackageManagerResponse.emptyResponse(projectId, repoName)
+            }
+
+            val helmNodeList = mutableListOf<NodeInfo>()
+            helmIndexYamlMetadata.entries.keys.forEach { name ->
+                helmNodeList.clear()
+                var page = 1
+                val packageMetadataPage = queryPackagePage(projectId, repoName, page, name)
+                var packageMetadataList = packageMetadataPage.records.map { resolveNode(it) }
+                if (packageMetadataList.isEmpty()) {
+                    logger.info("no package with name [$name] found in repo [$projectId/$repoName], skip.")
+                    return@forEach
+                }
+                while (packageMetadataList.isNotEmpty()) {
+                    helmNodeList.addAll(packageMetadataList)
+                    page += 1
+                    packageMetadataList =
+                        queryPackagePage(projectId, repoName, page, name).records.map { resolveNode(it) }
+                }
+                try {
+                    logger.info(
+                        "Retrieved ${helmNodeList.size} records for package [$name] to add package manager, " +
+                            "process: $totalCount/${packageMetadataPage.totalRecords}"
+                    )
+                    // 添加包管理
+                    doAddPackageManager(projectId, repoName, helmNodeList, name)
+                    logger.info("Success to add package manager for [$name] in repo [$projectId/$repoName].")
+                    successCount += 1
+                } catch (exception: RuntimeException) {
+                    logger.error(
+                        "Failed to to add package manager for [$name] in repo [$projectId/$repoName].",
+                        exception
+                    )
+                    failedSet.add(name)
+                    failedCount += 1
+                } finally {
+                    totalCount += 1
+                }
+            }
+            val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
+            logger.info(
+                "Repair helm package populate in repo [$projectId/$repoName], " +
+                    "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+            )
             return PackageManagerResponse(
                 projectId = projectId,
                 repoName = repoName,
-                totalCount = 0,
-                successCount = 0,
-                failedCount = 0,
-                failedSet = emptySet(),
+                totalCount = totalCount,
+                successCount = successCount,
+                failedCount = failedCount,
+                failedSet = failedSet
+            )
+        } catch (exception: HelmFileNotFoundException) {
+            logger.error("package populate for repo [$projectId/$repoName] failed, message: ${exception.message}")
+            return PackageManagerResponse.emptyResponse(
+                projectId,
+                repoName,
+                description = exception.message
+            )
+        } catch (exception: RuntimeException) {
+            logger.error("fresh index file for repo [$projectId/$repoName] failed, skip. message: ", exception)
+            return PackageManagerResponse.emptyResponse(
+                projectId,
+                repoName,
                 description = "fresh index file for repo [$projectId/$repoName] failed."
             )
         }
-
-        // 查询索引文件
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
-            logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-            throw HelmFileNotFoundException("the file index-cache.yaml not found.")
-        }
-        val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null)!!
-        val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
-        if (helmIndexYamlMetadata.entries.isEmpty()) {
-            return PackageManagerResponse(
-                projectId = projectId,
-                repoName = repoName,
-                totalCount = 0,
-                successCount = 0,
-                failedCount = 0,
-                failedSet = emptySet()
-            )
-        }
-
-        val helmNodeList = mutableListOf<NodeInfo>()
-        helmIndexYamlMetadata.entries.keys.forEach { name ->
-            helmNodeList.clear()
-            var page = 1
-            val packageMetadataPage = queryPackagePage(projectId, repoName, page, name)
-            var packageMetadataList = packageMetadataPage.records.map { resolveNode(it) }
-            if (packageMetadataList.isEmpty()) {
-                logger.info("no package with name [$name] found in repo [$projectId/$repoName], skip.")
-                return@forEach
-            }
-            while (packageMetadataList.isNotEmpty()) {
-                helmNodeList.addAll(packageMetadataList)
-                page += 1
-                packageMetadataList = queryPackagePage(projectId, repoName, page, name).records.map { resolveNode(it) }
-            }
-            try {
-                logger.info(
-                    "Retrieved ${helmNodeList.size} records for package [$name] to add package manager, " +
-                        "process: $totalCount/${packageMetadataPage.totalRecords}"
-                )
-                // 添加包管理
-                doAddPackageManager(projectId, repoName, helmNodeList, name)
-                logger.info("Success to add package manager for [$name] in repo [$projectId/$repoName].")
-                successCount += 1
-            } catch (exception: RuntimeException) {
-                logger.error(
-                    "Failed to to add package manager for [$name] in repo [$projectId/$repoName].",
-                    exception
-                )
-                failedSet.add(name)
-                failedCount += 1
-            } finally {
-                totalCount += 1
-            }
-        }
-        val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
-        logger.info(
-            "Repair helm package populate in repo [$projectId/$repoName], " +
-                "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
-        )
-        return PackageManagerResponse(
-            projectId = projectId,
-            repoName = repoName,
-            totalCount = totalCount,
-            successCount = successCount,
-            failedCount = failedCount,
-            failedSet = failedSet
-        )
     }
 
     private fun doAddPackageManager(
@@ -170,6 +152,8 @@ class FixToolServiceImpl(
         var description: String = StringPool.EMPTY
         val versionList = nodeInfoList.map { it ->
             with(it) {
+                // sleep 0.1s
+                Thread.sleep(100)
                 val helmChartMetadata = storageService.load(sha256!!, Range.full(size), null)
                     ?.use {
                         it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION).byteInputStream()
