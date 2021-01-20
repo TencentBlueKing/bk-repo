@@ -32,7 +32,7 @@ class FixToolController(
     private val fixToolService: FixToolService
 ) {
     @ApiOperation("修复package管理功能")
-    @GetMapping("/fixPackageVersion")
+    @GetMapping("/ext/package/populate")
     fun fixPackageVersion(): List<PackageManagerResponse> {
         return fixToolService.fixPackageVersion()
     }
