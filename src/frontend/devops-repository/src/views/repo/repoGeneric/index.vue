@@ -207,6 +207,7 @@
         components: { RepoTree, genericDetail, genericUpload },
         data () {
             return {
+                MODE_CONFIG,
                 isLoading: false,
                 treeLoading: false,
                 importantSearch: '',

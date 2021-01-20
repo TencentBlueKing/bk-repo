@@ -56,6 +56,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_PREVIEW
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -70,9 +71,8 @@ class GenericLocalRepository : LocalRepository() {
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         super.onDownloadBefore(context)
         val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW)
-        if (preview) {
-            context.useDisposition = false
-        }
+            || context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
+        context.useDisposition = !preview
     }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {

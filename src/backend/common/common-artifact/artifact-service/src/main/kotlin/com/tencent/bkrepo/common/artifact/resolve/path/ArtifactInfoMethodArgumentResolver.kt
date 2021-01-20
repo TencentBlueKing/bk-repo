@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
@@ -51,13 +50,12 @@ import kotlin.reflect.KClass
  * 构件位置信息参数解析器
  */
 @Suppress("UNCHECKED_CAST")
-class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
-
-    private val resolverMap: ResolverMap = ResolverScannerRegistrar.resolverMap
+class ArtifactInfoMethodArgumentResolver(
+    private val resolverMap: ResolverMap
+) : HandlerMethodArgumentResolver {
 
     override fun supportsParameter(parameter: MethodParameter): Boolean {
-        return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType) &&
-            parameter.hasParameterAnnotation(ArtifactPathVariable::class.java)
+        return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType)
     }
 
     override fun resolveArgument(
@@ -65,7 +63,7 @@ class ArtifactInfoMethodArgumentResolver : HandlerMethodArgumentResolver {
         container: ModelAndViewContainer?,
         nativeWebRequest: NativeWebRequest,
         factory: WebDataBinderFactory?
-    ): Any? {
+    ): Any {
         val attributes = nativeWebRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, 0) as Map<*, *>
         val projectId = attributes[PROJECT_ID].toString()
         val repoName = attributes[REPO_NAME].toString()

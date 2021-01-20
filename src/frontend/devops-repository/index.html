@@ -20,11 +20,28 @@
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
     </script>
     <script>
+        const redirectUrl = location.href.split(/\?redirect=/)[1]
+
         window.getLoginUrl = function () {
             const loginUrl = new URL(LOGIN_SERVICE_URL)
-            const cUrl = location.origin
+            const cUrl = location.origin + (redirectUrl ? (redirectUrl + '?preview=true') : '')
             loginUrl.searchParams.append('c_url', cUrl)
             return loginUrl.href
+        }
+
+        if (redirectUrl) {
+            const xhr = new XMLHttpRequest()
+            xhr.onreadystatechange = function (e) {
+                const { readyState, status } = e.currentTarget
+                if (readyState === 4 && status === 200) {
+                    location.href = location.origin + redirectUrl + '?preview=true'
+                } else if (status === 401) {
+                    location.href = window.getLoginUrl(location.origin + redirectUrl + '?preview=true')
+                }
+            }
+            xhr.withCredentials = true
+            xhr.open('HEAD', redirectUrl)
+            xhr.send()
         }
     </script>
 </body>
