@@ -3,8 +3,6 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readYamlString
-import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
-import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -13,17 +11,13 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
-import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.service.FixToolService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
@@ -37,8 +31,7 @@ import java.time.LocalDateTime
 @Service
 class FixToolServiceImpl(
     private val storageService: StorageService,
-    private val helmPackageHandler: HelmPackageHandler,
-    private val chartRepositoryService: ChartRepositoryService
+    private val helmPackageHandler: HelmPackageHandler
 ) : FixToolService, AbstractChartService() {
 
     override fun fixPackageVersion(): List<PackageManagerResponse> {
@@ -58,18 +51,6 @@ class FixToolServiceImpl(
         return packageManagerList
     }
 
-    /**
-     * 刷新仓库的index.yaml文件
-     */
-    private fun freshIndexYaml(projectId: String, repoName: String) {
-        val helmArtifactInfo = HelmArtifactInfo(projectId, repoName, "")
-        // 刷新index.yaml索引文件，避免上传包没有刷新到索引文件导致漏掉
-        val request = HttpContextHolder.getRequest()
-        request.setAttribute(ARTIFACT_INFO_KEY, helmArtifactInfo)
-        request.setAttribute(REPO_KEY, repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data!!)
-        chartRepositoryService.freshIndexFile(helmArtifactInfo)
-    }
-
     private fun addPackageManager(projectId: String, repoName: String): PackageManagerResponse {
         // 查询仓库下面的所有package的包
         var successCount = 0L
@@ -79,7 +60,6 @@ class FixToolServiceImpl(
         val startTime = LocalDateTime.now()
 
         try {
-            freshIndexYaml(projectId, repoName)
             // 查询索引文件
             val nodeDetail =
                 nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
