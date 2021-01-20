@@ -1,8 +1,8 @@
-## Generic通用制品简单文件操作接口
+# Generic通用制品仓库简单文件操作
 
 [toc]
 
-### 上传文件
+## 上传文件
 
 - API: PUT /generic/{project}/{repo}/{path}
 - API 名称: upload
@@ -15,22 +15,22 @@
 
 - 请求字段说明
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|project|string|是|无|项目名称|project name|
-|repo|string|是|无|仓库名称|repo name|
-|path|string|是|无|完整路径|full path|
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |project|string|是|无|项目名称|project name|
+  |repo|string|是|无|仓库名称|repo name|
+  |path|string|是|无|完整路径|full path|
 
 - 请求头
 
-|字段|类型|是否必须|默认值|说明|Description|
-|---|---|---|---|---|---|
-|X-BKREPO-SHA256|string|否|无|文件sha256|file sha256|
-|X-BKREPO-MD5|string|否|无|文件md5|file md5|
-|X-BKREPO-OVERWRITE|boolean|否|false|是否覆盖已存在文件|overwrite exist file|
-|X-BKREPO-EXPIRES|long|否|0|过期时间，单位天(0代表永久保存)|file expired days|
-|X-BKREPO-META-{key}|string|否|无|文件元数据，{key}表示元数据key，可以添加多个|file metadata|
-|X-BKREPO-META|string|否|无|文件元数据，格式为base64(key1=value1&key2=value2)。当`X-BKREPO-META-{key}`不能满足需求时可用此字段代替|file metadata|
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |X-BKREPO-SHA256|string|否|无|文件sha256|file sha256|
+  |X-BKREPO-MD5|string|否|无|文件md5|file md5|
+  |X-BKREPO-OVERWRITE|boolean|否|false|是否覆盖已存在文件|overwrite exist file|
+  |X-BKREPO-EXPIRES|long|否|0|过期时间，单位天(0代表永久保存)|file expired days|
+  |X-BKREPO-META-{key}|string|否|无|文件元数据，{key}表示元数据key，可以添加多个|file metadata|
+  |X-BKREPO-META|string|否|无|文件元数据，格式为base64(key1=value1&key2=value2)。当`X-BKREPO-META-{key}`不能满足需求时可用此字段代替|file metadata|
 
 
 - 响应体
@@ -78,7 +78,7 @@
   |projectId|string|节点所属项目|node project id|
   |repoName|string|节点所属仓库|node repository name|
 
-### 下载文件
+## 下载文件
 
 - API: GET /generic/{project}/{repo}/{path}
 - API 名称: download
@@ -121,7 +121,7 @@
 - 响应体
   [文件流]
 
-### 获取文件头部信息
+## 获取文件头部信息
 
 - API: HEAD /generic/{project}/{repo}/{path}
 - API 名称: head
@@ -164,7 +164,7 @@
 - 响应体
   此接口响应体为空
 
-### 删除文件
+## 删除文件
 
 - API: DELETE /generic/{project}/{repo}/{path}
 - API 名称: delete

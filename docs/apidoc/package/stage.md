@@ -1,8 +1,8 @@
-## Stage制品晋级接口说明
+# Stage制品晋级接口
 
 [toc]
 
-### 制品晋级
+## 制品晋级
 
 - API: POST /repository/api/stage/upgrade/{projectId}/{repoName}/{packgekey}/{version}?tag=@release
 - API 名称: upgrade_stage

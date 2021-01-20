@@ -1,8 +1,8 @@
-## Share文件分享接口
+# Share文件分享接口
 
 [toc]
 
-### 创建分享下载链接
+## 创建分享下载链接
 
 - API: POST /repository/api/share/{projectId}/{repoName}/{fullPath}
 - API 名称: create_share_url
@@ -67,7 +67,7 @@
   |authorizedIpList|list|授权ip列表|authorized ip list|
   |expireDate|string|过期时间|expire date|
 
-### 创建分享下载链接（批量）
+## 创建分享下载链接（批量）
 
 - API: POST /repository/api/share/batch
 - API 名称: create_batch_share_url
@@ -138,7 +138,7 @@
   |authorizedIpList|[string]|授权ip列表|authorized ip list|
   |expireDate|string|过期时间|expire date|
 
-### 分享链接下载
+## 分享链接下载
 
 - API: GET /repository/api/share/{projectId}/{repoName}/{fullPath}?token=xxx
 - API 名称: download_share_url

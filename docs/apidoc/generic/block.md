@@ -1,8 +1,8 @@
-## Generic通用制品分块文件操作接口
+# Generic通用制品仓库分块文件操作
 
 [toc]
 
-### 初始化分块上传
+## 初始化分块上传
 
 - API: POST /generic/block/{project}/{repo}/{path}
 - API 名称: start_block_upload
@@ -50,7 +50,7 @@
   |uploadId|string|分块上传id|block upload id|
   |expireSeconds|string|上传有效期(秒)|expire time(seconds)|
 
-### 上传分块文件
+## 上传分块文件
 
 - API: PUT /{project}/{repo}/{path}
 - API 名称: block_upload
@@ -89,7 +89,7 @@
   }
   ```
 
-### 完成分块上传
+## 完成分块上传
 
 - API: PUT /generic/block/{project}/{repo}/{path}
 - API 名称: complete_block_upload
@@ -125,7 +125,7 @@
   }
   ```
 
-### 终止(取消)分块上传
+## 终止(取消)分块上传
 
 - API: DELETE /generic/block/{project}/{repo}/{path}
 - API 名称: abort_block_upload
@@ -161,7 +161,7 @@
   }
   ```
 
-### 查询已上传的分块列表
+## 查询已上传的分块列表
 
 - API: GET /generic/block/{project}/{repo}/{path}
 - API 名称: list_upload_block

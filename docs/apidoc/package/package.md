@@ -1,8 +1,8 @@
-## Package包管理接口说明
+# Package制品包版本接口
 
 [toc]
 
-### 分页查询包列表
+## 分页查询包列表
 
 - API: GET /repository/api/package/page/{projectId}/{repoName}?packageName=xxx&pageNumber=0&pageSize=20
 - API 名称: list_package_page
@@ -72,7 +72,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 查询包信息
+## 查询包信息
 
 - API: GET /repository/api/package/info/{projectId}/{repoName}?packageKey=docker://nginx
 - API 名称: get_package_info
@@ -134,7 +134,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 删除包
+## 删除包
 
 - API: DELETE /repository/api/package/delete/{projectId}/{repoName}?packageKey=gav://com.tencent:test
 - API 名称: delete_package
@@ -163,7 +163,7 @@
   }
   ```
 
-### 分页查询包版本
+## 分页查询包版本
 
 - API: GET /repository/api/version/page/{projectId}/{repoName}?packageKey=gav://com.tencent:test&version=0.0.1&stageTag=release&pageNumber=0&pageSize=20
 - API 名称: list_version_page
@@ -229,7 +229,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 删除版本
+## 删除版本
 
 - API: DELETE /repository/api/version/delete/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
 - API 名称: delete_version
@@ -258,7 +258,7 @@
   }
   ```
 
-### 自定义搜索包
+## 自定义搜索包
 
 - API: POST /repository/api/package/search
 - API 名称: package search
@@ -269,7 +269,7 @@
   参考[自定义搜索接口公共说明](../common/search.md)
 
   ``` json
-  # 查询在项目test下, 仓库类型为MAVEN，包名为spring开头的包，并按照包名排序，查询结果包含name、key、latest、donwloads、versions字段
+   查询在项目test下, 仓库类型为MAVEN，包名为spring开头的包，并按照包名排序，查询结果包含name、key、latest、donwloads、versions字段
   {
     "select": ["name", "key", "latest", "downloads", "versions"],
     "page": {
@@ -303,7 +303,7 @@
   }
   ```
 
-### 下载版本
+## 下载版本
 
 - API: GET /repository/api/version/download/{projectId}/{repoName}?packageKey=npm://test&version=0.0.1
 - API 名称: download_version
@@ -326,9 +326,9 @@
 - 响应体
   [文件流]
 
-## Package包管理公共说明
+## 公共说明
 
-#### 1. 包类型枚举
+### 包类型枚举
 
 > 用于标识构件包类型
 
@@ -342,7 +342,7 @@
 |COMPOSER|Composer包|
 |RPM|Rpm包|
 
-#### 2. package key 格式
+### package key 格式
 
 > 因为同个仓库下包名称不唯一， 所以使用package key来确定包的唯一性。
 > pakcage key的格式为: `{type}://{value}`

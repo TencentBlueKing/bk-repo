@@ -1,8 +1,8 @@
-## Node节点相关接口
+# Node节点操作接口
 
 [toc]
 
-### 查询节点详情
+## 查询节点详情
 
 - API: GET /repository/api/node/detail/{projectId}/{repoName}/{fullPath}
 - API 名称: query_node_detail
@@ -68,7 +68,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 分页查询节点
+## 分页查询节点
 
 - API: GET /repository/api/node/page/{projectId}/{repoName}/{fullPath}?pageNumber=0&pageSize=20&includeFolder=true&includeMetadata=true&deep=false&sort=false
 - API 名称: list_node_page
@@ -147,7 +147,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 创建目录
+## 创建目录
 
 - API: POST /repository/api/node/mkdir/{projectId}/{repoName}/{path}
 - API 名称: mkdir
@@ -175,7 +175,7 @@
   }
   ```
 
-### 删除节点
+## 删除节点
 
 - API: DELETE /repository/api/node/delete/{projectId}/{repoName}/{fullPath}
 - API 名称: delete_node
@@ -203,7 +203,7 @@
   }
   ```
 
-### 更新节点
+## 更新节点
 
 - API: POST /repository/api/node/update/{projectId}/{repoName}/{fullPath}
 - API 名称: update_node
@@ -238,7 +238,7 @@
   }
   ```
 
-### 重命名节点
+## 重命名节点
 
 - API: POST /repository/api/node/rename/{projectId}/{repoName}/{fullPath}?newFullPath=/data/new_name.text
 - API 名称: rename_node
@@ -268,7 +268,7 @@
   }
   ```
 
-### 移动节点
+## 移动节点
 
 - API: POST /repository/api/node/move
 - API 名称: move_node
@@ -320,7 +320,7 @@
   }
   ```
 
-### 拷贝节点
+## 拷贝节点
 
 - API: POST /repository/api/node/copy
 - API 名称: copy_node
@@ -372,7 +372,7 @@
   }
   ```
 
-### 统计节点大小信息
+## 统计节点大小信息
 
 - API: GET /repository/api/node/size/{projectId}/{repoName}/{fullPath}
 - API 名称: compute_node_size
@@ -411,7 +411,7 @@
   |subNodeCount|long|子节点数量（包括目录）|sub node count|
   |size|long|目录/文件大小|directory/file size|
 
-### 自定义搜索
+## 自定义搜索
 
 - API: POST /repository/api/node/search
 - API 名称: node search
@@ -419,10 +419,10 @@
   - 中文：节点自定义搜索。最外层的查询条件中必须包含projectId条件，可以传入repoType指定仓库类型或者repoName指定仓库查询。
   - English：search node
 - 请求体
-  参考[自定义搜索接口公共说明](../common/search.md)
+  参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议)
 
   ``` json
-  # 分页查询在项目test下, 仓库为generic-local1或generic-local2，文件名以.tgz结尾的文件，并按照文件名和大小排序，查询结果包含name、fullPath、size、sha256、md5、metadata字段，
+   分页查询在项目test下, 仓库为generic-local1或generic-local2，文件名以.tgz结尾的文件，并按照文件名和大小排序，查询结果包含name、fullPath、size、sha256、md5、metadata字段，
   {
     "select": ["name", "fullPath", "size", "sha256", "md5", "metadata"],
     "page": {

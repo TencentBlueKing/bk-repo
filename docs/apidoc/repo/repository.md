@@ -1,14 +1,14 @@
-## Repository仓库相关接口
+# Repository仓库接口
 
 [toc]
 
-### 创建仓库
+## 创建仓库
 
 - API: POST /repository/api/repo/create
 - API 名称: create_repo
 - 功能说明：
   - 中文：创建仓库
-    - English：create repo
+  - English：create repo
 - 请求体
 
   ```json
@@ -49,7 +49,7 @@
   ```
 
 
-### 更新仓库信息
+## 更新仓库信息
 
 - API: POST /repository/api/repo/update/{projectId}/{repoName}
 - API 名称: update_repo
@@ -86,7 +86,7 @@
   }
   ```
 
-### 删除仓库
+## 删除仓库
 
 - API: DELETE /repository/api/repo/delete/{projectId}/{repoName}?forced=false
 - API 名称: delete_repo
@@ -122,7 +122,7 @@
   }
   ```
 
-### 查询仓库信息
+## 查询仓库信息
 
 - API: GET /repository/api/repo/info/{projectId}/{repoName}/{type}
 - API 名称: get_repo_info
@@ -178,7 +178,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 校验仓库是否存在
+## 校验仓库是否存在
 
 - API: GET /repository/api/repo/exist/{projectId}/{repoName}
 - API 名称: check_repo_exist
@@ -211,7 +211,7 @@
   |---|---|---|---|
   |data|boolean|仓库是否存在|repo exist or not|
 
-### 分页查询仓库
+## 分页查询仓库
 
 - API: GET /repository/api/repo/page/{projectId}/{pageNumber}/{pageSize}?name=local&type=GENERIC
 - API 名称: list_repo_page
@@ -275,7 +275,7 @@
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
 
-### 列表查询仓库
+## 列表查询仓库
 
 - API: GET /repository/api/repo/list/{projectId}?name=local&type=GENERIC
 - API 名称: list_repo
@@ -332,7 +332,7 @@
   |lastModifiedDate|string|上次修改时间|last modify time|
 
 ## 仓库公共枚举值说明
-### 1. 仓库类型RepositoryType
+### 仓库类型RepositoryType
 
 > 用于标识仓库功能类型
 
@@ -347,7 +347,7 @@
 |COMPOSER|Composer仓库|
 |RPM|Rpm仓库|
 
-### 2. 仓库类别RepositoryCategory
+### 仓库类别RepositoryCategory
 
 > 用于标识仓库类别
 
@@ -359,7 +359,7 @@
 |COMPOSITE|组合仓库。具有LOCAL的功能，同时也支持代理多个远程地址进行下载|
 
 ## RepositoryConfiguration仓库配置项
-### 1. 公共配置项
+### 公共配置项
 
 每一类配置都具有下列公共配置项
 
@@ -368,26 +368,26 @@
 |type|string|是|无|不同类型仓库分别对应local、remote、virtual、composite(小写)，用于反序列化，创建和修改时需要提供该字段|configuration type|
 |settings|map|否|无|不同类型仓库可以通过该字段进行差异化配置|repo settings|
 
-### 2. local本地仓库配置项
+### local本地仓库配置项
 
 |字段|类型|是否必须|默认值|说明|Description|
 |:------|---|---|---|---|---|
 |webHook|WebHook|否|无|WebHook相关配置|web hook|
 
-- WebHook配置项
+- **WebHook配置项**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |:----------|---|---|---|---|---|
 |webHookList|[WebHookSetting]|否|无|WebHook 列表|web hook list|
 
-- WebHookSetting配置项
+- **WebHookSetting配置项**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |:------|---|---|---|---|---|
 |url|string|否|无|远程url地址|remote web hook url|
 |headers|map|否|无|发起远程url的自定义headers|web hook headers|
 
-### 3. remote远程仓库配置项
+### remote远程仓库配置项
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
@@ -396,14 +396,14 @@
 |network|RemoteNetworkConfiguration|否|默认配置|网络配置|remote network configuration|
 |cache|RemoteCacheConfiguration|否|默认配置|缓存配置|remote cache configuration|
 
-- RemoteCredentialsConfiguration
+- **RemoteCredentialsConfiguration**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |username|string|否|无|远程仓库 用户名|remote repo username|
 |password|string|否|无|远程仓库 密码|remote repo password|
 
-- RemoteNetworkConfiguration
+- **RemoteNetworkConfiguration**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
@@ -411,7 +411,7 @@
 |connectTimeout|long|否|10 * 1000|网络连接超时时间(单位ms)|network connect timeout|
 |readTimeout|long|否|10 * 1000|网络读取超时时间(单位ms)|network read timeout|
 
-- NetworkProxyConfiguration
+- **NetworkProxyConfiguration**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
@@ -420,39 +420,39 @@
 |username|string|否|无|网络代理用户名|proxy username|
 |password|string|否|无|网络代理密码|proxy password|
 
-- RemoteCacheConfiguration
+- **RemoteCacheConfiguration**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |enabled|boolean|否|true|是否开启缓存|cache enabled|
 |expiration|long|否|---1|构件缓存过期时间（单位分钟，0或负数表示永久缓存）|cache expiration|
 
-### 4. virtual虚拟仓库配置项
+### virtual虚拟仓库配置项
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |repositoryList|[RepositoryIdentify]|否|无|仓库列表|repo list|
 
-- RepositoryIdentify
+- **RepositoryIdentify**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |projectId|string|是|无|代理项目名称|project id|
 |name|string|是|无|代理仓库名称|repo name|
 
-### 5. composite组合仓库配置项
+### composite组合仓库配置项
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |proxy|ProxyConfiguration|否|无|仓库代理配置|repo proxy configuration|
 
-- ProxyConfiguration
+- **ProxyConfiguration**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |channelList|[ProxyChannelSetting]|否|无|代理源列表|proxy channel list|
 
-- ProxyChannelSetting
+- **ProxyChannelSetting**
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
@@ -464,6 +464,6 @@
 |username|string|否|无|代理源认证用户名，私有源可选参数|private channel username|
 |password|string|否|无|代理源认证密码，私有源可选参数|private channel password|
 
-### 6. 依赖源的差异化配置项
+### 依赖源的差异化配置项
 
 各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。

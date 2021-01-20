@@ -1,14 +1,17 @@
-## Replication仓库同步接口
+# Replication仓库同步接口
 
 [toc]
 
-### replication说明
+## 说明
+
 - 现有方案需要把`operate_log` collection设置为Capped Collection
+
 ```bash
 db.operate_log.isCapped()
 db.runCommand({"convertToCapped":"operate_log",size:10000})
 ```
-### 测试集群连通状态
+
+## 测试集群连通状态
 
 - API: GET /replication/task/connect/test
 - API 名称: test_connect
@@ -45,7 +48,7 @@ db.runCommand({"convertToCapped":"operate_log",size:10000})
   }
   ```
 
-### 创建集群同步任务
+## 创建集群同步任务
 
 - API: POST  /replication/task/create
 - API 名称: create_replication_task

@@ -1,8 +1,8 @@
-## Metadata元数据接口说明
+# Metadata元数据接口
 
 [toc]
 
-### 查询元数据
+## 查询元数据
 
 - API: GET /repository/api/metadata/{projectId}/{repoName}/{fullPath}
 - API 名称: query_metadata
@@ -38,7 +38,7 @@
 
   键值对，key为元数据名称，value为元数据值
 
-#### 保存（更新）元数据
+### 保存（更新）元数据
 
 - API: POST /repository/api/metadata/{projectId}/{repoName}/{fullPath}
 - API 名称: save_metadata
@@ -74,7 +74,7 @@
   }
   ```
 
-#### 删除元数据
+### 删除元数据
 
 - API: DELETE /repository/api/metadata/{projectId}/{repoName}/{fullPath}
 - API 名称: delete_metadata

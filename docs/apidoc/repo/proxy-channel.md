@@ -1,8 +1,8 @@
-## ProxyChannel代理源相关接口
+# ProxyChannel代理源接口
 
 [toc]
 
-### 查询公有源列表
+## 查询公有源列表
 
 - API: GET /repository/api/proxy-channel/list/public/{repoType}
 - API 名称: list_public_proxy_channel

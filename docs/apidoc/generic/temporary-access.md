@@ -1,8 +1,8 @@
-## Generic通用制品临时访问凭证接口
+# Generic通用制品仓库临时访问凭证接口
 
 [toc]
 
-### 创建临时访问token
+## 创建临时访问token
 
 - API: POST /generic/temporary/token/create
 - API 名称: create_temporary_access_token
@@ -73,7 +73,7 @@
   |permits|int|允许访问次数，null表示无限制|access permits|
   |type|string|token类型|token type|
 
-### 创建临时访问url
+## 创建临时访问url
 
 - API: POST /generic/temporary/url/create
 - API 名称: create_temporary_access_url
@@ -107,7 +107,7 @@
   |authorizedIpSet|list|否|无|授权访问ip，不传则任意ip可访问|authorized ip set|
   |expireSeconds|long|否|3600*24|token有效时间，单位秒，小于等于0则永久有效|expire seconds|
   |permits|int|否|null|允许访问次数，null表示无限制|access permits|
-  |type|string|是|无|token类型。UPLOAD: 运行上传, DOWNLOAD: 允许下载, ALL: 同时运行上传和下载|token type|
+  |type|string|是|无|token类型。UPLOAD:允许上传, DOWNLOAD: 允许下载, ALL: 同时允许上传和下载|token type|
 
 - 响应体
 
@@ -144,7 +144,7 @@
   |permits|int|允许访问次数，null表示无限制|access permits|
   |type|string|token类型|token type|
 
-### 临时token文件下载接口
+## 临时token文件下载接口
 
 - API: GET /generic/temporary/token/download/{project}/{repo}/{path}?token=xxx
 - API 名称: temporary download
@@ -154,7 +154,7 @@
 - 接口说明
   除`token`参数外，其余参数和协议和[generic下载文件](./simple.md)一致
   
-### 临时token文件上传接口
+## 临时token文件上传接口
 
 - API: PUT /generic/temporary/token/upload/{project}/{repo}/{path}?token=xxx
 - API 名称: temporary upload
