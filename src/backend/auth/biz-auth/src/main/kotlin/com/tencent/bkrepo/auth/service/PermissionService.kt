@@ -44,6 +44,7 @@ import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
 
 interface PermissionService {
+
     fun checkPermission(request: CheckPermissionRequest): Boolean
 
     fun listRepoPermission(request: ListRepoPermissionRequest): List<String>

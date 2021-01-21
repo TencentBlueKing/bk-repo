@@ -57,6 +57,8 @@ const val RANDOM_KEY_LENGTH = 30
 
 const val BKREPO_TICKET = "bkrepo_ticket"
 
+const val AUTH_REPO_SUFFIX = "/create/repo"
+
 const val AUTH_CLUSTER_PREFIX = "/api/cluster"
 
 const val AUTH_PERMISSION_PREFIX = "/permission"
