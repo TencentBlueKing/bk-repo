@@ -102,6 +102,9 @@ class StorageManager(
         try {
             val request = HttpContextHolder.getRequestOrNull()
             val range = request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
+            if (node.size == 0L) {
+                return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+            }
             if (request?.method == HttpMethod.HEAD.name) {
                 return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
             }
