@@ -184,13 +184,13 @@ class PackageServiceImpl(
 
     override fun deleteVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return
-        val tPackageVersion = packageVersionDao.findByName(projectId, versionName) ?: return
+        val tPackageVersion = packageVersionDao.findByName(tPackage.id.orEmpty(), versionName) ?: return
         packageVersionDao.deleteByName(tPackageVersion.packageId, tPackageVersion.name)
-        if (tPackage.versions <= 1L) {
+        tPackage.versions -= 1
+        if (tPackage.versions <= 0L) {
             packageDao.removeById(tPackage.id.orEmpty())
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
         } else if (tPackage.latest == tPackageVersion.name) {
-            tPackage.versions -= 1
             val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
             tPackage.latest = latestVersion?.name.orEmpty()
             packageDao.save(tPackage)
