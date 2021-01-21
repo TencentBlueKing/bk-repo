@@ -87,7 +87,7 @@ class UploadService(
         with(artifactInfo) {
             val expires = getLongHeader(HEADER_EXPIRES)
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-            Preconditions.checkArgument(expires > 0, "expires")
+            Preconditions.checkArgument(expires >= 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeClient.checkExist(projectId, repoName, getArtifactFullPath()).data == true) {
                 logger.warn(
