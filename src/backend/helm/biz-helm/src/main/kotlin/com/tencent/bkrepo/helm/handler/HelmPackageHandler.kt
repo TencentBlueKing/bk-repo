@@ -119,7 +119,7 @@ class HelmPackageHandler(
                 }
             } catch (exception: ExternalErrorCodeException) {
                 // 暂时转换为包存在异常
-                logger.error("$contentPath already exists, message: ${exception.message}")
+                logger.warn("$contentPath already exists, message: ${exception.message}")
                 throw HelmFileAlreadyExistsException("$contentPath already exists")
             }
         }
