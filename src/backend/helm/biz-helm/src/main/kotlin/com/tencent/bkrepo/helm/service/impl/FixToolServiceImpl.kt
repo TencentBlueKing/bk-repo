@@ -55,7 +55,7 @@ class FixToolServiceImpl(
         // 查询仓库下面的所有package的包
         var successCount = 0L
         var failedCount = 0L
-        var totalCount = 0L
+        var totalCount = 1L
         val failedSet = mutableSetOf<String>()
         val startTime = LocalDateTime.now()
 
@@ -77,6 +77,7 @@ class FixToolServiceImpl(
                 return PackageManagerResponse.emptyResponse(projectId, repoName)
             }
 
+            val packageSize = helmIndexYamlMetadata.entries.size
             val helmNodeList = mutableListOf<NodeInfo>()
             helmIndexYamlMetadata.entries.keys.forEach { name ->
                 helmNodeList.clear()
@@ -95,8 +96,8 @@ class FixToolServiceImpl(
                 }
                 try {
                     logger.info(
-                        "Retrieved ${helmNodeList.size} records for package [$name] to add package manager, " +
-                            "process: $totalCount/${packageMetadataPage.totalRecords}"
+                        "Retrieved $packageSize packages to add package manager in repo [$projectId/$repoName], " +
+                            "process: $totalCount/$packageSize, current package: [$name] with [${helmNodeList.size}] versions."
                     )
                     // 添加包管理
                     doAddPackageManager(projectId, repoName, helmNodeList, name)
