@@ -47,6 +47,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -74,7 +75,9 @@ class UserServiceImpl constructor(
 
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
-        logger.info("create user request : [$request]")
+        var logRequest = request
+        logRequest.pwd = EMPTY
+        logger.info("create user request : [$logRequest]")
         val user = userRepository.findFirstByUserId(request.userId)
         user?.let {
             logger.warn("create user [${request.userId}]  is exist.")
@@ -104,7 +107,9 @@ class UserServiceImpl constructor(
     }
 
     override fun createUserToRepo(request: CreateUserToRepoRequest): Boolean {
-        logger.info("create user to repo request : [$request]")
+        var logRequest = request
+        logRequest.pwd = EMPTY
+        logger.info("create user to repo request : [$logRequest]")
         repositoryClient.getRepoInfo(request.projectId, request.repoName).data ?: run {
             logger.warn("repo [${request.projectId}/${request.repoName}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_REPO_NOT_EXIST)
@@ -126,7 +131,9 @@ class UserServiceImpl constructor(
     }
 
     override fun createUserToProject(request: CreateUserToProjectRequest): Boolean {
-        logger.info("create user to project request : [$request]")
+        var logRequest = request
+        logRequest.pwd = EMPTY
+        logger.info("create user to project request : [$logRequest]")
         projectClient.getProjectInfo(request.projectId).data ?: run {
             logger.warn("project [${request.projectId}]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_PROJECT_NOT_EXIST)

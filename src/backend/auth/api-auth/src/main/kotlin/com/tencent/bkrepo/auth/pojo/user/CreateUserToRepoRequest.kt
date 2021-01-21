@@ -39,7 +39,7 @@ data class CreateUserToRepoRequest(
     @ApiModelProperty("用户名")
     val name: String,
     @ApiModelProperty("密码")
-    val pwd: String? = null,
+    var pwd: String? = null,
     @ApiModelProperty("管理员")
     val admin: Boolean = false,
     @ApiModelProperty("关联用户")
