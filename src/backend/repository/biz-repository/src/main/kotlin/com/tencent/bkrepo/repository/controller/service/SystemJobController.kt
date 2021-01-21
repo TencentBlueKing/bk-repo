@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.job.FileReferenceCleanupJob
 import com.tencent.bkrepo.repository.job.FileSynchronizeJob
 import com.tencent.bkrepo.repository.job.NodeDeletedCorrectionJob
 import com.tencent.bkrepo.repository.job.PackageDownloadsMigrationJob
+import com.tencent.bkrepo.repository.job.PackageVersionCorrectionJob
 import com.tencent.bkrepo.repository.job.RootNodeCleanupJob
 import com.tencent.bkrepo.repository.job.StorageInstanceMigrationJob
 import org.springframework.web.bind.annotation.PathVariable
@@ -55,7 +56,8 @@ class SystemJobController(
     private val fileReferenceCleanupJob: FileReferenceCleanupJob,
     private val rootNodeCleanupJob: RootNodeCleanupJob,
     private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
-    private val packageDownloadsMigrationJob: PackageDownloadsMigrationJob
+    private val packageDownloadsMigrationJob: PackageDownloadsMigrationJob,
+    private val packageVersionCorrectionJob: PackageVersionCorrectionJob
 ) {
 
     @PostMapping("/sync/file")
@@ -81,9 +83,14 @@ class SystemJobController(
     }
 
     @PostMapping("/correct/node")
-    fun correct(): Response<Void> {
+    fun correctNode(): Response<Void> {
         nodeDeletedCorrectionJob.correct()
         return ResponseBuilder.success()
+    }
+
+    @PostMapping("/correct/version")
+    fun correctVersion(): Response<List<Any>> {
+        return ResponseBuilder.success(packageVersionCorrectionJob.correct())
     }
 
     @PostMapping("/cleanup/rootNode")

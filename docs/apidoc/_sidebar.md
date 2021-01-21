@@ -1,0 +1,30 @@
+- **接口公共说明**
+  - [通用接口协议](common/common.md)
+  - [自定义搜索协议](common/search.md)
+- **项目/仓库**
+  - [项目接口](repo/project.md)
+  - [仓库接口](repo/repository.md)
+  - [代理源接口](repo/proxy-channel.md)
+  - [仓库同步接口](repo/replication.md)
+- **节点**
+  - [节点操作接口](node/node.md)
+  - [分享链接接口](node/share.md)
+  - [元数据接口](node/metadata.md)
+- **制品包/版本**
+  - [制品包版本接口](package/package.md)
+  - [制品stage接口](package/stage.md)
+- **Generic通用制品仓库**
+    - [简单文件操作](generic/simple.md)
+    - [分块文件操作](generic/block.md)
+    - [临时访问凭证](generic/temporary-access.md)
+- **认证服务**
+  - [用户相关](auth/user.md)
+  - [用户token相关](auth/token.md)
+  - [角色相关](auth/role.md)
+  - [权限相关](auth/permission.md)
+  - [平台账号相关](auth/account.md)
+  - [前端相关](auth/ext.md)
+- **依赖源扩展接口**
+  - [docker扩展接口](registry/docker.md)
+  - [npm扩展接口](registry/npm.md)
+  - [rpm扩展接口](registry/rpm.md)
