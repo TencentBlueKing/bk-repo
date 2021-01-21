@@ -34,9 +34,9 @@ package com.tencent.bkrepo.common.artifact.api
 /**
  * 构件文件map，用于保存多个构件文件
  */
-class ArtifactFileMap {
-    private val fileMap = mutableMapOf<String, ArtifactFile>()
-
+class ArtifactFileMap(
+    private val fileMap: MutableMap<String, ArtifactFile> = mutableMapOf()
+) {
     val size: Int = fileMap.size
     val keys: MutableSet<String> = fileMap.keys
     val values: MutableCollection<ArtifactFile> = fileMap.values

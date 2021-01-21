@@ -31,25 +31,26 @@
 
 package com.tencent.bkrepo.common.api.message
 
-enum class CommonMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
+enum class CommonMessageCode(private val key: String) : MessageCode {
 
-    SYSTEM_ERROR(1, "system.error"),
-    PARAMETER_MISSING(2, "system.parameter.missing"),
-    PARAMETER_INVALID(3, "system.parameter.invalid"),
-    REQUEST_CONTENT_INVALID(4, "system.request.content.invalid"),
-    RESOURCE_EXISTED(5, "system.resource.existed"),
-    RESOURCE_NOT_FOUND(6, "system.resource.notfound"),
-    RESOURCE_EXPIRED(7, "system.resource.expired"),
-    OPERATION_UNSUPPORTED(8, "system.operation.unsupported"),
-    PERMISSION_DENIED(9, "system.permission.denied"),
-    SERVICE_CIRCUIT_BREAKER(10, "system.service.circuit-breaker"),
-    SERVICE_CALL_ERROR(11, "system.service.call-error"),
-    SERVICE_UNAUTHENTICATED(12, "system.service.unauthenticated"),
-    HEADER_MISSING(13, "system.header.missing"),
-    MEDIA_TYPE_UNSUPPORTED(14, "system.media.type.unsupported"),
-    SUCCESS(0, "success") { override fun getCode() = 0 };
+    SYSTEM_ERROR("system.error"),
+    PARAMETER_MISSING("system.parameter.missing"),
+    PARAMETER_EMPTY("system.parameter.empty"),
+    PARAMETER_INVALID("system.parameter.invalid"),
+    REQUEST_CONTENT_INVALID("system.request.content.invalid"),
+    RESOURCE_EXISTED("system.resource.existed"),
+    RESOURCE_NOT_FOUND("system.resource.notfound"),
+    RESOURCE_EXPIRED("system.resource.expired"),
+    OPERATION_UNSUPPORTED("system.operation.unsupported"),
+    PERMISSION_DENIED("system.permission.denied"),
+    SERVICE_CIRCUIT_BREAKER("system.service.circuit-breaker"),
+    SERVICE_CALL_ERROR("system.service.call-error"),
+    SERVICE_UNAUTHENTICATED("system.service.unauthenticated"),
+    HEADER_MISSING("system.header.missing"),
+    MEDIA_TYPE_UNSUPPORTED("system.media.type.unsupported"),
+    SUCCESS("success") { override fun getCode() = 0 };
 
-    override fun getBusinessCode() = businessCode
+    override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
     override fun getModuleCode() = 1
 }
