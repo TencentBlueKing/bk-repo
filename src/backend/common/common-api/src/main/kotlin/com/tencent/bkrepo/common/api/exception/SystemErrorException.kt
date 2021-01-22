@@ -33,11 +33,13 @@ package com.tencent.bkrepo.common.api.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
  * 系统异常
  */
-open class SystemErrorException: ErrorCodeException(
-    status = HttpStatus.INTERNAL_SERVER_ERROR,
-    messageCode = CommonMessageCode.SYSTEM_ERROR
-)
+open class SystemErrorException(
+    messageCode: MessageCode = CommonMessageCode.SYSTEM_ERROR,
+    vararg params: String
+) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params)
+

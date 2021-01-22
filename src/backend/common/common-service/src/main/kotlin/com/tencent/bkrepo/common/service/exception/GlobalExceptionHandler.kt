@@ -34,7 +34,6 @@ package com.tencent.bkrepo.common.service.exception
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -115,7 +114,6 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
 
     @ExceptionHandler(Exception::class)
     fun handleException(exception: Exception): Response<Void> {
-        val errorCodeException = SystemErrorException()
-        return response(errorCodeException)
+        return response(exception)
     }
 }

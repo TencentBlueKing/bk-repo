@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.common.service.exception
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -41,12 +43,26 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 open class AbstractExceptionHandler {
 
     /**
-     * 处理ErrorCodeException响应
+     * 处理ErrorCodeException
+     * 打印日志并输出给给用户
      */
     fun response(exception: ErrorCodeException): Response<Void> {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
         LoggerHolder.logErrorCodeException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
         HttpContextHolder.getResponse().status = exception.status.value
         return ResponseBuilder.fail(exception.messageCode.getCode(), errorMessage)
+    }
+
+    /**
+     * 处理系统未捕获的Exception响应
+     * 日志按照ErrorCodeException格式打印
+     * 用户输出为CommonMessageCode.SYSTEM_ERROR，防止将敏感信息或者无用信息响应给用户
+     */
+    fun response(exception: Exception): Response<Void> {
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(CommonMessageCode.SYSTEM_ERROR)
+        val code = CommonMessageCode.SYSTEM_ERROR.getCode()
+        LoggerHolder.logException(exception, "[$code]${exception.message}", true)
+        HttpContextHolder.getResponse().status = HttpStatus.INTERNAL_SERVER_ERROR.value
+        return ResponseBuilder.fail(code, errorMessage)
     }
 }
