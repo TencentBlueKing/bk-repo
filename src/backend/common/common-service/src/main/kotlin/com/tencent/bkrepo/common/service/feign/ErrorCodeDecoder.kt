@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.service.feign
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import feign.Response
 import feign.codec.ErrorDecoder
 import java.io.IOException
@@ -50,7 +50,7 @@ class ErrorCodeDecoder : ErrorDecoder {
             return try {
                 feignResponse.body().asInputStream().use {
                     val response = it.readJsonString<com.tencent.bkrepo.common.api.pojo.Response<Any>>()
-                    ExternalErrorCodeException(methodKey, response.code, response.message)
+                    RemoteErrorCodeException(methodKey, response.code, response.message)
                 }
             } catch (ignored: IOException) {
                 delegate.decode(methodKey, feignResponse)

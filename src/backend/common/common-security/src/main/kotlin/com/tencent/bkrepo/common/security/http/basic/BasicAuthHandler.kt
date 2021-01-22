@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.security.http.basic
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
@@ -57,7 +57,7 @@ open class BasicAuthHandler(val authenticationManager: AuthenticationManager) : 
                 require(parts.size >= 2)
                 BasicAuthCredentials(parts[0], parts[1])
             } catch (exception: IllegalArgumentException) {
-                throw BadCredentialsException("Authorization value [$authorizationHeader] is not a valid scheme.")
+                throw AuthenticationException("Invalid authorization value.")
             }
         } else AnonymousCredentials()
     }

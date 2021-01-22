@@ -33,12 +33,12 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
@@ -106,12 +106,12 @@ class ShareServiceImpl(
                     .and(TShareRecord::token).isEqualTo(token)
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
-                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, token)
+                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
-                throw ErrorCodeException(CommonMessageCode.PERMISSION_DENIED)
+                throw PermissionException("unauthorized")
             }
             if (shareRecord.expireDate?.isBefore(LocalDateTime.now()) == true) {
-                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, token)
+                throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
             }
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)

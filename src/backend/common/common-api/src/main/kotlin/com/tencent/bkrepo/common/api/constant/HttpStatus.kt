@@ -171,6 +171,13 @@ enum class HttpStatus(
 
     NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
 
+    /**
+     * 是否为服务端错误，code >=500
+     */
+    fun isServerError(): Boolean {
+        return value >= INTERNAL_SERVER_ERROR.value
+    }
+
     companion object {
 
         fun valueOf(statusCode: Int): HttpStatus {

@@ -31,13 +31,12 @@
 
 package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.StatusCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
- * 构件相关异常
+ * 节点不存在
  */
-open class ArtifactException(
-    override val status: HttpStatus = HttpStatus.BAD_REQUEST,
-    override val message: String? = null
-) : StatusCodeException(status, message)
+class NodeNotFoundException(
+    fullPath: String
+) : NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)

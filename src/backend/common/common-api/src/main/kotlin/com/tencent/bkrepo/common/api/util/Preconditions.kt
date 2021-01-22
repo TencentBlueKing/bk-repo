@@ -64,7 +64,7 @@ object Preconditions {
      * 2. 如何value 为 string, 则长度必须大于1且不能为全空
      */
     fun checkNotBlank(value: Any?, name: String) {
-        when(value) {
+        when (value) {
             null -> throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, name)
             is String -> {
                 if (value.isBlank()) {

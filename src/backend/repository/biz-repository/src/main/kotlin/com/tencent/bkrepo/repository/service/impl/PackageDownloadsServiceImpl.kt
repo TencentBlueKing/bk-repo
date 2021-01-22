@@ -281,7 +281,7 @@ class PackageDownloadsServiceImpl(
      */
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
-            ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, packageId, versionName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, versionName)
     }
 
     companion object {

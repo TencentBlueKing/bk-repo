@@ -317,7 +317,8 @@ class NpmFixToolServiceImpl(
         val queryResult = nodeClient.search(queryModel).data!!
         return queryResult.records.associateBy(
             { resolverVersion(packageName, it["fullPath"] as String) },
-            { resolveNode(it) })
+            { resolveNode(it) }
+        )
     }
 
     private fun resolverVersion(packageName: String, fullPath: String): String {

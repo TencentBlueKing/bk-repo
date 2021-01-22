@@ -35,10 +35,6 @@ package com.tencent.bkrepo.common.api.message
  * 消息码
  */
 interface MessageCode {
-    /**
-     * 业务码
-     */
-    fun getBusinessCode(): Int
 
     /**
      * 消息i18n key
@@ -46,14 +42,19 @@ interface MessageCode {
     fun getKey(): String
 
     /**
+     * 平台码
+     */
+    fun getPlatformCode(): Int = PLATFORM_CODE
+
+    /**
      * 模块码
      */
     fun getModuleCode(): Int
 
     /**
-     * 平台码
+     * 业务码
      */
-    fun getPlatformCode(): Int = PLATFORM_CODE
+    fun getBusinessCode(): Int
 
     /**
      * 消息code

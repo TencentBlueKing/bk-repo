@@ -3,7 +3,7 @@ package com.tencent.bkrepo.npm.pojo.fixtool
 /**
  * 包管理包装数据返回
  */
-data class PackageManagerResponse (
+data class PackageManagerResponse(
     val projectId: String,
     val repoName: String,
     val totalCount: Long,

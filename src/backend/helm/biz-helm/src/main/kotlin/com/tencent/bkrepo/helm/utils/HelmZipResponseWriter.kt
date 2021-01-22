@@ -77,10 +77,10 @@ object HelmZipResponseWriter {
             val message = exception.message.orEmpty()
             when {
                 message.contains("Connection reset by peer") -> {
-                    LoggerHolder.logBusinessException(exception, "Stream response failed[Connection reset by peer]")
+                    LoggerHolder.logException(exception, "Stream response failed[Connection reset by peer]", false)
                 }
                 message.contains("Broken pipe") -> {
-                    LoggerHolder.logBusinessException(exception, "Stream response failed[Broken pipe]")
+                    LoggerHolder.logException(exception, "Stream response failed[Broken pipe]", false)
                 }
                 else -> throw exception
             }

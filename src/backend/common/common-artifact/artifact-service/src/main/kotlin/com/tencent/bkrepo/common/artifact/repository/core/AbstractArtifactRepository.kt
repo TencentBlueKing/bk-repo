@@ -31,15 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
-import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
-import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -102,11 +100,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     override fun upload(context: ArtifactUploadContext) {
         try {
             this.onUploadBefore(context)
-            this.onUploadValidate(context)
             this.onUpload(context)
             this.onUploadSuccess(context)
-        } catch (validateException: ArtifactValidateException) {
-            this.onValidateFailed(context, validateException)
         } catch (exception: RuntimeException) {
             this.onUploadFailed(context, exception)
         } finally {
@@ -117,13 +112,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     override fun download(context: ArtifactDownloadContext) {
         try {
             this.onDownloadBefore(context)
-            this.onDownloadValidate(context)
             val artifactResponse = this.onDownload(context)
-                ?: throw ArtifactNotFoundException("Artifact[${context.artifactInfo}] not found")
+                ?: throw ArtifactNotFoundException(context.artifactInfo.toString())
             val throughput = ArtifactResourceWriter.write(artifactResponse)
             this.onDownloadSuccess(context, artifactResponse, throughput)
-        } catch (validateException: ArtifactValidateException) {
-            this.onValidateFailed(context, validateException)
         } catch (responseException: ArtifactResponseException) {
             val principal = SecurityUtils.getPrincipal()
             val artifactInfo = context.artifactInfo
@@ -136,26 +128,19 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     }
 
     override fun remove(context: ArtifactRemoveContext) {
-        throw UnsupportedMethodException()
+        throw MethodNotAllowedException()
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
-        throw UnsupportedMethodException()
+        throw MethodNotAllowedException()
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
-        throw UnsupportedMethodException()
+        throw MethodNotAllowedException()
     }
 
     override fun migrate(context: ArtifactMigrateContext): MigrateDetail {
-        throw UnsupportedMethodException()
-    }
-
-    /**
-     * 验证构件
-     */
-    @Throws(ArtifactValidateException::class)
-    open fun onUploadValidate(context: ArtifactUploadContext) {
+        throw MethodNotAllowedException()
     }
 
     /**
@@ -169,7 +154,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 上传构件
      */
     open fun onUpload(context: ArtifactUploadContext) {
-        throw UnsupportedMethodException()
+        throw MethodNotAllowedException()
     }
 
     /**
@@ -190,13 +175,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     }
 
     /**
-     * 下载验证
-     */
-    @Throws(ArtifactValidateException::class)
-    open fun onDownloadValidate(context: ArtifactDownloadContext) {
-    }
-
-    /**
      * 下载前回调
      */
     open fun onDownloadBefore(context: ArtifactDownloadContext) {
@@ -207,7 +185,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 下载构件
      */
     open fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        throw UnsupportedMethodException()
+        throw MethodNotAllowedException()
     }
 
     /**
@@ -249,15 +227,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadFailed(context: ArtifactDownloadContext, exception: Exception) {
         throw exception
-    }
-
-    /**
-     * 验证失败回调
-     *
-     * 默认向上抛异常，由全局异常处理器处理
-     */
-    open fun onValidateFailed(context: ArtifactContext, validateException: ArtifactValidateException) {
-        throw validateException
     }
 
     /**

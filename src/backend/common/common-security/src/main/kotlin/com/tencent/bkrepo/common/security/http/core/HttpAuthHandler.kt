@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.security.http.core
 
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -52,7 +51,7 @@ interface HttpAuthHandler {
     /**
      * 提取认证身份信息
      */
-    @Throws(BadCredentialsException::class)
+    @Throws(AuthenticationException::class)
     fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials
 
     /**

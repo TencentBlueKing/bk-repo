@@ -33,22 +33,26 @@ package com.tencent.bkrepo.common.api.message
 
 enum class CommonMessageCode(private val key: String) : MessageCode {
 
+    SUCCESS("success") { override fun getCode() = 0 },
+
     SYSTEM_ERROR("system.error"),
     PARAMETER_MISSING("system.parameter.missing"),
     PARAMETER_EMPTY("system.parameter.empty"),
     PARAMETER_INVALID("system.parameter.invalid"),
     REQUEST_CONTENT_INVALID("system.request.content.invalid"),
     RESOURCE_EXISTED("system.resource.existed"),
-    RESOURCE_NOT_FOUND("system.resource.notfound"),
+    RESOURCE_NOT_FOUND("system.resource.not-found"),
     RESOURCE_EXPIRED("system.resource.expired"),
-    OPERATION_UNSUPPORTED("system.operation.unsupported"),
-    PERMISSION_DENIED("system.permission.denied"),
+    METHOD_NOT_ALLOWED("system.method.not-allowed"),
+    REQUEST_DENIED("system.request.denied"),
+    REQUEST_UNAUTHENTICATED("system.request.unauthenticated"),
     SERVICE_CIRCUIT_BREAKER("system.service.circuit-breaker"),
     SERVICE_CALL_ERROR("system.service.call-error"),
     SERVICE_UNAUTHENTICATED("system.service.unauthenticated"),
     HEADER_MISSING("system.header.missing"),
-    MEDIA_TYPE_UNSUPPORTED("system.media.type.unsupported"),
-    SUCCESS("success") { override fun getCode() = 0 };
+    MEDIA_TYPE_UNSUPPORTED("system.media-type.unsupported"),
+    REQUEST_RANGE_INVALID("system.request-range.invalid"),
+    ;
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key

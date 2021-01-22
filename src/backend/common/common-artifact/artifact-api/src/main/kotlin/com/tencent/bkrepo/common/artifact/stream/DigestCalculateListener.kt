@@ -31,7 +31,8 @@
 
 package com.tencent.bkrepo.common.artifact.stream
 
-import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -57,11 +58,11 @@ class DigestCalculateListener : StreamReceiveListener {
     }
 
     fun getMd5(): String {
-        return md5 ?: throw ArtifactReceiveException("Artifact stream has not received.")
+        return md5 ?: throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_RECEIVE_FAILED)
     }
 
     fun getSha256(): String {
-        return sha256 ?: throw ArtifactReceiveException("Artifact stream has not received.")
+        return sha256 ?: throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_RECEIVE_FAILED)
     }
 
     private fun hexToString(byteArray: ByteArray, length: Int): String {

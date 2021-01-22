@@ -29,11 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.api.exception
+package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
- * 系统异常
+ * 包版本不存在异常
  */
-open class SystemException(messageCode: MessageCode, vararg params: String) : ErrorCodeException(messageCode, *params)
+class VersionNotFoundException(
+    version: String
+) : NotFoundException(ArtifactMessageCode.VERSION_NOT_FOUND, version)

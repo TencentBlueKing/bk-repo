@@ -40,8 +40,8 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.security.exception.AccessDeniedException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -91,11 +91,11 @@ class PermissionManager(
 
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
-                throw AccessDeniedException()
+                throw PermissionException()
             }
         } else if (principalType == PrincipalType.PLATFORM) {
             if (!isPlatformUser() && !isAdminUser(userId)) {
-                throw AccessDeniedException()
+                throw PermissionException()
             }
         }
     }
@@ -171,7 +171,7 @@ class PermissionManager(
 
     private fun checkPermission(checkRequest: CheckPermissionRequest) {
         if (permissionResource.checkPermission(checkRequest).data != true) {
-            throw AccessDeniedException()
+            throw PermissionException()
         }
     }
 

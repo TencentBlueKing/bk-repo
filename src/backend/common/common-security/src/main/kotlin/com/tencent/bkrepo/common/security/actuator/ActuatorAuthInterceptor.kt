@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
@@ -51,7 +50,8 @@ class ActuatorAuthInterceptor(
 ) : HandlerInterceptorAdapter() {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION) ?: throw AuthenticationException()
+        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
+            ?: throw AuthenticationException("Empty authorization value.")
         try {
             val encodedCredentials = authorizationHeader.removePrefix(BASIC_AUTH_PREFIX)
             val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
@@ -65,7 +65,7 @@ class ActuatorAuthInterceptor(
         } catch (exception: PermissionException) {
             throw exception
         } catch (exception: IllegalArgumentException) {
-            throw BadCredentialsException("Authorization value [$authorizationHeader] is not a valid scheme.")
+            throw AuthenticationException("Invalid authorization value.")
         }
     }
 }

@@ -10,7 +10,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -179,7 +179,7 @@ class FixToolServiceImpl(
         }.toList()
         try {
             helmPackageHandler.populatePackage(versionList, nodeInfoList.first(), name, description)
-        } catch (exception: ExternalErrorCodeException) {
+        } catch (exception: RemoteErrorCodeException) {
             logger.error(
                 "add package manager for [$name] failed " +
                     "in repo [$projectId/$repoName]."

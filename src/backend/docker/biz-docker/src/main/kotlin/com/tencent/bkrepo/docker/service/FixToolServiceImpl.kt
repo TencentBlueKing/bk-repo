@@ -28,7 +28,7 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.docker.artifact.DockerPackageRepo
 import com.tencent.bkrepo.docker.constant.DOCKER_MANIFEST
 import com.tencent.bkrepo.docker.constant.REPO_TYPE
@@ -145,7 +145,7 @@ class FixToolServiceImpl(
                     createdBy = userId
                 )
             packageRepo.createVersion(request)
-        } catch (exception: ExternalErrorCodeException) {
+        } catch (exception: RemoteErrorCodeException) {
             if (exception.errorMessage == CommonMessageCode.RESOURCE_EXISTED.getKey()) {
                 logger.warn("the package manager for [$name] with version [$tag] is already exists in repo [$projectId/$repoName], skip.")
                 return artifactName

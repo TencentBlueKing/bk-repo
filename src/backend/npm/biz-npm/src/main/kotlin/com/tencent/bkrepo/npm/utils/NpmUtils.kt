@@ -116,10 +116,10 @@ object NpmUtils {
         val newTarball = StringBuilder()
         npmPrefixHeader?.let {
             newTarball.append(it.trimEnd(SLASH))
-                //.append(SLASH).append(artifactInfo.getRepoIdentify())
+                // .append(SLASH).append(artifactInfo.getRepoIdentify())
                 .append(SLASH).append(tgzSuffix.trimStart(SLASH))
         } ?: newTarball.append(tarballPrefix.trimEnd(SLASH))
-            //.append(SLASH).append(artifactInfo.getRepoIdentify())
+            // .append(SLASH).append(artifactInfo.getRepoIdentify())
             .append(SLASH).append(tgzSuffix.trimStart(SLASH))
         return newTarball.toString()
     }

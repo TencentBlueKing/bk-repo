@@ -46,7 +46,7 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.message.HealthCheckFailedException
-import com.tencent.bkrepo.common.storage.message.StorageException
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -96,7 +96,7 @@ abstract class AbstractStorageService : StorageService {
             }
         } catch (exception: Exception) {
             logger.error("Failed to store artifact file [$digest].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -112,7 +112,7 @@ abstract class AbstractStorageService : StorageService {
             }
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.LOAD_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.LOAD_ERROR)
         }
     }
 
@@ -124,7 +124,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to delete file [$digest].")
         } catch (exception: Exception) {
             logger.error("Failed to delete file [$digest] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.DELETE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.DELETE_ERROR)
         }
     }
 
@@ -135,7 +135,7 @@ abstract class AbstractStorageService : StorageService {
             return doExist(path, digest, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to check file [$digest] exist on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.QUERY_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.QUERY_ERROR)
         }
     }
 
@@ -156,7 +156,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to copy file [$digest] from [$from] to [$to].")
         } catch (exception: Exception) {
             logger.error("Failed to copy file [$digest] from [$from] to [$to].", exception)
-            throw StorageException(StorageMessageCode.COPY_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.COPY_ERROR)
         }
     }
 
@@ -170,7 +170,7 @@ abstract class AbstractStorageService : StorageService {
             return appendId
         } catch (exception: Exception) {
             logger.error("Failed to create append id [$appendId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -185,7 +185,7 @@ abstract class AbstractStorageService : StorageService {
             return length
         } catch (exception: Exception) {
             logger.error("Failed to append file [$appendId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -200,7 +200,7 @@ abstract class AbstractStorageService : StorageService {
             return fileInfo
         } catch (exception: Exception) {
             logger.error("Failed to finish append file [$appendId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -214,7 +214,7 @@ abstract class AbstractStorageService : StorageService {
             return blockId
         } catch (exception: Exception) {
             logger.error("Failed to create block [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -225,7 +225,7 @@ abstract class AbstractStorageService : StorageService {
             return tempClient.checkDirectory(blockId)
         } catch (exception: Exception) {
             logger.error("Failed to check block [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -249,7 +249,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to store block [$blockId/$sequence].")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -260,11 +260,11 @@ abstract class AbstractStorageService : StorageService {
             val blockFileList = tempClient.listFiles(blockId, BLOCK_SUFFIX).sortedBy {
                 it.name.removeSuffix(BLOCK_SUFFIX).toInt()
             }
-            blockFileList.takeIf { it.isNotEmpty() } ?: throw StorageException(StorageMessageCode.BLOCK_EMPTY)
+            blockFileList.takeIf { it.isNotEmpty() } ?: throw StorageErrorException(StorageMessageCode.BLOCK_EMPTY)
             for (index in blockFileList.indices) {
                 val sequence = index + 1
                 if (blockFileList[index].name.removeSuffix(BLOCK_SUFFIX).toInt() != sequence) {
-                    throw StorageException(StorageMessageCode.BLOCK_MISSING, sequence.toString())
+                    throw StorageErrorException(StorageMessageCode.BLOCK_MISSING, sequence.toString())
                 }
             }
             val mergedFile = tempClient.mergeFiles(blockFileList, tempClient.touch(blockId, MERGED_FILENAME))
@@ -272,12 +272,12 @@ abstract class AbstractStorageService : StorageService {
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
             logger.info("Success to merge block [$blockId].")
             return fileInfo
-        } catch (storageException: StorageException) {
-            logger.error("Failed to merge block [$blockId] on [$credentials]: ${storageException.messageCode}")
+        } catch (storageException: StorageErrorException) {
+            logger.error("Failed to merge block [$blockId] on [$credentials]: ${storageException.code}")
             throw storageException
         } catch (exception: Exception) {
             logger.error("Failed to merge block [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.orEmpty())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -289,7 +289,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to delete block id [$blockId].")
         } catch (exception: Exception) {
             logger.error("Failed to delete block id [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 
@@ -308,7 +308,7 @@ abstract class AbstractStorageService : StorageService {
             }
         } catch (exception: Exception) {
             logger.error("Failed to list block [$blockId] on [$credentials].", exception)
-            throw StorageException(StorageMessageCode.STORE_ERROR, exception.message.toString())
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
 

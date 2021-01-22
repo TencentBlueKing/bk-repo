@@ -31,6 +31,20 @@
 
 package com.tencent.bkrepo.common.api.exception
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.message.MessageCode
 
-open class ErrorCodeException(val messageCode: MessageCode, vararg val params: String) : RuntimeException()
+/**
+ * error code 异常
+ */
+open class ErrorCodeException(
+    val code: MessageCode,
+    vararg val params: String,
+    val status: HttpStatus = HttpStatus.BAD_REQUEST
+) : RuntimeException() {
+    constructor(
+        status: HttpStatus,
+        code: MessageCode,
+        params: Array<out String>
+    ) : this(code = code, params = *params, status = status)
+}

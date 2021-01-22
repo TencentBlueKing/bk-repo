@@ -122,7 +122,7 @@ class UserServiceImpl constructor(
                 return false
             }
         } catch (exception: ErrorCodeException) {
-            if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
+            if (exception.code == AuthMessageCode.AUTH_DUP_UID) {
                 return true
             }
             throw exception
@@ -146,7 +146,7 @@ class UserServiceImpl constructor(
                 return false
             }
         } catch (exception: ErrorCodeException) {
-            if (exception.messageCode == AuthMessageCode.AUTH_DUP_UID) {
+            if (exception.code == AuthMessageCode.AUTH_DUP_UID) {
                 return true
             }
             throw exception

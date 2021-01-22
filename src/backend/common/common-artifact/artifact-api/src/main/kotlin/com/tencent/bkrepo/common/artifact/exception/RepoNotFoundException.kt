@@ -31,9 +31,12 @@
 
 package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
- * 构件验证异常
+ * 仓库不存在
  */
-open class ArtifactValidateException(message: String) : ArtifactException(HttpStatus.BAD_REQUEST, message)
+class RepoNotFoundException(
+    repo: String
+) : NotFoundException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repo)

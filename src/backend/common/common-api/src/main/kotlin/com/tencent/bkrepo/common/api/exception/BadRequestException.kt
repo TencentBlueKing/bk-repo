@@ -29,23 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.exception
+package com.tencent.bkrepo.common.api.exception
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import org.springframework.core.Ordered
-import org.springframework.core.annotation.Order
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.RestControllerAdvice
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.message.MessageCode
 
-@Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice
-class DefaultArtifactExceptionHandler {
-
-    /**
-     * 构件接收失败，response被关闭，不进行响应
-     */
-    @ExceptionHandler(ArtifactReceiveException::class)
-    fun handleException(exception: ArtifactReceiveException) {
-        LoggerHolder.logBusinessException(exception)
-    }
-}
+/**
+ * bad request 异常
+ */
+open class BadRequestException(
+    code: MessageCode,
+    vararg params: String
+) : ErrorCodeException(HttpStatus.BAD_REQUEST, code, params)

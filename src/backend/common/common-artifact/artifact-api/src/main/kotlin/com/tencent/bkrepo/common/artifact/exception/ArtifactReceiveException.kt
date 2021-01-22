@@ -31,11 +31,12 @@
 
 package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
  * 构件接收异常
  */
 open class ArtifactReceiveException(
-    message: String
-) : ArtifactException(HttpStatus.BAD_REQUEST, "Receive artifact stream failed: $message")
+    reason: String
+) : ErrorCodeException(ArtifactMessageCode.ARTIFACT_RESPONSE_FAILED, reason)

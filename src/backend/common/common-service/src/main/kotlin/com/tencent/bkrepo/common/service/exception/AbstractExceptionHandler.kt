@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,14 +31,22 @@
 
 package com.tencent.bkrepo.common.service.exception
 
-import com.netflix.hystrix.exception.HystrixBadRequestException
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 
-/**
- * 外部ErrorCodeException。
- * 调用外部服务时，出现业务异常会返回errorCode和message，message已经过国际化与模版化，所以直接返回。
- */
-open class ExternalErrorCodeException(
-    val methodKey: String,
-    val errorCode: Int,
-    val errorMessage: String?
-) : HystrixBadRequestException(errorMessage)
+open class AbstractExceptionHandler {
+
+    /**
+     * 处理ErrorCodeException响应
+     */
+    fun response(exception: ErrorCodeException): Response<Void> {
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.code, exception.params)
+        LoggerHolder.logErrorCodeException(exception, "[${exception.code.getCode()}]$errorMessage")
+        HttpContextHolder.getResponse().status = exception.status.value
+        return ResponseBuilder.fail(exception.code.getCode(), errorMessage)
+    }
+}

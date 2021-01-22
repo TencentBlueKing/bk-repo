@@ -12,7 +12,7 @@ class HelmFixToolController(
 ) {
     @ApiOperation("修复package管理功能")
     @GetMapping("/ext/package/populate")
-    fun fixPackageVersion(): List<PackageManagerResponse>{
+    fun fixPackageVersion(): List<PackageManagerResponse> {
         return fixToolService.fixPackageVersion()
     }
 }

@@ -31,9 +31,12 @@
 
 package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
- * 操作不支持
+ * 包不存在
  */
-class UnsupportedMethodException(message: String? = null) : ArtifactException(HttpStatus.METHOD_NOT_ALLOWED, message)
+class PackageNotFoundException(
+    packageName: String
+) : NotFoundException(ArtifactMessageCode.PACKAGE_NOT_FOUND, packageName)
