@@ -113,7 +113,7 @@ class StorageManager(
         } catch (exception: IllegalArgumentException) {
             throw ErrorCodeException(
                 status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                code = CommonMessageCode.REQUEST_RANGE_INVALID
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
 

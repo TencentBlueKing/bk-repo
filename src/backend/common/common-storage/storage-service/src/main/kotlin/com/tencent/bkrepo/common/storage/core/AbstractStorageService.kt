@@ -273,7 +273,7 @@ abstract class AbstractStorageService : StorageService {
             logger.info("Success to merge block [$blockId].")
             return fileInfo
         } catch (storageException: StorageErrorException) {
-            logger.error("Failed to merge block [$blockId] on [$credentials]: ${storageException.code}")
+            logger.error("Failed to merge block [$blockId] on [$credentials]: ${storageException.messageCode}")
             throw storageException
         } catch (exception: Exception) {
             logger.error("Failed to merge block [$blockId] on [$credentials].", exception)

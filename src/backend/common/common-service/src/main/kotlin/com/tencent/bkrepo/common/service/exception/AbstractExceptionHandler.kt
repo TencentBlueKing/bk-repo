@@ -44,9 +44,9 @@ open class AbstractExceptionHandler {
      * 处理ErrorCodeException响应
      */
     fun response(exception: ErrorCodeException): Response<Void> {
-        val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.code, exception.params)
-        LoggerHolder.logErrorCodeException(exception, "[${exception.code.getCode()}]$errorMessage")
+        val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+        LoggerHolder.logErrorCodeException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
         HttpContextHolder.getResponse().status = exception.status.value
-        return ResponseBuilder.fail(exception.code.getCode(), errorMessage)
+        return ResponseBuilder.fail(exception.messageCode.getCode(), errorMessage)
     }
 }

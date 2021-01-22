@@ -38,13 +38,13 @@ import com.tencent.bkrepo.common.api.message.MessageCode
  * error code 异常
  */
 open class ErrorCodeException(
-    val code: MessageCode,
-    vararg val params: String,
+    val messageCode: MessageCode,
+    vararg val params: Any,
     val status: HttpStatus = HttpStatus.BAD_REQUEST
 ) : RuntimeException() {
     constructor(
         status: HttpStatus,
-        code: MessageCode,
-        params: Array<out String>
-    ) : this(code = code, params = *params, status = status)
+        messageCode: MessageCode,
+        params: Array<out Any>
+    ) : this(messageCode = messageCode, params = *params, status = status)
 }

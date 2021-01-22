@@ -31,13 +31,14 @@
 
 package com.tencent.bkrepo.common.storage.message
 
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
  * 存储异常
  */
 class StorageErrorException(
-    code: MessageCode,
+    messageCode: MessageCode,
     vararg params: String
-) : SystemErrorException(code, *params)
+) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params)

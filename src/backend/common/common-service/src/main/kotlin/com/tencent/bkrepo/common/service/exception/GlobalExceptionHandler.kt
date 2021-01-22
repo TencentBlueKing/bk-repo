@@ -108,7 +108,7 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
     fun handleException(exception: HttpMediaTypeNotSupportedException): Response<Void> {
         val errorCodeException = ErrorCodeException(
             status = HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-            code = CommonMessageCode.MEDIA_TYPE_UNSUPPORTED
+            messageCode = CommonMessageCode.MEDIA_TYPE_UNSUPPORTED
         )
         return response(errorCodeException)
     }

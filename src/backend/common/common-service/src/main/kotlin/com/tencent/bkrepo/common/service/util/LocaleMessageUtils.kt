@@ -49,7 +49,7 @@ object LocaleMessageUtils {
      * @param messageCode messageCode
      * @param params 替换描述信息占位符的参数数组
      */
-    fun getLocalizedMessage(messageCode: MessageCode, params: Array<out String>?): String {
+    fun getLocalizedMessage(messageCode: MessageCode, params: Array<out Any>?): String {
         return try {
             messageSource.getMessage(messageCode.getKey(), params, locale)
         } catch (exception: NoSuchMessageException) {
