@@ -105,7 +105,7 @@ class ServiceUserResourceImpl @Autowired constructor(
             val checkRequest =
                 CheckPermissionRequest(
                     uid = userId,
-                    resourceType = ResourceType.REPO,
+                    resourceType = ResourceType.PROJECT,
                     action = PermissionAction.WRITE,
                     projectId = request.projectId
                 )
