@@ -30,6 +30,7 @@ import com.tencent.bkrepo.npm.constants.TIME
 import com.tencent.bkrepo.npm.constants.VERSIONS
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.pojo.fixtool.DateTimeFormatResponse
+import com.tencent.bkrepo.npm.pojo.fixtool.FailPackageDetail
 import com.tencent.bkrepo.npm.pojo.fixtool.PackageManagerResponse
 import com.tencent.bkrepo.npm.pojo.fixtool.PackageMetadataFixResponse
 import com.tencent.bkrepo.npm.service.NpmFixToolService
@@ -223,7 +224,7 @@ class NpmFixToolServiceImpl(
         var successCount = 0L
         var failedCount = 0L
         var totalCount = 0L
-        val failedSet = mutableSetOf<String>()
+        // val failedSet = mutableSetOf<String>()
         val startTime = LocalDateTime.now()
 
         // 分页查询文件节点，以package.json文件为后缀
@@ -232,25 +233,20 @@ class NpmFixToolServiceImpl(
         var packageMetadataList = packageMetadataPage.records.map { resolveNode(it) }
         if (packageMetadataList.isEmpty()) {
             logger.info("no package found in repo [$projectId/$repoName], skip.")
-            return PackageManagerResponse(
-                projectId = projectId,
-                repoName = repoName,
-                totalCount = 0,
-                successCount = 0,
-                failedCount = 0,
-                failedSet = emptySet()
-            )
+            return PackageManagerResponse.emptyResponse(projectId, repoName)
         }
+        val failedSet: MutableSet<FailPackageDetail> = mutableSetOf()
         while (packageMetadataList.isNotEmpty()) {
-            packageMetadataList.forEach {
+            packageMetadataList.forEach { it ->
                 logger.info(
-                    "Retrieved ${packageMetadataPage.totalRecords} records to add package manager, " +
+                    "Retrieved ${packageMetadataPage.totalRecords} records to add package manager in repo [$projectId/$repoName], " +
                         "process: $totalCount/${packageMetadataPage.totalRecords}"
                 )
                 val packageName = it.fullPath.removePrefix("/.npm/").removeSuffix("/package.json")
                 try {
                     // 添加包管理
-                    doAddPackageManager(projectId, repoName, packageName, it)
+                    val failPackageDetail = doAddPackageManager(projectId, repoName, packageName, it)
+                    failPackageDetail?.let { failedSet.add(it) }
                     logger.info("Success to add package manager for [$packageName] in repo [$projectId/$repoName].")
                     successCount += 1
                 } catch (exception: RuntimeException) {
@@ -258,7 +254,8 @@ class NpmFixToolServiceImpl(
                         "Failed to to add package manager for [$packageName] in repo [$projectId/$repoName].",
                         exception
                     )
-                    failedSet.add(packageName)
+                    failedSet.add(FailPackageDetail(packageName, mutableSetOf()))
+                    // failedSet.add(packageName)
                     failedCount += 1
                 } finally {
                     totalCount += 1
@@ -287,13 +284,14 @@ class NpmFixToolServiceImpl(
         repoName: String,
         packageName: String,
         nodeInfo: NodeInfo
-    ) {
+    ): FailPackageDetail? {
         val packageMetaData = storageService.load(nodeInfo.sha256!!, Range.full(nodeInfo.size), null)
             ?.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
             ?: throw IllegalStateException("src package json not found in repo [$projectId/$repoName]")
         val tgzNodeInfoMap = queryTgzNode(projectId, repoName, packageName)
-        npmPackageHandler.populatePackage(nodeInfo, packageMetaData, tgzNodeInfoMap)
-        logger.info("add package manager for package [$packageName] success in repo [$projectId/$repoName]")
+        return npmPackageHandler.populatePackage(nodeInfo, packageMetaData, tgzNodeInfoMap).also {
+            logger.info("add package manager for package [$packageName] success in repo [$projectId/$repoName]")
+        }
     }
 
     private fun queryTgzNode(
