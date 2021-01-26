@@ -9,5 +9,20 @@ data class PackageManagerResponse(
     val totalCount: Long,
     val successCount: Long,
     val failedCount: Long,
-    val failedSet: Set<String>
+    val failedSet: MutableSet<FailPackageDetail> = mutableSetOf()
+) {
+    companion object {
+        fun emptyResponse(projectId: String, repoName: String) =
+            PackageManagerResponse(projectId, repoName, 0, 0, 0)
+    }
+}
+
+data class FailPackageDetail(
+    val name: String,
+    val failedVersionSet: MutableSet<FailVersionDetail>
+)
+
+data class FailVersionDetail(
+    val version: String,
+    val reason: String
 )
