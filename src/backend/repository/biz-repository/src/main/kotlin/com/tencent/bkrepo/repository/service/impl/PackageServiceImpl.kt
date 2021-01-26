@@ -81,8 +81,18 @@ class PackageServiceImpl(
         packageKey: String,
         versionName: String
     ): PackageVersion? {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return null
-        return convert(checkPackageVersion(tPackage.id!!, versionName))
+        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        return convert(packageVersionDao.findByName(packageId, versionName))
+    }
+
+    override fun findVersionByTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        tag: String
+    ): PackageVersion? {
+        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        return convert(packageVersionDao.findByTag(packageId, tag))
     }
 
     override fun listPackagePage(
@@ -126,6 +136,9 @@ class PackageServiceImpl(
 
     override fun createPackageVersion(request: PackageVersionCreateRequest) {
         with(request) {
+            Preconditions.checkNotBlank(packageKey, this::packageKey.name)
+            Preconditions.checkNotBlank(packageName, this::packageName.name)
+            Preconditions.checkNotBlank(versionName, this::packageName.name)
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(request)
             // 检查版本是否存在
@@ -143,6 +156,8 @@ class PackageServiceImpl(
                     artifactPath = request.artifactPath
                     stageTag = request.stageTag.orEmpty()
                     metadata = MetadataUtils.fromMap(request.metadata)
+                    tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
+                    extension = request.extension.orEmpty()
                 }
             } else {
                 // create new
@@ -160,7 +175,9 @@ class PackageServiceImpl(
                     manifestPath = manifestPath,
                     artifactPath = artifactPath,
                     stageTag = stageTag.orEmpty(),
-                    metadata = MetadataUtils.fromMap(metadata)
+                    metadata = MetadataUtils.fromMap(metadata),
+                    tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
+                    extension = request.extension.orEmpty()
                 )
             }
             packageVersionDao.save(newVersion)
@@ -251,7 +268,8 @@ class PackageServiceImpl(
                         manifestPath = it.manifestPath,
                         artifactPath = it.artifactPath,
                         stageTag = it.stageTag.orEmpty(),
-                        metadata = MetadataUtils.fromMap(it.metadata)
+                        metadata = MetadataUtils.fromMap(it.metadata),
+                        extension = it.extension.orEmpty()
                     )
                     packageVersionDao.save(newVersion)
                     tPackage.versions += 1
@@ -291,7 +309,8 @@ class PackageServiceImpl(
                     key = key,
                     type = type,
                     downloads = 0,
-                    versions = 0
+                    versions = 0,
+                    extension = extension.orEmpty()
                 )
                 try {
                     packageDao.save(tPackage)
@@ -322,7 +341,8 @@ class PackageServiceImpl(
                     key = packageKey,
                     type = packageType,
                     downloads = 0,
-                    versions = 0
+                    versions = 0,
+                    extension = packageExtension.orEmpty()
                 )
                 try {
                     packageDao.save(tPackage)
@@ -381,7 +401,8 @@ class PackageServiceImpl(
                     latest = it.latest.orEmpty(),
                     downloads = it.downloads,
                     versions = it.versions,
-                    description = it.description
+                    description = it.description,
+                    extension = it.extension.orEmpty()
                 )
             }
         }
@@ -398,6 +419,8 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     stageTag = it.stageTag,
                     metadata = MetadataUtils.toMap(it.metadata),
+                    tags = it.tags.orEmpty(),
+                    extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath
                 )
             }

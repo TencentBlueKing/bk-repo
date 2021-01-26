@@ -47,6 +47,8 @@ data class PackageVersionCreateRequest(
     val packageType: PackageType,
     @ApiModelProperty("包简要描述")
     val packageDescription: String? = null,
+    @ApiModelProperty("包扩展字段")
+    val packageExtension: Map<String, Any>? = null,
     @ApiModelProperty("版本名称")
     val versionName: String,
     @ApiModelProperty("版本大小")
@@ -59,6 +61,10 @@ data class PackageVersionCreateRequest(
     val stageTag: List<String>? = null,
     @ApiModelProperty("版本元数据")
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("标签")
+    val tags: List<String>? = null,
+    @ApiModelProperty("版本扩展字段")
+    val extension: Map<String, Any>? = null,
     @ApiModelProperty("是否允许覆盖")
     val overwrite: Boolean = false,
     @ApiModelProperty("创建人")

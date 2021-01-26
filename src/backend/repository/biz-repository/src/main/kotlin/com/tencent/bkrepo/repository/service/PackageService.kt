@@ -74,6 +74,21 @@ interface PackageService {
     ): PackageVersion?
 
     /**
+     * 查询版本信息
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param packageKey 包唯一标识
+     * @param tag 标签
+     */
+    fun findVersionByTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        tag: String
+    ): PackageVersion?
+
+    /**
      * 分页查询包列表, 支持根据packageName模糊搜索
      *
      * @param projectId 项目id

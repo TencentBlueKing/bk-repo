@@ -35,6 +35,8 @@ import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_MET
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_METADATA_IDX_DEF
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_NAME_IDX
 import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_NAME_IDX_DEF
+import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_TAGS_IDX
+import com.tencent.bkrepo.repository.model.TPackageVersion.Companion.VERSION_TAGS_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -43,7 +45,8 @@ import java.time.LocalDateTime
 @Document("package_version")
 @CompoundIndexes(
     CompoundIndex(name = VERSION_NAME_IDX, def = VERSION_NAME_IDX_DEF, background = true),
-    CompoundIndex(name = VERSION_METADATA_IDX, def = VERSION_METADATA_IDX_DEF, background = true)
+    CompoundIndex(name = VERSION_METADATA_IDX, def = VERSION_METADATA_IDX_DEF, background = true),
+    CompoundIndex(name = VERSION_TAGS_IDX, def = VERSION_TAGS_IDX_DEF, background = true)
 )
 data class TPackageVersion(
     var id: String? = null,
@@ -60,13 +63,17 @@ data class TPackageVersion(
     var manifestPath: String? = null,
     var artifactPath: String? = null,
     var stageTag: List<String>,
-    var metadata: List<TMetadata>
+    var metadata: List<TMetadata>,
+    var tags: List<String>? = null,
+    var extension: Map<String, Any>? = null
 ) {
     companion object {
         const val VERSION_NAME_IDX = "version_name_idx"
         const val VERSION_METADATA_IDX = "version_metadata_idx"
+        const val VERSION_TAGS_IDX = "version_tags_idx"
 
         const val VERSION_NAME_IDX_DEF = "{'packageId': 1, 'name': 1}"
         const val VERSION_METADATA_IDX_DEF = "{'packageId': 1, 'metadata': 1}"
+        const val VERSION_TAGS_IDX_DEF = "{'packageId': 1, 'tags': 1}"
     }
 }

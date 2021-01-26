@@ -92,7 +92,7 @@ class PackageDownloadsServiceImpl(
             packageDownloadsDao.upsert(downloadsQuery, downloadsUpdate)
 
             // update package version
-            val versionQuery = PackageQueryHelper.versionQuery(tPackage.id.orEmpty(), packageVersion)
+            val versionQuery = PackageQueryHelper.versionQuery(tPackage.id.orEmpty(), name = packageVersion)
             val versionUpdate = Update().inc(TPackageVersion::downloads.name, 1)
             packageVersionDao.updateFirst(versionQuery, versionUpdate)
 
