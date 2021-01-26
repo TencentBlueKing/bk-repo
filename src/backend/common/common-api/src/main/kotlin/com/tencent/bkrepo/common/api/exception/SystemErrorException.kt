@@ -29,16 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.exception
+package com.tencent.bkrepo.common.api.exception
 
-import com.netflix.hystrix.exception.HystrixBadRequestException
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
- * 外部ErrorCodeException。
- * 调用外部服务时，出现业务异常会返回errorCode和message，message已经过国际化与模版化，所以直接返回。
+ * 系统异常
  */
-open class ExternalErrorCodeException(
-    val methodKey: String,
-    val errorCode: Int,
-    val errorMessage: String?
-) : HystrixBadRequestException(errorMessage)
+open class SystemErrorException(
+    messageCode: MessageCode = CommonMessageCode.SYSTEM_ERROR,
+    vararg params: String
+) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params)
+

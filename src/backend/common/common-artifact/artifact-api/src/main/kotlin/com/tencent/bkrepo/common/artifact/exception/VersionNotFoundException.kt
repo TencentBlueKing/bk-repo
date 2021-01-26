@@ -29,33 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.feign
+package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
-import feign.Response
-import feign.codec.ErrorDecoder
-import java.io.IOException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
- * Feign ErrorDecoder
+ * 包版本不存在异常
  */
-class ErrorCodeDecoder : ErrorDecoder {
-
-    private val delegate: ErrorDecoder = ErrorDecoder.Default()
-
-    override fun decode(methodKey: String, feignResponse: Response): Exception {
-        if (feignResponse.status() == HttpStatus.BAD_REQUEST.value) {
-            return try {
-                feignResponse.body().asInputStream().use {
-                    val response = it.readJsonString<com.tencent.bkrepo.common.api.pojo.Response<Any>>()
-                    RemoteErrorCodeException(methodKey, response.code, response.message)
-                }
-            } catch (ignored: IOException) {
-                delegate.decode(methodKey, feignResponse)
-            }
-        }
-        return delegate.decode(methodKey, feignResponse)
-    }
-}
+class VersionNotFoundException(
+    version: String
+) : NotFoundException(ArtifactMessageCode.VERSION_NOT_FOUND, version)

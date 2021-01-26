@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.http.credentials.UsernamePasswordCredentials
@@ -71,7 +70,7 @@ class NpmLoginAuthHandler(
             val password = jsonNode[PASSWORD].textValue()
             return UsernamePasswordCredentials(username, password)
         } catch (exception: IllegalArgumentException) {
-            throw BadCredentialsException()
+            throw AuthenticationException()
         }
     }
 

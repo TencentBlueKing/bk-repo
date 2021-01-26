@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
@@ -153,13 +153,13 @@ class ArtifactContextHolder(
 
         /**
          * 根据[repositoryId]查询仓库详情
-         * 当对应仓库不存在，抛[ArtifactNotFoundException]异常
+         * 当对应仓库不存在，抛[RepoNotFoundException]异常
          */
         private fun queryRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
                 val repoType = getCurrentArtifactConfigurer().getRepositoryType().name
                 val response = repositoryClient.getRepoDetail(projectId, repoName, repoType)
-                return response.data ?: throw ArtifactNotFoundException("Repository[$repositoryId] not found")
+                return response.data ?: throw RepoNotFoundException(repoName)
             }
         }
     }

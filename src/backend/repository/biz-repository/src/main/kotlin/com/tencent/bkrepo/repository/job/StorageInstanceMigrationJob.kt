@@ -81,14 +81,14 @@ class StorageInstanceMigrationJob(
         // 限制只能由默认storage迁移
         val srcStorageKey = repository.storageCredentials?.key
         if (srcStorageKey != null) {
-            throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only support migrate from default storage")
         }
         val srcStorageCredentials = storageProperties.defaultStorageCredentials()
         val destStorageCredentials = storageCredentialService.findByKey(destStorageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, destStorageKey)
         // 限制存储实例类型必须相同且为InnerCos
         if (srcStorageCredentials !is InnerCosCredentials || destStorageCredentials !is InnerCosCredentials) {
-            throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only support inner cos storage")
         }
 
         val srcBucket = srcStorageCredentials.bucket

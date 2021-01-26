@@ -29,11 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.exception
+package com.tencent.bkrepo.common.storage.message
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
- * 操作不支持
+ * 存储异常
  */
-class UnsupportedMethodException(message: String? = null) : ArtifactException(HttpStatus.METHOD_NOT_ALLOWED, message)
+class StorageErrorException(
+    messageCode: MessageCode,
+    vararg params: String
+) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params)

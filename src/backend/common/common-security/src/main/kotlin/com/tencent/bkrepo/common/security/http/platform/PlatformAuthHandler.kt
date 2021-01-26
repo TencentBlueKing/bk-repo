@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.constant.PLATFORM_AUTH_PREFIX
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
@@ -62,7 +62,7 @@ open class PlatformAuthHandler(private val authenticationManager: Authentication
                 require(parts.size >= 2)
                 PlatformAuthCredentials(parts[0], parts[1])
             } catch (exception: IllegalArgumentException) {
-                throw BadCredentialsException("Authorization value [$authorizationHeader] is not a valid scheme.")
+                throw AuthenticationException("Invalid authorization value")
             }
         } else AnonymousCredentials()
     }

@@ -29,11 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
+package com.tencent.bkrepo.common.api.exception
 
-import com.tencent.bkrepo.common.security.constant.ACCESS_DENIED_PROMPT
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
 /**
- * 禁止访问
+ * method not allowed 异常
  */
-class AccessDeniedException : PermissionException(ACCESS_DENIED_PROMPT)
+open class MethodNotAllowedException(
+    reason: String = "Unsupported operation"
+) : ErrorCodeException(HttpStatus.METHOD_NOT_ALLOWED, CommonMessageCode.METHOD_NOT_ALLOWED, arrayOf(reason))

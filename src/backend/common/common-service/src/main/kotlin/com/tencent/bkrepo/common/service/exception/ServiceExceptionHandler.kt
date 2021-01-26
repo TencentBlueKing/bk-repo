@@ -36,8 +36,7 @@ import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
-import com.tencent.bkrepo.common.service.log.LoggerHolder.logBusinessException
-import com.tencent.bkrepo.common.service.log.LoggerHolder.logSystemException
+import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.http.HttpStatus
@@ -52,10 +51,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice
 class ServiceExceptionHandler {
 
-    @ExceptionHandler(ExternalErrorCodeException::class)
+    @ExceptionHandler(RemoteErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleException(exception: ExternalErrorCodeException): Response<Void> {
-        logBusinessException(exception, "[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}")
+    fun handleException(exception: RemoteErrorCodeException): Response<Void> {
+        logException(exception, "[${exception.methodKey}][${exception.errorCode}]${exception.errorMessage}", false)
         return ResponseBuilder.fail(exception.errorCode, exception.errorMessage.orEmpty())
     }
 
@@ -72,7 +71,7 @@ class ServiceExceptionHandler {
         } else if (exception.failureType == HystrixRuntimeException.FailureType.SHORTCIRCUIT) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
         }
-        logSystemException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage")
+        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", true)
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }

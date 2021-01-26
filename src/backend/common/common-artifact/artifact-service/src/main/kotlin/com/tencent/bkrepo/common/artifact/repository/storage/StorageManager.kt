@@ -32,8 +32,9 @@
 package com.tencent.bkrepo.common.artifact.repository.storage
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.ArtifactException
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -102,12 +103,18 @@ class StorageManager(
         try {
             val request = HttpContextHolder.getRequestOrNull()
             val range = request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
+            if (node.size == 0L) {
+                return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+            }
             if (request?.method == HttpMethod.HEAD.name) {
                 return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
             }
             return storageService.load(node.sha256.orEmpty(), range, storageCredentials)
         } catch (exception: IllegalArgumentException) {
-            throw ArtifactException(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+            throw ErrorCodeException(
+                status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
+            )
         }
 
     }

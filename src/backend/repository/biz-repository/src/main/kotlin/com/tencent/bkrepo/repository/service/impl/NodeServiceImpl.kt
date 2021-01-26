@@ -398,7 +398,7 @@ class NodeServiceImpl(
                 it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
             }
             if (!canSrcRepoMove || !canDestRepoMove) {
-                throw ErrorCodeException(CommonMessageCode.OPERATION_UNSUPPORTED)
+                throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only local repository is supported")
             }
             val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, srcFullPath)

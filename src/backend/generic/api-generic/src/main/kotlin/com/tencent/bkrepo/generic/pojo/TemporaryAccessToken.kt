@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("临时访问token")
-data class TemporaryAccessToken (
+data class TemporaryAccessToken(
     @ApiModelProperty("项目")
     val projectId: String,
     @ApiModelProperty("仓库")

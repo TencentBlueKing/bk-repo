@@ -32,11 +32,12 @@
 package com.tencent.bkrepo.common.api.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
- * Http 状态码异常
+ * node found 异常
  */
-open class StatusCodeException(
-    open val status: HttpStatus,
-    open val reason: String? = null
-) : RuntimeException(reason ?: status.reasonPhrase)
+open class NotFoundException(
+    code: MessageCode,
+    vararg params: String
+) : ErrorCodeException(HttpStatus.NOT_FOUND, code, params)

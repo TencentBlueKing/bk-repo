@@ -31,9 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.repository.context
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.hash.HashAlgorithm
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.OctetStreamArtifactFile
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -134,6 +138,24 @@ open class ArtifactUploadContext : ArtifactContext {
     }
 
     /**
+     * 返回名为[name]的构件md5校验值
+     *
+     * [name]为`null`或不传值则返回二进制流文件的md5
+     */
+    fun getArtifactMd5(name: String? = null): String {
+        return getArtifactFile(name).getFileMd5()
+    }
+
+    /**
+     * 返回名为[name]的构件sha1校验值
+     *
+     * [name]为`null`或不传值则返回二进制流文件的sha1
+     */
+    fun getArtifactSha1(name: String? = null): String {
+        return getArtifactFile(name).getFileSha1()
+    }
+
+    /**
      * 返回名为[name]的构件sha256校验值
      *
      * [name]为`null`或不传值则返回二进制流文件的sha256
@@ -143,11 +165,20 @@ open class ArtifactUploadContext : ArtifactContext {
     }
 
     /**
-     * 返回名为[name]的构件md5校验值
-     *
-     * [name]为`null`或不传值则返回二进制流文件的md5
+     * 验证文件摘要是否正确，根据[uploadDigest]长度自动选择合适的摘要算法
      */
-    fun getArtifactMd5(name: String? = null): String {
-        return getArtifactFile(name).getFileMd5()
+    fun validateDigest(uploadDigest: String, filename: String? = null) {
+        val file = getArtifactFile(filename)
+        val calculatedDigest = when(uploadDigest.length) {
+            HashAlgorithm.MD5_LENGTH -> file.getFileMd5()
+            HashAlgorithm.SHA1_LENGTH -> file.getFileSha1()
+            HashAlgorithm.SHA256_LENGTH -> file.getFileSha256()
+            HashAlgorithm.SHA512_LENGTH -> file.getFileSha256()
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID , "digest")
+        }
+        if (uploadDigest != calculatedDigest) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "digest")
+        }
     }
+
 }

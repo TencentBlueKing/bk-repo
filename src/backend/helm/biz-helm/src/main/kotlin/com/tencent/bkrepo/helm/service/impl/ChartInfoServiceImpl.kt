@@ -108,7 +108,7 @@ class ChartInfoServiceImpl(
                     chartVersion == it.version
                 }.toList()
                 return if (helmChartMetadataList.isNotEmpty()) {
-                    require(helmChartMetadataList.size == 1){
+                    require(helmChartMetadataList.size == 1) {
                         "find more than one version [$chartVersion] in package [$chartName]."
                     }
                     ResponseEntity.ok().body(helmChartMetadataList.first())

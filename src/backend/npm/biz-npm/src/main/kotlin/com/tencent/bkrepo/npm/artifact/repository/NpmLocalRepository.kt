@@ -32,10 +32,11 @@
 package com.tencent.bkrepo.npm.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
 import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -75,7 +76,6 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import java.io.IOException
 import java.io.InputStream
@@ -92,17 +92,15 @@ class NpmLocalRepository(
     private val npmDependentHandler: NpmDependentHandler
 ) : LocalRepository() {
 
-    override fun onUploadValidate(context: ArtifactUploadContext) {
+    override fun onUploadBefore(context: ArtifactUploadContext) {
+        super.onUploadBefore(context)
         // 不为空说明上传的是tgz文件
         context.getStringAttribute("attachments.content_type")?.let {
-            it.takeIf { it == MediaType.APPLICATION_OCTET_STREAM_VALUE } ?: throw ArtifactValidateException(
-                "Request MIME_TYPE is not ${MediaType.APPLICATION_OCTET_STREAM_VALUE}"
-            )
             // 计算sha1并校验
             val calculatedSha1 = context.getArtifactFile().getInputStream().sha1()
             val uploadSha1 = context.getStringAttribute(ATTRIBUTE_OCTET_STREAM_SHA1)
             if (uploadSha1 != null && calculatedSha1 != uploadSha1) {
-                throw ArtifactValidateException("File shasum validate failed.")
+                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha1")
             }
         }
     }
@@ -118,7 +116,7 @@ class NpmLocalRepository(
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
             operator = context.userId,
-            //metadata = parseMetaData(name, context.getAttributes()),
+            // metadata = parseMetaData(name, context.getAttributes()),
             overwrite = name != NPM_PACKAGE_TGZ_FILE
         )
     }

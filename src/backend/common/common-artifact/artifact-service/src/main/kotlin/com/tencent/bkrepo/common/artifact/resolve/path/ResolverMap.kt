@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.exception.ArtifactResolveException
 import org.slf4j.LoggerFactory
 import kotlin.reflect.KClass
 
@@ -47,7 +46,7 @@ class ResolverMap(
     }
 
     fun getResolver(key: KClass<out ArtifactInfo>): ArtifactInfoResolver {
-        return super.get(key) ?: defaultResolver ?: throw ArtifactResolveException("No artifact resolver matched.")
+        return super.get(key) ?: defaultResolver!!
     }
 
     private fun register(resolver: ArtifactInfoResolver) {

@@ -29,11 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
+package com.tencent.bkrepo.common.artifact.exception
 
-import com.tencent.bkrepo.common.security.constant.BAD_CREDENTIALS_PROMPT
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 
 /**
- * 身份凭证不合法
+ * 节点不存在
  */
-class BadCredentialsException(override val message: String = BAD_CREDENTIALS_PROMPT) : AuthenticationException(message)
+class NodeNotFoundException(
+    fullPath: String
+) : NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)

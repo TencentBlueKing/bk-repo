@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.composer.artifact.repository
 
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -347,7 +347,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         context: ArtifactRemoveContext
     ) {
         if (node.folder) {
-            throw UnsupportedMethodException("Delete folder is forbidden")
+            throw MethodNotAllowedException("Delete folder is forbidden")
         }
         with(context) {
             // 更新索引

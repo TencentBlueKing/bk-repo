@@ -36,7 +36,6 @@ import org.springframework.context.annotation.Import
 
 @Configuration
 @Import(
-    DefaultArtifactExceptionHandler::class,
     ArtifactExceptionResponseAdvice::class
 )
 class ArtifactExceptionConfiguration

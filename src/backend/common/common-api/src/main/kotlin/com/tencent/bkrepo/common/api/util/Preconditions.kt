@@ -54,16 +54,33 @@ object Preconditions {
      */
     fun checkNotNull(value: Any?, name: String) {
         if (value == null) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, name)
         }
     }
 
     /**
-     * 校验字符串[value]不能为空，[name]为提示字段名称
+     * 校验对象[value]不能为空，[name]为提示字段名称
+     * 1. 如果value 为 list、map等集合对象，则长度必须大于1
+     * 2. 如何value 为 string, 则长度必须大于1且不能为全空
      */
-    fun checkNotBlank(value: String?, name: String) {
-        if (value.isNullOrBlank()) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+    fun checkNotBlank(value: Any?, name: String) {
+        when (value) {
+            null -> throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, name)
+            is String -> {
+                if (value.isBlank()) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, name)
+                }
+            }
+            is Collection<*> -> {
+                if (value.isEmpty()) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, name)
+                }
+            }
+            is Map<*, *> -> {
+                if (value.isEmpty()) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, name)
+                }
+            }
         }
     }
 

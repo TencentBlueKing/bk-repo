@@ -46,7 +46,6 @@ const val TGZ_FULL_PATH_WITH_DASH_SEPARATOR = "/-/"
 
 const val ATTRIBUTE_OCTET_STREAM_SHA1 = "artifact.sha1.octet-stream"
 
-
 // fileName
 const val NPM_PACKAGE_TGZ_FILE = "npm_package_tgz_file"
 const val NPM_PACKAGE_VERSION_JSON_FILE = "npm_package_version_json_file"

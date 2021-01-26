@@ -33,7 +33,7 @@ package com.tencent.bkrepo.helm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.service.exception.ExternalErrorCodeException
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
@@ -117,7 +117,7 @@ class HelmPackageHandler(
                 packageClient.createVersion(packageVersionCreateRequest).apply {
                     logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
                 }
-            } catch (exception: ExternalErrorCodeException) {
+            } catch (exception: RemoteErrorCodeException) {
                 // 暂时转换为包存在异常
                 logger.warn("$contentPath already exists, message: ${exception.message}")
                 throw HelmFileAlreadyExistsException("$contentPath already exists")

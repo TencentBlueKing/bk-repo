@@ -36,9 +36,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.exception.ArtifactValidateException
-import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -70,8 +68,8 @@ class GenericLocalRepository : LocalRepository() {
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         super.onDownloadBefore(context)
-        val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW)
-            || context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
+        val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW) ||
+            context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
         context.useDisposition = !preview
     }
 
@@ -83,27 +81,22 @@ class GenericLocalRepository : LocalRepository() {
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         if (!overwrite && !isBlockUpload(uploadId, sequence)) {
             with(context.artifactInfo) {
-                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                if (node != null) {
+                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
                 }
             }
         }
-    }
-
-    override fun onUploadValidate(context: ArtifactUploadContext) {
-        super.onUploadValidate(context)
         // 校验sha256
         val calculatedSha256 = context.getArtifactSha256()
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
         if (uploadSha256 != null && !calculatedSha256.equals(uploadSha256, true)) {
-            throw ArtifactValidateException("File sha256 validate failed.")
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
         }
         // 校验md5
         val calculatedMd5 = context.getArtifactMd5()
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
         if (uploadMd5 != null && !calculatedMd5.equals(calculatedMd5, true)) {
-            throw ArtifactValidateException("File md5 validate failed.")
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
     }
 
@@ -128,10 +121,10 @@ class GenericLocalRepository : LocalRepository() {
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw ArtifactNotFoundException("Artifact[$this] not found")
+                ?: throw NodeNotFoundException(this.getArtifactFullPath())
             if (node.folder) {
                 if (nodeClient.countFileNode(projectId, repoName, getArtifactFullPath()).data!! > 0) {
-                    throw UnsupportedMethodException("Delete non empty folder is forbidden")
+                    throw ErrorCodeException(ArtifactMessageCode.FOLDER_CONTAINS_FILE)
                 }
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)

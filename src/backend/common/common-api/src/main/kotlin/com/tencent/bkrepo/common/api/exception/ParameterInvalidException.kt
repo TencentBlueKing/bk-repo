@@ -29,12 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.message
+package com.tencent.bkrepo.common.api.exception
 
-import com.tencent.bkrepo.common.api.exception.SystemException
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
 /**
- * 存储异常
+ * 参数非法异常
  */
-class StorageException(messageCode: MessageCode, vararg params: String) : SystemException(messageCode, *params)
+class ParameterInvalidException(
+    parameter: String
+) : ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, parameter)

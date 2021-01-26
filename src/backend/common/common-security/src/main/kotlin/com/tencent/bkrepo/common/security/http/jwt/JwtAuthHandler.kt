@@ -34,7 +34,6 @@ package com.tencent.bkrepo.common.security.http.jwt
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.exception.BadCredentialsException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
@@ -62,9 +61,9 @@ open class JwtAuthHandler(properties: JwtAuthProperties) : HttpAuthHandler {
         } catch (exception: ExpiredJwtException) {
             throw AuthenticationException("Expired token")
         } catch (exception: JwtException) {
-            throw BadCredentialsException("Invalid token")
+            throw AuthenticationException("Invalid token")
         } catch (exception: IllegalArgumentException) {
-            throw BadCredentialsException("Empty token")
+            throw AuthenticationException("Empty token")
         }
     }
 }

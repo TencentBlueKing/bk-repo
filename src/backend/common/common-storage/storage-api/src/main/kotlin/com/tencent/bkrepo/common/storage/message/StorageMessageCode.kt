@@ -36,17 +36,17 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 /**
  * 存储错误码
  */
-enum class StorageMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
+enum class StorageMessageCode(private val key: String) : MessageCode {
 
-    STORE_ERROR(1, "storage.store.error"),
-    LOAD_ERROR(2, "storage.load.error"),
-    DELETE_ERROR(3, "storage.delete.error"),
-    QUERY_ERROR(4, "storage.query.error"),
-    COPY_ERROR(5, "storage.copy.error"),
-    BLOCK_EMPTY(6, "storage.block.empty"),
-    BLOCK_MISSING(7, "storage.block.missing");
+    STORE_ERROR("storage.store.error"),
+    LOAD_ERROR("storage.load.error"),
+    DELETE_ERROR("storage.delete.error"),
+    QUERY_ERROR("storage.query.error"),
+    COPY_ERROR("storage.copy.error"),
+    BLOCK_EMPTY("storage.block.empty"),
+    BLOCK_MISSING("storage.block.missing");
 
-    override fun getBusinessCode() = businessCode
+    override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key
     override fun getModuleCode() = 11
 }

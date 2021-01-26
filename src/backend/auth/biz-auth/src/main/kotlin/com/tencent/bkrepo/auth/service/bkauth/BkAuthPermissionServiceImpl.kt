@@ -150,7 +150,8 @@ class BkAuthPermissionServiceImpl constructor(
         logger.info("check permission  request : [$request] ")
         // devops/web权限校验
         if (request.resourceType == ResourceType.REPO && isDevopsRepo(request.repoName!!) &&
-            (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)) {
+            (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)
+        ) {
             return checkDevopsPermission(request)
         }
         if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {

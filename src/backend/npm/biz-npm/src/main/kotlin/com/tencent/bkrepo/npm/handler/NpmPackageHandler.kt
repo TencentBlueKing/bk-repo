@@ -39,6 +39,8 @@ import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.model.properties.PackageProperties
+import com.tencent.bkrepo.npm.pojo.fixtool.FailPackageDetail
+import com.tencent.bkrepo.npm.pojo.fixtool.FailVersionDetail
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -66,15 +68,24 @@ class NpmPackageHandler {
         nodeInfo: NodeInfo,
         packageMetaData: NpmPackageMetaData,
         tgzNodeInfoMap: Map<String, NodeInfo>
-    ) {
+    ): FailPackageDetail? {
         val versionList = mutableListOf<PopulatedPackageVersion>()
         with(packageMetaData) {
             val name = this.name.orEmpty()
             val iterator = packageMetaData.versions.map.entries.iterator()
+            val failPackageDetail = FailPackageDetail(name, mutableSetOf())
             while (iterator.hasNext()) {
                 val next = iterator.next()
                 val version = next.key
-                val tgzNodeInfo = tgzNodeInfoMap[version] ?: error("")
+                // tgz包不存在，补全包版本数据失败
+                if (!tgzNodeInfoMap.containsKey(version)){
+                    val message = "the version [$version] for package [$name] with tgz file not found in repo [${nodeInfo.projectId}/${nodeInfo.repoName}]."
+                    logger.warn(message)
+                    val failVersionDetail = FailVersionDetail(version, message)
+                    failPackageDetail.failedVersionSet.add(failVersionDetail)
+                    continue
+                }
+                val tgzNodeInfo = tgzNodeInfoMap.getValue(version)
                 val dist = next.value.dist!!
                 val size = if (!dist.any().containsKey(SIZE)) {
                     tgzNodeInfoMap[next.key]?.size!!
@@ -113,6 +124,7 @@ class NpmPackageHandler {
                 )
                 packageClient.populatePackage(packagePopulateRequest)
             }
+            return if (failPackageDetail.failedVersionSet.isEmpty()) null else failPackageDetail
         }
     }
 
@@ -146,7 +158,7 @@ class NpmPackageHandler {
                     artifactPath = contentPath,
                     stageTag = null,
                     metadata = metadata,
-                    overwrite = false,
+                    overwrite = true,
                     createdBy = userId
                 )
                 packageClient.createVersion(packageVersionCreateRequest).apply {

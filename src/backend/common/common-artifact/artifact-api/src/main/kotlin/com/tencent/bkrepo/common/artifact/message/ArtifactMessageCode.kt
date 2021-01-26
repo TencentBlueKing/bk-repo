@@ -37,24 +37,29 @@ import com.tencent.bkrepo.common.api.message.MessageCode
  * 构件相关错误码
  */
 enum class ArtifactMessageCode(private val key: String) : MessageCode {
-    PROJECT_NOT_FOUND("artifact.project.notfound"),
+    ARTIFACT_RECEIVE_FAILED("artifact.receive.failed"),
+    ARTIFACT_RESPONSE_FAILED("artifact.response.failed"),
+    DIGEST_CHECK_FAILED("artifact.digest.check-failed"),
+    PROJECT_NOT_FOUND("artifact.project.not-found"),
     PROJECT_EXISTED("artifact.project.existed"),
-    REPOSITORY_NOT_FOUND("artifact.repository.notfound"),
+    REPOSITORY_NOT_FOUND("artifact.repository.not-found"),
     REPOSITORY_EXISTED("artifact.repository.existed"),
-    REPOSITORY_CONTAINS_FILE("artifact.repository.contains-file"),
-    NODE_NOT_FOUND("artifact.node.notfound"),
+    REPOSITORY_CONTAINS_FILE("artifact.repository.not-empty"),
+    FOLDER_CONTAINS_FILE("artifact.folder.not-empty"),
+    NODE_NOT_FOUND("artifact.node.not-found"),
     NODE_PATH_INVALID("artifact.node.path.invalid"),
     NODE_EXISTED("artifact.node.existed"),
     NODE_CONFLICT("artifact.node.conflict"),
     NODE_LIST_TOO_LARGE("artifact.node.list.too-large"),
     STAGE_UPGRADE_ERROR("artifact.stage.upgrade.error"),
     STAGE_DOWNGRADE_ERROR("artifact.stage.downgrade.error"),
-    PACKAGE_NOT_FOUND("artifact.package.notfound"),
+    PACKAGE_NOT_FOUND("artifact.package.not-found"),
     PACKAGE_EXISTED("artifact.package.existed"),
-    VERSION_NOT_FOUND("artifact.version.notfound"),
+    VERSION_NOT_FOUND("artifact.version.not-found"),
     VERSION_EXISTED("artifact.version.existed"),
-    TEMPORARY_TOKEN_INVALID("temporary.token.invalid"),
-    TEMPORARY_TOKEN_EXPIRED("temporary.token.expired");
+    TEMPORARY_TOKEN_INVALID("artifact.temporary-token.invalid"),
+    TEMPORARY_TOKEN_EXPIRED("artifact.temporary-token.expired"),
+    ;
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key

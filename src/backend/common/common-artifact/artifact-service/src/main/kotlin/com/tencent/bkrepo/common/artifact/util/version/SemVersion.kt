@@ -108,5 +108,18 @@ data class SemVersion(
         fun parse(version: String): SemVersion {
             return SemVersionParser.parse(version)
         }
+
+        /**
+         * Validate the [version] string is a valid SemVer.
+         *
+         */
+        fun validate(version: String): Boolean {
+            return try {
+                parse(version)
+                true
+            } catch (e: IllegalArgumentException) {
+                false
+            }
+        }
     }
 }

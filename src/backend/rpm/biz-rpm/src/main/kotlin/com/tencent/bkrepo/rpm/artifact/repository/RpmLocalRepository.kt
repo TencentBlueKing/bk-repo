@@ -33,10 +33,10 @@ package com.tencent.bkrepo.rpm.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.exception.UnsupportedMethodException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -567,7 +567,7 @@ class RpmLocalRepository(
         version: String
     ) {
         if (node.folder) {
-            throw UnsupportedMethodException("Delete folder is forbidden")
+            throw MethodNotAllowedException("Delete folder is forbidden")
         }
         val nodeMetadata = node.metadata
         val artifactSha256 = node.sha256

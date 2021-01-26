@@ -61,4 +61,11 @@ object SecurityUtils {
     fun getPrincipal(): String {
         return getPlatformId()?.let { "$it-${getUserId()}" } ?: getUserId()
     }
+
+    /**
+     * 判断是否为匿名用户
+     */
+    fun isAnonymous(): Boolean {
+        return getUserId() == ANONYMOUS_USER
+    }
 }
