@@ -45,10 +45,12 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenMetadata
 import com.tencent.bkrepo.maven.pojo.MavenPom
+import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
 import com.tencent.bkrepo.repository.api.StageClient
@@ -74,34 +76,51 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
         return request.copy(overwrite = true)
     }
 
+    private fun buildMavenArtifactNode(context: ArtifactUploadContext, packaging: String): NodeCreateRequest {
+        val request = super.buildNodeCreateRequest(context)
+        return request.copy(
+            overwrite = true,
+            metadata = mapOf("packaging" to packaging)
+        )
+    }
+
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
-            // 改为解析pom文件数据
+            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.jar"))) {
+                val node = buildMavenArtifactNode(context, "jar")
+                storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
+                val mavenJar = (this as MavenArtifactInfo).toMavenJar()
+                createMavenVersion(context, mavenJar)
+            }
+            // 解析pom文件数据
             if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.pom"))) {
                 val mavenPom = context.getArtifactFile().getInputStream().readXmlString<MavenPom>()
-                // 打包方式为pom时，下载地址为pom文件地址，否则改为jar包地址。
-                val artifactFullPath = if (StringUtils.isNotBlank(mavenPom.version) && mavenPom.packaging == "pom") {
-                    getArtifactFullPath()
+                if (StringUtils.isNotBlank(mavenPom.version) && mavenPom.packaging == "pom") {
+                    val node = buildMavenArtifactNode(context, "pom")
+                    storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
+                    createMavenVersion(context, mavenPom)
                 } else {
-                    StringBuilder(getArtifactFullPath().removeSuffix("pom")).append("jar").toString()
+                    super.onUpload(context)
                 }
-                packageClient.createVersion(
-                    PackageVersionCreateRequest(
-                        projectId,
-                        repoName,
-                        packageName = mavenPom.artifactId,
-                        packageKey = PackageKeys.ofGav(mavenPom.groupId, mavenPom.artifactId),
-                        packageType = PackageType.MAVEN,
-                        versionName = mavenPom.version,
-                        size = context.getArtifactFile().getSize(),
-                        artifactPath = artifactFullPath,
-                        overwrite = true,
-                        createdBy = context.userId
-                    )
-                )
             }
         }
-        super.onUpload(context)
+    }
+
+    private fun createMavenVersion(context: ArtifactUploadContext, mavenGAVC: MavenGAVC) {
+        packageClient.createVersion(
+            PackageVersionCreateRequest(
+                context.projectId,
+                context.repoName,
+                packageName = mavenGAVC.artifactId,
+                packageKey = PackageKeys.ofGav(mavenGAVC.groupId, mavenGAVC.artifactId),
+                packageType = PackageType.MAVEN,
+                versionName = mavenGAVC.version,
+                size = context.getArtifactFile().getSize(),
+                artifactPath = context.artifactInfo.getArtifactFullPath(),
+                overwrite = true,
+                createdBy = context.userId
+            )
+        )
     }
 
     fun metadataNodeCreateRequest(
@@ -272,8 +291,9 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
         with(context) {
-            val fullPath = context.artifactInfo.getArtifactFullPath()
-            return if (fullPath.endsWith(".pom")) {
+            val fullPath = artifactInfo.getArtifactFullPath()
+            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            return if (node != null && node.metadata["packaging"] != null) {
                 val mavenGAVC = fullPath.mavenGAVC()
                 val version = mavenGAVC.version
                 val artifactId = mavenGAVC.artifactId

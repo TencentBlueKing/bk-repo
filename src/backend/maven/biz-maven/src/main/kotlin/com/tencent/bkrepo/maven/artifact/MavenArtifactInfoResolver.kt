@@ -33,6 +33,7 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
@@ -45,7 +46,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             MavenArtifactInfo(projectId, repoName, artifactUri)
         // 仅当上传jar包时校验地址格式
         if (artifactUri.endsWith(".jar")) {
-            val paths = artifactUri.split("/")
+            val paths = artifactUri.removePrefix("/").removeSuffix("/").split("/")
             if (paths.size < pathMinLimit) {
                 logger.debug(
                     "Cannot build MavenArtifactInfo from '{}'. The groupId, artifactId and version are unreadable.",
@@ -54,17 +55,11 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
                 return MavenArtifactInfo("", "", "")
             }
             var pos = paths.size - groupMark
-
+            mavenArtifactInfo.jarName = paths.last()
             mavenArtifactInfo.versionId = paths[pos--]
-            mavenArtifactInfo.artifactId = paths[pos--]
-            val stringBuilder = StringBuilder()
-            while (pos >= 0) {
-                if (stringBuilder.isNotEmpty()) {
-                    stringBuilder.insert(0, '.')
-                }
-                stringBuilder.insert(0, paths[pos--])
-            }
-            mavenArtifactInfo.groupId = stringBuilder.toString()
+            mavenArtifactInfo.artifactId = paths[pos]
+            val groupCollection = paths.subList(0, pos)
+            mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
 
             require(mavenArtifactInfo.isValid()) {
                 throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
