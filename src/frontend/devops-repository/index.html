@@ -30,6 +30,7 @@
         }
 
         if (redirectUrl) {
+            document.body.removeChild(document.querySelector('#app'))
             const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = function (e) {
                 const { readyState, status } = e.currentTarget
