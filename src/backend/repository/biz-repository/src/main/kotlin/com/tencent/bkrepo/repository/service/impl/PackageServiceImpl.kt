@@ -85,14 +85,14 @@ class PackageServiceImpl(
         return convert(packageVersionDao.findByName(packageId, versionName))
     }
 
-    override fun findVersionByTag(
+    override fun findVersionNameByTag(
         projectId: String,
         repoName: String,
         packageKey: String,
         tag: String
-    ): PackageVersion? {
-        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
-        return convert(packageVersionDao.findByTag(packageId, tag))
+    ): String? {
+        val versionTag = packageDao.findByKey(projectId, repoName, packageKey)?.versionTag ?: return null
+        return versionTag[tag]
     }
 
     override fun findLatestBySemVer(
@@ -193,8 +193,10 @@ class PackageServiceImpl(
             // 更新包
             tPackage.lastModifiedBy = newVersion.lastModifiedBy
             tPackage.lastModifiedDate = newVersion.lastModifiedDate
-            tPackage.description = packageDescription
+            tPackage.description = packageDescription?.let { packageDescription }
             tPackage.latest = versionName
+            tPackage.extension = extension?.let { extension }
+            tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
             packageDao.save(tPackage)
 
             logger.info("Create package version[${newVersion}] success")
@@ -283,7 +285,7 @@ class PackageServiceImpl(
                     packageVersionDao.save(newVersion)
                     tPackage.versions += 1
                     tPackage.downloads += it.downloads
-
+                    tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
                     if (latestVersion == null) {
                         latestVersion = newVersion
                     } else if (it.createdDate.isAfter(latestVersion?.createdDate)) {
@@ -319,6 +321,7 @@ class PackageServiceImpl(
                     type = type,
                     downloads = 0,
                     versions = 0,
+                    versionTag = versionTag.orEmpty(),
                     extension = extension.orEmpty()
                 )
                 try {
@@ -351,7 +354,9 @@ class PackageServiceImpl(
                     type = packageType,
                     downloads = 0,
                     versions = 0,
-                    extension = packageExtension.orEmpty()
+                    versionTag = versionTag.orEmpty(),
+                    extension = packageExtension.orEmpty(),
+                    description = packageDescription
                 )
                 try {
                     packageDao.save(tPackage)
@@ -390,6 +395,18 @@ class PackageServiceImpl(
         }
     }
 
+    /**
+     * 合并version tag
+     */
+    private fun mergeVersionTag(
+        original: Map<String, String>?,
+        extra: Map<String, String>?
+    ) : Map<String, String> {
+        return original?.toMutableMap()?.apply {
+            extra?.forEach { (tag, version) -> this[tag] = version }
+        }.orEmpty()
+    }
+
     companion object {
 
         private val logger = LoggerFactory.getLogger(PackageServiceImpl::class.java)
@@ -411,6 +428,7 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     versions = it.versions,
                     description = it.description,
+                    versionTag = it.versionTag.orEmpty(),
                     extension = it.extension.orEmpty()
                 )
             }

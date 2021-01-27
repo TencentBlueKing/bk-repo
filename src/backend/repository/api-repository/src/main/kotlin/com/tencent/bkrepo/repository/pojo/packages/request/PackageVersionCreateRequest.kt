@@ -47,6 +47,8 @@ data class PackageVersionCreateRequest(
     val packageType: PackageType,
     @ApiModelProperty("包简要描述")
     val packageDescription: String? = null,
+    @ApiModelProperty("包版本标签")
+    val versionTag: Map<String, String>? = null,
     @ApiModelProperty("包扩展字段")
     val packageExtension: Map<String, Any>? = null,
     @ApiModelProperty("版本名称")

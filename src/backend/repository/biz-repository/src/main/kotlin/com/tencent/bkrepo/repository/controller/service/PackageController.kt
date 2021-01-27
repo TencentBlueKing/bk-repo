@@ -65,14 +65,14 @@ class PackageController(
         return ResponseBuilder.success(packageVersion)
     }
 
-    override fun findVersionByTag(
+    override fun findVersionNameByTag(
         projectId: String,
         repoName: String,
         packageKey: String,
         tag: String
-    ): Response<PackageVersion?> {
-        val packageVersion = packageService.findVersionByTag(projectId, repoName, packageKey, tag)
-        return ResponseBuilder.success(packageVersion)
+    ): Response<String?> {
+        val versionName = packageService.findVersionNameByTag(projectId, repoName, packageKey, tag)
+        return ResponseBuilder.success(versionName)
     }
 
     override fun findLatestBySemVer(

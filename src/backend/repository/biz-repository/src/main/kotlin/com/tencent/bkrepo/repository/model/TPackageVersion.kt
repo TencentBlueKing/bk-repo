@@ -44,7 +44,7 @@ import java.time.LocalDateTime
 
 @Document("package_version")
 @CompoundIndexes(
-    CompoundIndex(name = VERSION_NAME_IDX, def = VERSION_NAME_IDX_DEF, background = true),
+    CompoundIndex(name = VERSION_NAME_IDX, def = VERSION_NAME_IDX_DEF, background = true, unique = true),
     CompoundIndex(name = VERSION_METADATA_IDX, def = VERSION_METADATA_IDX_DEF, background = true),
     CompoundIndex(name = VERSION_TAGS_IDX, def = VERSION_TAGS_IDX_DEF, background = true)
 )
