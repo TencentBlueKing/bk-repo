@@ -74,6 +74,15 @@ interface PackageClient {
         @RequestParam version: String
     ): Response<PackageVersion?>
 
+    @ApiOperation("查询版本信息")
+    @GetMapping("/version/info/{projectId}/{repoName}")
+    fun findVersionByTag(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam tag: String
+    ): Response<PackageVersion?>
+
     @ApiOperation("创建包版本")
     @PostMapping("/version/create")
     fun createVersion(
