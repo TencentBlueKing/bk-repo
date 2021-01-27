@@ -75,7 +75,7 @@ interface PackageClient {
     ): Response<PackageVersion?>
 
     @ApiOperation("根据版本标签查询版本信息")
-    @GetMapping("/version/info/{projectId}/{repoName}")
+    @GetMapping("/version/tag/{projectId}/{repoName}")
     fun findVersionByTag(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
