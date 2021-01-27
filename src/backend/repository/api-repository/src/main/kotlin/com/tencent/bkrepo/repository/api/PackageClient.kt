@@ -65,7 +65,7 @@ interface PackageClient {
         @RequestParam packageKey: String
     ): Response<PackageSummary?>
 
-    @ApiOperation("查询版本信息")
+    @ApiOperation("根据版本名称查询版本信息")
     @GetMapping("/version/info/{projectId}/{repoName}")
     fun findVersionByName(
         @PathVariable projectId: String,
@@ -74,7 +74,7 @@ interface PackageClient {
         @RequestParam version: String
     ): Response<PackageVersion?>
 
-    @ApiOperation("查询版本信息")
+    @ApiOperation("根据版本标签查询版本信息")
     @GetMapping("/version/info/{projectId}/{repoName}")
     fun findVersionByTag(
         @PathVariable projectId: String,
@@ -82,6 +82,15 @@ interface PackageClient {
         @RequestParam packageKey: String,
         @RequestParam tag: String
     ): Response<PackageVersion?>
+
+    @ApiOperation("根据语义化版本排序查找latest版本")
+    @GetMapping("/version/semver/latest/{projectId}/{repoName}")
+    fun findLatestBySemVer(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String
+    ): Response<PackageVersion?>
+
 
     @ApiOperation("创建包版本")
     @PostMapping("/version/create")

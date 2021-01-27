@@ -89,6 +89,15 @@ interface PackageService {
     ): PackageVersion?
 
     /**
+     * 根据语义化版本查询latest版本
+     */
+    fun findLatestBySemVer(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): PackageVersion?
+
+    /**
      * 分页查询包列表, 支持根据packageName模糊搜索
      *
      * @param projectId 项目id

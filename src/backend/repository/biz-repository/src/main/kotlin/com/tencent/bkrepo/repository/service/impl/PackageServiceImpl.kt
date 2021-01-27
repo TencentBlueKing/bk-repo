@@ -95,6 +95,15 @@ class PackageServiceImpl(
         return convert(packageVersionDao.findByTag(packageId, tag))
     }
 
+    override fun findLatestBySemVer(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): PackageVersion? {
+        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        return convert(packageVersionDao.findLatest(packageId))
+    }
+
     override fun listPackagePage(
         projectId: String,
         repoName: String,
@@ -168,7 +177,7 @@ class PackageServiceImpl(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now(),
                     packageId = tPackage.id!!,
-                    name = versionName,
+                    name = versionName.trim(),
                     size = size,
                     ordinal = calculateOrdinal(versionName),
                     downloads = 0,
@@ -261,7 +270,7 @@ class PackageServiceImpl(
                         lastModifiedBy = it.lastModifiedBy,
                         lastModifiedDate = it.lastModifiedDate,
                         packageId = tPackage.id!!,
-                        name = it.name,
+                        name = it.name.trim(),
                         size = it.size,
                         ordinal = calculateOrdinal(it.name),
                         downloads = it.downloads,
@@ -304,9 +313,9 @@ class PackageServiceImpl(
                     lastModifiedDate = lastModifiedDate,
                     projectId = projectId,
                     repoName = repoName,
-                    name = name,
+                    name = name.trim(),
                     description = description,
-                    key = key,
+                    key = key.trim(),
                     type = type,
                     downloads = 0,
                     versions = 0,
@@ -337,8 +346,8 @@ class PackageServiceImpl(
                     lastModifiedDate = LocalDateTime.now(),
                     projectId = projectId,
                     repoName = repoName,
-                    name = packageName,
-                    key = packageKey,
+                    name = packageName.trim(),
+                    key = packageKey.trim(),
                     type = packageType,
                     downloads = 0,
                     versions = 0,
