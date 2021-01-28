@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,26 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.user
+package com.tencent.bkrepo.common.api.sensitive
 
-import com.tencent.bkrepo.common.api.sensitive.Sensitive
-import com.tencent.bkrepo.common.api.sensitive.SensitiveType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.api.constant.StringPool
+import org.junit.jupiter.api.Test
 
-@ApiModel("创建用户请求")
-data class CreateUserRequest(
-    @ApiModelProperty("用户id")
-    val userId: String,
-    @ApiModelProperty("用户名")
-    val name: String,
-    @ApiModelProperty("密码")
+internal class DesensitizedUtilsTest {
+
+    @Test
+    fun test() {
+        println(DesensitizedUtils.toString(TestDataClass()))
+        println(DesensitizedUtils.toString(TestNormalClass()))
+    }
+}
+
+data class TestDataClass(
+    val normal: String = "normal",
     @Sensitive(SensitiveType.PASSWORD)
-    var pwd: String? = null,
-    @ApiModelProperty("管理员")
-    val admin: Boolean = false,
-    @ApiModelProperty("关联用户")
-    val asstUsers: List<String> = emptyList(),
-    @ApiModelProperty("群组账号")
-    val group: Boolean = false
+    val password: String = "123456",
+    @Sensitive(SensitiveType.PASSWORD)
+    val nullPassword: String? = null,
+    @Sensitive(SensitiveType.PASSWORD)
+    val emptyPassword: String = StringPool.EMPTY
+)
+
+class TestNormalClass(
+    val normal: String = "normal",
+    @Sensitive(SensitiveType.PASSWORD)
+    val password: String = "123456",
+    @Sensitive(SensitiveType.PASSWORD)
+    val nullPassword: String? = null,
+    @Sensitive(SensitiveType.PASSWORD)
+    val emptyPassword: String = StringPool.EMPTY
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,26 +29,37 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.user
+package com.tencent.bkrepo.common.api.sensitive
 
-import com.tencent.bkrepo.common.api.sensitive.Sensitive
-import com.tencent.bkrepo.common.api.sensitive.SensitiveType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 
-@ApiModel("创建用户请求")
-data class CreateUserRequest(
-    @ApiModelProperty("用户id")
-    val userId: String,
-    @ApiModelProperty("用户名")
-    val name: String,
-    @ApiModelProperty("密码")
-    @Sensitive(SensitiveType.PASSWORD)
-    var pwd: String? = null,
-    @ApiModelProperty("管理员")
-    val admin: Boolean = false,
-    @ApiModelProperty("关联用户")
-    val asstUsers: List<String> = emptyList(),
-    @ApiModelProperty("群组账号")
-    val group: Boolean = false
-)
+/**
+ * 数据脱敏工具类
+ */
+object DesensitizedUtils {
+
+    /**
+     * 返回对象[obj]脱敏后的字符串
+     */
+    fun toString(obj: Any): String {
+        val fields = mutableListOf<String>()
+        var clazz: Class<in Any>? = obj.javaClass
+        while (clazz != null) {
+            for (field in clazz.declaredFields.filterNot { Modifier.isStatic(it.modifiers) }) {
+                fields.add("${field.name}=" + desensitized(field, obj))
+            }
+            clazz = clazz.superclass
+        }
+        return "${obj.javaClass.simpleName}=[${fields.joinToString(", ")}]"
+    }
+
+    private fun desensitized(field: Field, obj: Any): String? {
+        field.isAccessible = true
+        val value = field.get(obj)?.toString() ?: return null
+        val annotation = field.getAnnotation(Sensitive::class.java)
+        return if (annotation != null && field.type == String::class.java) {
+            annotation.type.desensitized(value)
+        } else value
+    }
+}
