@@ -67,6 +67,8 @@ data class PackageSummary(
     var versions: Long,
     @ApiModelProperty("包简要描述")
     var description: String? = null,
+    @ApiModelProperty("版本标签")
+    val versionTag: Map<String, String>,
     @ApiModelProperty("扩展字段")
     val extension: Map<String, Any>
 )
