@@ -63,7 +63,7 @@ env:
 
   # auth
   BK_REPO_AUTH_PORT: 25902
-  BK_REPO_AUTH_REALM: bkiam
+  BK_REPO_AUTH_REALM: local
   BK_IAM_PRIVATE_URL: http://iam.service.consul:8080
   BK_PAAS_PRIVATE_URL: http://paas.service.consul
   BK_REPO_IAM_CALLBACK_USER:
