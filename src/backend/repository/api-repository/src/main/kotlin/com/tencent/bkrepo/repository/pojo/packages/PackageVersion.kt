@@ -59,6 +59,10 @@ data class PackageVersion(
     val stageTag: List<String>,
     @ApiModelProperty("元数据")
     val metadata: Map<String, Any>,
+    @ApiModelProperty("标签")
+    val tags: List<String>,
+    @ApiModelProperty("扩展字段")
+    val extension: Map<String, Any>,
     @ApiModelProperty("包内容文件路径")
     val contentPath: String? = null
 )
