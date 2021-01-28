@@ -302,6 +302,7 @@
     .version-checksums {
         .display-value {
             flex: 12;
+            word-break: break-all;
         }
     }
     .version-metadata {
@@ -407,6 +408,7 @@
     }
     .display-value {
         flex: 3;
+        word-break: break-all;
     }
 }
 </style>
