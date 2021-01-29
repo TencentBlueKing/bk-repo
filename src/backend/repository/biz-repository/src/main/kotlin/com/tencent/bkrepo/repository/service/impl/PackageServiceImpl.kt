@@ -143,6 +143,18 @@ class PackageServiceImpl(
         }
     }
 
+    override fun listVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): List<PackageVersion> {
+        val stageTag = option.stageTag?.split(StringPool.COMMA)
+        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
+        val query = PackageQueryHelper.versionListQuery(tPackage.id!!, option.version, stageTag)
+        return packageVersionDao.find(query).map { convert(it)!! }
+    }
+
     override fun createPackageVersion(request: PackageVersionCreateRequest) {
         with(request) {
             Preconditions.checkNotBlank(packageKey, this::packageKey.name)

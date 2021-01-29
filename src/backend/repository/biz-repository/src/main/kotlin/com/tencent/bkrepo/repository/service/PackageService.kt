@@ -111,7 +111,7 @@ interface PackageService {
     ): Page<PackageSummary>
 
     /**
-     * 查询版本列表
+     * 分页查询版本列表
      *
      * @param projectId 项目id
      * @param repoName 仓库id
@@ -124,6 +124,21 @@ interface PackageService {
         packageKey: String,
         option: VersionListOption
     ): Page<PackageVersion>
+
+    /**
+     * 查询版本列表
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库id
+     * @param packageKey 包唯一标识
+     * @param option 列表选项
+     */
+    fun listVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): List<PackageVersion>
 
     /**
      * 创建包版本

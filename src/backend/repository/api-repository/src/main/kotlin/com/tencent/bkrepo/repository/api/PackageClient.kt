@@ -129,6 +129,15 @@ interface PackageClient {
         @RequestBody option: VersionListOption = VersionListOption()
     ): Response<Page<PackageVersion>>
 
+    @ApiOperation("查询所有版本")
+    @PostMapping("/version/list/{projectId}/{repoName}")
+    fun listVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestBody option: VersionListOption = VersionListOption()
+    ): Response<List<PackageVersion>>
+
     @ApiOperation("分页查询包")
     @PostMapping("/package/page/{projectId}/{repoName}")
     fun listPackagePage(

@@ -118,6 +118,16 @@ class PackageController(
         return ResponseBuilder.success(pageResult)
     }
 
+    override fun listVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): Response<List<PackageVersion>> {
+        val pageResult = packageService.listVersion(projectId, repoName, packageKey, option)
+        return ResponseBuilder.success(pageResult)
+    }
+
     override fun listPackagePage(
         projectId: String,
         repoName: String,
