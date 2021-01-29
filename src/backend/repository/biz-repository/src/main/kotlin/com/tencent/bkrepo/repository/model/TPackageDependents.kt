@@ -29,29 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 
 /**
- * 包数据访问层
+ * 文件摘要引用
  */
-@Repository
-class PackageDao : SimpleMongoDao<TPackage>() {
-
-    fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
-        if (key.isBlank()) {
-            return null
-        }
-        return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
-    }
-
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
-        if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
-        }
-    }
-}
+@ShardingDocument("package_dependents")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "package_dependents_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'key': 1, 'dependents': 1}",
+        background = true,
+        unique = true
+    )
+)
+data class TPackageDependents(
+    var id: String? = null,
+    var projectId: String,
+    var repoName: String? = null,
+    var key: String,
+    var dependents: MutableSet<String>
+)

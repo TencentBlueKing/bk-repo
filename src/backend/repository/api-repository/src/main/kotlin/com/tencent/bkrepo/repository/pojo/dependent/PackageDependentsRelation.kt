@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,29 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.repository.pojo.dependent
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import org.springframework.stereotype.Repository
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 包数据访问层
- */
-@Repository
-class PackageDao : SimpleMongoDao<TPackage>() {
-
-    fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
-        if (key.isBlank()) {
-            return null
-        }
-        return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
-    }
-
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
-        if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
-        }
-    }
-}
+@ApiModel("包依赖关系")
+data class PackageDependentsRelation(
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("包唯一key", required = true)
+    val packageKey: String,
+    @ApiModelProperty("包依赖列表，packageKey被dependents列表中的包依赖", required = true)
+    val dependents: MutableSet<String>
+)

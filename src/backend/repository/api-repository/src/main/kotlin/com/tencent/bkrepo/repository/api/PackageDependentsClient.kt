@@ -29,29 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-/**
- * 包数据访问层
- */
-@Repository
-class PackageDao : SimpleMongoDao<TPackage>() {
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDependentsClient")
+@RequestMapping("/service/package/dependents/")
+interface PackageDependentsClient {
 
-    fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
-        if (key.isBlank()) {
-            return null
-        }
-        return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
-    }
+    @PostMapping("/add")
+    fun addDependents(@RequestBody relation: PackageDependentsRelation): Response<Void>
 
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
-        if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
-        }
-    }
+    @GetMapping("/query")
+    fun queryDependents(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam packageKey: String
+    ): Response<Set<String>>
 }

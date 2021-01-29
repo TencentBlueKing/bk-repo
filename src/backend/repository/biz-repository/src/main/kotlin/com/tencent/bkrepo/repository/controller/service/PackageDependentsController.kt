@@ -29,29 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.PackageDependentsClient
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.repository.service.PackageDependentsService
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * 包数据访问层
- */
-@Repository
-class PackageDao : SimpleMongoDao<TPackage>() {
+@RestController
+class PackageDependentsController(
+    private val packageDependentsService: PackageDependentsService
+) : PackageDependentsClient {
 
-    fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
-        if (key.isBlank()) {
-            return null
-        }
-        return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
+    override fun addDependents(relation: PackageDependentsRelation): Response<Void> {
+        packageDependentsService.addDependents(relation)
+        return ResponseBuilder.success()
     }
 
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
-        if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
-        }
+    override fun queryDependents(projectId: String, repoName: String, packageKey: String): Response<Set<String>> {
+        return ResponseBuilder.success(packageDependentsService.findByPackageKey(projectId, repoName, packageKey))
     }
 }

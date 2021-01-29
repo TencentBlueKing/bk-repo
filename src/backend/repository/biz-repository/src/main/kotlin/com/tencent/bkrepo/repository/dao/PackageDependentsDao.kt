@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,26 +32,20 @@
 package com.tencent.bkrepo.repository.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TPackage
+import com.tencent.bkrepo.repository.model.TPackageDependents
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.springframework.stereotype.Repository
 
 /**
- * 包数据访问层
+ * 包依赖关系数据访问层
  */
 @Repository
-class PackageDao : SimpleMongoDao<TPackage>() {
+class PackageDependentsDao : SimpleMongoDao<TPackageDependents>() {
 
-    fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
+    fun findByPackageKey(projectId: String, repoName: String, key: String): TPackageDependents? {
         if (key.isBlank()) {
             return null
         }
         return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
-    }
-
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
-        if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
-        }
     }
 }

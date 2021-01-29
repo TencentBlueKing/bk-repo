@@ -29,29 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TPackage
-import com.tencent.bkrepo.repository.util.PackageQueryHelper
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 
-/**
- * 包数据访问层
- */
-@Repository
-class PackageDao : SimpleMongoDao<TPackage>() {
+interface PackageDependentsService {
 
-    fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
-        if (key.isBlank()) {
-            return null
-        }
-        return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
-    }
+    /**
+     * 添加依赖关系
+     *
+     * @param request 依赖关系
+     */
+    fun addDependents(request: PackageDependentsRelation)
 
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
-        if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
-        }
-    }
+    /**
+     * 查询包依赖关系
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param packageKey 包唯一key
+     */
+    fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String>
 }
