@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.repository.model.TPackageDependents
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 /**
@@ -47,5 +48,14 @@ class PackageDependentsDao : SimpleMongoDao<TPackageDependents>() {
             return null
         }
         return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
+    }
+
+    fun addDependent(projectId: String, repoName: String, key: String, dependent: String): Long {
+        if (key.isBlank() || dependent.isBlank()) {
+            return 0
+        }
+        val query = PackageQueryHelper.packageQuery(projectId, repoName, key)
+        val update = Update().addToSet(TPackageDependents::dependents.name, dependent)
+        return this.upsert(query, update).modifiedCount
     }
 }

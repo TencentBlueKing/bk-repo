@@ -33,7 +33,6 @@ package com.tencent.bkrepo.repository.service.impl
 
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageDependentsDao
-import com.tencent.bkrepo.repository.model.TPackageDependents
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.repository.service.PackageDependentsService
 import org.slf4j.Logger
@@ -48,26 +47,13 @@ class PackageDependentsServiceImpl(
 
     override fun addDependents(request: PackageDependentsRelation) {
         with(request) {
-            val tPackageDependents = packageDependentsDao.findByPackageKey(projectId, repoName, packageKey) ?: run {
-                TPackageDependents(
-                    projectId = projectId,
-                    repoName = repoName,
-                    key = packageKey,
-                    dependents = mutableSetOf()
-                )
-            }
-            var addCount = 0
-            val existedDependents = tPackageDependents.dependents
-            dependents.forEach {
-                if (!existedDependents.contains(it) && packageDao.findByKey(projectId, repoName, it) != null) {
-                    existedDependents.add(it)
-                    addCount +=1
+            var addCount = 0L
+            dependencies.forEach {
+                if (packageDao.findByKey(projectId, repoName, it) != null) {
+                    addCount += packageDependentsDao.addDependent(projectId, repoName, it, packageKey)
                 }
             }
-            if (addCount > 0) {
-                packageDependentsDao.save(tPackageDependents)
-                logger.info("Create [$addCount] dependents for package [$projectId/$repoName/$packageKey]")
-            }
+            logger.info("Create [$addCount] dependents for package [$projectId/$repoName/$packageKey]")
         }
     }
 
