@@ -53,7 +53,7 @@ class PackageDependentsServiceImpl(
                     projectId = projectId,
                     repoName = repoName,
                     key = packageKey,
-                    dependents = dependents
+                    dependents = mutableSetOf()
                 )
             }
             var addCount = 0

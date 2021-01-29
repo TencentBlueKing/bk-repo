@@ -43,5 +43,5 @@ data class PackageDependentsRelation(
     @ApiModelProperty("包唯一key", required = true)
     val packageKey: String,
     @ApiModelProperty("包依赖列表，packageKey被dependents列表中的包依赖", required = true)
-    val dependents: MutableSet<String>
+    val dependents: Set<String>
 )
