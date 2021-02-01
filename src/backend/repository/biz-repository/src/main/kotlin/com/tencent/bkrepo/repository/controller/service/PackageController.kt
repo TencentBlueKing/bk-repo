@@ -41,7 +41,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.service.PackageService
 import org.springframework.web.bind.annotation.RestController
 
@@ -101,6 +103,16 @@ class PackageController(
         version: String
     ): Response<Void> {
         packageService.deleteVersion(projectId, repoName, packageKey, version)
+        return ResponseBuilder.success()
+    }
+
+    override fun updatePackage(request: PackageUpdateRequest): Response<Void> {
+        packageService.updatePackage(request)
+        return ResponseBuilder.success()
+    }
+
+    override fun updateVersion(request: PackageVersionUpdateRequest): Response<Void> {
+        packageService.updateVersion(request)
         return ResponseBuilder.success()
     }
 

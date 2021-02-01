@@ -40,7 +40,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
@@ -112,6 +114,18 @@ interface PackageClient {
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
         @RequestParam version: String
+    ): Response<Void>
+
+    @ApiOperation("更新包")
+    @PostMapping("/package/update")
+    fun updatePackage(
+        @RequestBody request: PackageUpdateRequest
+    ): Response<Void>
+
+    @ApiOperation("更新版本")
+    @PostMapping("/version/update")
+    fun updateVersion(
+        @RequestBody request: PackageVersionUpdateRequest
     ): Response<Void>
 
     @ApiOperation("搜索包")

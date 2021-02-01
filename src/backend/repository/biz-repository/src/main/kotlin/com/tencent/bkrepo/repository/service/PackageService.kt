@@ -38,7 +38,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 
 /**
  * 包服务类接口
@@ -175,6 +177,20 @@ interface PackageService {
         packageKey: String,
         versionName: String
     )
+
+    /**
+     * 更新包
+     *
+     * @param request 包更新请求
+     */
+    fun updatePackage(request: PackageUpdateRequest)
+
+    /**
+     * 更新包版本
+     *
+     * @param request 包版本更新请求
+     */
+    fun updateVersion(request: PackageVersionUpdateRequest)
 
     /**
      * 下载包版本
