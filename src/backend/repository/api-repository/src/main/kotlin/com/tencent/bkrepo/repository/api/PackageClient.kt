@@ -145,7 +145,7 @@ interface PackageClient {
 
     @ApiOperation("查询所有版本")
     @PostMapping("/version/list/{projectId}/{repoName}")
-    fun listVersion(
+    fun listAllVersion(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
@@ -159,6 +159,13 @@ interface PackageClient {
         @PathVariable repoName: String,
         @RequestBody option: PackageListOption = PackageListOption()
     ): Response<Page<PackageSummary>>
+
+    @ApiOperation("查询所有包名称")
+    @PostMapping("/package/list/{projectId}/{repoName}")
+    fun listAllPackageNames(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<List<String>>
 
     /**
      * 包版本数据填充，该过程会自动累加downloads和version数量到包信息中

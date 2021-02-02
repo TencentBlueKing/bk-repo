@@ -130,14 +130,14 @@ class PackageController(
         return ResponseBuilder.success(pageResult)
     }
 
-    override fun listVersion(
+    override fun listAllVersion(
         projectId: String,
         repoName: String,
         packageKey: String,
         option: VersionListOption
     ): Response<List<PackageVersion>> {
-        val pageResult = packageService.listVersion(projectId, repoName, packageKey, option)
-        return ResponseBuilder.success(pageResult)
+        val versions = packageService.listAllVersion(projectId, repoName, packageKey, option)
+        return ResponseBuilder.success(versions)
     }
 
     override fun listPackagePage(
@@ -147,6 +147,11 @@ class PackageController(
     ): Response<Page<PackageSummary>> {
         val pageResult = packageService.listPackagePage(projectId, repoName, option)
         return ResponseBuilder.success(pageResult)
+    }
+
+    override fun listAllPackageNames(projectId: String, repoName: String): Response<List<String>> {
+        val names = packageService.listAllPackageName(projectId, repoName)
+        return ResponseBuilder.success(names)
     }
 
     override fun populatePackage(request: PackagePopulateRequest): Response<Void> {

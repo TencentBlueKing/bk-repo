@@ -123,6 +123,14 @@ class PackageServiceImpl(
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
+    override fun listAllPackageName(projectId: String, repoName: String): List<String> {
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
+        query.fields().include(TPackage::key.name)
+        return packageDao.find(query, Map::class.java).map {
+            it[TPackage::key.name].toString()
+        }
+    }
+
     override fun listVersionPage(
         projectId: String,
         repoName: String,
@@ -146,7 +154,7 @@ class PackageServiceImpl(
         }
     }
 
-    override fun listVersion(
+    override fun listAllVersion(
         projectId: String,
         repoName: String,
         packageKey: String,
