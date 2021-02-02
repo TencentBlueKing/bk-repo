@@ -231,4 +231,9 @@ interface PackageService {
      * @param request 包版本填充请求
      */
     fun populatePackage(request: PackagePopulateRequest)
+
+    /**
+     * 查询包数量
+     */
+    fun getPackageCount(projectId: String, repoName: String): Long
 }

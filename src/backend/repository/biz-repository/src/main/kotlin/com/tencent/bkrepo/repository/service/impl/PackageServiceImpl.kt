@@ -359,6 +359,11 @@ class PackageServiceImpl(
         }
     }
 
+    override fun getPackageCount(projectId: String, repoName: String): Long {
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
+        return packageDao.count(query)
+    }
+
     /**
      * 查找包，不存在则创建
      *

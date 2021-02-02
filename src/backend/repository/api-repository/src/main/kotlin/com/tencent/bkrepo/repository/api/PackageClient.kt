@@ -167,6 +167,13 @@ interface PackageClient {
         @PathVariable repoName: String
     ): Response<List<String>>
 
+    @ApiOperation("查询包数量")
+    @PostMapping("/package/count/{projectId}/{repoName}")
+    fun getPackageCount(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Long>
+
     /**
      * 包版本数据填充，该过程会自动累加downloads和version数量到包信息中
      *
