@@ -823,6 +823,7 @@ class RpmLocalRepository(
         logger.info("originIndexMd5: ${originXmlFile.md5()}")
         try {
             val fixedXmlFile = fixRpmXml(originXmlFile)
+            jobService.checkValid(fixedXmlFile)
             logger.info("fixedIndexMd5: ${fixedXmlFile.md5()}")
             try {
                 jobService.storeXmlGZNode(repoDetail, fixedXmlFile, repoPath, IndexType.PRIMARY)
