@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -777,23 +778,33 @@ class RpmLocalRepository(
 
     fun refinePrimaryIndexText(originStr: String, index: Int): String {
         return if (index < 0) {
-            originStr + "\n"
+            "\n" + originStr
         } else {
             val prefix = originStr.substring(0, index + 9)
             val suffix = originStr.substring(index + 9)
-            return "$prefix>\n$suffix\n"
+            "\n$prefix>\n$suffix"
         }
     }
 
     fun fixRpmXml(originXmlFile: File): File {
         BufferedReader(InputStreamReader(originXmlFile.inputStream(), "UTF-8")).use { reader ->
             val resultFile = File.createTempFile("rpm_", ".xmlStream")
-            resultFile.outputStream().use { outputStream ->
-                var s: String? = null
-                while (reader.readLine().also { s = it } != null) {
-                    val bugIndex = s!!.indexOf("</package ")
-                    outputStream.write(refinePrimaryIndexText(s!!, bugIndex).toByteArray())
+            try {
+                resultFile.outputStream().use { outputStream ->
+                    var line: String? = null
+                    var firstLine = true
+                    while (reader.readLine().also { line = it } != null) {
+                        val bugIndex = line!!.indexOf("</package ")
+                        if (firstLine) {
+                            outputStream.write((refinePrimaryIndexText(line!!, bugIndex).substring(1)).toByteArray())
+                            firstLine = false
+                        } else {
+                            outputStream.write((refinePrimaryIndexText(line!!, bugIndex)).toByteArray())
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                resultFile.delete()
             }
             return resultFile
         }
@@ -809,9 +820,16 @@ class RpmLocalRepository(
             return
         }
         val originXmlFile = storageService.load(indexNode.sha256!!, Range.full(indexNode.size), null)!!.use { it.unGzipInputStream() }
+        logger.info("originIndexMd5: ${originXmlFile.md5()}")
         try {
             val fixedXmlFile = fixRpmXml(originXmlFile)
-            jobService.storeXmlGZNode(repoDetail, fixedXmlFile, repoPath, IndexType.PRIMARY)
+            logger.info("fixedIndexMd5: ${fixedXmlFile.md5()}")
+            try {
+                jobService.storeXmlGZNode(repoDetail, fixedXmlFile, repoPath, IndexType.PRIMARY)
+            } finally {
+                fixedXmlFile.delete()
+                logger.info("temp index file ${fixedXmlFile.absolutePath} deleted")
+            }
         } finally {
             originXmlFile.delete()
             logger.info("temp index file ${originXmlFile.absolutePath} deleted")
