@@ -61,4 +61,9 @@ class RpmDebugService : ArtifactService() {
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         (repository as RpmLocalRepository).compensation()
     }
+
+    fun fixPrimaryXml(rpmArtifactInfo: RpmArtifactInfo) {
+        val context = ArtifactContext()
+        (repository as RpmLocalRepository).fixPrimaryXml(context)
+    }
 }

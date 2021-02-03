@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.servcie.RpmDebugService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -59,5 +60,10 @@ class RpmDebugController(
     @GetMapping("/ext/package/populate")
     fun compensation() {
         rpmDebugService.compensation()
+    }
+
+    @PostMapping("/ext/fixPrimaryXml")
+    fun fixPrimaryXml(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
+        rpmDebugService.fixPrimaryXml(rpmArtifactInfo)
     }
 }

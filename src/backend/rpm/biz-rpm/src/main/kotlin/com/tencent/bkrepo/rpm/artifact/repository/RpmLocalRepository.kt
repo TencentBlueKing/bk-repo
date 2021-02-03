@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -91,6 +92,7 @@ import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
 import com.tencent.bkrepo.rpm.pojo.RpmUploadResponse
 import com.tencent.bkrepo.rpm.pojo.RpmVersion
 import com.tencent.bkrepo.rpm.util.GZipUtils.gZip
+import com.tencent.bkrepo.rpm.util.GZipUtils.unGzipInputStream
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import com.tencent.bkrepo.rpm.util.RpmConfiguration.toRpmRepoConf
 import com.tencent.bkrepo.rpm.util.RpmHeaderUtils.getRpmBooleanHeader
@@ -111,8 +113,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.util.StopWatch
+import java.io.BufferedReader
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.FileInputStream
+import java.io.InputStreamReader
 import java.nio.channels.Channels
 import java.time.LocalDateTime
 
@@ -459,7 +464,9 @@ class RpmLocalRepository(
                         rpmNodeCreateRequest(context, mutableMapOf())
                     }
                 }
-            } else { rpmNodeCreateRequest(context, mutableMapOf()) }
+            } else {
+                rpmNodeCreateRequest(context, mutableMapOf())
+            }
 
             store(nodeCreateRequest, context.getArtifactFile(), context.storageCredentials)
         }
@@ -766,6 +773,50 @@ class RpmLocalRepository(
         artifactFile.delete()
         with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
         logger.info("Success to insert $node")
+    }
+
+    fun refinePrimaryIndexText(originStr: String, index: Int): String {
+        return if (index < 0) {
+            originStr + "\n"
+        } else {
+            val prefix = originStr.substring(0, index + 9)
+            val suffix = originStr.substring(index + 9)
+            return "$prefix>\n$suffix\n"
+        }
+    }
+
+    fun fixRpmXml(originXmlFile: File): File {
+        BufferedReader(InputStreamReader(originXmlFile.inputStream(), "UTF-8")).use { reader ->
+            val resultFile = File.createTempFile("rpm_", ".xmlStream")
+            resultFile.outputStream().use { outputStream ->
+                var s: String? = null
+                while (reader.readLine().also { s = it } != null) {
+                    val bugIndex = s!!.indexOf("</package ")
+                    outputStream.write(refinePrimaryIndexText(s!!, bugIndex).toByteArray())
+                }
+            }
+            return resultFile
+        }
+    }
+
+    fun fixPrimaryXml(context: ArtifactContext) {
+        val repoPath = context.artifactInfo.getArtifactFullPath()
+        val repoDetail = context.repositoryDetail
+        logger.info("fixPrimaryXml, projectId: ${context.projectId}, repoPath: $repoPath")
+        val indexNode = jobService.getLatestIndexNode(repoDetail, repoPath, "-primary.xml.gz")
+        if (indexNode == null) {
+            logger.info("primary index not found")
+            return
+        }
+        val originXmlFile = storageService.load(indexNode.sha256!!, Range.full(indexNode.size), null)!!.use { it.unGzipInputStream() }
+        try {
+            val fixedXmlFile = fixRpmXml(originXmlFile)
+            jobService.storeXmlGZNode(repoDetail, fixedXmlFile, repoPath, IndexType.PRIMARY)
+        } finally {
+            originXmlFile.delete()
+            logger.info("temp index file ${originXmlFile.absolutePath} deleted")
+        }
+        flushRepoMdXML(context, repoPath)
     }
 
     companion object {
