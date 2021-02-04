@@ -443,16 +443,14 @@ class RpmLocalRepository(
                         val packageKey = PackageKeys.ofRpm(rpmPackagePojo.path, rpmPackagePojo.name)
                         packageClient.createVersion(
                             PackageVersionCreateRequest(
-                                context.projectId,
-                                context.repoName,
-                                rpmPackagePojo.name,
-                                packageKey,
-                                PackageType.RPM,
-                                null,
-                                rpmPackagePojo.version,
-                                context.getArtifactFile().getSize(),
-                                null,
-                                context.artifactInfo.getArtifactFullPath(),
+                                projectId = context.projectId,
+                                repoName = context.repoName,
+                                packageName = rpmPackagePojo.name,
+                                packageKey = packageKey,
+                                packageType = PackageType.RPM,
+                                versionName = rpmPackagePojo.version,
+                                size = context.getArtifactFile().getSize(),
+                                artifactPath = context.artifactInfo.getArtifactFullPath(),
                                 overwrite = true,
                                 createdBy = context.userId
                             )
