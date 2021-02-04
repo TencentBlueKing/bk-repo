@@ -48,22 +48,27 @@ class RpmDebugService : ArtifactService() {
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun flushRepomd(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactSearchContext()
+        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         (repository as RpmLocalRepository).flushRepoMdXML(context, null)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun flushAllRepomd(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactContext()
+        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         (repository as RpmLocalRepository).flushAllRepoData(context)
     }
 
-    fun compensation() {
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun populatePackage() {
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
-        (repository as RpmLocalRepository).compensation()
+        (repository as RpmLocalRepository).populatePackage()
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun fixPrimaryXml(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactContext()
+        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         (repository as RpmLocalRepository).fixPrimaryXml(context)
     }
 }

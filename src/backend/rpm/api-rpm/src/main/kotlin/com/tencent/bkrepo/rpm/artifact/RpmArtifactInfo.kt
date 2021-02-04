@@ -46,7 +46,7 @@ class RpmArtifactInfo(
         const val RPM_CONFIGURATION = "/configuration/{projectId}/{repoName}/**"
         const val RPM_DEBUG_FLUSH = "/flush/{projectId}/{repoName}/**"
         const val RPM_DEBUG_ALL_FLUSH = "/flushAll/{projectId}/{repoName}/"
-        const val RPM_EXT_FIX_PRIMARY_XML = "/ext/fixPrimaryXml/{projectId}/{repoName}/**"
+        const val RPM_FIX_PRIMARY_XML = "/fixPrimaryXml/{projectId}/{repoName}/**"
         const val RPM_EXT_LIST = "/list/{projectId}/{repoName}/**"
 
         // RPM 产品接口

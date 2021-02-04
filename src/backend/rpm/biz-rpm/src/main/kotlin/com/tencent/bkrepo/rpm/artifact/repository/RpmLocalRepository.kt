@@ -686,25 +686,25 @@ class RpmLocalRepository(
         return Page(page, size, pages.totalRecords, pages.records.map { it["name"] as String })
     }
 
-    fun compensation() {
-        logger.info("start compensation package info")
+    fun populatePackage() {
+        logger.info("start populate package info")
         // 所有rpm仓库
         val repos = jobService.getAllRpmRepo() ?: return
         // 遍历仓库
         for (repo in repos) {
-            logger.info("start compensation repo: ${repo.projectId}/${repo.name}")
+            logger.info("start populate repo: ${repo.projectId}/${repo.name}")
             val rpmConfiguration = repo.configuration
             val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
             val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
             logger.info("find ${repo.projectId}/${repo.name} : $targetSet")
             for (repoDataPath in targetSet) {
-                logger.info("start compensation package info : ${repo.projectId}/${repo.name}/$repoDataPath")
-                compensationPackage(repo, repoDataPath)
+                logger.info("start populate package info : ${repo.projectId}/${repo.name}/$repoDataPath")
+                populatePackage(repo, repoDataPath)
             }
         }
     }
 
-    private fun compensationPackage(repo: RepositoryDetail, repoDataPath: String) {
+    private fun populatePackage(repo: RepositoryDetail, repoDataPath: String) {
         val rpmNodePath = repoDataPath.removeSuffix("/").removeSuffix("repodata").removeSuffix("/")
         var i = 0
         loop@ while (true) {
@@ -720,15 +720,15 @@ class RpmLocalRepository(
             val nodeInfoPage = nodeClient.listNodePage(repo.projectId, repo.name, rpmNodePath, nodeListOption).data
                 ?: break@loop
             if (nodeInfoPage.records.isEmpty()) break@loop
-            logger.info("compensation: found ${nodeInfoPage.records.size} , totalRecords: ${nodeInfoPage.totalRecords}")
+            logger.info("populatePackage: found ${nodeInfoPage.records.size} , totalRecords: ${nodeInfoPage.totalRecords}")
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {
-                compensationPackageByNodeInfo(nodeInfo)
+                populatePackageByNodeInfo(nodeInfo)
             }
         }
     }
 
-    private fun compensationPackageByNodeInfo(nodeInfo: NodeInfo) {
+    private fun populatePackageByNodeInfo(nodeInfo: NodeInfo) {
         val nodeMetadata = nodeInfo.metadata
         if (nodeMetadata == null) {
             logger.warn("Can not found $nodeInfo metadata, skip!")
