@@ -812,7 +812,7 @@ class RpmLocalRepository(
         val repoPath = context.artifactInfo.getArtifactFullPath()
         val repoDetail = context.repositoryDetail
         logger.info("fixPrimaryXml, projectId: ${context.projectId}, repoPath: $repoPath")
-        val indexNode = jobService.getLatestIndexNode(repoDetail, repoPath, "-primary.xml.gz")
+        val indexNode = jobService.getLatestIndexNode(repoDetail, repoPath, "primary.xml.gz")
         if (indexNode == null) {
             logger.info("primary index not found")
             return
