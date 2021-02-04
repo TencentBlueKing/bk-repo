@@ -62,7 +62,7 @@ class RpmDebugController(
         rpmDebugService.compensation()
     }
 
-    @PostMapping("/ext/fixPrimaryXml")
+    @PostMapping(RpmArtifactInfo.RPM_EXT_FIX_PRIMARY_XML)
     fun fixPrimaryXml(@ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo) {
         rpmDebugService.fixPrimaryXml(rpmArtifactInfo)
     }
