@@ -17,39 +17,40 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
+local _M = {}
 
-local service_name = ngx.var.service
-if config.service_name ~= nil and config.service_name ~= "" then
-    service_name = config.service_name
-end
-
-if not service_name then
-    ngx.log(ngx.ERR, "failed with no service name")
-    ngx.exit(503)
-    return
-end
-
-if service_name == "" then
-    ngx.log(ngx.ERR, "failed with empty service name")
-    ngx.exit(503)
-    return
-end
-
--- 访问限制的工具
-local access_util = nil
-
--- 限制访问频率
-if access_util then
-    local access_result, err = access_util:isAccess()
-    if not access_result then
-        ngx.log(ngx.STDERR, "request excess!")
-        ngx.exit(503)
-        return
+function _M:isAccess()
+    local limit_req = require "resty.limit.req"
+    -- 创建req_limit实例，每秒100次请求，100个等待，超过200个的请求全部拒绝
+    -- 外部请求频率50,浮动20；构建机类请求频率20，浮动20
+    local lim = nil
+    lim, err = limit_req.new("build_limit_req_store", 100, 20)
+    -- 创建req_limit实例失败时
+    if not lim then
+        ngx.log(ngx.STDERR, "failed to instantiate a resty.limit.req object: ", err)
+        return false
     end
+    -- 获取4字节的IP的KEY
+    local key = ngx.var.http_x_devops_real_ip or ngx.var.http_x_real_ip or ngx.var.binary_remote_addr or "0.0.0.0"
+    -- 获取key目前的状态:delay非空的时候，说明接受请求，err是排队信息；delay为空的时候，说明拒绝请求，err是错误信息。
+    local delay, err = lim:incoming(key, true)
+    if not delay then
+        if err == "rejected" then
+            return false
+        end
+        ngx.log(ngx.STDERR, "failed to limit req: ", err)
+        return false
+    end
+    if delay >= 0.001 then
+        -- 排队号
+        local excess = err
+        -- 等待需要delay的时间
+        ngx.sleep(delay)
+        return true
+    end
+    --- 不用等待
+    return true
 end
 
-
-local host, port = hostUtil:get_addr(service_name)
-ngx.var.target = host .. ":" .. port
-
+return _M
 
