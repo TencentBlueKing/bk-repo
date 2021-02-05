@@ -49,4 +49,4 @@ spec:
         - name: pv-storage
           persistentVolumeClaim:
             claimName: pvc-storage
-{{helm}}
+{{end}}
