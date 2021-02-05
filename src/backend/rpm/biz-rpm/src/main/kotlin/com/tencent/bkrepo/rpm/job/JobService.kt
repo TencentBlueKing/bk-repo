@@ -572,9 +572,11 @@ class JobService(
     }
 
     fun checkValid(xmlFile: File) {
+        val start = System.currentTimeMillis()
         val factory = SAXParserFactory.newInstance()
         val saxParser = factory.newSAXParser()
         saxParser.parse(xmlFile, DefaultHandler())
+        logger.debug("checkValid, cost: ${System.currentTimeMillis() - start} ms")
     }
 
     private fun deleteNodes(nodes: List<NodeInfo>) {
