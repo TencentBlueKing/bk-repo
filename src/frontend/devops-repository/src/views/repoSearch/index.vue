@@ -87,7 +87,7 @@
         components: { emptyData },
         data () {
             return {
-                repoEnum,
+                repoEnum: repoEnum.filter(v => v !== 'generic'),
                 showRepoSearch: true,
                 isLoading: false,
                 packageNameInput: this.$route.query.packageName || '',

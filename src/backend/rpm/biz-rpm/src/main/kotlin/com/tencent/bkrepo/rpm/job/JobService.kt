@@ -65,8 +65,8 @@ import com.tencent.bkrepo.rpm.util.RpmConfiguration.toRpmRepoConf
 import com.tencent.bkrepo.rpm.util.RpmVersionUtils.toRpmVersion
 import com.tencent.bkrepo.rpm.util.XmlStrUtils
 import com.tencent.bkrepo.rpm.util.xStream.XStreamUtil
-import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmChecksum
+import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmLocation
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoData
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoGroup
 import com.tencent.bkrepo.rpm.util.xStream.repomd.RepoIndex
@@ -76,11 +76,13 @@ import kotlinx.coroutines.launch
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.xml.sax.helpers.DefaultHandler
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
-import java.io.RandomAccessFile
 import java.io.FileOutputStream
+import java.io.RandomAccessFile
+import javax.xml.parsers.SAXParserFactory
 
 @Component
 class JobService(
@@ -559,6 +561,7 @@ class JobService(
                     logger.debug("updatePackageCount indexType: $indexType, indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, cost: ${System.currentTimeMillis() - start} ms")
                 }
             }
+            checkValid(unzipedIndexTempFile)
             storeXmlGZNode(repo, unzipedIndexTempFile, repodataPath, indexType)
             flushRepoMdXML(repo, repodataPath)
             deleteNodes(processedMarkNodes)
@@ -566,6 +569,14 @@ class JobService(
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} deleted")
         }
+    }
+
+    fun checkValid(xmlFile: File) {
+        val start = System.currentTimeMillis()
+        val factory = SAXParserFactory.newInstance()
+        val saxParser = factory.newSAXParser()
+        saxParser.parse(xmlFile, DefaultHandler())
+        logger.debug("checkValid, cost: ${System.currentTimeMillis() - start} ms")
     }
 
     private fun deleteNodes(nodes: List<NodeInfo>) {
