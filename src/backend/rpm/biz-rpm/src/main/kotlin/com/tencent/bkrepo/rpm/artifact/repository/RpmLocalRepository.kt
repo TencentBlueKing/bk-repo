@@ -827,11 +827,11 @@ class RpmLocalRepository(
                 jobService.storeXmlGZNode(repoDetail, fixedXmlFile, repoPath, IndexType.PRIMARY)
             } finally {
                 fixedXmlFile.delete()
-                logger.info("temp index file ${fixedXmlFile.absolutePath} deleted")
+                logger.info("temp fixedXmlFile ${fixedXmlFile.absolutePath} deleted")
             }
         } finally {
             originXmlFile.delete()
-            logger.info("temp index file ${originXmlFile.absolutePath} deleted")
+            logger.info("temp originXmlFile file ${originXmlFile.absolutePath} deleted")
         }
         flushRepoMdXML(context, repoPath)
     }
