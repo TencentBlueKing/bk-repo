@@ -31,31 +31,47 @@
 
 package com.tencent.bkrepo.helm.utils
 
-import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
-import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.V1
-import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
-object HelmUtils {
+object TimeFormatUtil {
 
-    fun getChartFileFullPath(name: String, version: String): String {
-        return String.format("/%s-%s.%s", name, version, CHART_PACKAGE_FILE_EXTENSION)
+    private val DATA_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+
+    fun getUtcTime(): String {
+        return Instant.now().toString()
     }
 
-    fun getProvFileFullPath(name: String, version: String): String {
-        return String.format("/%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
+    fun formatLocalTime(localDateTime: LocalDateTime): String {
+        return localDateTime.format(DateTimeFormatter.ISO_DATE_TIME)
     }
 
-    fun getIndexYamlFullPath(): String {
-        return "/$INDEX_CACHE_YAML"
+    fun convertToLocalTime(utcTime: String): LocalDateTime {
+        return convertToLocalTime(LocalDateTime.parse(utcTime, DateTimeFormatter.ISO_DATE_TIME))
     }
 
-    fun initIndexYamlMetadata(): HelmIndexYamlMetadata {
-        return HelmIndexYamlMetadata(
-            apiVersion = V1,
-            generated = TimeFormatUtil.getUtcTime()
-        )
+    private fun convertToLocalTime(utcTime: LocalDateTime): LocalDateTime {
+        return utcTime.plusHours(8)
+    }
+
+    fun convertToUtcTime(localDateTime: LocalDateTime): String {
+        return toUtc(localDateTime).format(DATA_TIME_FORMATTER)
+    }
+
+    private fun toUtc(time: LocalDateTime): LocalDateTime {
+        return toUtc(time, ZoneId.systemDefault())
+    }
+
+    private fun toUtc(time: LocalDateTime, fromZone: ZoneId): LocalDateTime {
+        return toZone(time, fromZone, ZoneOffset.UTC)
+    }
+
+    private fun toZone(time: LocalDateTime, fromZone: ZoneId, toZone: ZoneId): LocalDateTime {
+        val zonedTime = time.atZone(fromZone)
+        val converted = zonedTime.withZoneSameInstant(toZone)
+        return converted.toLocalDateTime()
     }
 }
