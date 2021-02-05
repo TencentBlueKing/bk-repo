@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,21 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.dao
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.model.TPackageDependents
+import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.stereotype.Repository
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
+/**
+ * 包依赖关系数据访问层
+ */
+@Repository
+class PackageDependentsDao : SimpleMongoDao<TPackageDependents>() {
+
+    fun findByPackageKey(projectId: String, repoName: String, key: String): TPackageDependents? {
+        if (key.isBlank()) {
+            return null
+        }
+        return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
+    }
+
+    fun addDependent(projectId: String, repoName: String, key: String, dependent: String): Long {
+        if (key.isBlank() || dependent.isBlank()) {
+            return 0
+        }
+        val query = PackageQueryHelper.packageQuery(projectId, repoName, key)
+        val update = Update().addToSet(TPackageDependents::dependents.name, dependent)
+        return this.upsert(query, update).modifiedCount
+    }
 }

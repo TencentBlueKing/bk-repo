@@ -29,21 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDependentsClient")
+@RequestMapping("/service/package/dependents/")
+interface PackageDependentsClient {
+
+    @PostMapping("/add")
+    fun addDependents(@RequestBody relation: PackageDependentsRelation): Response<Void>
+
+    @GetMapping("/query")
+    fun queryDependents(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam packageKey: String
+    ): Response<Set<String>>
 }

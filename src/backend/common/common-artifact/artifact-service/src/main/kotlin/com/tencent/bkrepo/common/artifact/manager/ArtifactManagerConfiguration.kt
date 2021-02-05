@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,21 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.common.artifact.manager
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
-}
+@Configuration
+@Import(
+    StorageManager::class,
+    PackageManager::class
+)
+class ArtifactManagerConfiguration

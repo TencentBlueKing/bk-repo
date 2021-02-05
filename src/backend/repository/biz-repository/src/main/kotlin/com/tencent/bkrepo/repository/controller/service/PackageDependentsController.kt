@@ -29,21 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.controller.service
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.PackageDependentsClient
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.repository.service.PackageDependentsService
+import org.springframework.web.bind.annotation.RestController
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
+@RestController
+class PackageDependentsController(
+    private val packageDependentsService: PackageDependentsService
+) : PackageDependentsClient {
+
+    override fun addDependents(relation: PackageDependentsRelation): Response<Void> {
+        packageDependentsService.addDependents(relation)
+        return ResponseBuilder.success()
+    }
+
+    override fun queryDependents(projectId: String, repoName: String, packageKey: String): Response<Set<String>> {
+        return ResponseBuilder.success(packageDependentsService.findByPackageKey(projectId, repoName, packageKey))
+    }
 }

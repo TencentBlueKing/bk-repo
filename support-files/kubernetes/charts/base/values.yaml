@@ -1,5 +1,6 @@
 # consul
 consul:
+  # false则忽略consul部署
   enabled: false
   global:
     name: consul
@@ -18,6 +19,7 @@ consul:
 
 # ingress-nginx
 ingress-nginx:
+  # false则忽略ingress-nginx部署
   enabled: false
   controller:
     image:
@@ -31,10 +33,13 @@ ingress-nginx:
 
 # volume
 volume:
+  # nfs存储
   nfs:
+    # false则使用hostPath模式
     enabled: false
     path: /data/nfs/
     server: 10.0.1.3
+  # 使用host存储，多host无法共享目录，供调试测试使用
   hostPath:
     path: /data/local/
   storage: 10Gi

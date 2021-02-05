@@ -29,21 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.service.impl
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.dao.PackageDao
+import com.tencent.bkrepo.repository.dao.PackageDependentsDao
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.repository.service.PackageDependentsService
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
+@Service
+class PackageDependentsServiceImpl(
+    private val packageDao: PackageDao,
+    private val packageDependentsDao: PackageDependentsDao
+) : PackageDependentsService, AbstractService() {
+
+    override fun addDependents(request: PackageDependentsRelation) {
+        with(request) {
+            var addCount = 0L
+            dependencies.forEach {
+                if (packageDao.findByKey(projectId, repoName, it) != null) {
+                    addCount += packageDependentsDao.addDependent(projectId, repoName, it, packageKey)
+                }
+            }
+            logger.info("Create [$addCount] dependents for package [$projectId/$repoName/$packageKey]")
+        }
+    }
+
+    override fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String> {
+        return packageDependentsDao.findByPackageKey(projectId, repoName, packageKey)?.dependents.orEmpty()
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(PackageDependentsServiceImpl::class.java)
+    }
 }

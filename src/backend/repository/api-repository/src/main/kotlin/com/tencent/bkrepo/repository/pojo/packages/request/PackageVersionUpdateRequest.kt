@@ -29,21 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.pojo.packages.request
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.swagger.annotations.ApiModelProperty
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
-}
+data class PackageVersionUpdateRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String,
+    @ApiModelProperty("包唯一标识符")
+    val packageKey: String,
+    @ApiModelProperty("版本名称")
+    val versionName: String,
+    @ApiModelProperty("版本大小")
+    val size: Long? = null,
+    @ApiModelProperty("版本描述文件路径")
+    var manifestPath: String? = null,
+    @ApiModelProperty("版本内容文件路径")
+    var artifactPath: String? = null,
+    @ApiModelProperty("版本构件阶段")
+    val stageTag: List<String>? = null,
+    @ApiModelProperty("版本元数据")
+    val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("标签")
+    val tags: List<String>? = null,
+    @ApiModelProperty("版本扩展字段")
+    val extension: Map<String, Any>? = null
+)

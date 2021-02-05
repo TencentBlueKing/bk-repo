@@ -77,7 +77,7 @@ class MongoAutoConfiguration {
         val converter = MappingMongoConverter(dbRefResolver, mappingContext)
         converter.setTypeMapper(DefaultMongoTypeMapper(null))
         converter.afterPropertiesSet()
-
+        converter.setMapKeyDotReplacement("#dot#")
         return converter
     }
 }

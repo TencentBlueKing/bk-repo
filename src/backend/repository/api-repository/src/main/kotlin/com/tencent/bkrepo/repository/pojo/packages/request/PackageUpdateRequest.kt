@@ -29,21 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.pojo.packages.request
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.swagger.annotations.ApiModelProperty
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
-}
+data class PackageUpdateRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String,
+    @ApiModelProperty("包唯一标识符")
+    val packageKey: String,
+    @ApiModelProperty("包名称")
+    val name: String? = null,
+    @ApiModelProperty("包简要描述")
+    val description: String? = null,
+    @ApiModelProperty("包版本标签")
+    val versionTag: Map<String, String>? = null,
+    @ApiModelProperty("包扩展字段")
+    val extension: Map<String, Any>? = null
+)

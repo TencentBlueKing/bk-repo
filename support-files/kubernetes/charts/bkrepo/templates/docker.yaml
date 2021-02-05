@@ -1,3 +1,4 @@
+{{if .Values.bkrepo.registry.docker }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,3 +49,4 @@ spec:
         - name: pv-storage
           persistentVolumeClaim:
             claimName: pvc-storage
+{{end}}

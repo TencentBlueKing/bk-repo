@@ -29,21 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
-}
+/**
+ * 文件摘要引用
+ */
+@ShardingDocument("package_dependents")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "package_dependents_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'key': 1, 'dependents': 1}",
+        background = true,
+        unique = true
+    )
+)
+data class TPackageDependents(
+    var id: String? = null,
+    var projectId: String,
+    var repoName: String? = null,
+    var key: String,
+    var dependents: MutableSet<String>
+)

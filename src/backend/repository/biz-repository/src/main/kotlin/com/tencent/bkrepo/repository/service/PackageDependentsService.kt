@@ -29,21 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.response
+package com.tencent.bkrepo.repository.service
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 
-class ArtifactResource(
-    val inputStream: ArtifactInputStream,
-    val artifact: String,
-    val node: NodeDetail? = null,
-    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
-) {
-    var characterEncoding: String = StringPool.UTF_8
-    var status: HttpStatus? = null
-    var contentType: String? = null
+interface PackageDependentsService {
+
+    /**
+     * 添加依赖关系
+     *
+     * @param request 依赖关系
+     */
+    fun addDependents(request: PackageDependentsRelation)
+
+    /**
+     * 查询包依赖关系
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param packageKey 包唯一key
+     */
+    fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String>
 }
