@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.DATA_TIME_FORMATTER
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
@@ -59,6 +58,7 @@ import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
+import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -102,7 +102,7 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
 
             val originalYamlMetadata = queryOriginalIndexYaml()
             val dateTime =
-                originalYamlMetadata.generated.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }
+                originalYamlMetadata.generated.let { TimeFormatUtil.convertToLocalTime(it) }
             val now = LocalDateTime.now()
             val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
             if (nodeList.isNotEmpty()) {
@@ -110,7 +110,7 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
                 logger.info(
                     "start refreshing the index file in repo [$projectId/$repoName], original index file entries size : [${indexYamlMetadata.entriesSize()}]"
                 )
-                indexYamlMetadata.generated = now.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
+                indexYamlMetadata.generated = TimeFormatUtil.convertToUtcTime(now)
                 uploadIndexYamlMetadata(indexYamlMetadata).also {
                     logger.info(
                         "refresh the index file success in repo [$projectId/$repoName], current index file entries size : [${indexYamlMetadata.entriesSize()}]"
@@ -255,7 +255,7 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
-            return localDateTime.format(DateTimeFormatter.ofPattern(DATA_TIME_FORMATTER))
+            return TimeFormatUtil.convertToUtcTime(localDateTime)
         }
     }
 }
