@@ -20,10 +20,6 @@ RUN ln -s  /data/workspace/gateway /usr/local/openresty/nginx/conf
 
 RUN ls -l /usr/local/openresty/nginx
 
-RUN ln -s  /data/workspace/frontend /usr/local/openresty/nginx/conf
-
-RUN ls -l /usr/local/openresty/nginx
-
 RUN mkdir -p /usr/local/openresty/nginx/run/
 
 RUN ls -l /usr/local/openresty/nginx
