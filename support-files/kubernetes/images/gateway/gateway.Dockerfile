@@ -12,17 +12,6 @@ RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 
 RUN ls -l /usr/local/openresty/nginx
 
-RUN  mv /usr/local/openresty/nginx/conf /usr/local/openresty/nginx/conf_bak
-
-RUN ls -l /usr/local/openresty/nginx
-
-RUN cp -r  /data/workspace/gateway /usr/local/openresty/nginx/conf
-
-RUN ls -l /usr/local/openresty/nginx
-
-RUN mkdir -p /usr/local/openresty/nginx/run/
-
-RUN ls -l /usr/local/openresty/nginx
 
 RUN chmod +x /data/workspace/startup.sh &&\
     chmod +x /data/workspace/render_tpl
