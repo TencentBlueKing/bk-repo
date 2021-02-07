@@ -9,11 +9,23 @@ RUN ls -l /usr/local/openresty/nginx
 
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo 'Asia/Shanghai' > /etc/timezone && \
-    rm -rf /usr/local/openresty/nginx/conf &&\
-    ln -s  /data/workspace/gateway /usr/local/openresty/nginx/conf &&\
-    ln -s  /data/workspace/frontend /usr/local/openresty/nginx/conf &&\
-    mkdir -p /usr/local/openresty/nginx/run/ &&\
-    chmod +x /data/workspace/startup.sh &&\
+    rm -rf /usr/local/openresty/nginx/conf
+
+RUN ls -l /usr/local/openresty/nginx
+
+RUN ln -s  /data/workspace/gateway /usr/local/openresty/nginx/conf
+
+RUN ls -l /usr/local/openresty/nginx
+
+RUN ln -s  /data/workspace/frontend /usr/local/openresty/nginx/conf
+
+RUN ls -l /usr/local/openresty/nginx
+
+RUN mkdir -p /usr/local/openresty/nginx/run/
+
+RUN ls -l /usr/local/openresty/nginx
+
+RUN chmod +x /data/workspace/startup.sh &&\
     chmod +x /data/workspace/render_tpl
 
 RUN ls -l /usr/local/openresty/nginx
