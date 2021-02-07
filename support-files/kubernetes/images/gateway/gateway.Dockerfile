@@ -12,7 +12,7 @@ RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 
 RUN ls -l /usr/local/openresty/nginx
 
-RUN  rm -rf /usr/local/openresty/nginx/conf
+RUN  mv /usr/local/openresty/nginx/conf /usr/local/openresty/nginx/conf_bak
 
 RUN ls -l /usr/local/openresty/nginx
 
