@@ -7,11 +7,12 @@ COPY ./ /data/workspace/
 
 RUN ls -l /usr/local/openresty/nginx
 
-RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && echo 'Asia/Shanghai' > /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    echo 'Asia/Shanghai' > /etc/timezone
 
 RUN ls -l /usr/local/openresty/nginx
 
-RUN rm -rf /usr/local/openresty/nginx/
+RUN  rm -rf /usr/local/openresty/nginx/conf
 
 RUN ls -l /usr/local/openresty/nginx
 
