@@ -16,7 +16,7 @@ RUN  mv /usr/local/openresty/nginx/conf /usr/local/openresty/nginx/conf_bak
 
 RUN ls -l /usr/local/openresty/nginx
 
-RUN ln -s  /data/workspace/gateway /usr/local/openresty/nginx/conf
+RUN cp -r  /data/workspace/gateway /usr/local/openresty/nginx/conf
 
 RUN ls -l /usr/local/openresty/nginx
 
