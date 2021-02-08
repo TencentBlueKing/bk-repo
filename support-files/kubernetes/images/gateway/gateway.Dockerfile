@@ -6,7 +6,7 @@ COPY ./ /data/workspace/
 
 RUN ls -l /usr/local/openresty/nginx/
 
-RUN  rm -rf /usr/local/openresty/nginx/conf
+RUN  rm -f /usr/local/openresty/nginx/conf/
 
 RUN ls -l /usr/local/openresty/nginx/
 
