@@ -4,6 +4,8 @@ LABEL maintainer="Tencent BlueKing Devops"
 
 COPY ./ /data/workspace/
 
+COPY ./gateway /usr/local/openresty/nginx/conf
+
 RUN ls -l /usr/local/openresty/nginx/
 
 RUN  mkdir -p /usr/local/openresty/nginx/run/
