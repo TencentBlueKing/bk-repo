@@ -45,7 +45,8 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         val mavenArtifactInfo =
             MavenArtifactInfo(projectId, repoName, artifactUri)
         // 仅当上传jar包时校验地址格式
-        if (artifactUri.endsWith(".jar")) {
+        val fileName = artifactUri.substringAfterLast("/")
+        if (fileName.matches(Regex("(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip)\$"))) {
             val paths = artifactUri.removePrefix("/").removeSuffix("/").split("/")
             if (paths.size < pathMinLimit) {
                 logger.debug(

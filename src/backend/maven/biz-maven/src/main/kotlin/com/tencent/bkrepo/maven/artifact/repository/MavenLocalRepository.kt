@@ -64,6 +64,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
+import java.util.regex.Pattern
 
 @Component
 class MavenLocalRepository(private val stageClient: StageClient) : LocalRepository() {
@@ -86,22 +87,27 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
-            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.jar"))) {
-                val node = buildMavenArtifactNode(context, "jar")
-                storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
-                val mavenJar = (this as MavenArtifactInfo).toMavenJar()
-                createMavenVersion(context, mavenJar)
-            }
-            // 解析pom文件数据
-            if (getArtifactFullPath().matches(Regex("(.)+-(.)+\\.pom"))) {
-                val mavenPom = context.getArtifactFile().getInputStream().readXmlString<MavenPom>()
-                if (StringUtils.isNotBlank(mavenPom.version) && mavenPom.packaging == "pom") {
-                    val node = buildMavenArtifactNode(context, "pom")
-                    storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
-                    createMavenVersion(context, mavenPom)
+            val regex = "(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip)$"
+            val matcher = Pattern.compile(regex).matcher(getArtifactFullPath())
+            if (matcher.find()) {
+                val packaging = matcher.group(3)
+                if (packaging == "pom") {
+                    val mavenPom = context.getArtifactFile().getInputStream().readXmlString<MavenPom>()
+                    if (StringUtils.isNotBlank(mavenPom.version) && mavenPom.packaging == "pom") {
+                        val node = buildMavenArtifactNode(context, packaging)
+                        storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
+                        createMavenVersion(context, mavenPom)
+                    } else {
+                        super.onUpload(context)
+                    }
                 } else {
-                    super.onUpload(context)
+                    val node = buildMavenArtifactNode(context, packaging)
+                    storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
+                    val mavenJar = (this as MavenArtifactInfo).toMavenJar()
+                    createMavenVersion(context, mavenJar)
                 }
+            } else {
+                super.onUpload(context)
             }
         }
     }
