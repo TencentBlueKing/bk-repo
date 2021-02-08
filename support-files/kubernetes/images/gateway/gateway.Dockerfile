@@ -6,6 +6,8 @@ COPY ./ /data/workspace/
 
 COPY ./gateway /usr/local/openresty/nginx/conf
 
+RUN mkdir -p /usr/local/openresty/nginx/run/
+
 RUN ls -l /usr/local/openresty/nginx/
 
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
