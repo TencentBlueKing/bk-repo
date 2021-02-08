@@ -8,7 +8,6 @@ RUN ls -l /usr/local/openresty/nginx/
 
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo 'Asia/Shanghai' > /etc/timezone && \
-    mkdir -p /usr/local/openresty/nginx/run/ &&\
     chmod +x /data/workspace/startup.sh &&\
     chmod +x /data/workspace/render_tpl
 
