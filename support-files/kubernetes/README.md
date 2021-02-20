@@ -66,8 +66,7 @@ bk-repo k8s构建工具
 
 1. 构建docker镜像
     ```shell script
-    cd images
-    ./build.sh
+    ./images/build.sh
     ```
 
 2. 部署基础镜像

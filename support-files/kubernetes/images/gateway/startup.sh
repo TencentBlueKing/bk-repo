@@ -1,5 +1,4 @@
 #! /bin/sh
-
 mkdir -p $BK_REPO_LOGS_DIR/nginx
 
 ##初始化配置
