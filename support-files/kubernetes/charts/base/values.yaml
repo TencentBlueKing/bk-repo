@@ -18,7 +18,7 @@ ingress-nginx:
   # false则忽略ingress-nginx部署
   enabled: true
   controller:
-    image:
+#    image:
 #      repository: xbazhen/ingress-nginx-controller
 #      tag: v0.34.1
 #      digest: sha256:80359bdf124d49264fabf136d2aecadac729b54f16618162194356d3c78ce2fe
