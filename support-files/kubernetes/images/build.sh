@@ -35,7 +35,7 @@ cp -rf gateway/startup.sh tmp/
 cp -rf $root_dir/support-files/scripts/render_tpl tmp/
 cp -rf $root_dir/support-files/templates tmp/
 docker build -f gateway/gateway.Dockerfile -t $hub/bkrepo/gateway:$bkrepo_version tmp --network=host
-#docker push $hub/bkrepo/gateway:$bkrepo_version
+docker push $hub/bkrepo/gateway:$bkrepo_version
 docker tag $hub/bkrepo/gateway:$bkrepo_version bkrepo/gateway
 info "构建gateway镜像完成"
 
@@ -49,7 +49,7 @@ do
     cp backend/startup.sh tmp/
     cp $backend_dir/release/boot-$service-*.jar tmp/$service.jar
     docker build -f backend/$service.Dockerfile -t $hub/bkrepo/$service:$bkrepo_version tmp --network=host
-    #docker push $hub/bkrepo/$service:$bkrepo_version
+    docker push $hub/bkrepo/$service:$bkrepo_version
     docker tag $hub/bkrepo/$service:$bkrepo_version bkrepo/$service
     info "构建$service 镜像完成"
 done
@@ -63,7 +63,7 @@ cp -rf $root_dir/support-files/scripts/render_tpl tmp/
 cp -rf $root_dir/support-files/templates tmp/
 cp -rf $root_dir/support-files/sql/init-data.js tmp/
 docker build -f init/init.Dockerfile -t $hub/bkrepo/init:$bkrepo_version tmp --no-cache --network=host
-#docker push $hub/bkrepo/init:$bkrepo_version
+docker push $hub/bkrepo/init:$bkrepo_version
 docker tag $hub/bkrepo/init:$bkrepo_version bkrepo/init
 info "构建init镜像完成"
 
