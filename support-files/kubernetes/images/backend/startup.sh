@@ -15,5 +15,3 @@ java -server \
      -jar $MODULE.jar \
      --spring.profiles.active=$BK_REPO_ENV \
      --spring.cloud.consul.host=$HOST_IP
-
-tail -f /dev/null

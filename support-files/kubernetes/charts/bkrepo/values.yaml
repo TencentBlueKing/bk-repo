@@ -2,7 +2,7 @@ image:
   # bkrepo镜像拉取地址
   hub: docker.io
   # bkrepo镜像拉取tag 
-  tag: 1.0.0
+  tag: 1.0.2
   pullPolicy: IfNotPresent
 
 # bkrepo
