@@ -30,7 +30,7 @@ config = {
       "__BK_REPO_CONSUL_DNS_HOST__"
     },
     port = "__BK_REPO_CONSUL_DNS_PORT__",
-    http_port = "__BK_REPO_CONSUL_PORT__",
+    http_port = "__BK_REPO_CONSUL_SERVER_PORT__",
     domain = "__BK_REPO_CONSUL_DOMAIN__",
     tag = "__BK_REPO_CONSUL_TAG__",
     nodes_url = "/v1/catalog/nodes"
