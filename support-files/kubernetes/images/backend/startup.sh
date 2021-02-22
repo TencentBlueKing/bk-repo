@@ -14,4 +14,5 @@ java -server \
      -Xmx$BK_REPO_JVM_XMX \
      -jar $MODULE.jar \
      --spring.profiles.active=$BK_REPO_ENV \
-     --spring.cloud.consul.host=$HOST_IP
+     --spring.cloud.consul.host=$BK_REPO_CONSUL_SERVER_HOST \
+     --spring.cloud.consul.port=$BK_REPO_CONSUL_SERVER_PORT

@@ -1,0 +1,7 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+验证步骤:
+1. 访问consul.bkrepo.com 查看服务列表是否正常加入，以及配置是否写入
+2. 访问bkrepo.com 验证是否服务能否正常访问
