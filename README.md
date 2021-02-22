@@ -33,6 +33,6 @@
 * [下载与编译](docs/overview/source_compile.md)
 * [安装部署](docs/overview/installation.md)
 * [API使用说明见这里](docs/apidoc/)
-* [使用Helm部署BKREPO到K8S环境](docs/install/README.md)
+* [使用Helm部署BKREPO到K8S环境](support-files/kubernetes/README.md)
 
 
