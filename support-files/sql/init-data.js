@@ -34,11 +34,11 @@ db.account.updateOne(
 );
 
 db.project.updateOne(
-    { name: "bkee" },
+    { name: "blueking" },
     {
         $setOnInsert: {
-            name: "bkee",
-            displayName: "bkee",
+            name: "blueking",
+            displayName: "blueking",
             description: "",
             createdBy: "admin",
             createdDate: new Date(),
@@ -51,12 +51,12 @@ db.project.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "bkee",
+        projectId: "blueking",
         name: "generic-local"
     },
     {
         $setOnInsert: {
-            projectId: "bkee",
+            projectId: "blueking",
             name: "generic-local",
             type: "GENERIC",
             category: "LOCAL",
@@ -75,12 +75,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "bkee",
+        projectId: "blueking",
         name: "maven-local"
     },
     {
         $setOnInsert: {
-            projectId: "bkee",
+            projectId: "blueking",
             name: "maven-local",
             type: "MAVEN",
             category: "LOCAL",
@@ -99,12 +99,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "bkee",
+        projectId: "blueking",
         name: "docker-local"
     },
     {
         $setOnInsert: {
-            projectId: "bkee",
+            projectId: "blueking",
             name: "docker-local",
             type: "DOCKER",
             category: "LOCAL",
@@ -123,12 +123,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "bkee",
+        projectId: "blueking",
         name: "npm-local"
     },
     {
         $setOnInsert: {
-            projectId: "bkee",
+            projectId: "blueking",
             name: "npm-local",
             type: "NPM",
             category: "LOCAL",
@@ -147,12 +147,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "bkee",
+        projectId: "blueking",
         name: "pypi-local"
     },
     {
         $setOnInsert: {
-            projectId: "bkee",
+            projectId: "blueking",
             name: "pypi-local",
             type: "PYPI",
             category: "LOCAL",
@@ -171,12 +171,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "bkee",
+        projectId: "blueking",
         name: "helm-local"
     },
     {
         $setOnInsert: {
-            projectId: "bkee",
+            projectId: "blueking",
             name: "helm-local",
             type: "HELM",
             category: "LOCAL",
