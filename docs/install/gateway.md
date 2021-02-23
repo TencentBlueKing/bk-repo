@@ -45,35 +45,23 @@ cd /usr/local/openresty/nginx && ./sbin/nginx -v
 
 最后提示`"nginx version: openresty/1.13.6.2"`即安装成功。
 
-### 部署并启动bk-ci网关
+### 部署并启动bkrepo网关
 
 网关主要是配置文件和lua脚本，所以只需要将网关gateway的外链到nginx的conf目录
 
-- 先配置{{code}}/scripts/bkenv.properties相关参数
+- 先配置/data/bkee/bkrepo/scripts/bkrepo.env相关参数
 - 执行render命令生成网关的模板文件
 
 ```shell
-    cd {{code}}/scripts
-    sh ./render_tpl -m ci ../support-files/templates/gateway*
+cd /data/bkee/bkrepo/scripts
+./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env /data/bkee/bkrepo/support-files/templates/gateway*
 ```
 
-- 拷贝渲染后的模板文件到nginx代码目录
-
-```shell
-cp -rf {{code}}/ci/gateway/core/* {{code}}/src/gateway/core/
-```
-
-- 将nginx配置文件复制到项目目录下
-  
-```shell
-cp -rf {{code}}/src/gateway/core/* __INSTALL_PATH__/gateway
-```
-
-- 将`__INSTALL_PATH__/gateway`的nginx配置目录软连到nginx的conf目录下
+- 将`/data/bkee/bkrepo/gateway`的nginx配置目录软连到nginx的conf目录下
 
 ```shell
 rm -rf /usr/local/openresty/nginx/conf
-ln -s  __INSTALL_PATH__/gateway /usr/local/openresty/nginx/conf
+ln -s  /data/bkee/bkrepo/gateway /usr/local/openresty/nginx/conf
 ```
 
 

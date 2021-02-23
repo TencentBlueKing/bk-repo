@@ -1,6 +1,4 @@
-# bk-ci 前端部署文档
-
-蓝鲸ci前端（frontend目录下）, common-lib和svg-sprites为项目依赖的静态资源，其余目录均为vue的spa工程，其中devops-nav为主入口，其它子服务以Iframe 或 UMD 的方式接入
+# bkrepo 前端编译文档
 
 ## 系统要求
 
