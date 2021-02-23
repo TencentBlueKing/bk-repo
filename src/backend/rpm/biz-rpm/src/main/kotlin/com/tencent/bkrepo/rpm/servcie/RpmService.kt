@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
@@ -54,6 +54,7 @@ import com.tencent.bkrepo.rpm.PRIMARY_XML
 import com.tencent.bkrepo.rpm.REPOMD_XML
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
 import com.tencent.bkrepo.rpm.artifact.repository.RpmLocalRepository
+import com.tencent.bkrepo.rpm.exception.RpmConfNotFoundException
 import org.springframework.stereotype.Service
 
 @Service
@@ -92,10 +93,12 @@ class RpmService(
     fun addGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         groups.removeAll(rpmIndexSet)
-        val rpmLocalConfiguration = context.getCompositeConfiguration()
-        (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
-            .addAll(groups)
-        val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
+        val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
+        val oldGroups = (rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
+            ?: mutableListOf()).toMutableSet()
+        oldGroups.addAll(groups)
+        rpmConfiguration.settings["groupXmlSet"] = oldGroups
+        val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
         repositoryClient.updateRepo(repoUpdateRequest)
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         (repository as RpmLocalRepository).flushAllRepoData(context)
@@ -104,10 +107,12 @@ class RpmService(
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
-        val rpmLocalConfiguration = context.getCompositeConfiguration()
-        (rpmLocalConfiguration.getSetting<MutableList<String>>("groupXmlSet") ?: mutableListOf())
-            .removeAll(groups)
-        val repoUpdateRequest = createRepoUpdateRequest(context, rpmLocalConfiguration)
+        val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
+        val oldGroups = (rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
+            ?: mutableListOf()).toMutableSet()
+        oldGroups.removeAll(groups)
+        rpmConfiguration.settings["groupXmlSet"] = oldGroups
+        val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
         repositoryClient.updateRepo(repoUpdateRequest)
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
         (repository as RpmLocalRepository).flushAllRepoData(context)
@@ -115,14 +120,14 @@ class RpmService(
 
     private fun createRepoUpdateRequest(
         context: ArtifactSearchContext,
-        rpmLocalConfiguration: LocalConfiguration
+        rpmConfiguration: RepositoryConfiguration
     ): RepoUpdateRequest {
         return RepoUpdateRequest(
             context.artifactInfo.projectId,
             context.artifactInfo.repoName,
             context.repositoryDetail.public,
             context.repositoryDetail.description,
-            rpmLocalConfiguration,
+            rpmConfiguration,
             context.userId
         )
     }
@@ -132,4 +137,11 @@ class RpmService(
         val context = ArtifactRemoveContext()
         repository.remove(context)
     }
+
+    private fun getRpmRepoConf(project: String, repoName: String): RepositoryConfiguration {
+        val repositoryInfo = repositoryClient.getRepoInfo(project, repoName).data
+            ?: throw RpmConfNotFoundException("can not found $project | $repoName conf")
+        return repositoryInfo.configuration
+    }
+
 }

@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi.artifact
+package com.tencent.bkrepo.pypi
 
 const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
 const val FLUSH_CACHE_EXPIRE = 60 * 24
