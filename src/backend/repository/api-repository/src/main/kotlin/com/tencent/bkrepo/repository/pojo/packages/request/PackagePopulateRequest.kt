@@ -57,5 +57,9 @@ data class PackagePopulateRequest(
     @ApiModelProperty("包简要描述")
     val description: String? = null,
     @ApiModelProperty("版本列表")
-    val versionList: List<PopulatedPackageVersion>
+    val versionList: List<PopulatedPackageVersion>,
+    @ApiModelProperty("包版本标签")
+    val versionTag: Map<String, String>? = null,
+    @ApiModelProperty("扩展字段")
+    val extension: Map<String, Any>? = null
 )

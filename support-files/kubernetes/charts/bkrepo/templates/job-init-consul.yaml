@@ -22,5 +22,5 @@ spec:
               value : {{ $value | quote }}
             {{- end}}
       restartPolicy: Never
-  backoffLimit: 4
+  backoffLimit: 1
 {{end}}

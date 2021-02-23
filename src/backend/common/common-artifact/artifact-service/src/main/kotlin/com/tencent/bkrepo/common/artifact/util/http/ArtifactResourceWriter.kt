@@ -74,8 +74,8 @@ object ArtifactResourceWriter {
 
         response.bufferSize = STREAM_BUFFER_SIZE
         response.characterEncoding = resource.characterEncoding
-        response.contentType = determineMediaType(artifact)
-        response.status = resolveStatus(request)
+        response.contentType = resource.contentType ?: determineMediaType(artifact)
+        response.status = resource.status?.value ?: resolveStatus(request)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, BYTES)
         response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
         response.setHeader(HttpHeaders.CONTENT_LENGTH, resolveContentLength(range))
@@ -126,7 +126,7 @@ object ArtifactResourceWriter {
     }
 
     private fun determineMediaType(name: String): String {
-        val extension = PathUtils.resolveExtension(name).orEmpty()
+        val extension = PathUtils.resolveExtension(name)
         return mimeMappings.get(extension) ?: MediaTypes.APPLICATION_OCTET_STREAM
     }
 

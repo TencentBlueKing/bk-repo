@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.response
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -38,9 +39,11 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 class ArtifactResource(
     val inputStream: ArtifactInputStream,
     val artifact: String,
-    val node: NodeDetail?,
-    val channel: ArtifactChannel,
+    val node: NodeDetail? = null,
+    val channel: ArtifactChannel = ArtifactChannel.LOCAL,
     var useDisposition: Boolean = true
 ) {
     var characterEncoding: String = StringPool.UTF_8
+    var status: HttpStatus? = null
+    var contentType: String? = null
 }

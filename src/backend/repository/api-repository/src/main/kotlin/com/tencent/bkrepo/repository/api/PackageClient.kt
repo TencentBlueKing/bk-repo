@@ -40,7 +40,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
@@ -65,13 +67,30 @@ interface PackageClient {
         @RequestParam packageKey: String
     ): Response<PackageSummary?>
 
-    @ApiOperation("查询版本信息")
+    @ApiOperation("根据版本名称查询版本信息")
     @GetMapping("/version/info/{projectId}/{repoName}")
     fun findVersionByName(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
         @RequestParam version: String
+    ): Response<PackageVersion?>
+
+    @ApiOperation("根据版本标签查询版本信息")
+    @GetMapping("/package/tag/{projectId}/{repoName}")
+    fun findVersionNameByTag(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam tag: String
+    ): Response<String?>
+
+    @ApiOperation("根据语义化版本排序查找latest版本")
+    @GetMapping("/version/semver/latest/{projectId}/{repoName}")
+    fun findLatestBySemVer(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String
     ): Response<PackageVersion?>
 
     @ApiOperation("创建包版本")
@@ -97,6 +116,18 @@ interface PackageClient {
         @RequestParam version: String
     ): Response<Void>
 
+    @ApiOperation("更新包")
+    @PostMapping("/package/update")
+    fun updatePackage(
+        @RequestBody request: PackageUpdateRequest
+    ): Response<Void>
+
+    @ApiOperation("更新版本")
+    @PostMapping("/version/update")
+    fun updateVersion(
+        @RequestBody request: PackageVersionUpdateRequest
+    ): Response<Void>
+
     @ApiOperation("搜索包")
     @PostMapping("/package/search")
     fun searchPackage(
@@ -112,6 +143,15 @@ interface PackageClient {
         @RequestBody option: VersionListOption = VersionListOption()
     ): Response<Page<PackageVersion>>
 
+    @ApiOperation("查询所有版本")
+    @PostMapping("/version/list/{projectId}/{repoName}")
+    fun listAllVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestBody option: VersionListOption = VersionListOption()
+    ): Response<List<PackageVersion>>
+
     @ApiOperation("分页查询包")
     @PostMapping("/package/page/{projectId}/{repoName}")
     fun listPackagePage(
@@ -119,6 +159,20 @@ interface PackageClient {
         @PathVariable repoName: String,
         @RequestBody option: PackageListOption = PackageListOption()
     ): Response<Page<PackageSummary>>
+
+    @ApiOperation("查询所有包名称")
+    @PostMapping("/package/list/{projectId}/{repoName}")
+    fun listAllPackageNames(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<List<String>>
+
+    @ApiOperation("查询包数量")
+    @PostMapping("/package/count/{projectId}/{repoName}")
+    fun getPackageCount(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Long>
 
     /**
      * 包版本数据填充，该过程会自动累加downloads和version数量到包信息中
