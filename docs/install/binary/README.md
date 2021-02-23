@@ -31,7 +31,7 @@
 - CentOS 7.X
 - jdk: 1.8
 - mongodb 3.6
-- Consul 1.0+ [Consul安装](../install/consul.md)
+- Consul 1.0+ [Consul安装](consul.md)
 
 ### 2.2 mongodb数据库初始化
 
@@ -64,11 +64,11 @@ echo "put config to consul kv success."
 
 采用OpenResty作为网关服务器，部署主要分为OpenResty安装， gateway的lua和nginx配置代码部署两部分。
 
-- [bk-ci网关部署](../install/gateway.md)
+- [bk-ci网关部署](gateway.md)
 
 ### 3.2 前端部署
 
-- [前端编译](../install/frontend.md)，对编译有兴趣可以自行研究
+- [前端编译](frontend.md)，对编译有兴趣可以自行研究
 
 bkrepo包中未编译好之后的工程，前端构建之后生成的模板配置文件变量替换
 
@@ -79,9 +79,7 @@ cd /data/bkee/bkrepo/scripts
 
 ### 3.3 后端微服务部署
 
-后端微服务与agent.jar的编译和部署
-
-- [后端服务编译及部署](../install/backend.md)
+- [后端服务部署](backend.md)
 
 
 ### 3.5 support-files/template配置文件初始化
