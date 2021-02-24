@@ -1,7 +1,9 @@
+## pypi仓库使用指引
 
-####添加仓库：
+#### 添加仓库：
+
 ```bash
-curl -X POST http://127.0.0.1:8080/api/repo \
+curl -X POST http://{bk_repo_addr}/repository/repo \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
@@ -12,8 +14,8 @@ curl -X POST http://127.0.0.1:8080/api/repo \
   "configuration": {"type": "local|remote|virtual|composite"}
 }'
 
-#添加remote 仓库
-curl -X POST http://127.0.0.1:8080/api/repo \
+#remote 仓库
+curl -X POST http://{bk_repo_addr}//repository/repo \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
@@ -34,27 +36,25 @@ curl -X POST http://127.0.0.1:8080/api/repo \
 配置文件路径：`~/.pip/pip.conf`
 ```conf
 [bkrepo]
-index-url = http://ip:port/projectId/repositoryId/simple
-username = admin
-password = password
+index-url = http://{bk_repo_addr}/{projectId}/{repoName}/simple
+username = {user}
+password = {password}
 ```
-
 
 **依赖源地址需要加上`/simple`**
 
+#### upload:
 
-
-#### Upload:
 配置仓库地址和认证信息:$HOME/.pypirc
-=======
+
 配置仓库地址和认证信息
 ```txt
 [distutils]
 index-servers = bkrepo
 [bkrepo]
-repository = http://ip:port/projectId/repositoryId/
-username = admin
-password = password
+repository = http://{bk_repo_addr}/{projectId}/{repoName}/simple
+username = {user}
+password = {password}
 ```
 
 ```bash
@@ -66,7 +66,7 @@ python3 -m twine upload -r {bkrepo} dist/*
 
 替换默认依赖源地址
 
-- MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf
+- MacOS/Linux配置目录 :  $HOME/.pip/pip.conf
 - Windows配置目录 :  %HOME%/pip/pip.ini
   ```txt
   [global]
@@ -81,6 +81,7 @@ python3 -m twine upload -r {bkrepo} dist/*
   
 指定依赖源下载
 ```bash
+
 pip3 install -i {repositoryUrl} {package}=={version}
 #Example
 pip3 install -i http://ip:port/projectId/repositoryId/simple installPackage==0.0.1
