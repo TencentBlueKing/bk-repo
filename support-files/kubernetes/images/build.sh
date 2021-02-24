@@ -11,11 +11,6 @@ backend_dir=$root_dir/src/backend
 frontent_dir=$root_dir/src/frontend
 gateway_dir=$root_dir/src/gateway
 
-info "root_dir: $root_dir"
-info "backend_dir: $backend_dir"
-info "frontent_dir: $frontent_dir"
-info "gateway_dir: $gateway_dir"
-
 set -e
 source ../build.env
 mkdir -p tmp
@@ -32,7 +27,7 @@ rm -rf tmp/*
 cp -rf $frontent_dir/frontend tmp/
 cp -rf $gateway_dir tmp/gateway
 cp -rf gateway/startup.sh tmp/
-cp -rf $root_dir/support-files/scripts/render_tpl tmp/
+cp -rf $root_dir/scripts/render_tpl tmp/
 cp -rf $root_dir/support-files/templates tmp/
 docker build -f gateway/gateway.Dockerfile -t $hub/bkrepo/gateway:$bkrepo_version tmp --network=host
 docker push $hub/bkrepo/gateway:$bkrepo_version
@@ -59,7 +54,7 @@ info "构建init镜像..."
 rm -rf tmp/*
 cp -rf init/init-mongodb.sh tmp/
 cp -rf init/init-consul.sh tmp/
-cp -rf $root_dir/support-files/scripts/render_tpl tmp/
+cp -rf $root_dir/scripts/render_tpl tmp/
 cp -rf $root_dir/support-files/templates tmp/
 cp -rf $root_dir/support-files/sql/init-data.js tmp/
 docker build -f init/init.Dockerfile -t $hub/bkrepo/init:$bkrepo_version tmp --no-cache --network=host
