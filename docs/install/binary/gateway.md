@@ -11,6 +11,8 @@
 
 这里以 CentOS 7.x 环境来对安装已经说明。
 
+### 服务器本地启动consul,并且加入conul集群，用作服务发现
+
 ### OpenResty安装及启动
 
 - 上传安装和部署文件
@@ -49,19 +51,19 @@ cd /usr/local/openresty/nginx && ./sbin/nginx -v
 
 网关主要是配置文件和lua脚本，所以只需要将网关gateway的外链到nginx的conf目录
 
-- 先配置/data/bkee/bkrepo/scripts/bkrepo.env相关参数
+- 先配置$BK_REPO_DIR/bkrepo/scripts/bkrepo.env相关参数
 - 执行render命令生成网关的模板文件
 
 ```shell
-cd /data/bkee/bkrepo/scripts
-./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env /data/bkee/bkrepo/support-files/templates/gateway*
+cd $BK_REPO_DIR/bkrepo/scripts
+./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env $BK_REPO_DIR/bkrepo/support-files/templates/gateway*
 ```
 
 - 将`/data/bkee/bkrepo/gateway`的nginx配置目录软连到nginx的conf目录下
 
 ```shell
 rm -rf /usr/local/openresty/nginx/conf
-ln -s  /data/bkee/bkrepo/gateway /usr/local/openresty/nginx/conf
+ln -s  $BK_REPO_DIR/bkrepo/gateway /usr/local/openresty/nginx/conf
 ```
 
 

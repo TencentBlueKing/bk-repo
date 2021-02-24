@@ -34,6 +34,7 @@ package com.tencent.bkrepo.rpm.artifact.repository
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -170,18 +171,6 @@ class RpmLocalRepository(
             operator = userId,
             metadata = metadata
         )
-    }
-
-    /**
-     * 查询rpm仓库属性
-     */
-    private fun getRpmRepoConf(context: ArtifactContext): RpmRepoConf {
-        val rpmConfiguration = try {
-            context.getLocalConfiguration()
-        } catch (e: IllegalArgumentException) {
-            context.getCompositeConfiguration()
-        }
-        return rpmConfiguration.toRpmRepoConf()
     }
 
     /**
@@ -772,6 +761,16 @@ class RpmLocalRepository(
         artifactFile.delete()
         with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
         logger.info("Success to insert $node")
+    }
+
+    private fun getRpmRepoConf(context: ArtifactContext): RpmRepoConf {
+        val repositoryInfo = repositoryClient.getRepoInfo(context.projectId, context.repoName).data
+            ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
+                "${context.projectId}/${context.repoName}"
+            )
+        val rpmConfiguration = repositoryInfo.configuration
+        return rpmConfiguration.toRpmRepoConf()
     }
 
     fun refinePrimaryIndexText(originStr: String, index: Int): String {
