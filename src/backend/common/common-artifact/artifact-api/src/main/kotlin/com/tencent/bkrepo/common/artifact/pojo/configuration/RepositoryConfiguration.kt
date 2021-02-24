@@ -59,7 +59,7 @@ open class RepositoryConfiguration {
      * 不同类型仓库可以通过该字段进行差异化配置
      */
     @ApiModelProperty("设置项", required = false)
-    val settings: Map<String, Any> = emptyMap()
+    val settings: MutableMap<String, Any> = mutableMapOf()
 
     /**
      * 根据属性名[key]获取自定义context属性

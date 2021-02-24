@@ -144,16 +144,17 @@ class PypiLocalRepository(
         val version: String = context.request.getParameter("version")
         packageClient.createVersion(
             PackageVersionCreateRequest(
-                context.projectId,
-                context.repoName,
-                name,
-                PackageKeys.ofPypi(name),
-                PackageType.PYPI,
-                null,
-                version,
-                context.getArtifactFile("content").getSize(),
-                null,
-                nodeCreateRequest.fullPath,
+                projectId = context.projectId,
+                repoName = context.repoName,
+                packageName = name,
+                packageKey = PackageKeys.ofPypi(name),
+                packageType = PackageType.PYPI,
+                packageDescription = null,
+                packageExtension = null,
+                versionName = version,
+                size = context.getArtifactFile("content").getSize(),
+                manifestPath = null,
+                artifactPath = nodeCreateRequest.fullPath,
                 overwrite = true,
                 createdBy = context.userId
             )
@@ -229,17 +230,8 @@ class PypiLocalRepository(
                     context.userId
                 )
             )
-            deleteVersion(context.projectId, context.repoName, packageKey, version)
+            packageClient.deleteVersion(context.projectId, context.repoName, packageKey, version)
         }
-    }
-
-    /**
-     * 删除版本后，检查改packageKey下版本是否为空，为空则删除packageKey
-     */
-    fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version)
-        val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
-        if (page.records.isEmpty()) packageClient.deletePackage(projectId, repoName, packageKey)
     }
 
     /**
@@ -297,6 +289,12 @@ class PypiLocalRepository(
      *
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
+        val request = HttpContextHolder.getRequest()
+        if (!request.requestURI.endsWith("/")) {
+            val response = HttpContextHolder.getResponse()
+            response.sendRedirect("${request.requestURL}/")
+            response.writer.flush()
+        }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
@@ -326,7 +324,7 @@ class PypiLocalRepository(
                     ).data
                         ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
                     return buildPypiPageContent(
-                        buildPackageFilenodeListContent(packageNode)
+                        buildPackageFileNodeListContent(packageNode)
                     )
                 }
             }
@@ -353,7 +351,7 @@ class PypiLocalRepository(
      * 对应包中的文件列表
      * [nodeList]
      */
-    private fun buildPackageFilenodeListContent(nodeList: List<NodeInfo>): String {
+    private fun buildPackageFileNodeListContent(nodeList: List<NodeInfo>): String {
         val builder = StringBuilder()
         if (nodeList.isEmpty()) {
             builder.append("The directory is empty.")
@@ -382,7 +380,10 @@ class PypiLocalRepository(
             builder.append("The directory is empty.")
         }
         for (node in nodeList) {
-            builder.append("<a data-requires-python=\">=\" href=\"/$projectId/$repoName/simple/${node.name}\" rel=\"internal\" >${node.name}</a><br/>")
+            builder.append(
+                "<a data-requires-python=\">=\" href=\"${node.name}\"" +
+                    " rel=\"internal\" >${node.name}</a><br/>"
+            )
         }
         return builder.toString()
     }
@@ -392,7 +393,7 @@ class PypiLocalRepository(
      * @param nodeInfo 节点
      */
     fun filenodeMetadata(nodeInfo: NodeInfo): List<Map<String, Any?>>? {
-        val filenodeList: List<Map<String, Any?>>?
+        val fileNodeList: List<Map<String, Any?>>?
         with(nodeInfo) {
             val projectId = Rule.QueryRule("projectId", projectId)
             val repoName = Rule.QueryRule("repoName", repoName)
@@ -408,9 +409,9 @@ class PypiLocalRepository(
                 select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
                 rule = rule
             )
-            filenodeList = nodeClient.search(queryModel).data?.records
+            fileNodeList = nodeClient.search(queryModel).data?.records
         }
-        return filenodeList
+        return fileNodeList
     }
 
     @org.springframework.beans.factory.annotation.Value("\${migrate.url:''}")
@@ -481,15 +482,13 @@ class PypiLocalRepository(
                     val packageMigrateDetail = PackageMigrateDetail(
                         packageName,
                         mutableSetOf(),
-                        mutableSetOf<VersionMigrateErrorDetail>()
+                        mutableSetOf()
                     )
-                    "$verifiedUrl/$packageName".htmlHrefs().let { filenodes ->
-                        for (filenode in filenodes) {
-                            threadPool.submit(
-                                Runnable {
-                                    migrateUpload(context, filenode, verifiedUrl, packageName, packageMigrateDetail)
-                                }
-                            )
+                    "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
+                        for (fileNode in fileNodes) {
+                            threadPool.submit {
+                                migrateUpload(context, fileNode, verifiedUrl, packageName, packageMigrateDetail)
+                            }
                         }
                     }
                     packageMigrateDetailList.add(packageMigrateDetail)
@@ -558,13 +557,13 @@ class PypiLocalRepository(
 
     fun migrateUpload(
         context: ArtifactMigrateContext,
-        filenode: Element,
+        fileNode: Element,
         verifiedUrl: String,
         packageName: String,
         packageMigrateDetail: PackageMigrateDetail
     ) {
-        val filename = filenode.text()
-        val hrefValue = filenode.attributes()["href"]
+        val filename = fileNode.text()
+        val hrefValue = fileNode.attributes()["href"]
         // 获取文件流
         try {
             "$verifiedUrl/$packageName/$hrefValue".downloadUrlHttpClient()?.use { inputStream ->
@@ -592,7 +591,7 @@ class PypiLocalRepository(
             }
         } catch (unknownServiceException: UnknownServiceException) {
             logger.error(unknownServiceException.message)
-            failSet.add("$verifiedUrl/$packageName/${filenode.attributes()["href"]}")
+            failSet.add("$verifiedUrl/$packageName/${fileNode.attributes()["href"]}")
         }
     }
 
