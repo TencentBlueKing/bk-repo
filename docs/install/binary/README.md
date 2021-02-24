@@ -31,7 +31,7 @@
 - CentOS 7.X
 - jdk: 1.8
 - mongodb 3.6
-- Consul 1.0+ [Consul安装](../install/consul.md)
+- Consul 1.0+ [Consul安装](consul.md)
 
 
 ### 2.2 设置部署环境变量
@@ -90,6 +90,11 @@ echo "put config to consul kv success."
 ### 3.2 前端部署
 
 - [前端编译](../install/source_compile.md)，对编译有兴趣可以自行研究
+- [bk-ci网关部署](gateway.md)
+
+### 3.2 前端部署
+
+- [前端编译](frontend.md)，对编译有兴趣可以自行研究
 
 前端配置文件渲染
 
@@ -100,8 +105,7 @@ cd $BK_REPO_DIR/bkrepo/scripts
 
 ### 3.3 后端微服务部署
 
-
-- [后端服务部署](../install/backend.md)
+- [后端服务部署](backend.md)
 
 
 

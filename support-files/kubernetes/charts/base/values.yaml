@@ -5,7 +5,6 @@ consul:
   global:
     name: consul
     domain: consul
-    datacenter: dc
   server:
     replicas: 1
     bootstrapExpect: 1
@@ -18,11 +17,6 @@ ingress-nginx:
   # false则忽略ingress-nginx部署
   enabled: true
   controller:
-#    image:
-#      repository: xbazhen/ingress-nginx-controller
-#      tag: v0.34.1
-#      digest: sha256:80359bdf124d49264fabf136d2aecadac729b54f16618162194356d3c78ce2fe
-#      pullPolicy: IfNotPresent
     kind: DaemonSet
     admissionWebhooks:
       enabled: false
