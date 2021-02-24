@@ -2,5 +2,5 @@ apiVersion: v1
 name: bkrepo
 description: BlueKing Repository
 type: application
-version: 1.0.3
-appVersion: 1.0.2
+version: 1.0.4
+appVersion: 1.0.4
