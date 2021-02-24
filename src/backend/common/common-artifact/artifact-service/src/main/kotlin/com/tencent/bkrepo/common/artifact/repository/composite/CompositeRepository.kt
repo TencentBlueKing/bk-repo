@@ -189,13 +189,11 @@ class CompositeRepository(
      * 根据原始上下文[context]以及代理源设置[setting]生成新的[ArtifactContext]
      */
     private fun getContextFromProxyChannel(context: ArtifactContext, setting: ProxyChannelSetting): ArtifactContext {
-        val artifactContext = if (setting.public) {
+        return if (setting.public) {
             getContextFromPublicProxyChannel(context, setting)
         } else {
             getContextFromPrivateProxyChannel(context, setting)
         }
-        require(artifactContext is ArtifactDownloadContext)
-        return artifactContext
     }
 
     /**

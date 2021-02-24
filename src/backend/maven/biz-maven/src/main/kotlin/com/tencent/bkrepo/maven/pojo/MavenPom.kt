@@ -39,8 +39,9 @@ data class MavenPom(
     @JacksonXmlProperty(isAttribute = true, namespace = "xsi")
     val schemaLocation: String?,
     val modelVersion: String?,
-    val groupId: String,
-    val artifactId: String,
-    val version: String,
+    override val groupId: String,
+    override val artifactId: String,
+    override val version: String,
+    override val classifier: String?,
     val packaging: String?
-)
+) : MavenGAVC(groupId, artifactId, version, classifier)
