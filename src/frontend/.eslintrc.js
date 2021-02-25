@@ -42,13 +42,7 @@ module.exports = {
         'vue'
     ],
     globals: {
-        'MODE_CONFIG': true,
-        'DOCS_URL_PREFIX': true,
-        'LOGIN_SERVICE_URL': true,
-        'DEVOPS_SITE_URL': true,
-        'AJAX_URL_PREFIX': true,
-        'WEB_URL_PREFIX': true,
-        'PERM_URL_PREFIX': true
+        'MODE_CONFIG': true
     },
     // add your custom rules hered
     rules: {
