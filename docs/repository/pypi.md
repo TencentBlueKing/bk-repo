@@ -3,7 +3,7 @@
 #### 添加仓库：
 
 ```bash
-curl -X POST http://{bk_repo_addr}/repository/repo \
+curl -X POST http://{bk_repo_addr}/repository/repo/create \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
@@ -15,7 +15,7 @@ curl -X POST http://{bk_repo_addr}/repository/repo \
 }'
 
 #remote 仓库
-curl -X POST http://{bk_repo_addr}//repository/repo \
+curl -X POST http://{bk_repo_addr}/repository/repo \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
@@ -70,9 +70,9 @@ python3 -m twine upload -r {bkrepo} dist/*
 - Windows配置目录 :  %HOME%/pip/pip.ini
   ```txt
   [global]
-  index-url = http://{admin}:{PASSWORD}@{repositoryUrl}/simple
+  index-url = http://{admin}:{PASSWORD}@{bk_repo_addr}/{projectId}/{repoName}/simple
   [install]
-  trusted-host=http://{repositoryUrl}
+  trusted-host=http://{bk_repo_addr}
   ```
 - 执行下面命令：
   ```bash
@@ -81,10 +81,7 @@ python3 -m twine upload -r {bkrepo} dist/*
   
 指定依赖源下载
 ```bash
-
-pip3 install -i {repositoryUrl} {package}=={version}
-#Example
-pip3 install -i http://ip:port/projectId/repositoryId/simple installPackage==0.0.1
+pip3 install -i http://{bk_repo_addr}/{projectId}/{repoName} {package}=={version}
 ```
 
 #### Search
@@ -95,9 +92,8 @@ pip3 list
 #删除安装包
 pip3 uninstall package
 #search
-pip3 search -i {repositoryUrl} {package}|{summary}
-#Example
-pip3 search -i http://ip:port/projectId/repositoryId installPackage
+pip3 search -i http://{bk_repo_addr}/{projectId}/{repoName} {package}|{summary}
+
 ```
 
 

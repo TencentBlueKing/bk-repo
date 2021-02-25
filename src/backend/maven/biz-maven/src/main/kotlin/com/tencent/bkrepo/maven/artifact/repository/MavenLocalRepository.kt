@@ -87,7 +87,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo) {
-            val regex = "(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip)$"
+            val regex = "(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip|pom)$"
             val matcher = Pattern.compile(regex).matcher(getArtifactFullPath())
             if (matcher.find()) {
                 val packaging = matcher.group(3)
