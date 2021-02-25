@@ -17,7 +17,7 @@ jdk: 1.8 ,java 运行时
 consul: 1.0 (服务器本地启动consul agent,并且加入到consul 服务集群)，用作配置中心与服务发现
 
 
-## 后端服务部署
+## 微服务部署
 
 ### 2.1 设置部署环境变量
 
@@ -25,12 +25,12 @@ consul: 1.0 (服务器本地启动consul agent,并且加入到consul 服务集�
 | ------------ | ---------------- |
 |BK_REPO_LOGS_DIR|bkrepo日志目录|
 |BK_REPO_JVM_XMS|java进程启动占用内存大小|
-|BK_REPO_ENV|部署环境,prod/test/dev|
+|BK_REPO_ENV|部署环境,prod|test|dev|
 |BK_REPO_CONSUL_SERVER_HOST|consul server host|
 |BK_REPO_CONSUL_SERVER_PORT |consul server port|
 |MODULE |微服务模块名称，比如auth,repository|
 
-### 2.2 微服务部署
+### 2.2 服务启动
 
 在部署服务器上的示例/data/bkee/的主目录下
 
@@ -55,5 +55,5 @@ java -server \
      --spring.cloud.consul.host=$BK_REPO_CONSUL_SERVER_HOST \
      --spring.cloud.consul.port=$BK_REPO_CONSUL_SERVER_PORT
 ```
-- 启动微服务： 比如项目管理 /data/bkee/bkrepo/backend/auth.sh start
+- 启动微服务：以auth微服务为例 /data/bkee/bkrepo/backend/auth.sh 
 

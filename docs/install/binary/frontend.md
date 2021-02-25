@@ -4,11 +4,12 @@
 
 nodejs版本 8.0.0及以上
 
-## 安装说明
+## 编译说明
 
 - 1、打包并部署相应的vue工程
 进入到src/frontend目录下
-```
+
+```shell
 # 先全局安装yarn
 npm install -g yarn
 # 然后执行install
