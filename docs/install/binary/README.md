@@ -24,7 +24,7 @@
 ```
 
 
-## 2. 基础环境部署
+## 2.服务部署
 
 ### 2.1 系统要求
 
@@ -38,7 +38,7 @@
 
 |   变量名   |  用途     |
 | ------------ | ---------------- |
-|BK_REPO_DIR|bkrepo安装目录,以前面bkrepo为例|
+|WORK_DIR|bkrepo安装目录,以/data/bkee/为例|
 |BK_REPO_MONGODB_USER|mongodb 用户名|
 |BK_REPO_MONGODB_PASSWORD|mongodb密码|
 |BK_REPO_MONGODB_ADDR|mongodb地址|
@@ -65,16 +65,17 @@ mongo -u $BK_REPO_MONGODB_USER -p $BK_REPO_MONGODB_PASSWORD $BK_REPO_MONGODB_ADD
   - 修改MODULE变量建议不要修改，默认为bkrepo
   
 ```shell
-cd $BK_REPO_DIR/bkrepo/scripts
-./render_tpl -u -p $BK_REPO_DIR -m bkrepo -e bkrepo.env $BK_REPO_DIR/bkrepo/support-files/templates/*.yaml
+cd $WORK_DIR/bkrepo/scripts
+chmod +x render_tpl
+./render_tpl -u -p $WORK_DIR -m bkrepo -e bkrepo.env $WORK_DIR/bkrepo/support-files/templates/*.yaml
 services=(auth repository dockerapi generic docker helm maven npm)
 for var in ${services[@]};
 do
     service=$BK_REPO_SERVICE_PREFIX$var
     echo $service
-    curl -T $BK_REPO_DIR/etc/bkrepo/$var.yaml http://$BK_REPO_CONSUL_SERVER_HOST:$BK_REPO_CONSUL_SERVER_PORT/v1/kv/bkrepo-config/$service/data
+    curl -T $WORK_DIR/etc/bkrepo/$var.yaml http://$BK_REPO_CONSUL_SERVER_HOST:$BK_REPO_CONSUL_SERVER_PORT/v1/kv/bkrepo-config/$service/data
 done
-curl -T $BK_REPO_DIR/etc/bkrepo/application.yaml http://$BK_REPO_CONSUL_SERVER_HOST:$BK_REPO_CONSUL_SERVER_PORT/v1/kv/bkrepo-config/application/data
+curl -T $WORK_DIR/etc/bkrepo/application.yaml http://$BK_REPO_CONSUL_SERVER_HOST:$BK_REPO_CONSUL_SERVER_PORT/v1/kv/bkrepo-config/application/data
 echo "put config to consul kv success."
 ```
 
@@ -85,12 +86,8 @@ echo "put config to consul kv success."
 
 采用OpenResty作为网关服务器，部署主要分为OpenResty安装， gateway的lua和nginx配置代码部署两部分。
 
-- [bkrepo网关部署](../install/gateway.md)
+- [bkrepo网关部署](gateway.md)
 
-### 3.2 前端部署
-
-- [前端编译](../install/source_compile.md)，对编译有兴趣可以自行研究
-- [bk-ci网关部署](gateway.md)
 
 ### 3.2 前端部署
 
@@ -99,7 +96,8 @@ echo "put config to consul kv success."
 前端配置文件渲染
 
 ```shell
-cd $BK_REPO_DIR/bkrepo/scripts
+cd $WORK_DIR/bkrepo/scripts
+chmod +x render_tpl
 ./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env /data/bkee/bkrepo/support-files/templates/*.html
 ```
 
