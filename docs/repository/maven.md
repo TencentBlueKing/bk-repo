@@ -1,6 +1,6 @@
-####启动配置：server.port: 8081
+#### 启动配置：server.port: 8081
 
-####添加仓库：
+#### 添加仓库：
 ```bash
 curl -X POST http://{bk_repo_addr}/repository/repo/create \
 -H 'Content-Type: application/json' \
