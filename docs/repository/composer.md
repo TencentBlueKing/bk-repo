@@ -1,6 +1,6 @@
-####启动配置：server.port: 8083
+#### 启动配置：server.port: 8083
 
-####添加仓库：
+#### 添加仓库：
 ```bash
 #composer 不支持virtual仓库
 curl -X POST http://{bk_repo_addr}/repository/repo/create \
