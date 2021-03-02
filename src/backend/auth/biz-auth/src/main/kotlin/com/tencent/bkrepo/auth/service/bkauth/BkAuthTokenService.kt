@@ -88,10 +88,10 @@ class BkAuthTokenService @Autowired constructor(
         val query = Query()
         val update = Update()
         query.addCriteria(Criteria.where(TBkAuthToken::lockKey.name).`is`(LOCKING_TASK_KEY))
-        update.addToSet(TBkAuthToken::token.name, token)
-        update.addToSet(TBkAuthToken::createdAt.name, now)
-        update.addToSet(TBkAuthToken::expiredAt.name, now.plusSeconds(210))
-        mongoTemplate.upsert(query, update, TUser::class.java)
+        update.set(TBkAuthToken::token.name, token)
+        update.set(TBkAuthToken::createdAt.name, now)
+        update.set(TBkAuthToken::expiredAt.name, now.plusSeconds(210))
+        mongoTemplate.upsert(query, update, TBkAuthToken::class.java)
     }
 
     fun getAccessToken(serviceCode: BkAuthServiceCode, invalidToken: String? = null): String {
