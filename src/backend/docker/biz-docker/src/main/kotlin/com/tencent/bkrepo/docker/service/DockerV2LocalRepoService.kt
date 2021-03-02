@@ -479,6 +479,7 @@ class DockerV2LocalRepoService @Autowired constructor(
             )
             return DockerTagDetail(basic, configBlob.history, nodeDetail.metadata, layers)
         } catch (ignored: Exception) {
+            logger.error("getRepoTagDetail exception [$ignored]")
             return null
         }
     }
