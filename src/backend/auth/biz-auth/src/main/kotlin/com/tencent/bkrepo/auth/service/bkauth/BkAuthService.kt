@@ -85,7 +85,7 @@ class BkAuthService @Autowired constructor(
         val responseObject = objectMapper.readValue<BkAuthResponse<String>>(apiResponse.content)
         if (responseObject.code != 0 && responseObject.code != 400) {
             if (responseObject.code == 403) {
-                bkAuthTokenService.refreshAccessToken(serviceCode)
+                bkAuthTokenService.getAccessToken(serviceCode, accessToken)
             }
             logger.error("validate user resource permission failed. ${apiResponse.content}")
             throw RuntimeException("validate user resource permission failed")

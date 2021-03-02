@@ -32,26 +32,40 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.model.TBkAuthToken
+import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.BkAuthResponse
 import com.tencent.bkrepo.auth.pojo.BkAuthToken
 import com.tencent.bkrepo.auth.pojo.BkAuthTokenRequest
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
+import com.tencent.bkrepo.auth.repository.BkAuthRepository
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.api.util.toJsonString
+import net.javacrumbs.shedlock.core.LockAssert
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockProvider
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
+import java.time.Duration
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @Service
 class BkAuthTokenService @Autowired constructor(
-    private val bkAuthConfig: BkAuthConfig
+    private val bkAuthConfig: BkAuthConfig,
+    private val lockProvider: LockProvider,
+    private val bkAuthRepository: BkAuthRepository,
+    private val mongoTemplate: MongoTemplate
 ) {
     private val okHttpClient = okhttp3.OkHttpClient.Builder()
         .connectTimeout(3L, TimeUnit.SECONDS)
@@ -59,24 +73,70 @@ class BkAuthTokenService @Autowired constructor(
         .writeTimeout(5L, TimeUnit.SECONDS)
         .build()
 
-    private val accessTokenCache = CacheBuilder.newBuilder()
-        .maximumSize(100)
-        .expireAfterWrite(210, TimeUnit.SECONDS)
-        .build<String, String>()
-
-    fun refreshAccessToken(serviceCode: BkAuthServiceCode): String {
-        accessTokenCache.invalidate(serviceCode.value)
-        return getAccessToken(serviceCode)
+    private fun getValidTokenInDB(invalidToken: String? = null): String? {
+        val authTokenInDB = bkAuthRepository.findOneByToken(LOCKING_TASK_KEY)
+        if (authTokenInDB != null && authTokenInDB.expiredAt.isAfter(LocalDateTime.now())) {
+            if (invalidToken == null || invalidToken != authTokenInDB.token) {
+                return authTokenInDB.token
+            }
+        }
+        return null
     }
 
-    fun getAccessToken(serviceCode: BkAuthServiceCode): String {
-        val cachedToken = accessTokenCache.getIfPresent(serviceCode.value)
-        if (cachedToken != null) {
-            return cachedToken
+    private fun saveTokenToDB(token: String) {
+        val now = LocalDateTime.now()
+        val query = Query()
+        val update = Update()
+        query.addCriteria(Criteria.where(TBkAuthToken::lockKey.name).`is`(LOCKING_TASK_KEY))
+        update.addToSet(TBkAuthToken::token.name, token)
+        update.addToSet(TBkAuthToken::createdAt.name, now)
+        update.addToSet(TBkAuthToken::expiredAt.name, now.plusSeconds(210))
+        mongoTemplate.upsert(query, update, TUser::class.java)
+    }
+
+    fun getAccessToken(serviceCode: BkAuthServiceCode, invalidToken: String? = null): String {
+        var authTokenInDB = getValidTokenInDB(invalidToken)
+        if (authTokenInDB != null) {
+            return authTokenInDB
         }
-        val accessToken = createAccessToken(serviceCode.value, bkAuthConfig.getAppSecret(serviceCode)).accessToken
-        accessTokenCache.put(serviceCode.name, accessToken)
-        return accessToken
+        val lockConfig = LockConfiguration(LOCKING_TASK_KEY, Duration.ofSeconds(5), Duration.ZERO)
+        var lock = lockProvider.lock(lockConfig)
+        if (!lock.isPresent) {
+            Thread.sleep(5000)
+            authTokenInDB = getValidTokenInDB(invalidToken)
+            if (authTokenInDB != null) {
+                return authTokenInDB
+            }
+            lock = lockProvider.lock(lockConfig)
+            if (!lock.isPresent) {
+                throw RuntimeException("get lock($LOCKING_TASK_KEY) failed")
+            }
+        }
+
+        try {
+            lockAssertStartLock(LOCKING_TASK_KEY)
+            logger.debug("get lock($LOCKING_TASK_KEY) success")
+            val token = createAccessToken(serviceCode.value, bkAuthConfig.getAppSecret(serviceCode)).accessToken
+            saveTokenToDB(token)
+            return token
+        } finally {
+            lockAssertEndLock()
+            lock.get().unlock()
+        }
+    }
+
+    private fun lockAssertStartLock(name: String) {
+        // static void startLock(String name)
+        val method = LockAssert::class.java.getDeclaredMethod("startLock", String::class.java)
+        method.isAccessible = true
+        method.invoke(null, name)
+    }
+
+    private fun lockAssertEndLock() {
+        // static void endLock()
+        val method = LockAssert::class.java.getDeclaredMethod("endLock")
+        method.isAccessible = true
+        method.invoke(null)
     }
 
     private fun createAccessToken(appCode: String, appSecret: String): BkAuthToken {
@@ -99,5 +159,7 @@ class BkAuthTokenService @Autowired constructor(
 
         private const val ID_PROVIDER = "client"
         private const val GRANT_TYPE = "client_credentials"
+
+        private const val LOCKING_TASK_KEY = "bk_auth_access_token_task"
     }
 }

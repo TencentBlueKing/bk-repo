@@ -79,7 +79,7 @@ class BkAuthProjectService @Autowired constructor(
         val responseObject = objectMapper.readValue<BkAuthResponse<Any>>(apiResponse.content)
         if (responseObject.code != 0) {
             if (responseObject.code == HTTP_403) {
-                bkAuthTokenService.refreshAccessToken(BkAuthServiceCode.ARTIFACTORY)
+                bkAuthTokenService.getAccessToken(BkAuthServiceCode.ARTIFACTORY, accessToken)
             }
             if (responseObject.code == HTTP_400) {
                 logger.info("user[$user] not member of project $projectCode")
