@@ -41,14 +41,13 @@ import org.springframework.cloud.client.serviceregistry.Registration
 
 class GrayMetadataAwareRule : PredicateBasedRule() {
 
-    private val properties: RibbonGrayProperties = SpringContextUtils.getBean(RibbonGrayProperties::class.java)
-
+    private val properties: RibbonGrayProperties = SpringContextUtils.getBean()
+    private val registration: Registration = SpringContextUtils.getBean()
     private val predicate: AbstractServerPredicate
-
     private val localHost: String = SpringContextUtils.getBean(Registration::class.java).host
 
     init {
-        val metadataAwarePredicate = GrayMetadataAwarePredicate(properties)
+        val metadataAwarePredicate = GrayMetadataAwarePredicate(registration)
         val availabilityPredicate = AvailabilityPredicate(this, null)
         predicate = CompositePredicate.withPredicates(metadataAwarePredicate, availabilityPredicate)
             .addFallbackPredicate(AbstractServerPredicate.alwaysTrue())
@@ -72,11 +71,5 @@ class GrayMetadataAwareRule : PredicateBasedRule() {
             }
         }
         return serverList
-    }
-
-    private fun createCompositePredicate(vararg predicate: AbstractServerPredicate): CompositePredicate {
-        return CompositePredicate.withPredicates(*predicate)
-            .addFallbackPredicate(AbstractServerPredicate.alwaysTrue())
-            .build()
     }
 }
