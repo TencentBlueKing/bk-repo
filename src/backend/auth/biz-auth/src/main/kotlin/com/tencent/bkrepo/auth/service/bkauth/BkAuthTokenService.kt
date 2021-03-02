@@ -74,7 +74,8 @@ class BkAuthTokenService @Autowired constructor(
         .build()
 
     private fun getValidTokenInDB(invalidToken: String? = null): String? {
-        val authTokenInDB = bkAuthRepository.findOneByToken(LOCKING_TASK_KEY)
+        logger.debug("getValidTokenInDB, invalidToken: $invalidToken")
+        val authTokenInDB = bkAuthRepository.findOneByLockKey(LOCKING_TASK_KEY)
         if (authTokenInDB != null && authTokenInDB.expiredAt.isAfter(LocalDateTime.now())) {
             if (invalidToken == null || invalidToken != authTokenInDB.token) {
                 return authTokenInDB.token

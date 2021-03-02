@@ -37,5 +37,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface BkAuthRepository : MongoRepository<TBkAuthToken, String> {
-    fun findOneByToken(token: String): TBkAuthToken?
+    fun findOneByLockKey(lockKey: String): TBkAuthToken?
 }
