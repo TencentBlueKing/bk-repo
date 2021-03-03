@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,33 +29,9 @@
  * SOFTWARE.
  */
 
-val assemblyMode: String? by project
-println("assembly mode: $assemblyMode")
-val k8s: Boolean = assemblyMode?.equals("k8s") ?: false
-dependencies {
-    api(project(":common:common-api"))
+package com.tencent.bkrepo.common.service.bootstrap
 
-    api("io.springfox:springfox-swagger2")
-    api("io.github.openfeign:feign-okhttp")
-    api("io.micrometer:micrometer-registry-influx")
-    api("org.springframework.boot:spring-boot-starter-actuator")
-    api("org.springframework.cloud:spring-cloud-starter-openfeign")
-    api("org.springframework.cloud:spring-cloud-starter-netflix-hystrix")
-    if (k8s) {
-        api("org.springframework.cloud:spring-cloud-starter-kubernetes-all")
-        api("org.springframework.cloud:spring-cloud-starter-kubernetes-ribbon")
-    } else {
-        api("org.springframework.cloud:spring-cloud-starter-consul-discovery")
-        api("org.springframework.cloud:spring-cloud-starter-consul-config")
-    }
-    api("org.springframework.boot:spring-boot-starter-web") {
-        exclude(module = "spring-boot-starter-tomcat")
-    }
-    api("org.springframework.boot:spring-boot-starter-undertow")
-    implementation("org.apache.skywalking:apm-toolkit-logback-1.x")
-    implementation("org.apache.skywalking:apm-toolkit-trace")
+import org.springframework.context.annotation.PropertySource
 
-    api("io.jsonwebtoken:jjwt-api")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson")
-}
+@PropertySource("classpath:common-service.properties")
+class CommonBootstrapConfiguration

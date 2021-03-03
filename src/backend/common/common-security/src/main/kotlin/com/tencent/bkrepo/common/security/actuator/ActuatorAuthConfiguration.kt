@@ -57,8 +57,8 @@ class ActuatorAuthConfiguration {
         webEndpointsSupplier: WebEndpointsSupplier,
         servletEndpointsSupplier: ServletEndpointsSupplier,
         controllerEndpointsSupplier: ControllerEndpointsSupplier,
-        endpointMediaTypes: EndpointMediaTypes?,
-        corsProperties: CorsEndpointProperties,
+        endpointMediaTypes: EndpointMediaTypes,
+        corsProperties: CorsEndpointProperties?,
         webEndpointProperties: WebEndpointProperties,
         environment: Environment,
         actuatorAuthInterceptor: ActuatorAuthInterceptor
@@ -72,7 +72,7 @@ class ActuatorAuthConfiguration {
         val endpointMapping = EndpointMapping(basePath)
         val webMvcEndpointHandlerMapping = WebMvcEndpointHandlerMapping(
             endpointMapping, webEndpoints,
-            endpointMediaTypes, corsProperties.toCorsConfiguration(),
+            endpointMediaTypes, corsProperties?.toCorsConfiguration(),
             EndpointLinksResolver(allEndpoints, basePath),
             basePath.isNotBlank() || ManagementPortType.get(environment) == ManagementPortType.DIFFERENT
         )
