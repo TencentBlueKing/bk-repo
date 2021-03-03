@@ -35,15 +35,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.tencent.bkrepo.monitor.export.InfluxExportProperties
-import com.tencent.bkrepo.monitor.notify.MessageNotifier
 import de.codecentric.boot.admin.server.config.EnableAdminServer
 import de.codecentric.boot.admin.server.domain.values.InstanceId
 import de.codecentric.boot.admin.server.services.InstanceIdGenerator
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import reactor.core.publisher.Mono
 import java.net.URL
 import javax.annotation.PostConstruct
 
@@ -68,11 +65,5 @@ class MonitorConfiguration(
     fun instanceIdGenerator(): InstanceIdGenerator = InstanceIdGenerator {
         val url = URL(it.serviceUrl)
         InstanceId.of("${url.host}-${url.port}")
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun messageNotifier() = object : MessageNotifier {
-        override fun notifyMessage(content: Any): Mono<Void> = Mono.empty()
     }
 }

@@ -35,12 +35,11 @@ import com.tencent.bkrepo.monitor.metrics.MetricsInfo
 import com.tencent.bkrepo.monitor.processor.MetricsInfoProcessor
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
-import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Flux
 
-@Component
+//@Component
 class InfluxMetricsExporter(
     metricsInfoProcessor: MetricsInfoProcessor,
     private val influxExportProperties: InfluxExportProperties
