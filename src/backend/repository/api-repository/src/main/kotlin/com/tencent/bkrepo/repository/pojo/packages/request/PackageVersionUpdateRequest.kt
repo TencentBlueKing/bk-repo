@@ -29,10 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.monitor.notify
+package com.tencent.bkrepo.repository.pojo.packages.request
 
-import reactor.core.publisher.Mono
+import io.swagger.annotations.ApiModelProperty
 
-interface MessageNotifier {
-    fun notifyMessage(content: Any): Mono<Void>
-}
+data class PackageVersionUpdateRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String,
+    @ApiModelProperty("包唯一标识符")
+    val packageKey: String,
+    @ApiModelProperty("版本名称")
+    val versionName: String,
+    @ApiModelProperty("版本大小")
+    val size: Long? = null,
+    @ApiModelProperty("版本描述文件路径")
+    var manifestPath: String? = null,
+    @ApiModelProperty("版本内容文件路径")
+    var artifactPath: String? = null,
+    @ApiModelProperty("版本构件阶段")
+    val stageTag: List<String>? = null,
+    @ApiModelProperty("版本元数据")
+    val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("标签")
+    val tags: List<String>? = null,
+    @ApiModelProperty("版本扩展字段")
+    val extension: Map<String, Any>? = null
+)

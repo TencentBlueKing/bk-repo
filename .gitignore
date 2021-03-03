@@ -27,3 +27,4 @@ data/
 /remoteHtml.html
 build.yml
 .temp/
+tmp/

@@ -1,30 +1,44 @@
 image:
+  # bkrepo镜像拉取地址
   hub: docker.io
-  tag: 0.0.1
+  # bkrepo镜像拉取tag
+  tag: 1.0.4
   pullPolicy: IfNotPresent
 
 # bkrepo
 bkrepo:
   replicaCount: 1
   init:
+    # 是否初始化mongodb数据，脚本能够幂等执行，第一次必须执行
     mongodb: true
+    # 是否初始化consul配置，第一次必须执行
     consul: true
+  # 选择需要启动的依赖源registry
+  registry:
+    generic: true
+    docker: false
+    dockerapi: false
+    helm: false
+  # 亲和性配置
   affinity:
+    # 是否开启
     enabled: false
     # 指定依赖源pod运行在哪个节点上
     node: node-1
 env:
-  # JVM
+  # jvm虚拟机内存配置
   BK_REPO_JVM_XMS: 512m
   BK_REPO_JVM_XMX: 768m
 
-  # env
+  # 环境profile
   BK_REPO_ENV: dev
 
-  # gateway
+  # gateway网关相关配置
   BK_HTTP_SCHEMA: http
+  BK_REPO_HTTP_SCHEMA: http
   BK_REPO_FQDN: bkrepo.com
   BK_REPO_HOST: bkrepo.com
+  BK_REPO_UI_HOST: bkrepo.com
   BK_CI_FQDN: bkci.com
   BK_REPO_HTTP_PORT: 80
   BK_REPO_HTTPS_PORT: 443
@@ -37,31 +51,34 @@ env:
   BK_REPO_PAAS_LOGIN_URL:
   BK_REPO_AUTHORIZATION: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
   BK_REPO_GATEWAY_CORS_ALLOW_LIST:
+  # 网关通过dns做服务发现，默认访问k8s-dns服务
   BK_REPO_GATEWAY_DNS_ADDR: kube-dns.kube-system.svc.cluster.local
+  # 服务名称前缀
   BK_REPO_SERVICE_PREFIX: repo-
+  # 部署模式，standalone: 独立模式，ci: 与ci搭配模式
   BK_REPO_DEPLOY_MODE: standalone
 
   # consul 相关配置
+  # consul dns服务地址，格式:consul-dns.$(NAMESPACE).svc.cluster.local
   BK_REPO_CONSUL_DNS_HOST: consul-dns.default.svc.cluster.local
   BK_REPO_CONSUL_DNS_PORT: 53
+  # consul http服务地址，格式:consul-server.$(NAMESPACE).svc.cluster.local
+  BK_REPO_CONSUL_SERVER_HOST: consul-server.default.svc.cluster.local
+  BK_REPO_CONSUL_SERVER_PORT: 8500
+  # consul dns服务查询domain，查询格式[tag.]<service>.service[.datacenter].<domain>
   BK_REPO_CONSUL_DOMAIN: consul
-  BK_REPO_CONSUL_PORT: 8500
   BK_REPO_CONSUL_TAG: bkce
 
-  # init job
-  BK_REPO_CONSUL_SERVER: consul-server.default.svc.cluster.local
-
-  # application
+  # 微服务公共配置
+  # 文件存储路径
   BK_REPO_FILE_PATH: /data/storage
-  BK_REPO_MONGODB_ADDR: 127.0.0.1:27017
-  BK_REPO_MONGODB_DB_NAME: bkrepo
-  BK_REPO_MONGODB_USER: root
-  BK_REPO_MONGODB_PASSWORD:
+  # mongodb 标准连接字符串
+  BK_REPO_MONGODB_URI: mongodb://127.0.0.1/bkrepo
 
-  # repository
+  # repository服务配置
   BK_REPO_REPOSITORY_PORT: 25901
 
-  # auth
+  # auth服务配置
   BK_REPO_AUTH_PORT: 25902
   BK_REPO_AUTH_REALM: local
   BK_IAM_PRIVATE_URL: http://iam.service.consul:8080
@@ -73,7 +90,7 @@ env:
   BK_REPO_IAM_IP0: iam.service.consul
   BK_REPO_IAM_TOKEN_URL: /bkiam/api/v1/auth/access-tokens
 
-  # docker api
+  # docker api服务配置
   BK_REPO_DOCKERAPI_PORT: 25906
   BK_REPO_DOCKERAPI_REALM: bkrepo
   BK_REPO_DOCKERAPI_HARBOR_URL:
@@ -82,10 +99,10 @@ env:
   BK_REPO_DOCKERAPI_HARBOR_IMAGE_PREFIX:
   BK_SSM_PRIVATE_URL: http://ssm.service.consul
 
-  # generic
+  # generic服务配置
   BK_REPO_GENERIC_PORT: 25801
 
-  # docker
+  # docker服务配置
   BK_REPO_DOCKER_PORT: 25802
   BK_REPO_DOCKER_FQDN: docker.bkrepo.com
   BK_REPO_DOCKER_HOST: docker.bkrepo.com
@@ -94,10 +111,16 @@ env:
   BK_REPO_DOCKER_CERT_KEY: /data/workspace/certs/cert.key
   BK_REPO_DOCKER_CERT_PEM: /data/workspace/certs/cert.pem
 
-  # npm
+  # maven服务配置
+  BK_REPO_MAVEN_PORT: 25803
+
+  # npm服务配置
   BK_REPO_NPM_PORT: 25804
 
-  # helm
+  # pypi服务配置
+  BK_REPO_PYPI_PORT: 25805
+
+  # helm服务配置
   BK_REPO_HELM_PORT: 25806
   BK_REPO_HELM_FQDN: helm.bkrepo.com
   BK_REPO_HELM_HTTP_PORT: 80

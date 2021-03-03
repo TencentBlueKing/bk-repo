@@ -26,18 +26,18 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end}}
-          volumeMounts:
-            - name: bkrepo-gateway-certs
-              mountPath: /data/workspace/certs
-      volumes:
-        - name: bkrepo-gateway-certs
-          secret:
-            secretName: bkrepo-gateway-secret
-            items:
-            - key: gateway.cert.key
-              path: cert.key
-            - key: gateway.cert.pem
-              path: cert.pem
+      #     volumeMounts:
+      #       - name: bkrepo-gateway-certs
+      #         mountPath: /data/workspace/certs
+      # volumes:
+      #   - name: bkrepo-gateway-certs
+      #     secret:
+      #       secretName: bkrepo-gateway-secret
+      #       items:
+      #       - key: gateway.cert.key
+      #         path: cert.key
+      #       - key: gateway.cert.pem
+      #         path: cert.pem
 ---
 apiVersion: v1
 kind: Service

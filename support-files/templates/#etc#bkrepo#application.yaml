@@ -2,10 +2,10 @@ spring:
   cloud:
     consul:
       discovery:
-        tags: bkce
+        tags: __BK_REPO_CONSUL_TAG__
   data:
     mongodb:
-      uri: mongodb://__BK_REPO_MONGODB_USER__:__BK_REPO_MONGODB_PASSWORD__@__BK_REPO_MONGODB_ADDR__/__BK_REPO_MONGODB_DB_NAME__?maxPoolSize=100
+      uri: __BK_REPO_MONGODB_URI__
       transaction:
         enabled: false
 

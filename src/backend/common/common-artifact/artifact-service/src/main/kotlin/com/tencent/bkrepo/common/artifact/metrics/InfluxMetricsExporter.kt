@@ -67,7 +67,7 @@ class InfluxMetricsExporter(
             if (!isEnabled) {
                 return
             }
-            val points = queue.map {
+            val points = queue.mapNotNull {
                 Point.measurementByPOJO(it.javaClass).addFieldsFromPOJO(it).tag(commonTags).build()
             }
             val batchPoints = BatchPoints.database(db).points(points).retentionPolicy(retentionPolicy).build()

@@ -8,7 +8,11 @@
         <main class="create-repo-main">
             <bk-form class="repo-base-info" :label-width="200" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
                 <bk-form-item :label="$t('repoType')" :required="true" property="type">
-                    <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group">
+                    <div v-if="MODE_CONFIG === 'ci'" class="flex-align-center">
+                        <icon size="24" name="generic" />
+                        <span class="ml10">generic</span>
+                    </div>
+                    <bk-radio-group v-else v-model="repoBaseInfo.type" class="repo-type-radio-group">
                         <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                             <div class="flex-center repo-type-radio">
                                 <icon size="60" :name="repo" />
@@ -69,9 +73,10 @@
         data () {
             return {
                 repoEnum,
+                MODE_CONFIG,
                 isLoading: false,
                 repoBaseInfo: {
-                    type: '',
+                    type: 'generic',
                     name: '',
                     enableFileLists: false,
                     repodataDepth: 0,
@@ -196,6 +201,7 @@
         overflow-y: auto;
         .repo-base-info {
             max-width: 1080px;
+            min-width: 720px;
             .repo-type-radio-group {
                 /deep/ .bk-form-radio-button {
                     margin: 0 20px 20px 0;

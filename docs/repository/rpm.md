@@ -1,36 +1,9 @@
 ## 使用指引
 
-<<<<<<< HEAD
-#### 创建仓库 -- develop 分支：
+#### 创建仓库：
 
 ```bash
-curl -X POST http://{ip}/repository/repo/ \
--H 'Content-Type: application/json' \
--d '{ 
-  "projectId": "{project}",
-  "name": "{repo}",
-  "type": "RPM",
-  "category": "LOCAL",
-  "public": true,
-  "configuration": {
-    "type": "rpm-local",  
-    "repodataDepth": 1,  
-    "enabledFileLists": false,
-    "groupXmlSet": [
-      "groups.xml",
-      "bkrepos.xml"
-    ]
-  },
-  "description": "for bkdevops test"
-}'
-```
-
-
-
-#### 创建仓库 -- develop_new 分支：
-
-```bash
-curl -X POST http://{ip}/repository/repo/create \
+curl -X POST http://{bk_repo_addr}/repository/repo/create \
 -H 'Content-Type: application/json' \
 -d '{ 
   "projectId": "{project}",
@@ -57,7 +30,7 @@ curl -X POST http://{ip}/repository/repo/create \
 
 ```bash
 #新增仓库配置分组文件名
-curl -X PUT http://{ip}/rpm/configuration/{project}/{repo}/ \
+curl -X PUT http://{bk_repo_addr}/{projectId}/{repoName}/rpm/configuration/{project}/{repo}/ \
 -H 'Content-Type: application/json' \
 -d '[
       "abc.xml",
@@ -65,7 +38,7 @@ curl -X PUT http://{ip}/rpm/configuration/{project}/{repo}/ \
     ]'
 
 #移除仓库配置分组文件名
-curl -X DELETE http://{ip}/rpm/configuration/{project}/{repo}/ \
+curl -X DELETE http://{bk_repo_addr}/{projectId}/{repoName}/rpm/configuration/{project}/{repo}/ \
 -H 'Content-Type: application/json' \
 -d '[
       "abc.xml",
@@ -81,67 +54,28 @@ curl -X DELETE http://{ip}/rpm/configuration/{project}/{repo}/ \
 =======
 仓库地址配置：
 
-
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
-
 配置文件目录：/etc/yum.repos.d/
 
 全局默认配置文件：CentOS-Base.repo
 
 或者自定义：{name}.repo
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 参考数据格式：
 
 ```txt
 [bkrepo]        
 name=bkrepo     //仓库名
-<<<<<<< HEAD
-baseurl=http://admin:password@{repositoryUrl}/$releasever/os/$basearch //仓库地址，如果有开启认证，需要在请求前添加 用户名：密码
-=======
-baseurl=http://admin:password@10.67.82.183:8084/bkrepo/rpm-local/$releasever/os/$basearch //仓库地址，如果有开启认证，需要在请求前添加 用户名：密码
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
+baseurl=http://admin:password@{bk_repo_addr}/{projectId}/{repoName}/$releasever/os/$basearch //仓库地址，如果有开启认证，需要在请求前添加 用户名：密码
 keepcache=0  //是否开启缓存，测试阶段推荐开启，否则上传后，yum install 时会优先去本地缓存找
 enabled=1    //地址授信，如果非 https 环境必须设为1
 gpgcheck=0   //设为0，目前还不支持gpg签名
 metadata_expire=1m  //本地元数据过期时间 ，测试阶段数据量不大的话，时间越短测试越方便
 ```
 
-<<<<<<< HEAD
 ```shell
 #发布
-curl -uadmin:password -XPUT {repositoryUrl} -T {文件路径}
-=======
+curl -u{admin}:{password} -XPUT http://{bk_repo_addr}/{projectId}/{repoName} -T {文件路径}
 
-
-<hr/>
-
-```shell
-#添加仓库 目前只支持本地仓库
-curl -X POST http://127.0.0.1:8080/api/repo \
--H 'Content-Type: application/json' \
--d '{
-  "projectId": "projectName",
-  "name": "repositoryName",
-  "type": "RPM
-  "category": "LOCAL",
-  "public": true,
-  "configuration": {
-    "type": "rpm-local",  
-    "repodataDepth": 3, #代表索引生成的目录的深度
-    "enabledFileLists": true, #是否启用单独的filelists.xml 索引
-    "groupXmlSet": []     #仓库分组设置
-  },
-  "description": "for bkdevops test"
-}'
-
-#发布
-curl -uadmin:password -XPUT http://{host}:{port}/{project}/{repo}/ -T {文件路径}
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 #下载
 yum install -y {package}
 # 添加源后快速使源生效
@@ -155,9 +89,8 @@ yum clean packages --enablerepo={源名称}
 #清除对应仓库的元数据
 yum clean metadata --enablerepo={源名称}
 
-<<<<<<< HEAD
 #上传组文件,必须上传至仓库repodata 目录
-curl -uadmin:password -XPUT {repositoryUrl}/repodata/ -T {文件路径}
+curl -u{admin}:{password} -XPUT http://{bk_repo_addr}/{projectId}/{repoName}/{repodata}/ -T {文件路径}
 
 #group 列表
 yum grouplist
@@ -167,6 +100,8 @@ yum groupinstall {group}
 yum groups mark remove {group}
 #移除通过组安装的包，在系统中组依然是被安装
 yum groupremove {group}
+#升级group下所有包
+yum groupupdate {groupName}
 ```
 
 <hr/>
@@ -174,28 +109,10 @@ yum groupremove {group}
 #### repodataDepth 解释：
 
 repodataDepth： 代表索引生成的目录的位置（对应请求的层级）,当rpm构件`deploy`请求路径参数小于repodataDepth大小时（project, repo 不包含在请求路径中）,不会计算构件索引。
-=======
-#组相关操作：将分组文件上传到仓库下具体某个repodata路径，
-curl -uadmin:password -XPUT http://{host}:{port}/{project}/{repo}/{仓库下具体repodata路径} -T {xxx.xml}
-#安装group下所有包
-yum groupinstall {groupName}
-#卸载group下所有包：只是卸载包，该group依然会显示已被安装。
-yum groupremove {groupName}
-#本机移除分组：推荐卸载后执行该命令，
-yum groups mark remove {groupName}
-#升级group下所有包
-yum groupupdate {groupName}
-
-```
-
-
-
-<hr/>
 
 ##  rpm仓库属性解释：
 
 **repodataDepth**： 代表索引生成的目录的位置（对应请求的层级）,当rpm构件`deploy`请求路径参数小于repodataDepth大小时（project, repo 不包含在请求路径中）,不会计算构件索引。
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4
 
 例如：repodataDepth：2 ，项目名：bkrepo ，仓库名：rpm-local。
 
@@ -209,14 +126,11 @@ yum groupupdate {groupName}
 
 -- 请求2的构件不会计算索引，`yum install` 下载不到，但是包会保存在服务器上。
 
-<<<<<<< HEAD
--- 请求3的构件将会计算索引，`yum install` 可以下载到，索引目录：`/a/b/repodata`
-=======
 -- 请求3的构件将会计算索引，`yum install` 可以下载到，索引目录：`/a/b/repodata`
 
 
 
-**enabledFileLists**:  是否启用单独的filelists.xml 索引，开启后rpm包的filelists信息会单独保存在filelists.xml中，否则是保存在primary.xml中。
+**enabledFileLists**:  是否启用单独的filelists.xml 索引，开启后rpm包的filelists信息会单独保存在filelists.xml中，否则部分文件信息保存在primary.xml中。
 
 
 
@@ -224,9 +138,7 @@ yum groupupdate {groupName}
 
 
 
-<hr/>
-
-##rpm package
+## rpm package
 
 官方文档：[RPM Packaging Guide](https://rpm-packaging-guide.github.io/)
 
@@ -287,5 +199,3 @@ yum-groups-manager \
 --save=bkrepo.xml \保存的文件名
 --mandatory {包名} {包名} 
 ```
-
->>>>>>> 95b43eea8c90c411aa9a5cae9e282ea1496e56b4

@@ -29,50 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.monitor.service
+package com.tencent.bkrepo.repository.pojo.packages.request
 
-import com.tencent.bkrepo.monitor.config.MonitorProperties
-import com.tencent.bkrepo.monitor.notify.MessageNotifier
-import com.tencent.bkrepo.monitor.processor.HealthInfoProcessor
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
+import io.swagger.annotations.ApiModelProperty
 
-@Component
-class HealthCheckService(
-    healthInfoProcessor: HealthInfoProcessor,
-    messageNotifier: MessageNotifier,
-    monitorProperties: MonitorProperties
-) {
-    val clusterName = monitorProperties.clusterName
-
-    init {
-        healthInfoProcessor.getFlux().subscribe { println("HealthCheckService: $it") }
-    }
-
-    // private fun createContent(healthInfo: HealthInfo): Any {
-    //     return with(healthInfo) {
-    //         MESSAGE_TEMPLATE.format(
-    //             application,
-    //             instance,
-    //             clusterName,
-    //             name,
-    //             status.status.code,
-    //             status.details,
-    //             LocalDateTime.now()
-    //         )
-    //     }
-    // }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(HealthCheckService::class.java)
-        val MESSAGE_TEMPLATE =
-            """
-            <font color="warning">【提醒】</font>服务实例[%s-%s]健康检查失败
-             > 集群: %s
-             > 组件: %s
-             > 状态: %s
-             > 详情: %s
-             > 时间: %s
-            """.trimIndent()
-    }
-}
+data class PackageUpdateRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名称")
+    val repoName: String,
+    @ApiModelProperty("包唯一标识符")
+    val packageKey: String,
+    @ApiModelProperty("包名称")
+    val name: String? = null,
+    @ApiModelProperty("包简要描述")
+    val description: String? = null,
+    @ApiModelProperty("包版本标签")
+    val versionTag: Map<String, String>? = null,
+    @ApiModelProperty("包扩展字段")
+    val extension: Map<String, Any>? = null
+)

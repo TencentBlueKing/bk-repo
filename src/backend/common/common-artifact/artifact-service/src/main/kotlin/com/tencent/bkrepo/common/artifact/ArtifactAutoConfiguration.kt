@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.artifact
 
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
+import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactResolverConfiguration
@@ -52,6 +53,7 @@ import org.springframework.context.annotation.PropertySource
     ArtifactEventConfiguration::class,
     ArtifactExceptionConfiguration::class,
     ArtifactMetricsConfiguration::class,
+    ArtifactManagerConfiguration::class,
     ArtifactResolverConfiguration::class
 )
 class ArtifactAutoConfiguration

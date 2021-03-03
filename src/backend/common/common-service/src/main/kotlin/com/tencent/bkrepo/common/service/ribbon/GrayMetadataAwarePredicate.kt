@@ -33,26 +33,53 @@ package com.tencent.bkrepo.common.service.ribbon
 
 import com.netflix.loadbalancer.AbstractServerPredicate
 import com.netflix.loadbalancer.PredicateKey
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.netflix.loadbalancer.Server
 import org.springframework.cloud.client.serviceregistry.Registration
-import org.springframework.cloud.consul.discovery.ConsulServer
+import org.springframework.util.ReflectionUtils
+import java.lang.reflect.Method
+import java.util.concurrent.ConcurrentHashMap
 
-class GrayMetadataAwarePredicate(val properties: RibbonGrayProperties) : AbstractServerPredicate() {
+/**
+ * 根据metadata标签过滤服务
+ */
+class GrayMetadataAwarePredicate(
+    private val registration: Registration
+) : AbstractServerPredicate() {
+
     override fun apply(input: PredicateKey?): Boolean {
         if (input == null) {
             return false
         }
-        val registration = SpringContextUtils.getBean(Registration::class.java)
         val localEnvTag = registration.metadata.getOrDefault(ENV, ENV_RELEASE)
         val server = input.server
-        return if (server is ConsulServer) {
-            val serverEnvTag = server.metadata.getOrDefault(ENV, ENV_RELEASE)
-            localEnvTag == serverEnvTag
-        } else true
+        val serverClass = server.javaClass
+        val method = METHOD_MAP[serverClass] ?: run {
+            if (NO_METHOD_LIST.contains(serverClass)) {
+                return true
+            }
+            ReflectionUtils.findMethod(serverClass, GET_METADATA)?.apply {
+                METHOD_MAP[serverClass] = this
+            } ?: run {
+                NO_METHOD_LIST.add(serverClass)
+                return true
+            }
+        }
+        return localEnvTag == getMetadata(method, server).getOrDefault(ENV, ENV_RELEASE)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun getMetadata(method: Method, server: Server): Map<String, String> {
+        val result = ReflectionUtils.invokeMethod(method, server)
+        return if (result is Map<*, *>) {
+            result as Map<String, String>
+        } else emptyMap()
     }
 
     companion object {
         private const val ENV = "env"
         private const val ENV_RELEASE = "release"
+        private const val GET_METADATA = "getMetadata"
+        private val METHOD_MAP = ConcurrentHashMap<Class<*>, Method>(1)
+        private val NO_METHOD_LIST = mutableListOf<Class<*>>()
     }
 }

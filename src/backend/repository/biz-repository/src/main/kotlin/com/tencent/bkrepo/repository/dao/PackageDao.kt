@@ -43,10 +43,15 @@ import org.springframework.stereotype.Repository
 class PackageDao : SimpleMongoDao<TPackage>() {
 
     fun findByKey(projectId: String, repoName: String, key: String): TPackage? {
+        if (key.isBlank()) {
+            return null
+        }
         return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
     }
 
     fun deleteByKey(projectId: String, repoName: String, key: String) {
-        this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
+        if (key.isNotBlank()) {
+            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
+        }
     }
 }

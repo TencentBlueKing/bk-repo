@@ -51,11 +51,13 @@ import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.user.BasicInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartInfoService
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
+import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.apache.http.HttpStatus
@@ -74,7 +76,7 @@ class ChartInfoServiceImpl(
         if (startTime != null) {
             val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
             val indexYamlMetadata = chartRepositoryService.buildIndexYamlMetadata(nodeList, artifactInfo, true)
-            return ResponseEntity.ok().body(indexYamlMetadata.entries)
+            return ResponseEntity.ok().body(convertUtcTime(indexYamlMetadata).entries)
         }
         chartRepositoryService.freshIndexFile(artifactInfo)
         val indexYamlMetadata = queryOriginalIndexYaml()
@@ -86,12 +88,13 @@ class ChartInfoServiceImpl(
         when (urlList.size) {
             // Without name and version
             0 -> {
-                return ResponseEntity.ok().body(indexYamlMetadata.entries)
+                return ResponseEntity.ok().body(convertUtcTime(indexYamlMetadata).entries)
             }
             // query with name
             1 -> {
                 val chartName = urlList[0]
                 val chartList = indexYamlMetadata.entries[chartName]
+                chartList?.forEach { convertUtcTime(it) }
                 return if (chartList == null) {
                     ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(CHART_NOT_FOUND)
                 } else {
@@ -111,9 +114,10 @@ class ChartInfoServiceImpl(
                     require(helmChartMetadataList.size == 1) {
                         "find more than one version [$chartVersion] in package [$chartName]."
                     }
-                    ResponseEntity.ok().body(helmChartMetadataList.first())
+                    ResponseEntity.ok().body(convertUtcTime(helmChartMetadataList.first()))
                 } else {
-                    ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
+                    ResponseEntity.status(HttpStatus.SC_NOT_FOUND)
+                        .body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
                 }
             }
             else -> {
@@ -189,6 +193,23 @@ class ChartInfoServiceImpl(
         const val SIZE = 5
 
         val logger: Logger = LoggerFactory.getLogger(ChartInfoServiceImpl::class.java)
+
+        fun convertUtcTime(indexYamlMetadata: HelmIndexYamlMetadata): HelmIndexYamlMetadata {
+            indexYamlMetadata.entries.forEach { it ->
+                val chartMetadataSet = it.value
+                chartMetadataSet.forEach { chartMetadata ->
+                    convertUtcTime(chartMetadata)
+                }
+            }
+            return indexYamlMetadata
+        }
+
+        fun convertUtcTime(helmChartMetadata: HelmChartMetadata): HelmChartMetadata{
+            helmChartMetadata.created?.let {
+                helmChartMetadata.created = TimeFormatUtil.formatLocalTime(TimeFormatUtil.convertToLocalTime(it))
+            }
+            return helmChartMetadata
+        }
 
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
             with(nodeDetail) {

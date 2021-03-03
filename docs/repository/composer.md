@@ -1,9 +1,9 @@
-####启动配置：server.port: 8083
+#### 启动配置：server.port: 8083
 
-####添加仓库：
+#### 添加仓库：
 ```bash
 #composer 不支持virtual仓库
-curl -X POST http://127.0.0.1:8080/api/repo \
+curl -X POST http://{bk_repo_addr}/repository/repo/create \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
@@ -23,7 +23,7 @@ curl -X POST http://127.0.0.1:8080/api/repo \
 #首先把默认的源给禁用掉
 composer config -g secure-http false
 #再修改镜像源
-composer config -g repo.packagist composer https://test/composer/
+composer config -g repo.packagist composer http://{bk_repo_addr}/{projectId}/{repoName}
 #修改成功后可以先查看一下配置
 composer config -g -l
 #第二行repositories.packagist.org.url 
@@ -40,11 +40,7 @@ composer config -g -l
   "repositories": [
     {
     "type": "composer",
-    "url": "http://packages.example.com" //第一个源
-    },
-    {
-    "type": "composer",
-    "url": "http://packages.example.com" //第二个源
+    "url": "http://{bk_repo_addr}/{projectId}/{repoName}"
     }
   ]
 }
@@ -56,9 +52,9 @@ composer config -g -l
 
 ```bash
 #通过curl 上传
-curl -u {username}:{password} "http://ip:port/projectId/repositoryId/fileName" -T filePath
+curl -u {username}:{password} "http://{bk_repo_addr}/{projectId}/{repoName}/fileName" -T filePath
 #Example
-curl -u admin:password "http://ip:port/project/composer-local/monolog-2.0.3.tar.gz" -T ~/Users/abc/monolog-2.0.3.tar.gz
+curl -u admin:password "http://{bk_repo_addr}/{projectId}/{repoName}/monolog-2.0.3.tar.gz" -T ~/Users/abc/monolog-2.0.3.tar.gz
 
 ```
 
@@ -79,7 +75,7 @@ composer.phar install
     "name": "canway/test",
     "repositories": [{   
             "type": "composer",
-            "url": "http://ip:port/test/composer" //添加依赖源
+            "url": "http://{bk_repo_addr}/{projectId}/{repoName}" //添加依赖源
         }
     ],
     "config": {

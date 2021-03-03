@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.maven.pojo.MavenJar
 
 class MavenArtifactInfo(
     projectId: String,
@@ -39,9 +40,10 @@ class MavenArtifactInfo(
     artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
 
-    var groupId: String? = null
-    var artifactId: String? = null
-    var versionId: String? = null
+    lateinit var groupId: String
+    lateinit var artifactId: String
+    lateinit var versionId: String
+    lateinit var jarName: String
 
     companion object {
         const val MAVEN_MAPPING_URI = "/{projectId}/{repoName}/**"
@@ -51,18 +53,27 @@ class MavenArtifactInfo(
     }
 
     private fun hasGroupId(): Boolean {
-        return groupId!!.isNotBlank() && "NA" != groupId
+        return groupId.isNotBlank() && "NA" != groupId
     }
 
     private fun hasArtifactId(): Boolean {
-        return artifactId!!.isNotBlank() && "NA" != artifactId
+        return artifactId.isNotBlank() && "NA" != artifactId
     }
 
     private fun hasVersion(): Boolean {
-        return versionId!!.isNotBlank() && "NA" != versionId
+        return versionId.isNotBlank() && "NA" != versionId
     }
 
     fun isValid(): Boolean {
         return hasGroupId() && hasArtifactId() && hasVersion()
+    }
+
+    fun toMavenJar(): MavenJar {
+        return MavenJar(
+            jarName,
+            groupId,
+            artifactId,
+            versionId
+        )
     }
 }

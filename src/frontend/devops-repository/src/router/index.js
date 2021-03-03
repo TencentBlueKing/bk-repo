@@ -9,41 +9,7 @@ const createRouter = (store) => {
         mode: 'history',
         routes: routerArr
     })
-
-    router.beforeEach((to, from, next) => {
-        if (MODE_CONFIG === 'ci' && !from.name && to.name === 'repoList') {
-            const projectId = to.params.projectId
-            const repositoryHistory = JSON.parse(localStorage.getItem('repositoryHistory') || '{}')[projectId] || { type: 'generic', name: 'custom' }
-            if (repositoryHistory.type === 'generic') {
-                next({
-                    name: 'repoGeneric',
-                    params: {
-                        ...to.params,
-                        repoType: repositoryHistory.type
-                    },
-                    query: {
-                        name: repositoryHistory.name
-                    }
-                })
-            } else {
-                next({
-                    name: 'repoCommon',
-                    params: {
-                        ...to.params,
-                        repoType: repositoryHistory.type
-                    },
-                    query: {
-                        name: repositoryHistory.name
-                    }
-                })
-            }
-        } else {
-            next()
-        }
-    })
-
-    router.afterEach(route => {
-    })
+    
     return router
 }
 

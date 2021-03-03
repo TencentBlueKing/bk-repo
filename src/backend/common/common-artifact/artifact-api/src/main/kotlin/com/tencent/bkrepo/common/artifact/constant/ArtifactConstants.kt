@@ -80,3 +80,8 @@ const val PRIVATE_PROXY_REPO_NAME = "%s-%s"
  * 默认storage key
  */
 const val DEFAULT_STORAGE_KEY = "default"
+
+/**
+ * 响应header check sum
+ */
+const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
