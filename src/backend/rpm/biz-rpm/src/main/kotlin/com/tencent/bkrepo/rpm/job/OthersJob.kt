@@ -17,7 +17,7 @@ class OthersJob {
 
     // 每次任务间隔 ms
     @Scheduled(fixedDelay = 30 * 1000)
-    @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT30M")
+    @SchedulerLock(name = "OthersJob", lockAtMostFor = "PT200M")
     fun updateOthersIndex() {
         logger.info("update others index start")
         val startMillis = System.currentTimeMillis()

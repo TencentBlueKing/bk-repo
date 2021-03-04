@@ -16,7 +16,7 @@ class PrimaryJob {
     private lateinit var jobService: JobService
 
     @Scheduled(fixedDelay = 20 * 1000)
-    @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT30M")
+    @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT200M")
     fun updatePrimaryIndex() {
         logger.info("update primary index start")
         val startMillis = System.currentTimeMillis()
