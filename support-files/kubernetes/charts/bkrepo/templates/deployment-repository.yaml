@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+  labels:
+    tier: backend
+    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "bkrepo.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}/repository:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: BK_REPO_LOGS_DIR
+              value: {{ .Values.env.BK_REPO_LOGS_DIR | quote}}
+          ports:
+            - name: http
+              containerPort: {{ .Values.env.BK_REPO_REPOSITORY_PORT }}
+              protocol: TCP
+          # livenessProbe:
+          #   httpGet:
+          #     path: /actuator/health/readiness
+          #     port: http
+          #     httpHeaders:
+          #     - name: Authorization
+          #       value: Basic {{ template "bkrepo.authorization" . }}
+          #   initialDelaySeconds: 60
+          # readinessProbe:
+          #   httpGet:
+          #     path: /actuator/health/liveness
+          #     port: http
+          #     httpHeaders:
+          #     - name: Authorization
+          #       value: Basic {{ template "bkrepo.authorization" . }}
+          #   initialDelaySeconds: 60
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: {{ .Values.env.BK_REPO_FILE_PATH }}
+              name: pv-storage
+      volumes:
+        - name: pv-storage
+          persistentVolumeClaim:
+            claimName: pvc-storage
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
