@@ -23,7 +23,6 @@ trap 'rm -rf $tmp_dir' EXIT TERM
 info "编译frontend..."
 yarn --cwd $frontent_dir install
 yarn --cwd $frontent_dir run public
-info "编译frontend完成"
 
 # 打包gateway镜像
 info "构建gateway镜像..."
@@ -36,32 +35,28 @@ cp -rf $root_dir/support-files/templates tmp/
 docker build -f gateway/gateway.Dockerfile -t $hub/bkrepo/gateway:$bkrepo_version tmp --network=host
 docker push $hub/bkrepo/gateway:$bkrepo_version
 docker tag $hub/bkrepo/gateway:$bkrepo_version bkrepo/gateway
-info "构建gateway镜像完成"
 
 # 构建backend镜像
-backends=(repository auth generic docker helm dockerapi)
+backends=(repository auth generic docker helm)
 for service in ${backends[@]};
 do
-    info "构建$service镜像..."
-    $backend_dir/gradlew -p $backend_dir :$service:boot-$service:build -x test
+    info "构建$service 镜像..."
+    $backend_dir/gradlew -p $backend_dir :$service:boot-$service:build -PassemblyMode=k8s -x test
     rm -rf tmp/*
     cp backend/startup.sh tmp/
-    cp $backend_dir/release/boot-$service-*.jar tmp/$service.jar
+    cp $backend_dir/release/boot-$service-*.jar tmp/app.jar
     docker build -f backend/$service.Dockerfile -t $hub/bkrepo/$service:$bkrepo_version tmp --network=host
     docker push $hub/bkrepo/$service:$bkrepo_version
     docker tag $hub/bkrepo/$service:$bkrepo_version bkrepo/$service
-    info "构建$service镜像完成"
 done
 
 # 构建init镜像
 info "构建init镜像..."
 rm -rf tmp/*
 cp -rf init/init-mongodb.sh tmp/
-cp -rf init/init-consul.sh tmp/
-cp -rf $root_dir/scripts/render_tpl tmp/
-cp -rf $root_dir/support-files/templates tmp/
 cp -rf $root_dir/support-files/sql/init-data.js tmp/
 docker build -f init/init.Dockerfile -t $hub/bkrepo/init:$bkrepo_version tmp --no-cache --network=host
 docker push $hub/bkrepo/init:$bkrepo_version
 docker tag $hub/bkrepo/init:$bkrepo_version bkrepo/init
-info "构建init镜像完成"
+
+info "BUILD SUCCESSFUL!"

@@ -11,6 +11,5 @@ gpgcheck=0\n\
 enabled=1'\ > /etc/yum.repos.d/mongodb.repo && \
     rpm --rebuilddb && \
     yum -y install mongodb-org-shell && \
-    chmod +x /data/workspace/init-consul.sh && \
-    chmod +x /data/workspace/init-mongodb.sh && \
-    chmod +x /data/workspace/render_tpl
+    chmod +x /data/workspace/init-mongodb.sh
+WORKDIR /data/workspace

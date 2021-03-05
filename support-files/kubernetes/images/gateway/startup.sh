@@ -1,6 +1,10 @@
 #! /bin/sh
-mkdir -p $BK_REPO_LOGS_DIR/nginx
-chmod 777 $BK_REPO_LOGS_DIR/nginx
+LOGS_DIR=/data/logs
+if [ -n "$BK_REPO_LOGS_DIR" ]; then
+    LOGS_DIR=$BK_REPO_LOGS_DIR
+fi
+mkdir -p $LOGS_DIR/nginx
+chmod 777 $LOGS_DIR/nginx
 ##初始化配置
 touch bkrepo.env
 /data/workspace/render_tpl -u -p /data/workspace -m . -e bkrepo.env /data/workspace/templates/gateway*
