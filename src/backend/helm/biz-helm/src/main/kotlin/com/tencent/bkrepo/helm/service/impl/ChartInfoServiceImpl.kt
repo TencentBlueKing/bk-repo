@@ -60,9 +60,9 @@ import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import org.apache.http.HttpStatus
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -96,7 +96,7 @@ class ChartInfoServiceImpl(
                 val chartList = indexYamlMetadata.entries[chartName]
                 chartList?.forEach { convertUtcTime(it) }
                 return if (chartList == null) {
-                    ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(CHART_NOT_FOUND)
+                    ResponseEntity.status(HttpStatus.NOT_FOUND).body(CHART_NOT_FOUND)
                 } else {
                     ResponseEntity.ok().body(chartList)
                 }
@@ -116,13 +116,13 @@ class ChartInfoServiceImpl(
                     }
                     ResponseEntity.ok().body(convertUtcTime(helmChartMetadataList.first()))
                 } else {
-                    ResponseEntity.status(HttpStatus.SC_NOT_FOUND)
+                    ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
                 }
             }
             else -> {
                 // ERROR_NOT_FOUND
-                return ResponseEntity.status(HttpStatus.SC_NOT_FOUND).body(CHART_NOT_FOUND)
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(CHART_NOT_FOUND)
             }
         }
     }
@@ -130,7 +130,7 @@ class ChartInfoServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun isExists(artifactInfo: HelmArtifactInfo) {
         val response = HttpContextHolder.getResponse()
-        val status: Int = with(artifactInfo) {
+        val status: HttpStatus = with(artifactInfo) {
             val projectId = Rule.QueryRule(PROJECT_ID, projectId)
             val repoName = Rule.QueryRule(REPO_NAME, repoName)
             val urlList = this.getArtifactFullPath().trimStart('/').split("/").filter { it.isNotBlank() }
@@ -158,12 +158,12 @@ class ChartInfoServiceImpl(
                     rule = rule
                 )
                 val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
-                if (nodeList.isNullOrEmpty()) HttpStatus.SC_NOT_FOUND else HttpStatus.SC_OK
+                if (nodeList.isNullOrEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
             } else {
-                HttpStatus.SC_NOT_FOUND
+                HttpStatus.NOT_FOUND
             }
         }
-        response.status = status
+        response.status = status.value()
     }
 
     override fun detailVersion(

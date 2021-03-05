@@ -1,18 +1,2 @@
-spring:
-  application:
-    name: ${service.prefix:repo-}${service.name}${service.suffix:}
-  cloud:
-    consul:
-      discovery:
-        heartbeat:
-          enabled: true
-        query-passing: true
-        prefer-ip-address: true
-      config:
-        prefix: bkrepo-config
-        format: YAML
-        data-key: data
-        profileSeparator: '::'
-
-service:
-  name: rpm
+service.name: rpm
+server.port: 25807

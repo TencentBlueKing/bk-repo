@@ -39,10 +39,10 @@ import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import org.apache.http.HttpStatus
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
@@ -90,7 +90,7 @@ class AuthInterceptor : HandlerInterceptor {
             request.setAttribute(PLATFORM_KEY, appId)
             return true
         } catch (e: IllegalArgumentException) {
-            response.status = HttpStatus.SC_UNAUTHORIZED
+            response.status = HttpStatus.UNAUTHORIZED.value
             response.writer.print(authFailStr)
             return false
         }

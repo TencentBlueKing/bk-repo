@@ -43,13 +43,16 @@ import okhttp3.Credentials
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
-import org.joda.time.DateTime
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import java.net.URLEncoder
 import java.security.SecureRandom
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.format.DateTimeFormatter.ISO_INSTANT
+import java.util.Date
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
@@ -61,6 +64,12 @@ class HarborClient @Autowired constructor(
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(HarborClient::class.java)
+
+        fun formatUTC(utc: String): String {
+            val date = Date.from(Instant.from(ISO_INSTANT.parse(utc)))
+            val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+            return format.format(date)
+        }
     }
 
     fun getProjectByName(projectName: String): HarborProject? {
@@ -77,8 +86,8 @@ class HarborClient @Autowired constructor(
         if (projects.isNotEmpty()) {
             projects.forEach {
                 if (it.name == projectName) {
-                    it.createTime = DateTime(it.createTime).toString("yyyy-MM-dd HH:mm:ss")
-                    it.updateTime = DateTime(it.updateTime).toString("yyyy-MM-dd HH:mm:ss")
+                    it.createTime = formatUTC(it.createTime)
+                    it.updateTime = formatUTC(it.updateTime)
                     return it
                 }
             }

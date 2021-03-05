@@ -3,8 +3,13 @@ Thank you for installing {{ .Chart.Name }}.
 Your release is named {{ .Release.Name }}.
 
 验证步骤:
-1. 修改hosts, 配置bkrepo.com 和 consul.bkrepo.com 指向k8s ingress地址
-2. 访问consul.bkrepo.com 查看服务列表是否包含repo-repository、repo-auth、repo-generic，以及配置是否正确写入
-3. 访问bkrepo.com 验证服务能否正常访问, 初始用户密码为 admin/password, 初始项目为blueking
-4. 测试上传文件 curl -u admin:password -T <upload_file> http://bkrepo.com/generic/blueking/generic-local/test_file
-5. 测试下载文件 curl -u admin:password http://bkrepo.com/generic/blueking/generic-local/test_file -o <output_file>
+1. 修改hosts, 配置bkrepo.com指向k8s ingress地址
+    <ingress ip> bkrepo.com
+2. 访问bkrepo.com 验证服务能否正常访问
+    初始用户: {{ .Values.env.BK_REPO_USERNAME }}
+    初始密码: {{ .Values.env.BK_REPO_PASSWORD }}
+    初始项目: blueking
+3. 测试上传文件
+    curl -u {{ .Values.env.BK_REPO_USERNAME }}:{{ .Values.env.BK_REPO_PASSWORD }} -T <upload_file> http://bkrepo.com/generic/blueking/generic-local/test_file
+4. 测试下载文件
+    curl -u {{ .Values.env.BK_REPO_USERNAME }}:{{ .Values.env.BK_REPO_PASSWORD }} http://bkrepo.com/generic/blueking/generic-local/test_file -o <output_file>

@@ -1,0 +1,19 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}common
+data:
+  application.yml: |-
+    spring:
+      data:
+        mongodb:
+          uri: {{ .Values.env.BK_REPO_MONGODB_URI }}
+          transaction:
+            enabled: false
+    logging:
+      config: classpath:logback-config.xml
+      path: {{ .Values.env.BK_REPO_LOGS_DIR }}
+    storage:
+      type: filesystem
+      filesystem:
+        path: {{ .Values.env.BK_REPO_FILE_PATH }}
