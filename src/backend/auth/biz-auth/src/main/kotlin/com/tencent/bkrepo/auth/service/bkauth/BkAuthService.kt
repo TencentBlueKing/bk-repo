@@ -65,7 +65,8 @@ class BkAuthService @Autowired constructor(
         resourceType: BkAuthResourceType,
         projectCode: String,
         resourceCode: String,
-        permission: BkAuthPermission
+        permission: BkAuthPermission,
+        retryIfTokenInvalid: Boolean = false
     ): Boolean {
         val accessToken = bkAuthTokenService.getAccessToken(serviceCode)
         val url = "${bkAuthConfig.getBkAuthServer()}/permission/project/service/policy/resource/user/verfiy?access_token=$accessToken"
@@ -83,14 +84,62 @@ class BkAuthService @Autowired constructor(
         val request = Request.Builder().url(url).post(requestBody).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
         val responseObject = objectMapper.readValue<BkAuthResponse<String>>(apiResponse.content)
+        logger.info("responseObject: $responseObject")
         if (responseObject.code != 0 && responseObject.code != 400) {
-            if (responseObject.code == 403) {
+            if (responseObject.code == 403 && retryIfTokenInvalid) {
                 bkAuthTokenService.refreshAccessToken(serviceCode)
+                return validateUserResourcePermission(
+                    user = user,
+                    serviceCode = serviceCode,
+                    resourceType = resourceType,
+                    projectCode = projectCode,
+                    resourceCode = resourceCode,
+                    permission = permission,
+                    retryIfTokenInvalid = false
+                )
             }
             logger.error("validate user resource permission failed. ${apiResponse.content}")
             throw RuntimeException("validate user resource permission failed")
         }
         return responseObject.code == 0
+    }
+
+    fun getUserResourceByPermission(
+        user: String,
+        serviceCode: BkAuthServiceCode,
+        resourceType: BkAuthResourceType,
+        projectCode: String,
+        permission: BkAuthPermission,
+        supplier: (() -> List<String>)?,
+        retryIfTokenInvalid: Boolean = false
+    ): List<String> {
+        val accessToken = bkAuthTokenService.getAccessToken(serviceCode)
+        val url = "${bkAuthConfig.getBkAuthServer()}/permission/project/service/policy/user/query/resources?" +
+            "access_token=$accessToken&user_id=$user&project_code=$projectCode&service_code=${serviceCode.value}" +
+            "&resource_type=${resourceType.value}&policy_code=${permission.value}&is_exact_resource=1"
+        val request = Request.Builder().url(url).get().build()
+        val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+        val responseObject = objectMapper.readValue<BkAuthResponse<List<String>>>(apiResponse.content)
+        if (responseObject.code != 0) {
+            if (responseObject.code != 400) {
+                return listOf()
+            }
+            if (responseObject.code == 403 && retryIfTokenInvalid) {
+                bkAuthTokenService.refreshAccessToken(serviceCode)
+                return getUserResourceByPermission(
+                    user = user,
+                    serviceCode = serviceCode,
+                    resourceType = resourceType,
+                    projectCode = projectCode,
+                    permission = permission,
+                    supplier = null,
+                    retryIfTokenInvalid = false
+                )
+            }
+            logger.error("get user resource permission failed. ${apiResponse.content}")
+            throw RuntimeException("get user resource permission failed")
+        }
+        return responseObject.data ?: listOf()
     }
 
     companion object {

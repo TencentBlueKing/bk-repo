@@ -63,7 +63,6 @@ class BkAuthProjectService @Autowired constructor(
         .build<String, Boolean>()
 
     fun isProjectMember(user: String, projectCode: String): Boolean {
-        logger.info("isProjectMember, user: $user, projectCode: $projectCode")
         val cacheKey = "$user::$projectCode"
         val cacheResult = cache.getIfPresent(cacheKey)
         if (cacheResult != null) {
