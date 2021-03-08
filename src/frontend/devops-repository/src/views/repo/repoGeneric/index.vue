@@ -324,7 +324,7 @@
         watch: {
             '$route.query.name' () {
                 this.initPage()
-                this.getArtifactories()
+                this.handlerPaginationChange()
             },
             'selectedTreeNode.fullPath' () {
                 // 重置选中行
@@ -419,7 +419,7 @@
                 this.query = null
                 this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
                 this.selectedRow = this.selectedTreeNode
-                this.getArtifactories()
+                this.handlerPaginationChange()
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -675,7 +675,7 @@
                     // 更新源和目的的节点信息
                     this.updateGenericTreeNode(this.selectedTreeNode)
                     this.updateGenericTreeNode(this.treeDialog.selectedNode)
-                    this.getArtifactories()
+                    this.handlerPaginationChange()
                     this.$bkMessage({
                         theme: 'success',
                         message: this.treeDialog.type + this.$t('success')

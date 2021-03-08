@@ -5,13 +5,17 @@
                 class="user-search"
                 v-model="userInput"
                 clearable
-                :placeholder="'支持账号/中文名搜索用户'"
-                @enter="handlerPaginationChange"
-                @clear="handlerPaginationChange">
+                :placeholder="'请输入账号/中文名'"
+                @enter="handlerPaginationChange()"
+                @clear="handlerPaginationChange()">
             </bk-input>
-            <i class="user-search-btn devops-icon icon-search" @click="handlerPaginationChange"></i>
+            <i class="user-search-btn devops-icon icon-search" @click="handlerPaginationChange()"></i>
             <div class="create-user flex-align-center">
-                <bk-checkbox v-model="showAdmin" @change="handlerPaginationChange">仅查看管理员</bk-checkbox>
+                <bk-checkbox
+                    v-model="showAdmin"
+                    :true-value="true"
+                    :false-value="''"
+                    @change="handlerPaginationChange()">仅查看管理员</bk-checkbox>
                 <bk-button v-if="mode === 'standalone'" class="ml20" theme="primary" @click.stop="showCreateUser">{{ $t('create') + $t('user') }}</bk-button>
             </div>
         </div>
@@ -27,6 +31,7 @@
             <bk-table-column :label="$t('account')" prop="userId" width="200"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
             <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
+            <bk-table-column label="电话" prop="phone"></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
                 <span slot-scope="props">{{formatDate(props.row.createdDate)}}</span>
             </bk-table-column>
@@ -53,6 +58,7 @@
             class="mt10"
             size="small"
             align="right"
+            show-total-count
             @change="current => handlerPaginationChange({ current })"
             @limit-change="limit => handlerPaginationChange({ limit })"
             :current.sync="pagination.current"
@@ -96,7 +102,7 @@
         data () {
             return {
                 isLoading: false,
-                showAdmin: false,
+                showAdmin: '',
                 userInput: '',
                 userList: [],
                 pagination: {
@@ -230,7 +236,7 @@
                     })
                     this.editUserDialog.show = false
                     this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
-                    this.handlerPaginationChange()
+                    this.getUserListHandler()
                 }).finally(() => {
                     // 更新用户列表缓存
                     this.editUserDialog.add && this.getRepoUserList()
@@ -278,7 +284,7 @@
                     })
                 }).finally(() => {
                     this.getRepoUserList()
-                    this.handlerPaginationChange()
+                    this.getUserListHandler()
                 })
             },
             changeAdminStatus ({ userId, admin }) {
@@ -294,7 +300,7 @@
                     })
                 }).finally(() => {
                     this.getRepoUserList()
-                    this.handlerPaginationChange()
+                    this.getUserListHandler()
                 })
             }
         }
@@ -330,9 +336,6 @@
         }
         .icon-delete {
             font-size: 16px;
-        }
-        .icon-arrows-up {
-            border-bottom: 1px solid;
         }
     }
 }
