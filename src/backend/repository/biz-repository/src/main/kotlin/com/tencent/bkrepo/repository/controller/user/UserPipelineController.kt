@@ -32,17 +32,15 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.api.ServicePipelineResource
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.service.NodeService
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
@@ -55,8 +53,7 @@ class UserPipelineController (
     private val servicePipelineResource: ServicePipelineResource
 ) {
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    @RequestMapping("/list/{projectId}")
+    @GetMapping("/list/{projectId}")
     fun listPipeline(
         @RequestAttribute userId: String,
         @PathVariable projectId: String
