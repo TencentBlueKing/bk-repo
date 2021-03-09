@@ -57,14 +57,14 @@ class BkAuthProjectService @Autowired constructor(
         .writeTimeout(5L, TimeUnit.SECONDS)
         .build()
 
-    private val cache = CacheBuilder.newBuilder()
+    private val projectPermissionCache = CacheBuilder.newBuilder()
         .maximumSize(20000)
         .expireAfterWrite(40, TimeUnit.SECONDS)
         .build<String, Boolean>()
 
-    fun isProjectMember(user: String, projectCode: String): Boolean {
+    fun isProjectMember(user: String, projectCode: String, retryIfTokenInvalid: Boolean = false): Boolean {
         val cacheKey = "$user::$projectCode"
-        val cacheResult = cache.getIfPresent(cacheKey)
+        val cacheResult = projectPermissionCache.getIfPresent(cacheKey)
         if (cacheResult != null) {
             logger.debug("match in cache: $cacheKey|$cacheResult")
             return cacheResult
@@ -77,24 +77,23 @@ class BkAuthProjectService @Autowired constructor(
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
         val responseObject = objectMapper.readValue<BkAuthResponse<Any>>(apiResponse.content)
         if (responseObject.code != 0) {
-            if (responseObject.code == HTTP_403) {
-                bkAuthTokenService.refreshAccessToken(BkAuthServiceCode.ARTIFACTORY)
+            if (responseObject.code == 403 && retryIfTokenInvalid) {
+                bkAuthTokenService.getAccessToken(BkAuthServiceCode.ARTIFACTORY, accessToken)
+                return isProjectMember(user, projectCode, false)
             }
-            if (responseObject.code == HTTP_400) {
+            if (responseObject.code == 400) {
                 logger.info("user[$user] not member of project $projectCode")
-                cache.put(cacheKey, false)
+                projectPermissionCache.put(cacheKey, false)
                 return false
             }
             logger.error("verify project member failed. ${apiResponse.content}")
             throw RuntimeException("verify project member failed")
         }
-        cache.put(cacheKey, true)
+        projectPermissionCache.put(cacheKey, true)
         return true
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(this::class.java)
-        private const val HTTP_403 = 403
-        private const val HTTP_400 = 400
     }
 }

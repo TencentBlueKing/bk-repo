@@ -43,8 +43,6 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -62,11 +60,11 @@ class BkAuthPermissionServiceImpl constructor(
     private val bkAuthService: BkAuthService,
     private val bkAuthProjectService: BkAuthProjectService
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
-    private fun parsePipelineId(path: String): String {
+    private fun parsePipelineId(path: String): String? {
         val roads = path.split("/")
         return if (roads.size < 2 || roads[1].isBlank()) {
             logger.warn("parse pipelineId failed, path: $path")
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "path")
+            null
         } else {
             roads[1]
         }
@@ -94,7 +92,10 @@ class BkAuthPermissionServiceImpl constructor(
                 PIPELINE -> {
                     return when (resourceType) {
                         ResourceType.REPO -> checkProjectPermission(uid, projectId!!)
-                        ResourceType.NODE -> checkPipelinePermission(uid, projectId!!, parsePipelineId(path!!))
+                        ResourceType.NODE -> {
+                            val pipelineId = parsePipelineId(path!!) ?: return false
+                            checkPipelinePermission(uid, projectId!!, pipelineId)
+                        }
                         else -> throw RuntimeException("resource type not supported: $resourceType")
                     }
                 }
@@ -122,7 +123,7 @@ class BkAuthPermissionServiceImpl constructor(
                 retryIfTokenInvalid = true
             )
         } catch (e: Exception) {
-            // TODO 调用auth稳定后直接改为抛异常
+            // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
             true
         }
@@ -132,9 +133,9 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkProjectPermission(uid: String, projectId: String): Boolean {
         logger.info("checkProjectPermission: uid: $uid, projectId: $projectId")
         return try {
-            checkProjectPermission(uid, projectId)
+            bkAuthProjectService.isProjectMember(uid, projectId, retryIfTokenInvalid = true)
         } catch (e: Exception) {
-            // TODO 调用auth稳定后直接改为抛异常
+            // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
             true
         }

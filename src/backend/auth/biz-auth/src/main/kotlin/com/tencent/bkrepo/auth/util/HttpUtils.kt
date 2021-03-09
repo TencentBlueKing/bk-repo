@@ -53,6 +53,7 @@ object HttpUtils {
             }
         }
         if (retry > 0) {
+            Thread.sleep(500)
             return doRequest(okHttpClient, request, retry - 1, acceptCode)
         } else {
             throw RuntimeException("http request error")
