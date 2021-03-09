@@ -29,11 +29,20 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-mongo"))
-    api(project(":auth:api-auth"))
-    api(project(":common:common-job"))
-    api(project(":common:common-security"))
-    api(project(":repository:api-repository"))
-    implementation("com.google.guava:guava")
-}
+package com.tencent.bkrepo.auth.model
+
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
+
+@Document("bk_auth_token")
+@CompoundIndexes(
+    CompoundIndex(name = "lockKey_idx", def = "{'lockKey': 1}", unique = true, background = true)
+)
+data class TBkAuthToken(
+    var tokenKey: String,
+    var token: String,
+    val createdAt: LocalDateTime,
+    val expiredAt: LocalDateTime
+)

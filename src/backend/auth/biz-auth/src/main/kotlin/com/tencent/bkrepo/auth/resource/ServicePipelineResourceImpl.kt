@@ -29,11 +29,24 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-mongo"))
-    api(project(":auth:api-auth"))
-    api(project(":common:common-job"))
-    api(project(":common:common-security"))
-    api(project(":repository:api-repository"))
-    implementation("com.google.guava:guava")
+package com.tencent.bkrepo.auth.resource
+
+import com.tencent.bkrepo.auth.api.ServicePipelineResource
+import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class ServicePipelineResourceImpl @Autowired constructor(
+    private val bkAuthPipelineService: BkAuthPipelineService
+) : ServicePipelineResource {
+    override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
+        return ResponseBuilder.success(bkAuthPipelineService.listPermissionedPipelines(uid, projectId))
+    }
+
+    override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
+        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId)))
+    }
 }

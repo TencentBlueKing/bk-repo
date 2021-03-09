@@ -29,36 +29,47 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.util
+package com.tencent.bkrepo.auth.service.bkauth
 
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
-object HttpUtils {
-    fun doRequest(okHttpClient: OkHttpClient, request: Request, retry: Int = 0, acceptCode: Set<Int> = setOf()): ApiResponse {
-        try {
-            val response = okHttpClient.newBuilder().build().newCall(request).execute()
-            val responseCode = response.code()
-            val responseContent = response.body()!!.string()
-            if (response.isSuccessful || acceptCode.contains(responseCode)) {
-                return ApiResponse(responseCode, responseContent)
-            }
-            logger.warn("http request failed, code: $responseCode, responseContent: $responseContent")
-        } catch (e: Exception) {
-            if (retry > 0) {
-                logger.warn("http request error, cause: ${e.message}")
-            } else {
-                logger.error("http request error", e)
-            }
-        }
-        if (retry > 0) {
-            Thread.sleep(500)
-            return doRequest(okHttpClient, request, retry - 1, acceptCode)
-        } else {
-            throw RuntimeException("http request error")
-        }
+/**
+ * ci 流水线权限查询
+ */
+@Service
+class BkAuthPipelineService(
+    private val bkAuthService: BkAuthService
+) {
+    fun listPermissionedPipelines(uid: String, projectId: String): List<String> {
+        return bkAuthService.getUserResourceByPermission(
+            user = uid,
+            serviceCode = BkAuthServiceCode.PIPELINE,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
+            projectCode = projectId,
+            permission = BkAuthPermission.LIST,
+            supplier = null,
+            retryIfTokenInvalid = true
+        )
     }
 
-    private val logger = LoggerFactory.getLogger(HttpUtils::class.java)
+    fun hasPermission(uid: String, projectId: String, pipelineId: String): Boolean {
+        logger.info("hasPermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
+        return bkAuthService.validateUserResourcePermission(
+            user = uid,
+            serviceCode = BkAuthServiceCode.PIPELINE,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
+            projectCode = projectId,
+            resourceCode = pipelineId,
+            permission = BkAuthPermission.DOWNLOAD,
+            retryIfTokenInvalid = true
+        )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(BkAuthPipelineService::class.java)
+    }
 }
