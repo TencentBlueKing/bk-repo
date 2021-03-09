@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.service.ListViewService
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -69,7 +70,7 @@ class UserListViewController(
     }
 
     @GetMapping("/{projectId}")
-    fun listRepositoryView(projectId: String) {
+    fun listRepositoryView(@PathVariable projectId: String) {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         listViewService.listRepoView(projectId)
     }
