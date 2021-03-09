@@ -69,20 +69,17 @@ class UploadService(
     private val storageService: StorageService
 ) : ArtifactService() {
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
         repository.upload(context)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun delete(userId: String, artifactInfo: GenericArtifactInfo) {
         val context = ArtifactRemoveContext()
         repository.remove(context)
         logger.info("User[${SecurityUtils.getPrincipal()}] delete artifact[$artifactInfo] success.")
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
             val expires = getLongHeader(HEADER_EXPIRES)
@@ -108,7 +105,6 @@ class UploadService(
         }
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun abortBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
         checkUploadId(uploadId, storageCredentials)
@@ -117,7 +113,6 @@ class UploadService(
         logger.info("User[${SecurityUtils.getPrincipal()}] abort upload block [$artifactInfo] success.")
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun completeBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
         val storageCredentials = getStorageCredentials()
         checkUploadId(uploadId, storageCredentials)
@@ -140,7 +135,6 @@ class UploadService(
         logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {
         val storageCredentials = getStorageCredentials()
         checkUploadId(uploadId, storageCredentials)

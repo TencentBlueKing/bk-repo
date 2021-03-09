@@ -59,6 +59,7 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     VERSION_EXISTED("artifact.version.existed"),
     TEMPORARY_TOKEN_INVALID("artifact.temporary-token.invalid"),
     TEMPORARY_TOKEN_EXPIRED("artifact.temporary-token.expired"),
+    PIPELINE_BANNED("artifact.pipeline.banned"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
@@ -66,7 +65,9 @@ class TemporaryAccessController(
         @RequestBody request: TemporaryTokenCreateRequest
     ): Response<List<TemporaryAccessToken>> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            fullPathSet.forEach {
+                permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
+            }
             return temporaryAccessService.createToken(request)
         }
     }
@@ -77,7 +78,9 @@ class TemporaryAccessController(
         @RequestBody request: TemporaryTokenCreateRequest
     ): Response<List<TemporaryAccessUrl>> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            fullPathSet.forEach {
+                permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
+            }
             return temporaryAccessService.createUrl(request)
         }
     }

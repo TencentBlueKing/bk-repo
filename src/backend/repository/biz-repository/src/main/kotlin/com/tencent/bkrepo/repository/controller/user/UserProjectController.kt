@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -54,7 +53,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @Api("项目用户接口")
-@Principal(PrincipalType.PLATFORM)
 @RestController
 @RequestMapping("/api/project")
 class UserProjectController(
@@ -86,32 +84,24 @@ class UserProjectController(
         @ApiParam(value = "项目ID", required = true)
         @PathVariable projectId: String
     ): Response<Boolean> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(projectService.checkExist(projectId))
     }
 
     @ApiOperation("项目列表")
+    @Principal(PrincipalType.ADMIN)
     @GetMapping("/list")
     fun listProject(): Response<List<ProjectInfo>> {
         return ResponseBuilder.success(projectService.listProject())
     }
 
-    @Deprecated("replace with createProject, waiting kb-ci ")
+    @Deprecated("waiting kb-ci", replaceWith = ReplaceWith("createProject"))
     @ApiOperation("创建项目")
     @PostMapping
     fun create(
         @RequestAttribute userId: String,
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
-        val createRequest = with(userProjectRequest) {
-            ProjectCreateRequest(
-                name = name,
-                displayName = displayName,
-                description = description,
-                operator = userId
-            )
-        }
-        projectService.createProject(createRequest)
-        return ResponseBuilder.success()
+        return this.createProject(userId, userProjectRequest)
     }
 }

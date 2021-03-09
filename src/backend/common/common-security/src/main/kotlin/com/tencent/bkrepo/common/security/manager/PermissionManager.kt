@@ -38,13 +38,12 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
@@ -59,42 +58,75 @@ class PermissionManager(
     private val httpAuthProperties: HttpAuthProperties
 ) {
 
-    fun checkPermission(
-        userId: String,
-        type: ResourceType,
+    /**
+     * 校验项目权限
+     * @param action 动作
+     * @param projectId 项目id
+     */
+    fun checkProjectPermission(
         action: PermissionAction,
-        projectId: String,
-        repoName: String? = null,
-        repoPublic: Boolean? = null
+        projectId: String
     ) {
-        when {
-            preCheck() -> return
-            type == ResourceType.PROJECT -> checkProjectPermission(userId, type, action, projectId)
-            repoName != null && repoPublic != null -> {
-                checkRepoPermission(userId, type, action, projectId, repoName, repoPublic)
-            }
-            else -> {
-                require(repoName != null) { "Repo name must not be null!" }
-                val repoInfo = queryRepositoryInfo(projectId, repoName)
-                checkRepoPermission(userId, type, action, repoInfo.projectId, repoInfo.name, repoInfo.public)
-            }
-        }
+        checkPermission(ResourceType.PROJECT, action, projectId)
     }
 
-    fun checkPrincipal(userId: String, principalType: PrincipalType) {
-        if (preCheck()) {
+    /**
+     * 校验仓库权限
+     * @param action 动作
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     */
+    fun checkRepoPermission(
+        action: PermissionAction,
+        projectId: String,
+        repoName: String,
+        public: Boolean? = null
+    ) {
+        if (isReadPublicRepo(action, projectId, repoName, public)) {
             return
         }
-        // 匿名用户，提示登录
-        val platformId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
-        if (userId == ANONYMOUS_USER && platformId == null) throw AuthenticationException()
+        checkPermission(ResourceType.REPO, action, projectId, repoName)
+    }
+
+    /**
+     * 校验节点权限
+     * @param action 动作
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param path 节点路径
+     * @param public 仓库是否为public
+     */
+    fun checkNodePermission(
+        action: PermissionAction,
+        projectId: String,
+        repoName: String,
+        path: String,
+        public: Boolean? = null
+    ) {
+        if (isReadPublicRepo(action, projectId, repoName, public)) {
+            return
+        }
+        checkPermission(ResourceType.NODE, action, projectId, repoName, path)
+    }
+
+    /**
+     * 校验身份
+     * @param userId 用户id
+     * @param principalType 身份类型
+     */
+    fun checkPrincipal(userId: String, principalType: PrincipalType) {
+        if (!httpAuthProperties.enabled) {
+            return
+        }
+        val platformId = SecurityUtils.getPlatformId()
+        checkAnonymous(userId, SecurityUtils.getPlatformId())
 
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
                 throw PermissionException()
             }
         } else if (principalType == PrincipalType.PLATFORM) {
-            if (!isPlatformUser() && !isAdminUser(userId)) {
+            if (platformId == null && !isAdminUser(userId)) {
                 throw PermissionException()
             }
         }
@@ -108,82 +140,84 @@ class PermissionManager(
         permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT, projectId, repoName))
     }
 
-    private fun preCheck(): Boolean {
-        return if (!httpAuthProperties.enabled) {
-            if (logger.isDebugEnabled) {
-                logger.debug("Auth disabled, skip checking permission")
-            }
-            true
-        } else false
+    /**
+     * 判断是否为public仓库且为READ操作
+     */
+    private fun isReadPublicRepo(
+        action: PermissionAction,
+        projectId: String,
+        repoName: String,
+        public: Boolean? = null
+    ): Boolean {
+        if (action != PermissionAction.READ) {
+            return false
+        }
+        return public ?: queryRepositoryInfo(projectId, repoName).public
     }
 
+    /**
+     * 查询仓库信息
+     */
     private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
         return repositoryClient.getRepoInfo(projectId, repoName).data
             ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
     }
 
-    private fun checkRepoPermission(
-        userId: String,
+    /**
+     * 去auth微服务校验资源权限
+     */
+    private fun checkPermission(
         type: ResourceType,
         action: PermissionAction,
-        projectId: String,
-        repoName: String,
-        repoPublic: Boolean
+        projectId: String? = null,
+        repoName: String? = null,
+        path: String? = null
     ) {
-        // public仓库且为READ操作，直接跳过
-        if (type == ResourceType.REPO && action == PermissionAction.READ && repoPublic) return
+        // 判断是否开启认证
+        if (!httpAuthProperties.enabled) {
+            return
+        }
+        val userId = SecurityUtils.getUserId()
+        val platformId = SecurityUtils.getPlatformId()
+        checkAnonymous(userId, SecurityUtils.getPlatformId())
 
-        // 匿名用户，提示登录
-        val appId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
-        if (userId == ANONYMOUS_USER && appId == null) throw AuthenticationException()
-
-        // auth 校验
-        val checkRequest = CheckPermissionRequest(
-            uid = userId,
-            appId = appId,
-            resourceType = type,
-            action = action,
-            projectId = projectId,
-            repoName = repoName
-        )
-        checkPermission(checkRequest)
-    }
-
-    private fun checkProjectPermission(
-        userId: String,
-        type: ResourceType,
-        action: PermissionAction,
-        projectId: String
-    ) {
-        // 匿名用户，提示登录
-        val platformId = HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) as? String
-        if (userId == ANONYMOUS_USER && platformId == null) throw AuthenticationException()
-
+        // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(
             uid = userId,
             appId = platformId,
             resourceType = type,
             action = action,
-            projectId = projectId
+            projectId = projectId,
+            repoName = repoName,
+            path =  path
         )
-        checkPermission(checkRequest)
-    }
-
-    private fun checkPermission(checkRequest: CheckPermissionRequest) {
         if (permissionResource.checkPermission(checkRequest).data != true) {
+            // 无权限，响应403错误
             throw PermissionException()
+        }
+        if (logger.isDebugEnabled) {
+            logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")
         }
     }
 
-    private fun isPlatformUser(): Boolean {
-        return HttpContextHolder.getRequest().getAttribute(PLATFORM_KEY) != null
-    }
-
+    /**
+     * 判断是否为管理员
+     */
     private fun isAdminUser(userId: String): Boolean {
         return userResource.detail(userId).data?.admin == true
     }
 
     companion object {
+
         private val logger = LoggerFactory.getLogger(PermissionManager::class.java)
+
+        /**
+         * 检查是否为匿名用户，如果是匿名用户则返回401并提示登录
+         */
+        private fun checkAnonymous(userId: String, platformId: String?) {
+            if (userId == ANONYMOUS_USER && platformId == null) {
+                throw AuthenticationException()
+            }
+        }
     }
 }
