@@ -40,12 +40,17 @@ export default {
     // 分页查询仓库列表
     getRepoList (_, { projectId, current, limit, name, type }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/repo/page/${projectId}/${current}/${limit}?name=${name}&type=${type}`
+            `${prefix}/repo/page/${projectId}/${current}/${limit}`,
+            {
+                params: {
+                    name,
+                    type
+                }
+            }
         )
     },
     // 查询仓库列表
-    getRepoListAll (_, { projectId, name, type }) {
-        // return Vue.prototype.$ajax.get(`${prefix}/repo/list/${projectId}?name=${name}&type=${type}`)
+    getRepoListAll (_, { projectId }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/list/${projectId}`
         )
