@@ -77,13 +77,13 @@ class BkAuthConfig {
      * 是否开启蓝盾用户权限认证开关
      */
     @Value("\${auth.devops.authEnabled:true}")
-    var authEnabled: Boolean = true
+    var devopsAuthEnabled: Boolean = true
 
     /**
      * 是否允许蓝盾匿名用户请求
      */
     @Value("\${auth.devops.allowAnonymous:true}")
-    var allowAnonymous: Boolean = true
+    var devopsAllowAnonymous: Boolean = true
 
     fun getAppSecret(serviceCode: BkAuthServiceCode): String {
         return when (serviceCode) {

@@ -32,6 +32,7 @@
 dependencies {
     api(project(":common:common-mongo"))
     api(project(":auth:api-auth"))
+    api(project(":common:common-job"))
     api(project(":common:common-security"))
     api(project(":repository:api-repository"))
     implementation("com.google.guava:guava")

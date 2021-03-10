@@ -1,8 +1,8 @@
 {
   "__inputs": [
     {
-      "name": "DS_INFLUXDB",
-      "label": "InfluxDB",
+      "name": "DS_BKREPO-METRICS-PROD",
+      "label": "bkrepo-metrics-prod",
       "description": "",
       "type": "datasource",
       "pluginId": "influxdb",
@@ -27,6 +27,12 @@
       "id": "influxdb",
       "name": "InfluxDB",
       "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
     }
   ],
   "annotations": {
@@ -48,17 +54,418 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1614605882486,
+  "iteration": 1615295398208,
   "links": [],
   "panels": [
     {
       "collapsed": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 0
+      },
+      "id": 19,
+      "panels": [],
+      "title": "制品库传输当日总览",
+      "type": "row"
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 21,
+      "interval": null,
+      "links": [],
+      "maxDataPoints": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$interval"
+              ],
+              "type": "time"
+            }
+          ],
+          "measurement": "artifact_uploaded_consume",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT sum(\"value\") FROM \"artifact_uploaded_consume\" WHERE (\"service\" =~ /^$service$/ AND \"instance\" =~ /^$instance$/) AND time > now()-1d GROUP BY time(1d) ORDER BY DESC LIMIT 1",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "sum"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "service",
+              "operator": "=~",
+              "value": "/^$service$/"
+            },
+            {
+              "condition": "AND",
+              "key": "instance",
+              "operator": "=~",
+              "value": "/^$instance$/"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "当日上传数据",
+      "type": "stat"
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 22,
+      "interval": null,
+      "links": [],
+      "maxDataPoints": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "groupBy": [],
+          "measurement": "artifact_uploaded_consume",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT sum(\"count\") FROM \"artifact_uploaded_consume\" WHERE (\"service\" =~ /^$service$/ AND \"instance\" =~ /^$instance$/) AND time > now()-1d GROUP BY time(1d) ORDER BY DESC LIMIT 1",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "service",
+              "operator": "=~",
+              "value": "/^$service$/"
+            },
+            {
+              "condition": "AND",
+              "key": "instance",
+              "operator": "=~",
+              "value": "/^$instance$/"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "当日上传数量",
+      "type": "stat"
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 23,
+      "interval": null,
+      "links": [],
+      "maxDataPoints": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "groupBy": [
+            {
+              "params": [
+                "$interval"
+              ],
+              "type": "time"
+            }
+          ],
+          "measurement": "artifact_uploaded_consume",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT sum(\"value\") FROM \"artifact_downloaded_consume\" WHERE (\"service\" =~ /^$service$/ AND \"instance\" =~ /^$instance$/) AND time > now()-1d GROUP BY time(1d) ORDER BY DESC LIMIT 1",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "sum"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "service",
+              "operator": "=~",
+              "value": "/^$service$/"
+            },
+            {
+              "condition": "AND",
+              "key": "instance",
+              "operator": "=~",
+              "value": "/^$instance$/"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "当日下载数据",
+      "type": "stat"
+    },
+    {
+      "cacheTimeout": null,
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": null
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 24,
+      "interval": null,
+      "links": [],
+      "maxDataPoints": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "sum"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value"
+      },
+      "pluginVersion": "7.1.3",
+      "targets": [
+        {
+          "groupBy": [],
+          "measurement": "artifact_uploaded_consume",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT sum(\"count\") FROM \"artifact_downloaded_consume\" WHERE (\"service\" =~ /^$service$/ AND \"instance\" =~ /^$instance$/) AND time > now()-1d GROUP BY time(1d) ORDER BY DESC LIMIT 1",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "value"
+                ],
+                "type": "field"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "key": "service",
+              "operator": "=~",
+              "value": "/^$service$/"
+            },
+            {
+              "condition": "AND",
+              "key": "instance",
+              "operator": "=~",
+              "value": "/^$instance$/"
+            }
+          ]
+        }
+      ],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "当日下载数量",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 4
       },
       "id": 12,
       "panels": [],
@@ -70,7 +477,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
       "description": "IO传输平均流量",
       "fieldConfig": {
         "defaults": {
@@ -84,7 +491,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 5
       },
       "hiddenSeries": false,
       "id": 17,
@@ -275,7 +682,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
       "decimals": null,
       "description": "平均每秒传输数量",
       "fieldConfig": {
@@ -290,7 +697,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 1
+        "y": 5
       },
       "hiddenSeries": false,
       "id": 14,
@@ -466,12 +873,12 @@
     },
     {
       "collapsed": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 13
       },
       "id": 7,
       "panels": [],
@@ -483,7 +890,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
       "description": "异步任务实时数量",
       "fieldConfig": {
         "defaults": {
@@ -497,7 +904,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 9,
@@ -605,7 +1012,7 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_INFLUXDB}",
+      "datasource": "${DS_BKREPO-METRICS-PROD}",
       "description": "异步任务队列大小",
       "fieldConfig": {
         "defaults": {
@@ -619,7 +1026,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 14
       },
       "hiddenSeries": false,
       "id": 10,
@@ -735,7 +1142,7 @@
         "allFormat": "glob",
         "allValue": "*",
         "current": {},
-        "datasource": "${DS_INFLUXDB}",
+        "datasource": "${DS_BKREPO-METRICS-PROD}",
         "definition": "",
         "error": null,
         "hide": 0,
@@ -759,7 +1166,7 @@
         "allFormat": "glob",
         "allValue": "*",
         "current": {},
-        "datasource": "${DS_INFLUXDB}",
+        "datasource": "${DS_BKREPO-METRICS-PROD}",
         "definition": "",
         "error": null,
         "hide": 0,

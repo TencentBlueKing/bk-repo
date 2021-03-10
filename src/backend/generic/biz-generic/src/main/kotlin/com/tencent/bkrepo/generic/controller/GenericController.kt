@@ -31,9 +31,12 @@
 
 package com.tencent.bkrepo.generic.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
@@ -58,10 +61,12 @@ class GenericController(
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         uploadService.upload(artifactInfo, file)
     }
 
+    @Permission(ResourceType.NODE, PermissionAction.DELETE)
     @DeleteMapping(GENERIC_MAPPING_URI)
     fun delete(
         @RequestAttribute userId: String,
@@ -71,11 +76,13 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
         downloadService.download(artifactInfo)
     }
 
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @PostMapping(BLOCK_MAPPING_URI)
     fun startBlockUpload(
         @RequestAttribute userId: String,
@@ -84,6 +91,7 @@ class GenericController(
         return ResponseBuilder.success(uploadService.startBlockUpload(userId, artifactInfo))
     }
 
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @DeleteMapping(BLOCK_MAPPING_URI)
     fun abortBlockUpload(
         @RequestAttribute userId: String,
@@ -94,6 +102,7 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @PutMapping(BLOCK_MAPPING_URI)
     fun completeBlockUpload(
         @RequestAttribute userId: String,
@@ -104,6 +113,7 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping(BLOCK_MAPPING_URI)
     fun listBlock(
         @RequestAttribute userId: String,

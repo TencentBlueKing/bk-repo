@@ -23,10 +23,10 @@
                                 v-model="versionInput"
                                 clearable
                                 :placeholder="$t('versionPlacehodler')"
-                                @enter="handlerPaginationChange"
-                                @clear="handlerPaginationChange">
+                                @enter="handlerPaginationChange()"
+                                @clear="handlerPaginationChange()">
                             </bk-input>
-                            <i class="common-version-search-btn devops-icon icon-search" @click="handlerPaginationChange"></i>
+                            <i class="common-version-search-btn devops-icon icon-search" @click="handlerPaginationChange()"></i>
                         </div>
                         <bk-table
                             class="common-version-table"
@@ -279,7 +279,7 @@
                             repoName: this.repoName,
                             packageKey: this.packageKey,
                             version: row.name
-                        }).then(data => {
+                        }).then(() => {
                             this.getVersionListHandler()
                             this.$bkMessage({
                                 theme: 'success',

@@ -31,8 +31,11 @@
 
 package com.tencent.bkrepo.generic.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.api.OperateResource
 import com.tencent.bkrepo.generic.pojo.FileInfo
@@ -48,6 +51,7 @@ class OperateResourceImpl @Autowired constructor(
     private val operateService: OperateService
 ) : OperateResource {
 
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     override fun listFile(
         userId: String,
         artifactInfo: ArtifactInfo,

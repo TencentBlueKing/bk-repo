@@ -21,9 +21,9 @@
 
 package com.tencent.bkrepo.auth.resource
 
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
@@ -49,13 +49,13 @@ abstract class AbstractPermissionResourceImpl {
                 }
                 ResourceType.NODE -> {
                     if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
                     }
                     if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoId")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoName")
                     }
                     if (path.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "path")
                     }
                 }
             }
@@ -77,7 +77,7 @@ abstract class AbstractPermissionResourceImpl {
                         throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
                     }
                     if (repoNames.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNameList")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNames")
                     }
                 }
                 ResourceType.NODE -> {
@@ -85,10 +85,10 @@ abstract class AbstractPermissionResourceImpl {
                         throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
                     }
                     if (repoNames.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNameList")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNames")
                     }
                     if (path.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "node")
+                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "path")
                     }
                 }
             }

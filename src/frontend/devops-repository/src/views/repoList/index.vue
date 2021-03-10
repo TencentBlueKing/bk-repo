@@ -6,7 +6,7 @@
                 <bk-select
                     v-model="query.type"
                     class="form-input"
-                    @change="getListData"
+                    @change="handlerPaginationChange()"
                     :placeholder="$t('allTypes')">
                     <bk-option
                         v-for="type in repoEnum"
@@ -27,8 +27,8 @@
                     class="form-input"
                     :placeholder="$t('enterSearch')"
                     :clearable="true"
-                    @enter="getListData"
-                    @clear="getListData"
+                    @enter="handlerPaginationChange()"
+                    @clear="handlerPaginationChange()"
                     :right-icon="'bk-icon icon-search'">
                 </bk-input>
             </div>

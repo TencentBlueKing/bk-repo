@@ -85,3 +85,9 @@ const val DEFAULT_STORAGE_KEY = "default"
  * 响应header check sum
  */
 const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
+
+/**
+ * 流水线仓库
+ */
+const val PIPELINE = "pipeline"
+

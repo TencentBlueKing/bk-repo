@@ -67,8 +67,12 @@ class InfluxMetricsExporter(
             if (!isEnabled) {
                 return
             }
-            val points = queue.mapNotNull {
-                Point.measurementByPOJO(it.javaClass).addFieldsFromPOJO(it).tag(commonTags).build()
+            val clazz = ArtifactTransferRecord::class.java
+            val points = ArrayList<Point>()
+            for (index in queue.indices) {
+                val record = queue[index]
+                val point = Point.measurementByPOJO(clazz).addFieldsFromPOJO(record).tag(commonTags).build()
+                points.add(point)
             }
             val batchPoints = BatchPoints.database(db).points(points).retentionPolicy(retentionPolicy).build()
             influxDB.write(batchPoints)

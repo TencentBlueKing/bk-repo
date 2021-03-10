@@ -29,6 +29,9 @@
  * SOFTWARE.
  */
 
+val assemblyMode: String? by project
+println("assembly mode: $assemblyMode")
+val k8s: Boolean = assemblyMode?.equals("k8s") ?: false
 dependencies {
     api(project(":common:common-api"))
 
@@ -36,10 +39,15 @@ dependencies {
     api("io.github.openfeign:feign-okhttp")
     api("io.micrometer:micrometer-registry-influx")
     api("org.springframework.boot:spring-boot-starter-actuator")
-    api("org.springframework.cloud:spring-cloud-starter-consul-discovery")
-    api("org.springframework.cloud:spring-cloud-starter-consul-config")
     api("org.springframework.cloud:spring-cloud-starter-openfeign")
     api("org.springframework.cloud:spring-cloud-starter-netflix-hystrix")
+    if (k8s) {
+        api("org.springframework.cloud:spring-cloud-starter-kubernetes-all")
+        api("org.springframework.cloud:spring-cloud-starter-kubernetes-ribbon")
+    } else {
+        api("org.springframework.cloud:spring-cloud-starter-consul-discovery")
+        api("org.springframework.cloud:spring-cloud-starter-consul-config")
+    }
     api("org.springframework.boot:spring-boot-starter-web") {
         exclude(module = "spring-boot-starter-tomcat")
     }
