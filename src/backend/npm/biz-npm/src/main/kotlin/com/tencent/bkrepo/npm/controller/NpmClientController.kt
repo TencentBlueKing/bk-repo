@@ -34,6 +34,7 @@ package com.tencent.bkrepo.npm.controller
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
@@ -43,6 +44,7 @@ import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
 import com.tencent.bkrepo.npm.service.NpmClientService
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -252,7 +254,10 @@ class NpmClientController(
         @PathVariable rev: String
     ): NpmDeleteResponse {
         val pkgName = if (scope.isNullOrBlank()) name else String.format("@%s/%s", scope, name)
-        npmClientService.deleteVersion(userId, artifactInfo, pkgName, filename)
+        val tgzPath = HttpContextHolder.getRequest().requestURI.substringAfterLast(artifactInfo.getRepoIdentify())
+            .substringBeforeLast("/-rev")
+        val version = NpmUtils.analyseVersionFromPackageName(filename, name)
+        npmClientService.deleteVersion(userId, artifactInfo, pkgName, version, tgzPath)
         return NpmDeleteResponse(true, pkgName, rev)
     }
 
