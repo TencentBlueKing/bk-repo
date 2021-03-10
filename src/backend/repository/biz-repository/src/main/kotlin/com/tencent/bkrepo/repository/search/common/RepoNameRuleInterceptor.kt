@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import org.springframework.data.mongodb.core.query.Criteria
@@ -60,14 +60,13 @@ class RepoNameRuleInterceptor(
     override fun intercept(rule: Rule, context: QueryContext): Criteria {
         with(rule as Rule.QueryRule) {
             require(context is CommonQueryContext)
-            val userId = SecurityUtils.getUserId()
             val projectId = context.findProjectId()
             val queryRule = when (operation) {
-                OperationType.EQ -> { handleRepoNameEq(userId, projectId, value.toString()) }
+                OperationType.EQ -> { handleRepoNameEq(projectId, value.toString()) }
                 OperationType.IN -> {
                     val listValue = value
                     require(listValue is List<*>)
-                    handleRepoNameIn(userId, projectId, listValue, context)
+                    handleRepoNameIn(projectId, listValue, context)
                 }
                 else -> throw IllegalArgumentException("RepoName only support EQ and IN operation type.")
             }.toFixed()
@@ -76,16 +75,16 @@ class RepoNameRuleInterceptor(
     }
 
     private fun handleRepoNameEq(
-        userId: String,
         projectId: String,
         value: String
     ): Rule.QueryRule {
-        hasRepoPermission(projectId, value)
+        if(!hasRepoPermission(projectId, value)) {
+            throw PermissionException()
+        }
         return Rule.QueryRule(NodeInfo::repoName.name, value, OperationType.EQ)
     }
 
     private fun handleRepoNameIn(
-        userId: String,
         projectId: String,
         value: List<*>,
         context: CommonQueryContext
@@ -117,7 +116,7 @@ class RepoNameRuleInterceptor(
                 public = repoPublic
             )
             true
-        } catch (ignored: Exception) {
+        } catch (ignored: PermissionException) {
             false
         }
     }
