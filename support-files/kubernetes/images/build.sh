@@ -17,7 +17,7 @@ PUSH=0
 REGISTRY=docker.io
 USERNAME=
 PASSWORD=
-BACKENDS=(repository auth generic docker helm npm)
+BACKENDS=(repository auth generic docker helm)
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
