@@ -158,7 +158,7 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
 fi
 
 # 构建init镜像
-if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
+if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     log "构建init镜像..."
     rm -rf tmp/*
     cp -rf init/init-mongodb.sh tmp/
