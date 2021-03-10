@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 用途：构建docker镜像并推送
+# 用途：构建并推送docker镜像
 
 # 安全模式
 set -euo pipefail 
@@ -8,14 +8,16 @@ set -euo pipefail
 PROGRAM=$(basename "$0")
 EXITCODE=0
 
-BACKENDS=(repository auth generic docker helm npm)
-REGISTRY=docker.io
-VERSION=latest
-PUSH=0
 ALL=1
 GATEWAY=0
 BACKEND=0
 INIT=0
+VERSION=latest
+PUSH=0
+REGISTRY=docker.io
+USERNAME=
+PASSWORD=
+BACKENDS=(repository auth generic docker helm npm)
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
@@ -29,12 +31,14 @@ usage () {
 用法: 
     $PROGRAM [OPTIONS]... 
 
-            [ -r, --registry        [可选] 指定docker镜像仓库地址, 默认docker.io ]
-            [ -v, --version         [可选] 镜像版本tag, 默认latest ]
-            [ -p, --push            [可选] 推送镜像到docker镜像仓库，默认不推送 ]
             [ --gateway             [可选] 打包gateway镜像 ]
             [ --backend             [可选] 打包backend镜像 ]
             [ --init                [可选] 打包init镜像 ]
+            [ -v, --version         [可选] 镜像版本tag, 默认latest ]
+            [ -p, --push            [可选] 推送镜像到docker远程仓库，默认不推送 ]
+            [ -r, --registry        [可选] docker仓库地址, 默认docker.io ]
+            [ --username            [可选] docker仓库用户名 ]
+            [ --password            [可选] docker仓库密码 ]
             [ -h, --help            [可选] 查看脚本帮助 ]
 EOF
 }
@@ -62,31 +66,36 @@ warning () {
 (( $# == 0 )) && usage_and_exit 1
 while (( $# > 0 )); do 
     case "$1" in
-        -n | --dry-run )
+        --gateway )
+            ALL=0
+            GATEWAY=1
+            ;;
+        --backend )
+            ALL=0
+            BACKEND=1
+            ;;
+        --init )
+            ALL=0
+            INIT=1
+            ;;
+        -v | --version )
+            shift
+            VERSION=$1
+            ;;
+        -p | --push )
             PUSH=1
             ;;
         -r | --registry )
             shift
             REGISTRY=$1
             ;;
-        -v | --version )
+        --username )
             shift
-            VERSION=$1
+            USERNAME=$1
             ;;
-        --gateway )
+        --password )
             shift
-            ALL=0
-            GATEWAY=1
-            ;;
-        --backend )
-            shift
-            ALL=0
-            BACKEND=1
-            ;;
-        --init )
-            shift
-            ALL=0
-            INIT=1
+            PASSWORD=$1
             ;;
         --help | -h | '-?' )
             usage_and_exit 0
@@ -100,6 +109,11 @@ while (( $# > 0 )); do
     esac
     shift
 done
+
+if [[ $PUSH -eq 1 && -n "$USERNAME" ]] ; then
+    docker login --username $USERNAME --password $PASSWORD $REGISTRY
+    log "docker login成功"
+fi
 
 # 创建临时目录
 mkdir -p $WORKING_DIR/tmp
