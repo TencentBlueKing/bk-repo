@@ -108,7 +108,7 @@ env:
   BK_REPO_AUTHORIZATION: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
   BK_REPO_GATEWAY_CORS_ALLOW_LIST:
   # 网关通过dns做服务发现，默认访问k8s-dns服务
-  BK_REPO_GATEWAY_DNS_ADDR: kube-dns.kube-system.svc.cluster.local
+  BK_REPO_GATEWAY_DNS_ADDR: local=on
   # 服务名称前缀
   BK_REPO_SERVICE_PREFIX: repo-
   # 部署模式，standalone: 独立模式，ci: 与ci搭配模式

@@ -38,7 +38,7 @@ import java.time.LocalDateTime
 
 @Document("bk_auth_token")
 @CompoundIndexes(
-    CompoundIndex(name = "lockKey_idx", def = "{'lockKey': 1}", unique = true, background = true)
+    CompoundIndex(name = "tokenKey_idx", def = "{'tokenKey': 1}", unique = true, background = true)
 )
 data class TBkAuthToken(
     var tokenKey: String,
