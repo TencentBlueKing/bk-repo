@@ -91,6 +91,7 @@ class BkAuthTokenService @Autowired constructor(
     }
 
     private fun saveTokenToDB(tokenKey: String, token: String) {
+        logger.debug("saveTokenToDB, tokenKey: $tokenKey, tokenKey: $token")
         val now = LocalDateTime.now()
         val query = Query()
         val update = Update()
