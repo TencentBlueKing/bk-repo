@@ -22,9 +22,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local bk_ticket, err = cookieUtil:get_cookie("bk_ticket")
 local bk_token, err = cookieUtil:get_cookie("bk_token")
 local bkrepo_token, bkrepo_err = cookieUtil:get_cookie("bkrepo_ticket")
-local ticket = nil
-local token = nil
-local username = nil
+local ticket, token, username
+
 
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
