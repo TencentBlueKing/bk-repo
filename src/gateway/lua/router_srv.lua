@@ -48,12 +48,7 @@ if access_util then
     end
 end
 
-if ngx.var.name_space == "" then
-    local host, port = hostUtil:get_addr(service_name)
-    ngx.var.target = host .. ":" .. port
-else
-    ngx.var.target = config.service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
-end
+ngx.var.target = hostUtil:get_addr(service_name)
 
 
 

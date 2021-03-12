@@ -124,12 +124,13 @@ function _M:verify_bkrepo_token(access_token)
     local user_cache = ngx.shared.user_info_store
     local user_cache_value = user_cache:get(access_token)
     if user_cache_value == nil then
-        local host, port = hostUtil:get_addr("auth")
+
         --- 初始化HTTP连接
         local httpc = http.new()
+        local addr = hostUtil:get_addr("auth")
         --- 开始连接
         httpc:set_timeout(3000)
-        httpc:connect(host, port)
+        httpc:connect(addr)
         --- 发送请求
         local res, err = httpc:request({
             path = "/api/user/verify" .. "?bkrepo_ticket=" .. access_token,
