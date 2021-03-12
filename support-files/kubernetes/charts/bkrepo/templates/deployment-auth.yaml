@@ -35,22 +35,22 @@ spec:
             - name: http
               containerPort: {{ .Values.env.BK_REPO_AUTH_PORT }}
               protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /actuator/health/readiness
-          #     port: http
-          #     httpHeaders:
-          #     - name: Authorization
-          #       value: Basic {{ template "bkrepo.authorization" . }}
-          #   initialDelaySeconds: 60
-          # readinessProbe:
-          #   httpGet:
-          #     path: /actuator/health/liveness
-          #     port: http
-          #     httpHeaders:
-          #     - name: Authorization
-          #       value: Basic {{ template "bkrepo.authorization" . }}
-          #   initialDelaySeconds: 60  
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/livenessState
+              port: http
+            initialDelaySeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readinessState
+              port: http
+            initialDelaySeconds: 30
+          startupProbe:
+            httpGet:
+              path: /actuator/health/livenessState
+              port: http
+            failureThreshold: 20
+            periodSeconds: 5  
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

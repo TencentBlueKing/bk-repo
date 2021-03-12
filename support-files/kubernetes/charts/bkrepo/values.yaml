@@ -107,23 +107,12 @@ env:
   BK_REPO_PAAS_LOGIN_URL:
   BK_REPO_AUTHORIZATION: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
   BK_REPO_GATEWAY_CORS_ALLOW_LIST:
-  # 网关通过dns做服务发现，默认访问k8s-dns服务
+  # 网关配置resolver用于proxy-pass
   BK_REPO_GATEWAY_DNS_ADDR: local=on
   # 服务名称前缀
   BK_REPO_SERVICE_PREFIX: repo-
   # 部署模式，standalone: 独立模式，ci: 与ci搭配模式
   BK_REPO_DEPLOY_MODE: standalone
-
-  # consul 相关配置
-  # consul dns服务地址，格式:consul-dns.$(NAMESPACE).svc.cluster.local
-  BK_REPO_CONSUL_DNS_HOST: consul-dns.default.svc.cluster.local
-  BK_REPO_CONSUL_DNS_PORT: 53
-  # consul http服务地址，格式:consul-server.$(NAMESPACE).svc.cluster.local
-  BK_REPO_CONSUL_SERVER_HOST: consul-server.default.svc.cluster.local
-  BK_REPO_CONSUL_SERVER_PORT: 8500
-  # consul dns服务查询domain，查询格式[tag.]<service>.service[.datacenter].<domain>
-  BK_REPO_CONSUL_DOMAIN: consul
-  BK_REPO_CONSUL_TAG: bkce
 
   # 微服务公共配置
   # 文件存储路径
