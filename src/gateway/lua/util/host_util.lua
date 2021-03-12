@@ -112,7 +112,14 @@ function _M:get_addr(service_name)
             table.insert(ips, ip)
         end
     end
-    return ips[math.random(table.getn(ips))], port
+
+    -- return address
+    if ngx.var.name_space == "" then
+        return ips[math.random(table.getn(ips))] .. ":" .. port
+    else
+        return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
+    end
+
 end
 
 return _M
