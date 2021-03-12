@@ -60,7 +60,7 @@ function _M:get_ticket(bk_ticket, input_type)
         --- 发送请求
         -- local url = config.oauth.scheme .. config.oauth.ip  .. config.oauth.loginUrl .. bk_token
         local url = config.oauth.url
-        local httpHeaders = nil
+        local httpHeaders
         if input_type == "ticket" then
             httpHeaders = {
                 ["Host"] = config.oauth.host,
