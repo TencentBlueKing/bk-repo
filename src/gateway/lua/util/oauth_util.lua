@@ -171,7 +171,7 @@ function _M:verify_bkrepo_token(access_token)
             return
         end
         result.data.access_token = access_token
-        user_cache:set(access_token, responseBody, 180)
+        user_cache:set(access_token, res.body, 180)
         return result.data
     else
         return json.decode(user_cache_value).data
@@ -179,17 +179,15 @@ function _M:verify_bkrepo_token(access_token)
 end
 
 function _M:verify_token(access_token)
-    local requestBody = {
-        access_token = access_token
-    }
     --- 初始化HTTP连接
     local httpc = http.new()
+    local path = "/oauth/token?access_token=" .. access_token
     --- 开始连接
     httpc:set_timeout(3000)
     httpc:connect(config.oauth.ip, config.oauth.port)
     --- 发送请求
     local res, err = httpc:request({
-        path = "/oauth/token" .. "?access_token=" .. access_token,
+        path = path,
         method = "GET",
         headers = {
             ["Host"] = config.oauth.host,
