@@ -70,7 +70,7 @@
             }
         },
         created () {
-            this.getPackageListHandler()
+            this.handlerPaginationChange()
         },
         methods: {
             ...mapActions([
@@ -109,7 +109,7 @@
                             repoType: this.repoType,
                             repoName: this.repoName,
                             packageKey: pkg.key
-                        }).then(data => {
+                        }).then(() => {
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',

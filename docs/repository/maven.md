@@ -1,6 +1,6 @@
 ## maven仓库使用指引
 
-####添加仓库：
+#### 添加仓库：
 ```bash
 curl -X POST http://{bk_repo_addr}/repository/repo/create \
 -H 'Content-Type: application/json' \

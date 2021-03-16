@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool.BYTES
 import com.tencent.bkrepo.common.api.constant.StringPool.NO_CACHE
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -85,6 +86,7 @@ object ArtifactResourceWriter {
         }
         node?.let {
             response.setHeader(HttpHeaders.ETAG, resolveETag(it))
+            response.setHeader(X_CHECKSUM_MD5, it.md5)
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
         return resource.inputStream.use { writeRangeStream(it, request, response) }

@@ -1,6 +1,6 @@
-# bk-ci 网关部署文档
+# bkrepo 网关部署文档
 
-蓝鲸ci网关服务基于Nginx+OpenResty，部署于微服务与用户设备中间层，提供用户访问验证、访问日志记录、流量控制、防爬虫、后端服务分发功能。
+bkrepo网关服务基于Nginx+OpenResty，部署于微服务与用户设备中间层，提供用户访问验证、访问日志记录、流量控制、防爬虫、后端服务分发功能。
 
 ## 系统要求
 
@@ -51,19 +51,20 @@ cd /usr/local/openresty/nginx && ./sbin/nginx -v
 
 网关主要是配置文件和lua脚本，所以只需要将网关gateway的外链到nginx的conf目录
 
-- 先配置$BK_REPO_DIR/bkrepo/scripts/bkrepo.env相关参数
+- 先配置$WORK_DIR/bkrepo/scripts/bkrepo.env相关参数
 - 执行render命令生成网关的模板文件
 
 ```shell
-cd $BK_REPO_DIR/bkrepo/scripts
-./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env $BK_REPO_DIR/bkrepo/support-files/templates/gateway*
+cd $WORK_DIR/bkrepo/scripts
+chmod +x render_tpl
+./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env $WORK_DIR/bkrepo/support-files/templates/gateway*
 ```
 
-- 将`/data/bkee/bkrepo/gateway`的nginx配置目录软连到nginx的conf目录下
+- 将`$WORK_DIR/bkrepo/gateway`的nginx配置目录软连到nginx的conf目录下
 
 ```shell
 rm -rf /usr/local/openresty/nginx/conf
-ln -s  $BK_REPO_DIR/bkrepo/gateway /usr/local/openresty/nginx/conf
+ln -s  $WORK_DIR/bkrepo/gateway /usr/local/openresty/nginx/conf
 ```
 
 

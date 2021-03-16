@@ -12,7 +12,13 @@ export default {
     // 查询所有角色
     getRepoRoleList (_, { projectId, repoName }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/role/list?projectId=${projectId}&repoName=${repoName}`
+            `${authPrefix}/role/list`,
+            {
+                params: {
+                    projectId,
+                    repoName
+                }
+            }
         )
     },
     // 查询所有部门
@@ -29,7 +35,13 @@ export default {
     // 查询仓库所有权限
     getPermissionDetail (_, { projectId, repoName }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/permission/list/inrepo?projectId=${projectId}&repoName=${repoName}`
+            `${authPrefix}/permission/list/inrepo`,
+            {
+                params: {
+                    projectId,
+                    repoName
+                }
+            }
         )
     },
     // 更新权限绑定用户
