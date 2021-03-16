@@ -16,7 +16,7 @@ class FileListsJob {
     private lateinit var jobService: JobService
 
     @Scheduled(fixedDelay = 60 * 1000)
-    @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT600M")
+    @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
     fun updateFilelistsIndex() {
         logger.info("update filelists index start")
         val startMillis = System.currentTimeMillis()
