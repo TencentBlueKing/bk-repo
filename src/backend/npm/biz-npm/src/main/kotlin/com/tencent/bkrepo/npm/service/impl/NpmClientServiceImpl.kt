@@ -251,18 +251,14 @@ class NpmClientServiceImpl(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
-    override fun deleteVersion(userId: String, artifactInfo: NpmArtifactInfo, name: String, filename: String) {
-        val version = NpmUtils.analyseVersionFromPackageName(filename, name)
+    override fun deleteVersion(userId: String, artifactInfo: NpmArtifactInfo, name: String, version: String, tgzPath: String) {
         logger.info("handling delete version [$version] request for package [$name]")
         val fullPathList = mutableListOf<String>()
-        val tgzPath = HttpContextHolder.getRequest().requestURI.substringAfterLast(artifactInfo.getRepoIdentify())
-            .substringBeforeLast("/-rev")
         with(artifactInfo) {
-            if (!exist(projectId, repoName, tgzPath)) {
+            if (tgzPath.isEmpty() || !exist(projectId, repoName, tgzPath)) {
                 throw NpmArtifactNotFoundException("can not find version [$version] for package [$name]")
             }
             fullPathList.add(tgzPath)
-            // fullPathList.add(NpmUtils.getTgzPath(name, version))
             fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
             val context = ArtifactRemoveContext()
             context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
