@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.helm.service
 
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
 
 interface FixToolService {
@@ -13,5 +13,5 @@ interface FixToolService {
     /**
      * helm的索引文件中created字段格式修复
      */
-    fun repairPackageCreatedDate(artifactInfo: HelmArtifactInfo)
+    fun repairPackageCreatedDate(): List<DateTimeRepairResponse>
 }

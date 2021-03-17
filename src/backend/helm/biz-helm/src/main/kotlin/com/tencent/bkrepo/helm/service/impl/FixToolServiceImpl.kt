@@ -2,8 +2,9 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -12,6 +13,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
@@ -19,13 +21,16 @@ import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
+import com.tencent.bkrepo.helm.pojo.fixtool.RepairResponse
 import com.tencent.bkrepo.helm.service.FixToolService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -38,23 +43,32 @@ class FixToolServiceImpl(
     private val helmPackageHandler: HelmPackageHandler
 ) : FixToolService, AbstractChartService() {
 
-    override fun repairPackageCreatedDate(artifactInfo: HelmArtifactInfo) {
+    override fun repairPackageCreatedDate(): List<DateTimeRepairResponse> {
+        val repairResponse = mutableListOf<DateTimeRepairResponse>()
+        val successRepoName: MutableList<RepairResponse> = mutableListOf()
+        val failedRepoName: MutableList<RepairResponse> = mutableListOf()
         logger.info("starting repair package created date for historical data")
-        // val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
-        //     logger.warn("no helm repository found, return.")
-        //     emptyList<RepositoryDetail>()
-        // }
-        // val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        // logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${helmLocalRepositoryList.map { it.projectId to it.name }}")
-        // helmLocalRepositoryList.forEach {
-        //     doRepairCreateDate(it.projectId, it.name)
-        // }
-        with(artifactInfo){
-            doRepairCreateDate(projectId, repoName)
+        val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
+            logger.warn("no helm repository found, return.")
+            emptyList<RepositoryDetail>()
         }
+        val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
+        logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${helmLocalRepositoryList.map { it.projectId to it.name }}")
+        helmLocalRepositoryList.forEach {
+            try {
+                doRepairCreatedDate(it.projectId, it.name)
+                successRepoName.add(RepairResponse(it.projectId, it.name))
+            } catch (exception: RuntimeException) {
+                successRepoName.add(RepairResponse(it.projectId, it.name))
+            }
+        }
+        repairResponse.add(DateTimeRepairResponse(successRepoName, failedRepoName))
+        return repairResponse
     }
 
-    private fun doRepairCreateDate(projectId: String, repoName: String) {
+    private fun doRepairCreatedDate(projectId: String, repoName: String) {
+        val request = HttpContextHolder.getRequest()
+        request.setAttribute(ARTIFACT_INFO_KEY, ArtifactInfo(projectId, repoName, ""))
         try {
             // 查询索引文件
             val nodeDetail =
@@ -105,11 +119,13 @@ class FixToolServiceImpl(
                         "Failed to to repair created date for [$name] in repo [$projectId/$repoName].",
                         exception
                     )
+                    throw exception
                 }
             }
             uploadIndexYamlMetadata(indexYamlMetadata = helmIndexYamlMetadata)
         } catch (exception: RuntimeException) {
             logger.error("repair created date for repo [$projectId/$repoName] failed, message: ${exception.message}")
+            throw exception
         }
     }
 
