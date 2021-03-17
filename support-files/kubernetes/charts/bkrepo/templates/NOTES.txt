@@ -2,14 +2,44 @@ Thank you for installing {{ .Chart.Name }}.
 
 Your release is named {{ .Release.Name }}.
 
+{{- $username := .Values.common.username | toString }}
+{{- $password := .Values.common.password | toString }}
+
 验证步骤:
-1. 修改hosts, 配置bkrepo.com指向k8s ingress地址
-    <ingress ip> bkrepo.com
-2. 访问bkrepo.com 验证服务能否正常访问
-    初始用户: {{ .Values.env.BK_REPO_USERNAME }}
-    初始密码: {{ .Values.env.BK_REPO_PASSWORD }}
+
+1. 配置{{ .Values.gateway.host }}域名解析(如果域名可以被DNS正确解析，您可以跳过此步骤)
+
+    {{ if .Values.ingress.enabled }}
+    - 添加映射记录到/etc/hosts, <IngressIP>为您的Ingress外部ip
+
+        echo "<IngressIP>	{{ .Values.gateway.host }}" >> /etc/hosts
+        echo "<IngressIP>	{{ .Values.gateway.host }}" >> /etc/hosts
+    
+    {{- else if contains "NodePort" .Values.gateway.service.type }}
+    - 添加映射记录到/etc/hosts
+
+        export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services repo-gateway)
+        export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+        
+        echo "$NODE_IP	{{ .Values.gateway.host }}" >> /etc/hosts
+        echo "$NODE_IP	docker.{{ .Values.gateway.host }}" >> /etc/hosts
+    {{- else if contains "ClusterIP" .Values.gateway.service.type }}
+    - 通过port-forward暴露repo-gateway
+
+        kubectl port-forward --namespace {{ .Release.Namespace }} service/repo-gateway 80:80
+    
+    - 添加映射记录到/etc/hosts
+
+        echo "127.0.0.1	{{ .Values.gateway.host }}" >> /etc/hosts
+        echo "127.0.0.1	docker.{{ .Values.gateway.host }}" >> /etc/hosts
+    {{- end }}
+
+2. 访问http://{{ .Values.gateway.host }}/ui/ 验证服务能否正常访问
+
+    **TIP** 如果使用NodePort或port-forward方式访问，请注意添加端口
+    
+    初始用户名/密码: {{ $username }}/{{ $password }}
     初始项目: blueking
-3. 测试上传文件
-    curl -u {{ .Values.env.BK_REPO_USERNAME }}:{{ .Values.env.BK_REPO_PASSWORD }} -T <upload_file> http://bkrepo.com/generic/blueking/generic-local/test_file
-4. 测试下载文件
-    curl -u {{ .Values.env.BK_REPO_USERNAME }}:{{ .Values.env.BK_REPO_PASSWORD }} http://bkrepo.com/generic/blueking/generic-local/test_file -o <output_file>
+
+3. 更多说明请参考页面操作指引以及API文档
+

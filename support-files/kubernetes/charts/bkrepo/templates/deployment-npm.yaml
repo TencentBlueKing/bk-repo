@@ -1,20 +1,20 @@
-{{- if .Values.generic.enabled -}}
+{{- if .Values.npm.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: repo-generic
+  name: repo-npm
   labels:
-    app: repo-generic
+    app: repo-npm
     {{- include "bkrepo.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.generic.replicaCount }}
+  replicas: {{ .Values.npm.replicaCount }}
   selector:
     matchLabels:
-      app: repo-generic
+      app: repo-npm
   template:
     metadata:
       labels:
-        app: repo-generic
+        app: repo-npm
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -24,10 +24,10 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: repo-generic
+        - name: repo-npm
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}/generic:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}/npm:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: BK_REPO_JVM_OPTION
@@ -36,7 +36,7 @@ spec:
               value: {{ .Values.common.springProfile }}
           ports:
             - name: http
-              containerPort: 25801
+              containerPort: 25804
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -56,7 +56,7 @@ spec:
             - name: repo-storage
               mountPath: {{ .Values.common.storage.filesystem.path }}
           resources:
-            {{- toYaml .Values.generic.resources | nindent 12 }}
+            {{- toYaml .Values.npm.resources | nindent 12 }}
       volumes:
         - name: repo-storage
           {{- if not .Values.persistence.enabled }}
@@ -68,11 +68,11 @@ spec:
           persistentVolumeClaim:
             claimName: repo-storage
           {{- end }}
-      {{- with .Values.generic.affinity }}
+      {{- with .Values.npm.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.generic.tolerations }}
+      {{- with .Values.npm.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

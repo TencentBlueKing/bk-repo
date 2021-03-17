@@ -60,10 +60,3 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
-
-{{/*
-Create the authorization header to access health endpoint
-*/}}
-{{- define "bkrepo.authorization" -}}
-{{- printf "%s:%s" .Values.env.BK_REPO_USERNAME .Values.env.BK_REPO_PASSWORD | b64enc }}
-{{- end }}

@@ -1,15 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+  name: repo-auth
   labels:
-    tier: backend
-    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+    app: repo-auth
+    {{- include "bkrepo.labels" . | nindent 4 }}
 spec:
+  type: ClusterIP
+  selector:
+    app: repo-auth
   ports:
     - port: 80
-      targetPort: {{ .Values.env.BK_REPO_AUTH_PORT }}
+      targetPort: 25902
       protocol: TCP
       name: http
-  selector:
-    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth

@@ -1,19 +1,18 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}common
+  name: repo-common
 data:
   application.yml: |-
+    service.prefix: repo-
     spring:
       data:
         mongodb:
-          uri: {{ .Values.env.BK_REPO_MONGODB_URI }}
+          {{- toYaml .Values.common.mongodb | nindent 10 }}
           transaction:
             enabled: false
     logging:
       config: classpath:logback-config.xml
-      path: {{ .Values.env.BK_REPO_LOGS_DIR }}
+      path: /data/workspace/logs
     storage:
-      type: filesystem
-      filesystem:
-        path: {{ .Values.env.BK_REPO_FILE_PATH }}
+      {{- toYaml .Values.common.storage | nindent 6 }}

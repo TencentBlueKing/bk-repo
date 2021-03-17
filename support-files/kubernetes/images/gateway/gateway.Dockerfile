@@ -2,6 +2,9 @@ FROM bkrepo/openrestry:0.0.1
 
 LABEL maintainer="Tencent BlueKing Devops"
 
+ENV BK_REPO_HOME=/data/workspace \
+    BK_REPO_LOGS_DIR=/data/workspace/logs
+
 COPY ./ /data/workspace/
 
 RUN ln -snf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \

@@ -38,4 +38,5 @@ dependencies {
     implementation("org.jsoup:jsoup:1.13.1")
     implementation("org.apache.commons:commons-compress")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation("com.google.code.gson:gson")
 }

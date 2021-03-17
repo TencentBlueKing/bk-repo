@@ -1,44 +1,66 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+  name: repo-gateway
   labels:
-    tier: frontend
-    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+    app: repo-gateway
+    {{- include "bkrepo.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+      app: repo-gateway
   template:
     metadata:
       labels:
-        app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+        app: repo-gateway
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{ end }}
       serviceAccountName: {{ include "bkrepo.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+        - name: repo-gateway
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}/gateway:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            {{- range $key, $value := .Values.env }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end}}
             - name: NAMESPACE
               value: {{ .Release.Namespace}}
+            - name: BK_REPO_SERVICE_PREFIX
+              value: repo-
+            - name: BK_REPO_HOST
+              value: {{ .Values.gateway.host }}
+            - name: BK_REPO_HTTP_PORT
+              value: "80"
+            - name: BK_REPO_GATEWAY_DNS_ADDR
+              value: {{ .Values.gateway.dnsServer }}
+            - name: BK_REPO_AUTHORIZATION
+              value: {{ .Values.gateway.authorization }}
+            - name: BK_REPO_DEPLOY_MODE
+              value: {{ .Values.gateway.deployMode }}
+            - name: BK_REPO_DOCKER_HTTP_PORT
+              value: "80"
+            - name: BK_REPO_HELM_HTTP_PORT
+              value: "80"
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+      {{- with .Values.gateway.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{ end }}
+      {{- with .Values.gateway.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{ end }}
       #     volumeMounts:
       #       - name: bkrepo-gateway-certs
       #         mountPath: /data/workspace/certs

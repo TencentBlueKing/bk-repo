@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+  name: repo-auth
   labels:
-    tier: backend
-    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+    app: repo-auth
+    {{- include "bkrepo.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.auth.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+      app: repo-auth
   template:
     metadata:
       labels:
-        app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+        app: repo-auth
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -23,48 +23,41 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}auth
+        - name: repo-auth
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}/auth:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            - name: BK_REPO_LOGS_DIR
-              value: {{ .Values.env.BK_REPO_LOGS_DIR | quote }}
+            - name: BK_REPO_JVM_OPTION
+              value: {{ .Values.common.jvmOption }}
+            - name: BK_REPO_PROFILE
+              value: {{ .Values.common.springProfile }}
           ports:
             - name: http
-              containerPort: {{ .Values.env.BK_REPO_AUTH_PORT }}
+              containerPort: 25902
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /actuator/health/livenessState
               port: http
-            initialDelaySeconds: 30
           readinessProbe:
             httpGet:
               path: /actuator/health/readinessState
               port: http
-            initialDelaySeconds: 30
           startupProbe:
             httpGet:
-              path: /actuator/health/livenessState
+              path: /actuator/health
               port: http
             failureThreshold: 20
-            periodSeconds: 5  
+            periodSeconds: 5
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-          volumeMounts:
-            - mountPath: {{ .Values.env.BK_REPO_FILE_PATH }}
-              name: pv-storage
-      volumes:
-        - name: pv-storage
-          persistentVolumeClaim:
-            claimName: pvc-storage
-      {{- with .Values.affinity }}
+            {{- toYaml .Values.auth.resources | nindent 12 }}
+      {{- with .Values.auth.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.tolerations }}
+      {{- with .Values.auth.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}

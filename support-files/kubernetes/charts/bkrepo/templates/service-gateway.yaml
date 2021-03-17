@@ -1,15 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+  name: repo-gateway
   labels:
-    tier: frontend
-    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+    app: repo-gateway
+    {{- include "bkrepo.labels" . | nindent 4 }}
 spec:
+  type: {{ .Values.gateway.service.type }}
+  selector:
+    app: repo-gateway
   ports:
-    - port: 80
+    - port: {{ .Values.gateway.service.port }}
       targetPort: 80
       protocol: TCP
       name: http
-  selector:
-    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
+      {{- if and (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer")) (not (empty .Values.gateway.service.nodePort)) }}
+      nodePort: {{ .Values.gateway.service.nodePort }}
+      {{- else if eq .Values.gateway.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}

@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: repo-generic
+  name: repo-npm
   labels:
-    app: repo-generic
+    app: repo-npm
     {{- include "bkrepo.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
   selector:
-    app: repo-generic
+    app: repo-npm
   ports:
     - port: 80
-      targetPort: 25801
+      targetPort: 25804
       protocol: TCP
       name: http

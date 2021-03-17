@@ -1,18 +1,18 @@
 #! /bin/sh
-LOGS_DIR=/data/logs
-if [ -n "$BK_REPO_LOGS_DIR" ]; then
-    LOGS_DIR=$BK_REPO_LOGS_DIR
-fi
-mkdir -p $LOGS_DIR
+
+mkdir -p $BK_REPO_LOGS_DIR
+chmod 777 $BK_REPO_LOGS_DIR
 
 java -server \
      -Dsun.jnu.encoding=UTF-8 \
      -Dfile.encoding=UTF-8 \
-     -Xloggc:$LOGS_DIR/gc.log \
+     -Xloggc:$BK_REPO_LOGS_DIR/gc.log \
      -XX:+PrintTenuringDistribution \
      -XX:+PrintGCDetails \
      -XX:+PrintGCDateStamps \
      -XX:+HeapDumpOnOutOfMemoryError \
      -XX:HeapDumpPath=oom.hprof \
-     -XX:ErrorFile=$LOGS_DIR/error_sys.log \
+     -XX:ErrorFile=$BK_REPO_LOGS_DIR/error_sys.log \
+     -Dspring.profiles.active=$BK_REPO_PROFILE \
+     $BK_REPO_JVM_OPTION \
      -jar /data/workspace/app.jar

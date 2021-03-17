@@ -1,8 +1,7 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+  name: repo-repository
 data:
   application.yml: |-
-    server:
-      port: {{ .Values.env.BK_REPO_REPOSITORY_PORT }}
+    {{- toYaml .Values.repository.config | nindent 4 }}
