@@ -288,13 +288,17 @@ kubectl port-forward service/repo-gateway <port>:80
 ## 常见问题
 
 **1. 首次启动失败，是bkrepo Chart有问题吗**
+
 答: bkrepo的Chart依赖了`mongodb`和`nignx-ingress-controller`, 这两个依赖的Chart默认从docker hub拉镜像，如果网络不通或被docker hub限制，将导致镜像拉取失败，可以参考配置列表修改镜像地址。
 
 **2. 首次启动时间过长，READY状态为`0/1`，是bkrepo Chart太垃圾了吗？**
+
 答: 如果选择了部署`mongodb Chart`，需要等待`mongodb`部署完成，否则初始化`Job`以及其余`Pod`内的进程启动失败，这个期间k8s探针检测失败，所以容器状态为`Not Ready`，只需等待`mongodb`部署完成后，其余`Pod`被调度重启即可。
 
 **3. 我卸载了Release立即重新部署，Pod状态一直为`Pending`，是bkrepo Chart太鸡肋了吗？**
+
 答: 如果选择了默认方式使用动态卷供应，当使用`helm uninstall`卸载Release，随后创建的pvc也会被删除，如果在pvc被删除之前重新部署，新启动的`Pod`会进入`Pending`状态。
 
 **4. 如何查看日志？**
+
 答: 有两种方式可以查看日志: 1. kubectl logs pod 查看实时日志  2.日志保存在/data/workspace/logs目录下，可以进入容器内查看
