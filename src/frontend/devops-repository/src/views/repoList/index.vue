@@ -1,12 +1,12 @@
 <template>
     <div class="repo-list-container">
         <header class="repo-list-header">
-            <div class="repo-list-search">
+            <div class="repo-list-search" v-if="MODE_CONFIG !== 'ci'">
                 <label class="form-label">{{$t('repoType')}}:</label>
                 <bk-select
                     v-model="query.type"
                     class="form-input"
-                    @change="getListData"
+                    @change="handlerPaginationChange()"
                     :placeholder="$t('allTypes')">
                     <bk-option
                         v-for="type in repoEnum"
@@ -27,8 +27,8 @@
                     class="form-input"
                     :placeholder="$t('enterSearch')"
                     :clearable="true"
-                    @enter="getListData"
-                    @clear="getListData"
+                    @enter="handlerPaginationChange()"
+                    @clear="handlerPaginationChange()"
                     :right-icon="'bk-icon icon-search'">
                 </bk-input>
             </div>
@@ -85,7 +85,8 @@
         name: 'repoList',
         data () {
             return {
-                repoEnum: ['generic', ...repoEnum],
+                repoEnum,
+                MODE_CONFIG,
                 isLoading: false,
                 repoList: [],
                 query: {

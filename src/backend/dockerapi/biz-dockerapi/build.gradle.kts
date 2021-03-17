@@ -34,6 +34,5 @@ dependencies {
     api(project(":common:common-service"))
     api(project(":auth:api-auth"))
     api(project(":repository:api-repository"))
-    implementation("joda-time:joda-time")
     implementation("org.bouncycastle:bcprov-jdk16:1.46")
 }

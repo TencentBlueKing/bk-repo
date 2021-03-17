@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
@@ -52,7 +53,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
@@ -81,8 +84,27 @@ class PackageServiceImpl(
         packageKey: String,
         versionName: String
     ): PackageVersion? {
-        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return null
-        return convert(checkPackageVersion(tPackage.id!!, versionName))
+        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        return convert(packageVersionDao.findByName(packageId, versionName))
+    }
+
+    override fun findVersionNameByTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        tag: String
+    ): String? {
+        val versionTag = packageDao.findByKey(projectId, repoName, packageKey)?.versionTag ?: return null
+        return versionTag[tag]
+    }
+
+    override fun findLatestBySemVer(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): PackageVersion? {
+        val packageId = packageDao.findByKey(projectId, repoName, packageKey)?.id ?: return null
+        return convert(packageVersionDao.findLatest(packageId))
     }
 
     override fun listPackagePage(
@@ -99,6 +121,14 @@ class PackageServiceImpl(
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val records = packageDao.find(query.with(pageRequest)).map { convert(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    override fun listAllPackageName(projectId: String, repoName: String): List<String> {
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
+        query.fields().include(TPackage::key.name)
+        return packageDao.find(query, Map::class.java).map {
+            it[TPackage::key.name].toString()
+        }
     }
 
     override fun listVersionPage(
@@ -124,8 +154,23 @@ class PackageServiceImpl(
         }
     }
 
+    override fun listAllVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): List<PackageVersion> {
+        val stageTag = option.stageTag?.split(StringPool.COMMA)
+        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
+        val query = PackageQueryHelper.versionListQuery(tPackage.id!!, option.version, stageTag)
+        return packageVersionDao.find(query).map { convert(it)!! }
+    }
+
     override fun createPackageVersion(request: PackageVersionCreateRequest) {
         with(request) {
+            Preconditions.checkNotBlank(packageKey, this::packageKey.name)
+            Preconditions.checkNotBlank(packageName, this::packageName.name)
+            Preconditions.checkNotBlank(versionName, this::packageName.name)
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(request)
             // 检查版本是否存在
@@ -143,6 +188,8 @@ class PackageServiceImpl(
                     artifactPath = request.artifactPath
                     stageTag = request.stageTag.orEmpty()
                     metadata = MetadataUtils.fromMap(request.metadata)
+                    tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
+                    extension = request.extension.orEmpty()
                 }
             } else {
                 // create new
@@ -153,22 +200,26 @@ class PackageServiceImpl(
                     lastModifiedBy = createdBy,
                     lastModifiedDate = LocalDateTime.now(),
                     packageId = tPackage.id!!,
-                    name = versionName,
+                    name = versionName.trim(),
                     size = size,
                     ordinal = calculateOrdinal(versionName),
                     downloads = 0,
                     manifestPath = manifestPath,
                     artifactPath = artifactPath,
                     stageTag = stageTag.orEmpty(),
-                    metadata = MetadataUtils.fromMap(metadata)
+                    metadata = MetadataUtils.fromMap(metadata),
+                    tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
+                    extension = request.extension.orEmpty()
                 )
             }
             packageVersionDao.save(newVersion)
             // 更新包
             tPackage.lastModifiedBy = newVersion.lastModifiedBy
             tPackage.lastModifiedDate = newVersion.lastModifiedDate
-            tPackage.description = packageDescription
+            tPackage.description = packageDescription?.let { packageDescription }
             tPackage.latest = versionName
+            tPackage.extension = extension?.let { extension }
+            tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
             packageDao.save(tPackage)
 
             logger.info("Create package version[${newVersion}] success")
@@ -196,6 +247,41 @@ class PackageServiceImpl(
             packageDao.save(tPackage)
         }
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
+    }
+
+    override fun updatePackage(request: PackageUpdateRequest) {
+        val projectId = request.projectId
+        val repoName = request.repoName
+        val packageKey = request.packageKey
+        val tPackage = checkPackage(projectId, repoName, packageKey).apply {
+            name = request.name ?: name
+            description = request.description ?: description
+            versionTag = request.versionTag ?: versionTag
+            extension = request.extension ?: extension
+            lastModifiedBy = SecurityUtils.getUserId()
+            lastModifiedDate = LocalDateTime.now()
+        }
+        packageDao.save(tPackage)
+    }
+
+    override fun updateVersion(request: PackageVersionUpdateRequest) {
+        val projectId = request.projectId
+        val repoName = request.repoName
+        val packageKey = request.packageKey
+        val versionName = request.versionName
+        val packageId = checkPackage(projectId, repoName, packageKey).id.orEmpty()
+        val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
+            size = request.size ?: size
+            manifestPath = request.manifestPath ?: manifestPath
+            artifactPath = request.artifactPath ?: artifactPath
+            stageTag = request.stageTag ?: stageTag
+            metadata = request.metadata?.let { MetadataUtils.fromMap(it) } ?: metadata
+            tags = request.tags ?: tags
+            extension = request.extension ?: extension
+            lastModifiedBy = SecurityUtils.getUserId()
+            lastModifiedDate = LocalDateTime.now()
+        }
+        packageVersionDao.save(tPackageVersion)
     }
 
     override fun downloadVersion(projectId: String, repoName: String, packageKey: String, versionName: String) {
@@ -244,19 +330,20 @@ class PackageServiceImpl(
                         lastModifiedBy = it.lastModifiedBy,
                         lastModifiedDate = it.lastModifiedDate,
                         packageId = tPackage.id!!,
-                        name = it.name,
+                        name = it.name.trim(),
                         size = it.size,
                         ordinal = calculateOrdinal(it.name),
                         downloads = it.downloads,
                         manifestPath = it.manifestPath,
                         artifactPath = it.artifactPath,
                         stageTag = it.stageTag.orEmpty(),
-                        metadata = MetadataUtils.fromMap(it.metadata)
+                        metadata = MetadataUtils.fromMap(it.metadata),
+                        extension = it.extension.orEmpty()
                     )
                     packageVersionDao.save(newVersion)
                     tPackage.versions += 1
                     tPackage.downloads += it.downloads
-
+                    tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
                     if (latestVersion == null) {
                         latestVersion = newVersion
                     } else if (it.createdDate.isAfter(latestVersion?.createdDate)) {
@@ -270,6 +357,11 @@ class PackageServiceImpl(
             packageDao.save(tPackage)
             logger.info("Update package version[${tPackage}] success")
         }
+    }
+
+    override fun getPackageCount(projectId: String, repoName: String): Long {
+        val query = PackageQueryHelper.packageListQuery(projectId, repoName, null)
+        return packageDao.count(query)
     }
 
     /**
@@ -286,12 +378,14 @@ class PackageServiceImpl(
                     lastModifiedDate = lastModifiedDate,
                     projectId = projectId,
                     repoName = repoName,
-                    name = name,
+                    name = name.trim(),
                     description = description,
-                    key = key,
+                    key = key.trim(),
                     type = type,
                     downloads = 0,
-                    versions = 0
+                    versions = 0,
+                    versionTag = versionTag.orEmpty(),
+                    extension = extension.orEmpty()
                 )
                 try {
                     packageDao.save(tPackage)
@@ -318,11 +412,14 @@ class PackageServiceImpl(
                     lastModifiedDate = LocalDateTime.now(),
                     projectId = projectId,
                     repoName = repoName,
-                    name = packageName,
-                    key = packageKey,
+                    name = packageName.trim(),
+                    key = packageKey.trim(),
                     type = packageType,
                     downloads = 0,
-                    versions = 0
+                    versions = 0,
+                    versionTag = versionTag.orEmpty(),
+                    extension = packageExtension.orEmpty(),
+                    description = packageDescription
                 )
                 try {
                     packageDao.save(tPackage)
@@ -361,6 +458,18 @@ class PackageServiceImpl(
         }
     }
 
+    /**
+     * 合并version tag
+     */
+    private fun mergeVersionTag(
+        original: Map<String, String>?,
+        extra: Map<String, String>?
+    ) : Map<String, String> {
+        return original?.toMutableMap()?.apply {
+            extra?.forEach { (tag, version) -> this[tag] = version }
+        }.orEmpty()
+    }
+
     companion object {
 
         private val logger = LoggerFactory.getLogger(PackageServiceImpl::class.java)
@@ -381,7 +490,9 @@ class PackageServiceImpl(
                     latest = it.latest.orEmpty(),
                     downloads = it.downloads,
                     versions = it.versions,
-                    description = it.description
+                    description = it.description,
+                    versionTag = it.versionTag.orEmpty(),
+                    extension = it.extension.orEmpty()
                 )
             }
         }
@@ -398,6 +509,8 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     stageTag = it.stageTag,
                     metadata = MetadataUtils.toMap(it.metadata),
+                    tags = it.tags.orEmpty(),
+                    extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath
                 )
             }

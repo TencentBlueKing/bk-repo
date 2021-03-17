@@ -40,9 +40,9 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.pypi.artifact.FLUSH_CACHE_EXPIRE
-import com.tencent.bkrepo.pypi.artifact.REMOTE_HTML_CACHE_FULL_PATH
-import com.tencent.bkrepo.pypi.artifact.XML_RPC_URI
+import com.tencent.bkrepo.pypi.FLUSH_CACHE_EXPIRE
+import com.tencent.bkrepo.pypi.REMOTE_HTML_CACHE_FULL_PATH
+import com.tencent.bkrepo.pypi.XML_RPC_URI
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
@@ -78,13 +78,32 @@ class PypiRemoteRepository : RemoteRepository() {
     fun generateRemoteListUrl(context: ArtifactQueryContext): String {
         val remoteConfiguration = context.getRemoteConfiguration()
         val artifactUri = context.artifactInfo.getArtifactFullPath()
-        return remoteConfiguration.url.trimEnd('/') + "/simple$artifactUri"
+        return remoteConfiguration.url.removeSuffix("/").removeSuffix("simple").removeSuffix("/") +
+            "/simple$artifactUri"
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
         val response = HttpContextHolder.getResponse()
-        response.contentType = "text/html; charset=UTF-8"
-        return getCacheHtml(context)
+        response.contentType = "text/html"
+        if (context.artifactInfo.getArtifactFullPath() == "/") {
+            val cacheHtml = getCacheHtml(context) ?: "Can not cache remote html"
+            response.setContentLength(cacheHtml.length)
+            response.writer.print(cacheHtml)
+        } else {
+            val responseStr = remoteRequest(context) ?: ""
+            response.setContentLength(responseStr.length)
+            response.writer.print(responseStr)
+        }
+        return null
+    }
+
+    fun remoteRequest(context: ArtifactQueryContext): String? {
+        val listUri = generateRemoteListUrl(context)
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val okHttpClient: OkHttpClient = createHttpClient(remoteConfiguration)
+        val build: Request = Request.Builder().get().url(listUri).build()
+        val htmlContent = okHttpClient.newCall(build).execute().body()?.string()
+        return htmlContent
     }
 
     /**
@@ -95,10 +114,13 @@ class PypiRemoteRepository : RemoteRepository() {
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = REMOTE_HTML_CACHE_FULL_PATH
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-        while (node == null) {
+        var node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        loop@for (i in 1..3) {
             cacheRemoteRepoList(context)
+            node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            if (node != null) break@loop
         }
+        if (node == null) return "Can not cache remote html"
         node.takeIf { !it.folder } ?: return null
         val format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
         val date = LocalDateTime.parse(node.lastModifiedDate, format)

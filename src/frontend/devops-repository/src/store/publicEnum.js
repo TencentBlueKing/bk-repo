@@ -1,5 +1,5 @@
 export const repoEnum = [
-    // 'generic',
+    'generic',
     'docker',
     'maven',
     'pypi',

@@ -88,7 +88,7 @@ interface NpmClientService {
     /**
      * delete package version
      */
-    fun deleteVersion(userId: String, artifactInfo: NpmArtifactInfo, name: String, filename: String)
+    fun deleteVersion(userId: String, artifactInfo: NpmArtifactInfo, name: String, version: String, tgzPath: String)
 
     /**
      * delete package

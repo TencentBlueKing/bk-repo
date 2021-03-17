@@ -1,9 +1,16 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "bkrepo.fullname" . -}}
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
 apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
 kind: Ingress
 metadata:
-  name: bkrepo-ingress
+  name: {{ $fullName }}-ingress
   annotations:
     kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10240m"
 spec:
   rules:
     - host: {{ .Values.env.BK_REPO_FQDN }}
@@ -11,26 +18,20 @@ spec:
         paths:
           - path: /
             backend:
-              serviceName: bkrepo-gateway
+              serviceName: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
               servicePort: 80
     - host: {{ .Values.env.BK_REPO_DOCKER_FQDN }}
       http:
         paths:
           - path: /
             backend:
-              serviceName: bkrepo-gateway
+              serviceName: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
               servicePort: 80
-    - host: { { .Values.env.BK_REPO_HELM_FQDN } }
-        http:
-          paths:
-            - path: /
-              backend:
-                serviceName: bkrepo-gateway
-                servicePort: 80
-    - host: consul.{{ .Values.env.BK_REPO_FQDN }}
+    - host: {{ .Values.env.BK_REPO_HELM_FQDN }}
       http:
         paths:
           - path: /
             backend:
-              serviceName: consul-ui
+              serviceName: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}gateway
               servicePort: 80
+{{- end }}

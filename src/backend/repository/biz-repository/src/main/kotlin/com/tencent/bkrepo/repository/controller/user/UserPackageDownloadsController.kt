@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -64,7 +63,7 @@ class UserPackageDownloadsController(
         @RequestBody request: DetailsQueryRequest
     ): Response<PackageDownloadsDetails> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
+            permissionManager.checkRepoPermission(PermissionAction.READ, projectId, repoName)
             return ResponseBuilder.success(packageDownloadsService.queryDetails(this))
         }
     }
@@ -76,7 +75,7 @@ class UserPackageDownloadsController(
         @RequestBody request: SummaryQueryRequest
     ): Response<PackageDownloadsSummary> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.READ, projectId, repoName)
+            permissionManager.checkRepoPermission(PermissionAction.READ, projectId, repoName)
             return ResponseBuilder.success(packageDownloadsService.querySummary(this))
         }
     }

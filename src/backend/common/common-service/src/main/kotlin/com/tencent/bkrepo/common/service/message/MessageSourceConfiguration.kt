@@ -35,6 +35,7 @@ import org.springframework.context.MessageSource
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 
 @Configuration
 class MessageSourceConfiguration {
@@ -51,6 +52,7 @@ class MessageSourceConfiguration {
         messageSource.setBasename("classpath*:i18n/messages")
         messageSource.setDefaultEncoding(StandardCharsets.UTF_8.name())
         messageSource.setUseCodeAsDefaultMessage(true)
+        messageSource.setDefaultLocale(Locale.ENGLISH)
         return messageSource
     }
 }

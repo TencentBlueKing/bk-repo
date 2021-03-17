@@ -55,6 +55,7 @@ module.exports = (env, argv) => {
             context: __dirname,
             manifest: require('./dist/manifest.json')
         }),
+        new CopyWebpackPlugin([{ from: path.join(__dirname, './static'), to: dist }]),
         new CopyWebpackPlugin([{ from: path.join(__dirname, './dist'), to: dist }])
     ]
 

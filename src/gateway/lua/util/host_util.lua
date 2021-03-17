@@ -21,12 +21,16 @@ local _M = {}
 
 --[[获取微服务真实地址]]
 function _M:get_addr(service_name)
-
-    --service_name = "auth"
+    
     local service_prefix = config.service_prefix
 
     if service_prefix == nil or service_prefix == "" then
         service_prefix = "repo-"
+    end
+
+    -- return k8s service address
+    if ngx.var.name_space ~= "" then
+        return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
     end
 
     local ns_config = config.ns
@@ -112,7 +116,10 @@ function _M:get_addr(service_name)
             table.insert(ips, ip)
         end
     end
-    return ips[math.random(table.getn(ips))], port
+
+    -- return ip,port address
+    return ips[math.random(table.getn(ips))] .. ":" .. port
+
 end
 
 return _M

@@ -6,60 +6,62 @@
             <span class="ml5">{{$t('create') + $t('repository')}}</span>
         </header>
         <main class="create-repo-main">
-            <div class="repo-base-info">
-                <bk-form :label-width="200" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
-                    <bk-form-item :label="$t('repoType')" :required="true" property="type">
-                        <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group">
-                            <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
-                                <div class="flex-center repo-type-radio">
-                                    <icon size="60" :name="repo" />
-                                    <span>{{repo}}</span>
-                                    <div v-show="repoBaseInfo.type === repo" class="top-right-selected">
-                                        <i class="devops-icon icon-check-1"></i>
-                                    </div>
+            <bk-form class="repo-base-info" :label-width="200" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
+                <bk-form-item :label="$t('repoType')" :required="true" property="type">
+                    <div v-if="MODE_CONFIG === 'ci'" class="flex-align-center">
+                        <icon size="24" name="generic" />
+                        <span class="ml10">generic</span>
+                    </div>
+                    <bk-radio-group v-else v-model="repoBaseInfo.type" class="repo-type-radio-group">
+                        <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
+                            <div class="flex-center repo-type-radio">
+                                <icon size="60" :name="repo" />
+                                <span>{{repo}}</span>
+                                <div v-show="repoBaseInfo.type === repo" class="top-right-selected">
+                                    <i class="devops-icon icon-check-1"></i>
                                 </div>
-                            </bk-radio-button>
-                        </bk-radio-group>
+                            </div>
+                        </bk-radio-button>
+                    </bk-radio-group>
+                </bk-form-item>
+                <bk-form-item :label="$t('repoName')" :required="true" property="name">
+                    <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                </bk-form-item>
+                <template v-if="repoBaseInfo.type === 'rpm'">
+                    <bk-form-item :label="$t('enableFileLists')">
+                        <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
                     </bk-form-item>
-                    <bk-form-item :label="$t('repoName')" :required="true" property="name">
-                        <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                    <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
+                        <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
                     </bk-form-item>
-                    <template v-if="repoBaseInfo.type === 'rpm'">
-                        <bk-form-item :label="$t('enableFileLists')">
-                            <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
-                            <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
-                            <bk-tag-input
-                                :value="repoBaseInfo.groupXmlSet"
-                                @change="(val) => {
-                                    repoBaseInfo.groupXmlSet = val.map(v => {
-                                        return v.replace(/^([^.]*)(\.xml)?$/, '$1.xml')
-                                    })
-                                }"
-                                :list="[]"
-                                trigger="focus"
-                                :clearable="false"
-                                allow-create
-                                has-delete-icon>
-                            </bk-tag-input>
-                        </bk-form-item>
-                    </template>
-                    <bk-form-item :label="$t('description')">
-                        <bk-input type="textarea"
-                            maxlength="200"
-                            v-model="repoBaseInfo.description"
-                            :placeholder="$t('repoDescriptionPlacehodler')">
-                        </bk-input>
+                    <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
+                        <bk-tag-input
+                            :value="repoBaseInfo.groupXmlSet"
+                            @change="(val) => {
+                                repoBaseInfo.groupXmlSet = val.map(v => {
+                                    return v.replace(/^([^.]*)(\.xml)?$/, '$1.xml')
+                                })
+                            }"
+                            :list="[]"
+                            trigger="focus"
+                            :clearable="false"
+                            allow-create
+                            has-delete-icon>
+                        </bk-tag-input>
                     </bk-form-item>
-                    <bk-form-item>
-                        <bk-button class="mr5" :loading="isLoading" theme="primary" @click.stop.prevent="submitRepo">{{$t('submit')}}</bk-button>
-                        <bk-button theme="default" @click="toRepoList">{{$t('cancel')}}</bk-button>
-                    </bk-form-item>
-                </bk-form>
-            </div>
+                </template>
+                <bk-form-item :label="$t('description')">
+                    <bk-input type="textarea"
+                        maxlength="200"
+                        v-model="repoBaseInfo.description"
+                        :placeholder="$t('repoDescriptionPlacehodler')">
+                    </bk-input>
+                </bk-form-item>
+                <bk-form-item>
+                    <bk-button class="mr5" :loading="isLoading" theme="primary" @click.stop.prevent="submitRepo">{{$t('submit')}}</bk-button>
+                    <bk-button theme="default" @click="toRepoList">{{$t('cancel')}}</bk-button>
+                </bk-form-item>
+            </bk-form>
         </main>
     </div>
 </template>
@@ -71,9 +73,10 @@
         data () {
             return {
                 repoEnum,
+                MODE_CONFIG,
                 isLoading: false,
                 repoBaseInfo: {
-                    type: '',
+                    type: 'generic',
                     name: '',
                     enableFileLists: false,
                     repodataDepth: 0,
@@ -153,6 +156,7 @@
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
                         description: this.repoBaseInfo.description,
+                        category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         ...(this.repoBaseInfo.type === 'rpm' ? {
                             configuration: {
                                 type: 'composite',
@@ -196,8 +200,8 @@
         background-color: white;
         overflow-y: auto;
         .repo-base-info {
-            flex: 1;
             max-width: 1080px;
+            min-width: 720px;
             .repo-type-radio-group {
                 /deep/ .bk-form-radio-button {
                     margin: 0 20px 20px 0;

@@ -1,19 +1,18 @@
 #! /bin/sh
-mkdir -p $BK_REPO_LOGS_DIR
+LOGS_DIR=/data/logs
+if [ -n "$BK_REPO_LOGS_DIR" ]; then
+    LOGS_DIR=$BK_REPO_LOGS_DIR
+fi
+mkdir -p $LOGS_DIR
+
 java -server \
      -Dsun.jnu.encoding=UTF-8 \
      -Dfile.encoding=UTF-8 \
-     -Xloggc:$BK_REPO_LOGS_DIR/gc.log \
+     -Xloggc:$LOGS_DIR/gc.log \
      -XX:+PrintTenuringDistribution \
      -XX:+PrintGCDetails \
      -XX:+PrintGCDateStamps \
      -XX:+HeapDumpOnOutOfMemoryError \
      -XX:HeapDumpPath=oom.hprof \
-     -XX:ErrorFile=error_sys.log \
-     -Xms$BK_REPO_JVM_XMS \
-     -Xmx$BK_REPO_JVM_XMX \
-     -jar $MODULE.jar \
-     --spring.profiles.active=$BK_REPO_ENV \
-     --spring.cloud.consul.host=$HOST_IP
-
-tail -f /dev/null
+     -XX:ErrorFile=$LOGS_DIR/error_sys.log \
+     -jar /data/workspace/app.jar

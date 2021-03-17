@@ -41,7 +41,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.repository.service.PackageService
 import org.springframework.web.bind.annotation.RestController
 
@@ -65,6 +67,25 @@ class PackageController(
         return ResponseBuilder.success(packageVersion)
     }
 
+    override fun findVersionNameByTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        tag: String
+    ): Response<String?> {
+        val versionName = packageService.findVersionNameByTag(projectId, repoName, packageKey, tag)
+        return ResponseBuilder.success(versionName)
+    }
+
+    override fun findLatestBySemVer(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): Response<PackageVersion?> {
+        val packageVersion = packageService.findLatestBySemVer(projectId, repoName, packageKey)
+        return ResponseBuilder.success(packageVersion)
+    }
+
     override fun createVersion(request: PackageVersionCreateRequest): Response<Void> {
         packageService.createPackageVersion(request)
         return ResponseBuilder.success()
@@ -85,6 +106,16 @@ class PackageController(
         return ResponseBuilder.success()
     }
 
+    override fun updatePackage(request: PackageUpdateRequest): Response<Void> {
+        packageService.updatePackage(request)
+        return ResponseBuilder.success()
+    }
+
+    override fun updateVersion(request: PackageVersionUpdateRequest): Response<Void> {
+        packageService.updateVersion(request)
+        return ResponseBuilder.success()
+    }
+
     override fun searchPackage(queryModel: QueryModel): Response<Page<MutableMap<*, *>>> {
         return ResponseBuilder.success(packageService.searchPackage(queryModel))
     }
@@ -99,6 +130,16 @@ class PackageController(
         return ResponseBuilder.success(pageResult)
     }
 
+    override fun listAllVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): Response<List<PackageVersion>> {
+        val versions = packageService.listAllVersion(projectId, repoName, packageKey, option)
+        return ResponseBuilder.success(versions)
+    }
+
     override fun listPackagePage(
         projectId: String,
         repoName: String,
@@ -106,6 +147,16 @@ class PackageController(
     ): Response<Page<PackageSummary>> {
         val pageResult = packageService.listPackagePage(projectId, repoName, option)
         return ResponseBuilder.success(pageResult)
+    }
+
+    override fun listAllPackageNames(projectId: String, repoName: String): Response<List<String>> {
+        val names = packageService.listAllPackageName(projectId, repoName)
+        return ResponseBuilder.success(names)
+    }
+
+    override fun getPackageCount(projectId: String, repoName: String): Response<Long> {
+        val count = packageService.getPackageCount(projectId, repoName)
+        return ResponseBuilder.success(count)
     }
 
     override fun populatePackage(request: PackagePopulateRequest): Response<Void> {

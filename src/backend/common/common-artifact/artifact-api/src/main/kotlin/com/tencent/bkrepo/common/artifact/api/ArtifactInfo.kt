@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
  *
  * [projectId]为项目名，[repoName]为仓库名，[artifactUri]为构件完整uri
  */
-abstract class ArtifactInfo(
+open class ArtifactInfo(
     /**
      * 项目名称
      */
@@ -82,14 +82,15 @@ abstract class ArtifactInfo(
      *
      * 默认使用传入的artifactUri作为名称
      */
-    open fun getResponseName(): String = PathUtils.resolveName(normalizedUri)
+    open fun getResponseName(): String = PathUtils.resolveName(getArtifactFullPath())
 
     /**
      * 获取仓库唯一名, 格式 /{projectId}/{repoName}
      */
     open fun getRepoIdentify(): String {
         val builder = StringBuilder()
-        builder.append(projectId)
+        builder.append(SLASH)
+            .append(projectId)
             .append(SLASH)
             .append(repoName)
         return builder.toString()

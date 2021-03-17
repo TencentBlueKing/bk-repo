@@ -38,6 +38,6 @@ import java.time.Duration
 data class MonitorProperties(
     var clusterName: String = "default",
     var interval: Duration = Duration.ofSeconds(10),
-    var metrics: Map<String, String>,
-    var health: Map<String, String>
+    var metrics: Map<String, String> = emptyMap(),
+    var health: Map<String, String> = emptyMap()
 )

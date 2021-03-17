@@ -43,7 +43,7 @@
                 window.Vue = Vue
                 const script = document.createElement('script')
                 script.type = 'text/javascript'
-                script.src = DEVOPS_SITE_URL + '/console/static/devops-utils.js'
+                script.src = location.origin + '/ui/devops-utils.js'
                 document.getElementsByTagName('head')[0].appendChild(script)
                 script.onload = () => {
                     this.$syncUrl(this.$route.fullPath.replace(/^\/ui\//, '/'))

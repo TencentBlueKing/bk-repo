@@ -5,44 +5,53 @@ const prefix = 'repository/api'
 export default {
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/node/query`,
-            {
-                page: {
-                    pageNumber: 1,
-                    pageSize: 1000
-                },
-                sort: {
-                    properties: [isPipeline ? 'lastModifiedDate' : 'name'],
-                    direction: isPipeline ? 'DESC' : 'ASC'
-                },
-                rule: {
-                    rules: [
-                        {
-                            field: 'projectId',
-                            value: projectId,
-                            operation: 'EQ'
-                        },
-                        {
-                            field: 'repoName',
-                            value: repoName,
-                            operation: 'EQ'
-                        },
-                        {
-                            field: 'path',
-                            value: `${fullPath === '/' ? '' : fullPath}/`,
-                            operation: 'EQ'
-                        },
-                        {
-                            field: 'folder',
-                            value: true,
-                            operation: 'EQ'
-                        }
-                    ],
-                    relation: 'AND'
+        const path = `${fullPath === '/' ? '' : fullPath}/`
+        let request
+        if (isPipeline && path === '/') {
+            request = Vue.prototype.$ajax.get(
+                `${prefix}/pipeline/list/${projectId}`
+            ).then(records => ({ records }))
+        } else {
+            request = Vue.prototype.$ajax.post(
+                `${prefix}/node/query`,
+                {
+                    page: {
+                        pageNumber: 1,
+                        pageSize: 1000
+                    },
+                    sort: {
+                        properties: [isPipeline ? 'lastModifiedDate' : 'name'],
+                        direction: isPipeline ? 'DESC' : 'ASC'
+                    },
+                    rule: {
+                        rules: [
+                            {
+                                field: 'projectId',
+                                value: projectId,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'repoName',
+                                value: repoName,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'path',
+                                value: path,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'folder',
+                                value: true,
+                                operation: 'EQ'
+                            }
+                        ],
+                        relation: 'AND'
+                    }
                 }
-            }
-        ).then(({ records }) => {
+            )
+        }
+        return request.then(({ records }) => {
             commit('UPDATE_TREE', {
                 roadMap,
                 list: records.map((v, index) => ({
@@ -61,6 +70,12 @@ export default {
     // 请求文件夹下的文件夹及制品
     getArtifactoryList (_, { projectId, repoName, fullPath, current, limit, includeFolder = true, includeMetadata = true, deep = false, isPipeline = false }) {
         if (isPipeline) {
+            const path = `${fullPath === '/' ? '' : fullPath}/`
+            if (path === '/') {
+                return Vue.prototype.$ajax.get(
+                    `${prefix}/pipeline/list/${projectId}`
+                ).then(records => ({ records, totalRecords: 0 }))
+            }
             return Vue.prototype.$ajax.post(
                 `${prefix}/node/query`,
                 {
@@ -86,7 +101,7 @@ export default {
                             },
                             {
                                 field: 'path',
-                                value: `${fullPath === '/' ? '' : fullPath}/`,
+                                value: path,
                                 operation: 'EQ'
                             }
                         ],

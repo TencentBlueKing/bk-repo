@@ -1,8 +1,8 @@
-####启动配置：server.port: 8081
+#### 启动配置：server.port: 8081
 
-####添加仓库：
+#### 添加仓库：
 ```bash
-curl -X POST http://127.0.0.1:8080/api/repo \
+curl -X POST http://{bk_repo_addr}/repository/repo/create \
 -H 'Content-Type: application/json' \
 -d '{
   "projectId": "projectName",
@@ -12,10 +12,6 @@ curl -X POST http://127.0.0.1:8080/api/repo \
   "public": true,
   "configuration": {"type": "local|remote|virtual"}
 }'
-```
-
-```bash
-
 ```
 
 #### deploy  jar:
@@ -38,7 +34,7 @@ mvn deploy:deploy-file
 -Dversion=1.0.0 
 -Dpackaging=jar 
 -DrepositoryId=file-http 
--Durl=http://ip:port/projectId/repositoryId
+-Durl=http://{bk_repo_addr}/{projectId}/{repoName}
 ```
 
 mvn `conf/settings.xml` 对应账户密码设置：

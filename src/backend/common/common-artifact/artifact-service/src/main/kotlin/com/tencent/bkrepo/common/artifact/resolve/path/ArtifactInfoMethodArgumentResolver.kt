@@ -54,6 +54,7 @@ class ArtifactInfoMethodArgumentResolver(
     private val resolverMap: ResolverMap
 ) : HandlerMethodArgumentResolver {
 
+    private val antPathMatcher = AntPathMatcher()
     override fun supportsParameter(parameter: MethodParameter): Boolean {
         return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType)
     }
@@ -69,12 +70,10 @@ class ArtifactInfoMethodArgumentResolver(
         val repoName = attributes[REPO_NAME].toString()
 
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)!!
-        val artifactUri = request.let {
-            AntPathMatcher.DEFAULT_PATH_SEPARATOR + AntPathMatcher().extractPathWithinPattern(
-                request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String,
-                request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE) as String
-            )
-        }
+        val artifactUri = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
+            request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE) as String,
+            request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE) as String
+        )
         val resolver = resolverMap.getResolver(parameter.parameterType.kotlin as KClass<out ArtifactInfo>)
         val artifactInfo = resolver.resolve(projectId, repoName, PathUtils.normalizeFullPath(artifactUri), request)
         request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)

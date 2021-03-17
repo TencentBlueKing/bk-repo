@@ -116,6 +116,16 @@ class ArtifactContextHolder(
         }
 
         /**
+         * 根据当前请求获取对应ArtifactInfo信息
+         * 如果请求为空，则返回`null`
+         */
+        fun getArtifactInfo(): ArtifactInfo? {
+            val artifactInfo = HttpContextHolder.getRequestOrNull()?.getAttribute(ARTIFACT_INFO_KEY) ?: return null
+            require(artifactInfo is ArtifactInfo)
+            return artifactInfo
+        }
+
+        /**
          * 根据当前请求获取对应仓库详情
          * 如果请求为空，则返回`null`
          */

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -66,9 +67,9 @@ class UserRepositoryController(
 ) {
 
     @ApiOperation("根据名称类型查询仓库")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/info/{projectId}/{repoName}", "/info/{projectId}/{repoName}/{type}")
     fun getRepoInfo(
-        @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
@@ -76,20 +77,18 @@ class UserRepositoryController(
         @ApiParam(value = "仓库类型", required = true)
         @PathVariable type: String? = null
     ): Response<RepositoryInfo?> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName))
     }
 
     @ApiOperation("根据名称查询仓库是否存在")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
-        @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<Boolean> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.checkExist(projectId, repoName))
     }
 
@@ -100,7 +99,7 @@ class UserRepositoryController(
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void> {
         val createRequest = with(userRepoCreateRequest) {
-            permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, projectId)
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
             RepoCreateRequest(
                 projectId = projectId,
                 name = name,
@@ -128,14 +127,13 @@ class UserRepositoryController(
         @ApiParam("仓库类型", required = false)
         @RequestParam type: String? = null
     ): Response<List<RepositoryInfo>> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.listRepo(projectId, name, type))
     }
 
     @ApiOperation("分页查询仓库列表")
     @GetMapping("/page/{projectId}/{pageNumber}/{pageSize}")
     fun listRepoPage(
-        @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "当前页", required = true, example = "0")
@@ -147,11 +145,12 @@ class UserRepositoryController(
         @ApiParam("仓库类型", required = false)
         @RequestParam type: String? = null
     ): Response<Page<RepositoryInfo>> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.READ, projectId)
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.listRepoPage(projectId, pageNumber, pageSize, name, type))
     }
 
     @ApiOperation("删除仓库")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     @DeleteMapping("/delete/{projectId}/{repoName}")
     fun deleteRepo(
         @RequestAttribute userId: String,
@@ -162,12 +161,12 @@ class UserRepositoryController(
         @ApiParam(value = "是否强制删除", required = false)
         @RequestParam forced: Boolean = false
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.DELETE, projectId, repoName)
         repositoryService.deleteRepo(RepoDeleteRequest(projectId, repoName, forced, userId))
         return ResponseBuilder.success()
     }
 
     @ApiOperation("更新仓库")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
     @PostMapping("/update/{projectId}/{repoName}")
     fun updateRepo(
         @RequestAttribute userId: String,
@@ -177,7 +176,6 @@ class UserRepositoryController(
         @PathVariable repoName: String,
         @RequestBody request: UserRepoUpdateRequest
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
         val repoUpdateRequest = RepoUpdateRequest(
             projectId = projectId,
             name = repoName,
@@ -190,29 +188,13 @@ class UserRepositoryController(
         return ResponseBuilder.success()
     }
 
-    @Deprecated("replace with createRepo, waiting kb-ci and bk")
+    @Deprecated("waiting kb-ci and bk", replaceWith = ReplaceWith("createRepo"))
     @ApiOperation("创建仓库")
     @PostMapping
     fun create(
         @RequestAttribute userId: String,
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest
     ): Response<Void> {
-        permissionManager.checkPermission(userId, ResourceType.PROJECT, PermissionAction.MANAGE, userRepoCreateRequest.projectId)
-
-        val createRequest = with(userRepoCreateRequest) {
-            RepoCreateRequest(
-                projectId = projectId,
-                name = name,
-                type = type,
-                category = category,
-                public = public,
-                description = description,
-                configuration = configuration,
-                storageCredentialsKey = storageCredentialsKey,
-                operator = userId
-            )
-        }
-        repositoryService.createRepo(createRequest)
-        return ResponseBuilder.success()
+        return this.createRepo(userId, userRepoCreateRequest)
     }
 }

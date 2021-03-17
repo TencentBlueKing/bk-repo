@@ -74,7 +74,7 @@
                 <bk-button class="detail-btn" theme="primary" @click.stop="showDetail()">{{ $t('showDetail') }}</bk-button>
                 <div class="actions-btn flex-column">
                     <template v-if="selectedRow.fullPath !== selectedTreeNode.fullPath || query">
-                        <template v-if="MODE_CONFIG === 'standalone' || repoName === 'custom'">
+                        <template v-if="repoName !== 'pipeline' && repoName !== 'report'">
                             <bk-button @click.stop="renameRes()" text theme="primary">
                                 <i class="mr5 devops-icon icon-edit"></i>
                                 {{ $t('rename') }}
@@ -104,7 +104,7 @@
                         </template>
                     </template>
                     <template v-else>
-                        <template v-if="MODE_CONFIG === 'standalone' || repoName === 'custom'">
+                        <template v-if="repoName !== 'pipeline' && repoName !== 'report'">
                             <bk-button @click.stop="addFolder()" text theme="primary">
                                 <i class="mr5 devops-icon icon-folder-plus"></i>
                                 {{$t('create') + $t('folder')}}
@@ -207,7 +207,6 @@
         components: { RepoTree, genericDetail, genericUpload },
         data () {
             return {
-                MODE_CONFIG,
                 isLoading: false,
                 treeLoading: false,
                 importantSearch: '',
@@ -322,7 +321,7 @@
         watch: {
             '$route.query.name' () {
                 this.initPage()
-                this.getArtifactories()
+                this.handlerPaginationChange()
             },
             'selectedTreeNode.fullPath' () {
                 // 重置选中行
@@ -417,7 +416,7 @@
                 this.query = null
                 this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
                 this.selectedRow = this.selectedTreeNode
-                this.getArtifactories()
+                this.handlerPaginationChange()
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -673,7 +672,7 @@
                     // 更新源和目的的节点信息
                     this.updateGenericTreeNode(this.selectedTreeNode)
                     this.updateGenericTreeNode(this.treeDialog.selectedNode)
-                    this.getArtifactories()
+                    this.handlerPaginationChange()
                     this.$bkMessage({
                         theme: 'success',
                         message: this.treeDialog.type + this.$t('success')

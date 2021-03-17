@@ -37,6 +37,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 
@@ -58,10 +59,11 @@ object PackageQueryHelper {
     }
 
     // version
-    fun versionQuery(packageId: String, name: String? = null): Query {
+    fun versionQuery(packageId: String, name: String? = null, tag: String? = null): Query {
         val criteria = where(TPackageVersion::packageId).isEqualTo(packageId)
             .apply {
                 name?.let { and(TPackageVersion::name).isEqualTo(name) }
+                tag?.let { and(TPackageVersion::tags).inValues(tag) }
             }
         return Query(criteria)
     }

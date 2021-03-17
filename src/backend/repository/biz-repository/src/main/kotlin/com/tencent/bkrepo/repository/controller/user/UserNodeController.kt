@@ -61,6 +61,7 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.service.NodeSearchService
 import com.tencent.bkrepo.repository.service.NodeService
+import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -82,7 +83,7 @@ class UserNodeController(
 ) {
 
     @ApiOperation("根据路径查看节点详情")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/detail/$DEFAULT_MAPPING_URI")
     fun getNodeDetail(
         @RequestAttribute userId: String,
@@ -115,7 +116,7 @@ class UserNodeController(
     }
 
     @ApiOperation("删除节点")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/delete/$DEFAULT_MAPPING_URI")
     fun deleteNode(
         @RequestAttribute userId: String,
@@ -134,7 +135,7 @@ class UserNodeController(
     }
 
     @ApiOperation("更新节点")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.UPDATE)
     @PostMapping("/update/$DEFAULT_MAPPING_URI")
     fun updateNode(
         @RequestAttribute userId: String,
@@ -155,7 +156,7 @@ class UserNodeController(
     }
 
     @ApiOperation("重命名节点")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.UPDATE)
     @PostMapping("/rename/$DEFAULT_MAPPING_URI")
     fun renameNode(
         @RequestAttribute userId: String,
@@ -163,6 +164,7 @@ class UserNodeController(
         @RequestParam newFullPath: String
     ): Response<Void> {
         with(artifactInfo) {
+            permissionManager.checkNodePermission(PermissionAction.UPDATE, projectId, repoName, newFullPath)
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -183,7 +185,8 @@ class UserNodeController(
         @RequestBody request: UserNodeRenameRequest
     ): Response<Void> {
         with(request) {
-            permissionManager.checkPermission(userId, ResourceType.REPO, PermissionAction.WRITE, projectId, repoName)
+            permissionManager.checkNodePermission(PermissionAction.UPDATE, projectId, repoName, fullPath)
+            permissionManager.checkNodePermission(PermissionAction.UPDATE, projectId, repoName, newFullPath)
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -203,7 +206,7 @@ class UserNodeController(
         @RequestBody request: UserNodeMoveRequest
     ): Response<Void> {
         with(request) {
-            checkCrossRepoPermission(userId, request)
+            checkCrossRepoPermission(request)
             val moveRequest = NodeMoveRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -226,7 +229,7 @@ class UserNodeController(
         @RequestBody request: UserNodeCopyRequest
     ): Response<Void> {
         with(request) {
-            checkCrossRepoPermission(userId, request)
+            checkCrossRepoPermission(request)
             val copyRequest = NodeCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -243,7 +246,7 @@ class UserNodeController(
     }
 
     @ApiOperation("查询节点大小信息")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/size/$DEFAULT_MAPPING_URI")
     fun computeSize(
         @RequestAttribute userId: String,
@@ -254,13 +257,15 @@ class UserNodeController(
     }
 
     @ApiOperation("分页查询节点")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
+        // 禁止查询pipeline仓库
+        PipelineRepoUtils.checkPipeline(artifactInfo.repoName)
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)
     }
@@ -283,22 +288,12 @@ class UserNodeController(
     /**
      * 校验跨仓库操作权限
      */
-    private fun checkCrossRepoPermission(userId: String, request: CrossRepoNodeRequest) {
-        val srcProjectId = request.srcProjectId
-        val srcRepoName = request.srcRepoName
-        val destProjectId = request.destProjectId
-        val destRepoName = request.destRepoName
-        // 校验src仓库权限
-        val type = ResourceType.REPO
-        val action = PermissionAction.WRITE
-        permissionManager.checkPermission(userId, type, action, srcProjectId, srcRepoName)
-
-        // 当src和dest不是用一个仓库是，校验dest仓库权限
-        val isDestRepoNull = destProjectId == null && destRepoName == null
-        val isSameRepo = destProjectId == srcProjectId && destRepoName == srcRepoName
-        if (isDestRepoNull || isSameRepo) {
-            return
+    private fun checkCrossRepoPermission(request: CrossRepoNodeRequest) {
+        with(request) {
+            permissionManager.checkNodePermission(PermissionAction.WRITE, srcProjectId, srcRepoName, srcFullPath)
+            val toProjectId = request.destProjectId ?: srcProjectId
+            val toRepoName = request.destRepoName ?: srcRepoName
+            permissionManager.checkNodePermission(PermissionAction.WRITE, toProjectId, toRepoName, destFullPath)
         }
-        permissionManager.checkPermission(userId, type, action, destProjectId.orEmpty(), destRepoName.orEmpty())
     }
 }

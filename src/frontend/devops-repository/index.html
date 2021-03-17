@@ -5,19 +5,16 @@
         <meta name=viewport content="width=device-width,initial-scale=1">
         <meta http-equiv=X-UA-Compatible content="ie=edge">
         <meta http-equiv="Pragma" content="no-cache" />
-        <title>Devops制品库管理</title>
+        <title>制品库管理</title>
     </head>
 <body>
     <div id="app"></div>
     <script src="<%= htmlWebpackPlugin.options.VENDOR_LIBS%>"></script>
     <script>
-        var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
-        var AJAX_URL_PREFIX = '__BK_HTTP_SCHEMA__://__BK_REPO_FQDN__/web'
-        var DEVOPS_SITE_URL = '__BK_HTTP_SCHEMA__://__BK_CI_FQDN__'
-        var LOGIN_SERVICE_URL = PAAS_SERVICE_URL + '/login/'
         // standalone: 独立部署模式
         // ci: ci模式
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+        var LOGIN_SERVICE_URL = '__BK_REPO_PAAS_LOGIN_URL__'
     </script>
     <script>
         const redirectUrl = location.href.split(/\?redirect=/)[1]
@@ -30,6 +27,7 @@
         }
 
         if (redirectUrl) {
+            document.body.removeChild(document.querySelector('#app'))
             const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = function (e) {
                 const { readyState, status } = e.currentTarget

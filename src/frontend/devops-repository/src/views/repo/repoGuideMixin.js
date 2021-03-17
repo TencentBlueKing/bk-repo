@@ -23,6 +23,9 @@ export default {
         repoUrl () {
             return `${location.origin}/${this.repoType}/${this.projectId}/${this.repoName}`
         },
+        userName () {
+            return this.userInfo.username || '<USERNAME>'
+        },
         dockerGuide () {
             return [
                 {
@@ -30,7 +33,7 @@ export default {
                     main: [
                         {
                             subTitle: '配置个人凭证',
-                            codeList: [`docker login -u ${this.userInfo.username} -p <PERSONAL_ACCESS_TOKEN> ${location.protocol}//${this.dockerDomain}`]
+                            codeList: [`docker login -u ${this.userName} -p <PERSONAL_ACCESS_TOKEN> ${this.dockerDomain}`]
                         }
                     ]
                 },
@@ -84,7 +87,7 @@ export default {
                             codeList: [
                                 `registry=${this.repoUrl}/`,
                                 `always-auth=true`,
-                                `//${this.repoUrl.split('//')[1]}/:username=${this.userInfo.username}`,
+                                `//${this.repoUrl.split('//')[1]}/:username=${this.userName}`,
                                 `//${this.repoUrl.split('//')[1]}/:_password=<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`,
                                 `//${this.repoUrl.split('//')[1]}/:email=<EMAIL>`
                             ]
@@ -199,7 +202,7 @@ export default {
                                 `<servers>`,
                                 `       <server>`,
                                 `               <id>${this.projectId}-${this.repoName}</id>`,
-                                `               <username>${this.userInfo.username}</username>`,
+                                `               <username>${this.userName}</username>`,
                                 `               <password><PERSONAL_ACCESS_TOKEN></password>`,
                                 `       </server>`,
                                 `</servers>`
@@ -308,13 +311,13 @@ export default {
                         {
                             subTitle: '1、推送Chart',
                             codeList: [
-                                `curl -F "chart=@<FILE_NAME>" -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
+                                `curl -F "chart=@<FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
                             ]
                         },
                         {
                             subTitle: '2、推送Chart Provenance',
                             codeList: [
-                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
+                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
                             ]
                         }
                     ]
@@ -325,7 +328,7 @@ export default {
                         {
                             subTitle: '1、配置',
                             codeList: [
-                                `helm repo add --username ${this.userInfo.username} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
+                                `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
                             ]
                         },
                         {
@@ -351,7 +354,7 @@ export default {
                         {
                             subTitle: '1、手动配置',
                             codeList: [
-                                `helm repo add --username ${this.userInfo.username} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
+                                `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
                             ]
                         },
                         {
@@ -381,7 +384,7 @@ export default {
                                 `[${this.repoName}]`,
                                 `name=${this.repoName}`,
                                 `baseurl=${this.repoUrl}`,
-                                `username=${this.userInfo.username}`,
+                                `username=${this.userName}`,
                                 `password=<PERSONAL_ACCESS_TOKEN>`,
                                 `enabled=1`,
                                 `gpgcheck=0`
@@ -394,7 +397,7 @@ export default {
                     main: [
                         {
                             codeList: [
-                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl}/ -T <RPM_FILE_NAME>`
+                                `curl -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl}/ -T <RPM_FILE_NAME>`
                             ]
                         }
                     ]
@@ -408,7 +411,7 @@ export default {
                         {
                             subTitle: 'RPM',
                             codeList: [
-                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/<RPM_FILE_NAME>`
+                                `rpm -i ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/<RPM_FILE_NAME>`
                             ]
                         },
                         {
@@ -431,7 +434,7 @@ export default {
                         {
                             subTitle: 'RPM',
                             codeList: [
-                                `rpm -i ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/<RPM_FILE_NAME>`
+                                `rpm -i ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${this.repoUrl}/<RPM_FILE_NAME>`
                             ]
                         },
                         {
@@ -456,7 +459,7 @@ export default {
                                 `index-servers = ${this.repoName}`,
                                 `[${this.repoName}]`,
                                 `repository: ${this.repoUrl}`,
-                                `username: ${this.userInfo.username}`,
+                                `username: ${this.userName}`,
                                 `password: <PERSONAL_ACCESS_TOKEN>`
                             ]
                         },
@@ -481,7 +484,7 @@ export default {
                             subTitle: 'Windows配置目录 :  %HOME%/pip/pip.ini',
                             codeList: [
                                 `[global]`,
-                                `index-url = ${location.protocol}//${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
+                                `index-url = ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
                             ]
                         },
                         {
@@ -516,7 +519,7 @@ export default {
                         {
                             subTitle: '使用 cURL 命令将压缩包上传至仓库',
                             codeList: [
-                                `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}" -T <PACKAGE_FILE>`
+                                `curl -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> "${this.repoUrl}" -T <PACKAGE_FILE>`
                             ]
                         }
                     ]
@@ -536,7 +539,7 @@ export default {
                                 `{`,
                                 `       "http-basic": {`,
                                 `               "${location.host}": {`,
-                                `                       "username": "${this.userInfo.username}",`,
+                                `                       "username": "${this.userName}",`,
                                 `                       "password": "<PERSONAL_ACCESS_TOKEN>"`,
                                 `               }`,
                                 `       }`,

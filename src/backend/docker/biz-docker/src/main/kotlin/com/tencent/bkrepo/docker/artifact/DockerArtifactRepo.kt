@@ -359,13 +359,12 @@ class DockerArtifactRepo @Autowired constructor(
         action: PermissionAction
     ): Boolean {
         try {
-            permissionManager.checkPermission(
-                userId,
-                resourceType,
-                action,
-                context.projectId,
-                context.repoName
-            )
+            if (resourceType == ResourceType.PROJECT) {
+                permissionManager.checkProjectPermission(action, context.projectId)
+            }
+            if (resourceType == ResourceType.REPO) {
+                permissionManager.checkRepoPermission(action, context.projectId, context.repoName)
+            }
         } catch (e: Exception) {
             logger.debug("user: [$userId] ,check  permission fail [$context]")
             return false

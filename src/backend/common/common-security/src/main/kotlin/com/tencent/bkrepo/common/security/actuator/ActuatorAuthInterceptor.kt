@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import org.springframework.util.AntPathMatcher
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
@@ -49,7 +50,13 @@ class ActuatorAuthInterceptor(
     private val permissionManager: PermissionManager
 ) : HandlerInterceptorAdapter() {
 
+    private val antPathMatcher = AntPathMatcher()
+
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
+        val uri = request.requestURI
+        if (antPathMatcher.match(HEALTH_ENDPOINT, uri) || antPathMatcher.match(INFO_ENDPOINT, uri)) {
+            return true
+        }
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
             ?: throw AuthenticationException("Empty authorization value.")
         try {
@@ -67,5 +74,10 @@ class ActuatorAuthInterceptor(
         } catch (exception: IllegalArgumentException) {
             throw AuthenticationException("Invalid authorization value.")
         }
+    }
+
+    companion object {
+        private const val HEALTH_ENDPOINT = "/actuator/health/**"
+        private const val INFO_ENDPOINT = "/actuator/info/**"
     }
 }

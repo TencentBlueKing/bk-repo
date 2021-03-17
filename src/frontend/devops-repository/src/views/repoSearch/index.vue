@@ -15,14 +15,14 @@
                     class="mr20 file-name-search"
                     v-model="packageNameInput"
                     :placeholder="$t('pleaseInput') + $t('packageName')"
-                    @enter="searckPackageHandler"
-                    @clear="searckPackageHandler"
+                    @enter="handlerPaginationChange()"
+                    @clear="handlerPaginationChange()"
                     clearable>
                 </bk-input>
-                <bk-button :loading="isLoading" theme="primary" @click="searckPackageHandler">{{$t('search')}}</bk-button>
+                <bk-button :loading="isLoading" theme="primary" @click="handlerPaginationChange()">{{$t('search')}}</bk-button>
             </div>
             <div class="repo-type-search">
-                <bk-radio-group v-model="repoType" @change="searckPackageHandler" class="repo-type-radio-group">
+                <bk-radio-group v-model="repoType" @change="handlerPaginationChange()" class="repo-type-radio-group">
                     <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                         <div class="flex-center repo-type-radio">
                             <icon size="60" :name="repo" />
@@ -87,7 +87,7 @@
         components: { emptyData },
         data () {
             return {
-                repoEnum,
+                repoEnum: repoEnum.filter(v => v !== 'generic'),
                 showRepoSearch: true,
                 isLoading: false,
                 packageNameInput: this.$route.query.packageName || '',

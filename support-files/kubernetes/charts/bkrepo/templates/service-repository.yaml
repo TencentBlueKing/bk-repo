@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+  labels:
+    tier: backend
+    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository
+spec:
+  ports:
+    - port: 80
+      targetPort: {{ .Values.env.BK_REPO_REPOSITORY_PORT }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ .Values.env.BK_REPO_SERVICE_PREFIX }}repository

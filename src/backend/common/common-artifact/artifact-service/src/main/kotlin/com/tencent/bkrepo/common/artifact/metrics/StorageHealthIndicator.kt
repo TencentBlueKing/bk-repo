@@ -41,10 +41,8 @@ class StorageHealthIndicator(
     private val storageHealthMonitor: StorageHealthMonitor
 ) : AbstractHealthIndicator() {
     override fun doHealthCheck(builder: Health.Builder) {
-        if (storageHealthMonitor.health.get()) {
-            builder.up()
-        } else {
-            builder.down()
-        }
+        builder.withDetail("cfs", storageHealthMonitor.health.get())
+            .withDetail("cos", true)
+            .up()
     }
 }

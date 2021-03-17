@@ -46,16 +46,20 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         return this.find(PackageQueryHelper.versionListQuery(packageId))
     }
 
+    fun findByTag(packageId: String, tag: String): TPackageVersion? {
+        return this.findOne(PackageQueryHelper.versionQuery(packageId, tag = tag))
+    }
+
     fun findByName(packageId: String, name: String): TPackageVersion? {
-        return this.findOne(PackageQueryHelper.versionQuery(packageId, name))
+        return this.findOne(PackageQueryHelper.versionQuery(packageId, name = name))
     }
 
     fun deleteByPackageId(packageId: String) {
         this.remove(PackageQueryHelper.versionQuery(packageId))
     }
 
-    fun deleteByName(packageId: String, versionName: String) {
-        this.remove(PackageQueryHelper.versionQuery(packageId, versionName))
+    fun deleteByName(packageId: String, name: String) {
+        this.remove(PackageQueryHelper.versionQuery(packageId, name = name))
     }
 
     fun findLatest(packageId: String): TPackageVersion? {
