@@ -109,7 +109,7 @@ function _M:get_ticket(bk_ticket, input_type)
 
         --- 判断返回码:Q!
         if result.code ~= 0 then
-            ngx.log(ngx.STDERR, "invalid get_ticket: ", result.message)
+            ngx.log(ngx.INFO, "invalid get_ticket: ", result.message)
             ngx.exit(401)
             return
         end
@@ -166,7 +166,7 @@ function _M:verify_bkrepo_token(access_token)
 
         --- 判断返回码:Q!
         if result.code ~= 0 then
-            ngx.log(ngx.STDERR, "invalid verify_bkrepo_token: ", result.message)
+            ngx.log(ngx.INFO, "invalid verify_bkrepo_token: ", result.message)
             ngx.exit(401)
             return
         end
@@ -222,7 +222,7 @@ function _M:verify_token(access_token)
 
     --- 判断返回码:Q!
     if result.code ~= 0 then
-        ngx.log(ngx.STDERR, "invalid verify_token: ", result.message)
+        ngx.log(ngx.INFO, "invalid verify_token: ", result.message)
         ngx.exit(401)
         return
     end
