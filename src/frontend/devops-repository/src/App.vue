@@ -16,6 +16,7 @@
     import Login from '@/components/Login'
     import Vue from 'vue'
     import { mapState, mapMutations, mapActions } from 'vuex'
+    import cookies from 'js-cookie'
     export default {
         name: 'App',
         components: { Login, Header },
@@ -37,6 +38,9 @@
             }
         },
         async created () {
+            const username = cookies.get('bk_uid')
+            username && this.SET_USER_INFO({ username })
+
             const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
             if (this.iframeMode) {
