@@ -773,16 +773,6 @@ class RpmLocalRepository(
         return rpmConfiguration.toRpmRepoConf()
     }
 
-    fun refinePrimaryIndexText(originStr: String, index: Int): String {
-        return if (index < 0) {
-            "\n" + originStr
-        } else {
-            val prefix = originStr.substring(0, index + 9)
-            val suffix = originStr.substring(index + 9)
-            "\n$prefix>\n$suffix"
-        }
-    }
-
     fun fixRpmXml(originXmlFile: File): File {
         BufferedReader(InputStreamReader(originXmlFile.inputStream(), "UTF-8")).use { reader ->
             val resultFile = File.createTempFile("rpm_", ".xmlStream")
@@ -791,12 +781,19 @@ class RpmLocalRepository(
                     var line: String? = null
                     var firstLine = true
                     while (reader.readLine().also { line = it } != null) {
-                        val bugIndex = line!!.indexOf("</package ")
-                        if (firstLine) {
-                            outputStream.write((refinePrimaryIndexText(line!!, bugIndex).substring(1)).toByteArray())
-                            firstLine = false
-                        } else {
-                            outputStream.write((refinePrimaryIndexText(line!!, bugIndex)).toByteArray())
+                        val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  "))
+                            && line!!.endsWith("<package type=\"rpm\">")
+                        when {
+                            isBugLine -> {
+                                outputStream.write("\n  </package>\n  <package type=\"rpm\">".toByteArray())
+                            }
+                            firstLine -> {
+                                outputStream.write(line!!.toByteArray())
+                                firstLine = false
+                            }
+                            else -> {
+                                outputStream.write("\n$line".toByteArray())
+                            }
                         }
                     }
                 }
@@ -816,6 +813,7 @@ class RpmLocalRepository(
             logger.info("primary index not found")
             return
         }
+        logger.info("find primary index: ${indexNode.fullPath}")
         val originXmlFile = storageService.load(indexNode.sha256!!, Range.full(indexNode.size), null)!!.use { it.unGzipInputStream() }
         logger.info("originIndexMd5: ${originXmlFile.md5()}")
         try {
