@@ -3,6 +3,8 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -11,28 +13,121 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
+import com.tencent.bkrepo.helm.pojo.fixtool.RepairResponse
 import com.tencent.bkrepo.helm.service.FixToolService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class FixToolServiceImpl(
     private val storageService: StorageService,
     private val helmPackageHandler: HelmPackageHandler
 ) : FixToolService, AbstractChartService() {
+
+    override fun repairPackageCreatedDate(): List<DateTimeRepairResponse> {
+        val repairResponse = mutableListOf<DateTimeRepairResponse>()
+        val successRepoName: MutableList<RepairResponse> = mutableListOf()
+        val failedRepoName: MutableList<RepairResponse> = mutableListOf()
+        logger.info("starting repair package created date for historical data")
+        val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
+            logger.warn("no helm repository found, return.")
+            emptyList<RepositoryDetail>()
+        }
+        val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
+        logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${helmLocalRepositoryList.map { it.projectId to it.name }}")
+        helmLocalRepositoryList.forEach {
+            try {
+                doRepairCreatedDate(it.projectId, it.name)
+                successRepoName.add(RepairResponse(it.projectId, it.name))
+            } catch (exception: RuntimeException) {
+                successRepoName.add(RepairResponse(it.projectId, it.name))
+            }
+        }
+        repairResponse.add(DateTimeRepairResponse(successRepoName, failedRepoName))
+        return repairResponse
+    }
+
+    private fun doRepairCreatedDate(projectId: String, repoName: String) {
+        val request = HttpContextHolder.getRequest()
+        request.setAttribute(ARTIFACT_INFO_KEY, ArtifactInfo(projectId, repoName, ""))
+        try {
+            // 查询索引文件
+            val nodeDetail =
+                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
+                    logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
+                    throw HelmFileNotFoundException("the file index-cache.yaml not found in repo [$projectId/$repoName]")
+                }
+            val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+                logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+                return
+            }
+            val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
+            if (helmIndexYamlMetadata.entries.isEmpty()) {
+                logger.error("not found entries in index-cache.yaml")
+                return
+            }
+            val helmNodeList = mutableListOf<NodeInfo>()
+            val entries = helmIndexYamlMetadata.entries
+            entries.keys.forEach { name ->
+                helmNodeList.clear()
+                var page = 1
+                var packageMetadataList =
+                    queryPackagePage(projectId, repoName, page, name).records.map { resolveNode(it) }
+                if (packageMetadataList.isEmpty()) {
+                    logger.info("no package with name [$name] found in repo [$projectId/$repoName], skip.")
+                    return@forEach
+                }
+                while (packageMetadataList.isNotEmpty()) {
+                    helmNodeList.addAll(packageMetadataList)
+                    page += 1
+                    packageMetadataList =
+                        queryPackagePage(projectId, repoName, page, name).records.map { resolveNode(it) }
+                }
+                try {
+                    // 修改时间
+                    entries[name]?.forEach { it ->
+                        val digest = it.digest
+                        val nodeInfo = helmNodeList.first { it.sha256 == digest }
+                        it.created = TimeFormatUtil.convertToUtcTime(
+                            LocalDateTime.parse(
+                                nodeInfo.createdDate,
+                                DateTimeFormatter.ISO_DATE_TIME
+                            )
+                        )
+                    }
+                } catch (exception: RuntimeException) {
+                    logger.error(
+                        "Failed to to repair created date for [$name] in repo [$projectId/$repoName].",
+                        exception
+                    )
+                    throw exception
+                }
+            }
+            uploadIndexYamlMetadata(indexYamlMetadata = helmIndexYamlMetadata)
+        } catch (exception: RuntimeException) {
+            logger.error("repair created date for repo [$projectId/$repoName] failed, message: ${exception.message}")
+            throw exception
+        }
+    }
 
     override fun fixPackageVersion(): List<PackageManagerResponse> {
         val packageManagerList = mutableListOf<PackageManagerResponse>()
