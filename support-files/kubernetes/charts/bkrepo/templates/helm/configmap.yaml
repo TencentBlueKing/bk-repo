@@ -1,0 +1,21 @@
+{{- if .Values.helm.enabled -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "common.names.fullname" . }}-helm
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: helm
+    {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+  {{- end }}
+data:
+  application.yml: |-
+    {{- toYaml .Values.helm.config | nindent 4 }}
+    helm:
+      domain: helm.{{ .Values.gateway.host }}
+      auth:
+        url: http://helm.{{ .Values.gateway.host }}/v2/auth
+{{- end }}

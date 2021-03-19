@@ -1,39 +1,43 @@
 {{- if .Values.ingress.enabled }}
-{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
-apiVersion: networking.k8s.io/v1beta1
-{{- else -}}
-apiVersion: extensions/v1beta1
-{{- end }}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
-  name: repo-ingress
-  labels:
-    {{- include "bkrepo.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
+  name: {{ include "common.names.fullname" . }}-ingress
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- if .Values.commonAnnotations }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ include "common.tplvalues.render" (dict "value" $value "context" $) | quote }}
+    {{- end }}
 spec:
   rules:
     - host: {{ .Values.gateway.host }}
       http:
         paths:
           - path: /
-            backend:
-              serviceName: repo-gateway
-              servicePort: 80
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" "http" "context" $) | nindent 14 }}
     - host: docker.{{ .Values.gateway.host }}
       http:
         paths:
           - path: /
-            backend:
-              serviceName: repo-gateway
-              servicePort: 80
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" "http" "context" $) | nindent 14 }}
     - host: helm.{{ .Values.gateway.host }}
       http:
         paths:
           - path: /
-            backend:
-              serviceName: repo-gateway
-              servicePort: 80
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" "http" "context" $) | nindent 14 }}
 {{- end }}

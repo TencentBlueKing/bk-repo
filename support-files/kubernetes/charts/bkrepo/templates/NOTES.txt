@@ -18,7 +18,7 @@ Your release is named {{ .Release.Name }}.
     {{- else if contains "NodePort" .Values.gateway.service.type }}
     - 添加映射记录到/etc/hosts
 
-        export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services repo-gateway)
+        export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "bkrepo.fullname" . }}-gateway)
         export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
         
         echo "$NODE_IP	{{ .Values.gateway.host }}" >> /etc/hosts
@@ -26,7 +26,7 @@ Your release is named {{ .Release.Name }}.
     {{- else if contains "ClusterIP" .Values.gateway.service.type }}
     - 通过port-forward暴露repo-gateway
 
-        kubectl port-forward --namespace {{ .Release.Namespace }} service/repo-gateway 80:80
+        kubectl port-forward --namespace {{ .Release.Namespace }} service/{{ include "bkrepo.fullname" . }}-gateway 80:80
     
     - 添加映射记录到/etc/hosts
 
