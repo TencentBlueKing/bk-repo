@@ -1,7 +1,0 @@
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: repo-auth
-data:
-  application.yml: |-
-    {{- toYaml .Values.auth.config | nindent 4 }}

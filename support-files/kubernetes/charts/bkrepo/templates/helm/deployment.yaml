@@ -1,0 +1,106 @@
+{{- if .Values.helm.enabled -}}
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ include "common.names.fullname" . }}-helm
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: helm
+    {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: helm
+  replicas: {{ default 1 .Values.helm.replicaCount }}
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: helm
+        {{- if .Values.helm.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.helm.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ template "bkrepo.serviceAccountName" . }}
+      {{- include "bkrepo.imagePullSecrets" . | nindent 6 }}
+      {{- if .Values.helm.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.helm.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.helm.affinity }}
+      affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.helm.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.helm.podAffinityPreset "component" "helm" "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.helm.podAntiAffinityPreset "component" "helm" "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.helm.nodeAffinityPreset.type "key" .Values.helm.nodeAffinityPreset.key "values" .Values.helm.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      {{- if .Values.helm.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" ( dict "value" .Values.helm.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.helm.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.helm.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.helm.priorityClassName }}
+      priorityClassName: {{ .Values.helm.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.helm.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.helm.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: helm
+          image: {{ include "common.images.image" ( dict "imageRoot" .Values.helm.image "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.helm.image.pullPolicy }}
+          {{- if .Values.helm.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.helm.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if .Values.helm.resources }}
+          resources: {{- toYaml .Values.helm.resources | nindent 12 }}
+          {{- end }}
+          env:
+            - name: BK_REPO_JVM_OPTION
+              value: {{ .Values.common.jvmOption }}
+            - name: BK_REPO_PROFILE
+              value: {{ .Values.common.springProfile }}
+            - name: BK_REPO_SERVICE_PREFIX
+              value: {{ include "common.names.fullname" . }}-
+          ports:
+            - name: http
+              containerPort: 25806
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/livenessState
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readinessState
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 20
+            periodSeconds: 5
+          volumeMounts:
+            - name: storage
+              mountPath: {{ .Values.common.storage.filesystem.path }}
+      volumes:
+        - name: storage
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ template "common.names.fullname" . }}-storage{{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

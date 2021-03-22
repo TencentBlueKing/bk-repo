@@ -1,7 +1,0 @@
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: repo-generic
-data:
-  application.yml: |-
-    {{- toYaml .Values.generic.config | nindent 4 }}

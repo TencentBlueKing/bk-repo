@@ -4,6 +4,7 @@ LABEL maintainer="Tencent BlueKing Devops"
 
 ENV BK_REPO_HOME=/data/workspace \
     BK_REPO_LOGS_DIR=/data/workspace/logs \
+    BK_REPO_SERVICE_PREFIX=repo- \
     BK_REPO_PROFILE=dev
 
 COPY ./ /data/workspace/
