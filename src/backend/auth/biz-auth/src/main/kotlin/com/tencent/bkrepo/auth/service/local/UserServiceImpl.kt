@@ -266,7 +266,7 @@ class UserServiceImpl constructor(
             val id = IDUtil.genRandomId()
             val now = LocalDateTime.now()
             var expiredTime: LocalDateTime? = null
-            expiredAt?.let {
+            if (expiredAt != null && expiredAt.length != 0) {
                 val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
                 // conv time
