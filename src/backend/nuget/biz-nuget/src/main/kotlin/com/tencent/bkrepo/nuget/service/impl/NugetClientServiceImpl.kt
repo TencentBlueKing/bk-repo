@@ -4,17 +4,17 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.constants.FULL_PATH
 import com.tencent.bkrepo.nuget.constants.HTTP_V2_BASE_URL
 import com.tencent.bkrepo.nuget.exception.NugetException
+import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 import com.tencent.bkrepo.nuget.service.NugetClientService
 import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspec
@@ -80,7 +80,7 @@ class NugetClientServiceImpl(
         with(artifactInfo) {
             val nupkgFullPath = NugetUtils.getNupkgFullPath(packageId, packageVersion)
             if (!exist(projectId, repoName, nupkgFullPath)) {
-                throw ArtifactNotFoundException("can not find version [$packageVersion] for package [$packageId]")
+                throw VersionNotFoundException(packageVersion)
             }
             val context = ArtifactRemoveContext()
             context.putAttribute(FULL_PATH, listOf(nupkgFullPath))

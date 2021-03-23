@@ -39,4 +39,4 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
  */
 class ArtifactNotFoundException(
     fullPath: String
-) : NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+) : NotFoundException(ArtifactMessageCode.ARTIFACT_DATA_NOT_FOUND, fullPath)

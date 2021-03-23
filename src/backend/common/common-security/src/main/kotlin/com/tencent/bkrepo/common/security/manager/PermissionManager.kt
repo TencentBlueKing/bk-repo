@@ -38,7 +38,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
@@ -159,8 +159,7 @@ class PermissionManager(
      * 查询仓库信息
      */
     private fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
-        return repositoryClient.getRepoInfo(projectId, repoName).data
-            ?: throw ArtifactNotFoundException("Repository[$repoName] not found")
+        return repositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
     }
 
     /**
