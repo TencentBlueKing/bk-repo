@@ -142,8 +142,8 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 deletePackage(artifactInfo, deletePackageRequest)
                 return
             }
-            // npmService.unPublishPkgWithVersion(operator, artifactInfo, name, version)
-            npmClientService.deleteVersion(operator, artifactInfo, name, String.format("%s-%s.tgz", name, version))
+            val tgzPath = packageMetadata.versions.map[version]?.dist?.tarball?.substringAfterLast(artifactInfo.getRepoIdentify()).orEmpty()
+            npmClientService.deleteVersion(operator, artifactInfo, name, version, tgzPath)
             // 修改package.json文件的内容
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
         }
