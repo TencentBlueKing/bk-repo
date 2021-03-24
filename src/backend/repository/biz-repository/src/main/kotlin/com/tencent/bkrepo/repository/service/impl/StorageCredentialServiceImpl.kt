@@ -79,7 +79,7 @@ class StorageCredentialServiceImpl(
     override fun findByKey(key: String): StorageCredentials? {
         val tStorageCredentials = storageCredentialsRepository.findByIdOrNull(key)
         val storageCredentials = tStorageCredentials?.credentials?.readJsonString<StorageCredentials>()
-        return storageCredentials?.apply { this.key = key }
+        return storageCredentials?.apply { this.key = tStorageCredentials.id }
     }
 
     override fun list(): List<StorageCredentials> {
