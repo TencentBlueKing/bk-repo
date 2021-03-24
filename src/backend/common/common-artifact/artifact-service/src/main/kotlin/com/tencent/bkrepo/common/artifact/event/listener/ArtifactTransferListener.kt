@@ -37,12 +37,12 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
-import com.tencent.bkrepo.common.artifact.util.FixedSizeQueue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import java.time.Instant
+import java.util.concurrent.LinkedBlockingQueue
 
 /**
  * 构件传输事件监听器
@@ -52,7 +52,7 @@ class ArtifactTransferListener(
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
 ) {
 
-    private var queue = FixedSizeQueue.create<ArtifactTransferRecord>(QUEUE_LIMIT)
+    private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
 
     @EventListener(ArtifactReceivedEvent::class)
     fun listen(event: ArtifactReceivedEvent) {
@@ -70,7 +70,7 @@ class ArtifactTransferListener(
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
                 sha256 = artifactFile.getFileSha256()
             )
-            queue.add(record)
+            queue.offer(record)
         }
     }
 
@@ -90,14 +90,14 @@ class ArtifactTransferListener(
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
                 sha256 = artifactResource.node?.sha256.orEmpty()
             )
-            queue.add(record)
+            queue.offer(record)
         }
     }
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun export() {
         val current = queue
-        queue = FixedSizeQueue.create(QUEUE_LIMIT)
+        queue = LinkedBlockingQueue(QUEUE_LIMIT)
         influxMetricsExporter.ifAvailable?.export(current)
     }
 
