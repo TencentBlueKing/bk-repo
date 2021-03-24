@@ -127,6 +127,7 @@
         </logger>
         <root level="INFO">
             <appender-ref ref="console"/>
+            <appender-ref ref="async_app_log"/>
             <appender-ref ref="async_error_log"/>
         </root>
     </springProfile>
