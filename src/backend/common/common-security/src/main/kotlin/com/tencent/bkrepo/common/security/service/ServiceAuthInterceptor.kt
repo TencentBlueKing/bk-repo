@@ -48,7 +48,7 @@ class ServiceAuthInterceptor(
         // 设置uid
         request.getHeader(MS_AUTH_HEADER_UID)?.let {
             request.setAttribute(USER_KEY, it)
-            request.setAttribute(MS_REQUEST_KEY, it)
+            request.setAttribute(MS_REQUEST_KEY, true)
         }
         // 微服务间jwt认证
         if (serviceAuthProperties.enabled) {
