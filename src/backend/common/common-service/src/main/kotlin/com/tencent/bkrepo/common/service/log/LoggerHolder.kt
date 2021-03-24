@@ -93,7 +93,7 @@ object LoggerHolder {
     private fun determineAccessChannel(request: HttpServletRequest?): String {
         return when {
             request == null -> "None"
-            request.getAttribute(MS_REQUEST_KEY) as? Boolean == true -> "MicroService"
+            request.getAttribute(MS_REQUEST_KEY) != null -> "MicroService"
             else -> "Api"
         }
     }
