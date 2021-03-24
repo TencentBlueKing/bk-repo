@@ -224,7 +224,7 @@ class NodeServiceImpl(
             )
             doCreate(node)
             publishEvent(NodeCreatedEvent(this))
-            logger.info("Create node [$this] success.")
+            logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
 
             return convertToDetail(node)!!
         }
@@ -288,9 +288,9 @@ class NodeServiceImpl(
         try {
             nodeDao.updateMulti(query, nodeDeleteUpdate(operator))
         } catch (exception: DuplicateKeyException) {
-            logger.warn("Delete node[$projectId/$repoName$fullPath] error: [${exception.message}]")
+            logger.warn("Delete node[/$projectId/$repoName$fullPath] error: [${exception.message}]")
         }
-        logger.info("Delete node [$projectId/$repoName$fullPath] by [$operator] success.")
+        logger.info("Delete node [/$projectId/$repoName$fullPath] by [$operator] success.")
     }
 
     /**

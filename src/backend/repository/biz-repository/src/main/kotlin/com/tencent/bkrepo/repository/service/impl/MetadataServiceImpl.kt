@@ -45,9 +45,10 @@ import com.tencent.bkrepo.repository.service.MetadataService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -65,11 +66,11 @@ class MetadataServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun saveMetadata(request: MetadataSaveRequest) {
-        if (request.metadata.isNullOrEmpty()) {
-            logger.info("Metadata key list is empty, skip saving[$this]")
-            return
-        }
-        request.apply {
+        with(request) {
+            if (metadata.isNullOrEmpty()) {
+                logger.info("Metadata is empty, skip saving")
+                return
+            }
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
@@ -77,31 +78,27 @@ class MetadataServiceImpl(
             metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
             node.metadata = MetadataUtils.fromMap(originalMetadata)
             nodeDao.save(node)
-        }.also {
-            publishEvent(MetadataSavedEvent(it))
-        }.also {
-            logger.info("Save metadata [$it] success.")
+            publishEvent(MetadataSavedEvent(request))
+            logger.info("Save metadata[$metadata] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteMetadata(request: MetadataDeleteRequest) {
-        if (request.keyList.isEmpty()) {
-            logger.info("Metadata key list is empty, skip deleting[$this]")
-            return
-        }
-        request.apply {
+        with(request) {
+            if (keyList.isNullOrEmpty()) {
+                logger.info("Metadata key list is empty, skip deleting")
+                return
+            }
             val fullPath = normalizeFullPath(request.fullPath)
             val query = NodeQueryHelper.nodeQuery(projectId, repoName, fullPath)
             val update = Update().pull(
                 TNode::metadata.name,
-                Query.query(Criteria.where(TMetadata::key.name).`in`(keyList))
+                Query.query(where(TMetadata::key).inValues(keyList))
             )
             nodeDao.updateMulti(query, update)
-        }.also {
-            publishEvent(MetadataDeletedEvent(it))
-        }.also {
-            logger.info("Delete metadata [$it] success.")
+            publishEvent(MetadataDeletedEvent(this))
+            logger.info("Delete metadata[$keyList] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
 
