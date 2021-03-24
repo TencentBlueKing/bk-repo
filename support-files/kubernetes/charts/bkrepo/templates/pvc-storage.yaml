@@ -1,18 +1,20 @@
-apiVersion: v1
+{{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) -}}
 kind: PersistentVolumeClaim
+apiVersion: v1
 metadata:
-  name: pvc-storage
+  name: {{ include "common.names.fullname" . }}-storage
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
 spec:
-  storageClassName: pv-storage
   accessModes:
-  {{if .Values.volume.nfs.enabled }}
-    - ReadWriteMany
-  {{else}}
-    - ReadWriteOnce
-  {{end}}
+    - {{ .Values.persistence.accessMode | quote }}
   resources:
     requests:
-      storage: {{ .Values.volume.storage }}
-  selector:
-    matchLabels:
-      pv: pv-storage
+      storage: {{ .Values.persistence.size | quote }}
+  {{- include "common.storage.class" (dict "persistence" .Values.persistence "global" .Values.global) | nindent 2 }}
+{{- end -}}

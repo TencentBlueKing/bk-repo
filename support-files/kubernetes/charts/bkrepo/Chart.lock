@@ -1,6 +1,12 @@
 dependencies:
-- name: ingress-nginx
-  repository: https://kubernetes.github.io/ingress-nginx
-  version: 3.7.1
-digest: sha256:aa48968591b7973f8fafcd23a37b0b3ec151d3f9188da396765d55e14910b8ee
-generated: "2021-03-05T15:25:52.762683+08:00"
+- name: common
+  repository: https://charts.bitnami.com/bitnami
+  version: 1.4.1
+- name: nginx-ingress-controller
+  repository: https://charts.bitnami.com/bitnami
+  version: 7.4.8
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 10.10.2
+digest: sha256:e869a478871055f2945be0298ea1577d2bcaa91442d6a6749b8d4fe605e1797d
+generated: "2021-03-18T17:11:06.342424+08:00"
