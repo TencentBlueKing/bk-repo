@@ -222,41 +222,38 @@ class NodeServiceImpl(
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now()
             )
-            return node.apply { doCreate(this) }
-                .also { publishEvent(NodeCreatedEvent(createRequest)) }
-                .also { logger.info("Create node [$createRequest] success.") }
-                .let { convertToDetail(it)!! }
+            doCreate(node)
+            publishEvent(NodeCreatedEvent(this))
+            logger.info("Create node [$this] success.")
+
+            return convertToDetail(node)!!
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun renameNode(renameRequest: NodeRenameRequest) {
-        renameRequest.apply {
+        with(renameRequest) {
             val fullPath = normalizeFullPath(fullPath)
             val newFullPath = normalizeFullPath(newFullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             doRename(node, newFullPath, operator)
-        }.also {
-            publishEvent(NodeRenamedEvent(it))
-        }.also {
-            logger.info("Rename node [$it] success.")
+            publishEvent(NodeRenamedEvent(this))
+            logger.info("Rename node [$this] success.")
         }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun updateNode(updateRequest: NodeUpdateRequest) {
-        updateRequest.apply {
+        with(updateRequest) {
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             val selfQuery = nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
-        }.also {
-            publishEvent(NodeUpdatedEvent(it))
-        }.also {
-            logger.info("Rename node [$it] success.")
+            publishEvent(NodeUpdatedEvent(this))
+            logger.info("Update node [$this] success.")
         }
     }
 
