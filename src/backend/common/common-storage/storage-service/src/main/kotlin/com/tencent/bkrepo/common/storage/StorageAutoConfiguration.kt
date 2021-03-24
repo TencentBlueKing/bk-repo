@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageType
-import com.tencent.bkrepo.common.storage.event.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.hdfs.HDFSStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
@@ -96,9 +95,6 @@ class StorageAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(FileLocator::class)
     fun fileLocator() = HashFileLocator()
-
-    @Bean
-    fun retryListener() = FileStoreRetryListener()
 
     companion object {
         private val logger = LoggerFactory.getLogger(StorageAutoConfiguration::class.java)

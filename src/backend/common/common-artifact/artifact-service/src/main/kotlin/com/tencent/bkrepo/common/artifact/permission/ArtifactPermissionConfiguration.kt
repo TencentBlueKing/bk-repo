@@ -29,28 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.credentials
+package com.tencent.bkrepo.common.artifact.permission
 
-import com.tencent.bkrepo.common.storage.config.CacheProperties
-import com.tencent.bkrepo.common.storage.config.UploadProperties
+import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.PermissionCheckHandler
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-/**
- * inner cos 身份认证信息
- */
-data class InnerCosCredentials(
-    var secretId: String = "",
-    var secretKey: String = "",
-    var region: String = "",
-    var bucket: String = "",
-    var modId: Int? = null,
-    var cmdId: Int? = null,
-    var timeout: Float = 0.5F,
-    override var key: String = "default",
-    override var cache: CacheProperties = CacheProperties(),
-    override var upload: UploadProperties = UploadProperties()
-) : StorageCredentials(key, cache, upload) {
+@Configuration
+class ArtifactPermissionConfiguration {
 
-    companion object {
-        const val type = "innercos"
+    @Bean
+    fun permissionCheckHandler(permissionManager: PermissionManager): PermissionCheckHandler {
+        return ArtifactPermissionCheckHandler(permissionManager)
     }
 }

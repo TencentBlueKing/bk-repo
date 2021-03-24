@@ -32,13 +32,11 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
-import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
 /**
  * 默认实现
  */
-@Component
 @Resolver(DefaultArtifactInfo::class, default = true)
 class DefaultArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(

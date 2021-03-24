@@ -45,7 +45,7 @@ import org.springframework.context.annotation.Import
 class PermissionConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(PermissionCheckHandler::class)
+    @ConditionalOnMissingBean
     fun permissionCheckHandler(permissionManager: PermissionManager): PermissionCheckHandler {
         return DefaultPermissionCheckHandler(permissionManager)
     }

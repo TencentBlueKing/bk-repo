@@ -77,9 +77,14 @@ object LoggerHolder {
         val method = request?.method
         val exceptionMessage = message ?: exception.message.orEmpty()
         val exceptionName = exception.javaClass.simpleName
+        val cause = if (exception is ErrorCodeException && exception.cause != null) {
+            exception.cause
+        } else {
+            exception
+        }
         val fullMessage = "User[$principal] $method [$uri] from [$channel] failed[$exceptionName]: $exceptionMessage"
         if (systemError) {
-            exceptionLogger.error(fullMessage, exception)
+            exceptionLogger.error(fullMessage, cause)
         } else {
             exceptionLogger.warn(fullMessage)
         }

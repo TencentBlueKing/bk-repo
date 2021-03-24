@@ -47,4 +47,7 @@ open class ErrorCodeException(
         messageCode: MessageCode,
         params: Array<out Any>
     ) : this(messageCode = messageCode, params = *params, status = status)
+
+    override val message: String?
+        get() = "[${messageCode.getCode()}]${messageCode.getKey()}"
 }

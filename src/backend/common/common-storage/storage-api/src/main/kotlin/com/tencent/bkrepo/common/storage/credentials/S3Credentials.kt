@@ -43,7 +43,7 @@ data class S3Credentials(
     var endpoint: String = "",
     var region: String = "",
     var bucket: String = "",
-    override var key: String? = null,
+    override var key: String = "default",
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()
 ) : StorageCredentials(key, cache, upload) {

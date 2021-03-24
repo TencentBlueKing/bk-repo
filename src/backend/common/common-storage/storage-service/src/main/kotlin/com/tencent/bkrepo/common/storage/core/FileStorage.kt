@@ -33,9 +33,6 @@ package com.tencent.bkrepo.common.storage.core
 
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import org.springframework.retry.annotation.Backoff
-import org.springframework.retry.annotation.Recover
-import org.springframework.retry.annotation.Retryable
 import java.io.File
 import java.io.InputStream
 
@@ -43,12 +40,6 @@ import java.io.InputStream
  * 文件存储接口
  */
 interface FileStorage {
-    @Retryable(
-        Exception::class,
-        label = "FileStorage.store",
-        maxAttempts = 5,
-        backoff = Backoff(delay = 60 * 1000, multiplier = 2.0)
-    )
     fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials)
     fun store(path: String, name: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials)
     fun load(path: String, name: String, range: Range, storageCredentials: StorageCredentials): InputStream?
@@ -56,6 +47,4 @@ interface FileStorage {
     fun exist(path: String, name: String, storageCredentials: StorageCredentials): Boolean
     fun copy(path: String, name: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
     fun getTempPath(storageCredentials: StorageCredentials): String = System.getProperty("java.io.tmpdir")
-    @Recover
-    fun recover(exception: Exception, path: String, name: String, file: File, storageCredentials: StorageCredentials)
 }

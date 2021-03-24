@@ -36,11 +36,14 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
+import com.tencent.bkrepo.common.storage.event.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
+import org.springframework.retry.RetryContext
+import org.springframework.retry.backoff.ExponentialBackOffPolicy
+import org.springframework.retry.policy.SimpleRetryPolicy
+import org.springframework.retry.support.RetryTemplate
 import java.io.File
 import java.io.InputStream
 
@@ -53,8 +56,22 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     @Autowired
     protected lateinit var storageProperties: StorageProperties
 
-    @Autowired
-    private lateinit var publisher: ApplicationEventPublisher
+    private val retryTemplate = RetryTemplate()
+
+    init {
+        //重试策略：次数重试策略
+        val retryPolicy = SimpleRetryPolicy(RETRY_MAX_ATTEMPTS)
+        retryTemplate.setRetryPolicy(retryPolicy)
+
+        //退避策略：指数退避策略
+        val backOffPolicy = ExponentialBackOffPolicy().apply {
+            initialInterval = RETRY_INITIAL_INTERVAL
+            maxInterval = RETRY_MAX_INTERVAL
+            multiplier = RETRY_MULTIPLIER
+        }
+        retryTemplate.setBackOffPolicy(backOffPolicy)
+        retryTemplate.registerListener(FileStoreRetryListener())
+    }
 
     private val clientCache: LoadingCache<Credentials, Client> by lazy {
         val cacheLoader = object : CacheLoader<Credentials, Client>() {
@@ -68,10 +85,15 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
-        val client = getClient(storageCredentials)
-        val size = file.length()
-        val throughput = measureThroughput(size) { store(path, name, file, client) }
-        logger.info("Success to persist file [$name], $throughput.")
+        retryTemplate.execute<Unit, RuntimeException>{
+            it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_FILE)
+            val client = getClient(storageCredentials)
+            val size = file.length()
+            val throughput = measureThroughput(size) {
+                store(path, name, file, client)
+            }
+            logger.info("Success to persist file [$name], $throughput.")
+        }
     }
 
     override fun store(
@@ -82,8 +104,18 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         storageCredentials: StorageCredentials
     ) {
         val client = getClient(storageCredentials)
-        val throughput = measureThroughput(size) { store(path, name, inputStream, size, client) }
-        logger.info("Success to persist stream [$name], $throughput.")
+        retryTemplate.execute<Unit, RuntimeException>{
+            it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_STREAM)
+            if (!inputStream.markSupported()) {
+                it.setExhaustedOnly()
+            } else {
+                inputStream.reset()
+            }
+            val throughput = measureThroughput(size) {
+                store(path, name, inputStream, size, client)
+            }
+            logger.info("Success to persist stream [$name], $throughput.")
+        }
     }
 
     override fun load(
@@ -95,7 +127,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         return try {
             val client = getClient(storageCredentials)
             load(path, name, range, client)
-        } catch (ex: Exception) {
+        } catch (ex: RuntimeException) {
             logger.warn("Failed to load stream[$name]: ${ex.message}", ex)
             null
         }
@@ -122,17 +154,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         copy(path, name, fromClient, toClient)
     }
 
-    override fun recover(
-        exception: Exception,
-        path: String,
-        name: String,
-        file: File,
-        storageCredentials: StorageCredentials
-    ) {
-        val event = StoreFailureEvent(path, name, file.absolutePath, storageCredentials, exception)
-        publisher.publishEvent(event)
-    }
-
     private fun getClient(storageCredentials: StorageCredentials): Client {
         return if (storageCredentials == storageProperties.defaultStorageCredentials()) {
             defaultClient
@@ -154,5 +175,11 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)
         private const val MAX_CACHE_CLIENT = 10L
+        private const val RETRY_MAX_ATTEMPTS = 5
+        private const val RETRY_INITIAL_INTERVAL = 1000L
+        private const val RETRY_MAX_INTERVAL = 20 * 1000L
+        private const val RETRY_MULTIPLIER = 2.0
+        private const val RETRY_NAME_STORE_FILE = "FileStorage.storeFile"
+        private const val RETRY_NAME_STORE_STREAM = "FileStorage.storeStream"
     }
 }
