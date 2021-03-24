@@ -451,11 +451,3 @@ object XmlStrUtils {
         return ByteArray(1024 * 1024)
     }
 }
-
-fun main() {
-    val raf = RandomAccessFile(File("/Users/weaving/Downloads/1.xml"), "rw")
-    XmlStrUtils.deletePackageIndex(
-        raf, IndexType.PRIMARY, """<location href="beaconWebOlapPre-v0.0.131-202103171874759-1-x86_64.rpm"/>"""
-    )
-
-}
