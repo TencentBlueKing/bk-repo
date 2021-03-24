@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
@@ -81,13 +81,15 @@ class CacheStorageService(
         if (loadCacheFirst) {
             cacheClient.load(path, filename)?.bound(range)?.artifactStream(range)?.let { return it }
         }
-
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
-        if (range.isFullContent() && loadCacheFirst && artifactInputStream != null) {
+        if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
             val cachePath = Paths.get(credentials.cache.path, path)
             val tempPath = Paths.get(credentials.cache.path, TEMP)
             val readListener = CachedFileWriter(cachePath, filename, tempPath)
             artifactInputStream.addListener(readListener)
+        }
+        if (artifactInputStream == null && !loadCacheFirst) {
+            return cacheClient.load(path, filename)?.bound(range)?.artifactStream(range)?.let { return it }
         }
         return artifactInputStream
     }
