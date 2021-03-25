@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.service.ribbon
 import com.netflix.loadbalancer.AbstractServerPredicate
 import com.netflix.loadbalancer.PredicateKey
 import com.netflix.loadbalancer.Server
+import org.slf4j.LoggerFactory
 import org.springframework.cloud.client.serviceregistry.Registration
 import org.springframework.util.ReflectionUtils
 import java.lang.reflect.Method
@@ -47,9 +48,11 @@ class GrayMetadataAwarePredicate(
 ) : AbstractServerPredicate() {
 
     override fun apply(input: PredicateKey?): Boolean {
+        logger.info("aaaaaaaaaaaaaaaaaaa")
         if (input == null) {
             return false
         }
+        logger.info("bbbbbbbbbbb")
         val localEnvTag = registration.metadata.getOrDefault(ENV, ENV_RELEASE)
         val server = input.server
         val serverClass = server.javaClass
@@ -64,6 +67,8 @@ class GrayMetadataAwarePredicate(
                 return true
             }
         }
+        val aa = getMetadata(method, server).getOrDefault(ENV, ENV_RELEASE)
+        logger.info("ccccccccc $aa   $localEnvTag")
         return localEnvTag == getMetadata(method, server).getOrDefault(ENV, ENV_RELEASE)
     }
 
@@ -81,5 +86,7 @@ class GrayMetadataAwarePredicate(
         private const val GET_METADATA = "getMetadata"
         private val METHOD_MAP = ConcurrentHashMap<Class<*>, Method>(1)
         private val NO_METHOD_LIST = mutableListOf<Class<*>>()
+        private val logger = LoggerFactory.getLogger(GrayMetadataAwarePredicate::class.java)
+
     }
 }
