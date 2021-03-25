@@ -18,6 +18,7 @@ rules:
     - services
     - secrets
     - endpoints
+    - persistentvolumeclaims
     verbs: 
     - get
     - watch
