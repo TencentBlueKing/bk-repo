@@ -14,9 +14,12 @@ rules:
   - apiGroups: 
     - ""
     resources: 
-    - "*"
+    - configmaps
+    - services
+    - secrets
+    - endpoints
     verbs: 
-    - "get"
-    - "watch"
-    - "list"
+    - get
+    - watch
+    - list
 {{- end -}}

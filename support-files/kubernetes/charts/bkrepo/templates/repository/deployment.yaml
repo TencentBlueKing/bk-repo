@@ -89,24 +89,20 @@ spec:
             httpGet:
               path: /actuator/health/livenessState
               port: http
+            initialDelaySeconds: 120
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 6
             successThreshold: 1
           readinessProbe:
             httpGet:
               path: /actuator/health/readinessState
               port: http
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 6
             successThreshold: 1
-          startupProbe:
-            httpGet:
-              path: /actuator/health
-              port: http
-            failureThreshold: 20
-            periodSeconds: 5
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.common.storage.filesystem.path }}
