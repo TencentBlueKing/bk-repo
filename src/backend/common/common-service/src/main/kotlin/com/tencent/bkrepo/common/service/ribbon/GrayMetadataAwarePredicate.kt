@@ -48,11 +48,9 @@ class GrayMetadataAwarePredicate(
 ) : AbstractServerPredicate() {
 
     override fun apply(input: PredicateKey?): Boolean {
-        logger.info("aaaaaaaaaaaaaaaaaaa")
         if (input == null) {
             return false
         }
-        logger.info("bbbbbbbbbbb")
         val localEnvTag = registration.metadata.getOrDefault(ENV, ENV_RELEASE)
         val server = input.server
         val serverClass = server.javaClass
@@ -67,8 +65,6 @@ class GrayMetadataAwarePredicate(
                 return true
             }
         }
-        val aa = getMetadata(method, server).getOrDefault(ENV, ENV_RELEASE)
-        logger.info("ccccccccc $aa   $localEnvTag")
         return localEnvTag == getMetadata(method, server).getOrDefault(ENV, ENV_RELEASE)
     }
 

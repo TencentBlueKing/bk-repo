@@ -38,3 +38,4 @@ data class RibbonGrayProperties(
     var enabled: Boolean = false,
     var localPrior: Boolean = false
 )
+
