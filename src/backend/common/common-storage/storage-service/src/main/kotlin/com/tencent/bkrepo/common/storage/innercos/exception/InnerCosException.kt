@@ -31,10 +31,12 @@
 
 package com.tencent.bkrepo.common.storage.innercos.exception
 
+import java.io.IOException
+
 /**
  * Inner Cos 相关异常.
  */
-open class InnerCosException(message: String? = null, cause: Throwable? = null) : RuntimeException(message, cause) {
+open class InnerCosException(message: String? = null, cause: Throwable? = null) : IOException(message, cause) {
     constructor(message: String?) : this(message, null)
     constructor(cause: Throwable?) : this(null, cause)
 }

@@ -36,7 +36,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.event.FileStoreRetryListener
+import com.tencent.bkrepo.common.storage.listener.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -45,33 +45,21 @@ import org.springframework.retry.backoff.ExponentialBackOffPolicy
 import org.springframework.retry.policy.SimpleRetryPolicy
 import org.springframework.retry.support.RetryTemplate
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 
 /**
- * 文件存储接口
+ * 文件存储抽象模板类
+ * 抽象模板类实现了如客户端缓存、重试机制、错误处理、吞吐计算等逻辑，子类只需要关心具体存储实现
  */
-@Suppress("UNCHECKED_CAST", "TooGenericExceptionCaught", "LateinitUsage")
+@Suppress("UNCHECKED_CAST")
 abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : FileStorage {
 
+    @Suppress("LateinitUsage")
     @Autowired
     protected lateinit var storageProperties: StorageProperties
 
     private val retryTemplate = RetryTemplate()
-
-    init {
-        //重试策略：次数重试策略
-        val retryPolicy = SimpleRetryPolicy(RETRY_MAX_ATTEMPTS)
-        retryTemplate.setRetryPolicy(retryPolicy)
-
-        //退避策略：指数退避策略
-        val backOffPolicy = ExponentialBackOffPolicy().apply {
-            initialInterval = RETRY_INITIAL_INTERVAL
-            maxInterval = RETRY_MAX_INTERVAL
-            multiplier = RETRY_MULTIPLIER
-        }
-        retryTemplate.setBackOffPolicy(backOffPolicy)
-        retryTemplate.registerListener(FileStoreRetryListener())
-    }
 
     private val clientCache: LoadingCache<Credentials, Client> by lazy {
         val cacheLoader = object : CacheLoader<Credentials, Client>() {
@@ -84,8 +72,22 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         onCreateClient(storageProperties.defaultStorageCredentials() as Credentials)
     }
 
+    init {
+        //重试策略：次数重试策略
+        val retryPolicy = SimpleRetryPolicy(RETRY_MAX_ATTEMPTS)
+        //退避策略：指数退避策略
+        val backOffPolicy = ExponentialBackOffPolicy().apply {
+            initialInterval = RETRY_INITIAL_INTERVAL
+            maxInterval = RETRY_MAX_INTERVAL
+            multiplier = RETRY_MULTIPLIER
+        }
+        retryTemplate.setRetryPolicy(retryPolicy)
+        retryTemplate.setBackOffPolicy(backOffPolicy)
+        retryTemplate.registerListener(FileStoreRetryListener())
+    }
+
     override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
-        retryTemplate.execute<Unit, RuntimeException>{
+        retryTemplate.execute<Unit, Exception>{
             it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_FILE)
             val client = getClient(storageCredentials)
             val size = file.length()
@@ -127,8 +129,8 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         return try {
             val client = getClient(storageCredentials)
             load(path, name, range, client)
-        } catch (ex: RuntimeException) {
-            logger.warn("Failed to load stream[$name]: ${ex.message}", ex)
+        } catch (exception: IOException) {
+            logger.error("Failed to load stream[$name]: ${exception.message}", exception)
             null
         }
     }

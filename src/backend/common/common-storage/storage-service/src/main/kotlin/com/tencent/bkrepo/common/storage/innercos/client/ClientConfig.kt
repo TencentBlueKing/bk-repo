@@ -42,12 +42,12 @@ import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 class ClientConfig(private val credentials: InnerCosCredentials) {
-    val maxUploadParts: Int = 10000
+    val maxUploadParts: Int = MAX_PARTS
     val signExpired: Duration = Duration.ofDays(1)
     val httpProtocol: HttpProtocol = HttpProtocol.HTTP
 
-    val multipartUploadThreshold: Long = DataSize.ofMegabytes(10).toBytes()
-    val minimumUploadPartSize: Long = DataSize.ofMegabytes(10).toBytes()
+    val multipartUploadThreshold: Long = DataSize.ofMegabytes(MULTIPART_THRESHOLD_SIZE).toBytes()
+    val minimumUploadPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
 
     val endpointResolver = createEndpointResolver()
     val endpointBuilder = RegionEndpointBuilder()
@@ -59,5 +59,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
         } else {
             DefaultEndpointResolver()
         }
+    }
+
+    companion object {
+        private const val MAX_PARTS = 10000
+        private const val MULTIPART_THRESHOLD_SIZE = 10L
+        private const val MIN_PART_SIZE = 10L
     }
 }
