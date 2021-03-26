@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.storage.innercos.request
 
 import java.io.File
-import kotlin.math.ceil
 import kotlin.math.min
 
 class UploadPartRequestFactory(

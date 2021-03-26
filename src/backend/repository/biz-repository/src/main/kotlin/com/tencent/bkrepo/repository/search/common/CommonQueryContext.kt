@@ -56,12 +56,20 @@ open class CommonQueryContext(
         }
         val rule = queryModel.rule
         if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            for (subRule in rule.rules) {
-                if (subRule is Rule.QueryRule && subRule.field == TNode::projectId.name) {
-                    return subRule.value.toString().apply { projectId = this }
-                }
+            findProjectIdRule(rule.rules)?.let {
+                return it.value.toString().apply { projectId = this }
             }
         }
-        throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "projectId")
+        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
     }
+
+    private fun findProjectIdRule(rules: List<Rule>): Rule.QueryRule? {
+        for (rule in rules) {
+            if (rule is Rule.QueryRule && rule.field == TNode::projectId.name) {
+                return rule
+            }
+        }
+        return null
+    }
+
 }
