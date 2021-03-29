@@ -33,12 +33,12 @@ package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
+import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
@@ -64,7 +64,9 @@ class AuthInterceptor : HandlerInterceptor {
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, basicAuthHeader)
         try {
             // 项目内操作，优先使用项目管理员权限
-            if (request.requestURI.contains(AUTH_REPO_SUFFIX) && basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
+            if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX) &&
+                (request.requestURI.contains(AUTH_REPO_SUFFIX) || request.requestURI.contains(AUTH_PROJECT_SUFFIX))
+            ) {
                 val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(COLON)
@@ -92,6 +94,7 @@ class AuthInterceptor : HandlerInterceptor {
         } catch (e: IllegalArgumentException) {
             response.status = HttpStatus.UNAUTHORIZED.value
             response.writer.print(authFailStr)
+            logger.warn("check account exception [$e]")
             return false
         }
     }
@@ -113,6 +116,6 @@ class AuthInterceptor : HandlerInterceptor {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
     }
 }
