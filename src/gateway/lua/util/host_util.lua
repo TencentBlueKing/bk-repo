@@ -34,7 +34,14 @@ function _M:get_addr(service_name)
     end
 
     local ns_config = config.ns
-    local query_subdomain = config.ns.tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
+    local tag = ns_config.tag
+
+    -- devops request to devops cluster
+    if service_name == "generic" and stringUtil:startswith(ngx.var.path, "devops/") then
+        tag = "devops"
+    end
+
+    local query_subdomain = tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
 
     local ips = {} -- address
     local port = nil -- port

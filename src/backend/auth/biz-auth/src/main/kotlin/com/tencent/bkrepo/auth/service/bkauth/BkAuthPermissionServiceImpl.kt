@@ -72,8 +72,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.info("checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, " +
-                "repoName: $repoName, path: $path, action: $action")
+            logger.info(
+                "checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, " +
+                    "repoName: $repoName, path: $path, action: $action"
+            )
             // 网关请求不允许匿名访问
             if (appId == bkAuthConfig.bkrepoAppId && request.uid == ANONYMOUS_USER) {
                 if (request.uid == ANONYMOUS_USER) {
@@ -129,7 +131,6 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-
     private fun checkProjectPermission(uid: String, projectId: String): Boolean {
         logger.info("checkProjectPermission: uid: $uid, projectId: $projectId")
         return try {
@@ -154,9 +155,10 @@ class BkAuthPermissionServiceImpl constructor(
         }
 
         // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report)的仓库和节点权限
-        if ((request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE)
-            && isDevopsRepo(request.repoName!!)
-            && (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)) {
+        if ((request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE) &&
+            isDevopsRepo(request.repoName!!) &&
+            (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)
+        ) {
             return checkDevopsPermission(request)
         }
 

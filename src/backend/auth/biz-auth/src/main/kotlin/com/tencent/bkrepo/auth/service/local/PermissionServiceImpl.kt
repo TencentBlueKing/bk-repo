@@ -204,15 +204,14 @@ open class PermissionServiceImpl constructor(
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
             roles.forEach {
                 val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
-                        it,
-                        request.projectId!!,
-                        RoleType.REPO,
-                        request.repoName!!
+                    it,
+                    request.projectId!!,
+                    RoleType.REPO,
+                    request.repoName!!
                 )
                 if (rRole != null && rRole.admin) return true
             }
         }
-
 
         // check repo action permission
         with(request) {

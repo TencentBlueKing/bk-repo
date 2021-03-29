@@ -33,6 +33,11 @@ function _M:endswith(str, substr)
   end
 end
 
+--[[判断str是否以substr开始。是返回true，否返回false，失败返回失败信息]]
+function _M:startswith(str, substr)
+  return string.sub(str, 1, string.len(substr)) == substr
+end
+
 function _M:split(str, pattern)
   local rt = {}
   string.gsub(str, '[^' .. pattern .. ']+', function(w) table.insert(rt, w) end)
