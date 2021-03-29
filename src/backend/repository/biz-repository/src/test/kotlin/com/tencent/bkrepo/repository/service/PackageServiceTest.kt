@@ -177,13 +177,32 @@ class PackageServiceTest @Autowired constructor(
         val request2 = buildCreateRequest(version = "0.0.1-SNAPSHOT", overwrite = false)
         packageService.createPackageVersion(request1)
         packageService.createPackageVersion(request2)
-        Assertions.assertNotNull(packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, UT_PACKAGE_VERSION))
-        Assertions.assertNotNull(packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "0.0.1-SNAPSHOT"))
+        Assertions.assertNotNull(
+            packageService.findVersionByName(
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                UT_PACKAGE_KEY,
+                UT_PACKAGE_VERSION
+            )
+        )
+        Assertions.assertNotNull(
+            packageService.findVersionByName(
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                UT_PACKAGE_KEY,
+                "0.0.1-SNAPSHOT"
+            )
+        )
 
         packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, UT_PACKAGE_VERSION)
-        assertThrows<ErrorCodeException> {
-            packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, UT_PACKAGE_VERSION)
-        }
+        Assertions.assertNull(
+            packageService.findVersionByName(
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                UT_PACKAGE_KEY,
+                UT_PACKAGE_VERSION
+            )
+        )
     }
 
     @Test
@@ -202,7 +221,14 @@ class PackageServiceTest @Autowired constructor(
         Assertions.assertNull(packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "0.0.2"))
 
         Assertions.assertNotNull(packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, "key1"))
-        Assertions.assertNotNull(packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, "key1", UT_PACKAGE_VERSION))
+        Assertions.assertNotNull(
+            packageService.findVersionByName(
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                "key1",
+                UT_PACKAGE_VERSION
+            )
+        )
     }
 
     @Test
@@ -210,7 +236,7 @@ class PackageServiceTest @Autowired constructor(
     fun `should throw exception when delete non exist package`() {
         val request = buildCreateRequest()
         packageService.createPackageVersion(request)
-        assertThrows<ErrorCodeException> { packageService.deletePackage(UT_PROJECT_ID, UT_REPO_NAME, "non-exist") }
+        packageService.deletePackage(UT_PROJECT_ID, UT_REPO_NAME, "non-exist")
     }
 
     @Test
@@ -218,7 +244,7 @@ class PackageServiceTest @Autowired constructor(
     fun `should throw exception when delete non exist version`() {
         val request = buildCreateRequest()
         packageService.createPackageVersion(request)
-        assertThrows<ErrorCodeException> { packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist") }
+        packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist")
     }
 
     private fun buildCreateRequest(

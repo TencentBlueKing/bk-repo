@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.repository.dao.ProjectDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -50,7 +52,9 @@ import org.springframework.test.context.TestPropertySource
 @Import(
     HttpAuthProperties::class,
     StorageProperties::class,
-    RepositoryProperties::class
+    RepositoryProperties::class,
+    ProjectDao::class,
+    RepositoryDao::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])

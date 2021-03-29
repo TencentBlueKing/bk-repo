@@ -111,11 +111,10 @@ class ProjectServiceTest @Autowired constructor(
         request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(33), UT_PROJECT_DESC, UT_USER)
         assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
-        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(32), UT_PROJECT_DESC, UT_USER)
-        projectService.createProject(request)
+        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(1), UT_PROJECT_DESC, UT_USER)
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
-        removeAllProject()
-        request = ProjectCreateRequest(UT_PROJECT_ID, "1", UT_PROJECT_DESC, UT_USER)
+        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(32), UT_PROJECT_DESC, UT_USER)
         projectService.createProject(request)
 
         removeAllProject()

@@ -42,8 +42,8 @@ import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
 import com.tencent.bkrepo.repository.model.TTemporaryToken
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.repository.service.NodeService
 import com.tencent.bkrepo.repository.service.TemporaryTokenService
+import com.tencent.bkrepo.repository.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime

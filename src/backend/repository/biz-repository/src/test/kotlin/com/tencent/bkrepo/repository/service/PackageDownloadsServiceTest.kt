@@ -38,6 +38,7 @@ import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.PackageDao
+import com.tencent.bkrepo.repository.dao.PackageDownloadsDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
@@ -65,7 +66,8 @@ import kotlin.concurrent.thread
 @DataMongoTest
 @Import(
     PackageDao::class,
-    PackageVersionDao::class
+    PackageVersionDao::class,
+    PackageDownloadsDao::class
 )
 class PackageDownloadsServiceTest @Autowired constructor(
     private val packageDownloadsService: PackageDownloadsService,

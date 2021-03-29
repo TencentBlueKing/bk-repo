@@ -160,6 +160,7 @@ interface PackageService {
 
     /**
      * 删除包
+     * 如果包不存在则直接返回
      *
      * @param projectId 项目id
      * @param repoName 项目id

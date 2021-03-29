@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,17 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.node
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 
 /**
- * 节点自定义查询服务接口
+ * 节点重命名接口
  */
-interface NodeSearchService {
+interface NodeStatsOperation {
+
     /**
-     * 根据[queryModel]查询节点
+     * 计算文件或者文件夹大小
      */
-    fun search(queryModel: QueryModel): Page<Map<String, Any?>>
+    fun computeSize(artifact: ArtifactInfo): NodeSizeInfo
+
+    /**
+     * 查询文件节点数量
+     */
+    fun countFileNode(artifact: ArtifactInfo): Long
 }

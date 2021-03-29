@@ -49,7 +49,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.service.ListViewService
-import com.tencent.bkrepo.repository.service.NodeService
+import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import org.apache.commons.lang.StringEscapeUtils

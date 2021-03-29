@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,39 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.node
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 
 /**
- * 节点服务接口
+ * 节点CRUD基本操作接口
  */
-interface NodeService {
+interface NodeBaseOperation {
+
     /**
      * 查询节点详情
      */
     fun getNodeDetail(artifact: ArtifactInfo, repoType: String? = null): NodeDetail?
-
-    /**
-     * 计算文件或者文件夹大小
-     */
-    fun computeSize(artifact: ArtifactInfo): NodeSizeInfo
-
-    /**
-     * 查询文件节点数量
-     */
-    fun countFileNode(artifact: ArtifactInfo): Long
 
     /**
      * 列表查询节点
@@ -89,46 +75,7 @@ interface NodeService {
     fun createNode(createRequest: NodeCreateRequest): NodeDetail
 
     /**
-     * 重命名文件或者文件夹
-     * 重命名过程中出现错误则抛异常，剩下的文件不会再移动
-     * 遇到同名文件或者文件夹直接抛异常
-     */
-    fun renameNode(renameRequest: NodeRenameRequest)
-
-    /**
      * 更新节点
      */
     fun updateNode(updateRequest: NodeUpdateRequest)
-
-    /**
-     * 移动文件或者文件夹
-     * 采用fast-failed模式，移动过程中出现错误则抛异常，剩下的文件不会再移动
-     * 行为类似linux mv命令
-     * mv 文件名 文件名	将源文件名改为目标文件名
-     * mv 文件名 目录名	将文件移动到目标目录
-     * mv 目录名 目录名	目标目录已存在，将源目录（目录本身及子文件）移动到目标目录；目标目录不存在则改名
-     * mv 目录名 文件名	出错
-     */
-    fun moveNode(moveRequest: NodeMoveRequest)
-
-    /**
-     * 拷贝文件或者文件夹
-     * 采用fast-failed模式，拷贝过程中出现错误则抛异常，剩下的文件不会再拷贝
-     * 行为类似linux cp命令
-     * cp 文件名 文件名	将源文件拷贝到目标文件
-     * cp 文件名 目录名	将文件移动到目标目录下
-     * cp 目录名 目录名	目标目录已存在，将源目录（目录本身及子文件）拷贝到目标目录；目标目录不存在则将源目录下文件拷贝到目标目录
-     * cp 目录名 文件名	出错
-     */
-    fun copyNode(copyRequest: NodeCopyRequest)
-
-    /**
-     * 删除指定节点, 逻辑删除
-     */
-    fun deleteNode(deleteRequest: NodeDeleteRequest)
-
-    /**
-     * 根据全路径删除文件或者目录
-     */
-    fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String)
 }
