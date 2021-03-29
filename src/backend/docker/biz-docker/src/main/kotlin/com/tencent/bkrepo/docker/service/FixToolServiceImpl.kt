@@ -99,7 +99,10 @@ class FixToolServiceImpl(
         }
         while (packageMetadataList.isNotEmpty()) {
             packageMetadataList.forEach {
-                logger.info("Retrieved ${packageMetadataList.size} records to add package manager, " + "process: $totalCount/${packageMetadataPage.totalRecords}")
+                logger.info(
+                    "Retrieved ${packageMetadataList.size} records to add package manager, " +
+                        "process: $totalCount/${packageMetadataPage.totalRecords}"
+                )
                 var name = ""
                 try {
                     // 添加包管理
@@ -118,7 +121,10 @@ class FixToolServiceImpl(
             packageMetadataList = queryPackagePage(projectId, repoName, page).records.map { resolveNode(it) }
         }
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
-        logger.info("Repair docker package metadata file in repo [$projectId/$repoName], total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally.")
+        logger.info(
+            "Repair docker package metadata file in repo [$projectId/$repoName], total: $totalCount, " +
+                "success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+        )
         return PackageManagerResponse(
             totalCount = totalCount,
             successCount = successCount,
@@ -157,10 +163,16 @@ class FixToolServiceImpl(
             packageRepo.createVersion(request)
         } catch (exception: RemoteErrorCodeException) {
             if (exception.errorMessage == CommonMessageCode.RESOURCE_EXISTED.getKey()) {
-                logger.warn("the package manager for [$name] with version [$tag] is already exists in repo [$projectId/$repoName], skip.")
+                logger.warn(
+                    "the package manager for [$name] with version [$tag] is already exists " +
+                        "in repo [$projectId/$repoName], skip."
+                )
                 return artifactName
             }
-            logger.error("add package manager for [$artifactName] with version [$tag] failed in repo [$projectId/$repoName].")
+            logger.error(
+                "add package manager for [$artifactName] with version [$tag] " +
+                    "failed in repo [$projectId/$repoName]."
+            )
             throw exception
         }
         logger.info("add package manager for package [$artifactName] success in repo [$projectId/$repoName]")
