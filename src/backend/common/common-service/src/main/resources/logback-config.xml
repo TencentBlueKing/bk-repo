@@ -19,7 +19,7 @@
     <appender name="app_log" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logging.app.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${logging.app.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${logging.app.file}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern> 
             <maxHistory>30</maxHistory>
             <maxFileSize>1GB</maxFileSize>
         </rollingPolicy>
@@ -116,7 +116,23 @@
         </root>
     </springProfile>
 
-    <springProfile name="dev, test, prod">
+    <springProfile name="dev">
+        <logger name="JobLogger" level="INFO" additivity="false">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_job_log"/>
+        </logger>
+        <logger name="AccessLogger" level="INFO" additivity="false">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_access_log"/>
+        </logger>
+        <root level="INFO">
+            <appender-ref ref="console"/>
+            <appender-ref ref="async_app_log"/>
+            <appender-ref ref="async_error_log"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="test, prod">
         <logger name="JobLogger" level="INFO" additivity="false">
             <appender-ref ref="async_job_log"/>
         </logger>

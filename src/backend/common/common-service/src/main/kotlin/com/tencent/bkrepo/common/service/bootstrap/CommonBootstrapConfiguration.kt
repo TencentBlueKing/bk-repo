@@ -33,5 +33,5 @@ package com.tencent.bkrepo.common.service.bootstrap
 
 import org.springframework.context.annotation.PropertySource
 
-@PropertySource("classpath:common-service.properties")
+@PropertySource("classpath:common-bootstrap.properties")
 class CommonBootstrapConfiguration

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.repository
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactBeanRegistrar
-import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionCheckHandler
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import org.springframework.context.annotation.Configuration
@@ -42,7 +41,6 @@ import org.springframework.context.annotation.Import
 @Import(
     ArtifactBeanRegistrar::class,
     ArtifactContextHolder::class,
-    ArtifactPermissionCheckHandler::class,
     CompositeRepository::class
 )
 class ArtifactContextConfiguration

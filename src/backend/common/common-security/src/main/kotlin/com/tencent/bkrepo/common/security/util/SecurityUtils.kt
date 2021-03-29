@@ -74,6 +74,6 @@ object SecurityUtils {
      * 判断是否为微服务请求
      */
     fun isServiceRequest(): Boolean {
-        return HttpContextHolder.getRequestOrNull()?.getAttribute(MS_REQUEST_KEY) as? Boolean == true
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(MS_REQUEST_KEY) != null
     }
 }

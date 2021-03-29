@@ -1,6 +1,9 @@
-FROM blueking/openresty:0.0.1
+FROM bkrepo/openrestry:0.0.1
 
 LABEL maintainer="Tencent BlueKing Devops"
+
+ENV BK_REPO_HOME=/data/workspace \
+    BK_REPO_LOGS_DIR=/data/workspace/logs
 
 COPY ./ /data/workspace/
 

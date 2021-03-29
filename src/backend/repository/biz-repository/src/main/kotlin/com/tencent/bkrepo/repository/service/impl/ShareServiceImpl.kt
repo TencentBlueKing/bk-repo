@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -75,7 +75,7 @@ class ShareServiceImpl(
         with(artifactInfo) {
             val node = nodeService.getNodeDetail(artifactInfo)
             if (node == null || node.folder) {
-                throw ArtifactNotFoundException("Artifact[${artifactInfo.getArtifactFullPath()}] not found")
+                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             val shareRecord = TShareRecord(
                 projectId = projectId,

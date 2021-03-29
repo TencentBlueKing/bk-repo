@@ -60,7 +60,7 @@ function _M:get_ticket(bk_ticket, input_type)
         --- 发送请求
         -- local url = config.oauth.scheme .. config.oauth.ip  .. config.oauth.loginUrl .. bk_token
         local url = config.oauth.url
-        local httpHeaders = nil
+        local httpHeaders
         if input_type == "ticket" then
             httpHeaders = {
                 ["Host"] = config.oauth.host,
@@ -109,7 +109,7 @@ function _M:get_ticket(bk_ticket, input_type)
 
         --- 判断返回码:Q!
         if result.code ~= 0 then
-            ngx.log(ngx.STDERR, "invalid get_ticket: ", result.message)
+            ngx.log(ngx.INFO, "invalid get_ticket: ", result.message)
             ngx.exit(401)
             return
         end
@@ -124,15 +124,16 @@ function _M:verify_bkrepo_token(access_token)
     local user_cache = ngx.shared.user_info_store
     local user_cache_value = user_cache:get(access_token)
     if user_cache_value == nil then
-        local host, port = hostUtil:get_addr("auth")
         --- 初始化HTTP连接
         local httpc = http.new()
+        local addr = "http://" .. hostUtil:get_addr("auth")
+        local path = "/api/user/verify?bkrepo_ticket=" .. access_token
         --- 开始连接
         httpc:set_timeout(3000)
-        httpc:connect(host, port)
+        httpc:connect(addr)
         --- 发送请求
-        local res, err = httpc:request({
-            path = "/api/user/verify" .. "?bkrepo_ticket=" .. access_token,
+        local res, err = httpc:request_uri(addr, {
+            path = path,
             method = "GET",
             headers = {
                 ["authorization"] = config.bkrepo.authorization,
@@ -152,12 +153,10 @@ function _M:verify_bkrepo_token(access_token)
             ngx.exit(500)
             return
         end
-        --- 获取所有回复
-        local responseBody = res:read_body()
         --- 设置HTTP保持连接
         httpc:set_keepalive(60000, 5)
         --- 转换JSON的返回数据为TABLE
-        local result = json.decode(responseBody)
+        local result = json.decode(res.body)
         --- 判断JSON转换是否成功
         if result == nil then
             ngx.log(ngx.ERR, "failed to parse verify_bkrepo_token response：", responseBody)
@@ -167,12 +166,12 @@ function _M:verify_bkrepo_token(access_token)
 
         --- 判断返回码:Q!
         if result.code ~= 0 then
-            ngx.log(ngx.STDERR, "invalid verify_bkrepo_token: ", result.message)
+            ngx.log(ngx.INFO, "invalid verify_bkrepo_token: ", result.message)
             ngx.exit(401)
             return
         end
         result.data.access_token = access_token
-        user_cache:set(access_token, responseBody, 180)
+        user_cache:set(access_token, res.body, 180)
         return result.data
     else
         return json.decode(user_cache_value).data
@@ -180,17 +179,15 @@ function _M:verify_bkrepo_token(access_token)
 end
 
 function _M:verify_token(access_token)
-    local requestBody = {
-        access_token = access_token
-    }
     --- 初始化HTTP连接
     local httpc = http.new()
+    local path = "/oauth/token?access_token=" .. access_token
     --- 开始连接
     httpc:set_timeout(3000)
     httpc:connect(config.oauth.ip, config.oauth.port)
     --- 发送请求
     local res, err = httpc:request({
-        path = "/oauth/token" .. "?access_token=" .. access_token,
+        path = path,
         method = "GET",
         headers = {
             ["Host"] = config.oauth.host,
@@ -225,7 +222,7 @@ function _M:verify_token(access_token)
 
     --- 判断返回码:Q!
     if result.code ~= 0 then
-        ngx.log(ngx.STDERR, "invalid verify_token: ", result.message)
+        ngx.log(ngx.INFO, "invalid verify_token: ", result.message)
         ngx.exit(401)
         return
     end

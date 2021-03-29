@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.monitor
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
@@ -81,7 +82,7 @@ class StorageHealthMonitor(
                     } catch (timeoutException: TimeoutException) {
                         changeToUnhealthy(IO_TIMEOUT_MESSAGE)
                     } catch (exception: IOException) {
-                        changeToUnhealthy(exception.message.orEmpty())
+                        changeToUnhealthy(exception.message ?: StringPool.UNKNOWN)
                     } finally {
                         checker.clean()
                     }
@@ -114,10 +115,10 @@ class StorageHealthMonitor(
         var sleep = true
         healthyThroughputCount.set(0)
         val count = unhealthyThroughputCount.incrementAndGet()
+        logger.warn("Path[${getPrimaryPath()}] check failed [$count/${monitorConfig.timesToFallback}].")
         if (health.get()) {
             // 如果当前是健康状态，不睡眠立即检查
             sleep = false
-            logger.warn("Path[${getPrimaryPath()}] check failed [$count/${monitorConfig.timesToFallback}].")
         }
 
         if (count >= monitorConfig.timesToFallback) {

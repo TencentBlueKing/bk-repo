@@ -141,8 +141,8 @@ class CompositeRepository(
         for (setting in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, setting))?.let { return it }
-            } catch (exception: RuntimeException) {
-                logger.warn("Failed to execute map with channel ${setting.name}", exception)
+            } catch (ignored: RuntimeException) {
+                logger.warn("Failed to execute map with channel ${setting.name}", ignored)
             }
         }
         return null

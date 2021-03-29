@@ -31,8 +31,6 @@
 
 package com.tencent.bkrepo.common.artifact.repository.context
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
@@ -41,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.Composite
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -57,7 +56,7 @@ open class ArtifactContext(
 ) {
     val request: HttpServletRequest = HttpContextHolder.getRequest()
     val response: HttpServletResponse = HttpContextHolder.getResponse()
-    val userId: String = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+    val userId: String = SecurityUtils.getUserId()
     val artifactInfo: ArtifactInfo = artifact ?: request.getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
     var repositoryDetail: RepositoryDetail = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
     val storageCredentials: StorageCredentials? = repositoryDetail.storageCredentials

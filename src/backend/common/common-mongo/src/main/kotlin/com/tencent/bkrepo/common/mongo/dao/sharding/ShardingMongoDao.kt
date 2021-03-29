@@ -191,11 +191,16 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
             if (key == shardingColumn) return value
             if (key == "\$and") {
                 require(value is BasicDBList)
-                for (element in value) {
-                    require(element is Document)
-                    determineCollectionName(element)?.let { return it }
-                }
+                determineCollectionName(value)?.let { return it }
             }
+        }
+        return null
+    }
+
+    private fun determineCollectionName(list: BasicDBList): Any? {
+        for (element in list) {
+            require(element is Document)
+            determineCollectionName(element)?.let { return it }
         }
         return null
     }

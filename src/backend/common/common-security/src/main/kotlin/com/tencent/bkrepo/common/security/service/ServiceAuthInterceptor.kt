@@ -45,15 +45,18 @@ class ServiceAuthInterceptor(
 ) : HandlerInterceptorAdapter() {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
+        val securityToken = request.getHeader(MS_AUTH_HEADER_SECURITY_TOKEN)
+        // 微服务间jwt认证
+        if (serviceAuthProperties.enabled) {
+            serviceAuthManager.verifySecurityToken(securityToken.orEmpty())
+        }
+        // 设置MS_REQUEST_KEY
+        securityToken?.let {
+            request.setAttribute(MS_REQUEST_KEY, true)
+        }
         // 设置uid
         request.getHeader(MS_AUTH_HEADER_UID)?.let {
             request.setAttribute(USER_KEY, it)
-            request.setAttribute(MS_REQUEST_KEY, it)
-        }
-        // 微服务间jwt认证
-        if (serviceAuthProperties.enabled) {
-            val securityToken = request.getHeader(MS_AUTH_HEADER_SECURITY_TOKEN).orEmpty()
-            serviceAuthManager.verifySecurityToken(securityToken)
         }
         return true
     }

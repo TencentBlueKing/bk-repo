@@ -17,7 +17,7 @@ PUSH=0
 REGISTRY=docker.io
 USERNAME=
 PASSWORD=
-BACKENDS=(repository auth generic docker helm)
+BACKENDS=(repository auth generic docker helm npm pypi)
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
@@ -150,7 +150,7 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
         rm -rf tmp/*
         cp backend/startup.sh tmp/
         cp $BACKEND_DIR/release/boot-$SERVICE-*.jar tmp/app.jar
-        docker build -f backend/$SERVICE.Dockerfile -t $REGISTRY/bkrepo/$SERVICE:$VERSION tmp --network=host
+        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo/$SERVICE:$VERSION tmp --network=host
         if [[ $PUSH -eq 1 ]] ; then
             docker push $REGISTRY/bkrepo/$SERVICE:$VERSION
         fi

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
+import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactResolverConfiguration
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxMetricsExportAutoConfiguration
@@ -45,14 +46,15 @@ import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.PropertySource
 
 @Configuration
+@PropertySource("classpath:common-artifact.properties")
 @AutoConfigureAfter(InfluxMetricsExportAutoConfiguration::class)
 @ConditionalOnWebApplication
-@PropertySource("classpath:common-artifact.properties")
 @Import(
     ArtifactContextConfiguration::class,
     ArtifactEventConfiguration::class,
     ArtifactExceptionConfiguration::class,
     ArtifactMetricsConfiguration::class,
+    ArtifactPermissionConfiguration::class,
     ArtifactManagerConfiguration::class,
     ArtifactResolverConfiguration::class
 )

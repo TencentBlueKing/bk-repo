@@ -81,7 +81,6 @@ class UserRepositoryController(
     }
 
     @ApiOperation("根据名称查询仓库是否存在")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
         @ApiParam(value = "所属项目", required = true)

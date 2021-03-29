@@ -203,7 +203,7 @@ object XmlStrUtils {
         var locationIndex: Long = -1L
         var suffixIndex: Long = -1L
 
-        val buffer = ByteArray(locationStr.toByteArray().size + 1)
+        val buffer = ByteArray(locationStr.toByteArray().size)
         var len: Int
         var index: Long = 0
         // 保存上一次读取的内容
@@ -262,7 +262,9 @@ object XmlStrUtils {
     private fun String.searchContent(index: Long, returnIndex: Long, targetStr: String, bufferSize: Int): Index {
         val location = this.indexOf(targetStr)
         return if (location >= 0) {
-            Index(index + location - bufferSize, true)
+            val prefixStr = this.split(targetStr).first()
+            val size = prefixStr.toByteArray().size
+            Index(index + size - bufferSize, true)
         } else {
             Index(bufferSize + (if (returnIndex.toInt() == -1) 0 else returnIndex), false)
         }

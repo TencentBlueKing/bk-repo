@@ -95,8 +95,8 @@ abstract class AbstractStorageService : StorageService {
                 1
             }
         } catch (exception: Exception) {
-            logger.error("Failed to store artifact file [$digest].", exception)
-            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+            logger.error("Failed to store artifact file [$digest] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR, cause = exception)
         }
     }
 
@@ -106,12 +106,12 @@ abstract class AbstractStorageService : StorageService {
         try {
             return doLoad(path, digest, range, credentials) ?: run {
                 if (credentials != storageProperties.defaultStorageCredentials()) {
-                    logger.warn("Fallback to default storage [$digest].")
+                    logger.warn("Fallback to load on default storage [$digest]")
                     doLoad(path, digest, range, storageProperties.defaultStorageCredentials())
                 } else null
             }
         } catch (exception: Exception) {
-            logger.error("Failed to load file [$digest] on [$credentials].", exception)
+            logger.error("Failed to load file [$digest] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.LOAD_ERROR)
         }
     }
@@ -121,9 +121,9 @@ abstract class AbstractStorageService : StorageService {
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
             doDelete(path, digest, credentials)
-            logger.info("Success to delete file [$digest].")
+            logger.info("Success to delete file [$digest]")
         } catch (exception: Exception) {
-            logger.error("Failed to delete file [$digest] on [$credentials].", exception)
+            logger.error("Failed to delete file [$digest] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.DELETE_ERROR)
         }
     }
@@ -134,7 +134,7 @@ abstract class AbstractStorageService : StorageService {
         try {
             return doExist(path, digest, credentials)
         } catch (exception: Exception) {
-            logger.error("Failed to check file [$digest] exist on [$credentials].", exception)
+            logger.error("Failed to check file [$digest] exist on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.QUERY_ERROR)
         }
     }
@@ -145,7 +145,7 @@ abstract class AbstractStorageService : StorageService {
         val to = getCredentialsOrDefault(toCredentials)
         try {
             if (from == to) {
-                logger.info("Source and destination credentials are same, skip copy file [$digest].")
+                logger.info("Source and destination credentials are same, skip copy file [$digest]")
                 return
             }
             if (doExist(path, digest, to)) {
@@ -153,9 +153,9 @@ abstract class AbstractStorageService : StorageService {
                 return
             }
             fileStorage.copy(path, digest, from, to)
-            logger.info("Success to copy file [$digest] from [$from] to [$to].")
+            logger.info("Success to copy file [$digest] from [${from.key}] to [${to.key}]")
         } catch (exception: Exception) {
-            logger.error("Failed to copy file [$digest] from [$from] to [$to].", exception)
+            logger.error("Failed to copy file [$digest] from [${from.key}] to [${to.key}]", exception)
             throw StorageErrorException(StorageMessageCode.COPY_ERROR)
         }
     }
@@ -166,10 +166,10 @@ abstract class AbstractStorageService : StorageService {
         val tempClient = getTempClient(credentials)
         try {
             tempClient.touch(CURRENT_PATH, appendId)
-            logger.info("Success to create append id [$appendId].")
+            logger.info("Success to create append id [$appendId]")
             return appendId
         } catch (exception: Exception) {
-            logger.error("Failed to create append id [$appendId] on [$credentials].", exception)
+            logger.error("Failed to create append id [$appendId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -181,10 +181,10 @@ abstract class AbstractStorageService : StorageService {
         val size = artifactFile.getSize()
         try {
             val length = tempClient.append(CURRENT_PATH, appendId, inputStream, size)
-            logger.info("Success to append file [$appendId].")
+            logger.info("Success to append file [$appendId]")
             return length
         } catch (exception: Exception) {
-            logger.error("Failed to append file [$appendId] on [$credentials].", exception)
+            logger.error("Failed to append file [$appendId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -196,10 +196,10 @@ abstract class AbstractStorageService : StorageService {
             val fileInfo = tempClient.load(CURRENT_PATH, appendId)?.let { storeFile(it, credentials) }
                 ?: throw IllegalArgumentException("Append file does not exist.")
             tempClient.delete(CURRENT_PATH, appendId)
-            logger.info("Success to finish append file [$appendId], file info [$fileInfo].")
+            logger.info("Success to finish append file [$appendId], file info [$fileInfo]")
             return fileInfo
         } catch (exception: Exception) {
-            logger.error("Failed to finish append file [$appendId] on [$credentials].", exception)
+            logger.error("Failed to finish append file [$appendId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -210,10 +210,10 @@ abstract class AbstractStorageService : StorageService {
         val tempClient = getTempClient(credentials)
         try {
             tempClient.createDirectory(CURRENT_PATH, blockId)
-            logger.info("Success to create block [$blockId].")
+            logger.info("Success to create block [$blockId]")
             return blockId
         } catch (exception: Exception) {
-            logger.error("Failed to create block [$blockId] on [$credentials].", exception)
+            logger.error("Failed to create block [$blockId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -224,7 +224,7 @@ abstract class AbstractStorageService : StorageService {
         try {
             return tempClient.checkDirectory(blockId)
         } catch (exception: Exception) {
-            logger.error("Failed to check block [$blockId] on [$credentials].", exception)
+            logger.error("Failed to check block [$blockId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -246,9 +246,9 @@ abstract class AbstractStorageService : StorageService {
         try {
             tempClient.store(blockId, "$sequence$BLOCK_SUFFIX", blockInputStream, blockSize, overwrite)
             tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)
-            logger.info("Success to store block [$blockId/$sequence].")
+            logger.info("Success to store block [$blockId/$sequence]")
         } catch (exception: Exception) {
-            logger.error("Failed to store block [$blockId/$sequence] on [$credentials].", exception)
+            logger.error("Failed to store block [$blockId/$sequence] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -270,13 +270,13 @@ abstract class AbstractStorageService : StorageService {
             val mergedFile = tempClient.mergeFiles(blockFileList, tempClient.touch(blockId, MERGED_FILENAME))
             val fileInfo = storeFile(mergedFile, credentials)
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
-            logger.info("Success to merge block [$blockId].")
+            logger.info("Success to merge block [$blockId]")
             return fileInfo
         } catch (storageException: StorageErrorException) {
-            logger.error("Failed to merge block [$blockId] on [$credentials]: ${storageException.messageCode}")
+            logger.error("Failed to merge block [$blockId] on [${credentials.key}]: ${storageException.messageCode}")
             throw storageException
         } catch (exception: Exception) {
-            logger.error("Failed to merge block [$blockId] on [$credentials].", exception)
+            logger.error("Failed to merge block [$blockId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -286,9 +286,9 @@ abstract class AbstractStorageService : StorageService {
         val tempClient = getTempClient(credentials)
         try {
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
-            logger.info("Success to delete block id [$blockId].")
+            logger.info("Success to delete block id [$blockId]")
         } catch (exception: Exception) {
-            logger.error("Failed to delete block id [$blockId] on [$credentials].", exception)
+            logger.error("Failed to delete block id [$blockId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }
@@ -307,7 +307,7 @@ abstract class AbstractStorageService : StorageService {
                 Pair(size, sha256)
             }
         } catch (exception: Exception) {
-            logger.error("Failed to list block [$blockId] on [$credentials].", exception)
+            logger.error("Failed to list block [$blockId] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.STORE_ERROR)
         }
     }

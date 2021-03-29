@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 enum class ArtifactMessageCode(private val key: String) : MessageCode {
     ARTIFACT_RECEIVE_FAILED("artifact.receive.failed"),
     ARTIFACT_RESPONSE_FAILED("artifact.response.failed"),
+    ARTIFACT_DATA_NOT_FOUND("artifact.data.not-found"),
     DIGEST_CHECK_FAILED("artifact.digest.check-failed"),
     PROJECT_NOT_FOUND("artifact.project.not-found"),
     PROJECT_EXISTED("artifact.project.existed"),

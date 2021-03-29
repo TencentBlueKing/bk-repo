@@ -161,51 +161,12 @@ class TemporaryAccessService(
         artifactInfo: ArtifactInfo,
         type: TokenType
     ): TemporaryTokenInfo {
-        if (token.isBlank()) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 查询token
-        val temporaryToken = temporaryTokenClient.getTokenInfo(token).data
-            ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        // 校验过期时间
-        temporaryToken.expireDate?.let {
-            val expireDate = LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
-            if (expireDate.isBefore(LocalDateTime.now())) {
-                throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
-            }
-        }
-        // 校验访问次数
-        temporaryToken.permits?.let {
-            if (it <= 0) {
-                throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
-            }
-        }
-        // 校验类型
-        if (temporaryToken.type != TokenType.ALL && temporaryToken.type != type) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验项目
-        if (temporaryToken.projectId != artifactInfo.projectId) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验仓库
-        if (temporaryToken.repoName != artifactInfo.repoName) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验路径
-        if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), temporaryToken.fullPath)) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验用户
-        val userId = SecurityUtils.getUserId()
-        if (temporaryToken.authorizedUserList.isNotEmpty() && userId !in temporaryToken.authorizedUserList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验ip
-        val clientIp = HttpContextHolder.getClientAddress()
-        if (temporaryToken.authorizedIpList.isNotEmpty() && clientIp !in temporaryToken.authorizedIpList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
+        val temporaryToken = checkToken(token)
+        checkExpireTime(temporaryToken.expireDate)
+        checkAccessType(temporaryToken.type, type)
+        checkAccessResource(temporaryToken, artifactInfo)
+        checkAuthorization(temporaryToken)
+        checkAccessPermits(temporaryToken.permits)
         return temporaryToken
     }
 
@@ -217,6 +178,80 @@ class TemporaryAccessService(
             .append(token)
             .toString()
     }
+
+    /**
+     * 检查token并返回token信息
+     */
+    private fun checkToken(token: String): TemporaryTokenInfo {
+        if (token.isBlank()) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+        return temporaryTokenClient.getTokenInfo(token).data
+            ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+    }
+
+    /**
+     * 检查token是否过期
+     */
+    private fun checkExpireTime(expireDateString: String?) {
+        expireDateString?.let {
+            val expireDate = LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
+            if (expireDate.isBefore(LocalDateTime.now())) {
+                throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
+            }
+        }
+    }
+
+    /**
+     * 检查访问次数
+     */
+    private fun checkAccessPermits(permits: Int?) {
+        permits?.let {
+            if (it <= 0) {
+                throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
+            }
+        }
+    }
+
+    /**
+     * 检查访问类型
+     */
+    private fun checkAccessType(grantedType: TokenType, accessType: TokenType) {
+        if (grantedType != TokenType.ALL && grantedType != accessType) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+    }
+
+    /**
+     * 检查访问资源
+     */
+    private fun checkAccessResource(temporaryToken: TemporaryTokenInfo, artifactInfo: ArtifactInfo) {
+        // 校验项目/仓库
+        if (temporaryToken.projectId != artifactInfo.projectId || temporaryToken.repoName != artifactInfo.repoName) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+        // 校验路径
+        if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), temporaryToken.fullPath)) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+    }
+
+    /**
+     * 检查授权用户和ip
+     */
+    private fun checkAuthorization(temporaryToken: TemporaryTokenInfo) {
+        // 检查用户授权
+        val userId = SecurityUtils.getUserId()
+        if (temporaryToken.authorizedUserList.isNotEmpty() && userId !in temporaryToken.authorizedUserList) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+        // 校验ip授权
+        val clientIp = HttpContextHolder.getClientAddress()
+        if (temporaryToken.authorizedIpList.isNotEmpty() && clientIp !in temporaryToken.authorizedIpList) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+    }
+
 
     companion object {
         private const val TEMPORARY_DOWNLOAD_ENDPOINT = "temporary/download"

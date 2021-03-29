@@ -51,6 +51,7 @@ interface StorageService {
 
     /**
      * 在存储实例[storageCredentials]上加载摘要为[digest]的文件
+     * 当文件未找到时，会尝试去默认存储实例上查找文件
      */
     fun load(digest: String, range: Range, storageCredentials: StorageCredentials?): ArtifactInputStream?
 

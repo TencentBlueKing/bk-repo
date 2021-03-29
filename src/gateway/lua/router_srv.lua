@@ -48,8 +48,7 @@ if access_util then
     end
 end
 
+ngx.var.target = hostUtil:get_addr(service_name)
 
-local host, port = hostUtil:get_addr(service_name)
-ngx.var.target = host .. ":" .. port
 
 

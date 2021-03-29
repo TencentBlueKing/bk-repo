@@ -44,6 +44,8 @@ const val COS_COPY_SOURCE = "x-cos-copy-source"
 const val RESPONSE_UPLOAD_ID = "UploadId"
 const val RESPONSE_LAST_MODIFIED = "LastModified"
 
+private const val ENCODED_STR_SIZE = 3
+
 fun String.encode(): String {
     val encodedString = URLEncoder.encode(this, DEFAULT_ENCODING)
         .replace("+", "%20")
@@ -58,7 +60,7 @@ fun String.encode(): String {
             builder.append(encodedString[index])
             builder.append(Character.toLowerCase(encodedString[index + 1]))
             builder.append(Character.toLowerCase(encodedString[index + 2]))
-            3
+            ENCODED_STR_SIZE
         } else {
             builder.append(encodedString[index])
             1
@@ -71,12 +73,12 @@ fun String.encode(): String {
  * 重试函数，times表示重试次数，加上第一次执行，总共会执行times+1次，
  */
 @Suppress("TooGenericExceptionCaught") // 无法预知block具体异常类型
-inline fun <R> retry(times: Int, delayInSeconds: Long = 10, block: (Int) -> R): R {
+inline fun <R> retry(times: Int, delayInSeconds: Long = 5, block: (Int) -> R): R {
     var retries = 0
     while (true) {
         try {
             return block(retries)
-        } catch (e: RuntimeException) {
+        } catch (e: Exception) {
             if (retries < times) {
                 TimeUnit.SECONDS.sleep(delayInSeconds)
                 retries += 1

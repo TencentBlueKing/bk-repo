@@ -239,8 +239,8 @@ class NpmFixToolServiceImpl(
         while (packageMetadataList.isNotEmpty()) {
             packageMetadataList.forEach { it ->
                 logger.info(
-                    "Retrieved ${packageMetadataPage.totalRecords} records to add package manager in repo [$projectId/$repoName], " +
-                        "process: $totalCount/${packageMetadataPage.totalRecords}"
+                    "Retrieved ${packageMetadataPage.totalRecords} records to add package manager " +
+                        "in repo [$projectId/$repoName], process: $totalCount/${packageMetadataPage.totalRecords}"
                 )
                 val packageName = it.fullPath.removePrefix("/.npm/").removeSuffix("/package.json")
                 try {
