@@ -1,7 +1,7 @@
 /*
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.  
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,13 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package com.tencent.bkrepo.docker.service
@@ -89,7 +99,10 @@ class FixToolServiceImpl(
         }
         while (packageMetadataList.isNotEmpty()) {
             packageMetadataList.forEach {
-                logger.info("Retrieved ${packageMetadataList.size} records to add package manager, " + "process: $totalCount/${packageMetadataPage.totalRecords}")
+                logger.info(
+                    "Retrieved ${packageMetadataList.size} records to add package manager, " +
+                        "process: $totalCount/${packageMetadataPage.totalRecords}"
+                )
                 var name = ""
                 try {
                     // 添加包管理
@@ -108,7 +121,10 @@ class FixToolServiceImpl(
             packageMetadataList = queryPackagePage(projectId, repoName, page).records.map { resolveNode(it) }
         }
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
-        logger.info("Repair docker package metadata file in repo [$projectId/$repoName], total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally.")
+        logger.info(
+            "Repair docker package metadata file in repo [$projectId/$repoName], total: $totalCount, " +
+                "success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+        )
         return PackageManagerResponse(
             totalCount = totalCount,
             successCount = successCount,
@@ -147,10 +163,16 @@ class FixToolServiceImpl(
             packageRepo.createVersion(request)
         } catch (exception: RemoteErrorCodeException) {
             if (exception.errorMessage == CommonMessageCode.RESOURCE_EXISTED.getKey()) {
-                logger.warn("the package manager for [$name] with version [$tag] is already exists in repo [$projectId/$repoName], skip.")
+                logger.warn(
+                    "the package manager for [$name] with version [$tag] is already exists " +
+                        "in repo [$projectId/$repoName], skip."
+                )
                 return artifactName
             }
-            logger.error("add package manager for [$artifactName] with version [$tag] failed in repo [$projectId/$repoName].")
+            logger.error(
+                "add package manager for [$artifactName] with version [$tag] " +
+                    "failed in repo [$projectId/$repoName]."
+            )
             throw exception
         }
         logger.info("add package manager for package [$artifactName] success in repo [$projectId/$repoName]")

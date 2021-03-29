@@ -46,7 +46,6 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
-import org.springframework.web.servlet.ModelAndView
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -97,22 +96,6 @@ class AuthInterceptor : HandlerInterceptor {
             logger.warn("check account exception [$e]")
             return false
         }
-    }
-
-    override fun postHandle(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        handler: Any,
-        modelAndView: ModelAndView?
-    ) {
-    }
-
-    override fun afterCompletion(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        handler: Any,
-        ex: Exception?
-    ) {
     }
 
     companion object {
