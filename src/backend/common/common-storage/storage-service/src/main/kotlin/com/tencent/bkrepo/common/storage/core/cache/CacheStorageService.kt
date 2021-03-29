@@ -43,7 +43,9 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.io.IOException
 import java.nio.file.Paths
 
 /**
@@ -64,7 +66,12 @@ class CacheStorageService(
             else -> {
                 val cachedFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
                 threadPoolTaskExecutor.execute {
-                    fileStorage.store(path, filename, cachedFile, credentials)
+                    try {
+                        fileStorage.store(path, filename, cachedFile, credentials)
+                    } catch (exception: IOException) {
+                        // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
+                        logger.error("Failed to async store file [$filename] on [${credentials.key}]", exception)
+                    }
                 }
             }
         }
@@ -88,10 +95,11 @@ class CacheStorageService(
             val readListener = CachedFileWriter(cachePath, filename, tempPath)
             artifactInputStream.addListener(readListener)
         }
-        if (artifactInputStream == null && !loadCacheFirst) {
-            return cacheClient.load(path, filename)?.bound(range)?.artifactStream(range)?.let { return it }
+        return if (artifactInputStream == null && !loadCacheFirst) {
+            cacheClient.load(path, filename)?.bound(range)?.artifactStream(range)
+        } else {
+            artifactInputStream
         }
-        return artifactInputStream
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
@@ -148,5 +156,9 @@ class CacheStorageService(
 
     private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {
         return FileSystemClient(credentials.cache.path)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CacheStorageService::class.java)
     }
 }

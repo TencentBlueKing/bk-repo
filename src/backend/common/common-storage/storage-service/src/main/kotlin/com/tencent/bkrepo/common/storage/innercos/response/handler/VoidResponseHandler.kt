@@ -36,5 +36,6 @@ import okhttp3.Response
 
 class VoidResponseHandler : HttpResponseHandler<Unit>() {
     override fun handle(response: Response) {
+        // do nothing
     }
 }

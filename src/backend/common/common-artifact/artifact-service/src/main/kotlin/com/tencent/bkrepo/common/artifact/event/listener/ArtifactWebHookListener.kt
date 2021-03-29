@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactUpdatedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.webhook.WebHookService
 import org.springframework.context.event.EventListener
-import org.springframework.stereotype.Component
 
 /**
  * 构件WebHook事件监听器

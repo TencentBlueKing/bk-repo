@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
@@ -177,9 +178,11 @@ class SmartStreamReceiver(
                 "$totalSize bytes received, but $actualSize bytes saved in memory."
             }
         } else {
-            val actualSize = Files.size(path.resolve(filename))
-            require(totalSize == actualSize) {
-                "$totalSize bytes received, but $actualSize bytes saved in file."
+            retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
+                val actualSize = Files.size(path.resolve(filename))
+                require(totalSize == actualSize) {
+                    "$totalSize bytes received, but $actualSize bytes saved in file."
+                }
             }
         }
     }
@@ -204,5 +207,6 @@ class SmartStreamReceiver(
 
     companion object {
         private val logger = LoggerFactory.getLogger(SmartStreamReceiver::class.java)
+        private const val RETRY_CHECK_TIMES = 3
     }
 }

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.innercos.client
 
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.request.AbortMultipartUploadRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.common.storage.innercos.response.handler.VoidResponseH
 import com.tencent.bkrepo.common.storage.innercos.retry
 import okhttp3.Request
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
@@ -66,6 +68,9 @@ import java.util.concurrent.Future
 import kotlin.math.ceil
 import kotlin.math.max
 
+/**
+ * Cos Client
+ */
 class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
 
@@ -88,7 +93,9 @@ class CosClient(val credentials: InnerCosCredentials) {
      * 分片上传
      */
     fun putFileObject(key: String, file: File): PutObjectResponse {
-        require(file.exists()) { "File[$file] does not exist." }
+        if (!file.exists()) {
+            throw InnerCosException("File[$file] does not exist.")
+        }
         val length = file.length()
         return if (shouldUseMultipartUpload(length)) {
             multipartUpload(key, file)
@@ -148,7 +155,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         try {
             val partEtagList = futureList.map { it.get() }
             return completeMultipartUpload(key, uploadId, partEtagList)
-        } catch (exception: Exception) {
+        } catch (exception: IOException) {
             cancelFutureList(futureList)
             abortMultipartUpload(key, uploadId)
             throw exception
@@ -163,7 +170,7 @@ class CosClient(val credentials: InnerCosCredentials) {
 
     private fun uploadPart(cosRequest: UploadPartRequest): Callable<PartETag> {
         return Callable {
-            retry(5) {
+            retry(RETRY_COUNT) {
                 val httpRequest = buildHttpRequest(cosRequest)
                 val uploadPartResponse = CosHttpClient.execute(httpRequest, UploadPartResponseHandler())
                 PartETag(cosRequest.partNumber, uploadPartResponse.eTag)
@@ -188,7 +195,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val httpRequest = buildHttpRequest(cosRequest)
         try {
             return CosHttpClient.execute(httpRequest, VoidResponseHandler())
-        } catch (ignored: Exception) {
+        } catch (ignored: IOException) {
         }
     }
 

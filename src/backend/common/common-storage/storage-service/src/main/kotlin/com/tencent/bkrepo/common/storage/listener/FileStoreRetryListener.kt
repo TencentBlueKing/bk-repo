@@ -29,26 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.listener
+package com.tencent.bkrepo.common.storage.listener
 
-import com.tencent.bkrepo.common.storage.event.StoreFailureEvent
 import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
-import org.springframework.stereotype.Component
+import org.springframework.retry.RetryCallback
+import org.springframework.retry.RetryContext
+import org.springframework.retry.listener.RetryListenerSupport
 
 /**
- * 构件存储事件监听器
+ * 文件存储重试监听器
  */
-class ArtifactStorageListener {
-
-    @EventListener(StoreFailureEvent::class)
-    fun listen(event: StoreFailureEvent) {
-        event.apply {
-            logger.error("[StoreFailureEvent]Failed to store file[$filename] on [$storageCredentials].", exception)
-        }
+class FileStoreRetryListener : RetryListenerSupport() {
+    override fun <T : Any, E : Throwable> onError(
+        context: RetryContext,
+        callback: RetryCallback<T, E>,
+        throwable: Throwable
+    ) {
+        val name = context.getAttribute(RetryContext.NAME)
+        val count = context.retryCount
+        logger.warn("Retryable method [$name] threw [$count]th exception [$throwable]")
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactStorageListener::class.java)
-    }
+    private val logger = LoggerFactory.getLogger(FileStoreRetryListener::class.java)
 }

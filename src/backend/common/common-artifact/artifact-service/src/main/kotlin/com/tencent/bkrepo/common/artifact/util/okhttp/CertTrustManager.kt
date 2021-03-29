@@ -50,8 +50,12 @@ object CertTrustManager {
     private const val X509 = "X.509"
 
     val disableValidationTrustManager = object : X509TrustManager {
-        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
-        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            // no-op
+        }
+        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
+            // no-op
+        }
         override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
     }
     val trustAllHostname = HostnameVerifier { _, _ -> true }

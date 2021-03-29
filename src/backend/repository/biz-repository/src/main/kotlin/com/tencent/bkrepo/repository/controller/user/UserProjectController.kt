@@ -60,6 +60,7 @@ class UserProjectController(
     private val projectService: ProjectService
 ) {
     @ApiOperation("创建项目")
+    @Principal(PrincipalType.PLATFORM)
     @PostMapping("/create")
     fun createProject(
         @RequestAttribute userId: String,
@@ -89,7 +90,7 @@ class UserProjectController(
     }
 
     @ApiOperation("项目列表")
-    @Principal(PrincipalType.ADMIN)
+    @Principal(PrincipalType.PLATFORM)
     @GetMapping("/list")
     fun listProject(): Response<List<ProjectInfo>> {
         return ResponseBuilder.success(projectService.listProject())
@@ -97,6 +98,7 @@ class UserProjectController(
 
     @Deprecated("waiting kb-ci", replaceWith = ReplaceWith("createProject"))
     @ApiOperation("创建项目")
+    @Principal(PrincipalType.PLATFORM)
     @PostMapping
     fun create(
         @RequestAttribute userId: String,

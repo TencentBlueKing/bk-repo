@@ -97,7 +97,7 @@
                 },
                 "size": {
                     "type": "string",
-                    "title": "Persistent Volume Claims大小",
+                    "title": "Volume大小",
                     "form": true,
                     "render": "slider",
                     "sliderMin": 10,
@@ -145,7 +145,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "title": "是否部署generic服务",
+                    "title": "是否部署generic registry",
                     "form": true
                 }
             }
@@ -155,7 +155,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "title": "是否部署docker服务",
+                    "title": "是否部署docker registry",
                     "form": true
                 }
             }
@@ -165,7 +165,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "title": "是否部署npm服务",
+                    "title": "是否部署npm registry",
                     "form": true
                 }
             }
@@ -175,7 +175,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "title": "是否部署pypi服务",
+                    "title": "是否部署pypi registry",
                     "form": true
                 }
             }
@@ -185,7 +185,7 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
-                    "title": "是否部署helm服务",
+                    "title": "是否部署helm registry",
                     "form": true
                 }
             }
