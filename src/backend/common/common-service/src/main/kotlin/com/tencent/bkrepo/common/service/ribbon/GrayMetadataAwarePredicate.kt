@@ -34,7 +34,6 @@ package com.tencent.bkrepo.common.service.ribbon
 import com.netflix.loadbalancer.AbstractServerPredicate
 import com.netflix.loadbalancer.PredicateKey
 import com.netflix.loadbalancer.Server
-import org.slf4j.LoggerFactory
 import org.springframework.cloud.client.serviceregistry.Registration
 import org.springframework.util.ReflectionUtils
 import java.lang.reflect.Method
@@ -82,7 +81,5 @@ class GrayMetadataAwarePredicate(
         private const val GET_METADATA = "getMetadata"
         private val METHOD_MAP = ConcurrentHashMap<Class<*>, Method>(1)
         private val NO_METHOD_LIST = mutableListOf<Class<*>>()
-        private val logger = LoggerFactory.getLogger(GrayMetadataAwarePredicate::class.java)
-
     }
 }
