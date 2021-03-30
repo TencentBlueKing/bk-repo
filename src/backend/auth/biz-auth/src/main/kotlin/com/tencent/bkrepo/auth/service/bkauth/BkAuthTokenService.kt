@@ -163,14 +163,16 @@ class BkAuthTokenService @Autowired constructor(
 
     private fun createAccessToken(appCode: String, appSecret: String): BkAuthToken {
         val url = "${bkAuthConfig.getBkAuthServer()}/oauth/token"
-        val bkAuthTokenRequest = BkAuthTokenRequest(bkAuthConfig.authEnvName, appCode, appSecret, ID_PROVIDER, GRANT_TYPE)
+        val bkAuthTokenRequest = BkAuthTokenRequest(bkAuthConfig.authEnvName, appCode, appSecret, ID_PROVIDER,
+            GRANT_TYPE)
         val mediaType = MediaType.parse("application/json; charset=utf-8")
         val requestBody = RequestBody.create(mediaType, bkAuthTokenRequest.toJsonString())
         val request = Request.Builder().url(url).post(requestBody).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
         val responseObject = objectMapper.readValue<BkAuthResponse<BkAuthToken>>(apiResponse.content)
         if (responseObject.data == null) {
-            logger.error("create access token failed, requestUrl: $url, requestData: $bkAuthTokenRequest, response: $apiResponse")
+            logger.error("create access token failed, requestUrl: $url, requestData: $bkAuthTokenRequest," +
+                " response: $apiResponse")
             throw RuntimeException("create access token failed, data null")
         }
         return responseObject.data

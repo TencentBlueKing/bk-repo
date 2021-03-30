@@ -31,7 +31,10 @@
 
 package com.tencent.bkrepo.auth.pojo
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class Action(
     val id: String,
-    val related_resource_types: List<RelatedResourceTypes>?
+    @JsonProperty("related_resource_types")
+    val relatedResourceTypes: List<RelatedResourceTypes>?
 )
