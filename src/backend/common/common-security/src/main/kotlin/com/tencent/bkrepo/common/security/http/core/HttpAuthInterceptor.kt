@@ -58,24 +58,7 @@ class HttpAuthInterceptor(
             val isLoginRequest = checkLoginRequest(authHandler, requestUri, requestMethod)
             // 拦截所有请求或当前为LoginEndpoint请求，表示需要认证处理
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {
-                try {
-                    val authCredentials = authHandler.extractAuthCredentials(request)
-                    if (authCredentials !is AnonymousCredentials) {
-                        val userId = authHandler.onAuthenticate(request, authCredentials)
-                        request.setAttribute(USER_KEY, userId)
-                        authHandler.onAuthenticateSuccess(request, response, userId)
-                        if (logger.isDebugEnabled) {
-                            val handlerName = authHandler.javaClass.simpleName
-                            logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by $handlerName.")
-                        }
-                        return true
-                    } else if (isLoginRequest) {
-                        throw AuthenticationException()
-                    }
-                } catch (authenticationException: AuthenticationException) {
-                    authHandler.onAuthenticateFailed(request, response, authenticationException)
-                    return false
-                }
+                return authenticateRequest(authHandler, isLoginRequest, request, response)
             }
         }
         // 没有合适的认证handler或为匿名用户
@@ -87,6 +70,38 @@ class HttpAuthInterceptor(
         }
     }
 
+    /**
+     * 对请求进行认证
+     */
+    private fun authenticateRequest(
+        authHandler: HttpAuthHandler,
+        isLoginRequest: Boolean,
+        request: HttpServletRequest,
+        response: HttpServletResponse
+    ): Boolean {
+        try {
+            val authCredentials = authHandler.extractAuthCredentials(request)
+            if (authCredentials !is AnonymousCredentials) {
+                val userId = authHandler.onAuthenticate(request, authCredentials)
+                request.setAttribute(USER_KEY, userId)
+                authHandler.onAuthenticateSuccess(request, response, userId)
+                if (logger.isDebugEnabled) {
+                    val handlerName = authHandler.javaClass.simpleName
+                    logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by $handlerName.")
+                }
+            } else if (isLoginRequest) {
+                throw AuthenticationException()
+            }
+        } catch (authenticationException: AuthenticationException) {
+            authHandler.onAuthenticateFailed(request, response, authenticationException)
+            return false
+        }
+        return true
+    }
+
+    /**
+     * 检查是否为登录请求
+     */
     private fun checkLoginRequest(authHandler: HttpAuthHandler, requestUri: String, requestMethod: String): Boolean {
         return authHandler.getLoginEndpoint()?.let {
             val loginEndpoint = httpAuthSecurity.formatEndPoint(it)
