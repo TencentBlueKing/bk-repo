@@ -318,39 +318,40 @@ class PackageServiceImpl(
         with(request) {
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(request)
-            var latestVersion = packageVersionDao.findLatest(tPackage.id!!)
+            val packageId = tPackage.id.orEmpty()
+            var latestVersion = packageVersionDao.findLatest(packageId)
             // 检查版本是否存在
             versionList.forEach {
-                if (packageVersionDao.findByName(tPackage.id!!, it.name) != null) {
+                if (packageVersionDao.findByName(packageId, it.name) != null) {
                     logger.info("Package version[${tPackage.name}-${it.name}] existed, skip populating.")
-                } else {
-                    val newVersion = TPackageVersion(
-                        createdBy = it.createdBy,
-                        createdDate = it.createdDate,
-                        lastModifiedBy = it.lastModifiedBy,
-                        lastModifiedDate = it.lastModifiedDate,
-                        packageId = tPackage.id!!,
-                        name = it.name.trim(),
-                        size = it.size,
-                        ordinal = calculateOrdinal(it.name),
-                        downloads = it.downloads,
-                        manifestPath = it.manifestPath,
-                        artifactPath = it.artifactPath,
-                        stageTag = it.stageTag.orEmpty(),
-                        metadata = MetadataUtils.fromMap(it.metadata),
-                        extension = it.extension.orEmpty()
-                    )
-                    packageVersionDao.save(newVersion)
-                    tPackage.versions += 1
-                    tPackage.downloads += it.downloads
-                    tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
-                    if (latestVersion == null) {
-                        latestVersion = newVersion
-                    } else if (it.createdDate.isAfter(latestVersion?.createdDate)) {
-                        latestVersion = newVersion
-                    }
-                    logger.info("Create package version[${newVersion}] success")
+                    return@forEach
                 }
+                val newVersion = TPackageVersion(
+                    createdBy = it.createdBy,
+                    createdDate = it.createdDate,
+                    lastModifiedBy = it.lastModifiedBy,
+                    lastModifiedDate = it.lastModifiedDate,
+                    packageId = packageId,
+                    name = it.name.trim(),
+                    size = it.size,
+                    ordinal = calculateOrdinal(it.name),
+                    downloads = it.downloads,
+                    manifestPath = it.manifestPath,
+                    artifactPath = it.artifactPath,
+                    stageTag = it.stageTag.orEmpty(),
+                    metadata = MetadataUtils.fromMap(it.metadata),
+                    extension = it.extension.orEmpty()
+                )
+                packageVersionDao.save(newVersion)
+                tPackage.versions += 1
+                tPackage.downloads += it.downloads
+                tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
+                if (latestVersion == null) {
+                    latestVersion = newVersion
+                } else if (it.createdDate.isAfter(latestVersion?.createdDate)) {
+                    latestVersion = newVersion
+                }
+                logger.info("Create package version[${newVersion}] success")
             }
             // 更新包
             tPackage.latest = latestVersion?.name ?: tPackage.latest
