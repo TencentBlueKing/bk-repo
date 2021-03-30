@@ -183,23 +183,28 @@ class GenericLocalRepository : LocalRepository() {
         }
         // case sensitive, base64 metadata
         // format X-BKREPO-META: base64(a=1&b=2)
-        request.getHeader(BKREPO_META)?.let {
+        request.getHeader(BKREPO_META)?.let { header ->
             try {
-                val metadataUrl = String(Base64.getDecoder().decode(it))
-                val parts = metadataUrl.split(CharPool.AND)
-                parts.forEach { part ->
-                    val pair = part.trim().split(CharPool.EQUAL, limit = 2)
-                    if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                        val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
-                        val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
-                        metadata[key] = value
+                val metadataUrl = String(Base64.getDecoder().decode(header))
+                metadataUrl.split(CharPool.AND).forEach { part ->
+                    decodeMetadata(part)?.let {
+                        metadata[it.first] = it.second
                     }
                 }
             } catch (exception: IllegalArgumentException) {
-                logger.warn("$it is not in valid Base64 scheme.")
+                logger.warn("$header is not in valid Base64 scheme.")
             }
         }
         return metadata
+    }
+
+    private fun decodeMetadata(part: String): Pair<String, String>? {
+        val pair = part.trim().split(CharPool.EQUAL, limit = 2)
+        return if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
+            val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
+            val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
+            Pair(key, value)
+        } else null
     }
 
     companion object {
