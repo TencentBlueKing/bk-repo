@@ -126,15 +126,7 @@ abstract class NodeBaseService (
             Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
             Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
             // 路径唯一性校验
-            nodeDao.findNode(projectId, repoName, fullPath)?.let {
-                if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-                } else if (it.folder || this.folder) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-                } else {
-                    deleteByPath(projectId, repoName, fullPath, operator)
-                }
-            }
+            checkConflict(createRequest, fullPath)
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
@@ -218,6 +210,21 @@ abstract class NodeBaseService (
             doCreate(node)
         }
     }
+
+    private fun checkConflict(createRequest: NodeCreateRequest, fullPath: String) {
+        with(createRequest) {
+            nodeDao.findNode(projectId, repoName, fullPath)?.let {
+                if (!overwrite) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+                } else if (it.folder || this.folder) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+                } else {
+                    deleteByPath(projectId, repoName, fullPath, operator)
+                }
+            }
+        }
+    }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)
