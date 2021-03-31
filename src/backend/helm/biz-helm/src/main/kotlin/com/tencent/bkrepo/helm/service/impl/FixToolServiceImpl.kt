@@ -15,7 +15,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
@@ -53,7 +52,10 @@ class FixToolServiceImpl(
             emptyList<RepositoryDetail>()
         }
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${helmLocalRepositoryList.map { it.projectId to it.name }}")
+        logger.info(
+            "find [${helmLocalRepositoryList.size}] HELM local " +
+                "repository ${helmLocalRepositoryList.map { it.projectId to it.name }}"
+        )
         helmLocalRepositoryList.forEach {
             try {
                 doRepairCreatedDate(it.projectId, it.name)
@@ -74,7 +76,9 @@ class FixToolServiceImpl(
             val nodeDetail =
                 nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
                     logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException("the file index-cache.yaml not found in repo [$projectId/$repoName]")
+                    throw HelmFileNotFoundException(
+                        "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                    )
                 }
             val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
@@ -138,7 +142,10 @@ class FixToolServiceImpl(
             return emptyList()
         }
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${repositoryList.map { it.projectId to it.name }}")
+        logger.info(
+            "find [${helmLocalRepositoryList.size}] HELM local " +
+                "repository ${repositoryList.map { it.projectId to it.name }}"
+        )
         helmLocalRepositoryList.forEach {
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
             packageManagerList.add(packageManagerResponse)
@@ -159,13 +166,17 @@ class FixToolServiceImpl(
             val nodeDetail =
                 nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
                     logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException("the file index-cache.yaml not found in repo [$projectId/$repoName]")
+                    throw HelmFileNotFoundException(
+                        "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                    )
                 }
             // sleep 0.1s
             Thread.sleep(100)
             val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
-                throw HelmFileNotFoundException("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+                throw HelmFileNotFoundException(
+                    "load index-cache.yaml file stream is null in repo [$projectId/$repoName]"
+                )
             }
             val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
             if (helmIndexYamlMetadata.entries.isEmpty()) {
@@ -192,7 +203,8 @@ class FixToolServiceImpl(
                 try {
                     logger.info(
                         "Retrieved $packageSize packages to add package manager in repo [$projectId/$repoName], " +
-                            "process: $totalCount/$packageSize, current package: [$name] with [${helmNodeList.size}] versions."
+                            "process: $totalCount/$packageSize, " +
+                            "current package: [$name] with [${helmNodeList.size}] versions."
                     )
                     // 添加包管理
                     doAddPackageManager(projectId, repoName, helmNodeList, name)
@@ -212,7 +224,8 @@ class FixToolServiceImpl(
             val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
             logger.info(
                 "Repair helm package populate in repo [$projectId/$repoName], " +
-                    "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+                    "total: $totalCount, success: $successCount, failed: $failedCount, " +
+                    "duration $durationSeconds s totally."
             )
             return PackageManagerResponse(
                 projectId = projectId,

@@ -35,7 +35,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 
-class VersionsSerializer() : JsonSerializer<NpmPackageMetaData.Versions>() {
+class VersionsSerializer : JsonSerializer<NpmPackageMetaData.Versions>() {
     override fun serialize(versions: NpmPackageMetaData.Versions, gen: JsonGenerator, serializers: SerializerProvider) {
         gen.writeStartObject()
         val iterator = versions.map.entries.iterator()
