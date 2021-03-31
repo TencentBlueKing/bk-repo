@@ -142,7 +142,14 @@ class MetadataServiceTest @Autowired constructor(
         val metadata = mapOf("key1" to "value1", "key2" to "value2", "key3" to "value3")
         val node = nodeService.createNode(createRequest(metadata))
         // delete
-        metadataService.deleteMetadata(MetadataDeleteRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, setOf("key1", "key2", "key0")))
+        metadataService.deleteMetadata(
+            MetadataDeleteRequest(
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                node.fullPath,
+                setOf("key1", "key2", "key0")
+            )
+        )
 
         val dbMetadata = metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
         Assertions.assertEquals(1, dbMetadata.size)

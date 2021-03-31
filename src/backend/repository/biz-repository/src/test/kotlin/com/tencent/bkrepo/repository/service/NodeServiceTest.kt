@@ -762,7 +762,12 @@ class NodeServiceTest @Autowired constructor(
         assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
     }
 
-    private fun createRequest(fullPath: String = "/a/b/c", folder: Boolean = true, size: Long = 1, metadata: Map<String, String>? = null): NodeCreateRequest {
+    private fun createRequest(
+        fullPath: String = "/a/b/c",
+        folder: Boolean = true,
+        size: Long = 1,
+        metadata: Map<String, String>? = null
+    ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
