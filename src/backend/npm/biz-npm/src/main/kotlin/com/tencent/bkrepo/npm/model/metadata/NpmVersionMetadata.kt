@@ -46,7 +46,7 @@ import java.io.Serializable
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-class NpmVersionMetadata() : Serializable {
+class NpmVersionMetadata : Serializable {
     var name: String? = null
     var description: String? = null
     var tags: JsonNode? = null
@@ -129,7 +129,7 @@ class NpmVersionMetadata() : Serializable {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    class Dist() : Serializable {
+    class Dist : Serializable {
         @JsonProperty("tarball")
         var tarball: String? = null
 

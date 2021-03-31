@@ -82,7 +82,8 @@ class BkAuthService @Autowired constructor(
         }
 
         val accessToken = bkAuthTokenService.getAccessToken(serviceCode)
-        val url = "${bkAuthConfig.getBkAuthServer()}/permission/project/service/policy/resource/user/verfiy?access_token=$accessToken"
+        val url = "${bkAuthConfig.getBkAuthServer()}/permission/project/service/policy/resource/user/verfiy?" +
+            "access_token=$accessToken"
         val bkAuthPermissionRequest = BkAuthPermissionRequest(
             projectCode = projectCode,
             serviceCode = serviceCode.value,

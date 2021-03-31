@@ -76,7 +76,10 @@ class NpmFixToolServiceImpl(
         }
         while (packageMetadataList.isNotEmpty()) {
             packageMetadataList.forEach {
-                logger.info("Retrieved ${packageMetadataList.size} records to repair, process: $totalCount/${packageMetadataPage.totalRecords}")
+                logger.info(
+                    "Retrieved ${packageMetadataList.size} records to repair, " +
+                        "process: $totalCount/${packageMetadataPage.totalRecords}"
+                )
                 val packageName = it.fullPath.removePrefix("/.npm/").removeSuffix("/package.json")
                 try {
                     // 修复metadata
@@ -126,9 +129,15 @@ class NpmFixToolServiceImpl(
         }
         if (isModify) {
             storePackageArtifact(packageJson, nodeInfo)
-            logger.info("repair package metadata for package [$packageName] success in repo [$projectId/$repoName], success versions: $successVersionList")
+            logger.info(
+                "repair package metadata for package [$packageName] success " +
+                    "in repo [$projectId/$repoName], success versions: $successVersionList"
+            )
         } else {
-            logger.info("the attribute is already exist in package metadata for package $packageName with version [$existsAttrVersionList] in repo [$projectId/$repoName], not to be repaired.")
+            logger.info(
+                "the attribute is already exist in package metadata for package $packageName " +
+                    "with version [$existsAttrVersionList] in repo [$projectId/$repoName], not to be repaired."
+            )
         }
     }
 
@@ -211,7 +220,10 @@ class NpmFixToolServiceImpl(
             return emptyList()
         }
         val npmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        logger.info("find [${npmLocalRepositoryList.size}] NPM local repository ${repositoryList.map { it.projectId to it.name }}")
+        logger.info(
+            "find [${npmLocalRepositoryList.size}] NPM local" +
+                " repository ${repositoryList.map { it.projectId to it.name }}"
+        )
         npmLocalRepositoryList.forEach {
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
             packageManagerList.add(packageManagerResponse)
@@ -255,7 +267,6 @@ class NpmFixToolServiceImpl(
                         exception
                     )
                     failedSet.add(FailPackageDetail(packageName, mutableSetOf()))
-                    // failedSet.add(packageName)
                     failedCount += 1
                 } finally {
                     totalCount += 1
@@ -267,7 +278,8 @@ class NpmFixToolServiceImpl(
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
         logger.info(
             "Repair npm package metadata file in repo [$projectId/$repoName], " +
-                "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+                "total: $totalCount, success: $successCount, failed: $failedCount, " +
+                "duration $durationSeconds s totally."
         )
         return PackageManagerResponse(
             projectId = projectId,

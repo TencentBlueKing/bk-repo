@@ -142,7 +142,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 deletePackage(artifactInfo, deletePackageRequest)
                 return
             }
-            val tgzPath = packageMetadata.versions.map[version]?.dist?.tarball?.substringAfterLast(artifactInfo.getRepoIdentify()).orEmpty()
+            val tgzPath =
+                packageMetadata.versions.map[version]?.dist?.tarball?.substringAfterLast(
+                    artifactInfo.getRepoIdentify()
+                ).orEmpty()
             npmClientService.deleteVersion(operator, artifactInfo, name, version, tgzPath)
             // 修改package.json文件的内容
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
@@ -190,7 +193,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
 
             ArtifactContextHolder.getRepository().upload(context).also {
-                logger.info("user [${context.userId}] upload npm package metadata file [$fullPath] into repo [$projectId/$repoName] success.")
+                logger.info(
+                    "user [${context.userId}] upload npm package metadata file [$fullPath] " +
+                        "to repo [$projectId/$repoName] success."
+                )
             }
             artifactFile.delete()
         }
