@@ -151,7 +151,10 @@ class TaskServiceTest {
         taskService.create("system", request)
     }
 
-    private fun insertFullTask(taskKey: String, status: ReplicationStatus = ReplicationStatus.WAITING): TReplicationTask {
+    private fun insertFullTask(
+        taskKey: String,
+        status: ReplicationStatus = ReplicationStatus.WAITING
+    ): TReplicationTask {
         val remoteClusterInfo = RemoteClusterInfo(url = "", username = "", password = "")
         val task = TReplicationTask(
             key = taskKey,

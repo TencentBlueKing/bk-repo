@@ -52,7 +52,7 @@ internal class StorageHealthMonitorTest {
         timesToRestore = 5,
         timesToFallback = 2
     )
-    private val storageProperties: StorageProperties = StorageProperties(filesystem = storageCredentials, monitor = monitorConfig)
+    private val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = monitorConfig)
 
     @Test
     fun testCheck() {

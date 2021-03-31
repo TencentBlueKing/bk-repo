@@ -373,8 +373,12 @@ class RepositoryServiceTest @Autowired constructor(
         repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
         assertNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test1"))
 
-        assertThrows<ErrorCodeException> { repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER)) }
-        assertThrows<ErrorCodeException> { repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> {
+            repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER))
+        }
+        assertThrows<ErrorCodeException> {
+            repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
+        }
 
         assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
     }
