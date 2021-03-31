@@ -121,7 +121,7 @@ object NpmUtils {
             newTarball.append(it.trimEnd(SLASH))
                 // .append(SLASH).append(artifactInfo.getRepoIdentify())
                 .append(SLASH).append(tgzSuffix.trimStart(SLASH))
-        } ?: if (tarballPrefix.isEmpty()){
+        } ?: if (tarballPrefix.isEmpty()) {
             // 这里有问题，远程仓库返回的是代理地址，应该返回本地的远程仓库地址
             newTarball.append(oldTarball)
         } else {
