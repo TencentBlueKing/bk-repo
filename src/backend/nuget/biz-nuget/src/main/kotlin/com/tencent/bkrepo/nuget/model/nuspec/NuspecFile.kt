@@ -5,7 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import java.io.Serializable
 
 @JacksonXmlRootElement(localName = "file")
-data class NuspecFile (
+data class NuspecFile(
     @JacksonXmlProperty(isAttribute = true)
     val src: String,
     @JacksonXmlProperty(isAttribute = true)

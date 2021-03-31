@@ -197,7 +197,8 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
                 Range.full(mavenMetadataNode.size),
                 ArtifactRemoveContext().storageCredentials
             ) ?: return
-            val xmlStr = String(artifactInputStream.readBytes()).removePrefix("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+            val xmlStr = String(artifactInputStream.readBytes())
+                .removePrefix("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
             val mavenMetadata = xmlStr.readXmlString<MavenMetadata>()
             mavenMetadata.versioning.versions.version.removeIf { it == version }
             // 当删除当前版本后不存在任一版本则删除整个包。

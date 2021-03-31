@@ -112,7 +112,10 @@ class DataMigrationService(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigrationByFile(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): MigrateDetail {
-        logger.info("handling migration by file request parameter:[isUseErrorData: $useErrorData, fileName: $FILE_NAME]")
+        logger.info(
+            "handling migration by file request parameter: " +
+                "[isUseErrorData: $useErrorData, fileName: $FILE_NAME]"
+        )
         val totalDataSet: Set<String>
         totalDataSet = if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
@@ -127,7 +130,10 @@ class DataMigrationService(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     fun dataMigrationByUrl(artifactInfo: NpmArtifactInfo, useErrorData: Boolean): MigrateDetail {
-        logger.info("handling migration by url request parameter: [url: ${npmProperties.migration.dataUrl}, isUseErrorData: $useErrorData]")
+        logger.info(
+            "handling migration by url request parameter: " +
+                "[url: ${npmProperties.migration.dataUrl}, isUseErrorData: $useErrorData]"
+        )
         val totalDataSet: Set<String>
         totalDataSet = if (useErrorData) {
             val result = find(artifactInfo.projectId, artifactInfo.repoName)
@@ -146,7 +152,9 @@ class DataMigrationService(
         useErrorData: Boolean,
         pkgName: String
     ): MigrateDetail {
-        logger.info("handling migration by package name request parameter: [isUseErrorData: $useErrorData, pkgName: $pkgName]")
+        logger.info(
+            "handling migration by package name request parameter: [isUseErrorData: $useErrorData, pkgName: $pkgName]"
+        )
         val pkgNameSet = initTotalDataSetByPkgName(pkgName)
         logger.info("migration by pkgName filter results: [$pkgNameSet], size: ${pkgNameSet.size}")
         return dataMigration(pkgNameSet, artifactInfo, useErrorData)

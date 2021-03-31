@@ -173,8 +173,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 val newLatest =
                     packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
                         ?: run {
-                            logger.error("delete version by web operator to find new latest version failed with package [$name]")
-                            throw NpmArtifactNotFoundException("delete version by web operator to find new latest version failed with package [$name]")
+                            val message =
+                                "delete version by web operator to find new latest version failed with package [$name]"
+                            logger.error(message)
+                            throw NpmArtifactNotFoundException(message)
                         }
                 packageMetaData.versions.map.remove(version)
                 packageMetaData.time.getMap().remove(version)
