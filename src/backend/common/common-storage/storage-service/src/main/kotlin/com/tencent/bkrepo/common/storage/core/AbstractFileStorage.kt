@@ -73,9 +73,9 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     init {
-        //重试策略：次数重试策略
+        // 重试策略：次数重试策略
         val retryPolicy = SimpleRetryPolicy(RETRY_MAX_ATTEMPTS)
-        //退避策略：指数退避策略
+        // 退避策略：指数退避策略
         val backOffPolicy = ExponentialBackOffPolicy().apply {
             initialInterval = RETRY_INITIAL_INTERVAL
             maxInterval = RETRY_MAX_INTERVAL
@@ -87,7 +87,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
-        retryTemplate.execute<Unit, Exception>{
+        retryTemplate.execute<Unit, Exception> {
             it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_FILE)
             val client = getClient(storageCredentials)
             val size = file.length()
@@ -106,7 +106,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         storageCredentials: StorageCredentials
     ) {
         val client = getClient(storageCredentials)
-        retryTemplate.execute<Unit, RuntimeException>{
+        retryTemplate.execute<Unit, RuntimeException> {
             it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_STREAM)
             if (!inputStream.markSupported()) {
                 it.setExhaustedOnly()

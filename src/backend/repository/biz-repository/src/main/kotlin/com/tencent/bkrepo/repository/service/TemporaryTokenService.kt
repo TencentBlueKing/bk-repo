@@ -61,5 +61,4 @@ interface TemporaryTokenService {
      * 根据[token]删除临时token信息
      */
     fun decrementPermits(token: String)
-
 }

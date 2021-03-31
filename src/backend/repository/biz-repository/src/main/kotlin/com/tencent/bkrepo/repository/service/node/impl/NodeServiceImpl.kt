@@ -50,7 +50,7 @@ import org.springframework.transaction.annotation.Transactional
  * 节点服务实现类
  */
 @Service
-class NodeServiceImpl (
+class NodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,

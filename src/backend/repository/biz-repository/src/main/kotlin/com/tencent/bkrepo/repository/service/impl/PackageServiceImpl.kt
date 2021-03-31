@@ -177,7 +177,7 @@ class PackageServiceImpl(
             val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
             val newVersion = if (oldVersion != null) {
                 if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, packageName,  versionName)
+                    throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, packageName, versionName)
                 }
                 // overwrite
                 oldVersion.apply {
@@ -465,7 +465,7 @@ class PackageServiceImpl(
     private fun mergeVersionTag(
         original: Map<String, String>?,
         extra: Map<String, String>?
-    ) : Map<String, String> {
+    ): Map<String, String> {
         return original?.toMutableMap()?.apply {
             extra?.forEach { (tag, version) -> this[tag] = version }
         }.orEmpty()

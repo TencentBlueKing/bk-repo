@@ -252,7 +252,6 @@ class TemporaryAccessService(
         }
     }
 
-
     companion object {
         private const val TEMPORARY_DOWNLOAD_ENDPOINT = "temporary/download"
     }

@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory
  */
 open class NodeRenameSupport(
     private val nodeBaseService: NodeBaseService
-): NodeRenameOperation {
+) : NodeRenameOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
