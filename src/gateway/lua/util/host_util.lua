@@ -36,9 +36,20 @@ function _M:get_addr(service_name)
     local ns_config = config.ns
     local tag = ns_config.tag
 
-    -- devops request to devops cluster
-    if service_name == "generic" and stringUtil:startswith(ngx.var.path, "devops/") then
-        tag = "devops"
+    -- router by project
+    for _, value in ipairs(config.router.project) do
+        local prefix = value.name .. "/"
+        if service_name == "generic" and stringUtil:startswith(ngx.var.path, prefix) then
+            tag = value.tag
+        end
+    end
+
+    -- router by repo
+    for _, value in pairs(config.router.project) do
+        local pathArray = stringUtil:split(ngx.var.path, "/")
+        if service_name == "generic" and table.len(pathArray) > 1 and pathArray[2] == value.name then
+            tag = value.tag
+        end
     end
 
     local query_subdomain = tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain

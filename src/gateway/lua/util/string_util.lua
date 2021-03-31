@@ -38,10 +38,16 @@ function _M:startswith(str, substr)
   return string.sub(str, 1, string.len(substr)) == substr
 end
 
-function _M:split(str, pattern)
-  local rt = {}
-  string.gsub(str, '[^' .. pattern .. ']+', function(w) table.insert(rt, w) end)
-  return rt
+function _M:split (str, sep)
+    if sep == nil then
+        sep = "%s"
+    end
+    local t = {}
+    for str in string.gmatch(str, "([^" .. sep .. "]+)") do
+        table.insert(t, str)
+    end
+    return t
 end
+
 
 return _M
