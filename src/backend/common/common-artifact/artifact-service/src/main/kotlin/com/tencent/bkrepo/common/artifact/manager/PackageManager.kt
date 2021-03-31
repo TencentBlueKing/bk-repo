@@ -50,10 +50,10 @@ class PackageManager(
     }
 
     fun findVersionByName(
-         projectId: String,
-         repoName: String,
-         packageKey: String,
-         version: String
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
     ): PackageVersion {
         return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
             ?: throw NotFoundException(ArtifactMessageCode.VERSION_NOT_FOUND, version)
@@ -68,5 +68,4 @@ class PackageManager(
         return packageClient.findVersionNameByTag(projectId, repoName, packageKey, tag).data
             ?: throw NotFoundException(ArtifactMessageCode.VERSION_NOT_FOUND, tag)
     }
-
 }

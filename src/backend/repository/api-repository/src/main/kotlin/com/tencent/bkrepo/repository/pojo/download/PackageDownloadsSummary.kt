@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("包下载总览统计")
-data class PackageDownloadsSummary (
+data class PackageDownloadsSummary(
     @ApiModelProperty("下载总数")
     val total: Long,
     @ApiModelProperty("今日下载数")

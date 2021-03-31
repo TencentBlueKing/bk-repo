@@ -67,7 +67,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 节点基础服务，实现了CRUD基本操作
  */
-abstract class NodeBaseService (
+abstract class NodeBaseService(
     open val nodeDao: NodeDao,
     open val repositoryDao: RepositoryDao,
     open val fileReferenceService: FileReferenceService,
@@ -75,14 +75,14 @@ abstract class NodeBaseService (
     open val storageService: StorageService,
     open val repositoryProperties: RepositoryProperties
 ) : NodeService, NodeBaseOperation, AbstractService() {
-    
+
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
             val node = nodeDao.findNode(projectId, repoName, getArtifactFullPath())
             return convertToDetail(node)
         }
     }
-    
+
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
         with(artifact) {
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
@@ -224,7 +224,6 @@ abstract class NodeBaseService (
             }
         }
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)

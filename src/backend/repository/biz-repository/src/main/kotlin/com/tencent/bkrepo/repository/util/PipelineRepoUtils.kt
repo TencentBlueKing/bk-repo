@@ -52,5 +52,4 @@ object PipelineRepoUtils {
             //throw ErrorCodeException(status = HttpStatus.FORBIDDEN, messageCode = ArtifactMessageCode.PIPELINE_BANNED)
         }
     }
-
 }

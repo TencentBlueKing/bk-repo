@@ -72,8 +72,6 @@ object CosHttpClient {
             val message = buildMessage(request, response)
             throw InnerCosException("Failed to execute http request: $message", exception)
         }
-
-
     }
 
     private fun buildMessage(request: Request, response: Response? = null): String {

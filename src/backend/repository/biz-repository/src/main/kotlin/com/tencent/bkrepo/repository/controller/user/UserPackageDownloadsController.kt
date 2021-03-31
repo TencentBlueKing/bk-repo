@@ -79,5 +79,4 @@ class UserPackageDownloadsController(
             return ResponseBuilder.success(packageDownloadsService.querySummary(this))
         }
     }
-
 }

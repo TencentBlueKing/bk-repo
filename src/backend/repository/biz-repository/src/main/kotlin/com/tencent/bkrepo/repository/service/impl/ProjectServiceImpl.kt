@@ -122,7 +122,8 @@ class ProjectServiceImpl(
             }
             if (displayName.isBlank()
                 || displayName.length < DISPLAY_NAME_LENGTH_MIN
-                || displayName.length > DISPLAY_NAME_LENGTH_MAX) {
+                || displayName.length > DISPLAY_NAME_LENGTH_MAX
+            ) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
             }
         }

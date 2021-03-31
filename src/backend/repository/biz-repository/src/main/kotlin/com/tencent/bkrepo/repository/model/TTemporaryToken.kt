@@ -44,7 +44,7 @@ import java.time.LocalDateTime
 @CompoundIndexes(
     CompoundIndex(def = "{'token': 1, 'type': 1}", background = true)
 )
-data class TTemporaryToken (
+data class TTemporaryToken(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,

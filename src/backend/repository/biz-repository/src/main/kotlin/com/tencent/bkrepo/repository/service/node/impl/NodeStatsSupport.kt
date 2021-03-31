@@ -48,7 +48,7 @@ import org.springframework.data.mongodb.core.query.Query
  */
 open class NodeStatsSupport(
     nodeBaseService: NodeBaseService
-): NodeStatsOperation {
+) : NodeStatsOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
@@ -86,5 +86,4 @@ open class NodeStatsSupport(
             return nodeDao.count(query)
         }
     }
-
 }

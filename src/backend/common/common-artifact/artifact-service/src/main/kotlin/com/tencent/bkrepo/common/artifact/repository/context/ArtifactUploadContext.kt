@@ -169,16 +169,14 @@ open class ArtifactUploadContext : ArtifactContext {
      */
     fun validateDigest(uploadDigest: String, filename: String? = null) {
         val file = getArtifactFile(filename)
-        val calculatedDigest = when(uploadDigest.length) {
+        val calculatedDigest = when (uploadDigest.length) {
             HashAlgorithm.MD5_LENGTH -> file.getFileMd5()
             HashAlgorithm.SHA1_LENGTH -> file.getFileSha1()
             HashAlgorithm.SHA256_LENGTH -> file.getFileSha256()
-            HashAlgorithm.SHA512_LENGTH -> file.getFileSha256()
-            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID , "digest")
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "digest")
         }
         if (uploadDigest != calculatedDigest) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "digest")
         }
     }
-
 }
