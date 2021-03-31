@@ -50,5 +50,10 @@ interface ChartInfoService {
     /**
      * 查询版本详情
      */
-    fun detailVersion(userId: String, artifactInfo: HelmArtifactInfo, packageKey: String, version: String): PackageVersionInfo
+    fun detailVersion(
+        userId: String,
+        artifactInfo: HelmArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo
 }
