@@ -245,20 +245,18 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         // 保存版本信息
         packageClient.createVersion(
             PackageVersionCreateRequest(
-                context.projectId,
-                context.repoName,
-                composerArtifact.name,
-                PackageKeys.ofComposer(composerArtifact.name),
-                PackageType.COMPOSER,
-                null,
-                composerArtifact.version,
-                context.getArtifactFile().getSize(),
-                null,
-                context.artifactInfo.getArtifactFullPath(),
-                null,
-                metadata,
-                overwrite = true,
-                createdBy = context.userId
+                    projectId = context.projectId,
+                    repoName = context.repoName,
+                    packageName = composerArtifact.name,
+                    packageKey = PackageKeys.ofComposer(composerArtifact.name),
+                    packageType = PackageType.COMPOSER,
+                    packageDescription = null,
+                    versionName = composerArtifact.version,
+                    size = context.getArtifactFile().getSize(),
+                    manifestPath = null,
+                    artifactPath = context.artifactInfo.getArtifactFullPath(),
+                    overwrite = true,
+                    createdBy = context.userId
             )
         )
     }

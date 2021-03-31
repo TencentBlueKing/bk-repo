@@ -63,8 +63,16 @@ object XmlStrUtils {
     /**
      * 针对重复节点则替换相应数据
      */
-    fun updatePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String, markContent: ByteArray): Int {
-        logger.info("updatePackageIndex: indexType: $indexType, locationStr: ${locationStr.replace("\n", "")}")
+    fun updatePackageIndex(
+            randomAccessFile: RandomAccessFile,
+            indexType: IndexType,
+            locationStr: String,
+            markContent: ByteArray
+    ): Int {
+        logger.info(
+                "updatePackageIndex: indexType: $indexType, " +
+                        "locationStr: ${locationStr.replace("\n", "")}"
+        )
         val stopWatch = StopWatch("updatePackageIndex")
 
         stopWatch.start("findPackageIndex")
@@ -93,11 +101,13 @@ object XmlStrUtils {
     /**
      * 删除包对应的索引
      * [indexType] 索引类型
-     * [file] 需要删除内容的索引文件
-     * [location] rpm构件相对repodata的目录
+     * [locationStr] rpm构件相对repodata的目录
      */
     fun deletePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String): Int {
-        logger.info("deletePackageIndex: indexType: $indexType, locationStr: ${locationStr.replace("\n", "")}")
+        logger.info(
+                "deletePackageIndex: indexType: $indexType, " +
+                        "locationStr: ${locationStr.replace("\n", "")}"
+        )
 
         val stopWatch = StopWatch("deletePackageIndex")
         stopWatch.start("findIndex")
@@ -180,7 +190,12 @@ object XmlStrUtils {
      * 删除rpm包索引
      */
     fun deletePackageXml(randomAccessFile: RandomAccessFile, xmlIndex: XmlIndex) {
-        updatePackageXml(randomAccessFile, xmlIndex.prefixIndex, xmlIndex.suffixEndIndex - xmlIndex.prefixIndex, "".toByteArray())
+        updatePackageXml(
+                randomAccessFile,
+                xmlIndex.prefixIndex,
+                xmlIndex.suffixEndIndex - xmlIndex.prefixIndex,
+                "".toByteArray()
+        )
     }
 
     /**
@@ -241,7 +256,11 @@ object XmlStrUtils {
         }
 
         return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
-            logger.warn("findPackageIndex failed, locationStr: $locationStr, prefixIndex: $prefixIndex, locationIndex: $locationIndex, suffixIndex: $suffixIndex")
+            logger.warn(
+                    "findPackageIndex failed, locationStr: $locationStr, " +
+                            "prefixIndex: $prefixIndex, " +
+                            "locationIndex: $locationIndex, suffixIndex: $suffixIndex"
+            )
             null
         } else {
             val suffixEndIndex = suffixIndex + suffixStr.length
@@ -273,8 +292,17 @@ object XmlStrUtils {
     /**
      * 更新索引文件中 package 数量
      */
-    fun updatePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType, changCount: Int, calculatePackage: Boolean) {
-        logger.info("updatePackageCount, indexType: $indexType, changCount: $changCount, calculatePackage: $calculatePackage")
+    fun updatePackageCount(
+            randomAccessFile: RandomAccessFile,
+            indexType: IndexType,
+            changCount: Int,
+            calculatePackage: Boolean
+    ) {
+        logger.info(
+                "updatePackageCount, indexType: $indexType, " +
+                        "changCount: $changCount, " +
+                        "calculatePackage: $calculatePackage"
+        )
         val currentCount = resolvePackageCount(randomAccessFile, indexType)
         logger.info("currentCount: $currentCount")
 
@@ -292,7 +320,8 @@ object XmlStrUtils {
         val packageCountIndex = when (indexType) {
             IndexType.PRIMARY ->
                 """<?xml version="1.0" encoding="UTF-8" ?>
-<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages="""".length
+<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages=""""
+                        .length
             IndexType.FILELISTS ->
                 """<?xml version="1.0" encoding="UTF-8" ?>
 <metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="""".length
@@ -300,19 +329,33 @@ object XmlStrUtils {
                 """<?xml version="1.0" encoding="UTF-8" ?>
 <metadata xmlns="http://linux.duke.edu/metadata/other" packages="""".length
         }
-        updatePackageXml(randomAccessFile, packageCountIndex.toLong(), currentCount.toString().length.toLong(), packageCount.toString().toByteArray())
+        updatePackageXml(
+                randomAccessFile,
+                packageCountIndex.toLong(),
+                currentCount.toString().length.toLong(),
+                packageCount.toString().toByteArray()
+        )
     }
 
     /**
      * 更新索引
      * [randomAccessFile] 文件内容
-     * [index] 更新位置
+     * [updateIndex] 更新位置
      * [cleanLength] 清理长度
      * [newContent] 新内容
      */
-    fun updatePackageXml(randomAccessFile: RandomAccessFile, updateIndex: Long, cleanLength: Long, newContent: ByteArray) {
+    fun updatePackageXml(
+            randomAccessFile: RandomAccessFile,
+            updateIndex: Long,
+            cleanLength: Long,
+            newContent: ByteArray
+    ) {
         if (logger.isDebugEnabled) {
-            logger.debug("updatePackageXml: updateIndex: $updateIndex, cleanLength: $cleanLength, newContentSize: ${newContent.size}")
+            logger.debug(
+                    "updatePackageXml: updateIndex: $updateIndex, " +
+                            "cleanLength: $cleanLength, " +
+                            "newContentSize: ${newContent.size}"
+            )
         }
 
         randomAccessFile.seek(updateIndex + cleanLength)
