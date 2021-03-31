@@ -220,7 +220,9 @@ class RpmLocalRepository(
             1L
         )
         stopWatch.start("storeOthers")
-        storeIndexMarkFile(context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHERS, othersIndexData, artifactSha256)
+        storeIndexMarkFile(
+            context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHERS, othersIndexData, artifactSha256
+        )
         stopWatch.stop()
         if (rpmRepoConf.enabledFileLists) {
             val fileListsIndexData = RpmMetadataFileList(
@@ -235,14 +237,20 @@ class RpmLocalRepository(
                 1L
             )
             stopWatch.start("storeFilelists")
-            storeIndexMarkFile(context, repoDataPojo, repeat, markFileMatedata, IndexType.FILELISTS, fileListsIndexData, artifactSha256)
+            storeIndexMarkFile(
+                context, repoDataPojo, repeat, markFileMatedata,
+                IndexType.FILELISTS, fileListsIndexData, artifactSha256
+            )
             stopWatch.stop()
         }
 
         rpmMetadata.filterRpmFileLists()
         rpmMetadata.packages[0].format.changeLogs.clear()
         stopWatch.start("storePrimary")
-        storeIndexMarkFile(context, repoDataPojo, repeat, markFileMatedata, IndexType.PRIMARY, rpmMetadata, artifactSha256)
+        storeIndexMarkFile(
+            context, repoDataPojo, repeat, markFileMatedata,
+            IndexType.PRIMARY, rpmMetadata, artifactSha256
+        )
         stopWatch.stop()
         if (logger.isDebugEnabled) {
             logger.debug("markStat: $stopWatch")
@@ -264,14 +272,19 @@ class RpmLocalRepository(
         sha256: String?
     ) {
         val repodataUri = repoData.repoDataPath
-        logger.info("storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType, metadata: $metadata")
+        logger.info(
+            "storeIndexMarkFile, repodataUri: $repodataUri, " +
+                    "repeat: $repeat, indexType: $indexType, metadata: $metadata"
+        )
         val artifactFile = when (repeat) {
             FULLPATH_SHA256 -> {
                 logger.warn("artifact repeat is $FULLPATH_SHA256, skip")
                 return
             }
             NONE, FULLPATH -> {
-                ArtifactFileFactory.build(ByteArrayInputStream(XmlStrUtils.toMarkFileXml(rpmXmlMetadata!!, indexType).toByteArray()))
+                ArtifactFileFactory.build(
+                    ByteArrayInputStream(XmlStrUtils.toMarkFileXml(rpmXmlMetadata!!, indexType).toByteArray())
+                )
             }
             else -> {
                 ArtifactFileFactory.build(ByteArrayInputStream("mark".toByteArray()))
@@ -579,17 +592,17 @@ class RpmLocalRepository(
 
         // 更新 primary, others
         storeIndexMarkFile(
-                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY,
-                null, artifactSha256
+            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY,
+            null, artifactSha256
         )
         storeIndexMarkFile(
-                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS,
-                null, artifactSha256
+            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS,
+            null, artifactSha256
         )
         if (rpmRepoConf.enabledFileLists) {
             storeIndexMarkFile(
-                    context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS,
-                    null, artifactSha256
+                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS,
+                null, artifactSha256
             )
         }
 

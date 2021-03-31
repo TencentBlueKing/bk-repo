@@ -100,7 +100,7 @@ class RpmService(
         val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
         val oldGroups = (
                 rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-                        ?: mutableListOf()
+                    ?: mutableListOf()
                 ).toMutableSet()
         oldGroups.addAll(groups)
         rpmConfiguration.settings["groupXmlSet"] = oldGroups
@@ -116,7 +116,7 @@ class RpmService(
         val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
         val oldGroups = (
                 rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-                        ?: mutableListOf()
+                    ?: mutableListOf()
                 ).toMutableSet()
         oldGroups.removeAll(groups)
         rpmConfiguration.settings["groupXmlSet"] = oldGroups

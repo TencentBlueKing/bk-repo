@@ -77,7 +77,8 @@ object RpmFormatUtils {
         count = format.header.read(readableChannelWrapper)
         stopWatch.stop()
         val immutableEntry = format.header.getEntry(Header.HeaderTag.HEADERIMMUTABLE)
-        expected = if (immutableEntry == null) 0 else (ByteBuffer.wrap(immutableEntry.values as ByteArray, 8, 4).int / -16)
+        expected = if (immutableEntry == null)
+            0 else (ByteBuffer.wrap(immutableEntry.values as ByteArray, 8, 4).int / -16)
         val headerLength = readableChannelWrapper.finish(headerKey) as Int
         format.header.endPos = headerStartPos + headerLength
         if (logger.isDebugEnabled) {
