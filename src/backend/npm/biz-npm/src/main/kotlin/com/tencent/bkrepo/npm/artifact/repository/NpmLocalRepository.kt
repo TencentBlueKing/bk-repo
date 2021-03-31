@@ -116,15 +116,9 @@ class NpmLocalRepository(
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
             operator = context.userId,
-            // metadata = parseMetaData(name, context.getAttributes()),
             overwrite = name != NPM_PACKAGE_TGZ_FILE
         )
     }
-
-    // @Suppress("UNCHECKED_CAST")
-    // fun parseMetaData(name: String, contextAttributes: Map<String, Any>): Map<String, String> {
-    //     return if (name == NPM_PACKAGE_TGZ_FILE) contextAttributes[NPM_METADATA] as Map<String, String> else emptyMap()
-    // }
 
     override fun query(context: ArtifactQueryContext): InputStream? {
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)

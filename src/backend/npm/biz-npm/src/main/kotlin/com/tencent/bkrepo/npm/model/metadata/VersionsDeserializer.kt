@@ -36,7 +36,7 @@ import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.JsonDeserializer
 
-class VersionsDeserializer() : JsonDeserializer<NpmPackageMetaData.Versions>() {
+class VersionsDeserializer : JsonDeserializer<NpmPackageMetaData.Versions>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext?): NpmPackageMetaData.Versions {
         val versions = NpmPackageMetaData.Versions()
         while (parser.nextToken() != JsonToken.END_OBJECT) {
