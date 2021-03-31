@@ -81,7 +81,8 @@ class NpmVersionMetadata : Serializable {
             field = if (devDependencies is Map) {
                 devDependencies
             } else {
-                if ((devDependencies !is List<*> || (devDependencies as List<*>).isNotEmpty()) && devDependencies != null) {
+                if ((devDependencies !is List<*> ||
+                        (devDependencies as List<*>).isNotEmpty()) && devDependencies != null) {
                     throw IOException("Invalid package.json format. The devDependencies field cannot be parsed.")
                 }
                 mutableMapOf()
