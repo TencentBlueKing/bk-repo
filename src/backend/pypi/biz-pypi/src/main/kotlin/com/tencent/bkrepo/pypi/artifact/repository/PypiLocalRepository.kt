@@ -358,10 +358,10 @@ class PypiLocalRepository(
             // 查询的对应的文件节点的metadata
             val metadata = filenodeMetadata(node)
             builder.append(
-                    "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${
-                        node
-                                .fullPath
-                    }#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
+                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${
+                    node
+                        .fullPath
+                }#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
             )
         }
         return builder.toString()
@@ -486,33 +486,33 @@ class PypiLocalRepository(
         val end = Instant.now()
         val elapseTimeSeconds = Duration.between(start, end)
         insertMigrateData(
-                context,
-                failSet,
-                limitPackages,
-                totalCount,
-                elapseTimeSeconds.seconds
+            context,
+            failSet,
+            limitPackages,
+            totalCount,
+            elapseTimeSeconds.seconds
         )
         return MigrateDetail(
-                context.projectId,
-                context.repoName,
-                packageMigrateDetailList,
-                elapseTimeSeconds,
-                null
+            context.projectId,
+            context.repoName,
+            packageMigrateDetailList,
+            elapseTimeSeconds,
+            null
         )
     }
 
     private fun migratePackage(
-            element: Element,
-            verifiedUrl: String,
-            threadPool: ThreadPoolExecutor,
-            context: ArtifactMigrateContext
+        element: Element,
+        verifiedUrl: String,
+        threadPool: ThreadPoolExecutor,
+        context: ArtifactMigrateContext
     ): PackageMigrateDetail? {
         // 每一个包所包含的文件列表
         element.text()?.let { packageName ->
             val packageMigrateDetail = PackageMigrateDetail(
-                    packageName,
-                    mutableSetOf(),
-                    mutableSetOf()
+                packageName,
+                mutableSetOf(),
+                mutableSetOf()
             )
             "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
                 for (fileNode in fileNodes) {
@@ -527,14 +527,14 @@ class PypiLocalRepository(
     }
 
     private fun insertMigrateData(
-            context: ArtifactMigrateContext,
-            collect: Set<String>,
-            packagesName: Int,
-            filesNum: Int,
-            elapseTimeSeconds: Long
+        context: ArtifactMigrateContext,
+        collect: Set<String>,
+        packagesName: Int,
+        filesNum: Int,
+        elapseTimeSeconds: Long
     ) {
         val dataCreateRequest = MigrateDataCreateNode(
-                projectId = context.artifactInfo.projectId,
+            projectId = context.artifactInfo.projectId,
             repoName = context.artifactInfo.repoName,
             errorData = jacksonObjectMapper().writeValueAsString(collect),
             packagesNum = packagesName,

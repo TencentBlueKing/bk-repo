@@ -47,12 +47,21 @@ class ComposerWebResourceController(
         return ResponseBuilder.success()
     }
 
-    override fun deleteVersion(composerArtifactInfo: ComposerArtifactInfo, packageKey: String, version: String?): Response<Void> {
+    override fun deleteVersion(
+        composerArtifactInfo: ComposerArtifactInfo,
+        packageKey: String,
+        version: String?
+    ): Response<Void> {
         composerWebService.delete(composerArtifactInfo, packageKey, version)
         return ResponseBuilder.success()
     }
 
-    override fun artifactDetail(composerArtifactInfo: ComposerArtifactInfo, packageKey: String, version: String?): Response<Any?> {
+    override fun artifactDetail(
+        composerArtifactInfo:
+        ComposerArtifactInfo,
+        packageKey: String,
+        version: String?
+    ): Response<Any?> {
         return ResponseBuilder.success(composerWebService.artifactDetail(composerArtifactInfo, packageKey, version))
     }
 }
