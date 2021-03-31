@@ -30,8 +30,8 @@
                                 <span>{{repoAddress}}</span>
                             </bk-form-item>
                             <template v-if="repoType === 'rpm'">
-                                <bk-form-item :label="$t('enableFileLists')">
-                                    <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                                <bk-form-item :label="$t('enabledFileLists')">
+                                    <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
                                     <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
@@ -90,7 +90,7 @@
                     loading: false,
                     repoName: '',
                     repoType: '',
-                    enableFileLists: false,
+                    enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: ''
@@ -183,7 +183,7 @@
                     body.configuration = {
                         ...this.repoBaseInfo.configuration,
                         settings: {
-                            enableFileLists: this.repoBaseInfo.enableFileLists,
+                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
                             repodataDepth: this.repoBaseInfo.repodataDepth,
                             groupXmlSet: this.repoBaseInfo.groupXmlSet
                         }

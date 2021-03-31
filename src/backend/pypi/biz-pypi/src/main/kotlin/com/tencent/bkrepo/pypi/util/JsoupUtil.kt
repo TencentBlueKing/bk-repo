@@ -71,9 +71,7 @@ object JsoupUtil {
         for (e in elements) {
             e.text()?.let { packageName ->
                 "$this/$packageName".htmlHrefs().let { filenodes ->
-                    for (filenode in filenodes) {
-                        sum++
-                    }
+                    sum += filenodes.size
                 }
             }
         }

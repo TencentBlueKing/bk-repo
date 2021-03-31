@@ -34,24 +34,21 @@ package com.tencent.bkrepo.composer.util
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.tencent.bkrepo.common.api.util.DecompressUtils
 import com.tencent.bkrepo.composer.DIRECT_DISTS
 import com.tencent.bkrepo.composer.COMPOSER_JSON
 import com.tencent.bkrepo.composer.exception.ComposerUnSupportCompressException
-import com.tencent.bkrepo.composer.pojo.ComposerMetadata
 import com.tencent.bkrepo.composer.util.JsonUtil.jsonValue
-import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
-import org.apache.commons.compress.archivers.ArchiveEntry
 import java.util.UUID
 import kotlin.math.abs
 
 object DecompressUtil {
 
-    private const val BUFFER_SIZE = 2048
     // 支持的压缩格式
     private const val TAR = "tar"
     private const val ZIP = "zip"
@@ -71,7 +68,6 @@ object DecompressUtil {
 
     /**
      * 获取composer 压缩包中'composer.json'文件
-     * @param InputStream 文件流
      * @param format 文件压缩格式
      * @exception
      */
@@ -90,12 +86,6 @@ object DecompressUtil {
                 throw ComposerUnSupportCompressException("Can not support compress format!")
             }
         }
-    }
-
-    fun InputStream.getComposerMetadata(uri: String): ComposerMetadata {
-        val uriArgs = UriUtil.getUriArgs(uri)
-        val json = this.getComposerJson(uriArgs.format)
-        return JsonUtil.mapper.readValue(json, ComposerMetadata::class.java)
     }
 
     /**
@@ -124,37 +114,14 @@ object DecompressUtil {
     }
 
     private fun getZipComposerJson(inputStream: InputStream): String {
-        return getCompressComposerJson(ZipArchiveInputStream(inputStream))
+        return DecompressUtils.getContent(ZipArchiveInputStream(inputStream), COMPOSER_JSON)
     }
 
     private fun getTgzComposerJson(inputStream: InputStream): String {
-        return getCompressComposerJson(TarArchiveInputStream(GZIPInputStream(inputStream)))
+        return DecompressUtils.getContent(TarArchiveInputStream(GZIPInputStream(inputStream)), COMPOSER_JSON)
     }
 
     private fun getTarComposerJson(inputStream: InputStream): String {
-        return getCompressComposerJson(TarArchiveInputStream(inputStream))
-    }
-
-    /**
-     * 获取Composer package 压缩中的'composer.json'文件
-     * @param tarInputStream 压缩文件流
-     * @return 以字符串格式返回 composer.json 文件内容
-     */
-    private fun getCompressComposerJson(archiveInputStream: ArchiveInputStream): String {
-        val stringBuilder = StringBuffer("")
-        var zipEntry: ArchiveEntry
-        archiveInputStream.use {
-            loop@while (archiveInputStream.nextEntry.also { zipEntry = it } != null) {
-                if ((!zipEntry.isDirectory) && zipEntry.name.split("/").last() == COMPOSER_JSON) {
-                    var length: Int
-                    val bytes = ByteArray(BUFFER_SIZE)
-                    while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
-                        stringBuilder.append(String(bytes, 0, length))
-                    }
-                    break@loop
-                }
-            }
-        }
-        return stringBuilder.toString()
+        return DecompressUtils.getContent(TarArchiveInputStream(inputStream), COMPOSER_JSON)
     }
 }
