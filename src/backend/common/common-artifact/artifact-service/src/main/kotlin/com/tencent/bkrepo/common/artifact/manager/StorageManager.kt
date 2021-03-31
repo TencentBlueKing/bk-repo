@@ -116,7 +116,6 @@ class StorageManager(
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
-
     }
 
     companion object {

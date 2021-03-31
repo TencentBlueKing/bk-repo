@@ -48,7 +48,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/pipeline/")
-class UserPipelineController (
+class UserPipelineController(
     private val nodeService: NodeService,
     private val servicePipelineResource: ServicePipelineResource
 ) {

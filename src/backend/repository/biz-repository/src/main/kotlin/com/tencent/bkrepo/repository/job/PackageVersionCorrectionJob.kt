@@ -77,7 +77,7 @@ class PackageVersionCorrectionJob(
                     packageVersionDao.listByPackageId(pkg.id.orEmpty()).forEach { version ->
                         // 查询节点
                         if (version.artifactPath?.isNotBlank() == true) {
-                            if(!nodeDao.exists(repo.projectId, repo.name, version.artifactPath!!)) {
+                            if (!nodeDao.exists(repo.projectId, repo.name, version.artifactPath!!)) {
                                 val displayVersion = "${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}"
                                 logger.info("Package version [$displayVersion] has been deleted.")
                                 if (!dryRun) {

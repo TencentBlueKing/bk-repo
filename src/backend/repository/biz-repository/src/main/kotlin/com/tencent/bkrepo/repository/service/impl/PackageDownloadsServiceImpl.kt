@@ -242,7 +242,7 @@ class PackageDownloadsServiceImpl(
                 eqDate?.let { and(DATE).isEqualTo(eqDate.toString()) }
             }
         if (fromDate != null && toDate != null) {
-            if(fromDate.isAfter(toDate)) {
+            if (fromDate.isAfter(toDate)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "date range")
             }
             val fromDateString = fromDate.toString()
@@ -266,7 +266,6 @@ class PackageDownloadsServiceImpl(
         }
         return dateRangeMap
     }
-
 
     /**
      * 查找包，不存在则抛异常
@@ -297,12 +296,12 @@ class PackageDownloadsServiceImpl(
         private const val COUNT = "count"
     }
 
-    data class DateCount (
+    data class DateCount(
         val date: String,
         val count: Long
     )
 
-    data class Count (
+    data class Count(
         val count: Long
     )
 }

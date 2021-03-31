@@ -95,8 +95,10 @@ class PackageDownloadsMigrationJob(
                                 date = downloads.date,
                                 count = downloads.count
                             )
-                            logger.info("Migrate [${downloads.count}] downloads on [${downloads.date}] " +
-                                "for version[$displayVersion]")
+                            logger.info(
+                                "Migrate [${downloads.count}] downloads on [${downloads.date}] " +
+                                    "for version[$displayVersion]"
+                            )
                             packageDownloadsService.migrate(migrationRequest)
                         }
                     }
@@ -149,7 +151,6 @@ class PackageDownloadsMigrationJob(
             )
         }
     }
-
 
     private fun queryLegacyDownloads(request: LegacyQueryRequest): List<LegacyDownloads> {
         if (request.artifact.isBlank()) return emptyList()

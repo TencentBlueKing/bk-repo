@@ -149,7 +149,6 @@ open class PermissionManager(
         repoName: String,
         public: Boolean? = null
     ): Boolean {
-        return true
         if (action != PermissionAction.READ) {
             return false
         }
@@ -189,7 +188,7 @@ open class PermissionManager(
             action = action,
             projectId = projectId,
             repoName = repoName,
-            path =  path
+            path = path
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误
