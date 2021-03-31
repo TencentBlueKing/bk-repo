@@ -144,7 +144,10 @@ class HelmPackageHandler(
         val packageKey = PackageKeys.ofHelm(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
-                logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
+                logger.info(
+                    "user: [$userId] delete package [$name] with version [$version] " +
+                        "in repo [$projectId/$repoName] success!"
+                )
             }
         }
     }

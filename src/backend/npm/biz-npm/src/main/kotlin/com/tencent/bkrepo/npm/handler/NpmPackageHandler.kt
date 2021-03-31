@@ -196,7 +196,10 @@ class NpmPackageHandler {
         val packageKey = PackageKeys.ofNpm(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
-                logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
+                logger.info(
+                    "user: [$userId] delete package [$name] with version [$version] " +
+                        "in repo [$projectId/$repoName] success!"
+                )
             }
         }
     }
