@@ -329,7 +329,9 @@ class JobService(
                 nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
             }
             if (nodeList.isEmpty()) {
-                throw NodeNotFoundException("latest index node not found: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
+                throw NodeNotFoundException(
+                        "latest index node not found: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]"
+                )
             }
         } else {
             if (nodeList.isEmpty()) {
@@ -379,6 +381,7 @@ class JobService(
      * [repo] 仓库
      * [locationStr] 节点路径
      * [indexType] 索引类型
+     * return
      */
     fun updateIndex(
         randomAccessFile: RandomAccessFile,
@@ -519,46 +522,27 @@ class JobService(
         val markNodes = markNodePage.records
         val latestIndexNode = getLatestIndexNode(repo, repodataPath, "${indexType.value}.xml.gz")!!
         logger.info("latestIndexNode, fullPath: ${latestIndexNode.fullPath}")
-        val unzipedIndexTempFile = storageService.load(latestIndexNode.sha256!!, Range.full(latestIndexNode.size), null)!!.use { it.unGzipInputStream() }
+        val unzipedIndexTempFile = storageService
+                .load(latestIndexNode.sha256!!, Range.full(latestIndexNode.size), null)!!.use { it.unGzipInputStream() }
         logger.info("temp index file ${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created")
         try {
             val processedMarkNodes = mutableListOf<NodeInfo>()
             var changeCount = 0
             RandomAccessFile(unzipedIndexTempFile, "rw").use { randomAccessFile ->
                 markNodes.forEach { markNode ->
-                    // rpm构件位置
-                    val locationStr = markNode.fullPath.replace("/repodata/${indexType.value}", "")
-                    val repodataDepth = getRpmRepoConf(repo.projectId, repo.name).repodataDepth
-                    // 保存在索引中的相对路径
-                    val pathList = locationStr.removePrefix("/").split("/")
-                    val stringBuilder = StringBuilder()
-                    for (i in repodataDepth until pathList.size) {
-                        stringBuilder.append("/").append(pathList[i])
-                    }
-                    val locationHref = stringBuilder.toString().removePrefix("/")
-                    logger.debug("locationStr: $locationStr, locationHref: $locationHref")
-                    with(markNode) { logger.info("process mark node[$projectId|$repoName|$fullPath]") }
-                    val repeat = ArtifactRepeat.valueOf(markNode.metadata?.get("repeat") as String? ?: "FULLPATH_SHA256")
-                    if (repeat == ArtifactRepeat.DELETE) {
-                        changeCount += updateIndex(randomAccessFile, markNode, repeat, repo, repodataPath, locationHref, indexType)
-                        processedMarkNodes.add(markNode)
-                    } else {
-                        val rpmNode = nodeClient.getNodeDetail(markNode.projectId, markNode.repoName, locationStr).data
-                        if (rpmNode == null) {
-                            with(markNode) { logger.info("rpm node[$projectId|$repoName|$locationStr] no found, skip index") }
-                            processedMarkNodes.add(markNode)
-                            return@forEach
-                        }
-                        changeCount += updateIndex(randomAccessFile, markNode, repeat, repo, repodataPath, locationHref, indexType)
-                        processedMarkNodes.add(markNode)
-                    }
+                    changeCount += updateIndexFile(randomAccessFile, markNode, indexType, repo, repodataPath)
+                    processedMarkNodes.add(markNode)
                 }
 
                 logger.debug("changeCount: $changeCount")
                 if (changeCount != 0) {
                     val start = System.currentTimeMillis()
                     XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
-                    logger.debug("updatePackageCount indexType: $indexType, indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, cost: ${System.currentTimeMillis() - start} ms")
+                    logger.debug(
+                            "updatePackageCount indexType: $indexType," +
+                                    " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
+                                    "cost: ${System.currentTimeMillis() - start} ms"
+                    )
                 }
             }
             checkValid(unzipedIndexTempFile)
@@ -568,6 +552,42 @@ class JobService(
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} deleted")
+        }
+    }
+
+    private fun updateIndexFile(
+            randomAccessFile: RandomAccessFile,
+            markNode: NodeInfo,
+            indexType: IndexType,
+            repo: RepositoryDetail,
+            repodataPath: String
+    ): Int {
+        // rpm构件位置
+        val locationStr = markNode.fullPath.replace("/repodata/${indexType.value}", "")
+        val repodataDepth = getRpmRepoConf(repo.projectId, repo.name).repodataDepth
+        // 保存在索引中的相对路径
+        val pathList = locationStr.removePrefix("/").split("/")
+        val stringBuilder = StringBuilder()
+        for (i in repodataDepth until pathList.size) {
+            stringBuilder.append("/").append(pathList[i])
+        }
+        val locationHref = stringBuilder.toString().removePrefix("/")
+        logger.debug("locationStr: $locationStr, locationHref: $locationHref")
+        with(markNode) { logger.info("process mark node[$projectId|$repoName|$fullPath]") }
+        val repeat = ArtifactRepeat.valueOf(
+                markNode.metadata?.get("repeat") as String? ?: "FULLPATH_SHA256"
+        )
+        return if (repeat == ArtifactRepeat.DELETE) {
+            updateIndex(randomAccessFile, markNode, repeat, repo, repodataPath, locationHref, indexType)
+        } else {
+            val rpmNode = nodeClient.getNodeDetail(markNode.projectId, markNode.repoName, locationStr).data
+            if (rpmNode == null) {
+                with(markNode) {
+                    logger.info("rpm node[$projectId|$repoName|$locationStr] no found, skip index")
+                }
+                return 0
+            }
+            updateIndex(randomAccessFile, markNode, repeat, repo, repodataPath, locationHref, indexType)
         }
     }
 

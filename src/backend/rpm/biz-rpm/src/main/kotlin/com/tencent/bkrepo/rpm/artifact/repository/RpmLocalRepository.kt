@@ -579,14 +579,17 @@ class RpmLocalRepository(
 
         // 更新 primary, others
         storeIndexMarkFile(
-            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY, null, artifactSha256
+                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY,
+                null, artifactSha256
         )
         storeIndexMarkFile(
-            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, null, artifactSha256
+                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS,
+                null, artifactSha256
         )
         if (rpmRepoConf.enabledFileLists) {
             storeIndexMarkFile(
-                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS, null, artifactSha256
+                    context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS,
+                    null, artifactSha256
             )
         }
 
@@ -781,8 +784,8 @@ class RpmLocalRepository(
                     var line: String? = null
                     var firstLine = true
                     while (reader.readLine().also { line = it } != null) {
-                        val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  "))
-                            && line!!.endsWith("<package type=\"rpm\">")
+                        val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  ")) &&
+                                line!!.endsWith("<package type=\"rpm\">")
                         when {
                             isBugLine -> {
                                 outputStream.write("\n  </package>\n  <package type=\"rpm\">".toByteArray())

@@ -98,8 +98,10 @@ class RpmService(
         val context = ArtifactSearchContext()
         groups.removeAll(rpmIndexSet)
         val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
-        val oldGroups = (rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-            ?: mutableListOf()).toMutableSet()
+        val oldGroups = (
+                rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
+                        ?: mutableListOf()
+                ).toMutableSet()
         oldGroups.addAll(groups)
         rpmConfiguration.settings["groupXmlSet"] = oldGroups
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
@@ -112,8 +114,10 @@ class RpmService(
     fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
-        val oldGroups = (rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-            ?: mutableListOf()).toMutableSet()
+        val oldGroups = (
+                rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
+                        ?: mutableListOf()
+                ).toMutableSet()
         oldGroups.removeAll(groups)
         rpmConfiguration.settings["groupXmlSet"] = oldGroups
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
@@ -147,5 +151,4 @@ class RpmService(
             ?: throw RpmConfNotFoundException("can not found $project | $repoName conf")
         return repositoryInfo.configuration
     }
-
 }
