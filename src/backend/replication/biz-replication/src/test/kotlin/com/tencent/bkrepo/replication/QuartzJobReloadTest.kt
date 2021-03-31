@@ -94,7 +94,8 @@ internal class QuartzJobReloadTest {
                             newTaskCount += 1
                         }
                     }
-                    logger.info("Success to reload replication task, total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount")
+                    logger.info("Success to reload replication task, " +
+                        "total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount")
                     sleep(3)
                 }
             }
@@ -130,6 +131,7 @@ internal class QuartzJobReloadTest {
         private fun sleep(seconds: Int) {
             Thread.sleep(seconds * 1000L)
         }
+
         private fun createScheduler(name: String): Scheduler {
             val stdSchedulerFactory = StdSchedulerFactory()
             val props = Properties()
