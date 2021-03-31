@@ -68,7 +68,11 @@ class RpmService(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun install(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        repository.downloadRetry(context)
+        if (rpmArtifactInfo.getArtifactFullPath().endsWith(REPOMD_XML)) {
+            repository.downloadRetry(context)
+        } else {
+            repository.download(context)
+        }
     }
 
     private fun ArtifactRepository.downloadRetry(context: ArtifactDownloadContext) {
@@ -78,7 +82,7 @@ class RpmService(
                 break
             } catch (e: ArtifactNotFoundException) {
                 if (i == 4) throw e
-                Thread.sleep(i * 2 * 1000L)
+                Thread.sleep(i * 1000L)
             }
         }
     }
