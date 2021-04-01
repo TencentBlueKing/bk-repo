@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,16 +29,33 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-plugin"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-storage:storage-service"))
+package com.tencent.bkrepo.common.plugin.core
 
-    api("org.springframework.boot:spring-boot-starter-aop")
-    api("org.influxdb:influxdb-java")
+import com.tencent.bkrepo.common.plugin.config.PluginProperties
+import org.slf4j.LoggerFactory
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import kotlin.streams.toList
 
+/**
+ * 插件扫描器默认实现
+ * 扫描指定路径下jar文件
+ */
+class DefaultPluginScanner(
+    private val pluginProperties: PluginProperties
+) : PluginScanner {
+
+    override fun scan(): List<Path> {
+        val pluginDir = Paths.get(pluginProperties.path)
+        if (!Files.isDirectory(pluginDir)) {
+            logger.error("Failed to load plugin, Path[$pluginDir] is not a directory.")
+            return emptyList()
+        }
+        return Files.walk(pluginDir).filter { it.toString().endsWith(".jar") }.toList()
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(DefaultPluginScanner::class.java)
+    }
 }
