@@ -124,7 +124,10 @@ class HarborClient @Autowired constructor(
         val requestBody = objectMapper.writeValueAsString(reqData)
         logger.info("request body: $requestBody")
 
-        val reqBody = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), objectMapper.writeValueAsString(reqData))
+        val reqBody = RequestBody.create(
+            MediaType.parse("application/json; charset=utf-8"),
+            objectMapper.writeValueAsString(reqData)
+        )
         val request = Request.Builder().url(url).header("Authorization", makeCredential()).post(reqBody).build()
         doRequest(request)
     }

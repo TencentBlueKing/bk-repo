@@ -97,7 +97,8 @@ class DockerPackageRepo @Autowired constructor(
      */
     fun getPackageVersion(context: RequestContext, version: String): PackageVersion? {
         with(context) {
-            return packageClient.findVersionByName(projectId, repoName, PackageKeys.ofDocker(artifactName), version).data
+            return packageClient.findVersionByName(projectId, repoName, PackageKeys.ofDocker(artifactName), version)
+                .data
         }
     }
 
