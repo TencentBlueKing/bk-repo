@@ -46,9 +46,11 @@ function _M:get_addr(service_name)
 
     -- router by repo
     for _, value in pairs(config.router.project) do
-        local pathArray = stringUtil:split(ngx.var.path, "/")
-        if service_name == "generic" and table.len(pathArray) > 1 and pathArray[2] == value.name then
-            tag = value.tag
+        if service_name == "generic" and ngx.var.path ~= nil then
+            local pathArray = stringUtil:split(ngx.var.path, "/")
+            if pathArray ~= nil and table.len(pathArray) > 1 and pathArray[2] == value.name then
+                tag = value.tag
+            end
         end
     end
 
@@ -69,7 +71,7 @@ function _M:get_addr(service_name)
 
         local dnsIps = {}
         if type(ns_config.ip) == 'table' then
-            for i, v in ipairs(ns_config.ip) do
+            for _, v in ipairs(ns_config.ip) do
                 table.insert(dnsIps, { v, ns_config.port })
             end
         else
@@ -108,7 +110,7 @@ function _M:get_addr(service_name)
             end
         end
 
-        for i, v in pairs(records) do
+        for _, v in pairs(records) do
             if v.section == dns.SECTION_AN then
                 port = v.port
             end
