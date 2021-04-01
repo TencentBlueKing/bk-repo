@@ -70,8 +70,8 @@ class PluginLoader(
     private fun resolveExtensions(): HashMap<ExtensionType, LinkedList<String>> {
         val result = HashMap<ExtensionType, LinkedList<String>>()
         try {
-            val url = classLoader.getResource(EXTENSION_RESOURCE_LOCATION)
-            check(url != null) { "[$EXTENSION_RESOURCE_LOCATION] does not exist in plugin [$pluginPath]" }
+            val url = classLoader.getResource(EXTENSION_LOCATION)
+            check(url != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
             val resource = UrlResource(url)
             val properties = PropertiesLoaderUtils.loadProperties(resource)
             ExtensionType.values().forEach { type ->
@@ -82,7 +82,7 @@ class PluginLoader(
                     .forEach { list.add(it.trim()) }
             }
         } catch (ex: IOException) {
-            throw IllegalArgumentException("Unable to load extensions from location [$EXTENSION_RESOURCE_LOCATION]", ex)
+            throw IllegalArgumentException("Unable to load extensions from location [$EXTENSION_LOCATION]", ex)
         }
         return result
     }
@@ -94,12 +94,16 @@ class PluginLoader(
                 check(manifest != null) { "[$MANIFEST_LOCATION] does not exist in plugin [$pluginPath]" }
                 val attributes = manifest.mainAttributes
                 val id = attributes.getValue(PLUGIN_ID).orEmpty()
-                //check(id.isNotBlank()) { "Required manifest attribute $PLUGIN_ID is null" }
+                check(id.isNotBlank()) { "Required manifest attribute $PLUGIN_ID is null" }
                 val version = attributes.getValue(PLUGIN_VERSION).orEmpty()
+                val author = attributes.getValue(PLUGIN_AUTHOR).orEmpty()
+                val description = attributes.getValue(PLUGIN_DESCRIPTION).orEmpty()
                 return PluginMetadata(
                     id = id,
                     name = id,
-                    version = version
+                    version = version,
+                    author = author,
+                    description = description
                 )
             }
         } catch (ex: IOException) {
@@ -121,7 +125,7 @@ class PluginLoader(
     }
 
     companion object {
-        private const val EXTENSION_RESOURCE_LOCATION = "META-INF/artifact.extensions"
+        const val EXTENSION_LOCATION = "META-INF/extensions.factories"
         private const val MANIFEST_LOCATION = "META-INF/MANIFEST.MF"
         private const val PLUGIN_ID = "Plugin-Id"
         private const val PLUGIN_VERSION = "Plugin-Version"

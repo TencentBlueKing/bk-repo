@@ -46,6 +46,7 @@ class PluginManager(
     val pluginMap = mutableMapOf<String, PluginInfo>()
 
     @EventListener(ApplicationReadyEvent::class)
+    @Synchronized
     fun load() {
         pluginScanner.scan().forEach {
             val pluginLoader = PluginLoader(it)
@@ -63,17 +64,21 @@ class PluginManager(
 
     private fun registerPluginIfNecessary(pluginInfo: PluginInfo, classLoader: ClassLoader) {
         if (checkExist(pluginInfo)) {
-            logger.debug("Plugin[${pluginInfo.id}] has been loaded, skip loading")
+            logger.info("Plugin[${pluginInfo.id}] has been loaded, skip register")
             return
         }
+        logger.info("Registering plugin[${pluginInfo.id}]")
+        // register extension controller
         pluginInfo.extensionControllers.forEach {
             val type = classLoader.loadClass(it)
             extensionRegistry.registerExtensionController(it, type)
         }
+        // register extension point
         pluginInfo.extensionPoints.forEach {
             val type = classLoader.loadClass(it)
             extensionRegistry.registerExtensionPoint(it, type)
         }
+        // save
         pluginMap[pluginInfo.id] = pluginInfo
     }
 
