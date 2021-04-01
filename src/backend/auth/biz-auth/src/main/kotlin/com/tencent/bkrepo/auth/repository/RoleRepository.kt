@@ -45,7 +45,9 @@ interface RoleRepository : MongoRepository<TRole, String> {
     fun findFirstByIdAndProjectIdAndType(Id: String, projectId: String, type: RoleType): TRole?
     fun findFirstByRoleIdAndProjectIdAndRepoName(RoleId: String, projectId: String, repoName: String): TRole?
     fun findFirstByIdAndProjectIdAndTypeAndRepoName(
-        Id: String, projectId: String,
-        type: RoleType, repoName: String
+        Id: String,
+        projectId: String,
+        type: RoleType,
+        repoName: String
     ): TRole?
 }

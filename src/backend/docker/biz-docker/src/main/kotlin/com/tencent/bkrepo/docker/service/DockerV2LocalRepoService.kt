@@ -423,8 +423,10 @@ class DockerV2LocalRepoService @Autowired constructor(
 
     // upload a blob file
     override fun uploadBlob(
-        context: RequestContext, digest: DockerDigest,
-        uuid: String, file: ArtifactFile
+        context: RequestContext,
+        digest: DockerDigest,
+        uuid: String,
+        file: ArtifactFile
     ): DockerResponse {
         logger.info("upload blob [$context,$digest ,$uuid]")
         RepoUtil.loadContext(artifactRepo, context)

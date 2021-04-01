@@ -190,8 +190,8 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
     }
 
     private fun isForeignLayer(layer: JsonNode?): Boolean {
-        return layer != null && layer.has(DOCKER_MEDIA_TYPE)
-            && DOCKER_FOREIGN_KEY == layer.get(DOCKER_MEDIA_TYPE).asText()
+        return layer != null && layer.has(DOCKER_MEDIA_TYPE) &&
+            DOCKER_FOREIGN_KEY == layer.get(DOCKER_MEDIA_TYPE).asText()
     }
 
     private fun notEmptyHistoryLayer(historyLayer: JsonNode?): Boolean {

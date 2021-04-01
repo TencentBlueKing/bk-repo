@@ -68,8 +68,10 @@ object PathUtil {
     }
 
     fun repoTagDetailArtifactName(
-        request: HttpServletRequest, projectId: String,
-        repoName: String, tag: String
+        request: HttpServletRequest,
+        projectId: String,
+        repoName: String,
+        tag: String
     ): String {
         val restOfTheUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
         return restOfTheUrl.removePrefix(tagDetailPrefix(projectId, repoName)).removeSuffix("/$tag")

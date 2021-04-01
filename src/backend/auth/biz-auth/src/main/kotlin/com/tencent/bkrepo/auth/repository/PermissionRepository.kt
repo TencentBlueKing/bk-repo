@@ -48,7 +48,8 @@ interface PermissionRepository : MongoRepository<TPermission, String> {
 
     fun findOneByPermNameAndProjectIdAndResourceType(
         permName: String,
-        projectId: String?, resourceType: ResourceType
+        projectId: String?,
+        resourceType: ResourceType
     ): TPermission?
     fun findOneByProjectIdAndReposAndPermNameAndResourceType(
         projectId: String?,
