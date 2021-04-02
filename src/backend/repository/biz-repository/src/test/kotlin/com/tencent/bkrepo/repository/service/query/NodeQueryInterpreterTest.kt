@@ -50,7 +50,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 @DisplayName("节点自定义查询解释器测试")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DataMongoTest
-class NodeQueryInterpreterTest: ServiceBaseTest() {
+class NodeQueryInterpreterTest : ServiceBaseTest() {
 
     @MockBean
     lateinit var repositoryService: RepositoryService
