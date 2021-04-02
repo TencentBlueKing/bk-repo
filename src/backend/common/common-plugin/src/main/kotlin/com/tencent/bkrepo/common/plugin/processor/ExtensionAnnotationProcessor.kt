@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.plugin.processor
 import com.tencent.bkrepo.common.plugin.core.ExtensionType
 import com.tencent.bkrepo.common.plugin.core.PluginLoader.Companion.EXTENSION_LOCATION
 import org.springframework.stereotype.Controller
+import org.springframework.web.bind.annotation.RestController
 import java.io.IOException
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
@@ -86,7 +87,8 @@ class ExtensionAnnotationProcessor : AbstractProcessor() {
     }
 
     private fun determineExtensionType(element: Element): ExtensionType {
-        if (element.getAnnotation(Controller::class.java) != null) {
+        if (element.getAnnotation(Controller::class.java) != null ||
+            element.getAnnotation(RestController::class.java) != null) {
             return ExtensionType.CONTROLLER
         }
         return ExtensionType.POINT
