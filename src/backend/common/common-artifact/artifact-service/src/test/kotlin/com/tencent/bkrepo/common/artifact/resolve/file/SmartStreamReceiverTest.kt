@@ -210,6 +210,5 @@ internal class SmartStreamReceiverTest {
             // 文件数据一直
             Assertions.assertEquals(longContent, readText(primaryPath.resolve(filename)))
         }
-
     }
 }
