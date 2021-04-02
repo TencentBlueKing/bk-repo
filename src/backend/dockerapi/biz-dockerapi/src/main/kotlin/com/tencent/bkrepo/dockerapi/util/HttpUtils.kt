@@ -58,7 +58,8 @@ object HttpUtils {
         }
     }
 
-    fun doRequest(okHttpClient: OkHttpClient, request: Request, retry: Int = 0, acceptCode: Set<Int> = setOf()): ApiResponse {
+    fun doRequest(okHttpClient: OkHttpClient, request: Request, retry: Int = 0, acceptCode: Set<Int> = setOf())
+        : ApiResponse {
         try {
             val response = okHttpClient.newBuilder().build().newCall(request).execute()
             val responseCode = response.code()
