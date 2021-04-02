@@ -116,7 +116,7 @@ class NugetPackageHandler {
     }
 
     fun getFrameworkValue(frameworkAssembly: FrameworkAssembly): String {
-        with(frameworkAssembly){
+        with(frameworkAssembly) {
             return targetFramework?.let {
                 StringJoiner(":").add(assemblyName).add(it).toString()
             } ?: assemblyName
@@ -138,7 +138,7 @@ class NugetPackageHandler {
                     val groupReferences = reference.references
                     groupReferences?.let {
                         val groupIterator = it.iterator()
-                        while (groupIterator.hasNext()){
+                        while (groupIterator.hasNext()) {
                             val groupReference = groupIterator.next()
                             values.add(groupReference.file)
                         }
@@ -165,7 +165,7 @@ class NugetPackageHandler {
                     val groupDependencies = dependency.dependencies
                     groupDependencies?.let {
                         val groupIterator = it.iterator()
-                        while (groupIterator.hasNext()){
+                        while (groupIterator.hasNext()) {
                             val groupDependency = groupIterator.next()
                             values.add(getDependencyValue(groupDependency, dependency.targetFramework))
                         }
