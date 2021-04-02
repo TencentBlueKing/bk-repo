@@ -54,7 +54,7 @@ abstract class CosRequest(
 
     private val requestUri: String = StringBuilder().append(PATH_DELIMITER).append(uri.trim(PATH_DELIMITER)).toString()
 
-    open fun buildRequestBody(): RequestBody? = null
+    abstract fun buildRequestBody(): RequestBody?
 
     open fun sign(credentials: InnerCosCredentials, config: ClientConfig): String {
         return headers[AUTHORIZATION] ?: run {

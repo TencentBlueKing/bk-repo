@@ -34,7 +34,6 @@ package com.tencent.bkrepo.helm.service
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -67,9 +66,6 @@ class ChartInfoServiceTest {
 
     private val projectId = "test"
     private var repoName = "helm-local"
-
-    @AfterEach
-    fun tearDown() {}
 
     @Test
     @DisplayName("chart列表展示")
