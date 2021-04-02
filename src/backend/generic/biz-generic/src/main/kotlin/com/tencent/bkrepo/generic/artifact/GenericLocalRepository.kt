@@ -70,7 +70,9 @@ class GenericLocalRepository : LocalRepository() {
         super.onDownloadBefore(context)
         val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW) ||
             context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
-        context.useDisposition = !preview
+        if (preview) {
+            context.useDisposition = true
+        }
     }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
