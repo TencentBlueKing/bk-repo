@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.helm.service
 
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -57,9 +56,6 @@ class ChartManipulationServiceTest {
     fun setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
     }
-
-    @AfterEach
-    fun tearDown() {}
 
     @Test
     @DisplayName("测试tgz包的全路径")

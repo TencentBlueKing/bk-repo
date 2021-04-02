@@ -58,7 +58,7 @@ import org.springframework.test.context.TestPropertySource
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
-abstract class ServiceBaseTest {
+class ServiceBaseTest {
 
     @MockBean
     lateinit var storageService: StorageService
