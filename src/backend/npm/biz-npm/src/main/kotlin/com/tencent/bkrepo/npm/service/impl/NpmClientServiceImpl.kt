@@ -490,7 +490,9 @@ class NpmClientServiceImpl(
                 ArtifactContextHolder.getRepository().upload(context)
                 artifactFile.delete()
             } catch (exception: IOException) {
-                logger.error("Failed deploying npm package [$fullPath] into repo [$projectId/$repoName] due to : $exception")
+                logger.error(
+                    "Failed deploying npm package [$fullPath] into repo [$projectId/$repoName] due to : $exception"
+                )
             }
         }
     }
@@ -518,7 +520,10 @@ class NpmClientServiceImpl(
         artifactInfo: NpmArtifactInfo,
         npmPackageMetaData: NpmPackageMetaData
     ) {
-        logger.info("userId [$userId] handler deprecated request: [$npmPackageMetaData] in repo [${artifactInfo.projectId}]")
+        logger.info(
+            "userId [$userId] handler deprecated request: [$npmPackageMetaData] " +
+                "in repo [${artifactInfo.projectId}]"
+        )
         doPackageFileUpload(userId, artifactInfo, npmPackageMetaData)
         // 元数据增加过期信息
         val iterator = npmPackageMetaData.versions.map.entries.iterator()

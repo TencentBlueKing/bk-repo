@@ -48,9 +48,7 @@ class BaseImpl : Base {
         if (userId == ANONYMOUS_USER) {
             throw AuthenticationException()
         }
-        return ResponseEntity.ok()
-            .header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-            .body("{}")
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION).body("{}")
     }
 }

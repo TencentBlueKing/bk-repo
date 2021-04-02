@@ -204,7 +204,7 @@ class ChartInfoServiceImpl(
             return indexYamlMetadata
         }
 
-        fun convertUtcTime(helmChartMetadata: HelmChartMetadata): HelmChartMetadata{
+        fun convertUtcTime(helmChartMetadata: HelmChartMetadata): HelmChartMetadata {
             helmChartMetadata.created?.let {
                 helmChartMetadata.created = TimeFormatUtil.formatLocalTime(TimeFormatUtil.convertToLocalTime(it))
             }

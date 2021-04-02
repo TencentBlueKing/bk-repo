@@ -47,12 +47,20 @@ class PypiWebResourceController(
         return ResponseBuilder.success()
     }
 
-    override fun deleteVersion(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?): Response<Void> {
+    override fun deleteVersion(
+        pypiArtifactInfo: PypiArtifactInfo,
+        packageKey: String,
+        version: String?
+    ): Response<Void> {
         pypiWebService.delete(pypiArtifactInfo, packageKey, version)
         return ResponseBuilder.success()
     }
 
-    override fun artifactDetail(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?): Response<Any?> {
+    override fun artifactDetail(
+        pypiArtifactInfo: PypiArtifactInfo,
+        packageKey: String,
+        version: String?
+    ): Response<Any?> {
         return ResponseBuilder.success(pypiWebService.artifactDetail(pypiArtifactInfo, packageKey, version))
     }
 }

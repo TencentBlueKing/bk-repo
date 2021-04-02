@@ -53,6 +53,7 @@ class ManifestJson : Serializable {
     }
 
     override fun toString(): String {
-        return "ManifestJson{mediaType='" + this.mediaType + '\''.toString() + ", size=" + this.size + ", digest='" + this.digest + '\''.toString() + ", platform=" + this.platform + '}'.toString()
+        return "ManifestJson{mediaType='" + this.mediaType + '\''.toString() + ", size=" + this.size + "," +
+            " digest='" + this.digest + '\''.toString() + ", platform=" + this.platform + '}'.toString()
     }
 }

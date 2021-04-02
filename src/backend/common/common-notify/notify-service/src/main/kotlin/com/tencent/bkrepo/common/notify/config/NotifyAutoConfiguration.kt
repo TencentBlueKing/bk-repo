@@ -48,7 +48,10 @@ class NotifyAutoConfiguration {
     @Bean
     fun notifyService(properties: NotifyProperties): NotifyService {
         val notifyService = DevopsNotify(properties.devopsServer)
-        logger.info("Initializing NotifyService[${DevopsNotify::class.simpleName}], devopsServer: ${properties.devopsServer}")
+        logger.info(
+            "Initializing NotifyService[${DevopsNotify::class.simpleName}], " +
+                "devopsServer: ${properties.devopsServer}"
+        )
         return notifyService
     }
 

@@ -330,7 +330,7 @@ class JobService(
             }
             if (nodeList.isEmpty()) {
                 throw NodeNotFoundException(
-                        "latest index node not found: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]"
+                    "latest index node not found: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]"
                 )
             }
         } else {
@@ -441,7 +441,10 @@ class JobService(
     }
 
     private fun resolveIndexXml(indexNodeInfo: NodeInfo, indexType: IndexType): ByteArray? {
-        storageService.load(indexNodeInfo.sha256!!, Range.full(indexNodeInfo.size), null).use { inputStream ->
+        storageService.load(
+            indexNodeInfo.sha256!!,
+            Range.full(indexNodeInfo.size), null
+        ).use { inputStream ->
             val content = inputStream!!.readBytes()
             return if (XStreamUtil.checkMarkFile(content, indexType)) {
                 content
@@ -518,13 +521,21 @@ class JobService(
             logger.info("no index file to process")
             return
         }
-        logger.info("${markNodePage.records.size} of ${markNodePage.totalRecords} ${indexType.name} mark file to process")
+        logger.info(
+            "${markNodePage.records.size} of " +
+                    "${markNodePage.totalRecords} ${indexType.name} mark file to process"
+        )
         val markNodes = markNodePage.records
         val latestIndexNode = getLatestIndexNode(repo, repodataPath, "${indexType.value}.xml.gz")!!
         logger.info("latestIndexNode, fullPath: ${latestIndexNode.fullPath}")
-        val unzipedIndexTempFile = storageService
-                .load(latestIndexNode.sha256!!, Range.full(latestIndexNode.size), null)!!.use { it.unGzipInputStream() }
-        logger.info("temp index file ${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created")
+        val unzipedIndexTempFile = storageService.load(
+            latestIndexNode.sha256!!,
+            Range.full(latestIndexNode.size), null
+        )!!.use { it.unGzipInputStream() }
+        logger.info(
+            "temp index file " +
+                    "${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created"
+        )
         try {
             val processedMarkNodes = mutableListOf<NodeInfo>()
             var changeCount = 0
@@ -539,9 +550,9 @@ class JobService(
                     val start = System.currentTimeMillis()
                     XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
                     logger.debug(
-                            "updatePackageCount indexType: $indexType," +
-                                    " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
-                                    "cost: ${System.currentTimeMillis() - start} ms"
+                        "updatePackageCount indexType: $indexType," +
+                                " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
+                                "cost: ${System.currentTimeMillis() - start} ms"
                     )
                 }
             }
@@ -556,11 +567,11 @@ class JobService(
     }
 
     private fun updateIndexFile(
-            randomAccessFile: RandomAccessFile,
-            markNode: NodeInfo,
-            indexType: IndexType,
-            repo: RepositoryDetail,
-            repodataPath: String
+        randomAccessFile: RandomAccessFile,
+        markNode: NodeInfo,
+        indexType: IndexType,
+        repo: RepositoryDetail,
+        repodataPath: String
     ): Int {
         // rpm构件位置
         val locationStr = markNode.fullPath.replace("/repodata/${indexType.value}", "")
@@ -575,7 +586,7 @@ class JobService(
         logger.debug("locationStr: $locationStr, locationHref: $locationHref")
         with(markNode) { logger.info("process mark node[$projectId|$repoName|$fullPath]") }
         val repeat = ArtifactRepeat.valueOf(
-                markNode.metadata?.get("repeat") as String? ?: "FULLPATH_SHA256"
+            markNode.metadata?.get("repeat") as String? ?: "FULLPATH_SHA256"
         )
         return if (repeat == ArtifactRepeat.DELETE) {
             updateIndex(randomAccessFile, markNode, repeat, repo, repodataPath, locationHref, indexType)

@@ -63,7 +63,8 @@ class NpmServiceTest {
     @DisplayName("npm包信息查询测试")
     fun searchPackageInfoTest() {
         val result = mockMvc.perform(
-            MockMvcRequestBuilders.get("/test/npm-local/babel-core/latest").accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
+            MockMvcRequestBuilders.get("/test/npm-local/babel-core/latest")
+                .accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
         ).andExpect { MockMvcResultMatchers.status().isOk }
             .andDo(MockMvcResultHandlers.print()).andReturn()
         val resultMap = GsonUtils.gsonToMaps<Any>(result.response.contentAsString)!!
@@ -77,7 +78,8 @@ class NpmServiceTest {
     @DisplayName("npm search测试")
     fun searchTest() {
         val result = mockMvc.perform(
-            MockMvcRequestBuilders.get("/test/npm-local/-/package/babel-core/dist-tags").accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
+            MockMvcRequestBuilders.get("/test/npm-local/-/package/babel-core/dist-tags")
+                .accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
         ).andExpect { MockMvcResultMatchers.status().isOk }
             .andDo(MockMvcResultHandlers.print()).andReturn()
         val resultMap = GsonUtils.gsonToMaps<Any>(result.response.contentAsString)!!

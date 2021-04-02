@@ -7,7 +7,7 @@ import java.net.URI
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SearchResponseData (
+data class SearchResponseData(
     @JsonProperty("@id")
     val id: URI,
     val version: String,
