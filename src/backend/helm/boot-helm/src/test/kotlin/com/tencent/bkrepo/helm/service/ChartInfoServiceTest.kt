@@ -117,9 +117,9 @@ class ChartInfoServiceTest {
     fun chartExistsTest() {
         val perform =
             mockMvc.perform(
-                MockMvcRequestBuilders.head("/test/helm-local/api/charts/bk-redis/0.1.1").header("Authorization", "Basic eHdoeToxMjM0NTY=").contentType(
-                    MediaType.APPLICATION_JSON_UTF8
-                )
+                MockMvcRequestBuilders.head("/test/helm-local/api/charts/bk-redis/0.1.1")
+                    .header("Authorization", "Basic eHdoeToxMjM0NTY=")
+                    .contentType(MediaType.APPLICATION_JSON)
             )
         perform.andExpect { MockMvcResultMatchers.status().isOk }
         val status = perform.andReturn().response.status

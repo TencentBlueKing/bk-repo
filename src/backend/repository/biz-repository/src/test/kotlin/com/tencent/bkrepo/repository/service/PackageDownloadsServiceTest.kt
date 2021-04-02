@@ -120,7 +120,6 @@ class PackageDownloadsServiceTest @Autowired constructor(
         Assertions.assertEquals(count.toLong(), packageInfo.downloads)
     }
 
-
     private fun buildPackageCreateRequest(
         projectId: String = UT_PROJECT_ID,
         repoName: String = UT_REPO_NAME,

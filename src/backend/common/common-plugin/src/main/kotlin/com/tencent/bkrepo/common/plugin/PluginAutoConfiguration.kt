@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,16 +29,33 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-plugin"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-storage:storage-service"))
+package com.tencent.bkrepo.common.plugin
 
-    api("org.springframework.boot:spring-boot-starter-aop")
-    api("org.influxdb:influxdb-java")
+import com.tencent.bkrepo.common.plugin.config.PluginProperties
+import com.tencent.bkrepo.common.plugin.core.DefaultPluginScanner
+import com.tencent.bkrepo.common.plugin.core.ExtensionRegistry
+import com.tencent.bkrepo.common.plugin.core.PluginManager
+import com.tencent.bkrepo.common.plugin.core.PluginScanner
+import com.tencent.bkrepo.common.plugin.spring.SpringExtensionRegistry
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
+@Configuration
+@EnableConfigurationProperties(PluginProperties::class)
+class PluginAutoConfiguration {
+
+    @Bean
+    fun pluginScanner(pluginProperties: PluginProperties) = DefaultPluginScanner(pluginProperties)
+
+    @Bean
+    fun extensionRegistry() = SpringExtensionRegistry()
+
+    @Bean
+    fun pluginManager(
+        pluginScanner: PluginScanner,
+        extensionRegistry: ExtensionRegistry
+    ): PluginManager {
+        return PluginManager(pluginScanner, extensionRegistry)
+    }
 }

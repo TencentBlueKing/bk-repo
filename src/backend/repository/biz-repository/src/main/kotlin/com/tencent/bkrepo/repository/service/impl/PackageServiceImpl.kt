@@ -222,7 +222,7 @@ class PackageServiceImpl(
             tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
             packageDao.save(tPackage)
 
-            logger.info("Create package version[${newVersion}] success")
+            logger.info("Create package version[$newVersion] success")
         }
     }
 
@@ -351,12 +351,12 @@ class PackageServiceImpl(
                 } else if (it.createdDate.isAfter(latestVersion?.createdDate)) {
                     latestVersion = newVersion
                 }
-                logger.info("Create package version[${newVersion}] success")
+                logger.info("Create package version[$newVersion] success")
             }
             // 更新包
             tPackage.latest = latestVersion?.name ?: tPackage.latest
             packageDao.save(tPackage)
-            logger.info("Update package version[${tPackage}] success")
+            logger.info("Update package version[$tPackage] success")
         }
     }
 
