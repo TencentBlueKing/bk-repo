@@ -45,4 +45,3 @@ data class PackageDownloadsSummary(
     @ApiModelProperty("本月下载数")
     val thisMonth: Long
 )
-
