@@ -63,7 +63,10 @@ class DataMigrationServiceTest {
     @DisplayName("npm数据迁移增量测试")
     fun searchPackageInfoTest() {
         val result = mockMvc.perform(
-            MockMvcRequestBuilders.get("/test/npm-local/dataMigrationByPkgName").param("pkgName", "babel-core, underscore").accept(MediaType.APPLICATION_JSON_UTF8_VALUE)
+            MockMvcRequestBuilders
+                .get("/test/npm-local/dataMigrationByPkgName")
+                .param("pkgName", "babel-core, underscore")
+                .accept(MediaType.APPLICATION_JSON)
         ).andExpect { MockMvcResultMatchers.status().isOk }
             .andDo(MockMvcResultHandlers.print()).andReturn()
         val resultMap = GsonUtils.gsonToMaps<Any>(result.response.contentAsString)!!

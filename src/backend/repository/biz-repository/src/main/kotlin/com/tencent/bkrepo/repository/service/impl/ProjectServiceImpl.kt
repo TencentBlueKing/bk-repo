@@ -120,9 +120,9 @@ class ProjectServiceImpl(
             if (!Pattern.matches(PROJECT_NAME_PATTERN, name)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
             }
-            if (displayName.isBlank()
-                || displayName.length < DISPLAY_NAME_LENGTH_MIN
-                || displayName.length > DISPLAY_NAME_LENGTH_MAX
+            if (displayName.isBlank() ||
+                displayName.length < DISPLAY_NAME_LENGTH_MIN ||
+                displayName.length > DISPLAY_NAME_LENGTH_MAX
             ) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
             }

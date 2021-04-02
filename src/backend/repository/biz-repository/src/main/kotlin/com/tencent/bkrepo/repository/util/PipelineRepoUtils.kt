@@ -49,7 +49,10 @@ object PipelineRepoUtils {
     fun checkPipeline(repoName: String) {
         if (repoName == PIPELINE) {
             logger.warn("Pipeline repo query is forbidden")
-            //throw ErrorCodeException(status = HttpStatus.FORBIDDEN, messageCode = ArtifactMessageCode.PIPELINE_BANNED)
+            // throw ErrorCodeException(
+            //     status = HttpStatus.FORBIDDEN,
+            //     messageCode = ArtifactMessageCode.PIPELINE_BANNED
+            // )
         }
     }
 }

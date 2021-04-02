@@ -306,7 +306,12 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
             }
         } else {
             with(context.artifactInfo) {
-                val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
+                val packageVersion = packageClient.findVersionByName(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey,
+                    version = version
+                ).data ?: return
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: return
                 removeComposerArtifact(node, packageKey, version, context)
             }
