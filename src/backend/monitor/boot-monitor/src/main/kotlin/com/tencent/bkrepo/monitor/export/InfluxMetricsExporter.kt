@@ -39,7 +39,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Flux
 
-//@Component
+// @Component
 class InfluxMetricsExporter(
     metricsInfoProcessor: MetricsInfoProcessor,
     private val influxExportProperties: InfluxExportProperties
