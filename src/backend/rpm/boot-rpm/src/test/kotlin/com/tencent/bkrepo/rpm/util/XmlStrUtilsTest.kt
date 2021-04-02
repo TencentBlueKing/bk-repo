@@ -91,7 +91,10 @@ class XmlStrUtilsTest {
     fun indexOfTest() {
         val file = File("/Users/weaving/Downloads/filelist/21e8c7280184d7428e4fa259c669fa4b2cfef05f-filelists.xml")
         val randomAccessFile = RandomAccessFile(file, "r")
-        val index = indexOf(randomAccessFile, """<package pkgid="cb764f7906736425286341f6c5939347b01c5c17" name="httpd" arch="x86_64">""")
+        val index = indexOf(
+            randomAccessFile, """<package pkgid="cb764f7906736425286341f6c5939347b01c5c17" 
+            |name="httpd" arch="x86_64">""".trimMargin()
+        )
         Assertions.assertEquals(287, index)
     }
 
@@ -129,7 +132,10 @@ class XmlStrUtilsTest {
 
     @Test
     fun test() {
-        val file = File("${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master-20200921636887-1-x86_64.rpm")
+        val file = File(
+            "${System.getenv("HOME")}/Downloads/nfaprofile_consumer_request-master" +
+                "-20200921636887-1-x86_64.rpm"
+        )
         println(XStreamUtil.checkMarkFile(file.inputStream().readBytes(), IndexType.PRIMARY))
     }
 }

@@ -77,10 +77,12 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
                 }
                 uploadIndexYamlMetadata(originalIndexYamlMetadata)
                 logger.info(
-                    "User [$operator] fresh index.yaml for delete chart [$name], version [$version] in repo [$projectId/$repoName] success!"
+                    "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
+                        "in repo [$projectId/$repoName] success!"
                 )
             } catch (exception: TypeCastException) {
-                logger.error("User [$operator] fresh index.yaml for delete chart [$name], version [$version] in repo [$projectId/$repoName] failed, message: $exception")
+                logger.error("User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
+                    "in repo [$projectId/$repoName] failed, message: $exception")
                 throw exception
             }
         }
@@ -102,10 +104,14 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
                 originalIndexYamlMetadata.entries.remove(name)
                 uploadIndexYamlMetadata(originalIndexYamlMetadata)
                 logger.info(
-                    "User [$operator] fresh index.yaml for delete chart [$name] in repo [$projectId/$repoName] success!"
+                    "User [$operator] fresh index.yaml for delete chart [$name] " +
+                        "in repo [$projectId/$repoName] success!"
                 )
             } catch (exception: TypeCastException) {
-                logger.error("User [$operator] fresh index.yaml for delete chart [$name] in repo [$projectId/$repoName] failed, message: $exception")
+                logger.error(
+                    "User [$operator] fresh index.yaml for delete chart [$name] " +
+                        "in repo [$projectId/$repoName] failed, message: $exception"
+                )
                 throw exception
             }
         }

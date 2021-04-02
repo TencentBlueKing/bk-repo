@@ -57,9 +57,9 @@ class RpmResourceWebController(
     }
 
     override fun artifactDetail(
-            rpmArtifactInfo: RpmArtifactInfo,
-            packageKey: String,
-            version: String?
+        rpmArtifactInfo: RpmArtifactInfo,
+        packageKey: String,
+        version: String?
     ): Response<Any?> {
         return ResponseBuilder.success(rpmWebService.artifactDetail(rpmArtifactInfo, packageKey, version))
     }

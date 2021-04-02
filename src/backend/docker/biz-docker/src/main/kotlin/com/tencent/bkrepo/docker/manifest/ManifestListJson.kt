@@ -46,6 +46,7 @@ class ManifestListJson : Serializable {
     var manifests: List<ManifestJson> = emptyList()
 
     override fun toString(): String {
-        return "ManifestListJson{schemaVersion=" + this.schemaVersion + ", mediaType='" + this.mediaType + '\''.toString() + ", manifests=" + this.manifests + '}'.toString()
+        return "ManifestListJson{schemaVersion=" + this.schemaVersion + ", mediaType='" + this.mediaType + '\''
+            .toString() + ", manifests=" + this.manifests + '}'.toString()
     }
 }

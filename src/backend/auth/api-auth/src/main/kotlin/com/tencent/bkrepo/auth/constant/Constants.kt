@@ -47,7 +47,8 @@ const val DEFAULT_PASSWORD = "blueking"
 
 const val AUTHORIZATION = "Authorization"
 
-const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
+const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] " +
+    "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
 
 const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 

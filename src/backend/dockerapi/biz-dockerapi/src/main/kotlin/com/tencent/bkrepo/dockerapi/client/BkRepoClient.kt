@@ -149,7 +149,8 @@ class BkRepoClient(
             "pageSize" to request.pageSize.toString(),
             "packageName" to (request.searchKey ?: "")
         )
-        val url = "${bkRepoProperties.url}/repository/api/package/page/$projectId/$repoName?${HttpUtils.getQueryStr(requestParams)}"
+        val url = "${bkRepoProperties.url}" +
+            "/repository/api/package/page/$projectId/$repoName?${HttpUtils.getQueryStr(requestParams)}"
         val httpRequest = Request.Builder().url(url)
             .addHeader(AUTHORIZATION, bkRepoProperties.authorization)
             .addHeader(AUTH_HEADER_UID, ADMIN)
@@ -189,7 +190,8 @@ class BkRepoClient(
             "packageKey" to "docker://${request.imageRepo}",
             "version" to ""
         )
-        val url = "${bkRepoProperties.url}/repository/api/version/page/$projectId/$repoName?${HttpUtils.getQueryStr(requestParams)}"
+        val url = "${bkRepoProperties.url}" +
+            "/repository/api/version/page/$projectId/$repoName?${HttpUtils.getQueryStr(requestParams)}"
         val httpRequest = Request.Builder().url(url)
             .addHeader(AUTHORIZATION, bkRepoProperties.authorization)
             .addHeader(AUTH_HEADER_UID, ADMIN)

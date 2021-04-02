@@ -125,7 +125,10 @@ class PackageDependentService {
         return dependentMigration(artifactInfo, totalDataSet)
     }
 
-    fun dependentMigration(artifactInfo: NpmArtifactInfo, totalDataSet: Set<String>): NpmPackageDependentMigrationResponse {
+    fun dependentMigration(
+        artifactInfo: NpmArtifactInfo,
+        totalDataSet: Set<String>
+    ): NpmPackageDependentMigrationResponse {
         val attributes = RequestContextHolder.getRequestAttributes() as ServletRequestAttributes
         RequestContextHolder.setRequestAttributes(attributes, true)
         val start = System.currentTimeMillis()
@@ -144,8 +147,9 @@ class PackageDependentService {
         val resultList = ThreadPoolManager.submit(callableList)
         val elapseTimeMillis = System.currentTimeMillis() - start
         logger.info(
-            "npm package dependent migrate, total size[${totalDataSet.size}], success[${migrationDependentResult.first.size}], " +
-                "fail[${migrationDependentResult.second.size}], elapse [${millisToSecond(elapseTimeMillis)}] s totally."
+            "npm package dependent migrate, total size[${totalDataSet.size}], " +
+                "success[${migrationDependentResult.first.size}], fail[${migrationDependentResult.second.size}], " +
+                "elapse [${millisToSecond(elapseTimeMillis)}] s totally."
         )
         val collect = resultList.stream().flatMap { set -> set.stream() }.collect(Collectors.toSet())
         return NpmPackageDependentMigrationResponse(
@@ -158,7 +162,11 @@ class PackageDependentService {
         )
     }
 
-    fun doDependentMigration(artifactInfo: NpmArtifactInfo, data: Set<String>, totalDataSet: Set<String>): Pair<Set<String>, Set<String>> {
+    fun doDependentMigration(
+        artifactInfo: NpmArtifactInfo,
+        data: Set<String>,
+        totalDataSet: Set<String>
+    ): Pair<Set<String>, Set<String>> {
         val successSet = mutableSetOf<String>()
         val errorSet = mutableSetOf<String>()
         data.forEach { pkgName ->

@@ -379,7 +379,10 @@ class NpmLocalRepository(
             originalDistTags.set("latest", remoteLatest)
             originalTimeMap.add("modified", timeMap.get("modified"))
         }
-        logger.info("the different versions of the  package [$name] is [$remoteVersionList], size : ${remoteVersionList.size}")
+        logger.info(
+            "the different versions of the  package [$name] is [$remoteVersionList], " +
+                "size : ${remoteVersionList.size}"
+        )
         if (remoteVersionList.isNotEmpty()) {
             // 说明有版本更新，将新增的版本迁移过来
             remoteVersionList.forEach { it ->

@@ -87,7 +87,9 @@ object DecompressUtil {
             try {
                 var nextEntry: ArchiveEntry
                 while (it.nextEntry.also { nextEntry = it } != null) {
-                    if ((!nextEntry.isDirectory) && nextEntry.name.split("/").let { it.size == 2 && it.last() == FILE_NAME }) {
+                    if ((!nextEntry.isDirectory) && nextEntry.name.split("/")
+                            .let { it.size == 2 && it.last() == FILE_NAME }
+                    ) {
                         var length: Int
                         val bytes = ByteArray(BUFFER_SIZE)
                         while ((archiveInputStream.read(bytes).also { length = it }) != -1) {

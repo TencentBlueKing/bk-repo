@@ -7,7 +7,7 @@ import java.net.URI
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class RegistrationCatalogEntry (
+data class RegistrationCatalogEntry(
     @JsonProperty("@id")
     val id: URI,
     val authors: String?,
