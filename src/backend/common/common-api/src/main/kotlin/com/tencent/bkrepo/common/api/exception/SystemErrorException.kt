@@ -42,4 +42,3 @@ open class SystemErrorException(
     messageCode: MessageCode = CommonMessageCode.SYSTEM_ERROR,
     vararg params: String
 ) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params)
-
