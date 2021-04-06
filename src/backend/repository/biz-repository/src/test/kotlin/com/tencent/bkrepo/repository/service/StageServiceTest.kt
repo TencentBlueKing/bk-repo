@@ -48,9 +48,11 @@ import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -65,6 +67,7 @@ import org.springframework.data.mongodb.core.query.Query
     PackageDao::class,
     PackageVersionDao::class
 )
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class StageServiceTest @Autowired constructor(
     private val stageService: StageService,
     private val packageService: PackageService,
@@ -74,9 +77,13 @@ class StageServiceTest @Autowired constructor(
     @MockBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+    }
+
     @BeforeEach
     fun beforeEach() {
-        initMock()
         mongoTemplate.remove(Query(), TPackage::class.java)
         mongoTemplate.remove(Query(), TPackageVersion::class.java)
     }

@@ -81,7 +81,6 @@ class NodeSearchServiceTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
-        initMock()
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 

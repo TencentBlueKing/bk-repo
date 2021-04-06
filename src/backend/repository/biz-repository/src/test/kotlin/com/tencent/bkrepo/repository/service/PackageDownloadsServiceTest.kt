@@ -49,9 +49,11 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -69,6 +71,7 @@ import kotlin.concurrent.thread
     PackageVersionDao::class,
     PackageDownloadsDao::class
 )
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PackageDownloadsServiceTest @Autowired constructor(
     private val packageDownloadsService: PackageDownloadsService,
     private val packageService: PackageService,
@@ -81,9 +84,12 @@ class PackageDownloadsServiceTest @Autowired constructor(
     @MockBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+    }
     @BeforeEach
     fun beforeEach() {
-        initMock()
         mongoTemplate.remove(Query(), TPackage::class.java)
         mongoTemplate.remove(Query(), TPackageVersion::class.java)
     }
