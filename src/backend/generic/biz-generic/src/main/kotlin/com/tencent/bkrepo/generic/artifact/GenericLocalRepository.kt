@@ -71,7 +71,7 @@ class GenericLocalRepository : LocalRepository() {
         val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW) ||
             context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
         if (preview) {
-            context.useDisposition = true
+            context.useDisposition = false
         }
     }
 
