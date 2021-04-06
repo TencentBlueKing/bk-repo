@@ -103,7 +103,6 @@ class RepositoryServiceTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
-        initMock()
         repositoryService.listRepo(UT_PROJECT_ID).forEach {
             repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, it.name, operator = UT_USER))
         }

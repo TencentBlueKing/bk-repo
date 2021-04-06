@@ -76,7 +76,7 @@ open class PermissionManager(
      * @param projectId 项目id
      * @param repoName 仓库名称
      */
-    fun checkRepoPermission(
+    open fun checkRepoPermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
@@ -96,7 +96,7 @@ open class PermissionManager(
      * @param path 节点路径
      * @param public 仓库是否为public
      */
-    fun checkNodePermission(
+    open fun checkNodePermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,

@@ -35,11 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
-import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
@@ -50,8 +46,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -89,29 +83,11 @@ class NodeServiceTest @Autowired constructor(
     @BeforeAll
     fun beforeAll() {
         initMock()
-
-        if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_USER)
-            projectService.createProject(projectCreateRequest)
-        }
-        if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
-            val repoCreateRequest = RepoCreateRequest(
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                description = UT_REPO_DESC,
-                configuration = LocalConfiguration(),
-                operator = UT_USER
-            )
-            repositoryService.createRepo(repoCreateRequest)
-        }
+        initRepoForUnitTest(projectService, repositoryService)
     }
 
     @BeforeEach
     fun beforeEach() {
-        initMock()
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 

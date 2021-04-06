@@ -32,24 +32,15 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
-import com.tencent.bkrepo.repository.UT_REPO_DESC
-import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
@@ -85,29 +76,11 @@ class NodeSearchServiceTest @Autowired constructor(
     @BeforeAll
     fun beforeAll() {
         initMock()
-
-        if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
-            projectService.createProject(projectCreateRequest)
-        }
-        if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
-            val repoCreateRequest = RepoCreateRequest(
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                description = UT_REPO_DESC,
-                configuration = LocalConfiguration(),
-                operator = UT_USER
-            )
-            repositoryService.createRepo(repoCreateRequest)
-        }
+        initRepoForUnitTest(projectService, repositoryService)
     }
 
     @BeforeEach
     fun beforeEach() {
-        initMock()
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
@@ -120,18 +93,11 @@ class NodeSearchServiceTest @Autowired constructor(
         repeat(size) { i -> nodeService.createNode(createRequest("/a/b/c/$i.txt", false)) }
         repeat(size) { i -> nodeService.createNode(createRequest("/a/b/d/$i.txt", false)) }
 
-        val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
-        val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
-        val path = Rule.QueryRule("fullPath", "/a/b/d", OperationType.PREFIX)
-        val folder = Rule.QueryRule("folder", false)
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, path, folder))
-
-        val queryModel = QueryModel(
-            page = PageLimit(0, 11),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
+        val queryModel = createQueryBuilder()
+            .fullPath("/a/b/d", OperationType.PREFIX)
+            .excludeFolder()
+            .page(1, 11)
+            .build()
 
         val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(21, result.totalRecords)
@@ -146,18 +112,9 @@ class NodeSearchServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/b/3.txt", false, metadata = mapOf("key1" to "22")))
         nodeService.createNode(createRequest("/a/b/4.txt", false, metadata = mapOf("key1" to "2", "key2" to "1")))
 
-        val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
-        val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
-        val metadata = Rule.QueryRule("metadata.key1", "1")
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata))
-
-        val queryModel = QueryModel(
-            page = PageLimit(0, 10),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
-
+        val queryModel = createQueryBuilder()
+            .metadata("key1", "1", OperationType.EQ)
+            .build()
         val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(1, result.totalRecords)
         Assertions.assertEquals(1, result.records.size)
@@ -175,18 +132,9 @@ class NodeSearchServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "22")))
         nodeService.createNode(createRequest("/a/b/4.txt", false, metadata = mapOf("key" to "22", "key1" to "1")))
 
-        val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
-        val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
-        val metadata = Rule.QueryRule("metadata.key", "1", OperationType.PREFIX) // 前缀
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata))
-
-        val queryModel = QueryModel(
-            page = PageLimit(0, 10),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
-
+        val queryModel = createQueryBuilder()
+            .metadata("key", "1", OperationType.PREFIX)
+            .build()
         val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
@@ -199,18 +147,9 @@ class NodeSearchServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/b/2.txt", false, metadata = mapOf("key" to "131")))
         nodeService.createNode(createRequest("/a/b/3.txt", false, metadata = mapOf("key" to "144")))
 
-        val projectId = Rule.QueryRule("projectId", UT_PROJECT_ID)
-        val repoName = Rule.QueryRule("repoName", UT_REPO_NAME)
-        val metadata = Rule.QueryRule("metadata.key", "1*1", OperationType.MATCH) // 前缀
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata))
-
-        val queryModel = QueryModel(
-            page = PageLimit(0, 10),
-            sort = Sort(listOf("fullPath"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
-
+        val queryModel = createQueryBuilder()
+            .metadata("key", "1*1", OperationType.MATCH)
+            .build()
         val result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(2, result.totalRecords)
         Assertions.assertEquals(2, result.records.size)
@@ -235,5 +174,14 @@ class NodeSearchServiceTest @Autowired constructor(
             operator = UT_USER,
             metadata = metadata
         )
+    }
+
+    private fun createQueryBuilder(): NodeQueryBuilder {
+        return NodeQueryBuilder()
+            .projectId(UT_PROJECT_ID)
+            .repoName(UT_REPO_NAME)
+            .page(1, 10)
+            .sort(Sort.Direction.ASC, "fullPath")
+            .select("projectId", "repoName", "fullPath", "metadata")
     }
 }
