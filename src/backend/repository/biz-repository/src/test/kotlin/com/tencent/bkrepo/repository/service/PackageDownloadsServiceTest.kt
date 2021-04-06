@@ -88,6 +88,7 @@ class PackageDownloadsServiceTest @Autowired constructor(
     fun beforeAll() {
         initMock()
     }
+
     @BeforeEach
     fun beforeEach() {
         mongoTemplate.remove(Query(), TPackage::class.java)
@@ -112,14 +113,16 @@ class PackageDownloadsServiceTest @Autowired constructor(
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
-        val result = packageDownloadsService.queryDetails(DetailsQueryRequest(
-            projectId = UT_PROJECT_ID,
-            repoName = UT_REPO_NAME,
-            packageKey = UT_PACKAGE_KEY,
-            packageVersion = null,
-            fromDate = LocalDate.now(),
-            toDate = LocalDate.now()
-        ))
+        val result = packageDownloadsService.queryDetails(
+            DetailsQueryRequest(
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                packageKey = UT_PACKAGE_KEY,
+                packageVersion = null,
+                fromDate = LocalDate.now(),
+                toDate = LocalDate.now()
+            )
+        )
         println(result)
 
         val packageInfo = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)!!
