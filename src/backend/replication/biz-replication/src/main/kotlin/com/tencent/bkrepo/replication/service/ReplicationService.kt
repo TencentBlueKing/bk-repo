@@ -40,10 +40,9 @@ import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -129,13 +128,13 @@ class ReplicationService(
         }
     }
 
-    fun replicaNodeCopyRequest(context: ReplicationContext, request: NodeCopyRequest) {
+    fun replicaNodeCopyRequest(context: ReplicationContext, request: NodeMoveCopyRequest) {
         with(context) {
             replicationClient.replicaNodeCopyRequest(authToken, request)
         }
     }
 
-    fun replicaNodeMoveRequest(context: ReplicationContext, request: NodeMoveRequest) {
+    fun replicaNodeMoveRequest(context: ReplicationContext, request: NodeMoveCopyRequest) {
         with(context) {
             replicationClient.replicaNodeMoveRequest(authToken, request)
         }

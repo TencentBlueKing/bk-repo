@@ -119,7 +119,7 @@ open class PermissionManager(
             return
         }
         val platformId = SecurityUtils.getPlatformId()
-        checkAnonymous(userId, SecurityUtils.getPlatformId())
+        checkAnonymous(userId, platformId)
 
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {

@@ -63,10 +63,9 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -236,11 +235,11 @@ class ReplicationController(
         return nodeClient.updateNode(nodeUpdateRequest)
     }
 
-    override fun replicaNodeCopyRequest(token: String, nodeCopyRequest: NodeCopyRequest): Response<Void> {
+    override fun replicaNodeCopyRequest(token: String, nodeCopyRequest: NodeMoveCopyRequest): Response<Void> {
         return nodeClient.copyNode(nodeCopyRequest)
     }
 
-    override fun replicaNodeMoveRequest(token: String, nodeMoveRequest: NodeMoveRequest): Response<Void> {
+    override fun replicaNodeMoveRequest(token: String, nodeMoveRequest: NodeMoveCopyRequest): Response<Void> {
         return nodeClient.moveNode(nodeMoveRequest)
     }
 

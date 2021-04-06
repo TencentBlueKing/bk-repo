@@ -29,34 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node.service
+package com.tencent.bkrepo.repository.pojo.node.user
 
-import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 /**
- * 节点复制请求
+ * 用户节点移动/复制请求
  */
-@ApiModel("节点复制请求")
-data class NodeCopyRequest(
+@ApiModel("用户节点移动/复制请求")
+data class UserNodeMoveCopyRequest(
     @ApiModelProperty("源项目id", required = true)
-    override val srcProjectId: String,
+    val srcProjectId: String,
     @ApiModelProperty("源仓库名称", required = true)
-    override val srcRepoName: String,
+    val srcRepoName: String,
     @ApiModelProperty("源节点路径", required = true)
-    override val srcFullPath: String,
+    val srcFullPath: String,
     @ApiModelProperty("目的项目id", required = false)
-    override val destProjectId: String? = null,
+    val destProjectId: String? = null,
     @ApiModelProperty("目的仓库名称", required = false)
-    override val destRepoName: String? = null,
+    val destRepoName: String? = null,
     @ApiModelProperty("目的路径", required = true)
-    override val destFullPath: String,
+    val destFullPath: String,
+    @Deprecated("This property is deprecated!", ReplaceWith("destFullPath"))
+    @ApiModelProperty("目的路径", required = false)
+    val destPath: String? = null,
     @ApiModelProperty("同名文件是否覆盖", required = false)
-    override val overwrite: Boolean = false,
-    @ApiModelProperty("操作用户", required = true)
-    override val operator: String
-) : CrossRepoNodeRequest, ServiceRequest {
-    override fun getOperateName() = "Copy"
-}
+    val overwrite: Boolean = false
+)

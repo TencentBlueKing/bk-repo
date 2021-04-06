@@ -39,10 +39,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import io.swagger.annotations.Api
@@ -114,11 +113,11 @@ interface NodeClient {
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
-    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveRequest): Response<Void>
+    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<Void>
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
-    fun copyNode(@RequestBody nodeCopyRequest: NodeCopyRequest): Response<Void>
+    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<Void>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")
@@ -220,12 +219,12 @@ interface NodeClient {
     @Deprecated("replace with moveNode")
     @ApiOperation("移动节点")
     @PutMapping("/move")
-    fun move(@RequestBody nodeMoveRequest: NodeMoveRequest): Response<Void>
+    fun move(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<Void>
 
     @Deprecated("replace with copyNode")
     @ApiOperation("复制节点")
     @PutMapping("/copy")
-    fun copy(@RequestBody nodeCopyRequest: NodeCopyRequest): Response<Void>
+    fun copy(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<Void>
 
     @Deprecated("replace with search")
     @ApiOperation("自定义查询节点")
