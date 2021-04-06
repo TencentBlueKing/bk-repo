@@ -82,6 +82,7 @@ class HttpAuthInterceptor(
         request: HttpServletRequest,
         response: HttpServletResponse
     ): Boolean? {
+        var result: Boolean? = null
         try {
             val authCredentials = authHandler.extractAuthCredentials(request)
             if (authCredentials !is AnonymousCredentials) {
@@ -92,15 +93,15 @@ class HttpAuthInterceptor(
                     val handlerName = authHandler.javaClass.simpleName
                     logger.debug("User[${SecurityUtils.getPrincipal()}] authenticate success by $handlerName.")
                 }
-                return true
+                result = true
             } else if (isLoginRequest) {
                 throw AuthenticationException()
             }
         } catch (authenticationException: AuthenticationException) {
             authHandler.onAuthenticateFailed(request, response, authenticationException)
-            return false
+            result = false
         }
-        return null
+        return result
     }
 
     /**
