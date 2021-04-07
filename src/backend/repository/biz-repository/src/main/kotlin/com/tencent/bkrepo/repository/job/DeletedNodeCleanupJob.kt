@@ -99,7 +99,8 @@ class DeletedNodeCleanupJob(
             logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${repo.projectId}/${repo.name}")
             deletedNodeList.forEach { node ->
                 cleanUpNode(repo, node)
-                if (node.folder) {FileReferenceCleanupJob
+                if (node.folder) {
+                    FileReferenceCleanupJob
                     result.folderCleanupCount += 1
                 } else {
                     result.fileCleanupCount += 1
@@ -132,7 +133,7 @@ class DeletedNodeCleanupJob(
         }
     }
 
-    data class CleanupResult (
+    data class CleanupResult(
         var folderCleanupCount: Int = 0,
         var fileCleanupCount: Int = 0,
         var totalCleanupCount: Int = 0
