@@ -289,7 +289,7 @@ open class NodeMoveCopySupport(
         return key?.let { storageCredentialService.findByKey(it) }
     }
 
-    class MoveCopyContext(
+    data class MoveCopyContext(
         val srcRepo: TRepository,
         val srcCredentials: StorageCredentials?,
         val srcNode: TNode,
