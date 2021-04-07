@@ -29,29 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.listener
+package com.tencent.bkrepo.replication.handler.event
 
-import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
-import com.tencent.bkrepo.repository.listener.event.IEvent
-import com.tencent.bkrepo.repository.model.TOperateLog
+import com.tencent.bkrepo.replication.handler.BaseHandler
+import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
+import com.tencent.bkrepo.replication.service.ReplicationService
 import org.springframework.beans.factory.annotation.Autowired
 
-// LateinitUsage: 抽象类中使用构造器注入会造成不便
-@Suppress("LateinitUsage")
-abstract class AbstractEventListener {
+/**
+ * AbstractMessageHandler
+ */
+abstract class BaseEventHandler : BaseHandler() {
 
+    // LateinitUsage: 抽象类中使用构造器注入会造成不便
+    @Suppress("LateinitUsage")
     @Autowired
-    private lateinit var operateLogRepository: OperateLogRepository
+    lateinit var replicationService: ReplicationService
 
-    fun logEvent(event: IEvent) {
-        val log = TOperateLog(
-            resourceType = event.getResourceType(),
-            resourceKey = event.getResourceKey(),
-            operateType = event.getOperateType(),
-            description = event.getRequest(),
-            userId = event.userId,
-            clientAddress = event.clientAddress
-        )
-        operateLogRepository.save(log)
+    fun getRepoDetail(projectId: String, repoName: String, remoteRepoName: String): ReplicationRepoDetail? {
+        val detail = repoDataService.getRepositoryDetail(projectId, repoName) ?: return null
+        return convertReplicationRepo(detail, remoteRepoName)
+    }
+
+    fun getRemoteProjectId(task: TReplicationTask, sourceProjectId: String): String {
+        return task.remoteProjectId ?: task.localProjectId ?: sourceProjectId
+    }
+
+    fun getRemoteRepoName(task: TReplicationTask, sourceRepoName: String): String {
+        return task.remoteRepoName ?: task.localRepoName ?: sourceRepoName
     }
 }

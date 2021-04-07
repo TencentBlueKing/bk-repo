@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -99,23 +100,10 @@ internal class CachedFileWriterTest {
         val size = 1024 * 1024 * 1L
         val randomString = StringPool.randomString(size.toInt())
         val inputStream = randomString.byteInputStream().artifactStream(Range.full(size))
-        val out = ByteArrayOutputStream()
         val listener = CachedFileWriter(cachePath, filename, tempPath)
         inputStream.addListener(listener)
         try {
-            inputStream.use {
-                var bytesCopied: Long = 0
-                val buffer = ByteArray(1024 * 8)
-                var bytes = it.read(buffer)
-                while (bytes >= 0) {
-                    out.write(buffer, 0, bytes)
-                    bytesCopied += bytes
-                    bytes = it.read(buffer)
-                    if (bytesCopied > size / 2) {
-                        throw IOException()
-                    }
-                }
-            }
+            throwExceptionWhenIOCopy(inputStream, size)
         } catch (ignored: IOException) {
         }
         // should not exist
@@ -152,5 +140,22 @@ internal class CachedFileWriterTest {
         val cacheFile = cachePath.resolve(filename).toFile()
         Assertions.assertTrue { cacheFile.exists() }
         Assertions.assertEquals(expectedSha256, cacheFile.readText().sha256())
+    }
+
+    private fun throwExceptionWhenIOCopy(inputStream: InputStream, size: Long) {
+        val out = ByteArrayOutputStream()
+        inputStream.use {
+            var bytesCopied: Long = 0
+            val buffer = ByteArray(1024 * 8)
+            var bytes = it.read(buffer)
+            while (bytes >= 0) {
+                out.write(buffer, 0, bytes)
+                bytesCopied += bytes
+                bytes = it.read(buffer)
+                if (bytesCopied > size / 2) {
+                    throw IOException()
+                }
+            }
+        }
     }
 }

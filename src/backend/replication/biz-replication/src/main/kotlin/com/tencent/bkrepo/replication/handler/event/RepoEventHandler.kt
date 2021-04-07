@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component
  * handler repository message and replicate
  */
 @Component
-class RepoEventHandler : AbstractEventHandler() {
+class RepoEventHandler : BaseEventHandler() {
 
     @EventListener(RepoCreatedMessage::class)
     fun handle(message: RepoCreatedMessage) {

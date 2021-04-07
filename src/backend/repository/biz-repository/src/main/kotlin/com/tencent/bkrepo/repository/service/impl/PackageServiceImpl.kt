@@ -71,7 +71,7 @@ class PackageServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,
     private val packageSearchInterpreter: PackageSearchInterpreter
-) : AbstractService(), PackageService {
+) : PackageService {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
         val tPackage = packageDao.findByKey(projectId, repoName, packageKey)

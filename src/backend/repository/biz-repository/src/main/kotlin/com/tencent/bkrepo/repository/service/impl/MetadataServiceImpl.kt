@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataDeletedEvent
 import com.tencent.bkrepo.repository.listener.event.metadata.MetadataSavedEvent
@@ -58,7 +59,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class MetadataServiceImpl(
     private val nodeDao: NodeDao
-) : AbstractService(), MetadataService {
+) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)

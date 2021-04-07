@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -70,13 +71,13 @@ open class NodeMoveCopySupport(
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
-        nodeBaseService.publishEvent(NodeMovedEvent(moveRequest))
+        publishEvent(NodeMovedEvent(moveRequest))
         logger.info("Move node success: [$this]")
     }
 
     override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         moveCopy(copyRequest, false)
-        nodeBaseService.publishEvent(NodeCopiedEvent(copyRequest))
+        publishEvent(NodeCopiedEvent(copyRequest))
         logger.info("Copy node success: [$this]")
     }
 

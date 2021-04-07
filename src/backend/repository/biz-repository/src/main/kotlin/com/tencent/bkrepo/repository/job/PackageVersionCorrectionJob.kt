@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
+import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.service.PackageService
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
@@ -65,38 +66,49 @@ class PackageVersionCorrectionJob(
         // 遍历仓库
         val dryRun = HttpContextHolder.getRequestOrNull()?.getParameter("dry-run")?.toBoolean() ?: true
         val result = mutableListOf<Any>()
-        queryRepository().forEach { repo ->
-            logger.info("Correct repo[${repo.projectId}/${repo.name}], type[${repo.type}]")
-            // 查询包
-            val query = PackageQueryHelper.packageListQuery(repo.projectId, repo.name, null)
-            var pageNumber = 1
-            var pageRequest = Pages.ofRequest(pageNumber, DEFAULT_PAGE_SIZE)
-            var packages = packageDao.find(query.with(pageRequest))
-            while (packages.isNotEmpty()) {
-                packages.forEach { pkg ->
-                    packageVersionDao.listByPackageId(pkg.id.orEmpty()).forEach { version ->
-                        // 查询节点
-                        if (version.artifactPath?.isNotBlank() == true) {
-                            if (!nodeDao.exists(repo.projectId, repo.name, version.artifactPath!!)) {
-                                val displayVersion = "${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}"
-                                logger.info("Package version [$displayVersion] has been deleted.")
-                                if (!dryRun) {
-                                    packageService.deleteVersion(repo.projectId, repo.name, pkg.key, version.name)
-                                }
-                                val record = mapOf(
-                                    "projectId" to repo.projectId,
-                                    "repoName" to repo.name,
-                                    "packageKey" to pkg.key,
-                                    "versionName" to version.name
-                                )
-                                result.add(record)
-                            }
-                        }
-                    }
+        queryRepository().forEach {
+            result.addAll(handleRepo(it, dryRun))
+        }
+        return result
+    }
+
+    private fun handleRepo(repo: TRepository, dryRun: Boolean): List<Any> {
+        logger.info("Correct repo[${repo.projectId}/${repo.name}], type[${repo.type}]")
+        val result = mutableListOf<Any>()
+        // 查询包
+        val query = PackageQueryHelper.packageListQuery(repo.projectId, repo.name, null)
+        var pageNumber = 1
+        var pageRequest = Pages.ofRequest(pageNumber, DEFAULT_PAGE_SIZE)
+        var packages = packageDao.find(query.with(pageRequest))
+        while (packages.isNotEmpty()) {
+            packages.forEach {
+                result.addAll(handlePackage(repo, it, dryRun))
+            }
+            pageNumber += 1
+            pageRequest = Pages.ofRequest(pageNumber, DEFAULT_PAGE_SIZE)
+            packages = packageDao.find(query.with(pageRequest))
+        }
+        return result
+    }
+
+    private fun handlePackage(repo: TRepository, pkg: TPackage, dryRun: Boolean): List<Any> {
+        val result = mutableListOf<Any>()
+        packageVersionDao.listByPackageId(pkg.id.orEmpty()).forEach { version ->
+            if (version.artifactPath.isNullOrBlank()) {
+                return result
+            }
+            if (!nodeDao.exists(repo.projectId, repo.name, version.artifactPath!!)) {
+                val displayVersion = "${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}"
+                logger.info("Package version [$displayVersion] has been deleted.")
+                if (!dryRun) {
+                    packageService.deleteVersion(repo.projectId, repo.name, pkg.key, version.name)
                 }
-                pageNumber += 1
-                pageRequest = Pages.ofRequest(pageNumber, DEFAULT_PAGE_SIZE)
-                packages = packageDao.find(query.with(pageRequest))
+                result.add(mapOf(
+                    "projectId" to repo.projectId,
+                    "repoName" to repo.name,
+                    "packageKey" to pkg.key,
+                    "versionName" to version.name
+                ))
             }
         }
         return result

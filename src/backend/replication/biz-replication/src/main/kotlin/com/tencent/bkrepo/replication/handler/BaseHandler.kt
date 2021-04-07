@@ -44,7 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
-abstract class AbstractHandler {
+open class BaseHandler {
 
     @Autowired
     lateinit var repoDataService: RepoDataService
