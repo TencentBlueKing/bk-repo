@@ -33,8 +33,8 @@ package com.tencent.bkrepo.replication.message.node
 
 import com.tencent.bkrepo.replication.message.IMessage
 import com.tencent.bkrepo.replication.message.MessageType
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 
-data class NodeCopiedMessage(val request: NodeCopyRequest) : IMessage {
+data class NodeCopiedMessage(val request: NodeMoveCopyRequest) : IMessage {
     override fun getMessageType() = MessageType.NODE_COPIED
 }
