@@ -37,12 +37,11 @@ import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -85,12 +84,12 @@ class NodeServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun moveNode(moveRequest: NodeMoveRequest) {
+    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun copyNode(copyRequest: NodeCopyRequest) {
+    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 

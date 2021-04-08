@@ -41,8 +41,8 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.repository.service.PackageDownloadsService
-import com.tencent.bkrepo.repository.service.PackageService
+import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query

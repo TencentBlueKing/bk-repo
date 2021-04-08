@@ -44,19 +44,16 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
@@ -203,11 +200,11 @@ class UserNodeController(
     @PostMapping("/move")
     fun moveNode(
         @RequestAttribute userId: String,
-        @RequestBody request: UserNodeMoveRequest
+        @RequestBody request: UserNodeMoveCopyRequest
     ): Response<Void> {
         with(request) {
             checkCrossRepoPermission(request)
-            val moveRequest = NodeMoveRequest(
+            val moveRequest = NodeMoveCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
                 srcFullPath = srcFullPath,
@@ -226,11 +223,11 @@ class UserNodeController(
     @PostMapping("/copy")
     fun copyNode(
         @RequestAttribute userId: String,
-        @RequestBody request: UserNodeCopyRequest
+        @RequestBody request: UserNodeMoveCopyRequest
     ): Response<Void> {
         with(request) {
             checkCrossRepoPermission(request)
-            val copyRequest = NodeCopyRequest(
+            val copyRequest = NodeMoveCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
                 srcFullPath = srcFullPath,
@@ -288,7 +285,7 @@ class UserNodeController(
     /**
      * 校验跨仓库操作权限
      */
-    private fun checkCrossRepoPermission(request: CrossRepoNodeRequest) {
+    private fun checkCrossRepoPermission(request: UserNodeMoveCopyRequest) {
         with(request) {
             permissionManager.checkNodePermission(PermissionAction.WRITE, srcProjectId, srcRepoName, srcFullPath)
             val toProjectId = request.destProjectId ?: srcProjectId

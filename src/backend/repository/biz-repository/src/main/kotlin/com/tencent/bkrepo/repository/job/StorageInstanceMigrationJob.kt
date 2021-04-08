@@ -42,9 +42,9 @@ import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistReques
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.RepositoryService
-import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria

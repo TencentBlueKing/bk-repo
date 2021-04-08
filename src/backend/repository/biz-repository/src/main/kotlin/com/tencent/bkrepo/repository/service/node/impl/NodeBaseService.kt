@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -51,11 +52,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.repository.service.impl.AbstractService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
@@ -74,7 +74,7 @@ abstract class NodeBaseService(
     open val storageCredentialService: StorageCredentialService,
     open val storageService: StorageService,
     open val repositoryProperties: RepositoryProperties
-) : NodeService, NodeBaseOperation, AbstractService() {
+) : NodeService, NodeBaseOperation {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {

@@ -46,8 +46,8 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -254,29 +254,31 @@ class PackageServiceTest @Autowired constructor(
         packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist")
     }
 
-    private fun buildCreateRequest(
-        projectId: String = UT_PROJECT_ID,
-        repoName: String = UT_REPO_NAME,
-        packageName: String = UT_PACKAGE_NAME,
-        packageKey: String = UT_PACKAGE_KEY,
-        version: String = UT_PACKAGE_VERSION,
-        overwrite: Boolean = false
-    ): PackageVersionCreateRequest {
-        return PackageVersionCreateRequest(
-            projectId = projectId,
-            repoName = repoName,
-            packageName = packageName,
-            packageKey = packageKey,
-            packageType = PackageType.MAVEN,
-            packageDescription = "some description",
-            versionName = version,
-            size = 1024,
-            manifestPath = "/com/tencent/bkrepo/test/$version",
-            artifactPath = "/com/tencent/bkrepo/test/$version",
-            stageTag = listOf(ArtifactStageEnum.RELEASE.toString()),
-            metadata = mapOf("key" to "value"),
-            overwrite = overwrite,
-            createdBy = UT_USER
-        )
+    companion object {
+
+        fun buildCreateRequest(
+            repoName: String = UT_REPO_NAME,
+            packageName: String = UT_PACKAGE_NAME,
+            packageKey: String = UT_PACKAGE_KEY,
+            version: String = UT_PACKAGE_VERSION,
+            overwrite: Boolean = false
+        ): PackageVersionCreateRequest {
+            return PackageVersionCreateRequest(
+                projectId = UT_PROJECT_ID,
+                repoName = repoName,
+                packageName = packageName,
+                packageKey = packageKey,
+                packageType = PackageType.MAVEN,
+                packageDescription = "some description",
+                versionName = version,
+                size = 1024,
+                manifestPath = "/com/tencent/bkrepo/test/$version",
+                artifactPath = "/com/tencent/bkrepo/test/$version",
+                stageTag = null,
+                metadata = mapOf("key" to "value"),
+                overwrite = overwrite,
+                createdBy = UT_USER
+            )
+        }
     }
 }

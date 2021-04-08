@@ -57,7 +57,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.test.context.TestPropertySource
 import java.io.File
 import java.nio.charset.Charset
-import java.nio.file.Paths
 import java.util.concurrent.CyclicBarrier
 import kotlin.concurrent.thread
 
@@ -156,9 +155,7 @@ internal class CacheStorageServiceTest {
     fun `should cache once when loading concurrently`() {
         val size = 1024L
         val artifactFile = createTempArtifactFile(size)
-        println(artifactFile.getFile()!!.readText())
         val sha256 = artifactFile.getFileSha256()
-        println("sha256: $sha256")
         val path = fileLocator.locate(sha256)
         storageService.store(sha256, artifactFile, null)
 
@@ -182,16 +179,13 @@ internal class CacheStorageServiceTest {
             val thread = thread {
                 cyclicBarrier.await()
                 val artifactInputStream = storageService.load(sha256, Range.full(size), null)
-                Assertions.assertNotNull(artifactInputStream)
                 Assertions.assertEquals(artifactInputStream!!.sha256(), sha256)
             }
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
-        println(Paths.get(storageProperties.filesystem.cache.path, path, sha256))
         // check cache
         Assertions.assertTrue(cacheClient.exist(path, sha256))
-        println(cacheClient.load(path, sha256)?.readText())
         Assertions.assertEquals(sha256, cacheClient.load(path, sha256)?.sha256())
     }
 
@@ -206,19 +200,10 @@ internal class CacheStorageServiceTest {
         val sha256 = artifactFile.getFileSha256()
         val path = fileLocator.locate(sha256)
         storageService.store(sha256, artifactFile, null)
-
         // wait to async store
         Thread.sleep(500)
-
-        // check cache
-        Assertions.assertTrue(cacheClient.exist(path, sha256))
-
-        // check persist
-        Assertions.assertTrue(storageService.exist(sha256, null))
-
         // remove cache
         cacheClient.delete(path, sha256)
-        Assertions.assertFalse(cacheClient.exist(path, sha256))
 
         val count = 10
         val cyclicBarrier = CyclicBarrier(count)
@@ -228,7 +213,6 @@ internal class CacheStorageServiceTest {
                 cyclicBarrier.await()
                 val range = Range(0, rangeSize.toLong() - 1, size)
                 val artifactInputStream = storageService.load(sha256, range, null)
-                Assertions.assertNotNull(artifactInputStream)
                 Assertions.assertEquals(artifactInputStream!!.sha256(), partialSha256)
             }
             threadList.add(thread)

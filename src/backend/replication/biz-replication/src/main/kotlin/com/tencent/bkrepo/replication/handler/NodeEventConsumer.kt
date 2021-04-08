@@ -55,7 +55,7 @@ import org.springframework.stereotype.Component
 @Component
 class NodeEventConsumer(
     private val eventPublisher: ApplicationEventPublisher
-) : AbstractHandler() {
+) : BaseHandler() {
 
     fun dealWithNodeCreateEvent(description: Map<String, Any>) {
         val request = description[NODE_REQUEST] as String
