@@ -51,6 +51,8 @@ import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.springframework.boot.test.mock.mockito.MockBean

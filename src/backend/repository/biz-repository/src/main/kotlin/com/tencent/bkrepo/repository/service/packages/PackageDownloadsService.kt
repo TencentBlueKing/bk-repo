@@ -29,30 +29,42 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.packages
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.repository.pojo.download.DownloadsMigrationRequest
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
 
-/**
- * 列表视图服务接口
- */
-interface ListViewService {
+interface PackageDownloadsService {
 
     /**
-     * 展示节点[artifactInfo]的子节点列表视图，通过`Http Servlet Response`直接输出视图内容
+     * 记录包下载
      *
-     * 如果[artifactInfo]为目录则展示目录下的节点列表
-     * 如果[artifactInfo]为文件则下载文件
+     * @param record 包下载记录
      */
-    fun listNodeView(artifactInfo: ArtifactInfo)
+    fun record(record: PackageDownloadRecord)
 
     /**
-     * 展示项目[projectId]的仓库列表视图，通过`Http Servlet Response`直接输出视图内容
+     * 数据迁移
+     *
+     * @param request 迁移请求
      */
-    fun listRepoView(projectId: String)
+    fun migrate(request: DownloadsMigrationRequest)
 
     /**
-     * 展示项目列表视图，通过`Http Servlet Response`直接输出视图内容
+     * 查询包下载记录详情
+     *
+     * @param request 包下载记录查询请求
      */
-    fun listProjectView()
+    fun queryDetails(request: DetailsQueryRequest): PackageDownloadsDetails
+
+    /**
+     * 查询包下载记录总览
+     *
+     * @param request 包下载记录查询请求
+     */
+    fun querySummary(request: SummaryQueryRequest): PackageDownloadsSummary
 }

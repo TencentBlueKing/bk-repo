@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,25 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.packages.impl
 
+import com.tencent.bkrepo.repository.dao.PackageDao
+import com.tencent.bkrepo.repository.dao.PackageDependentsDao
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.repository.service.packages.PackageDependentsService
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
-interface PackageDependentsService {
+@Service
+class PackageDependentsServiceImpl(
+    private val packageDao: PackageDao,
+    private val packageDependentsDao: PackageDependentsDao
+) : PackageDependentsService {
 
-    /**
-     * 添加依赖关系
-     *
-     * @param request 依赖关系
-     */
-    fun addDependents(request: PackageDependentsRelation)
+    override fun addDependents(request: PackageDependentsRelation) {
+        with(request) {
+            var addCount = 0L
+            dependencies.forEach {
+                if (packageDao.findByKey(projectId, repoName, it) != null) {
+                    addCount += packageDependentsDao.addDependent(projectId, repoName, it, packageKey)
+                }
+            }
+            logger.info("Create [$addCount] dependents for package [$projectId/$repoName/$packageKey]")
+        }
+    }
 
-    /**
-     * 查询包依赖关系
-     *
-     * @param projectId 项目id
-     * @param repoName 仓库名称
-     * @param packageKey 包唯一key
-     */
-    fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String>
+    override fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String> {
+        return packageDependentsDao.findByPackageKey(projectId, repoName, packageKey)?.dependents.orEmpty()
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(PackageDependentsServiceImpl::class.java)
+    }
 }

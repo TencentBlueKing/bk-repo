@@ -29,40 +29,44 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.repo
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 
 /**
- * 项目服务接口
+ * 代理源服务接口
  */
-interface ProjectService {
+interface ProxyChannelService {
 
     /**
-     * 查询名称为[name]的项目信息
+     * 根据[id]查询代理源信息
      */
-    fun getProjectInfo(name: String): ProjectInfo?
+    fun findById(id: String): ProxyChannelInfo?
 
     /**
-     * 查询项目列表
+     * 根据[request]创建代理源
      */
-    fun listProject(): List<ProjectInfo>
+    fun createProxy(userId: String, request: ProxyChannelCreateRequest)
 
     /**
-     * 分页查询项目列表
+     * 判断id为[id]类型为[repoType]的代理源是否存在
      */
-    fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?>
+    fun checkExistById(id: String, repoType: RepositoryType): Boolean
 
     /**
-     * 判断名称为[name]的项目是否存在
+     * 判断名称为[name]类型为[repoType]的代理源是否存在
      */
-    fun checkExist(name: String): Boolean
+    fun checkExistByName(name: String, repoType: RepositoryType): Boolean
 
     /**
-     * 根据[request]创建项目，创建成功后返回项目信息
+     * 判断url为[url]类型为[repoType]的代理源是否存在
      */
-    fun createProject(request: ProjectCreateRequest): ProjectInfo
+    fun checkExistByUrl(url: String, repoType: RepositoryType): Boolean
+
+    /**
+     * 列表查询公有源
+     */
+    fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
 }

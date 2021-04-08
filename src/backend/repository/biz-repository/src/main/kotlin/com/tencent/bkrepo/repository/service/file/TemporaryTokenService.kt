@@ -29,29 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.file
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
-import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 
 /**
- * 文件分享服务接口
+ * 临时访问服务接口
  */
-interface ShareService {
+interface TemporaryTokenService {
 
     /**
-     * 创建分享连接
+     * 创建临时token
+     * @param request 创建请求
      */
-    fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo
+    fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo>
 
     /**
-     * 下载分享文件
+     * 查询临时token信息
+     * @param token 临时token
      */
-    fun download(userId: String, token: String, artifactInfo: ArtifactInfo)
+    fun getTokenInfo(token: String): TemporaryTokenInfo?
 
     /**
-     * 查询节点被创建的分享链接列表
+     * 删除临时token信息
+     * @param token 临时token
      */
-    fun list(projectId: String, repoName: String, fullPath: String): List<ShareRecordInfo>
+    fun deleteToken(token: String)
+
+    /**
+     * 根据[token]删除临时token信息
+     */
+    fun decrementPermits(token: String)
 }
