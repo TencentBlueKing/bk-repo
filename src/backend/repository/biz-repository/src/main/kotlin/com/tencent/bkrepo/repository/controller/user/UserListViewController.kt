@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.repository.service.ListViewService
+import com.tencent.bkrepo.repository.service.file.ListViewService
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import org.springframework.web.bind.annotation.GetMapping

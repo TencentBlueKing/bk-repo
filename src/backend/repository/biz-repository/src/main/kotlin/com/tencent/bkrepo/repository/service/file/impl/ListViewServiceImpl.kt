@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.impl
+package com.tencent.bkrepo.repository.service.file.impl
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -48,10 +48,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
-import com.tencent.bkrepo.repository.service.ListViewService
+import com.tencent.bkrepo.repository.service.file.ListViewService
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.ProjectService
-import com.tencent.bkrepo.repository.service.RepositoryService
+import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.apache.commons.lang.StringEscapeUtils
 import org.springframework.stereotype.Service
 import java.io.PrintWriter

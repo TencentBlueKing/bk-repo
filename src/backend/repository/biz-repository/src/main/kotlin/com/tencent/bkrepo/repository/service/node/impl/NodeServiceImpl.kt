@@ -40,8 +40,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

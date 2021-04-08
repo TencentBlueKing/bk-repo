@@ -37,8 +37,8 @@ import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
-import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.ServiceBaseTest
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

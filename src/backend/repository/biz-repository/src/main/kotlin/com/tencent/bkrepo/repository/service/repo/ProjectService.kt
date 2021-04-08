@@ -29,36 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.repo
 
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
-import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 
 /**
- * 临时访问服务接口
+ * 项目服务接口
  */
-interface TemporaryTokenService {
+interface ProjectService {
 
     /**
-     * 创建临时token
-     * @param request 创建请求
+     * 查询名称为[name]的项目信息
      */
-    fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo>
+    fun getProjectInfo(name: String): ProjectInfo?
 
     /**
-     * 查询临时token信息
-     * @param token 临时token
+     * 查询项目列表
      */
-    fun getTokenInfo(token: String): TemporaryTokenInfo?
+    fun listProject(): List<ProjectInfo>
 
     /**
-     * 删除临时token信息
-     * @param token 临时token
+     * 分页查询项目列表
      */
-    fun deleteToken(token: String)
+    fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?>
 
     /**
-     * 根据[token]删除临时token信息
+     * 判断名称为[name]的项目是否存在
      */
-    fun decrementPermits(token: String)
+    fun checkExist(name: String): Boolean
+
+    /**
+     * 根据[request]创建项目，创建成功后返回项目信息
+     */
+    fun createProject(request: ProjectCreateRequest): ProjectInfo
 }

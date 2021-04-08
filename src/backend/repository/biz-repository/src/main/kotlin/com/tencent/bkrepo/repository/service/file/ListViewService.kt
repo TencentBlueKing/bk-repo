@@ -29,22 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.file
 
-import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
 /**
- * 包版本晋级服务接口
+ * 列表视图服务接口
  */
-interface StageService {
+interface ListViewService {
 
     /**
-     * 查询版本晋级状态
+     * 展示节点[artifactInfo]的子节点列表视图，通过`Http Servlet Response`直接输出视图内容
+     *
+     * 如果[artifactInfo]为目录则展示目录下的节点列表
+     * 如果[artifactInfo]为文件则下载文件
      */
-    fun query(projectId: String, repoName: String, packageKey: String, version: String): List<String>
+    fun listNodeView(artifactInfo: ArtifactInfo)
 
     /**
-     * 版本晋级
+     * 展示项目[projectId]的仓库列表视图，通过`Http Servlet Response`直接输出视图内容
      */
-    fun upgrade(request: StageUpgradeRequest)
+    fun listRepoView(projectId: String)
+
+    /**
+     * 展示项目列表视图，通过`Http Servlet Response`直接输出视图内容
+     */
+    fun listProjectView()
 }

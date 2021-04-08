@@ -29,42 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.packages
 
-import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
-import com.tencent.bkrepo.repository.pojo.download.DownloadsMigrationRequest
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
-import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
+import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 
-interface PackageDownloadsService {
+interface PackageDependentsService {
 
     /**
-     * 记录包下载
+     * 添加依赖关系
      *
-     * @param record 包下载记录
+     * @param request 依赖关系
      */
-    fun record(record: PackageDownloadRecord)
+    fun addDependents(request: PackageDependentsRelation)
 
     /**
-     * 数据迁移
+     * 查询包依赖关系
      *
-     * @param request 迁移请求
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param packageKey 包唯一key
      */
-    fun migrate(request: DownloadsMigrationRequest)
-
-    /**
-     * 查询包下载记录详情
-     *
-     * @param request 包下载记录查询请求
-     */
-    fun queryDetails(request: DetailsQueryRequest): PackageDownloadsDetails
-
-    /**
-     * 查询包下载记录总览
-     *
-     * @param request 包下载记录查询请求
-     */
-    fun querySummary(request: SummaryQueryRequest): PackageDownloadsSummary
+    fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String>
 }

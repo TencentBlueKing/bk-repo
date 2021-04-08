@@ -51,8 +51,8 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
-import com.tencent.bkrepo.repository.service.StorageCredentialService
 import com.tencent.bkrepo.repository.service.node.NodeMoveCopyOperation
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime

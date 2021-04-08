@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest

@@ -37,7 +37,7 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.service.FileReferenceService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Query

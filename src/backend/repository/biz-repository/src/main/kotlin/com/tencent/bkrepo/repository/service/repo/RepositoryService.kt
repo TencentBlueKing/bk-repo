@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest

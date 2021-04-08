@@ -29,44 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.file
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 
 /**
- * 代理源服务接口
+ * 文件分享服务接口
  */
-interface ProxyChannelService {
+interface ShareService {
 
     /**
-     * 根据[id]查询代理源信息
+     * 创建分享连接
      */
-    fun findById(id: String): ProxyChannelInfo?
+    fun create(userId: String, artifactInfo: ArtifactInfo, request: ShareRecordCreateRequest): ShareRecordInfo
 
     /**
-     * 根据[request]创建代理源
+     * 下载分享文件
      */
-    fun createProxy(userId: String, request: ProxyChannelCreateRequest)
+    fun download(userId: String, token: String, artifactInfo: ArtifactInfo)
 
     /**
-     * 判断id为[id]类型为[repoType]的代理源是否存在
+     * 查询节点被创建的分享链接列表
      */
-    fun checkExistById(id: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 判断名称为[name]类型为[repoType]的代理源是否存在
-     */
-    fun checkExistByName(name: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 判断url为[url]类型为[repoType]的代理源是否存在
-     */
-    fun checkExistByUrl(url: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 列表查询公有源
-     */
-    fun listPublicChannel(repoType: RepositoryType): List<ProxyChannelInfo>
+    fun list(projectId: String, repoName: String, fullPath: String): List<ShareRecordInfo>
 }

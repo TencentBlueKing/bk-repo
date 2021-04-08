@@ -29,33 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service
+package com.tencent.bkrepo.repository.service.packages
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
 
 /**
- * 元数据服务接口
+ * 包版本晋级服务接口
  */
-interface MetadataService {
+interface StageService {
 
     /**
-     * 查询节点的元数据
-     *
-     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
-     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
+     * 查询版本晋级状态
      */
-    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
+    fun query(projectId: String, repoName: String, packageKey: String, version: String): List<String>
 
     /**
-     * 根据请求[request]保存或者更新元数据
-     *
-     * 如果元数据`key`已经存在则更新，否则创建新的
+     * 版本晋级
      */
-    fun saveMetadata(request: MetadataSaveRequest)
-
-    /**
-     * 根据请求[request]删除元数据
-     */
-    fun deleteMetadata(request: MetadataDeleteRequest)
+    fun upgrade(request: StageUpgradeRequest)
 }

@@ -29,39 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.impl
+package com.tencent.bkrepo.repository.service.metadata
 
-import com.tencent.bkrepo.repository.dao.PackageDao
-import com.tencent.bkrepo.repository.dao.PackageDependentsDao
-import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
-import com.tencent.bkrepo.repository.service.PackageDependentsService
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 
-@Service
-class PackageDependentsServiceImpl(
-    private val packageDao: PackageDao,
-    private val packageDependentsDao: PackageDependentsDao
-) : PackageDependentsService {
+/**
+ * 元数据服务接口
+ */
+interface MetadataService {
 
-    override fun addDependents(request: PackageDependentsRelation) {
-        with(request) {
-            var addCount = 0L
-            dependencies.forEach {
-                if (packageDao.findByKey(projectId, repoName, it) != null) {
-                    addCount += packageDependentsDao.addDependent(projectId, repoName, it, packageKey)
-                }
-            }
-            logger.info("Create [$addCount] dependents for package [$projectId/$repoName/$packageKey]")
-        }
-    }
+    /**
+     * 查询节点的元数据
+     *
+     * [projectId]为节点所属项目，[repoName]为节点所属仓库，[fullPath]为节点完整路径
+     * 返回[Map]数据结构，`key`为元数据名称，`value`为元数据值
+     */
+    fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any>
 
-    override fun findByPackageKey(projectId: String, repoName: String, packageKey: String): Set<String> {
-        return packageDependentsDao.findByPackageKey(projectId, repoName, packageKey)?.dependents.orEmpty()
-    }
+    /**
+     * 根据请求[request]保存或者更新元数据
+     *
+     * 如果元数据`key`已经存在则更新，否则创建新的
+     */
+    fun saveMetadata(request: MetadataSaveRequest)
 
-    companion object {
-        private val logger: Logger = LoggerFactory.getLogger(PackageDependentsServiceImpl::class.java)
-    }
+    /**
+     * 根据请求[request]删除元数据
+     */
+    fun deleteMetadata(request: MetadataDeleteRequest)
 }

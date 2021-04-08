@@ -34,6 +34,8 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
