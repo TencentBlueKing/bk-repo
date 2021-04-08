@@ -38,7 +38,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class MetadataEventListener : AbstractEventListener() {
+class MetadataEventListener : BaseEventListener() {
 
     @Async
     @EventListener(MetadataSavedEvent::class)

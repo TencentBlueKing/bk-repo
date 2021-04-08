@@ -43,7 +43,7 @@ import org.springframework.stereotype.Service
 class PackageDependentsServiceImpl(
     private val packageDao: PackageDao,
     private val packageDependentsDao: PackageDependentsDao
-) : PackageDependentsService, AbstractService() {
+) : PackageDependentsService {
 
     override fun addDependents(request: PackageDependentsRelation) {
         with(request) {

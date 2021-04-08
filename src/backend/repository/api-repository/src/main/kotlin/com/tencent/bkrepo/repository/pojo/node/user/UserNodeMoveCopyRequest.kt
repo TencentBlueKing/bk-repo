@@ -29,34 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.handler.event
+package com.tencent.bkrepo.repository.pojo.node.user
 
-import com.tencent.bkrepo.replication.handler.AbstractHandler
-import com.tencent.bkrepo.replication.model.TReplicationTask
-import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
-import com.tencent.bkrepo.replication.service.ReplicationService
-import org.springframework.beans.factory.annotation.Autowired
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * AbstractMessageHandler
+ * 用户节点移动/复制请求
  */
-abstract class AbstractEventHandler : AbstractHandler() {
-
-    // LateinitUsage: 抽象类中使用构造器注入会造成不便
-    @Suppress("LateinitUsage")
-    @Autowired
-    lateinit var replicationService: ReplicationService
-
-    fun getRepoDetail(projectId: String, repoName: String, remoteRepoName: String): ReplicationRepoDetail? {
-        val detail = repoDataService.getRepositoryDetail(projectId, repoName) ?: return null
-        return convertReplicationRepo(detail, remoteRepoName)
-    }
-
-    fun getRemoteProjectId(task: TReplicationTask, sourceProjectId: String): String {
-        return task.remoteProjectId ?: task.localProjectId ?: sourceProjectId
-    }
-
-    fun getRemoteRepoName(task: TReplicationTask, sourceRepoName: String): String {
-        return task.remoteRepoName ?: task.localRepoName ?: sourceRepoName
-    }
-}
+@ApiModel("用户节点移动/复制请求")
+data class UserNodeMoveCopyRequest(
+    @ApiModelProperty("源项目id", required = true)
+    val srcProjectId: String,
+    @ApiModelProperty("源仓库名称", required = true)
+    val srcRepoName: String,
+    @ApiModelProperty("源节点路径", required = true)
+    val srcFullPath: String,
+    @ApiModelProperty("目的项目id", required = false)
+    val destProjectId: String? = null,
+    @ApiModelProperty("目的仓库名称", required = false)
+    val destRepoName: String? = null,
+    @ApiModelProperty("目的路径", required = true)
+    val destFullPath: String,
+    @Deprecated("This property is deprecated!", ReplaceWith("destFullPath"))
+    @ApiModelProperty("目的路径", required = false)
+    val destPath: String? = null,
+    @ApiModelProperty("同名文件是否覆盖", required = false)
+    val overwrite: Boolean = false
+)

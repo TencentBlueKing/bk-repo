@@ -35,7 +35,12 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
+import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -44,10 +49,8 @@ import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
 import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
-import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.service.StorageCredentialService
 import com.tencent.bkrepo.repository.service.node.NodeMoveCopyOperation
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -66,183 +69,242 @@ open class NodeMoveCopySupport(
     private val repositoryDao: RepositoryDao = nodeBaseService.repositoryDao
     private val storageCredentialService: StorageCredentialService = nodeBaseService.storageCredentialService
 
-    override fun moveNode(moveRequest: NodeMoveRequest) {
-        moveOrCopy(moveRequest, moveRequest.operator)
+    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
+        moveCopy(moveRequest, true)
+        publishEvent(NodeMovedEvent(moveRequest))
+        logger.info("Move node success: [$this]")
     }
 
-    override fun copyNode(copyRequest: NodeCopyRequest) {
-        moveOrCopy(copyRequest, copyRequest.operator)
+    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
+        moveCopy(copyRequest, false)
+        publishEvent(NodeCopiedEvent(copyRequest))
+        logger.info("Copy node success: [$this]")
     }
 
     /**
      * 处理节点操作请求
      */
-    private fun moveOrCopy(request: CrossRepoNodeRequest, operator: String) {
-        with(request) {
-            // 准备数据
-            val srcFullPath = PathUtils.normalizeFullPath(srcFullPath)
-            val destProjectId = request.destProjectId ?: srcProjectId
-            val destRepoName = request.destRepoName ?: srcRepoName
-            val destFullPath = PathUtils.normalizeFullPath(request.destFullPath)
-
-            val isSameRepository = srcProjectId == destProjectId && srcRepoName == destRepoName
-            // 查询repository
-            val srcRepo = repositoryDao.findByNameAndType(srcProjectId, srcRepoName)
-                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, srcRepoName)
-            val destRepo = if (!isSameRepository) {
-                repositoryDao.findByNameAndType(destProjectId, destRepoName)
-                    ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, destRepoName)
-            } else srcRepo
-
-            // 查询storageCredentials
-            val srcCredentials = srcRepo.credentialsKey?.let {
-                storageCredentialService.findByKey(it)
-            }
-            val destCredentials = if (!isSameRepository) {
-                destRepo.credentialsKey?.let { storageCredentialService.findByKey(it) }
-            } else srcCredentials
-
-            // 只允许local或者composite类型仓库操作
-            val canSrcRepoMove = srcRepo.category.let {
-                it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
-            }
-            val canDestRepoMove = destRepo.category.let {
-                it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
-            }
-            if (!canSrcRepoMove || !canDestRepoMove) {
-                throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only local repository is supported")
-            }
-            val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, srcFullPath)
-            val destNode = nodeDao.findNode(destProjectId, destRepoName, destFullPath)
-            // 同路径，跳过
-            if (isSameRepository && srcNode.fullPath == destNode?.fullPath) return
-            // src为dest目录下的子节点，跳过
-            if (isSameRepository && destNode?.folder == true && srcNode.path == PathUtils.toPath(destNode.fullPath)) {
+    private fun moveCopy(request: NodeMoveCopyRequest, move: Boolean) {
+        with(resolveContext(request, move)) {
+            preCheck(this)
+            if (canIgnore(this)) {
                 return
             }
-            // 目录 ->
             if (srcNode.folder) {
-                // 目录 -> 文件: error
-                if (destNode?.folder == false) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, destFullPath)
-                }
-                val destRootNodePath = if (destNode == null) {
-                    // 目录 -> 不存在的目录
-                    val path = PathUtils.resolveParent(destFullPath)
-                    val name = PathUtils.resolveName(destFullPath)
-                    // 创建dest父目录
-                    nodeBaseService.mkdirs(destProjectId, destRepoName, path, operator)
-                    // 操作节点
-                    doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, path, name, request, operator)
-                    PathUtils.combinePath(path, name)
-                } else {
-                    // 目录 -> 存在的目录
-                    val path = PathUtils.toPath(destNode.fullPath)
-                    val nodeName = srcNode.name
-                    // 操作节点
-                    doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, path, nodeName, request, operator)
-                    PathUtils.combinePath(path, srcNode.name)
-                }
-                val srcRootNodePath = PathUtils.toPath(srcNode.fullPath)
-                val listOption = NodeListOption(
-                    includeFolder = true,
-                    includeMetadata = false,
-                    deep = true,
-                    sort = false
-                )
-                val query =
-                    NodeQueryHelper.nodeListQuery(srcNode.projectId, srcNode.repoName, srcRootNodePath, listOption)
-                // 目录下的节点 -> 创建好的目录
-                nodeDao.find(query).forEach {
-                    val destPath = it.path.replaceFirst(srcRootNodePath, destRootNodePath)
-                    doMoveOrCopy(it, destRepo, srcCredentials, destCredentials, destPath, null, request, operator)
-                }
+                moveCopyFolder(this)
             } else {
-                // 文件 ->
-                val destPath =
-                    if (destNode?.folder == true) PathUtils.toPath(destNode.fullPath) else PathUtils.resolveParent(
-                        destFullPath
-                    )
-                val destName = if (destNode?.folder == true) srcNode.name else PathUtils.resolveName(destFullPath)
-                // 创建dest父目录
-                nodeBaseService.mkdirs(destProjectId, destRepoName, destPath, operator)
-                doMoveOrCopy(srcNode, destRepo, srcCredentials, destCredentials, destPath, destName, request, operator)
+                moveCopyFile(this)
             }
-            // event
-            if (request is NodeMoveRequest) {
-                nodeBaseService.publishEvent(NodeMovedEvent(request))
-            } else if (request is NodeCopyRequest) {
-                nodeBaseService.publishEvent(NodeCopiedEvent(request))
-            }
-            logger.info("[${request.getOperateName()}] node success: [$this]")
         }
     }
 
     /**
-     * 移动/拷贝节点
+     * 移动/复制节点
      */
-    private fun doMoveOrCopy(
-        srcNode: TNode,
-        destRepository: TRepository,
-        srcStorageCredentials: StorageCredentials?,
-        destStorageCredentials: StorageCredentials?,
-        destPath: String,
-        nodeName: String?,
-        request: CrossRepoNodeRequest,
-        operator: String
+    private fun doMoveCopy(
+        context: MoveCopyContext,
+        node: TNode,
+        dstPath: String,
+        dstName: String
     ) {
-        // 计算destName
-        val destName = nodeName ?: srcNode.name
-        val destFullPath = PathUtils.combineFullPath(destPath, destName)
-        // 冲突检查
-        val existNode = nodeDao.findNode(destRepository.projectId, destRepository.name, destFullPath)
-        // 目录 -> 目录: 跳过
-        if (srcNode.folder && existNode?.folder == true) return
+        with(context) {
+            val dstFullPath = combineFullPath(dstPath, dstName)
+            // 冲突检查
+            val existNode = nodeDao.findNode(dstProjectId, dstRepoName, dstFullPath)
+            // 目录 -> 目录: 跳过
+            if (node.folder && existNode?.folder == true) return
+            checkConflict(context, node, existNode)
+            // copy目标节点
+            val dstNode = node.copy(
+                id = null,
+                projectId = dstProjectId,
+                repoName = dstRepoName,
+                path = dstPath,
+                name = dstName,
+                fullPath = dstFullPath,
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now()
+            )
+            // move操作，create信息保留
+            if (move) {
+                dstNode.createdBy = operator
+                dstNode.createdDate = LocalDateTime.now()
+            }
+            // 文件 -> 文件 & 允许覆盖: 删除old
+            if (!node.folder && existNode?.folder == false && overwrite) {
+                val query = NodeQueryHelper.nodeQuery(existNode.projectId, existNode.repoName, existNode.fullPath)
+                val update = NodeQueryHelper.nodeDeleteUpdate(operator)
+                nodeDao.updateFirst(query, update)
+            }
+            // 文件 & 跨存储node
+            if (!node.folder && srcCredentials != dstCredentials) {
+                storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
+            }
+            // 创建dst节点
+            nodeBaseService.doCreate(dstNode, dstRepo)
+            // move操作，创建dst节点后，还需要删除src节点
+            // 因为分表所以不能直接更新src节点，必须创建新的并删除旧的
+            if (move) {
+                val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
+                val update = NodeQueryHelper.nodeDeleteUpdate(operator)
+                nodeDao.updateFirst(query, update)
+            }
+        }
+    }
+
+    private fun resolveContext(request: NodeMoveCopyRequest, move: Boolean): MoveCopyContext {
+        with(request) {
+            val srcFullPath = PathUtils.normalizeFullPath(srcFullPath)
+            val dstProjectId = request.destProjectId ?: srcProjectId
+            val dstRepoName = request.destRepoName ?: srcRepoName
+            val dstFullPath = PathUtils.normalizeFullPath(request.destFullPath)
+            val isSameRepo = srcProjectId == destProjectId && srcRepoName == destRepoName
+            // 查询repository
+            val srcRepo = findRepository(srcProjectId, srcRepoName)
+            val dstRepo = if (!isSameRepo) findRepository(dstProjectId, dstRepoName) else srcRepo
+            // 查询storageCredentials
+            val srcCredentials = findCredential(srcRepo.credentialsKey)
+            val dstCredentials = if (!isSameRepo) findCredential(dstRepo.credentialsKey) else srcCredentials
+            val srcNode = nodeDao.findNode(srcProjectId, srcRepoName, srcFullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, srcFullPath)
+            val dstNode = nodeDao.findNode(dstProjectId, dstRepoName, dstFullPath)
+
+            return MoveCopyContext(
+                srcRepo = srcRepo,
+                srcCredentials = srcCredentials,
+                srcNode = srcNode,
+                dstProjectId = dstProjectId,
+                dstRepoName = dstRepoName,
+                dstFullPath = dstFullPath,
+                dstRepo = dstRepo,
+                dstCredentials = dstCredentials,
+                dstNode = dstNode,
+                overwrite = overwrite,
+                operator = request.operator,
+                move = move
+            )
+        }
+    }
+
+    /**
+     * 预检查
+     */
+    private fun preCheck(context: MoveCopyContext) {
+        // 只允许local或者composite类型仓库操作
+        val canSrcRepoMove = context.srcRepo.category.let {
+            it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
+        }
+        val canDstRepoMove = context.dstRepo.category.let {
+            it == RepositoryCategory.LOCAL || it == RepositoryCategory.COMPOSITE
+        }
+        if (!canSrcRepoMove || !canDstRepoMove) {
+            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only local repository is supported")
+        }
+    }
+
+    /**
+     * 判断能否忽略执行
+     */
+    private fun canIgnore(context: MoveCopyContext): Boolean {
+        with(context) {
+            var canIgnore = false
+            if (isSameRepo()) {
+                if (srcNode.fullPath == dstNode?.fullPath) {
+                    // 同路径，跳过
+                    canIgnore = true
+                } else if (dstNode?.folder == true && srcNode.path == toPath(dstNode.fullPath)) {
+                    // src为dst目录下的子节点，跳过
+                    canIgnore = true
+                }
+            }
+            return canIgnore
+        }
+    }
+
+    private fun checkConflict(context: MoveCopyContext, node: TNode, existNode: TNode?) {
         // 目录 -> 文件: 出错
-        if (srcNode.folder && existNode?.folder == false) {
+        if (node.folder && existNode?.folder == false) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, existNode.fullPath)
         }
         // 文件 -> 文件 & 不允许覆盖: 出错
-        if (!srcNode.folder && existNode?.folder == false && !request.overwrite) {
+        if (!node.folder && existNode?.folder == false && !context.overwrite) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, existNode.fullPath)
         }
+    }
 
-        // copy目标节点
-        val destNode = srcNode.copy(
-            id = null,
-            projectId = destRepository.projectId,
-            repoName = destRepository.name,
-            path = destPath,
-            name = destName,
-            fullPath = destFullPath,
-            lastModifiedBy = operator,
-            lastModifiedDate = LocalDateTime.now()
-        )
-        // move操作，create信息保留
-        if (request is NodeMoveRequest) {
-            destNode.createdBy = operator
-            destNode.createdDate = LocalDateTime.now()
+    /**
+     * 移动/复制目录
+     */
+    private fun moveCopyFolder(context: MoveCopyContext) {
+        with(context) {
+            // 目录 -> 文件: error
+            if (dstNode?.folder == false) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, dstFullPath)
+            }
+            val dstRootNodePath = if (dstNode == null) {
+                // 目录 -> 不存在的目录
+                val path = resolveParent(dstFullPath)
+                val name = resolveName(dstFullPath)
+                // 创建dst父目录
+                nodeBaseService.mkdirs(dstProjectId, dstRepoName, path, operator)
+                // 操作节点
+                doMoveCopy(this, srcNode, path, name)
+                PathUtils.combinePath(path, name)
+            } else {
+                // 目录 -> 存在的目录
+                val path = toPath(dstNode.fullPath)
+                val name = srcNode.name
+                // 操作节点
+                doMoveCopy(this, srcNode, path, name)
+                PathUtils.combinePath(path, name)
+            }
+            val srcRootNodePath = toPath(srcNode.fullPath)
+            val listOption = NodeListOption(includeFolder = true, includeMetadata = false, deep = true, sort = false)
+            val query = NodeQueryHelper.nodeListQuery(srcNode.projectId, srcNode.repoName, srcRootNodePath, listOption)
+            // 目录下的节点 -> 创建好的目录
+            nodeDao.find(query).forEach {
+                doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
+            }
         }
-        // 文件 -> 文件 & 允许覆盖: 删除old
-        if (!srcNode.folder && existNode?.folder == false && request.overwrite) {
-            val query = NodeQueryHelper.nodeQuery(existNode.projectId, existNode.repoName, existNode.fullPath)
-            val update = NodeQueryHelper.nodeDeleteUpdate(operator)
-            nodeDao.updateFirst(query, update)
+    }
+
+    /**
+     * 移动/复制文件
+     */
+    private fun moveCopyFile(context: MoveCopyContext) {
+        with(context) {
+            val dstPath = if (dstNode?.folder == true) toPath(dstNode.fullPath) else resolveParent(dstFullPath)
+            val dstName = if (dstNode?.folder == true) srcNode.name else resolveName(dstFullPath)
+            // 创建dst父目录
+            nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
+            doMoveCopy(context, srcNode, dstPath, dstName)
         }
-        // 文件 & 跨存储
-        if (!srcNode.folder && srcStorageCredentials != destStorageCredentials) {
-            storageService.copy(srcNode.sha256!!, srcStorageCredentials, destStorageCredentials)
-        }
-        // 创建dest节点
-        nodeBaseService.doCreate(destNode, destRepository)
-        // move操作，创建dest节点后，还需要删除src节点
-        // 因为分表所以不能直接更新src节点，必须创建新的并删除旧的
-        if (request is NodeMoveRequest) {
-            val query = NodeQueryHelper.nodeQuery(srcNode.projectId, srcNode.repoName, srcNode.fullPath)
-            val update = NodeQueryHelper.nodeDeleteUpdate(operator)
-            nodeDao.updateFirst(query, update)
-        }
+    }
+
+    private fun findRepository(projectId: String, repoName: String): TRepository {
+        return repositoryDao.findByNameAndType(projectId, repoName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+    }
+
+    private fun findCredential(key: String?): StorageCredentials? {
+        return key?.let { storageCredentialService.findByKey(it) }
+    }
+
+    data class MoveCopyContext(
+        val srcRepo: TRepository,
+        val srcCredentials: StorageCredentials?,
+        val srcNode: TNode,
+        val dstProjectId: String,
+        val dstRepoName: String,
+        val dstFullPath: String,
+        val dstRepo: TRepository,
+        val dstCredentials: StorageCredentials?,
+        val dstNode: TNode?,
+        val overwrite: Boolean,
+        val operator: String,
+        val move: Boolean
+    ) {
+        fun isSameRepo() = srcNode.projectId == dstProjectId && srcNode.repoName == dstRepoName
     }
 
     companion object {

@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
 
 @Suppress("UNCHECKED_CAST")
-abstract class AbstractQueryBuilder<T : AbstractQueryBuilder<T>> {
+open class AbstractQueryBuilder<T : AbstractQueryBuilder<T>> {
     private var projectId: String? = null
     private var repoNames: List<String> = listOf()
     private var repoType: RepositoryType? = null

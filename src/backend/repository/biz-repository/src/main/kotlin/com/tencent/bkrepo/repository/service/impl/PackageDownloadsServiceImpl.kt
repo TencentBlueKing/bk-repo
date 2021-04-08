@@ -71,7 +71,7 @@ class PackageDownloadsServiceImpl(
     private val packageDao: PackageDao,
     private val packageVersionDao: PackageVersionDao,
     private val packageDownloadsDao: PackageDownloadsDao
-) : PackageDownloadsService, AbstractService() {
+) : PackageDownloadsService {
 
     override fun record(record: PackageDownloadRecord) {
         with(record) {

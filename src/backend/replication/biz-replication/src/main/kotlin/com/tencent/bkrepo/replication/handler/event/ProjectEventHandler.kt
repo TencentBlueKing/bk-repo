@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component
  * handler project message and replicate
  */
 @Component
-class ProjectEventHandler : AbstractEventHandler() {
+class ProjectEventHandler : BaseEventHandler() {
 
     @EventListener(ProjectCreatedMessage::class)
     fun handle(message: ProjectCreatedMessage) {

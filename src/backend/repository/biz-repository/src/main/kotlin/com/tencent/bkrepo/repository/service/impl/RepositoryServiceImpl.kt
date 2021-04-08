@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -64,11 +65,11 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.ProjectService
 import com.tencent.bkrepo.repository.service.ProxyChannelService
 import com.tencent.bkrepo.repository.service.RepositoryService
 import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.service.node.NodeService
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
@@ -94,7 +95,7 @@ class RepositoryServiceImpl(
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties
-) : AbstractService(), RepositoryService {
+) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
@@ -196,9 +197,9 @@ class RepositoryServiceImpl(
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
                 repositoryDao.insert(repository)
-                    .also { publishEvent(RepoCreatedEvent(repoCreateRequest)) }
-                    .also { logger.info("Create repository [$repoCreateRequest] success.") }
-                    .let { convertToDetail(repository, storageCredential)!! }
+                publishEvent(RepoCreatedEvent(repoCreateRequest))
+                logger.info("Create repository [$repoCreateRequest] success.")
+                convertToDetail(repository, storageCredential)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
                 getRepoDetail(projectId, name, type.name)!!

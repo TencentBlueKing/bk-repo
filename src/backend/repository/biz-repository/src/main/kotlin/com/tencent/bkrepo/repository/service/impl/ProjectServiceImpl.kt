@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.listener.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.repository.model.TProject
@@ -57,7 +58,7 @@ import java.util.regex.Pattern
 @Service
 class ProjectServiceImpl(
     private val projectDao: ProjectDao
-) : AbstractService(), ProjectService {
+) : ProjectService {
 
     override fun getProjectInfo(name: String): ProjectInfo? {
         return convert(projectDao.findByName(name))
@@ -105,9 +106,9 @@ class ProjectServiceImpl(
             )
             return try {
                 projectDao.insert(project)
-                    .also { publishEvent(ProjectCreatedEvent(request)) }
-                    .also { logger.info("Create project [$name] success.") }
-                    .let { convert(it)!! }
+                publishEvent(ProjectCreatedEvent(request))
+                logger.info("Create project [$name] success.")
+                convert(project)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert project[$name] error: [${exception.message}]")
                 getProjectInfo(name)!!

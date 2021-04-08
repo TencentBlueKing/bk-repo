@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit
  * include create ,copy ,rename,move
  */
 @Component
-class NodeEventHandler : AbstractEventHandler() {
+class NodeEventHandler : BaseEventHandler() {
 
     @Async
     @EventListener(NodeCreatedMessage::class)

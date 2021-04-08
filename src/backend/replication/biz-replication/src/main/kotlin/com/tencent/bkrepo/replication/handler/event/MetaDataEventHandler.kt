@@ -39,7 +39,7 @@ import org.springframework.context.event.EventListener
 /**
  * handler metadata message and replicate
  */
-class MetaDataEventHandler : AbstractEventHandler() {
+class MetaDataEventHandler : BaseEventHandler() {
 
     @EventListener(MetadataSavedMessage::class)
     fun handle(message: MetadataSavedMessage) {

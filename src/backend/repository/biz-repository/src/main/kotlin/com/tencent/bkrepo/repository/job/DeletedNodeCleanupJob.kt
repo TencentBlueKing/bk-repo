@@ -75,23 +75,10 @@ class DeletedNodeCleanupJob(
         val expireDate = LocalDateTime.now().minusDays(reserveDays)
 
         repositoryDao.findAll().forEach { repo ->
-            val criteria = where(TNode::projectId).isEqualTo(repo.projectId)
-                .and(TNode::repoName).isEqualTo(repo.name)
-                .and(TNode::deleted).lt(expireDate)
-            val query = Query.query(criteria).with(PageRequest.of(0, PAGE_SIZE))
-            var deletedNodeList = nodeDao.find(query)
-            while (deletedNodeList.isNotEmpty()) {
-                logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${repo.projectId}/${repo.name}")
-                deletedNodeList.forEach { node ->
-                    cleanUpNode(repo, node)
-                    if (node.folder) {
-                        folderCleanupCount += 1
-                    } else {
-                        fileCleanupCount += 1
-                    }
-                }
-                totalCleanupCount += deletedNodeList.size
-                deletedNodeList = nodeDao.find(query)
+            handleRepo(repo, expireDate).let {
+                totalCleanupCount += it.totalCleanupCount
+                fileCleanupCount += it.fileCleanupCount
+                folderCleanupCount += it.folderCleanupCount
             }
         }
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
@@ -99,6 +86,30 @@ class DeletedNodeCleanupJob(
             "[$totalCleanupCount] nodes has been clean up, file[$fileCleanupCount], folder[$folderCleanupCount]" +
                 ", elapse [$elapseTimeMillis] ms totally."
         )
+    }
+
+    private fun handleRepo(repo: TRepository, expireDate: LocalDateTime): CleanupResult {
+        val result = CleanupResult()
+        val criteria = where(TNode::projectId).isEqualTo(repo.projectId)
+            .and(TNode::repoName).isEqualTo(repo.name)
+            .and(TNode::deleted).lt(expireDate)
+        val query = Query.query(criteria).with(PageRequest.of(0, PAGE_SIZE))
+        var deletedNodeList = nodeDao.find(query)
+        while (deletedNodeList.isNotEmpty()) {
+            logger.info("Retrieved [${deletedNodeList.size}] deleted records from ${repo.projectId}/${repo.name}")
+            deletedNodeList.forEach { node ->
+                cleanUpNode(repo, node)
+                if (node.folder) {
+                    FileReferenceCleanupJob
+                    result.folderCleanupCount += 1
+                } else {
+                    result.fileCleanupCount += 1
+                }
+            }
+            result.totalCleanupCount += deletedNodeList.size
+            deletedNodeList = nodeDao.find(query)
+        }
+        return result
     }
 
     private fun cleanUpNode(repo: TRepository, node: TNode) {
@@ -121,6 +132,12 @@ class DeletedNodeCleanupJob(
             }
         }
     }
+
+    data class CleanupResult(
+        var folderCleanupCount: Int = 0,
+        var fileCleanupCount: Int = 0,
+        var totalCleanupCount: Int = 0
+    )
 
     companion object {
         private val logger = LoggerHolder.jobLogger

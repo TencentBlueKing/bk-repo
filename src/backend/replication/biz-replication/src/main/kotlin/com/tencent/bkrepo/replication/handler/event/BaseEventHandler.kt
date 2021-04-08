@@ -29,26 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.node
+package com.tencent.bkrepo.replication.handler.event
+
+import com.tencent.bkrepo.replication.handler.BaseHandler
+import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
+import com.tencent.bkrepo.replication.service.ReplicationService
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
- * 节点请求抽象类
+ * AbstractMessageHandler
  */
-interface CrossRepoNodeRequest : NodeRequest {
-    val srcProjectId: String
-    val srcRepoName: String
-    val srcFullPath: String
-    val destProjectId: String?
-    val destRepoName: String?
-    val destFullPath: String
-    val overwrite: Boolean
+abstract class BaseEventHandler : BaseHandler() {
 
-    fun getOperateName(): String
+    // LateinitUsage: 抽象类中使用构造器注入会造成不便
+    @Suppress("LateinitUsage")
+    @Autowired
+    lateinit var replicationService: ReplicationService
 
-    override val projectId
-        get() = srcProjectId
-    override val repoName: String
-        get() = srcRepoName
-    override val fullPath: String
-        get() = srcFullPath
+    fun getRepoDetail(projectId: String, repoName: String, remoteRepoName: String): ReplicationRepoDetail? {
+        val detail = repoDataService.getRepositoryDetail(projectId, repoName) ?: return null
+        return convertReplicationRepo(detail, remoteRepoName)
+    }
+
+    fun getRemoteProjectId(task: TReplicationTask, sourceProjectId: String): String {
+        return task.remoteProjectId ?: task.localProjectId ?: sourceProjectId
+    }
+
+    fun getRemoteRepoName(task: TReplicationTask, sourceRepoName: String): String {
+        return task.remoteRepoName ?: task.localRepoName ?: sourceRepoName
+    }
 }

@@ -43,7 +43,7 @@ import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 
-abstract class AbstractEventListener(private val nodeClient: NodeClient) {
+open class AbstractEventListener(private val nodeClient: NodeClient) {
 
     /**
      * check node exists
