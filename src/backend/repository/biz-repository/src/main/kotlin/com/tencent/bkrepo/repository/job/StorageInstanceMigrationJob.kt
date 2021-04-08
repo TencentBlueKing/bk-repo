@@ -83,7 +83,7 @@ class StorageInstanceMigrationJob(
                 migrateOldFile(context)
                 // 校验新文件
                 correctNewFile(context)
-            } catch (exception: RuntimeException) {
+            } catch (exception: Exception) {
                 logger.error("Migrate storage instance failed.", exception)
             }
         }
@@ -100,7 +100,7 @@ class StorageInstanceMigrationJob(
                 val sha256 = node.sha256.orEmpty()
                 try {
                     correctNode(context, node)
-                } catch (exception: RuntimeException) {
+                } catch (exception: Exception) {
                     logger.error("Failed to check file[$sha256].", exception)
                     correctFailedCount += 1
                 } finally {
@@ -189,7 +189,7 @@ class StorageInstanceMigrationJob(
                 migrate(this, sha256)
                 logger.info("Success to migrate file[$sha256].")
                 successCount += 1
-            } catch (exception: RuntimeException) {
+            } catch (exception: Exception) {
                 logger.error("Failed to migrate file[$sha256].", exception)
                 failedCount += 1
             } finally {
