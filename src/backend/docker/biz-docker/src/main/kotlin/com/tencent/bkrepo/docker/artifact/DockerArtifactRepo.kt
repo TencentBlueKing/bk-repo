@@ -70,9 +70,9 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
@@ -236,7 +236,7 @@ class DockerArtifactRepo @Autowired constructor(
         logger.debug("user [$userId] start to copy file [$context,$srcPath,$destPath]")
         try {
             with(context) {
-                val copyRequest = NodeCopyRequest(
+                val copyRequest = NodeMoveCopyRequest(
                     srcProjectId = projectId,
                     srcRepoName = repoName,
                     srcFullPath = srcPath,
