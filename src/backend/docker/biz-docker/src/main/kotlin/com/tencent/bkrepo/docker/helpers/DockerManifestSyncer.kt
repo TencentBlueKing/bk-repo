@@ -92,16 +92,13 @@ object DockerManifestSyncer {
                 logger.info("found empty layer [$fileName] in manifest  ,create blob in path [$finalPath]")
                 val blobContent = ByteArrayInputStream(EMPTY_BLOB_CONTENT)
                 val artifactFile = ArtifactFileFactory.build(blobContent)
-                try {
-                    val uploadContext = UploadContext(context.projectId, context.repoName, finalPath)
-                        .sha256(emptyBlobDigest().getDigestHex()).artifactFile(artifactFile)
-                    if (!repo.upload(uploadContext)) {
-                        logger.warn("save blob failed [$finalPath]")
-                        throw DockerFileSaveFailedException(finalPath)
-                    }
-                } finally {
-                    artifactFile.delete()
+                val uploadContext = UploadContext(context.projectId, context.repoName, finalPath)
+                    .sha256(emptyBlobDigest().getDigestHex()).artifactFile(artifactFile)
+                if (!repo.upload(uploadContext)) {
+                    logger.warn("save blob failed [$finalPath]")
+                    throw DockerFileSaveFailedException(finalPath)
                 }
+                artifactFile.delete()
                 continue
             }
 
