@@ -266,16 +266,12 @@ class ReplicationJobBean(
             if (existFullPathList.contains(node.fullPath)) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> {
-                        if (logger.isDebugEnabled) {
-                            logger.debug("File[$formattedNodePath] conflict, skip it.")
-                        }
+                        logger.debug("File[$formattedNodePath] conflict, skip it.")
                         progress.conflictedNode += 1
                         return
                     }
                     ConflictStrategy.OVERWRITE -> {
-                        if (logger.isDebugEnabled) {
-                            logger.debug("File[$formattedNodePath] conflict, overwrite it.")
-                        }
+                        logger.debug("File[$formattedNodePath] conflict, overwrite it.")
                     }
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$formattedNodePath] conflict.")
                 }
