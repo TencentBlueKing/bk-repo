@@ -29,25 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node
+package com.tencent.bkrepo.repository.pojo.node
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
 /**
- * 节点恢复接口
+ * 节点恢复选项
  */
-interface NodeRestoreOperation {
-    /**
-     * 恢复被删除的节点
-     * @return 恢复节点数量
-     */
-    fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult
+@ApiModel("节点恢复选项")
+data class NodeRestoreOption(
+    @ApiModelProperty("删除时间")
+    val deletedTime: LocalDateTime,
+    @ApiModelProperty("冲突处理策略")
+    val conflictStrategy: ConflictStrategy = ConflictStrategy.SKIP
+)
 
-    /**
-     * 查询节点删除点
-     */
-    fun listDeletedPoint(artifact: ArtifactInfo): List<NodeDeletedPoint>
+/**
+ * 冲突策略
+ */
+enum class ConflictStrategy {
+    SKIP, // 跳过
+    OVERWRITE, // 覆盖
+    FAILED; // 失败
 }
