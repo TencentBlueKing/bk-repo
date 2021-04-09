@@ -78,11 +78,11 @@ class StorageManager(
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
         try {
             return nodeClient.createNode(request).data!!
-        } catch (exception: RuntimeException) {
+        } catch (exception: Exception) {
             // 当文件有创建，则删除文件
             if (affectedCount == 1) try {
                 storageService.delete(request.sha256!!, storageCredentials)
-            } catch (exception: RuntimeException) {
+            } catch (exception: Exception) {
                 logger.error("Failed to delete new created file[${request.sha256}]", exception)
             }
             // 异常往上抛
@@ -103,10 +103,7 @@ class StorageManager(
         try {
             val request = HttpContextHolder.getRequestOrNull()
             val range = request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
-            if (node.size == 0L) {
-                return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-            }
-            if (request?.method == HttpMethod.HEAD.name) {
+            if (node.size == 0L || request?.method == HttpMethod.HEAD.name) {
                 return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
             }
             return storageService.load(node.sha256.orEmpty(), range, storageCredentials)
