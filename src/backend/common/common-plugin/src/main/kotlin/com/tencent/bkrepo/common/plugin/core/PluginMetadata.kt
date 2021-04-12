@@ -45,6 +45,10 @@ data class PluginMetadata(
      */
     val version: String,
     /**
+     * 插件生效范围
+     */
+    val scope: List<String>,
+    /**
      * 插件作者
      */
     val author: String? = null,

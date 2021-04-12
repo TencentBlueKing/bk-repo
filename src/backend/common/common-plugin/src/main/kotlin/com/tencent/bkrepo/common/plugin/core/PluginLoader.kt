@@ -93,15 +93,17 @@ class PluginLoader(
                 val manifest = jar.manifest
                 check(manifest != null) { "[$MANIFEST_LOCATION] does not exist in plugin [$pluginPath]" }
                 val attributes = manifest.mainAttributes
-                val id = attributes.getValue(PLUGIN_ID).orEmpty()
-                check(id.isNotBlank()) { "Required manifest attribute $PLUGIN_ID is null" }
-                val version = attributes.getValue(PLUGIN_VERSION).orEmpty()
-                val author = attributes.getValue(PLUGIN_AUTHOR).orEmpty()
-                val description = attributes.getValue(PLUGIN_DESCRIPTION).orEmpty()
+                val id = attributes.getValue(PLUGIN_ID).orEmpty().trim()
+                check(id.isNotEmpty()) { "Required manifest attribute $PLUGIN_ID is null" }
+                val version = attributes.getValue(PLUGIN_VERSION).orEmpty().trim()
+                val scope = resolveScope(attributes.getValue(PLUGIN_SCOPE).orEmpty().trim())
+                val author = attributes.getValue(PLUGIN_AUTHOR).orEmpty().trim()
+                val description = attributes.getValue(PLUGIN_DESCRIPTION).orEmpty().trim()
                 return PluginMetadata(
                     id = id,
                     name = id,
                     version = version,
+                    scope = scope,
                     author = author,
                     description = description
                 )
@@ -109,6 +111,17 @@ class PluginLoader(
         } catch (ex: IOException) {
             throw IllegalArgumentException("Unable to load manifest from location [$MANIFEST_LOCATION]", ex)
         }
+    }
+
+    private fun resolveScope(value: String): List<String> {
+        if (value.isEmpty() || value == "*") {
+            return emptyList()
+        }
+        val scope = value.split(",")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        return if (scope.contains("*")) emptyList() else scope
     }
 
     private fun calculateDigest(): String {
@@ -129,6 +142,7 @@ class PluginLoader(
         private const val MANIFEST_LOCATION = "META-INF/MANIFEST.MF"
         private const val PLUGIN_ID = "Plugin-Id"
         private const val PLUGIN_VERSION = "Plugin-Version"
+        private const val PLUGIN_SCOPE = "Plugin-Scope"
         private const val PLUGIN_AUTHOR = "Plugin-Author"
         private const val PLUGIN_DESCRIPTION = "Plugin-Description"
     }
