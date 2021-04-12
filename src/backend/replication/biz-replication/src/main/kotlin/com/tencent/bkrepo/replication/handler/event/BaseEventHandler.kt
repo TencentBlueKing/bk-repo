@@ -31,11 +31,14 @@
 
 package com.tencent.bkrepo.replication.handler.event
 
+import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.replication.handler.BaseHandler
 import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.service.ReplicationService
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.TimeUnit
 
 /**
  * AbstractMessageHandler
@@ -47,9 +50,23 @@ abstract class BaseEventHandler : BaseHandler() {
     @Autowired
     lateinit var replicationService: ReplicationService
 
+    private val repoDetailCache = CacheBuilder.newBuilder()
+        .maximumSize(100)
+        .expireAfterWrite(210, TimeUnit.SECONDS)
+        .build<String, ReplicationRepoDetail>()
+
     fun getRepoDetail(projectId: String, repoName: String, remoteRepoName: String): ReplicationRepoDetail? {
-        val detail = repoDataService.getRepositoryDetail(projectId, repoName) ?: return null
-        return convertReplicationRepo(detail, remoteRepoName)
+        val cacheKey = "$projectId:$repoName:$remoteRepoName"
+        var cacheDetail = repoDetailCache.getIfPresent(cacheKey)
+        if (cacheDetail == null) {
+            val repoDetail = repoDataService.getRepositoryDetail(projectId, repoName) ?: run {
+                logger.warn("found no repo detail [$projectId, $repoName]")
+                return null
+            }
+            cacheDetail = convertReplicationRepo(repoDetail, remoteRepoName)
+            repoDetailCache.put(cacheKey, cacheDetail)
+        }
+        return cacheDetail
     }
 
     fun getRemoteProjectId(task: TReplicationTask, sourceProjectId: String): String {
@@ -58,5 +75,9 @@ abstract class BaseEventHandler : BaseHandler() {
 
     fun getRemoteRepoName(task: TReplicationTask, sourceRepoName: String): String {
         return task.remoteRepoName ?: task.localRepoName ?: sourceRepoName
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(BaseEventHandler::class.java)
     }
 }

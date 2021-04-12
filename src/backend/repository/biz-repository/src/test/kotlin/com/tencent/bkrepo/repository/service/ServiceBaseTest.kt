@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
@@ -55,6 +56,7 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
@@ -65,7 +67,8 @@ import org.springframework.test.context.TestPropertySource
     RepositoryProperties::class,
     ProjectDao::class,
     RepositoryDao::class,
-    HttpAuthProperties::class
+    HttpAuthProperties::class,
+    SpringContextUtils::class
 )
 @ComponentScan("com.tencent.bkrepo.repository.service")
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
@@ -82,6 +85,9 @@ open class ServiceBaseTest {
 
     @MockBean
     lateinit var permissionManager: PermissionManager
+
+    @Autowired
+    lateinit var springContextUtils: SpringContextUtils
 
     fun initMock() {
         Mockito.`when`(roleResource.createRepoManage(anyString(), anyString())).then {

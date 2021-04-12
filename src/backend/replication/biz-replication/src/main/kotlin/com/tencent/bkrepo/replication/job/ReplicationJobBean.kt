@@ -243,15 +243,11 @@ class ReplicationJobBean(
             val localRepoName = localRepoDetail.name
             var fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, ROOT, page, pageSize)
             while (fileNodeList.isNotEmpty()) {
-                val fullPathList = mutableListOf<String>()
-                fileNodeList.forEach { fullPathList.add(it.fullPath) }
-                with(context) {
-                    val request = NodeExistCheckRequest(localProjectId, localRepoName, fullPathList)
-                    val existFullPathList = replicationClient.checkNodeExistList(authToken, request).data!!
-                    // 同步不存在的节点
-                    fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
-                }
-
+                val fullPathList = fileNodeList.map { it.fullPath }
+                val request = NodeExistCheckRequest(localProjectId, localRepoName, fullPathList)
+                val existFullPathList = context.replicationClient.checkNodeExistList(context.authToken, request).data!!
+                // 同步不存在的节点
+                fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 page += 1
                 fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, ROOT, page, pageSize)
             }
@@ -346,20 +342,18 @@ class ReplicationJobBean(
             }
             // 同步权限数据
             val localPermissionList = repoDataService.listPermission(remoteProjectId, remoteRepoName)
-            val remotePermissionList =
-                replicationClient.listPermission(authToken, localProjectId, localRepoName).data!!
+            val remotePermissionList = replicationClient.listPermission(authToken, localProjectId, localRepoName).data!!
 
             localPermissionList.forEach { permission ->
                 // 过滤已存在的权限
-                if (!containsPermission(permission, remotePermissionList)) {
-                    // 创建用户
-                    permission.users.forEach {
-                        if (!traversedUserList.contains(it)) {
-                            createUser(this, it)
-                        }
-                    }
-                    createPermission(this, permission, roleIdMap)
+                if (containsPermission(permission, remotePermissionList)) {
+                    return@forEach
                 }
+                // 创建用户
+                permission.users.filter { !traversedUserList.contains(it) }.forEach {
+                    createUser(this, it)
+                }
+                createPermission(this, permission, roleIdMap)
             }
         }
     }

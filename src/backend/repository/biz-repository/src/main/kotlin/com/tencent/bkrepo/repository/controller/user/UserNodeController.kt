@@ -44,9 +44,12 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -245,10 +248,7 @@ class UserNodeController(
     @ApiOperation("查询节点大小信息")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/size/$DEFAULT_MAPPING_URI")
-    fun computeSize(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: ArtifactInfo
-    ): Response<NodeSizeInfo> {
+    fun computeSize(artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
         val nodeSizeInfo = nodeService.computeSize(artifactInfo)
         return ResponseBuilder.success(nodeSizeInfo)
     }
@@ -257,14 +257,30 @@ class UserNodeController(
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        artifactInfo: ArtifactInfo,
         nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
         // 禁止查询pipeline仓库
         PipelineRepoUtils.checkPipeline(artifactInfo.repoName)
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)
+    }
+
+    @ApiOperation("查询节点删除点")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @GetMapping("/list-deleted/$DEFAULT_MAPPING_URI")
+    fun listDeletedPoint(artifactInfo: ArtifactInfo): Response<List<NodeDeletedPoint>> {
+        return ResponseBuilder.success(nodeService.listDeletedPoint(artifactInfo))
+    }
+
+    @ApiOperation("恢复被删除节点")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
+    @PostMapping("/restore/$DEFAULT_MAPPING_URI")
+    fun restoreNode(
+        artifactInfo: ArtifactInfo,
+        nodeRestoreOption: NodeRestoreOption
+    ): Response<NodeRestoreResult> {
+        return ResponseBuilder.success(nodeService.restoreNode(artifactInfo, nodeRestoreOption))
     }
 
     @ApiOperation("自定义查询节点")
@@ -276,9 +292,7 @@ class UserNodeController(
     @Deprecated("replace with search")
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
-    fun query(
-        @RequestBody queryModel: QueryModel
-    ): Response<Page<Map<String, Any?>>> {
+    fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 

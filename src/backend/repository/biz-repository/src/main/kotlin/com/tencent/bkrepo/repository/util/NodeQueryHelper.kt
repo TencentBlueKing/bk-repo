@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
+import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -68,12 +69,11 @@ object NodeQueryHelper {
 
     fun nodeListCriteria(projectId: String, repoName: String, path: String, option: NodeListOption): Criteria {
         val nodePath = toPath(path)
-        val escapedPath = escapeRegex(nodePath)
         val criteria = where(TNode::projectId).isEqualTo(projectId)
             .and(TNode::repoName).isEqualTo(repoName)
             .and(TNode::deleted).isEqualTo(null)
         if (option.deep) {
-            criteria.and(TNode::fullPath).regex("^$escapedPath")
+            criteria.and(TNode::fullPath).regex("^${escapeRegex(nodePath)}")
         } else {
             criteria.and(TNode::path).isEqualTo(nodePath)
         }
@@ -100,6 +100,54 @@ object NodeQueryHelper {
             query.fields().exclude(TNode::metadata.name)
         }
         return query
+    }
+
+    /**
+     * 查询节点被删除的记录
+     */
+    fun nodeDeletedPointListQuery(projectId: String, repoName: String, fullPath: String): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::fullPath).isEqualTo(toFullPath(fullPath))
+            .and(TNode::deleted).ne(null)
+        return Query(criteria).with(Sort.by(Sort.Direction.DESC, TNode::deleted.name))
+    }
+
+    /**
+     * 查询单个被删除节点
+     */
+    fun nodeDeletedPointQuery(projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::fullPath).isEqualTo(toFullPath(fullPath))
+            .and(TNode::deleted).isEqualTo(deleted)
+        return Query(criteria)
+    }
+
+    /**
+     * 查询被删除的目录以及子节点
+     */
+    fun nodeDeletedFolderQuery(
+        projectId: String,
+        repoName: String,
+        path: String,
+        deleted: LocalDateTime,
+        deep: Boolean
+    ): Query {
+        val nodePath = toPath(path)
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(deleted)
+        if (deep) {
+            criteria.and(TNode::fullPath).regex("^${escapeRegex(nodePath)}")
+        } else {
+            criteria.and(TNode::path).isEqualTo(nodePath)
+        }
+        return Query(criteria)
+    }
+
+    fun nodeRestoreUpdate(): Update {
+        return Update().unset(TNode::deleted.name)
     }
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {
