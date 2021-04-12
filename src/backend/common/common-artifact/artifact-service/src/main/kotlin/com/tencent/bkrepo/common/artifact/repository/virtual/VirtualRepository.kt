@@ -49,8 +49,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
 
     override fun query(context: ArtifactQueryContext): Any? {
         val artifactInfo = context.artifactInfo
-        val virtualConfiguration = context.getVirtualConfiguration()
-        val repoList = virtualConfiguration.repositoryList
+        val repoList = context.getVirtualConfiguration().repositoryList
         val traversedList = getTraversedList(context)
         for (repoIdentify in repoList) {
             if (repoIdentify in traversedList) {

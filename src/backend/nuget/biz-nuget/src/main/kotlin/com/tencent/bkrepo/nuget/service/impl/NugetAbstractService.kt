@@ -7,7 +7,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import org.springframework.beans.factory.annotation.Autowired
 
-abstract class NugetAbstractService {
+open class NugetAbstractService {
     @Autowired
     lateinit var nodeClient: NodeClient
 
@@ -17,7 +17,6 @@ abstract class NugetAbstractService {
     fun getV2Url(artifactInfo: ArtifactInfo): String {
         val url = HttpContextHolder.getRequest().requestURL
         val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
-        // return domain.append(SLASH).append("nuget").append(SLASH).append(artifactInfo.getRepoIdentify()).toString()
         return domain.append(SLASH).append(artifactInfo.getRepoIdentify()).toString()
     }
 

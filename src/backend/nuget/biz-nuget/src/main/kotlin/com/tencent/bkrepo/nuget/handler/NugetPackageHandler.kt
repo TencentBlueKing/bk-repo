@@ -135,19 +135,23 @@ class NugetPackageHandler {
                 if (reference is Reference) {
                     values.add(reference.file)
                 } else if (reference is ReferenceGroup) {
-                    val groupReferences = reference.references
-                    groupReferences?.let {
-                        val groupIterator = it.iterator()
-                        while (groupIterator.hasNext()) {
-                            val groupReference = groupIterator.next()
-                            values.add(groupReference.file)
-                        }
-                    }
+                    buildReferenceGroup(reference, values)
                 }
             }
             return values
         }
         return emptySet()
+    }
+
+    private fun buildReferenceGroup(reference: ReferenceGroup, values: HashSet<String>) {
+        val groupReferences = reference.references
+        groupReferences?.let {
+            val groupIterator = it.iterator()
+            while (groupIterator.hasNext()) {
+                val groupReference = groupIterator.next()
+                values.add(groupReference.file)
+            }
+        }
     }
 
     /**
@@ -162,19 +166,23 @@ class NugetPackageHandler {
                 if (dependency is Dependency) {
                     values.add(getDependencyValue(dependency, ""))
                 } else if (dependency is DependencyGroup) {
-                    val groupDependencies = dependency.dependencies
-                    groupDependencies?.let {
-                        val groupIterator = it.iterator()
-                        while (groupIterator.hasNext()) {
-                            val groupDependency = groupIterator.next()
-                            values.add(getDependencyValue(groupDependency, dependency.targetFramework))
-                        }
-                    } ?: values.add("::${dependency.targetFramework}")
+                    buildDependencyGroup(dependency, values)
                 }
             }
             return values
         }
         return emptySet()
+    }
+
+    private fun buildDependencyGroup(dependency: DependencyGroup, values: HashSet<String>) {
+        val groupDependencies = dependency.dependencies
+        groupDependencies?.let {
+            val groupIterator = it.iterator()
+            while (groupIterator.hasNext()) {
+                val groupDependency = groupIterator.next()
+                values.add(getDependencyValue(groupDependency, dependency.targetFramework))
+            }
+        } ?: values.add("::${dependency.targetFramework}")
     }
 
     fun getDependencyValue(dependency: Dependency, targetFramework: String): String {

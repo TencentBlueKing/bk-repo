@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.helm.utils
 
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.helm.constants.CHART_YAML
 import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.ArchiveInputStream
@@ -82,7 +84,6 @@ object DecompressUtil {
     }
 
     private fun getArchiversContent(archiveInputStream: ArchiveInputStream): String {
-        val stringBuilder = StringBuffer()
         archiveInputStream.use { it ->
             try {
                 var nextEntry: ArchiveEntry
@@ -90,17 +91,22 @@ object DecompressUtil {
                     if ((!nextEntry.isDirectory) && nextEntry.name.split("/")
                             .let { it.size == 2 && it.last() == FILE_NAME }
                     ) {
-                        var length: Int
-                        val bytes = ByteArray(BUFFER_SIZE)
-                        while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
-                            stringBuilder.append(String(bytes, 0, length))
-                        }
-                        return stringBuilder.toString()
+                        return parseStream(archiveInputStream)
                     }
                 }
             } catch (ise: IllegalStateException) {
                 logger.error("get archivers content error : ${ise.message}")
             }
+        }
+        throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Can not find $FILE_NAME")
+    }
+
+    private fun parseStream(archiveInputStream: ArchiveInputStream): String {
+        val stringBuilder = StringBuffer()
+        var length: Int
+        val bytes = ByteArray(BUFFER_SIZE)
+        while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
+            stringBuilder.append(String(bytes, 0, length))
         }
         return stringBuilder.toString()
     }
