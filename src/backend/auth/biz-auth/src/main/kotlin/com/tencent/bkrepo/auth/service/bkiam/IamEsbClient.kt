@@ -99,10 +99,12 @@ class IamEsbClient {
     private val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
         @Throws(CertificateException::class)
         override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+            // no-op
         }
 
         @Throws(CertificateException::class)
         override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+            // no-op
         }
 
         override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> {

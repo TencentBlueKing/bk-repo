@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo
 
+@Suppress("ALL")
 data class IamCreateApiRes(
     val result: Boolean,
     val code: Int,
