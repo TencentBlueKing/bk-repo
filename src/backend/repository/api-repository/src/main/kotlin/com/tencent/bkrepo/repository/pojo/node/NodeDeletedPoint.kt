@@ -29,25 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node
+package com.tencent.bkrepo.repository.pojo.node
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
 /**
- * 节点恢复接口
+ * 节点删除点
  */
-interface NodeRestoreOperation {
-    /**
-     * 恢复被删除的节点
-     * @return 恢复节点数量
-     */
-    fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult
-
-    /**
-     * 查询节点删除点
-     */
-    fun listDeletedPoint(artifact: ArtifactInfo): List<NodeDeletedPoint>
-}
+@ApiModel("节点删除点")
+data class NodeDeletedPoint(
+    @ApiModelProperty("完整路径")
+    val fullPath: String,
+    @ApiModelProperty("文件大小，单位byte")
+    val size: Long,
+    @ApiModelProperty("文件sha256")
+    val sha256: String? = null,
+    @ApiModelProperty("元数据")
+    val metadata: Map<String, Any>,
+    @ApiModelProperty("删除用户")
+    val deletedBy: String,
+    @ApiModelProperty("删除时间")
+    val deletedTime: LocalDateTime
+)

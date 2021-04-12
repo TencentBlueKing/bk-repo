@@ -36,6 +36,9 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -96,5 +99,14 @@ class NodeServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun renameNode(renameRequest: NodeRenameRequest) {
         NodeRenameSupport(this).renameNode(renameRequest)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
+        return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
+    }
+
+    override fun listDeletedPoint(artifact: ArtifactInfo): List<NodeDeletedPoint> {
+        return NodeRestoreSupport(this).listDeletedPoint(artifact)
     }
 }
