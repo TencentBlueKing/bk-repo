@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.plugin.core
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.event.EventListener
 
@@ -44,6 +45,9 @@ class PluginManager(
 ) {
 
     val pluginMap = mutableMapOf<String, PluginInfo>()
+
+    @Value("\${service.name}")
+    var applicationName: String? = null
 
     @EventListener(ApplicationReadyEvent::class)
     @Synchronized
@@ -63,6 +67,10 @@ class PluginManager(
     }
 
     private fun registerPluginIfNecessary(pluginInfo: PluginInfo, classLoader: ClassLoader) {
+        if (!checkScope(pluginInfo)) {
+            logger.info("Plugin[${pluginInfo.id}]'s scope not contains $applicationName, skip register")
+            return
+        }
         if (checkExist(pluginInfo)) {
             logger.info("Plugin[${pluginInfo.id}] has been loaded, skip register")
             return
@@ -82,6 +90,19 @@ class PluginManager(
         pluginMap[pluginInfo.id] = pluginInfo
     }
 
+    /**
+     * 检查插件范围是否有效
+     */
+    private fun checkScope(pluginInfo: PluginInfo): Boolean {
+        if (pluginInfo.metadata.scope.isEmpty()) {
+            return true
+        }
+        return pluginInfo.metadata.scope.contains(applicationName)
+    }
+
+    /**
+     * 检查插件是否已存在
+     */
     private fun checkExist(pluginInfo: PluginInfo): Boolean {
         return pluginMap[pluginInfo.id]?.digest == pluginInfo.digest
     }
