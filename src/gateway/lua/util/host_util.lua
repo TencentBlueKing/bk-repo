@@ -48,7 +48,7 @@ function _M:get_addr(service_name)
     for _, value in pairs(config.router.project) do
         if service_name == "generic" and ngx.var.path ~= nil then
             local pathArray = stringUtil:split(ngx.var.path, "/")
-            if pathArray ~= nil and table.len(pathArray) > 1 and pathArray[2] == value.name then
+            if pathArray ~= nil and _G.next(pathArray) ~= nil and table.getn(pathArray) > 1 and pathArray[2] == value.name then
                 tag = value.tag
             end
         end

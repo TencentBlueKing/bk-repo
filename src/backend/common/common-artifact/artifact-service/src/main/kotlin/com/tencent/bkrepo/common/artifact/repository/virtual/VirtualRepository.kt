@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import org.slf4j.LoggerFactory
 
@@ -48,96 +49,25 @@ import org.slf4j.LoggerFactory
 abstract class VirtualRepository : AbstractArtifactRepository() {
 
     override fun query(context: ArtifactQueryContext): Any? {
-        val artifactInfo = context.artifactInfo
-        val repoList = context.getVirtualConfiguration().repositoryList
-        val traversedList = getTraversedList(context)
-        for (repoIdentify in repoList) {
-            if (repoIdentify in traversedList) {
-                continue
-            }
-            traversedList.add(repoIdentify)
-            try {
-                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail)
-                require(subContext is ArtifactQueryContext)
-                repository.query(subContext)?.let {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is found in repo[$repoIdentify].")
-                    }
-                    return it
-                }
-            } catch (ignored: Exception) {
-                logger.warn("Query Artifact[$artifactInfo] from repo[$repoIdentify] failed: ${ignored.message}")
-            }
+        return mapFirstRepo(context) { sub, repository ->
+            require(sub is ArtifactQueryContext)
+            repository.query(sub)
         }
-        return null
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
-        val artifactInfo = context.artifactInfo
-        val virtualConfiguration = context.getVirtualConfiguration()
-        val repoList = virtualConfiguration.repositoryList
-        val traversedList = getTraversedList(context)
-        for (repoIdentify in repoList) {
-            if (repoIdentify in traversedList) {
-                continue
-            }
-            traversedList.add(repoIdentify)
-            try {
-                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail)
-                require(subContext is ArtifactSearchContext)
-                repository.search(subContext).let {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is found in repo[$repoIdentify].")
-                    }
-                    return it
-                }
-            } catch (ignored: Exception) {
-                logger.warn("Search Artifact[$artifactInfo] from repo[$repoIdentify] failed: ${ignored.message}")
-            }
-        }
-        return emptyList()
+        return mapFirstRepo(context) { sub, repository ->
+            require(sub is ArtifactSearchContext)
+            repository.search(sub)
+        }.orEmpty()
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        val artifactInfo = context.artifactInfo
-        val virtualConfiguration = context.getVirtualConfiguration()
-        val repoList = virtualConfiguration.repositoryList
-        val traversedList = getTraversedList(context)
-        for (repoIdentify in repoList) {
-            if (repoIdentify in traversedList) {
-                if (logger.isDebugEnabled) {
-                    logger.debug("Repository[$repoIdentify] has been traversed, skip it.")
-                }
-                continue
-            }
-            traversedList.add(repoIdentify)
-            try {
-                val projectId = repoIdentify.projectId
-                val repoName = repoIdentify.name
-                val subRepoDetail = repositoryClient.getRepoDetail(projectId, repoName).data!!
-                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
-                val subContext = context.copy(subRepoDetail)
-                require(subContext is ArtifactDownloadContext)
-                require(repository is AbstractArtifactRepository)
-                repository.onDownload(subContext)?.let {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is found in repo[$repoIdentify].")
-                    }
-                    return it
-                } ?: run {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Artifact[$artifactInfo] is not found in repo[$repoIdentify], skipped.")
-                    }
-                }
-            } catch (ignored: RuntimeException) {
-                logger.warn("Download Artifact[$artifactInfo] from repo[$repoIdentify] failed: ${ignored.message}")
-            }
+        return mapFirstRepo(context) { sub, repository ->
+            require(sub is ArtifactDownloadContext)
+            require(repository is AbstractArtifactRepository)
+            repository.onDownload(sub)
         }
-        return null
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -148,6 +78,30 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             context.putAttribute(TRAVERSED_LIST, traversedList)
             return traversedList
         }
+    }
+
+    /**
+     * 遍历虚拟仓库，直到第一个仓库返回数据
+     */
+    private fun <R> mapFirstRepo(context: ArtifactContext, action: (ArtifactContext, ArtifactRepository) -> R?): R? {
+        val virtualConfiguration = context.getVirtualConfiguration()
+        val repoList = virtualConfiguration.repositoryList
+        val traversedList = getTraversedList(context)
+        for (repoIdentify in repoList) {
+            if (repoIdentify in traversedList) {
+                continue
+            }
+            traversedList.add(repoIdentify)
+            try {
+                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
+                val subContext = context.copy(subRepoDetail)
+                action(subContext, repository)?.let { return it }
+            } catch (ignored: Exception) {
+                logger.warn("Failed to execute map with repo[$repoIdentify]: ${ignored.message}")
+            }
+        }
+        return null
     }
 
     companion object {
