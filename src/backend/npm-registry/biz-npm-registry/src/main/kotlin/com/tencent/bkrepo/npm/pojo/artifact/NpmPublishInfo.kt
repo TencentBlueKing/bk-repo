@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,15 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
+package com.tencent.bkrepo.npm.pojo.artifact
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.npm.pojo.metadata.NpmAttachment
+import com.tencent.bkrepo.npm.pojo.metadata.NpmPackageMetadata
+import com.tencent.bkrepo.npm.pojo.metadata.NpmVersionMetadata
 
 /**
- * 用户认证异常, 401错误
+ * npm publish信息
  */
-open class AuthenticationException(
-    val reason: String = HttpStatus.UNAUTHORIZED.reasonPhrase
-) : ErrorCodeException(HttpStatus.UNAUTHORIZED, CommonMessageCode.REQUEST_UNAUTHENTICATED, arrayOf(reason))
+class NpmPublishInfo(
+    projectId: String,
+    repoName: String,
+    packageName: String,
+    version: String,
+    val packageMetadata: NpmPackageMetadata,
+    val isDeprecated: Boolean
+) : NpmArtifactInfo(projectId, repoName, packageName, version) {
+
+    /**
+     * tarball base64解码后的内容
+     */
+    var tarball: ByteArray = ByteArray(0)
+
+    /**
+     * 获取attachment
+     */
+    fun getAttachment(): NpmAttachment {
+        return packageMetadata.attachments.values.first()
+    }
+
+    /**
+     * 获取版本 package 内容
+     */
+    fun getVersionPackage(): NpmVersionMetadata {
+        return packageMetadata.versions[version]!!
+    }
+}

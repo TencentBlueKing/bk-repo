@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,15 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
+package com.tencent.bkrepo.npm.pojo.request
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-
-/**
- * 用户认证异常, 401错误
- */
-open class AuthenticationException(
-    val reason: String = HttpStatus.UNAUTHORIZED.reasonPhrase
-) : ErrorCodeException(HttpStatus.UNAUTHORIZED, CommonMessageCode.REQUEST_UNAUTHENTICATED, arrayOf(reason))
+data class NpmLoginRequest(
+    val name: String,
+    val password: String
+)

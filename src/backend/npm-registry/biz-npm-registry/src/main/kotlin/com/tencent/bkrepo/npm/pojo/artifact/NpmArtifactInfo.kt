@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,15 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
+package com.tencent.bkrepo.npm.pojo.artifact
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.npm.util.NpmUtils
 
 /**
- * 用户认证异常, 401错误
+ * npm 构件基本信息
+ * 其余场景的ArtifactInfo 可以继承该类，如[NpmPublishInfo]
  */
-open class AuthenticationException(
-    val reason: String = HttpStatus.UNAUTHORIZED.reasonPhrase
-) : ErrorCodeException(HttpStatus.UNAUTHORIZED, CommonMessageCode.REQUEST_UNAUTHENTICATED, arrayOf(reason))
+open class NpmArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val packageName: String,
+    val version: String = StringPool.EMPTY,
+    private val delimiter: String = StringPool.DASH,
+    private val write: Boolean = true // meaning the request using for write, don't sync
+) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    /**
+     * 1. without scope: /test/-/test-1.0.0.tgz
+     * 2. with scope: /@scope/test/-/@scope/test-1.0.0.tgz
+     */
+    private val tarballFullPath: String = NpmUtils.formatTarballPath(packageName, version, delimiter)
+
+    override fun getArtifactFullPath() = tarballFullPath
+
+    override fun getArtifactVersion() = version
+
+    override fun getArtifactName() = packageName
+}

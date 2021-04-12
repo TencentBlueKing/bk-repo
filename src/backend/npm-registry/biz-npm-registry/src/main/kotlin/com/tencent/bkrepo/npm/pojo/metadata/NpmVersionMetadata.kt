@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,15 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
+package com.tencent.bkrepo.npm.pojo.metadata
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
- * 用户认证异常, 401错误
+ * reference: https://docs.npmjs.com/cli/v6/configuring-npm/package-json
  */
-open class AuthenticationException(
-    val reason: String = HttpStatus.UNAUTHORIZED.reasonPhrase
-) : ErrorCodeException(HttpStatus.UNAUTHORIZED, CommonMessageCode.REQUEST_UNAUTHENTICATED, arrayOf(reason))
+data class NpmVersionMetadata(
+    var deprecated: String? = null,
+    val version: String,
+    val name: String,
+    @JsonProperty("publish-time")
+    var publishTime: String? = null,
+    var description: String? = null,
+    // list or string
+    var keywords: Any? = null,
+    @JsonProperty("dist-tags")
+    var distTags: Map<String, String>? = null,
+    // 使用MutableList，服务器可能会添加当前操作用户到maintainer中
+    var maintainers: MutableList<Map<String, String>>? = null,
+    var author: Any? = null,
+    var repository: Any? = null,
+    var dist: NpmVersionDist,
+    var dependencies: Map<String, Any>? = null,
+    var readme: String? = null,
+    var readmeFilename: String? = null,
+    var homepage: String? = null,
+    var bugs: Any? = null,
+    var license: Any? = null
+) : NpmMetadata()

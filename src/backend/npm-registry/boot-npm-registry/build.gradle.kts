@@ -29,15 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.exception
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-
-/**
- * 用户认证异常, 401错误
- */
-open class AuthenticationException(
-    val reason: String = HttpStatus.UNAUTHORIZED.reasonPhrase
-) : ErrorCodeException(HttpStatus.UNAUTHORIZED, CommonMessageCode.REQUEST_UNAUTHENTICATED, arrayOf(reason))
+dependencies {
+    implementation(project(":npm-registry:biz-npm-registry"))
+}
