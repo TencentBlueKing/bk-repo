@@ -350,15 +350,14 @@ class ReplicationJobBean(
 
             localPermissionList.forEach { permission ->
                 // 过滤已存在的权限
-                if (!containsPermission(permission, remotePermissionList)) {
-                    // 创建用户
-                    permission.users.forEach {
-                        if (!traversedUserList.contains(it)) {
-                            createUser(this, it)
-                        }
-                    }
-                    createPermission(this, permission, roleIdMap)
+                if (containsPermission(permission, remotePermissionList)) {
+                    return@forEach
                 }
+                // 创建用户
+                permission.users.filter { !traversedUserList.contains(it) }.forEach {
+                    createUser(this, it)
+                }
+                createPermission(this, permission, roleIdMap)
             }
         }
     }
