@@ -36,8 +36,8 @@
                     location.href = location.origin + redirectUrl + '?preview=true'
                 } else if (status === 401) {
                     location.href = window.getLoginUrl(location.origin + redirectUrl + '?preview=true')
-                } else if (status === 404) {
-                    printError()
+                } else if (status === 403 || status === 404) {
+                    printError(status)
                 }
             }
             xhr.withCredentials = true
@@ -45,14 +45,27 @@
             xhr.send()
         }
 
-        function printError () {
+        function printError (status) {
+            let message
+            switch (status) {
+                case 403:
+                    message = '未获得预览文件的访问权限'
+                    break
+                case 404:
+                    message = '预览文件不存在'
+                    break
+                default:
+                    message = '服务异常，请稍后重试'
+            }
             document.writeln(
-                `<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                    <img src="/ui/404.png" />
-                    <p style="font-size: 20px; color: #979797; margin: 32px 0;">
-                        预览文件不存在
-                    </p>
-                </div>`
+                '<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">'
+                + '<img src="/ui/'
+                + status
+                + '.png" />'
+                + '<p style="font-size: 20px; color: #979797; margin: 32px 0;">'
+                + message
+                + '</p>'
+                + '</div>'
             )
         }
     </script>
