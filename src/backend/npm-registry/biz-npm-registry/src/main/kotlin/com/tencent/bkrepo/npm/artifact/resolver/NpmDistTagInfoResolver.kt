@@ -29,31 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.artifact.resolver
 
-data class PluginMetadata(
-    /**
-     * 插件id，要求唯一
-     */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.npm.constant.NAME
+import com.tencent.bkrepo.npm.constant.SCOPE
+import com.tencent.bkrepo.npm.pojo.artifact.NpmDistTagInfo
+import com.tencent.bkrepo.npm.util.NpmUtils
+import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(NpmDistTagInfo::class)
+class NpmDistTagInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): ArtifactInfo {
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        val name = attributes[NAME].toString().trim()
+        val scope = attributes[SCOPE]?.toString()?.trim()
+        val packageName = NpmUtils.formatPackageName(name, scope)
+        val distTags = request.inputStream.readJsonString<Map<String, String>?>().orEmpty()
+        return NpmDistTagInfo(projectId, repoName, packageName, distTags)
+    }
+}

@@ -29,31 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.metadata
 
-data class PluginMetadata(
+import com.fasterxml.jackson.annotation.JsonAnyGetter
+import com.fasterxml.jackson.annotation.JsonAnySetter
+import com.fasterxml.jackson.annotation.JsonInclude
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+open class NpmMetadata {
     /**
-     * 插件id，要求唯一
+     * 额外未知字段
      */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+    private val others: MutableMap<String, Any> = mutableMapOf()
+
+    @JsonAnyGetter
+    fun get() = others
+
+    @JsonAnySetter
+    fun set(key: String, value: Any) {
+        others[key] = value
+    }
+}

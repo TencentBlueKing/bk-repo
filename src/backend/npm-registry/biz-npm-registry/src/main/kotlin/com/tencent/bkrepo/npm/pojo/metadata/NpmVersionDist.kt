@@ -29,31 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.metadata
 
-data class PluginMetadata(
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.npm.constant.SHA_SUM
+
+data class NpmVersionDist(
     /**
-     * 插件id，要求唯一
+     * sha1
      */
-    val id: String,
+    @JsonProperty(SHA_SUM)
+    var shaSum: String? = null,
     /**
-     * 插件名称，要求唯一，先保持和id一致
+     * tgz文件下载地址
      */
-    val name: String,
+    var tarball: String,
     /**
-     * 插件版本，语义化版本格式
+     * tgz文件数据长度
      */
-    val version: String,
+    var packageSize: Int? = null,
     /**
-     * 插件生效范围
+     * 解压后长度
      */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+    var unpackedSize: Int? = null
+) : NpmMetadata()

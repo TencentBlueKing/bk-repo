@@ -29,31 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.artifact
 
-data class PluginMetadata(
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.npm.util.NpmUtils
+
+/**
+ * npm 构件基本信息
+ * 其余场景的ArtifactInfo 可以继承该类，如[NpmPublishInfo]
+ */
+open class NpmArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val packageName: String,
+    val version: String = StringPool.EMPTY,
+    private val delimiter: String = StringPool.DASH,
+    private val write: Boolean = true // meaning the request using for write, don't sync
+) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
     /**
-     * 插件id，要求唯一
+     * 1. without scope: /test/-/test-1.0.0.tgz
+     * 2. with scope: /@scope/test/-/@scope/test-1.0.0.tgz
      */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+    private val tarballFullPath: String = NpmUtils.formatTarballPath(packageName, version, delimiter)
+
+    override fun getArtifactFullPath() = tarballFullPath
+
+    override fun getArtifactVersion() = version
+
+    override fun getArtifactName() = packageName
+}

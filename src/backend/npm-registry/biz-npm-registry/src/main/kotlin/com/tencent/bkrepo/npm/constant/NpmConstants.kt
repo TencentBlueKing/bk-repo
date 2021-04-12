@@ -29,31 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.constant
 
-data class PluginMetadata(
-    /**
-     * 插件id，要求唯一
-     */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+const val NAME = "name"
+const val SCOPE = "scope"
+const val VERSION = "version"
+const val TAG = "tag"
+const val WRITE = "write"
+const val LATEST = "latest"
+const val PACKAGE = "package"
+const val CREATED = "created"
+const val MODIFIED = "modified"
+const val STAR_USERS = "starUser"
+const val MAINTAINERS = "maintainers"
+const val PACKAGE_JSON = "package.json"
+const val KEYWORDS = "keywords"
+const val SHA_SUM = "shasum"
+const val FILENAME = "filename"
+const val DELIMITER = "delimiter"
+const val DEFAULT_REV = "1-0"
+const val TAG_DEPRECATED = "deprecated"
+const val USERNAME = "username"

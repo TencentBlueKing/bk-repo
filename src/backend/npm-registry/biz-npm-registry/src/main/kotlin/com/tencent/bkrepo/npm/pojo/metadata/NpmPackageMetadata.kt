@@ -29,31 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.metadata
 
-data class PluginMetadata(
-    /**
-     * 插件id，要求唯一
-     */
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class NpmPackageMetadata(
+    @JsonProperty("_id")
     val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
+    @JsonProperty("_rev")
+    val rev: String? = null,
     val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+    var description: String? = null,
+    @JsonProperty("dist-tags")
+    var distTags: Map<String, String> = mapOf(),
+    var maintainers: MutableList<Map<String, String>>? = null,
+    var time: Map<String, String>? = null,
+    var users: Map<String, Boolean>? = null,
+    var author: Any? = null,
+    var repository: Any? = null,
+    var versions: Map<String, NpmVersionMetadata> = mapOf(),
+    var readme: String? = null,
+    @JsonProperty("_attachments")
+    var attachments: Map<String, NpmAttachment> = mapOf(),
+    var readmeFilename: String? = null,
+    var homepage: String? = null,
+    var bugs: Any? = null,
+    var license: Any? = null
+) : NpmMetadata()

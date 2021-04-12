@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,31 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
 
-data class PluginMetadata(
-    /**
-     * 插件id，要求唯一
-     */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+dependencies {
+    implementation(project(":npm-registry:biz-npm-registry"))
+}

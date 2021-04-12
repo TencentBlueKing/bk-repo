@@ -29,31 +29,21 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.response
 
-data class PluginMetadata(
-    /**
-     * 插件id，要求唯一
-     */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.tencent.bkrepo.npm.pojo.metadata.NpmMetadata
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class NpmResponse(
+    val ok: Any? = null,
+    val rev: String? = null,
+    val error: String? = null,
+    val reason: String? = null
+) : NpmMetadata() {
+    companion object {
+        fun success() = NpmResponse(ok = true)
+        fun distTagSuccess() = NpmResponse(ok = "dist-tags updated")
+        fun error(reason: String) = NpmResponse(error = reason, reason = reason)
+    }
+}

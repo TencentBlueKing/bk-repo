@@ -29,31 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.artifact
 
-data class PluginMetadata(
+import com.tencent.bkrepo.npm.pojo.metadata.NpmAttachment
+import com.tencent.bkrepo.npm.pojo.metadata.NpmPackageMetadata
+import com.tencent.bkrepo.npm.pojo.metadata.NpmVersionMetadata
+
+/**
+ * npm publish信息
+ */
+class NpmPublishInfo(
+    projectId: String,
+    repoName: String,
+    packageName: String,
+    version: String,
+    val packageMetadata: NpmPackageMetadata,
+    val isDeprecated: Boolean
+) : NpmArtifactInfo(projectId, repoName, packageName, version) {
+
     /**
-     * 插件id，要求唯一
+     * tarball base64解码后的内容
      */
-    val id: String,
+    var tarball: ByteArray = ByteArray(0)
+
     /**
-     * 插件名称，要求唯一，先保持和id一致
+     * 获取attachment
      */
-    val name: String,
+    fun getAttachment(): NpmAttachment {
+        return packageMetadata.attachments.values.first()
+    }
+
     /**
-     * 插件版本，语义化版本格式
+     * 获取版本 package 内容
      */
-    val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+    fun getVersionPackage(): NpmVersionMetadata {
+        return packageMetadata.versions[version]!!
+    }
+}

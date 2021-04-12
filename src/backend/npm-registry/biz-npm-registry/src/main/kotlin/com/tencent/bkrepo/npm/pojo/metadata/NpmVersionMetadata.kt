@@ -29,31 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.plugin.core
+package com.tencent.bkrepo.npm.pojo.metadata
 
-data class PluginMetadata(
-    /**
-     * 插件id，要求唯一
-     */
-    val id: String,
-    /**
-     * 插件名称，要求唯一，先保持和id一致
-     */
-    val name: String,
-    /**
-     * 插件版本，语义化版本格式
-     */
+import com.fasterxml.jackson.annotation.JsonProperty
+
+/**
+ * reference: https://docs.npmjs.com/cli/v6/configuring-npm/package-json
+ */
+data class NpmVersionMetadata(
+    var deprecated: String? = null,
     val version: String,
-    /**
-     * 插件生效范围
-     */
-    val scope: List<String>,
-    /**
-     * 插件作者
-     */
-    val author: String? = null,
-    /**
-     * 插件描述
-     */
-    val description: String? = null
-)
+    val name: String,
+    @JsonProperty("publish-time")
+    var publishTime: String? = null,
+    var description: String? = null,
+    // list or string
+    var keywords: Any? = null,
+    @JsonProperty("dist-tags")
+    var distTags: Map<String, String>? = null,
+    // 使用MutableList，服务器可能会添加当前操作用户到maintainer中
+    var maintainers: MutableList<Map<String, String>>? = null,
+    var author: Any? = null,
+    var repository: Any? = null,
+    var dist: NpmVersionDist,
+    var dependencies: Map<String, Any>? = null,
+    var readme: String? = null,
+    var readmeFilename: String? = null,
+    var homepage: String? = null,
+    var bugs: Any? = null,
+    var license: Any? = null
+) : NpmMetadata()
