@@ -32,15 +32,15 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
-import com.tencent.bkrepo.rpm.pojo.Index
-import com.tencent.bkrepo.rpm.pojo.IndexType
-import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
-import com.tencent.bkrepo.rpm.pojo.XmlIndex
+import com.tencent.bkrepo.rpm.pojo.*
+import com.tencent.bkrepo.rpm.util.XmlStrUtils.searchContent
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
+import kotlinx.coroutines.flow.merge
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.util.regex.Pattern
 
@@ -218,6 +218,10 @@ object XmlStrUtils {
         var locationIndex: Long = -1L
         var suffixIndex: Long = -1L
 
+        var prefix = Index(-1L, false)
+        var location = Index(-1L, false)
+        var suffix = Index(-1L, false)
+
         val buffer = ByteArray(locationStr.toByteArray().size)
         var len: Int
         var index: Long = 0
@@ -226,30 +230,28 @@ object XmlStrUtils {
         randomAccessFile.seek(0L)
         loop@ while (randomAccessFile.read(buffer).also { len = it } > 0) {
             val content = String(buffer, 0, len)
-            if (locationIndex < 0) {
-                val prefix = (tempStr + content).searchContent(index, prefixIndex, prefixStr, buffer.size)
-                val location = (tempStr + content).searchContent(index, locationIndex, locationStr, buffer.size)
-                if (location.isFound) {
-                    locationIndex = location.index
-                    val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
-                    if (suffix.index > locationIndex) {
-                        suffixIndex = suffix.index
-                        break@loop
-                    }
-                }
-                if (!location.isFound && prefix.isFound) {
-                    prefixIndex = prefix.index
-                }
-                if (location.isFound && prefix.isFound && prefix.index < location.index) {
-                    prefixIndex = prefix.index
-                }
+            val mergeContent = tempStr + content
+            //只有未定位到location时 ，才查找 prefix 和 location
+            if (!location.isFound) {
+                prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
+                location = mergeContent.searchContent(index, locationIndex, locationStr, buffer.size)
             }
-            if (locationIndex > 0) {
-                val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
-                if (suffix.index > locationIndex) {
-                    suffixIndex = suffix.index
-                    break@loop
-                }
+            //在未定位到location时，prefix 保持更新
+            if (!location.isFound && prefix.isFound) {
+                prefixIndex = prefix.index
+            }
+            //当定位到location时， 查找suffix
+            if (location.isFound) {
+                locationIndex = location.index
+                suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
+            }
+
+            if (location.isFound && prefix.isFound && prefix.index < location.index) {
+                prefixIndex = prefix.index
+            }
+            if (suffix.isFound && suffix.index > locationIndex) {
+                suffixIndex = suffix.index
+                break@loop
             }
             index += buffer.size
             tempStr = content
