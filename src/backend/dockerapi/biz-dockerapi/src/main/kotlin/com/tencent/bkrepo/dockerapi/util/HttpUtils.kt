@@ -60,7 +60,8 @@ object HttpUtils {
 
     private fun doRequest(
         okHttpClient: OkHttpClient,
-        request: Request, retry: Int = 0,
+        request: Request,
+        retry: Int = 0,
         acceptCode: Set<Int> = setOf()
     ): ApiResponse {
         try {

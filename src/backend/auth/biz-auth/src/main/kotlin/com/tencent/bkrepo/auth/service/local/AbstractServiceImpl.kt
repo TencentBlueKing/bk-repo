@@ -51,7 +51,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 
-abstract class AbstractServiceImpl constructor(
+open class AbstractServiceImpl constructor(
     private val mongoTemplate: MongoTemplate,
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository

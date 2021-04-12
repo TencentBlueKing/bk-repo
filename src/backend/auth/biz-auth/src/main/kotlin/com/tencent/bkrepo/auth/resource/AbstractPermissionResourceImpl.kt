@@ -37,7 +37,7 @@ import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
-abstract class AbstractPermissionResourceImpl {
+open class AbstractPermissionResourceImpl {
 
     fun checkRequest(request: CheckPermissionRequest) {
         with(request) {

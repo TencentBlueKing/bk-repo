@@ -539,13 +539,12 @@ class DockerV2LocalRepoService @Autowired constructor(
             if (!artifactRepo.canWrite(context)) {
                 return DockerV2Errors.manifestUnknown(digest.toString())
             }
-            with(context) {
-                val manifestDigest = artifactRepo.getAttribute(projectId, repoName, fullPath, digest.getDigestAlg())
-                manifestDigest.let {
-                    if (StringUtils.equals(manifestDigest, digest.getDigestHex())) {
-                        // repo.delete(fullPath)
-                    }
-                }
+            val manifestDigest = artifactRepo.getAttribute(
+                context.projectId, context.repoName,
+                fullPath, digest.getDigestAlg()
+            )
+            if (manifestDigest != null && StringUtils.equals(manifestDigest, digest.getDigestHex())) {
+                // repo.delete(fullPath)
             }
         }
         return ResponseEntity.status(HttpStatus.ACCEPTED).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION).build()
