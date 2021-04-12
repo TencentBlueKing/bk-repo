@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,45 +29,27 @@
  * SOFTWARE.
  */
 
-rootProject.name = "bk-repo-backend"
+package com.tencent.bkrepo.npm.pojo.metadata
 
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.npm.constant.SHA_SUM
 
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
-
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
-
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":composer")
-includeAll(":docker")
-includeAll(":dockerapi")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":maven")
-includeAll(":monitor")
-includeAll(":npm")
-includeAll(":npm-registry")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
+data class NpmVersionDist(
+    /**
+     * sha1
+     */
+    @JsonProperty(SHA_SUM)
+    var shaSum: String? = null,
+    /**
+     * tgz文件下载地址
+     */
+    var tarball: String,
+    /**
+     * tgz文件数据长度
+     */
+    var packageSize: Int? = null,
+    /**
+     * 解压后长度
+     */
+    var unpackedSize: Int? = null
+) : NpmMetadata()

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,45 +29,34 @@
  * SOFTWARE.
  */
 
-rootProject.name = "bk-repo-backend"
+package com.tencent.bkrepo.npm.pojo.artifact
 
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
-    }
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.npm.util.NpmUtils
+
+/**
+ * npm 构件基本信息
+ * 其余场景的ArtifactInfo 可以继承该类，如[NpmPublishInfo]
+ */
+open class NpmArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val packageName: String,
+    val version: String = StringPool.EMPTY,
+    private val delimiter: String = StringPool.DASH,
+    private val write: Boolean = true // meaning the request using for write, don't sync
+) : ArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    /**
+     * 1. without scope: /test/-/test-1.0.0.tgz
+     * 2. with scope: /@scope/test/-/@scope/test-1.0.0.tgz
+     */
+    private val tarballFullPath: String = NpmUtils.formatTarballPath(packageName, version, delimiter)
+
+    override fun getArtifactFullPath() = tarballFullPath
+
+    override fun getArtifactVersion() = version
+
+    override fun getArtifactName() = packageName
 }
-
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
-
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
-
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":composer")
-includeAll(":docker")
-includeAll(":dockerapi")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":maven")
-includeAll(":monitor")
-includeAll(":npm")
-includeAll(":npm-registry")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
