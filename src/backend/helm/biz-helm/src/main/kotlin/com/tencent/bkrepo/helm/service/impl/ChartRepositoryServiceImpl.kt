@@ -70,201 +70,205 @@ import java.time.format.DateTimeFormatter
 @Service
 class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryService {
 
-    @Value("\${helm.registry.domain: ''}")
-    private lateinit var domain: String
+	@Value("\${helm.registry.domain: ''}")
+	private lateinit var domain: String
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
-    override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
-        // val lockKey = "${artifactInfo.projectId}_${artifactInfo.repoName}"
-        // try {
-        //     if (mongoLock.tryLock(lockKey, LOCK_VALUE)) {
-        //         freshIndexFile(artifactInfo)
-        //     }
-        // } finally {
-        //     mongoLock.releaseLock(lockKey, LOCK_VALUE)
-        // }
-        freshIndexFile(artifactInfo)
-        downloadIndexYaml()
-    }
+	@Permission(ResourceType.REPO, PermissionAction.READ)
+	override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
+		// val lockKey = "${artifactInfo.projectId}_${artifactInfo.repoName}"
+		// try {
+		//     if (mongoLock.tryLock(lockKey, LOCK_VALUE)) {
+		//         freshIndexFile(artifactInfo)
+		//     }
+		// } finally {
+		//     mongoLock.releaseLock(lockKey, LOCK_VALUE)
+		// }
+		freshIndexFile(artifactInfo)
+		downloadIndexYaml()
+	}
 
-    @Synchronized
-    override fun freshIndexFile(artifactInfo: HelmArtifactInfo) {
-        // 先查询index.yaml文件，如果不存在则创建，
-        // 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
-        with(artifactInfo) {
-            if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
-                val nodeList = queryNodeList(artifactInfo, false)
-                logger.info("query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +
-                    " start generate index.yaml ... ")
-                val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
-                uploadIndexYamlMetadata(indexYamlMetadata).also {
-                    logger.info("fresh the index file success in repo [$projectId/$repoName]")
-                }
-                return
-            }
+	@Synchronized
+	override fun freshIndexFile(artifactInfo: HelmArtifactInfo) {
+		// 先查询index.yaml文件，如果不存在则创建，
+		// 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
+		with(artifactInfo) {
+			if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
+				val nodeList = queryNodeList(artifactInfo, false)
+				logger.info("query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +
+						" start generate index.yaml ... ")
+				val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
+				uploadIndexYamlMetadata(indexYamlMetadata).also {
+					logger.info("fresh the index file success in repo [$projectId/$repoName]")
+				}
+				return
+			}
 
-            val originalYamlMetadata = queryOriginalIndexYaml()
-            val dateTime =
-                originalYamlMetadata.generated.let { TimeFormatUtil.convertToLocalTime(it) }
-            val now = LocalDateTime.now()
-            val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
-            if (nodeList.isNotEmpty()) {
-                val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
-                logger.info(
-                    "start refreshing the index file in repo [$projectId/$repoName], original index file " +
-                        "entries size : [${indexYamlMetadata.entriesSize()}]"
-                )
-                indexYamlMetadata.generated = TimeFormatUtil.convertToUtcTime(now)
-                uploadIndexYamlMetadata(indexYamlMetadata).also {
-                    logger.info(
-                        "refresh the index file success in repo [$projectId/$repoName], " +
-                            "current index file entries size : [${indexYamlMetadata.entriesSize()}]"
-                    )
-                }
-            }
-        }
-    }
+			val originalYamlMetadata = queryOriginalIndexYaml()
+			val dateTime =
+					originalYamlMetadata.generated.let { TimeFormatUtil.convertToLocalTime(it) }
+			val now = LocalDateTime.now()
+			val nodeList = queryNodeList(artifactInfo, lastModifyTime = dateTime)
+			if (nodeList.isNotEmpty()) {
+				val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
+				logger.info(
+						"start refreshing the index file in repo [$projectId/$repoName], original index file " +
+								"entries size : [${indexYamlMetadata.entriesSize()}]"
+				)
+				indexYamlMetadata.generated = TimeFormatUtil.convertToUtcTime(now)
+				uploadIndexYamlMetadata(indexYamlMetadata).also {
+					logger.info(
+							"refresh the index file success in repo [$projectId/$repoName], " +
+									"current index file entries size : [${indexYamlMetadata.entriesSize()}]"
+					)
+				}
+			}
+		}
+	}
 
-    @Suppress("UNCHECKED_CAST")
-    override fun buildIndexYamlMetadata(
-        result: List<Map<String, Any?>>,
-        artifactInfo: HelmArtifactInfo,
-        isInit: Boolean
-    ): HelmIndexYamlMetadata {
-        with(artifactInfo) {
-            val indexYamlMetadata =
-            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
-                HelmUtils.initIndexYamlMetadata()
-            } else {
-                queryOriginalIndexYaml()
-            }
-            if (result.isNotEmpty()) {
-                val context = ArtifactQueryContext()
-                result.forEach { it ->
-                    Thread.sleep(SLEEP_MILLIS)
-                    context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
-                    var chartName: String? = null
-                    var chartVersion: String? = null
-                    try {
-                        val artifactInputStream =
-                            ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
-                        val content = artifactInputStream.use {
-                            it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
-                        }
-                        val chartMetadata = content.byteInputStream().readYamlString<HelmChartMetadata>()
-                        chartName = chartMetadata.name
-                        chartVersion = chartMetadata.version
-                        chartMetadata.urls = listOf(
-                            domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
-                                "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
-                            )
-                        )
-                        chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
-                        chartMetadata.digest = it[NODE_SHA256] as String
-                        addIndexEntries(indexYamlMetadata, chartMetadata)
-                    } catch (ex: HelmFileNotFoundException) {
-                        logger.error(
-                            "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
-                                "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
-                        )
-                    }
-                }
-            }
-            return indexYamlMetadata
-        }
-    }
+	@Suppress("UNCHECKED_CAST")
+	override fun buildIndexYamlMetadata(
+			result: List<Map<String, Any?>>,
+			artifactInfo: HelmArtifactInfo,
+			isInit: Boolean
+	): HelmIndexYamlMetadata {
+		with(artifactInfo) {
+			val indexYamlMetadata =
+					if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
+						HelmUtils.initIndexYamlMetadata()
+					} else {
+						queryOriginalIndexYaml()
+					}
+			if (result.isNotEmpty()) {
+				val context = ArtifactQueryContext()
+				result.forEach {
+					Thread.sleep(SLEEP_MILLIS)
+					var chartName: String? = null
+					var chartVersion: String? = null
+					try {
+						val chartMetadata = queryHelmChartMetadata(context, it)
+						chartName = chartMetadata.name
+						chartVersion = chartMetadata.version
+						chartMetadata.urls = listOf(
+								domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
+										"$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
+								)
+						)
+						chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
+						chartMetadata.digest = it[NODE_SHA256] as String
+						addIndexEntries(indexYamlMetadata, chartMetadata)
+					} catch (ex: HelmFileNotFoundException) {
+						logger.error(
+								"generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
+										"[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
+						)
+					}
+				}
+			}
+			return indexYamlMetadata
+		}
+	}
 
-    fun addIndexEntries(
-        indexYamlMetadata: HelmIndexYamlMetadata,
-        chartMetadata: HelmChartMetadata
-    ) {
-        val chartName = chartMetadata.name
-        val chartVersion = chartMetadata.version
-        val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.name)
-        indexYamlMetadata.entries.let {
-            if (isFirstChart) {
-                it[chartMetadata.name] = sortedSetOf(chartMetadata)
-            } else {
-                // force upload
-                run stop@{
-                    it[chartName]?.forEachIndexed { _, helmChartMetadata ->
-                        if (chartVersion == helmChartMetadata.version) {
-                            it[chartName]?.remove(helmChartMetadata)
-                            return@stop
-                        }
-                    }
-                }
-                it[chartName]?.add(chartMetadata)
-            }
-        }
-    }
+	private fun queryHelmChartMetadata(context: ArtifactQueryContext, nodeInfo: Map<String, Any?>): HelmChartMetadata {
+		context.putAttribute(FULL_PATH, nodeInfo[NODE_FULL_PATH] as String)
+		val artifactInputStream =
+				ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
+		val content = artifactInputStream.use {
+			it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
+		}
+		return content.byteInputStream().readYamlString()
+	}
 
-    fun downloadIndexYaml() {
-        val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, HelmUtils.getIndexYamlFullPath())
-        ArtifactContextHolder.getRepository().download(context)
-    }
+	private fun addIndexEntries(
+			indexYamlMetadata: HelmIndexYamlMetadata,
+			chartMetadata: HelmChartMetadata
+	) {
+		val chartName = chartMetadata.name
+		val chartVersion = chartMetadata.version
+		val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.name)
+		indexYamlMetadata.entries.let {
+			if (isFirstChart) {
+				it[chartMetadata.name] = sortedSetOf(chartMetadata)
+			} else {
+				// force upload
+				run stop@{
+					it[chartName]?.forEachIndexed { _, helmChartMetadata ->
+						if (chartVersion == helmChartMetadata.version) {
+							it[chartName]?.remove(helmChartMetadata)
+							return@stop
+						}
+					}
+				}
+				it[chartName]?.add(chartMetadata)
+			}
+		}
+	}
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun installTgz(artifactInfo: HelmArtifactInfo) {
-        val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
-        ArtifactContextHolder.getRepository().download(context)
-    }
+	fun downloadIndexYaml() {
+		val context = ArtifactDownloadContext()
+		context.putAttribute(FULL_PATH, HelmUtils.getIndexYamlFullPath())
+		ArtifactContextHolder.getRepository().download(context)
+	}
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun installProv(artifactInfo: HelmArtifactInfo) {
-        val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
-        ArtifactContextHolder.getRepository().download(context)
-    }
+	@Permission(ResourceType.REPO, PermissionAction.READ)
+	@Transactional(rollbackFor = [Throwable::class])
+	override fun installTgz(artifactInfo: HelmArtifactInfo) {
+		val context = ArtifactDownloadContext()
+		context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+		ArtifactContextHolder.getRepository().download(context)
+	}
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
-        val nodeList = queryNodeList(artifactInfo, false)
-        logger.info("query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
-            ", size [${nodeList.size}], starting full refresh index.yaml ... ")
-        val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
-        uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
-    }
+	@Permission(ResourceType.REPO, PermissionAction.READ)
+	@Transactional(rollbackFor = [Throwable::class])
+	override fun installProv(artifactInfo: HelmArtifactInfo) {
+		val context = ArtifactDownloadContext()
+		context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+		ArtifactContextHolder.getRepository().download(context)
+	}
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
-    @Transactional(rollbackFor = [Throwable::class])
-    override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
-        val artifactResourceList = mutableListOf<ArtifactResource>()
-        val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
-        if (nodeList.isEmpty()) {
-            throw HelmFileNotFoundException(
-                "no chart found in repository [${artifactInfo.getRepoIdentify()}]"
-            )
-        }
-        val context = ArtifactQueryContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        nodeList.forEach {
-            context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
-            val artifactInputStream = repository.query(context) as ArtifactInputStream
-            artifactResourceList.add(
-                ArtifactResource(
-                    artifactInputStream,
-                    it[NODE_NAME] as String,
-                    null,
-                    ArtifactChannel.LOCAL
-                )
-            )
-        }
-        HelmZipResponseWriter.write(artifactResourceList)
-    }
+	@Permission(ResourceType.REPO, PermissionAction.READ)
+	@Transactional(rollbackFor = [Throwable::class])
+	override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
+		val nodeList = queryNodeList(artifactInfo, false)
+		logger.info("query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
+				", size [${nodeList.size}], starting full refresh index.yaml ... ")
+		val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
+		uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
+	}
 
-    companion object {
-        const val SLEEP_MILLIS = 20L
-        val logger: Logger = LoggerFactory.getLogger(ChartRepositoryServiceImpl::class.java)
+	@Permission(ResourceType.REPO, PermissionAction.READ)
+	@Transactional(rollbackFor = [Throwable::class])
+	override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
+		val artifactResourceList = mutableListOf<ArtifactResource>()
+		val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
+		if (nodeList.isEmpty()) {
+			throw HelmFileNotFoundException(
+					"no chart found in repository [${artifactInfo.getRepoIdentify()}]"
+			)
+		}
+		val context = ArtifactQueryContext()
+		val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+		nodeList.forEach {
+			context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
+			val artifactInputStream = repository.query(context) as ArtifactInputStream
+			artifactResourceList.add(
+					ArtifactResource(
+							artifactInputStream,
+							it[NODE_NAME] as String,
+							null,
+							ArtifactChannel.LOCAL
+					)
+			)
+		}
+		HelmZipResponseWriter.write(artifactResourceList)
+	}
 
-        fun convertDateTime(timeStr: String): String {
-            val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
-            return TimeFormatUtil.convertToUtcTime(localDateTime)
-        }
-    }
+	companion object {
+		const val SLEEP_MILLIS = 20L
+		val logger: Logger = LoggerFactory.getLogger(ChartRepositoryServiceImpl::class.java)
+
+		fun convertDateTime(timeStr: String): String {
+			val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
+			return TimeFormatUtil.convertToUtcTime(localDateTime)
+		}
+	}
 }
