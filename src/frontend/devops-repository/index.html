@@ -5,6 +5,7 @@
         <meta name=viewport content="width=device-width,initial-scale=1">
         <meta http-equiv=X-UA-Compatible content="ie=edge">
         <meta http-equiv="Pragma" content="no-cache" />
+        <link rel="icon" href="/ui/favicon.ico" type="image/x-icon" />
         <title>制品库管理</title>
     </head>
 <body>
@@ -35,11 +36,24 @@
                     location.href = location.origin + redirectUrl + '?preview=true'
                 } else if (status === 401) {
                     location.href = window.getLoginUrl(location.origin + redirectUrl + '?preview=true')
+                } else if (status === 404) {
+                    printError()
                 }
             }
             xhr.withCredentials = true
             xhr.open('HEAD', redirectUrl)
             xhr.send()
+        }
+
+        function printError () {
+            document.writeln(
+                `<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <img src="/ui/404.png" />
+                    <p style="font-size: 20px; color: #979797; margin: 32px 0;">
+                        预览文件不存在
+                    </p>
+                </div>`
+            )
         }
     </script>
 </body>
