@@ -52,7 +52,7 @@ interface PermissionRepository : MongoRepository<TPermission, String> {
         projectId: String?,
         resourceType: ResourceType
     ): TPermission?
-    
+
     fun findOneByProjectIdAndReposAndPermNameAndResourceType(
         projectId: String?,
         repoName: String,
