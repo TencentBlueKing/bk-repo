@@ -98,7 +98,7 @@ echo "put config to consul kv success."
 ```shell
 cd $WORK_DIR/bkrepo/scripts
 chmod +x render_tpl
-./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env /data/bkee/bkrepo/support-files/templates/*.html
+./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env /data/workspace/frontend/ui/frontend#ui#index.html
 ```
 
 ### 3.3 后端微服务部署
