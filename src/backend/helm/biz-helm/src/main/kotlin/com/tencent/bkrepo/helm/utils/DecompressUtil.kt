@@ -89,7 +89,7 @@ object DecompressUtil {
                 var nextEntry: ArchiveEntry
                 while (it.nextEntry.also { nextEntry = it } != null) {
                     if ((!nextEntry.isDirectory) && nextEntry.name.split("/")
-                            .let { it.size == 2 && it.last() == FILE_NAME }
+                        .let { it.size == 2 && it.last() == FILE_NAME }
                     ) {
                         return parseStream(archiveInputStream)
                     }

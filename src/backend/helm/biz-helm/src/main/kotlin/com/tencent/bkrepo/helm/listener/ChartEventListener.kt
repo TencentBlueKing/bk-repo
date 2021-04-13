@@ -46,89 +46,91 @@ import org.springframework.stereotype.Component
 @Component
 class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeClient) {
 
-	/**
-	 * 删除chart版本，更新index.yaml文件
-	 */
-	@Synchronized
-	@EventListener(ChartVersionDeleteEvent::class)
-	fun handle(event: ChartVersionDeleteEvent) {
-		// 如果index.yaml文件不存在，说明还没有初始化该文件，return
-		// 如果index.yaml文件存在，则进行更新
-		with(event.request) {
-			try {
-				if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
-					logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
-					return
-				}
-				val originalIndexYamlMetadata = freshIndexYamlForDelete(this)
-				uploadIndexYamlMetadata(originalIndexYamlMetadata)
-				logger.info(
-						"User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
-								"in repo [$projectId/$repoName] success!"
-				)
-			} catch (exception: TypeCastException) {
-				logger.error("User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
-						"in repo [$projectId/$repoName] failed, message: $exception")
-				throw exception
-			}
-		}
-	}
+    /**
+     * 删除chart版本，更新index.yaml文件
+     */
+    @Synchronized
+    @EventListener(ChartVersionDeleteEvent::class)
+    fun handle(event: ChartVersionDeleteEvent) {
+        // 如果index.yaml文件不存在，说明还没有初始化该文件，return
+        // 如果index.yaml文件存在，则进行更新
+        with(event.request) {
+            try {
+                if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+                    logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
+                    return
+                }
+                val originalIndexYamlMetadata = freshIndexYamlForDelete(this)
+                uploadIndexYamlMetadata(originalIndexYamlMetadata)
+                logger.info(
+                    "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
+                        "in repo [$projectId/$repoName] success!"
+                )
+            } catch (exception: TypeCastException) {
+                logger.error(
+                    "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
+                        "in repo [$projectId/$repoName] failed, message: $exception"
+                )
+                throw exception
+            }
+        }
+    }
 
-	private fun freshIndexYamlForDelete(request: ChartVersionDeleteRequest): HelmIndexYamlMetadata {
-		with(request) {
-			val originalIndexYamlMetadata = getOriginalIndexYaml()
-			originalIndexYamlMetadata.entries.let {
-				val chartMetadataSet =
-						it[name] ?: throw HelmException(
-								"index.yaml file for chart [$name] not found in repo [$projectId/$repoName]."
-						)
-				if (chartMetadataSet.size == 1 && (version == chartMetadataSet.first().version)) {
-					it.remove(name)
-				} else {
-					run stop@{
-						chartMetadataSet.forEachIndexed { _, helmChartMetadata ->
-							if (version == helmChartMetadata.version) {
-								chartMetadataSet.remove(helmChartMetadata)
-								return@stop
-							}
-						}
-					}
-				}
-			}
-			return originalIndexYamlMetadata
-		}
-	}
+    private fun freshIndexYamlForDelete(request: ChartVersionDeleteRequest): HelmIndexYamlMetadata {
+        with(request) {
+            val originalIndexYamlMetadata = getOriginalIndexYaml()
+            originalIndexYamlMetadata.entries.let {
+                val chartMetadataSet =
+                    it[name] ?: throw HelmException(
+                        "index.yaml file for chart [$name] not found in repo [$projectId/$repoName]."
+                    )
+                if (chartMetadataSet.size == 1 && (version == chartMetadataSet.first().version)) {
+                    it.remove(name)
+                } else {
+                    run stop@{
+                        chartMetadataSet.forEachIndexed { _, helmChartMetadata ->
+                            if (version == helmChartMetadata.version) {
+                                chartMetadataSet.remove(helmChartMetadata)
+                                return@stop
+                            }
+                        }
+                    }
+                }
+            }
+            return originalIndexYamlMetadata
+        }
+    }
 
-	/**
-	 * 删除chart版本，更新index.yaml文件
-	 */
-	@Synchronized
-	@EventListener(ChartDeleteEvent::class)
-	fun handle(event: ChartDeleteEvent) {
-		with(event.request) {
-			try {
-				if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
-					logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
-					return
-				}
-				val originalIndexYamlMetadata = getOriginalIndexYaml()
-				originalIndexYamlMetadata.entries.remove(name)
-				uploadIndexYamlMetadata(originalIndexYamlMetadata)
-				logger.info(
-						"User [$operator] fresh index.yaml for delete chart [$name] " +
-								"in repo [$projectId/$repoName] success!"
-				)
-			} catch (exception: TypeCastException) {
-				logger.error(
-						"User [$operator] fresh index.yaml for delete chart [$name] " +
-								"in repo [$projectId/$repoName] failed, message: $exception"
-				)
-				throw exception
-			}
-		}
-	}
+    /**
+     * 删除chart版本，更新index.yaml文件
+     */
+    @Synchronized
+    @EventListener(ChartDeleteEvent::class)
+    fun handle(event: ChartDeleteEvent) {
+        with(event.request) {
+            try {
+                if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+                    logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
+                    return
+                }
+                val originalIndexYamlMetadata = getOriginalIndexYaml()
+                originalIndexYamlMetadata.entries.remove(name)
+                uploadIndexYamlMetadata(originalIndexYamlMetadata)
+                logger.info(
+                    "User [$operator] fresh index.yaml for delete chart [$name] " +
+                        "in repo [$projectId/$repoName] success!"
+                )
+            } catch (exception: TypeCastException) {
+                logger.error(
+                    "User [$operator] fresh index.yaml for delete chart [$name] " +
+                        "in repo [$projectId/$repoName] failed, message: $exception"
+                )
+                throw exception
+            }
+        }
+    }
 
-	companion object {
-		private val logger: Logger = LoggerFactory.getLogger(ChartEventListener::class.java)
-	}
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(ChartEventListener::class.java)
+    }
 }
