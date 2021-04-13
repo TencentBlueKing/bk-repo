@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.nuget.handler
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.model.nuspec.Dependency
@@ -71,12 +70,12 @@ class NugetPackageHandler {
         }
     }
 
-    private fun indexMetadata(nuspecMetadata: NuspecMetadata): Map<String, Any>? {
+    private fun indexMetadata(nuspecMetadata: NuspecMetadata): Map<String, Any> {
         val metadata: MutableMap<String, Any> = mutableMapOf()
         if (nuspecMetadata.isValid()) {
             with(nuspecMetadata) {
                 metadata["id"] = id
-                metadata["version"] = version
+                /*metadata["version"] = version
                 metadata["title"] = title ?: StringPool.EMPTY
                 metadata["authors"] = authors
                 metadata["summary"] = summary ?: StringPool.EMPTY
@@ -90,7 +89,7 @@ class NugetPackageHandler {
                 metadata["icon"] = icon ?: StringPool.EMPTY
                 metadata["licenseUrl"] = licenseUrl ?: StringPool.EMPTY
                 metadata["tags"] = tags ?: StringPool.EMPTY
-                metadata["language"] = language ?: StringPool.EMPTY
+                metadata["language"] = language ?: StringPool.EMPTY*/
                 metadata["dependency"] = buildDependencies(dependencies)
                 metadata["reference"] = buildReferences(references)
                 metadata["frameworks"] = buildFrameworks(frameworkAssemblies)

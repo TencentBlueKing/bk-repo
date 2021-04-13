@@ -107,12 +107,7 @@ class ModuleDepsService(
         depsCreateRequestList.forEach continuing@{
             with(it) {
                 checkParameter(it)
-                if (exist(projectId, repoName, name, deps)) {
-                    if (!overwrite) {
-                        throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
-                    }
-                    return@continuing
-                }
+                if (checkDepsExists()) return@continuing
                 val moduleDeps = buildModuleDeps(it)
                 createList.add(moduleDeps)
             }
@@ -121,6 +116,16 @@ class ModuleDepsService(
             moduleDepsRepository.insert(createList)
             logger.info("batch insert module deps, size: [${createList.size}] success.")
         }
+    }
+
+    private fun DepsCreateRequest.checkDepsExists(): Boolean {
+        if (exist(projectId, repoName, name, deps)) {
+            if (!overwrite) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, name)
+            }
+            return true
+        }
+        return false
     }
 
     private fun exist(projectId: String, repoName: String, name: String?, deps: String): Boolean {
