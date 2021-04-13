@@ -68,13 +68,13 @@ import java.io.InputStream
 
 @Service
 class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
-    
+
     @Autowired
     private lateinit var moduleDepsService: ModuleDepsService
-    
+
     @Autowired
     private lateinit var npmClientService: NpmClientService
-    
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun detailVersion(artifactInfo: NpmArtifactInfo, packageKey: String, version: String): PackageVersionInfo {
         val name = PackageKeys.resolveNpm(packageKey)
@@ -101,7 +101,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             return PackageVersionInfo(basicInfo, emptyMap(), versionDependenciesInfo)
         }
     }
-    
+
     private fun queryVersionDependenciesInfo(
         artifactInfo: NpmArtifactInfo,
         versionMetadata: NpmVersionMetadata,
@@ -118,7 +118,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val devDependenciesList = parseDevDependencies(versionMetadata)
         return VersionDependenciesInfo(dependenciesList, devDependenciesList, moduleDepsPage)
     }
-    
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deletePackage(artifactInfo: NpmArtifactInfo, deleteRequest: PackageDeleteRequest) {
         logger.info("npm delete package request: [$deleteRequest]")
@@ -127,7 +127,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             npmClientService.deletePackage(operator, artifactInfo, name)
         }
     }
-    
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteVersion(artifactInfo: NpmArtifactInfo, deleteRequest: PackageVersionDeleteRequest) {
         logger.info("npm delete package version request: [$deleteRequest]")
@@ -151,7 +151,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
         }
     }
-    
+
     fun updatePackageWithDeleteVersion(
         artifactInfo: NpmArtifactInfo,
         deleteRequest: PackageVersionDeleteRequest,
@@ -178,7 +178,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             reUploadPackageJsonFile(artifactInfo, packageMetaData)
         }
     }
-    
+
     private fun findNewLatest(request: PackageVersionDeleteRequest): String {
         return with(request) {
             packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
@@ -190,7 +190,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 }
         }
     }
-    
+
     fun reUploadPackageJsonFile(artifactInfo: NpmArtifactInfo, packageMetaData: NpmPackageMetaData) {
         with(artifactInfo) {
             val fullPath = NpmUtils.getPackageMetadataPath(packageMetaData.name!!)
@@ -198,7 +198,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             val context = ArtifactUploadContext(artifactFile)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            
+
             ArtifactContextHolder.getRepository().upload(context).also {
                 logger.info(
                     "user [${context.userId}] upload npm package metadata file [$fullPath] " +
@@ -208,7 +208,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             artifactFile.delete()
         }
     }
-    
+
     private fun parseDependencies(versionMetadata: NpmVersionMetadata): MutableList<DependenciesInfo> {
         val dependenciesList: MutableList<DependenciesInfo> = mutableListOf()
         if (versionMetadata.dependencies != null) {
@@ -223,7 +223,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         }
         return dependenciesList
     }
-    
+
     private fun parseDevDependencies(versionMetadata: NpmVersionMetadata): MutableList<DependenciesInfo> {
         val devDependenciesList: MutableList<DependenciesInfo> = mutableListOf()
         if (versionMetadata.devDependencies != null) {
@@ -238,7 +238,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         }
         return devDependenciesList
     }
-    
+
     private fun queryPackageInfo(pkgName: String): NpmPackageMetaData {
         pkgName.takeIf { !pkgName.isBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
         val context = ArtifactQueryContext()
@@ -248,11 +248,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 ?: throw NpmArtifactNotFoundException("package [$pkgName/package.json] not found.")
         return inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
     }
-    
+
     companion object {
-        
+
         val logger: Logger = LoggerFactory.getLogger(NpmWebServiceImpl::class.java)
-        
+
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
             with(nodeDetail) {
                 return BasicInfo(

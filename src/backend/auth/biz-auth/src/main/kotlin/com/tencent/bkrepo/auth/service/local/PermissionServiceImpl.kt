@@ -266,34 +266,13 @@ open class PermissionServiceImpl constructor(
 
         // check project admin
         if (roles.isNotEmpty() && request.resourceType == ResourceType.PROJECT) {
-            // val reposList = mutableListOf<String>()
-            roles.forEach { role ->
-                val tRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
-                if (tRole != null && tRole.admin) {
-                    val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
-                    return filterRepos(repoList, request.repoNames)
-                }
-            }
+            return listProjectPermissions(roles, request)
         }
 
         val reposList = mutableListOf<String>()
         // check repo admin
         if (roles.isNotEmpty() && request.resourceType == ResourceType.REPO) {
-            roles.forEach { role ->
-                // check project admin first
-                val pRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
-                if (pRole != null && pRole.admin) {
-                    val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
-                    return filterRepos(repoList, request.repoNames)
-                }
-                // check repo admin then
-                val rRole = roleRepository.findFirstByIdAndProjectIdAndType(
-                    role,
-                    request.projectId,
-                    RoleType.REPO
-                )
-                if (rRole != null && rRole.admin) reposList.add(rRole.repoName!!)
-            }
+            return listRepoPermissions(roles, request, reposList)
         }
 
         // check repo permission
@@ -305,6 +284,40 @@ open class PermissionServiceImpl constructor(
             reposList.addAll(permissionRepoList)
             return filterRepos(reposList, request.repoNames)
         }
+    }
+
+    private fun listRepoPermissions(
+        roles: List<String>,
+        request: ListRepoPermissionRequest,
+        reposList: MutableList<String>
+    ): List<String> {
+        roles.forEach { role ->
+            // check project admin first
+            val pRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
+            if (pRole != null && pRole.admin) {
+                val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
+                return filterRepos(repoList, request.repoNames)
+            }
+            // check repo admin then
+            val rRole = roleRepository.findFirstByIdAndProjectIdAndType(
+                role,
+                request.projectId,
+                RoleType.REPO
+            )
+            if (rRole != null && rRole.admin) reposList.add(rRole.repoName!!)
+        }
+        return emptyList()
+    }
+
+    private fun listProjectPermissions(roles: List<String>, request: ListRepoPermissionRequest): List<String> {
+        roles.forEach { role ->
+            val tRole = roleRepository.findFirstByIdAndProjectIdAndType(role, request.projectId, RoleType.PROJECT)
+            if (tRole != null && tRole.admin) {
+                val repoList = repositoryClient.listRepo(request.projectId).data?.map { it.name } ?: emptyList()
+                return filterRepos(repoList, request.repoNames)
+            }
+        }
+        return emptyList()
     }
 
     override fun registerResource(request: RegisterResourceRequest) {
