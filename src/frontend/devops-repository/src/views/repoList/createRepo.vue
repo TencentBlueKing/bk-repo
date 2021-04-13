@@ -27,6 +27,9 @@
                 <bk-form-item :label="$t('repoName')" :required="true" property="name">
                     <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                 </bk-form-item>
+                <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
+                    <bk-checkbox v-model="repoBaseInfo.public"></bk-checkbox>
+                </bk-form-item>
                 <template v-if="repoBaseInfo.type === 'rpm'">
                     <bk-form-item :label="$t('enabledFileLists')">
                         <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -78,6 +81,7 @@
                 repoBaseInfo: {
                     type: 'generic',
                     name: '',
+                    public: false,
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
@@ -155,6 +159,7 @@
                         projectId: this.projectId,
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
+                        public: this.repoBaseInfo.public,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         ...(this.repoBaseInfo.type === 'rpm' ? {
