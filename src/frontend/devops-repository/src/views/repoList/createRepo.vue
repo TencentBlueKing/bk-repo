@@ -28,7 +28,7 @@
                     <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
-                    <bk-checkbox v-model="repoBaseInfo.public"></bk-checkbox>
+                    <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
                 </bk-form-item>
                 <template v-if="repoBaseInfo.type === 'rpm'">
                     <bk-form-item :label="$t('enabledFileLists')">
