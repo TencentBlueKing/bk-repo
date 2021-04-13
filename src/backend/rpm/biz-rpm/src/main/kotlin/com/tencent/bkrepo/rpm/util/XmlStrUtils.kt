@@ -400,17 +400,6 @@ object XmlStrUtils {
             }
 
             addSuffixContent(randomAccessFile, memoryBuffer, bufferFile)
-//            if (memoryBuffer != null) {
-//                randomAccessFile.write(memoryBuffer.toByteArray())
-//            } else {
-//                bufferFile!!.inputStream().use { inputStream ->
-//                    val buffer = newBuffer()
-//                    var len: Int
-//                    while (inputStream.read(buffer).also { len = it } > 0) {
-//                        randomAccessFile.write(buffer, 0, len)
-//                    }
-//                }
-//            }
             randomAccessFile.setLength(randomAccessFile.filePointer)
         } finally {
             if (bufferFile != null && bufferFile.exists()) {
@@ -477,8 +466,8 @@ object XmlStrUtils {
      */
     fun resolvePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType): Int {
         val regex = when (indexType) {
-            IndexType.PRIMARY -> """^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=
-                |"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$""".trimMargin()
+            IndexType.PRIMARY -> ("""^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
+                    """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$""").trimMargin()
             IndexType.FILELISTS -> """^<metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="(\d+)">$"""
             IndexType.OTHERS -> """^<metadata xmlns="http://linux.duke.edu/metadata/other" packages="(\d+)">$"""
         }
