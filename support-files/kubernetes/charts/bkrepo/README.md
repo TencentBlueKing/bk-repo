@@ -24,7 +24,7 @@ $ helm install bkrepo bkee/bkrepo
 $ helm uninstall bkrepo
 ```
 
-上述命令经移除所有和bkrepo相关的Kubernetes组件，并删除release。
+上述命令将移除所有和bkrepo相关的Kubernetes组件，并删除release。
 
 ## Chart依赖
 - [bitnami/nginx-ingress-controller](https://github.com/bitnami/charts/tree/master/bitnami/nginx-ingress-controller)
