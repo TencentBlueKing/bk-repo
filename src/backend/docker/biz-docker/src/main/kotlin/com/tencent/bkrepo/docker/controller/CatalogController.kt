@@ -29,49 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.docker.api
+package com.tencent.bkrepo.docker.controller
 
-import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
-import com.tencent.bkrepo.docker.constant.DOCKER_NODE_NAME
-import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
-import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
-import com.tencent.bkrepo.docker.constant.DOCKER_TAGS_SUFFIX
-import com.tencent.bkrepo.docker.response.DockerResponse
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestAttribute
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
+import com.tencent.bkrepo.docker.constant.DOCKER_CATALOG_SUFFIX
+import com.tencent.bkrepo.docker.context.RequestContext
+import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
+import com.tencent.bkrepo.docker.util.UserUtil
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * docker tag api
- */
-@Api("docker镜像blob文件处理接口")
-@RequestMapping(DOCKER_API_PREFIX)
-interface Tag {
+@RestController
+class CatalogController @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) {
 
-    @ApiOperation("列出指定name的所有tag")
-    @GetMapping(DOCKER_TAGS_SUFFIX)
+    @RequestMapping(method = [RequestMethod.GET], value = [DOCKER_CATALOG_SUFFIX])
     fun list(
-        @RequestAttribute
         userId: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_PROJECT_ID, required = true)
         projectId: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_REPO_NAME, required = true)
         repoName: String,
-        @PathVariable
-        @ApiParam(value = DOCKER_NODE_NAME, required = true)
-        name: String,
-        @RequestParam(required = false)
-        @ApiParam(value = "n", required = false)
         n: Int?,
-        @RequestParam(required = false)
-        @ApiParam(value = "last", required = false)
         last: String?
-    ): DockerResponse
+    ): ResponseEntity<Any> {
+        var maxEntries = 0
+        var index = EMPTY
+        n?.let {
+            maxEntries = n
+        }
+        last?.let {
+            index = last
+        }
+        val uId = UserUtil.getContextUserId(userId)
+        val pathContext = RequestContext(uId, projectId, repoName, EMPTY)
+        return dockerRepo.catalog(pathContext, maxEntries, index)
+    }
 }

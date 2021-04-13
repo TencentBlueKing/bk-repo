@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.npm.pojo
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import io.swagger.annotations.Api
@@ -45,7 +46,8 @@ data class NpmSearchResponse(
 )
 
 data class NpmSearchInfoMap(
-    var `package`: NpmSearchInfo? = null
+    @JsonAlias("package")
+    var packages: NpmSearchInfo? = null
 )
 
 data class NpmSearchInfo(

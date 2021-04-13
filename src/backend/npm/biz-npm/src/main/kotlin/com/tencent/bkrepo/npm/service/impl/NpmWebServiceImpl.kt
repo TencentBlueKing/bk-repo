@@ -170,19 +170,24 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                     }
                 }
             } else {
-                val newLatest =
-                    packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
-                        ?: run {
-                            val message =
-                                "delete version by web operator to find new latest version failed with package [$name]"
-                            logger.error(message)
-                            throw NpmArtifactNotFoundException(message)
-                        }
+                val newLatest = findNewLatest(this)
                 packageMetaData.versions.map.remove(version)
                 packageMetaData.time.getMap().remove(version)
                 packageMetaData.distTags.set(LATEST, newLatest)
             }
             reUploadPackageJsonFile(artifactInfo, packageMetaData)
+        }
+    }
+
+    private fun findNewLatest(request: PackageVersionDeleteRequest): String {
+        return with(request) {
+            packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
+                ?: run {
+                    val message =
+                        "delete version by web operator to find new latest version failed with package [$name]"
+                    logger.error(message)
+                    throw NpmArtifactNotFoundException(message)
+                }
         }
     }
 
@@ -267,28 +272,5 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 )
             }
         }
-
-        // fun convert(downloadStatisticsMetric: DownloadStatisticsMetric): DownloadCount {
-        //     with(downloadStatisticsMetric) {
-        //         return DownloadCount(description, count)
-        //     }
-        // }
-        //
-        // fun convert(nodeDetail: NodeDetail): NpmPackageLatestVersionInfo {
-        //     with(nodeDetail) {
-        //         return NpmPackageLatestVersionInfo(
-        //             createdBy,
-        //             createdDate,
-        //             lastModifiedBy,
-        //             lastModifiedDate,
-        //             name,
-        //             size,
-        //             null,
-        //             stageTag,
-        //             projectId,
-        //             repoName
-        //         )
-        //     }
-        // }
     }
 }

@@ -113,17 +113,7 @@ class ModuleDepsService(
                     }
                     return@continuing
                 }
-
-                val moduleDeps = TModuleDeps(
-                    projectId = projectId,
-                    repoName = repoName,
-                    name = name,
-                    deps = deps,
-                    createdBy = operator,
-                    createdDate = LocalDateTime.now(),
-                    lastModifiedBy = operator,
-                    lastModifiedDate = LocalDateTime.now()
-                )
+                val moduleDeps = buildModuleDeps(it)
                 createList.add(moduleDeps)
             }
         }
@@ -136,10 +126,10 @@ class ModuleDepsService(
     private fun exist(projectId: String, repoName: String, name: String?, deps: String): Boolean {
         if (deps.isBlank()) return false
         val criteria =
-            Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
+            Criteria.where(TModuleDeps::projectId.name).`is`(projectId)
+                .and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::deps.name).`is`(deps)
         name?.run { criteria.and(TModuleDeps::name.name).`is`(name) }
-
         return mongoTemplate.exists(Query(criteria), TModuleDeps::class.java)
     }
 
@@ -186,7 +176,8 @@ class ModuleDepsService(
 
     fun find(projectId: String, repoName: String, name: String, deps: String): ModuleDepsInfo {
         val criteria =
-            Criteria.where(TModuleDeps::projectId.name).`is`(projectId).and(TModuleDeps::repoName.name).`is`(repoName)
+            Criteria.where(TModuleDeps::projectId.name).`is`(projectId)
+                .and(TModuleDeps::repoName.name).`is`(repoName)
                 .and(TModuleDeps::name.name).`is`(name).and(TModuleDeps::deps.name).`is`(deps)
         if (mongoTemplate.count(Query.query(criteria), TModuleDeps::class.java) >= THRESHOLD) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
@@ -230,6 +221,21 @@ class ModuleDepsService(
                     repoName = it.repoName,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                )
+            }
+        }
+
+        fun buildModuleDeps(request: DepsCreateRequest): TModuleDeps {
+            return with(request) {
+                TModuleDeps(
+                    projectId = projectId,
+                    repoName = repoName,
+                    name = name,
+                    deps = deps,
+                    createdBy = operator,
+                    createdDate = LocalDateTime.now(),
+                    lastModifiedBy = operator,
+                    lastModifiedDate = LocalDateTime.now()
                 )
             }
         }

@@ -63,9 +63,11 @@ class TrustAllManager : X509TrustManager {
     override fun checkClientTrusted(certChain: Array<out X509Certificate>?, authType: String?) {
         // no-op
     }
-    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?){
+
+    override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {
         // no-op
     }
+
     override fun getAcceptedIssuers(): Array<X509Certificate> {
         return arrayOf()
     }

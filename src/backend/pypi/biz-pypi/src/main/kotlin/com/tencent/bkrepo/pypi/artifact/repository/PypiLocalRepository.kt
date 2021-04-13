@@ -482,6 +482,7 @@ class PypiLocalRepository(
         }
         threadPool.shutdown()
         while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {
+            logger.info("migrate thread pool running!")
         }
         val end = Instant.now()
         val elapseTimeSeconds = Duration.between(start, end)

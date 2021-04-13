@@ -523,7 +523,7 @@ class JobService(
         }
         logger.info(
             "${markNodePage.records.size} of " +
-                    "${markNodePage.totalRecords} ${indexType.name} mark file to process"
+                "${markNodePage.totalRecords} ${indexType.name} mark file to process"
         )
         val markNodes = markNodePage.records
         val latestIndexNode = getLatestIndexNode(repo, repodataPath, "${indexType.value}.xml.gz")!!

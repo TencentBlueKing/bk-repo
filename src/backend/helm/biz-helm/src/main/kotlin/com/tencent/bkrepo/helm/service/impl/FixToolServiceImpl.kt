@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.SortedSet
 
 @Service
 class FixToolServiceImpl(
@@ -73,18 +74,7 @@ class FixToolServiceImpl(
         request.setAttribute(ARTIFACT_INFO_KEY, ArtifactInfo(projectId, repoName, ""))
         try {
             // 查询索引文件
-            val nodeDetail =
-                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
-                    logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException(
-                        "the file index-cache.yaml not found in repo [$projectId/$repoName]"
-                    )
-                }
-            val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
-                logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
-                return
-            }
-            val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
+            val helmIndexYamlMetadata = helmIndexYamlMetadata(projectId, repoName)
             if (helmIndexYamlMetadata.entries.isEmpty()) {
                 logger.error("not found entries in index-cache.yaml")
                 return
@@ -108,16 +98,7 @@ class FixToolServiceImpl(
                 }
                 try {
                     // 修改时间
-                    entries[name]?.forEach { it ->
-                        val digest = it.digest
-                        val nodeInfo = helmNodeList.first { it.sha256 == digest }
-                        it.created = TimeFormatUtil.convertToUtcTime(
-                            LocalDateTime.parse(
-                                nodeInfo.createdDate,
-                                DateTimeFormatter.ISO_DATE_TIME
-                            )
-                        )
-                    }
+                    repairCreatedDate(entries, name, helmNodeList)
                 } catch (exception: RuntimeException) {
                     logger.error(
                         "Failed to to repair created date for [$name] in repo [$projectId/$repoName].",
@@ -131,6 +112,40 @@ class FixToolServiceImpl(
             logger.error("repair created date for repo [$projectId/$repoName] failed, message: ${exception.message}")
             throw exception
         }
+    }
+
+    private fun repairCreatedDate(
+        entries: MutableMap<String, SortedSet<HelmChartMetadata>>,
+        name: String,
+        helmNodeList: MutableList<NodeInfo>
+    ) {
+        entries[name]?.forEach { it ->
+            val digest = it.digest
+            val nodeInfo = helmNodeList.first { it.sha256 == digest }
+            it.created = TimeFormatUtil.convertToUtcTime(
+                LocalDateTime.parse(
+                    nodeInfo.createdDate,
+                    DateTimeFormatter.ISO_DATE_TIME
+                )
+            )
+        }
+    }
+
+    private fun helmIndexYamlMetadata(projectId: String, repoName: String): HelmIndexYamlMetadata {
+        val nodeDetail =
+            nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
+                logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
+                throw HelmFileNotFoundException(
+                    "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                )
+            }
+        val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+            logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+            throw HelmFileNotFoundException(
+                "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+            )
+        }
+        return inputStream.use { it.readYamlString() }
     }
 
     override fun fixPackageVersion(): List<PackageManagerResponse> {
