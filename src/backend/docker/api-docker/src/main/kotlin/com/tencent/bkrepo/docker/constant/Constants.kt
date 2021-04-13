@@ -72,7 +72,10 @@ const val AUTH_CHALLENGE_SERVICE_SCOPE = "Bearer realm=\"%s\",service=\"%s\",sco
 const val AUTH_CHALLENGE_SCOPE = ",scope=\"%s:%s:%s\""
 const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}"
 const val DOCKER_UNAUTHED_BODY =
-    "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"access to the requested resource is not authorized\",\"detail\":[{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"pull\"},{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"push\"}]}]}"
+    "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"access to the " +
+        "requested resource is not authorized\",\"detail\"" +
+        ":[{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"pull\"}," +
+        "{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"push\"}]}]}"
 
 const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
 const val DOCKER_API_VERSION = "registry/2.0"

@@ -36,13 +36,15 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -50,7 +52,7 @@ import org.springframework.transaction.annotation.Transactional
  * 节点服务实现类
  */
 @Service
-class NodeServiceImpl (
+class NodeServiceImpl(
     override val nodeDao: NodeDao,
     override val repositoryDao: RepositoryDao,
     override val fileReferenceService: FileReferenceService,
@@ -85,17 +87,26 @@ class NodeServiceImpl (
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun moveNode(moveRequest: NodeMoveRequest) {
+    override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         NodeMoveCopySupport(this).moveNode(moveRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun copyNode(copyRequest: NodeCopyRequest) {
+    override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         NodeMoveCopySupport(this).copyNode(copyRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun renameNode(renameRequest: NodeRenameRequest) {
         NodeRenameSupport(this).renameNode(renameRequest)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun restoreNode(artifact: ArtifactInfo, nodeRestoreOption: NodeRestoreOption): NodeRestoreResult {
+        return NodeRestoreSupport(this).restoreNode(artifact, nodeRestoreOption)
+    }
+
+    override fun listDeletedPoint(artifact: ArtifactInfo): List<NodeDeletedPoint> {
+        return NodeRestoreSupport(this).listDeletedPoint(artifact)
     }
 }

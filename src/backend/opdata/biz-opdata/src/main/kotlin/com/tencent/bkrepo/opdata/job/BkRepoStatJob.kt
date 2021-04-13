@@ -56,8 +56,8 @@ class BkRepoStatJob(
         logger.info("start to stat bkrepo metrics")
         val projectsMetrics = projectMetricsRepository.findAll()
         var tms = Calendar.getInstance()
-        val date =
-            tms.get(Calendar.YEAR).toString() + "-" + tms.get(Calendar.MONTH).toString() + "-" + tms.get(Calendar.DAY_OF_MONTH).toString()
+        val date = tms.get(Calendar.YEAR).toString() +
+            "-" + tms.get(Calendar.MONTH).toString() + "-" + tms.get(Calendar.DAY_OF_MONTH).toString()
         var capSize = 0L
         var nodeNum = 0L
         var projectNum = 0L

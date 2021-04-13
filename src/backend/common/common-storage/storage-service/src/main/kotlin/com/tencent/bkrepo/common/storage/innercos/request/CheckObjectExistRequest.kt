@@ -32,7 +32,10 @@
 package com.tencent.bkrepo.common.storage.innercos.request
 
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import okhttp3.RequestBody
 
 data class CheckObjectExistRequest(
     val key: String
-) : CosRequest(HttpMethod.HEAD, key)
+) : CosRequest(HttpMethod.HEAD, key) {
+    override fun buildRequestBody(): RequestBody? = null
+}

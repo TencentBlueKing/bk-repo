@@ -32,11 +32,9 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.repository.UT_PACKAGE_KEY
-import com.tencent.bkrepo.repository.UT_PACKAGE_NAME
 import com.tencent.bkrepo.repository.UT_PACKAGE_VERSION
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
-import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageDownloadsDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
@@ -44,14 +42,17 @@ import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.repository.service.PackageServiceTest.Companion.buildCreateRequest
+import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.repository.service.packages.PackageService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -69,6 +70,7 @@ import kotlin.concurrent.thread
     PackageVersionDao::class,
     PackageDownloadsDao::class
 )
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PackageDownloadsServiceTest @Autowired constructor(
     private val packageDownloadsService: PackageDownloadsService,
     private val packageService: PackageService,
@@ -81,9 +83,13 @@ class PackageDownloadsServiceTest @Autowired constructor(
     @MockBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+    }
+
     @BeforeEach
     fun beforeEach() {
-        initMock()
         mongoTemplate.remove(Query(), TPackage::class.java)
         mongoTemplate.remove(Query(), TPackageVersion::class.java)
     }
@@ -91,7 +97,7 @@ class PackageDownloadsServiceTest @Autowired constructor(
     @Test
     @DisplayName("创建下载量相关测试")
     fun createTest() {
-        val packageVersionRequest = buildPackageCreateRequest(version = UT_PACKAGE_VERSION, overwrite = false)
+        val packageVersionRequest = buildCreateRequest(version = UT_PACKAGE_VERSION, overwrite = false)
         packageService.createPackageVersion(packageVersionRequest)
 
         val count = 100
@@ -106,51 +112,25 @@ class PackageDownloadsServiceTest @Autowired constructor(
             threadList.add(thread)
         }
         threadList.forEach { it.join() }
-        val result = packageDownloadsService.queryDetails(DetailsQueryRequest(
-            projectId = UT_PROJECT_ID,
-            repoName = UT_REPO_NAME,
-            packageKey = UT_PACKAGE_KEY,
-            packageVersion = null,
-            fromDate = LocalDate.now(),
-            toDate = LocalDate.now()
-        ))
+        val result = packageDownloadsService.queryDetails(
+            DetailsQueryRequest(
+                projectId = UT_PROJECT_ID,
+                repoName = UT_REPO_NAME,
+                packageKey = UT_PACKAGE_KEY,
+                packageVersion = null,
+                fromDate = LocalDate.now(),
+                toDate = LocalDate.now()
+            )
+        )
         println(result)
 
         val packageInfo = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)!!
         Assertions.assertEquals(count.toLong(), packageInfo.downloads)
     }
 
-
-    private fun buildPackageCreateRequest(
-        projectId: String = UT_PROJECT_ID,
-        repoName: String = UT_REPO_NAME,
-        packageName: String = UT_PACKAGE_NAME,
-        packageKey: String = UT_PACKAGE_KEY,
-        version: String = UT_PACKAGE_VERSION,
-        overwrite: Boolean = false
-    ): PackageVersionCreateRequest {
-        return PackageVersionCreateRequest(
-            projectId = projectId,
-            repoName = repoName,
-            packageName = packageName,
-            packageKey = packageKey,
-            packageType = PackageType.MAVEN,
-            packageDescription = "some description",
-            versionName = version,
-            size = 1024,
-            manifestPath = "/com/tencent/bkrepo/test/$version",
-            artifactPath = "/com/tencent/bkrepo/test/$version",
-            stageTag = listOf(ArtifactStageEnum.RELEASE.toString()),
-            metadata = mapOf("key" to "value"),
-            overwrite = overwrite,
-            createdBy = UT_USER
-        )
-    }
-
     private fun buildDownloadStatRequest(
         projectId: String = UT_PROJECT_ID,
         repoName: String = UT_REPO_NAME,
-        packageName: String = UT_PACKAGE_NAME,
         packageKey: String = UT_PACKAGE_KEY,
         version: String = UT_PACKAGE_VERSION
     ): PackageDownloadRecord {

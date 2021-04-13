@@ -47,7 +47,21 @@ config = {
   bkrepo = {
     authorization = "__BK_REPO_AUTHORIZATION__"
   },
-  mode = "__BK_REPO_DEPLOY_MODE__"
+  mode = "__BK_REPO_DEPLOY_MODE__",
+  router = {
+    project = {
+      {
+        name = "devops",
+        tag = "devops"
+      }
+    },
+    repo = {
+      {
+        name = "log",
+        tag = "devcloud"
+      }
+    }
+  }
 }
   
 require("init_common")

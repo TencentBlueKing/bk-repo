@@ -118,7 +118,8 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
         var historyCounter = 0L
         history?.let {
             val iterable = Iterable<JsonNode> { history.elements() }
-            historyCounter = StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
+            historyCounter =
+                StreamSupport.stream(iterable.spliterator(), false).filter { notEmptyHistoryLayer(it) }.count()
         }
         val foreignHasHistory = layers.size().toLong() == historyCounter
         var iterationsCounter = 0
@@ -181,12 +182,16 @@ object ManifestSchema2Deserializer : AbstractManifestDeserializer() {
                 String(manifestBytes, StandardCharsets.UTF_8) + "jsonBytes:" +
                 String(configBytes, StandardCharsets.UTF_8)
             logger.error(msg)
-            throw IllegalArgumentException("Circuit Breaker Threshold Reached, Breaking Operation. see log output for manifest details.")
+            throw IllegalArgumentException(
+                "Circuit Breaker Threshold Reached," +
+                    " Breaking Operation. see log output for manifest details."
+            )
         }
     }
 
     private fun isForeignLayer(layer: JsonNode?): Boolean {
-        return layer != null && layer.has(DOCKER_MEDIA_TYPE) && DOCKER_FOREIGN_KEY == layer.get(DOCKER_MEDIA_TYPE).asText()
+        return layer != null && layer.has(DOCKER_MEDIA_TYPE) &&
+            DOCKER_FOREIGN_KEY == layer.get(DOCKER_MEDIA_TYPE).asText()
     }
 
     private fun notEmptyHistoryLayer(historyLayer: JsonNode?): Boolean {

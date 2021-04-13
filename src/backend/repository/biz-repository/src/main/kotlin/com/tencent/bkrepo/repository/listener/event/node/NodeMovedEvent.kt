@@ -32,8 +32,8 @@
 package com.tencent.bkrepo.repository.listener.event.node
 
 import com.tencent.bkrepo.repository.pojo.log.OperateType
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 
-data class NodeMovedEvent(val request: NodeMoveRequest) : NodeEvent(request, request.operator) {
+data class NodeMovedEvent(val request: NodeMoveCopyRequest) : NodeEvent(request, request.operator) {
     override fun getOperateType() = OperateType.MOVE
 }

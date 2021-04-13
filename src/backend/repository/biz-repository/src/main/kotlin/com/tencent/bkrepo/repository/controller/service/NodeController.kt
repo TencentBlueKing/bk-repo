@@ -41,10 +41,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
@@ -102,12 +101,12 @@ class NodeController(
         return ResponseBuilder.success()
     }
 
-    override fun moveNode(nodeMoveRequest: NodeMoveRequest): Response<Void> {
+    override fun moveNode(nodeMoveRequest: NodeMoveCopyRequest): Response<Void> {
         nodeService.moveNode(nodeMoveRequest)
         return ResponseBuilder.success()
     }
 
-    override fun copyNode(nodeCopyRequest: NodeCopyRequest): Response<Void> {
+    override fun copyNode(nodeCopyRequest: NodeMoveCopyRequest): Response<Void> {
         nodeService.copyNode(nodeCopyRequest)
         return ResponseBuilder.success()
     }
@@ -183,11 +182,11 @@ class NodeController(
         return this.updateNode(nodeUpdateRequest)
     }
 
-    override fun move(nodeMoveRequest: NodeMoveRequest): Response<Void> {
+    override fun move(nodeMoveRequest: NodeMoveCopyRequest): Response<Void> {
         return this.moveNode(nodeMoveRequest)
     }
 
-    override fun copy(nodeCopyRequest: NodeCopyRequest): Response<Void> {
+    override fun copy(nodeCopyRequest: NodeMoveCopyRequest): Response<Void> {
         return this.copyNode(nodeCopyRequest)
     }
 

@@ -63,7 +63,9 @@ class RepoNameRuleInterceptor(
             require(context is CommonQueryContext)
             val projectId = context.findProjectId()
             val queryRule = when (operation) {
-                OperationType.EQ -> { handleRepoNameEq(projectId, value.toString()) }
+                OperationType.EQ -> {
+                    handleRepoNameEq(projectId, value.toString())
+                }
                 OperationType.IN -> {
                     val listValue = value
                     require(listValue is List<*>)
@@ -79,7 +81,7 @@ class RepoNameRuleInterceptor(
         projectId: String,
         value: String
     ): Rule.QueryRule {
-        if(!hasRepoPermission(projectId, value)) {
+        if (!hasRepoPermission(projectId, value)) {
             throw PermissionException()
         }
         return Rule.QueryRule(NodeInfo::repoName.name, value, OperationType.EQ)

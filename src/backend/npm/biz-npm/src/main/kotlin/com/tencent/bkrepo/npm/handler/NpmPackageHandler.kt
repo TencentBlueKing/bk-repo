@@ -78,7 +78,7 @@ class NpmPackageHandler {
                 val next = iterator.next()
                 val version = next.key
                 // tgz包不存在，补全包版本数据失败
-                if (!tgzNodeInfoMap.containsKey(version)){
+                if (!tgzNodeInfoMap.containsKey(version)) {
                     val message = "the version [$version] for package [$name] with tgz file not found " +
                         "in repo [${nodeInfo.projectId}/${nodeInfo.repoName}]."
                     logger.warn(message)

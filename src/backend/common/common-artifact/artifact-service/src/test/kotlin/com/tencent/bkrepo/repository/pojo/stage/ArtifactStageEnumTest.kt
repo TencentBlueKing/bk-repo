@@ -49,9 +49,15 @@ internal class ArtifactStageEnumTest {
     @Test
     @DisplayName("测试upgrade")
     fun testUpgrade() {
-        Assertions.assertEquals(ArtifactStageEnum.PRE_RELEASE, ArtifactStageEnum.NONE.upgrade(ArtifactStageEnum.PRE_RELEASE))
+        Assertions.assertEquals(
+            ArtifactStageEnum.PRE_RELEASE,
+            ArtifactStageEnum.NONE.upgrade(ArtifactStageEnum.PRE_RELEASE)
+        )
         Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.NONE.upgrade(ArtifactStageEnum.RELEASE))
-        Assertions.assertEquals(ArtifactStageEnum.RELEASE, ArtifactStageEnum.PRE_RELEASE.upgrade(ArtifactStageEnum.RELEASE))
+        Assertions.assertEquals(
+            ArtifactStageEnum.RELEASE,
+            ArtifactStageEnum.PRE_RELEASE.upgrade(ArtifactStageEnum.RELEASE)
+        )
 
         assertThrows<IllegalArgumentException> { ArtifactStageEnum.NONE.upgrade(ArtifactStageEnum.NONE) }
         assertThrows<IllegalArgumentException> { ArtifactStageEnum.RELEASE.upgrade(ArtifactStageEnum.PRE_RELEASE) }

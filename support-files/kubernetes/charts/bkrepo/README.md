@@ -386,7 +386,7 @@ ingress.enabled=false
 nginx-ingress-controller.enabled=false
 gateway.service.type=ClusterIP
 ```
-
+
 部署成功后，通过`kubectl port-forward`将`bkrepo-gateway`服务暴露出去，即可通过 bkrepo.com:\<port\> 访问（您仍需要配置dns解析）
 ```shell
 kubectl port-forward service/bkrepo-gateway <port>:80
@@ -394,11 +394,11 @@ kubectl port-forward service/bkrepo-gateway <port>:80
 
 ## 常见问题
 
-**1. 首次启动失败，是bkrepo Chart有问题吗**
+**1. 首次启动失败，是bkrepo Chart有问题吗**
 
 答: bkrepo的Chart依赖了`mongodb`和`nignx-ingress-controller`, 这两个依赖的Chart默认从docker.io拉镜像，如果网络不通或被docker hub限制，将导致镜像拉取失败，可以参考配置列表修改镜像地址。
 
-**2. 首次启动时间过长，且READY状态为`0/1`？**
+**2. 首次启动时间过长，且READY状态为`0/1`？**
 
 答: 如果选择了部署`mongodb Chart`，需要等待`mongodb`部署完成后，`bkrepo`相关容器才会启动；启动过程涉及到数据表以及索引创建，这个期间容器状态为`Not Ready`。
 

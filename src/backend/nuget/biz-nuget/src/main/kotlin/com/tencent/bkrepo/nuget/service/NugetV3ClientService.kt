@@ -10,7 +10,7 @@ interface NugetV3ClientService {
      * 获取index.json内容
      */
     fun getFeed(artifactInfo: NugetArtifactInfo): String
-
+    
     /**
      * 根据RegistrationsBaseUrl获取registration的index metadata
      */
@@ -20,12 +20,12 @@ interface NugetV3ClientService {
         registrationPath: String,
         isSemver2Endpoint: Boolean
     ): RegistrationIndex
-
+    
     /**
      * 下载 [packageId].[packageVersion].nupkg 包
      */
     fun download(artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String)
-
+    
     /**
      * 根绝[searchRequest]里面的条件进行搜索
      */

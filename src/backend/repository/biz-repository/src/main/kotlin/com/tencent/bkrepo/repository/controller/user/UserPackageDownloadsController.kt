@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
-import com.tencent.bkrepo.repository.service.PackageDownloadsService
+import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.PostMapping
@@ -79,5 +79,4 @@ class UserPackageDownloadsController(
             return ResponseBuilder.success(packageDownloadsService.querySummary(this))
         }
     }
-
 }

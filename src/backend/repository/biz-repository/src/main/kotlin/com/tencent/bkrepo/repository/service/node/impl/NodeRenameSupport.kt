@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.service.node.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.listener.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.repository.model.TNode
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory
  */
 open class NodeRenameSupport(
     private val nodeBaseService: NodeBaseService
-): NodeRenameOperation {
+) : NodeRenameOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
@@ -59,7 +60,7 @@ open class NodeRenameSupport(
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             doRename(node, newFullPath, operator)
-            nodeBaseService.publishEvent(NodeRenamedEvent(this))
+            publishEvent(NodeRenamedEvent(this))
             logger.info("Rename node [$this] success.")
         }
     }

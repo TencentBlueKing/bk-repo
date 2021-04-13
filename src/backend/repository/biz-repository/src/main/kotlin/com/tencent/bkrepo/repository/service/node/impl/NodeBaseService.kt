@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -51,11 +52,10 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.service.FileReferenceService
-import com.tencent.bkrepo.repository.service.StorageCredentialService
-import com.tencent.bkrepo.repository.service.impl.AbstractService
+import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
@@ -67,22 +67,22 @@ import java.time.format.DateTimeFormatter
 /**
  * 节点基础服务，实现了CRUD基本操作
  */
-abstract class NodeBaseService (
+abstract class NodeBaseService(
     open val nodeDao: NodeDao,
     open val repositoryDao: RepositoryDao,
     open val fileReferenceService: FileReferenceService,
     open val storageCredentialService: StorageCredentialService,
     open val storageService: StorageService,
     open val repositoryProperties: RepositoryProperties
-) : NodeService, NodeBaseOperation, AbstractService() {
-    
+) : NodeService, NodeBaseOperation {
+
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
             val node = nodeDao.findNode(projectId, repoName, getArtifactFullPath())
             return convertToDetail(node)
         }
     }
-    
+
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
         with(artifact) {
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
@@ -224,7 +224,6 @@ abstract class NodeBaseService (
             }
         }
     }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)

@@ -76,7 +76,7 @@ open class PermissionManager(
      * @param projectId 项目id
      * @param repoName 仓库名称
      */
-    fun checkRepoPermission(
+    open fun checkRepoPermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
@@ -96,7 +96,7 @@ open class PermissionManager(
      * @param path 节点路径
      * @param public 仓库是否为public
      */
-    fun checkNodePermission(
+    open fun checkNodePermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
@@ -119,7 +119,7 @@ open class PermissionManager(
             return
         }
         val platformId = SecurityUtils.getPlatformId()
-        checkAnonymous(userId, SecurityUtils.getPlatformId())
+        checkAnonymous(userId, platformId)
 
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
@@ -149,7 +149,6 @@ open class PermissionManager(
         repoName: String,
         public: Boolean? = null
     ): Boolean {
-        return true
         if (action != PermissionAction.READ) {
             return false
         }
@@ -189,7 +188,7 @@ open class PermissionManager(
             action = action,
             projectId = projectId,
             repoName = repoName,
-            path =  path
+            path = path
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误

@@ -46,12 +46,14 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -66,6 +68,7 @@ import org.springframework.data.mongodb.core.query.Query
     PackageDao::class,
     PackageVersionDao::class
 )
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PackageServiceTest @Autowired constructor(
     private val packageService: PackageService,
     private val mongoTemplate: MongoTemplate
@@ -74,9 +77,13 @@ class PackageServiceTest @Autowired constructor(
     @MockBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+    }
+
     @BeforeEach
     fun beforeEach() {
-        initMock()
         mongoTemplate.remove(Query(), TPackage::class.java)
         mongoTemplate.remove(Query(), TPackageVersion::class.java)
     }
@@ -247,29 +254,31 @@ class PackageServiceTest @Autowired constructor(
         packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist")
     }
 
-    private fun buildCreateRequest(
-        projectId: String = UT_PROJECT_ID,
-        repoName: String = UT_REPO_NAME,
-        packageName: String = UT_PACKAGE_NAME,
-        packageKey: String = UT_PACKAGE_KEY,
-        version: String = UT_PACKAGE_VERSION,
-        overwrite: Boolean = false
-    ): PackageVersionCreateRequest {
-        return PackageVersionCreateRequest(
-            projectId = projectId,
-            repoName = repoName,
-            packageName = packageName,
-            packageKey = packageKey,
-            packageType = PackageType.MAVEN,
-            packageDescription = "some description",
-            versionName = version,
-            size = 1024,
-            manifestPath = "/com/tencent/bkrepo/test/$version",
-            artifactPath = "/com/tencent/bkrepo/test/$version",
-            stageTag = listOf(ArtifactStageEnum.RELEASE.toString()),
-            metadata = mapOf("key" to "value"),
-            overwrite = overwrite,
-            createdBy = UT_USER
-        )
+    companion object {
+
+        fun buildCreateRequest(
+            repoName: String = UT_REPO_NAME,
+            packageName: String = UT_PACKAGE_NAME,
+            packageKey: String = UT_PACKAGE_KEY,
+            version: String = UT_PACKAGE_VERSION,
+            overwrite: Boolean = false
+        ): PackageVersionCreateRequest {
+            return PackageVersionCreateRequest(
+                projectId = UT_PROJECT_ID,
+                repoName = repoName,
+                packageName = packageName,
+                packageKey = packageKey,
+                packageType = PackageType.MAVEN,
+                packageDescription = "some description",
+                versionName = version,
+                size = 1024,
+                manifestPath = "/com/tencent/bkrepo/test/$version",
+                artifactPath = "/com/tencent/bkrepo/test/$version",
+                stageTag = null,
+                metadata = mapOf("key" to "value"),
+                overwrite = overwrite,
+                createdBy = UT_USER
+            )
+        }
     }
 }

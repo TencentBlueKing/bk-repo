@@ -43,10 +43,9 @@ import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -142,13 +141,13 @@ interface ReplicationClient {
     @PostMapping("/node/copy")
     fun replicaNodeCopyRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody nodeCopyRequest: NodeCopyRequest
+        @RequestBody nodeCopyRequest: NodeMoveCopyRequest
     ): Response<Void>
 
     @PostMapping("/node/move")
     fun replicaNodeMoveRequest(
         @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody nodeMoveRequest: NodeMoveRequest
+        @RequestBody nodeMoveRequest: NodeMoveCopyRequest
     ): Response<Void>
 
     @PostMapping("/node/delete")

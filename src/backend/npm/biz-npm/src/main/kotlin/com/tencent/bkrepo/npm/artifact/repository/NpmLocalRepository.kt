@@ -91,7 +91,7 @@ class NpmLocalRepository(
     private val okHttpUtil: OkHttpUtil,
     private val npmDependentHandler: NpmDependentHandler
 ) : LocalRepository() {
-
+    
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
         // 不为空说明上传的是tgz文件
@@ -104,7 +104,7 @@ class NpmLocalRepository(
             }
         }
     }
-
+    
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val name = context.getStringAttribute("name") ?: StringPool.EMPTY
         return NodeCreateRequest(
@@ -119,7 +119,7 @@ class NpmLocalRepository(
             overwrite = name != NPM_PACKAGE_TGZ_FILE
         )
     }
-
+    
     override fun query(context: ArtifactQueryContext): InputStream? {
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)
         return this.onQuery(context) ?: run {
@@ -127,7 +127,7 @@ class NpmLocalRepository(
             null
         }
     }
-
+    
     private fun onQuery(context: ArtifactQueryContext): InputStream? {
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
@@ -140,7 +140,7 @@ class NpmLocalRepository(
                 logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]")
             }
     }
-
+    
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
@@ -152,10 +152,10 @@ class NpmLocalRepository(
             }
         }
     }
-
+    
     override fun search(context: ArtifactSearchContext): List<NpmSearchInfoMap> {
         val searchRequest = context.getAttribute<MetadataSearchRequest>(SEARCH_REQUEST)!!
-
+        
         val queryModel = NodeQueryBuilder()
             .select("projectId", "repoName", "fullPath", "metadata", "lastModifiedDate")
             .sortByDesc("lastModifiedDate")
@@ -175,7 +175,7 @@ class NpmLocalRepository(
         }
         return transferRecords(data.records)
     }
-
+    
     @Suppress("UNCHECKED_CAST")
     private fun transferRecords(records: List<Map<String, Any?>>): List<NpmSearchInfoMap> {
         val mapListInfo = mutableListOf<NpmSearchInfoMap>()
@@ -198,7 +198,7 @@ class NpmLocalRepository(
         }
         return mapListInfo
     }
-
+    
     override fun remove(context: ArtifactRemoveContext) {
         val repositoryDetail = context.repositoryDetail
         val projectId = repositoryDetail.projectId
@@ -210,7 +210,7 @@ class NpmLocalRepository(
             logger.info("delete artifact $it success in repo [${context.artifactInfo.getRepoIdentify()}].")
         }
     }
-
+    
     /**
      *  todo
      *  迁移成功之后需要创建包
@@ -236,12 +236,12 @@ class NpmLocalRepository(
             )
         }
     }
-
+    
     private fun doMigrate(context: ArtifactMigrateContext, packageName: String): PackageMigrateDetail {
         val packageMetaData = queryRemotePackageMetadata(packageName)
         return migratePackageArtifact(context, packageMetaData)
     }
-
+    
     private fun queryRemotePackageMetadata(packageName: String): NpmPackageMetaData {
         val url = UrlFormatter.format(npmProperties.migration.remoteRegistry, packageName)
         var response: Response? = null
@@ -259,7 +259,7 @@ class NpmLocalRepository(
             response?.body()?.close()
         }
     }
-
+    
     private fun migratePackageArtifact(
         context: ArtifactMigrateContext,
         packageMetaData: NpmPackageMetaData
@@ -298,7 +298,7 @@ class NpmLocalRepository(
         migratePackageMetadata(context, packageMetaData, failVersionList, versionSizeMap)
         return packageMigrateDetail
     }
-
+    
     /**
      * 迁移package.json文件
      */
@@ -312,11 +312,7 @@ class NpmLocalRepository(
         val fullPath = NpmUtils.getPackageMetadataPath(name)
         try {
             with(context) {
-                val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-                val originalPackageMetadata = node?.let {
-                    val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
-                    JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
-                }
+                val originalPackageMetadata = npmPackageMetaData(fullPath)
                 val newPackageMetaData = if (originalPackageMetadata != null) {
                     // 比对合并package.json，将失败的版本去除
                     comparePackageVersion(originalPackageMetadata, packageMetaData, failVersionList, versionSizeMap)
@@ -325,14 +321,7 @@ class NpmLocalRepository(
                     migratePackageVersion(packageMetaData, failVersionList, versionSizeMap)
                 } ?: return
                 // 调整tarball地址
-                val versionMetaData = newPackageMetaData.versions.map.values.iterator().next()
-                with(versionMetaData) {
-                    if (!NpmUtils.isDashSeparateInTarball(name, version!!, dist?.tarball!!)) {
-                        packageMetaData.versions.map.values.forEach {
-                            adjustTarball(it)
-                        }
-                    }
-                }
+                adjustTarball(newPackageMetaData, name, packageMetaData)
                 // 存储package.json文件
                 context.putAttribute(NPM_FILE_FULL_PATH, NpmUtils.getPackageMetadataPath(name))
                 val artifactFile = JsonUtils.objectMapper.writeValueAsBytes(newPackageMetaData).inputStream()
@@ -349,7 +338,26 @@ class NpmLocalRepository(
             logger.error("migrate package metadata for package [$name] failed. message: ${ignored.message}")
         }
     }
-
+    
+    private fun adjustTarball(newPackageMetaData: NpmPackageMetaData, name: String, packageMetaData: NpmPackageMetaData) {
+        val versionMetaData = newPackageMetaData.versions.map.values.iterator().next()
+        with(versionMetaData) {
+            if (!NpmUtils.isDashSeparateInTarball(name, version!!, dist?.tarball!!)) {
+                packageMetaData.versions.map.values.forEach {
+                    adjustTarball(it)
+                }
+            }
+        }
+    }
+    
+    private fun ArtifactMigrateContext.npmPackageMetaData(fullPath: String): NpmPackageMetaData? {
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return node?.let {
+            val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
+            JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
+        }
+    }
+    
     private fun comparePackageVersion(
         originalPackageMetadata: NpmPackageMetaData,
         packageMetaData: NpmPackageMetaData,
@@ -357,7 +365,7 @@ class NpmLocalRepository(
         versionSizeMap: Map<String, Long>
     ): NpmPackageMetaData {
         addPackageSizeField(originalPackageMetadata, versionSizeMap)
-        val name = originalPackageMetadata.name
+        val name = originalPackageMetadata.name.orEmpty()
         val originalVersionSet = originalPackageMetadata.versions.map.keys
         val remoteVersionList = packageMetaData.versions.map.keys
         remoteVersionList.removeAll(originalVersionSet)
@@ -367,18 +375,9 @@ class NpmLocalRepository(
         val distTags = packageMetaData.distTags
         val timeMap = packageMetaData.time
         // 迁移dist_tags
-        distTags.getMap().entries.forEach {
-            if (!originalDistTags.getMap().keys.contains(it.key)) {
-                originalDistTags.set(it.key, it.value)
-            }
-        }
+        migrateDistTags(distTags, originalDistTags)
         // 迁移latest版本
-        val remoteLatest = NpmUtils.getLatestVersionFormDistTags(distTags)
-        val originalLatest = NpmUtils.getLatestVersionFormDistTags(originalDistTags)
-        if (TimeUtil.compareTime(timeMap.get(remoteLatest), originalTimeMap.get(originalLatest))) {
-            originalDistTags.set("latest", remoteLatest)
-            originalTimeMap.add("modified", timeMap.get("modified"))
-        }
+        migrateLatest(distTags, originalDistTags, timeMap, originalTimeMap)
         logger.info(
             "the different versions of the  package [$name] is [$remoteVersionList], " +
                 "size : ${remoteVersionList.size}"
@@ -405,7 +404,29 @@ class NpmLocalRepository(
         }
         return originalPackageMetadata
     }
-
+    
+    private fun migrateDistTags(distTags: NpmPackageMetaData.DistTags, originalDistTags: NpmPackageMetaData.DistTags) {
+        distTags.getMap().entries.forEach {
+            if (!originalDistTags.getMap().keys.contains(it.key)) {
+                originalDistTags.set(it.key, it.value)
+            }
+        }
+    }
+    
+    private fun migrateLatest(
+        distTags: NpmPackageMetaData.DistTags,
+        originalDistTags: NpmPackageMetaData.DistTags,
+        timeMap: NpmPackageMetaData.Time,
+        originalTimeMap: NpmPackageMetaData.Time
+    ) {
+        val remoteLatest = NpmUtils.getLatestVersionFormDistTags(distTags)
+        val originalLatest = NpmUtils.getLatestVersionFormDistTags(originalDistTags)
+        if (TimeUtil.compareTime(timeMap.get(remoteLatest), originalTimeMap.get(originalLatest))) {
+            originalDistTags.set("latest", remoteLatest)
+            originalTimeMap.add("modified", timeMap.get("modified"))
+        }
+    }
+    
     /**
      * 迁移版本成功的包
      */
@@ -420,7 +441,7 @@ class NpmLocalRepository(
         val remoteVersionList = packageMetaData.versions.map.keys
         remoteVersionList.removeAll(failVersionList)
         if (remoteVersionList.isEmpty()) return null
-
+        
         val distTags = packageMetaData.distTags
         val timeMap = packageMetaData.time.getMap()
         val latest = NpmUtils.getLatestVersionFormDistTags(distTags)
@@ -446,13 +467,13 @@ class NpmLocalRepository(
         }
         return packageMetaData
     }
-
+    
     private fun adjustTarball(versionMetaData: NpmVersionMetadata) {
         with(versionMetaData) {
             versionMetaData.dist!!.tarball = NpmUtils.formatTarballWithDash(name!!, version!!, dist?.tarball!!)
         }
     }
-
+    
     private fun addPackageSizeField(packageMetaData: NpmPackageMetaData, versionSizeMap: Map<String, Long>) {
         val versionsMap = packageMetaData.versions.map
         versionsMap.entries.forEach {
@@ -461,7 +482,7 @@ class NpmLocalRepository(
             }
         }
     }
-
+    
     private fun storeVersionMetadata(context: ArtifactMigrateContext, versionMetadata: NpmVersionMetadata) {
         with(context) {
             val name = versionMetadata.name!!
@@ -486,7 +507,7 @@ class NpmLocalRepository(
             artifactFile.delete()
         }
     }
-
+    
     private fun storeTgzArtifact(
         context: ArtifactMigrateContext,
         tarball: String,
@@ -495,7 +516,7 @@ class NpmLocalRepository(
     ): Long {
         // 包的大小信息
         with(context) {
-            var size: Long = 0L
+            var size = 0L
             var response: Response? = null
             val fullPath = NpmUtils.getTgzPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
@@ -531,7 +552,7 @@ class NpmLocalRepository(
             return size
         }
     }
-
+    
     private fun buildMigrationNodeCreateRequest(
         context: ArtifactMigrateContext,
         file: ArtifactFile
@@ -551,7 +572,7 @@ class NpmLocalRepository(
             operator = context.userId
         )
     }
-
+    
     private fun deleteVersionMetadata(context: ArtifactMigrateContext, name: String, version: String) {
         val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
         with(context) {
@@ -565,7 +586,7 @@ class NpmLocalRepository(
             }
         }
     }
-
+    
     /**
      * 检查下载响应
      */
@@ -576,7 +597,7 @@ class NpmLocalRepository(
         }
         return true
     }
-
+    
     companion object {
         val logger: Logger = LoggerFactory.getLogger(NpmLocalRepository::class.java)
     }

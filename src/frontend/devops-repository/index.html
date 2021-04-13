@@ -5,6 +5,7 @@
         <meta name=viewport content="width=device-width,initial-scale=1">
         <meta http-equiv=X-UA-Compatible content="ie=edge">
         <meta http-equiv="Pragma" content="no-cache" />
+        <link rel="icon" href="/ui/favicon.ico" type="image/x-icon" />
         <title>制品库管理</title>
     </head>
 <body>
@@ -35,11 +36,37 @@
                     location.href = location.origin + redirectUrl + '?preview=true'
                 } else if (status === 401) {
                     location.href = window.getLoginUrl(location.origin + redirectUrl + '?preview=true')
+                } else if (status === 403 || status === 404) {
+                    printError(status)
                 }
             }
             xhr.withCredentials = true
             xhr.open('HEAD', redirectUrl)
             xhr.send()
+        }
+
+        function printError (status) {
+            let message
+            switch (status) {
+                case 403:
+                    message = '未获得预览文件的访问权限'
+                    break
+                case 404:
+                    message = '预览文件不存在'
+                    break
+                default:
+                    message = '服务异常，请稍后重试'
+            }
+            document.writeln(
+                '<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">'
+                + '<img src="/ui/'
+                + status
+                + '.png" />'
+                + '<p style="font-size: 20px; color: #979797; margin: 32px 0;">'
+                + message
+                + '</p>'
+                + '</div>'
+            )
         }
     </script>
 </body>

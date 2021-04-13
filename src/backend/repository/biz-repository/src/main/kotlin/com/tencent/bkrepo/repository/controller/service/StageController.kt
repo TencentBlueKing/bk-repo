@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.StageClient
-import com.tencent.bkrepo.repository.service.StageService
+import com.tencent.bkrepo.repository.service.packages.StageService
 import org.springframework.web.bind.annotation.RestController
 
 /**

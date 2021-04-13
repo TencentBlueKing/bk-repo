@@ -155,10 +155,9 @@ class BkAuthPermissionServiceImpl constructor(
         }
 
         // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report)的仓库和节点权限
-        if ((request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE) &&
-            isDevopsRepo(request.repoName!!) &&
-            (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)
-        ) {
+        val resourceCond = request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE
+        val appIdCond = request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId
+        if (resourceCond && isDevopsRepo(request.repoName!!) && appIdCond) {
             return checkDevopsPermission(request)
         }
 

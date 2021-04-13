@@ -51,7 +51,12 @@ class BkRepoImageServiceImpl(
 ) : ImageService {
     override fun queryPublicImage(request: QueryPublicImageRequest): Page<DockerRepo> {
         with(request) {
-            return queryProjectImage(QueryProjectImageRequest(searchKey, PUBLIC_PROJECT_ID, DEFAULT_DOCKER_REPO_NAME, pageNumber, pageSize))
+            return queryProjectImage(
+                QueryProjectImageRequest(
+                    searchKey,
+                    PUBLIC_PROJECT_ID, DEFAULT_DOCKER_REPO_NAME, pageNumber, pageSize
+                )
+            )
         }
     }
 

@@ -48,7 +48,7 @@ import org.springframework.data.mongodb.core.query.where
  */
 open class NodeDeleteSupport(
     nodeBaseService: NodeBaseService
-): NodeDeleteOperation {
+) : NodeDeleteOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
 
@@ -80,5 +80,4 @@ open class NodeDeleteSupport(
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)
     }
-    
 }

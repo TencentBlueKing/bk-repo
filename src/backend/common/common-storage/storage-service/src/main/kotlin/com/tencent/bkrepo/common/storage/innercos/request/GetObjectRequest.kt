@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.storage.innercos.request
 
 import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.RANGE
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import okhttp3.RequestBody
 
 data class GetObjectRequest(
     val key: String,
@@ -47,4 +48,6 @@ data class GetObjectRequest(
             headers[RANGE] = "bytes=$rangeStartStr-$rangeEndStr"
         }
     }
+
+    override fun buildRequestBody(): RequestBody? = null
 }

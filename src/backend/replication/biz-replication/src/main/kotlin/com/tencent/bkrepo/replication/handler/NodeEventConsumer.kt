@@ -39,10 +39,9 @@ import com.tencent.bkrepo.replication.message.node.NodeDeletedMessage
 import com.tencent.bkrepo.replication.message.node.NodeMovedMessage
 import com.tencent.bkrepo.replication.message.node.NodeRenamedMessage
 import com.tencent.bkrepo.replication.message.node.NodeUpdatedMessage
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import org.springframework.context.ApplicationEventPublisher
@@ -55,7 +54,7 @@ import org.springframework.stereotype.Component
 @Component
 class NodeEventConsumer(
     private val eventPublisher: ApplicationEventPublisher
-) : AbstractHandler() {
+) : BaseHandler() {
 
     fun dealWithNodeCreateEvent(description: Map<String, Any>) {
         val request = description[NODE_REQUEST] as String
@@ -73,7 +72,7 @@ class NodeEventConsumer(
 
     fun dealWithNodeCopyEvent(description: Map<String, Any>) {
         val request = description[NODE_REQUEST] as String
-        JsonUtils.objectMapper.readValue(request, NodeCopyRequest::class.java).also {
+        JsonUtils.objectMapper.readValue(request, NodeMoveCopyRequest::class.java).also {
             eventPublisher.publishEvent(NodeCopiedMessage(it))
         }
     }
@@ -87,7 +86,7 @@ class NodeEventConsumer(
 
     fun dealWithNodeMoveEvent(description: Map<String, Any>) {
         val request = description[NODE_REQUEST] as String
-        JsonUtils.objectMapper.readValue(request, NodeMoveRequest::class.java).also {
+        JsonUtils.objectMapper.readValue(request, NodeMoveCopyRequest::class.java).also {
             eventPublisher.publishEvent(NodeMovedMessage(it))
         }
     }

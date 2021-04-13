@@ -65,7 +65,7 @@ class NodeDao : ShardingMongoDao<TNode>() {
     }
 
     companion object {
-        private fun buildRootNode(projectId: String, repoName: String): TNode {
+        fun buildRootNode(projectId: String, repoName: String): TNode {
             return TNode(
                 createdBy = StringPool.EMPTY,
                 createdDate = LocalDateTime.now(),

@@ -71,5 +71,4 @@ open class CommonQueryContext(
         }
         return null
     }
-
 }

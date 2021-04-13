@@ -54,6 +54,9 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -103,7 +106,6 @@ class RepositoryServiceTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
-        initMock()
         repositoryService.listRepo(UT_PROJECT_ID).forEach {
             repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, it.name, operator = UT_USER))
         }
@@ -373,8 +375,12 @@ class RepositoryServiceTest @Autowired constructor(
         repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
         assertNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test1"))
 
-        assertThrows<ErrorCodeException> { repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER)) }
-        assertThrows<ErrorCodeException> { repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER)) }
+        assertThrows<ErrorCodeException> {
+            repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "", operator = SYSTEM_USER))
+        }
+        assertThrows<ErrorCodeException> {
+            repositoryService.deleteRepo(RepoDeleteRequest(UT_PROJECT_ID, "test1", operator = SYSTEM_USER))
+        }
 
         assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
     }

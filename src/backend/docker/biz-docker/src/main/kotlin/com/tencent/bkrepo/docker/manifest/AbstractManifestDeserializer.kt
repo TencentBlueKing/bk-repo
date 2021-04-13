@@ -38,7 +38,7 @@ import com.tencent.bkrepo.docker.model.ManifestMetadata
 /**
  * manifest utility with each schema
  */
-abstract class AbstractManifestDeserializer {
+open class AbstractManifestDeserializer {
 
     fun populatePorts(manifestMetadata: ManifestMetadata, dockerMetadata: DockerImageMetadata) {
         dockerMetadata.config?.let {

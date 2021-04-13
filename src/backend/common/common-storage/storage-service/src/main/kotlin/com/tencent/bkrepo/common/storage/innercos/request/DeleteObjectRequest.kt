@@ -32,7 +32,10 @@
 package com.tencent.bkrepo.common.storage.innercos.request
 
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import okhttp3.RequestBody
 
 data class DeleteObjectRequest(
     val key: String
-) : CosRequest(HttpMethod.DELETE, key)
+) : CosRequest(HttpMethod.DELETE, key) {
+    override fun buildRequestBody(): RequestBody? = null
+}
