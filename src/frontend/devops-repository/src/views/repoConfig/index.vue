@@ -29,6 +29,9 @@
                             <bk-form-item :label="$t('repoAddress')">
                                 <span>{{repoAddress}}</span>
                             </bk-form-item>
+                            <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
+                                <bk-checkbox v-model="repoBaseInfo.public"></bk-checkbox>
+                            </bk-form-item>
                             <template v-if="repoType === 'rpm'">
                                 <bk-form-item :label="$t('enabledFileLists')">
                                     <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -89,6 +92,7 @@
                 repoBaseInfo: {
                     loading: false,
                     repoName: '',
+                    public: false,
                     repoType: '',
                     enabledFileLists: false,
                     repodataDepth: 0,
@@ -176,6 +180,7 @@
             },
             async saveBaseInfo () {
                 const body = {
+                    public: this.repoBaseInfo.public,
                     description: this.repoBaseInfo.description
                 }
                 if (this.repoType === 'rpm') {

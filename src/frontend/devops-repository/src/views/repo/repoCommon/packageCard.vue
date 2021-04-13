@@ -1,10 +1,13 @@
 <template>
     <div class="package-card-container flex-align-center">
-        <div class="package-card-main flex-column">
+        <div class="mr20 package-card-main flex-column">
             <div class="package-card-name flex-align-center">
                 <icon class="mr10" size="14" :name="cardIcon" />
                 {{ cardData.name }}
                 <span class="ml10 repo-tag" v-if="cardData.type === 'MAVEN'">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
+            </div>
+            <div class="ml20 package-card-description">
+                <span :title="cardData.description">{{ cardData.description }}</span>
             </div>
             <div class="package-card-data flex-align-center">
                 <div class="flex-align-center" :title="cardData.latest"><icon class="mr5" size="16" name="latest-version" />{{ cardData.latest }}</div>
@@ -46,7 +49,6 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .package-card-container {
-    height: 70px;
     padding: 5px 20px;
     border: 1px solid $borderWeightColor;
     border-radius: 5px;
@@ -59,6 +61,7 @@
         flex: 1;
         height: 100%;
         justify-content: space-around;
+        overflow: hidden;
         .package-card-name {
             color: #222222;
             font-size: 12px;
@@ -66,6 +69,15 @@
             .repo-tag {
                 font-weight: normal;
             }
+        }
+        .package-card-description {
+            margin: 5px 0;
+            font-size: 12px;
+            max-width: 800px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .package-card-data {
             color: $fontWeightColor;
