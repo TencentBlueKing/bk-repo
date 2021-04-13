@@ -119,6 +119,7 @@ import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.nio.channels.Channels
 import java.time.LocalDateTime
@@ -190,6 +191,7 @@ class RpmLocalRepository(
     private fun mark(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf): RpmVersion {
         val repodataDepth = rpmRepoConf.repodataDepth
         val repoDataPojo = XmlStrUtils.resolveRepodataUri(context.artifactInfo.getArtifactFullPath(), repodataDepth)
+
         val artifactFile = context.getArtifactFile()
         val artifactSha256 = context.getArtifactFile().getFileSha256()
         val sha1Digest = artifactFile.getInputStream().sha1()
@@ -273,10 +275,8 @@ class RpmLocalRepository(
         sha256: String?
     ) {
         val repodataUri = repoData.repoDataPath
-        logger.info(
-            "storeIndexMarkFile, repodataUri: $repodataUri, " +
-                    "repeat: $repeat, indexType: $indexType, metadata: $metadata"
-        )
+        logger.info("storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType," +
+            " metadata: $metadata")
         val artifactFile = when (repeat) {
             FULLPATH_SHA256 -> {
                 logger.warn("artifact repeat is $FULLPATH_SHA256, skip")
@@ -796,29 +796,33 @@ class RpmLocalRepository(
             val resultFile = File.createTempFile("rpm_", ".xmlStream")
             try {
                 resultFile.outputStream().use { outputStream ->
-                    var line: String? = null
-                    var firstLine = true
-                    while (reader.readLine().also { line = it } != null) {
-                        val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  ")) &&
-                                line!!.endsWith("<package type=\"rpm\">")
-                        when {
-                            isBugLine -> {
-                                outputStream.write("\n  </package>\n  <package type=\"rpm\">".toByteArray())
-                            }
-                            firstLine -> {
-                                outputStream.write(line!!.toByteArray())
-                                firstLine = false
-                            }
-                            else -> {
-                                outputStream.write("\n$line".toByteArray())
-                            }
-                        }
-                    }
+                    fixRpmXmlContent(reader, outputStream)
                 }
             } catch (e: Exception) {
                 resultFile.delete()
             }
             return resultFile
+        }
+    }
+
+    private fun fixRpmXmlContent(reader: BufferedReader, outputStream: FileOutputStream) {
+        var line: String? = null
+        var firstLine = true
+        while (reader.readLine().also { line = it } != null) {
+            val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  ")) &&
+                line!!.endsWith("<package type=\"rpm\">")
+            when {
+                isBugLine -> {
+                    outputStream.write("\n  </package>\n  <package type=\"rpm\">".toByteArray())
+                }
+                firstLine -> {
+                    outputStream.write(line!!.toByteArray())
+                    firstLine = false
+                }
+                else -> {
+                    outputStream.write("\n$line".toByteArray())
+                }
+            }
         }
     }
 

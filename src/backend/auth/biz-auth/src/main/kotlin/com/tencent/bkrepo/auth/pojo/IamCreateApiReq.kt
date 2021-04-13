@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo
 
+@Suppress("ALL")
 data class IamCreateApiReq(
     val system: String,
     val type: String,
