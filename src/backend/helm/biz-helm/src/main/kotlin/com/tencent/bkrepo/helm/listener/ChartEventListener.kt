@@ -34,6 +34,7 @@ package com.tencent.bkrepo.helm.listener
 import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
+import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.utils.HelmUtils
@@ -42,6 +43,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+import java.util.SortedSet
 
 @Component
 class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeClient) {
@@ -64,12 +66,12 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
                 uploadIndexYamlMetadata(originalIndexYamlMetadata)
                 logger.info(
                     "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
-                        "in repo [$projectId/$repoName] success!"
+                            "in repo [$projectId/$repoName] success!"
                 )
             } catch (exception: TypeCastException) {
                 logger.error(
                     "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
-                        "in repo [$projectId/$repoName] failed, message: $exception"
+                            "in repo [$projectId/$repoName] failed, message: $exception"
                 )
                 throw exception
             }
@@ -87,17 +89,21 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
                 if (chartMetadataSet.size == 1 && (version == chartMetadataSet.first().version)) {
                     it.remove(name)
                 } else {
-                    run stop@{
-                        chartMetadataSet.forEachIndexed { _, helmChartMetadata ->
-                            if (version == helmChartMetadata.version) {
-                                chartMetadataSet.remove(helmChartMetadata)
-                                return@stop
-                            }
-                        }
-                    }
+                    updateIndexYaml(version, chartMetadataSet)
                 }
             }
             return originalIndexYamlMetadata
+        }
+    }
+
+    private fun updateIndexYaml(version: String, chartMetadataSet: SortedSet<HelmChartMetadata>) {
+        run stop@{
+            chartMetadataSet.forEachIndexed { _, helmChartMetadata ->
+                if (version == helmChartMetadata.version) {
+                    chartMetadataSet.remove(helmChartMetadata)
+                    return@stop
+                }
+            }
         }
     }
 
@@ -118,12 +124,12 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
                 uploadIndexYamlMetadata(originalIndexYamlMetadata)
                 logger.info(
                     "User [$operator] fresh index.yaml for delete chart [$name] " +
-                        "in repo [$projectId/$repoName] success!"
+                            "in repo [$projectId/$repoName] success!"
                 )
             } catch (exception: TypeCastException) {
                 logger.error(
                     "User [$operator] fresh index.yaml for delete chart [$name] " +
-                        "in repo [$projectId/$repoName] failed, message: $exception"
+                            "in repo [$projectId/$repoName] failed, message: $exception"
                 )
                 throw exception
             }

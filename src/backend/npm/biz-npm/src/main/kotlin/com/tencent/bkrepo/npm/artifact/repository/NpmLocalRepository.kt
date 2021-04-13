@@ -282,7 +282,7 @@ class NpmLocalRepository(
                 }.apply {
                     logger.info(
                         "migrate npm package [$name] for version [$version] success, elapse $this ms. " +
-                            "process rate: [${++count}/$totalSize]"
+                                "process rate: [${++count}/$totalSize]"
                     )
                 }
                 packageMigrateDetail.addSuccessVersion(version)
@@ -383,29 +383,35 @@ class NpmLocalRepository(
         migrateLatest(distTags, originalDistTags, timeMap, originalTimeMap)
         logger.info(
             "the different versions of the  package [$name] is [$remoteVersionList], " +
-                "size : ${remoteVersionList.size}"
+                    "size : ${remoteVersionList.size}"
         )
-        if (remoteVersionList.isNotEmpty()) {
-            // 说明有版本更新，将新增的版本迁移过来
-            remoteVersionList.forEach { it ->
-                val versionMetadata = packageMetaData.versions.map[it]!!
-                val versionTime = timeMap.get(it)
-                // 比较两边都存在相同的版本，则比较上传时间, 如果remote版本在后面上传，则进行迁移
-                if (originalVersionSet.contains(it)) {
-                    if (TimeUtil.compareTime(timeMap.get(it), originalTimeMap.get(it))) {
-                        originalPackageMetadata.versions.map[it] = versionMetadata
-                        originalTimeMap.add(it, versionTime)
-                        distTags.getMap().entries.forEach {
-                            originalDistTags.set(it.key, it.value)
-                        }
-                    }
-                } else {
+        if (remoteVersionList.isEmpty()) return originalPackageMetadata
+        // 说明有版本更新，将新增的版本迁移过来
+        remoteVersionList.forEach { it ->
+            val versionMetadata = packageMetaData.versions.map[it]!!
+            val versionTime = timeMap.get(it)
+            // 比较两边都存在相同的版本，则比较上传时间, 如果remote版本在后面上传，则进行迁移
+            if (originalVersionSet.contains(it)) {
+                if (TimeUtil.compareTime(versionTime, originalTimeMap.get(it))) {
                     originalPackageMetadata.versions.map[it] = versionMetadata
                     originalTimeMap.add(it, versionTime)
+                    migrateDistTagsToOriginal(distTags, originalDistTags)
                 }
+            } else {
+                originalPackageMetadata.versions.map[it] = versionMetadata
+                originalTimeMap.add(it, versionTime)
             }
         }
         return originalPackageMetadata
+    }
+
+    private fun migrateDistTagsToOriginal(
+        distTags: NpmPackageMetaData.DistTags,
+        originalDistTags: NpmPackageMetaData.DistTags
+    ) {
+        distTags.getMap().entries.forEach {
+            originalDistTags.set(it.key, it.value)
+        }
     }
 
     private fun migrateDistTags(distTags: NpmPackageMetaData.DistTags, originalDistTags: NpmPackageMetaData.DistTags) {
@@ -500,7 +506,7 @@ class NpmLocalRepository(
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with version metadata [$name-$version.json] " +
-                        "is already exists in repository [$projectId/$repoName], skip migration."
+                            "is already exists in repository [$projectId/$repoName], skip migration."
                 )
                 return
             }
@@ -527,7 +533,7 @@ class NpmLocalRepository(
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with tgz file [$fullPath] is " +
-                        "already exists in repository [$projectId/$repoName], skip migration."
+                            "already exists in repository [$projectId/$repoName], skip migration."
                 )
                 return 0L
             }
@@ -584,7 +590,7 @@ class NpmLocalRepository(
                 nodeClient.deleteNode(nodeDeleteRequest)
                 logger.info(
                     "migrate package [$name] with version [$version] failed, " +
-                        "delete package version metadata [$fullPath] success."
+                            "delete package version metadata [$fullPath] success."
                 )
             }
         }
