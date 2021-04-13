@@ -92,14 +92,7 @@ class BkAuthPermissionServiceImpl constructor(
                     return checkProjectPermission(uid, projectId!!)
                 }
                 PIPELINE -> {
-                    return when (resourceType) {
-                        ResourceType.REPO -> checkProjectPermission(uid, projectId!!)
-                        ResourceType.NODE -> {
-                            val pipelineId = parsePipelineId(path!!) ?: return false
-                            checkPipelinePermission(uid, projectId!!, pipelineId)
-                        }
-                        else -> throw RuntimeException("resource type not supported: $resourceType")
-                    }
+                    return checkPipelinePermission(uid, projectId!!, path, resourceType)
                 }
                 REPORT -> {
                     return action == PermissionAction.READ || action == PermissionAction.WRITE
@@ -109,6 +102,22 @@ class BkAuthPermissionServiceImpl constructor(
                     return false
                 }
             }
+        }
+    }
+
+    private fun checkPipelinePermission(
+        uid: String,
+        projectId: String,
+        path: String?,
+        resourceType: ResourceType
+    ): Boolean {
+        return when (resourceType) {
+            ResourceType.REPO -> checkProjectPermission(uid, projectId)
+            ResourceType.NODE -> {
+                val pipelineId = parsePipelineId(path ?: return false) ?: return false
+                checkPipelinePermission(uid, projectId!!, pipelineId)
+            }
+            else -> throw RuntimeException("resource type not supported: $resourceType")
         }
     }
 
