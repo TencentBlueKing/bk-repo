@@ -140,30 +140,29 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
                 } else {
                     queryOriginalIndexYaml()
                 }
-            if (result.isNotEmpty()) {
-                val context = ArtifactQueryContext()
-                result.forEach {
-                    Thread.sleep(SLEEP_MILLIS)
-                    var chartName: String? = null
-                    var chartVersion: String? = null
-                    try {
-                        val chartMetadata = queryHelmChartMetadata(context, it)
-                        chartName = chartMetadata.name
-                        chartVersion = chartMetadata.version
-                        chartMetadata.urls = listOf(
-                            domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
-                                "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
-                            )
+            if (result.isEmpty()) return indexYamlMetadata
+            val context = ArtifactQueryContext()
+            result.forEach {
+                Thread.sleep(SLEEP_MILLIS)
+                var chartName: String? = null
+                var chartVersion: String? = null
+                try {
+                    val chartMetadata = queryHelmChartMetadata(context, it)
+                    chartName = chartMetadata.name
+                    chartVersion = chartMetadata.version
+                    chartMetadata.urls = listOf(
+                        domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
+                            "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                         )
-                        chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
-                        chartMetadata.digest = it[NODE_SHA256] as String
-                        addIndexEntries(indexYamlMetadata, chartMetadata)
-                    } catch (ex: HelmFileNotFoundException) {
-                        logger.error(
-                            "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
+                    )
+                    chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
+                    chartMetadata.digest = it[NODE_SHA256] as String
+                    addIndexEntries(indexYamlMetadata, chartMetadata)
+                } catch (ex: HelmFileNotFoundException) {
+                    logger.error(
+                        "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
                                 "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
-                        )
-                    }
+                    )
                 }
             }
             return indexYamlMetadata

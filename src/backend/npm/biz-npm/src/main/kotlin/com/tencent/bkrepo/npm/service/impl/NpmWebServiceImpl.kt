@@ -161,14 +161,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             val latest = NpmUtils.getLatestVersionFormDistTags(packageMetaData.distTags)
             if (version != latest) {
                 // 删除versions里面对应的版本
-                packageMetaData.versions.map.remove(version)
-                packageMetaData.time.getMap().remove(version)
-                val iterator = packageMetaData.distTags.getMap().entries.iterator()
-                while (iterator.hasNext()) {
-                    if (version == iterator.next().value) {
-                        iterator.remove()
-                    }
-                }
+                deleteVersion(packageMetaData)
             } else {
                 val newLatest = findNewLatest(this)
                 packageMetaData.versions.map.remove(version)
@@ -176,6 +169,17 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 packageMetaData.distTags.set(LATEST, newLatest)
             }
             reUploadPackageJsonFile(artifactInfo, packageMetaData)
+        }
+    }
+
+    private fun PackageVersionDeleteRequest.deleteVersion(packageMetaData: NpmPackageMetaData) {
+        packageMetaData.versions.map.remove(version)
+        packageMetaData.time.getMap().remove(version)
+        val iterator = packageMetaData.distTags.getMap().entries.iterator()
+        while (iterator.hasNext()) {
+            if (version == iterator.next().value) {
+                iterator.remove()
+            }
         }
     }
 
@@ -240,7 +244,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     }
 
     private fun queryPackageInfo(pkgName: String): NpmPackageMetaData {
-        pkgName.takeIf { !pkgName.isBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
+        pkgName.takeIf { pkgName.isNotBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
         val context = ArtifactQueryContext()
         context.putAttribute(NPM_FILE_FULL_PATH, NpmUtils.getPackageMetadataPath(pkgName))
         val inputStream =
