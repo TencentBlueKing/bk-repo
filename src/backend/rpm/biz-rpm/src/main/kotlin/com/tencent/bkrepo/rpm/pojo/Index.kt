@@ -31,6 +31,11 @@
 
 package com.tencent.bkrepo.rpm.pojo
 
+/**
+ * 包装查找结果
+ * [index] 索引位置
+ * [isFound] 是否找到索引
+ */
 data class Index(
     val index: Long,
     val isFound: Boolean
