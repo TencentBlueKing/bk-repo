@@ -134,5 +134,6 @@
     "permissionConfig": "权限管理",
     "noPermission": "未获得授权",
     "logout": "退出",
-    "publicRepo": "公开仓库"
+    "publicRepo": "公开仓库",
+    "publicRepoDesc": "公开的仓库将会开放下载"
 }
