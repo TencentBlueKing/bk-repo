@@ -236,7 +236,6 @@ class NpmFixToolServiceImpl(
         var successCount = 0L
         var failedCount = 0L
         var totalCount = 0L
-        // val failedSet = mutableSetOf<String>()
         val startTime = LocalDateTime.now()
 
         // 分页查询文件节点，以package.json文件为后缀
@@ -263,7 +262,7 @@ class NpmFixToolServiceImpl(
                     successCount += 1
                 } catch (exception: RuntimeException) {
                     logger.error(
-                        "Failed to to add package manager for [$packageName] in repo [$projectId/$repoName].",
+                        "Failed to add package manager for [$packageName] in repo [$projectId/$repoName].",
                         exception
                     )
                     failedSet.add(FailPackageDetail(packageName, mutableSetOf()))

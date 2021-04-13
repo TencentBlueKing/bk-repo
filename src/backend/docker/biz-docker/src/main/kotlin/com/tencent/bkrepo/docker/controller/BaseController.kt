@@ -29,45 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.docker.api
+package com.tencent.bkrepo.docker.controller
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.docker.constant.DOCKER_API_PREFIX
-import com.tencent.bkrepo.docker.constant.DOCKER_CATALOG_SUFFIX
-import com.tencent.bkrepo.docker.constant.DOCKER_PROJECT_ID
-import com.tencent.bkrepo.docker.constant.DOCKER_REPO_NAME
+import com.tencent.bkrepo.docker.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.docker.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.docker.response.DockerResponse
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
-import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.http.HttpHeaders.CONTENT_TYPE
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
 
-/**
- * docker image catalog api
- */
-@Api("docker镜像catalog相关接口")
-@RequestMapping(DOCKER_API_PREFIX)
-interface Catalog {
+@RestController
+class BaseController {
 
-    @ApiOperation("获取catalog列表")
-    @RequestMapping(method = [RequestMethod.GET], value = [DOCKER_CATALOG_SUFFIX])
-    fun list(
-        @RequestAttribute
-        userId: String,
-        @RequestParam(required = false)
-        @ApiParam(value = DOCKER_PROJECT_ID, required = false)
-        projectId: String,
-        @RequestParam(required = false)
-        @ApiParam(value = DOCKER_REPO_NAME, required = false)
-        repoName: String,
-        @RequestParam(required = false)
-        @ApiParam(value = "n", required = false)
-        n: Int?,
-        @RequestParam(required = false)
-        @ApiParam(value = "last", required = false)
-        last: String?
-
-    ): DockerResponse
+    @GetMapping(DOCKER_API_PREFIX)
+    fun ping(userId: String): DockerResponse {
+        if (userId == ANONYMOUS_USER) {
+            throw AuthenticationException()
+        }
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION).body("{}")
+    }
 }

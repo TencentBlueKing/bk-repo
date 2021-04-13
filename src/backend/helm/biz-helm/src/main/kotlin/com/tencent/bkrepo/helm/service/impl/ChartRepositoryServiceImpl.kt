@@ -94,8 +94,10 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
         with(artifactInfo) {
             if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
                 val nodeList = queryNodeList(artifactInfo, false)
-                logger.info("query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +
-                    " start generate index.yaml ... ")
+                logger.info(
+                    "query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +
+                        " start generate index.yaml ... "
+                )
                 val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
                 uploadIndexYamlMetadata(indexYamlMetadata).also {
                     logger.info("fresh the index file success in repo [$projectId/$repoName]")
@@ -133,25 +135,19 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
     ): HelmIndexYamlMetadata {
         with(artifactInfo) {
             val indexYamlMetadata =
-            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
-                HelmUtils.initIndexYamlMetadata()
-            } else {
-                queryOriginalIndexYaml()
-            }
+                if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
+                    HelmUtils.initIndexYamlMetadata()
+                } else {
+                    queryOriginalIndexYaml()
+                }
             if (result.isNotEmpty()) {
                 val context = ArtifactQueryContext()
-                result.forEach { it ->
+                result.forEach {
                     Thread.sleep(SLEEP_MILLIS)
-                    context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
                     var chartName: String? = null
                     var chartVersion: String? = null
                     try {
-                        val artifactInputStream =
-                            ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
-                        val content = artifactInputStream.use {
-                            it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
-                        }
-                        val chartMetadata = content.byteInputStream().readYamlString<HelmChartMetadata>()
+                        val chartMetadata = queryHelmChartMetadata(context, it)
                         chartName = chartMetadata.name
                         chartVersion = chartMetadata.version
                         chartMetadata.urls = listOf(
@@ -174,10 +170,17 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
         }
     }
 
-    fun addIndexEntries(
-        indexYamlMetadata: HelmIndexYamlMetadata,
-        chartMetadata: HelmChartMetadata
-    ) {
+    private fun queryHelmChartMetadata(context: ArtifactQueryContext, nodeInfo: Map<String, Any?>): HelmChartMetadata {
+        context.putAttribute(FULL_PATH, nodeInfo[NODE_FULL_PATH] as String)
+        val artifactInputStream =
+            ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
+        val content = artifactInputStream.use {
+            it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
+        }
+        return content.byteInputStream().readYamlString()
+    }
+
+    private fun addIndexEntries(indexYamlMetadata: HelmIndexYamlMetadata, chartMetadata: HelmChartMetadata) {
         val chartName = chartMetadata.name
         val chartVersion = chartMetadata.version
         val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.name)
@@ -225,8 +228,10 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         val nodeList = queryNodeList(artifactInfo, false)
-        logger.info("query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
-            ", size [${nodeList.size}], starting full refresh index.yaml ... ")
+        logger.info(
+            "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
+                ", size [${nodeList.size}], starting full refresh index.yaml ... "
+        )
         val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
         uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
     }

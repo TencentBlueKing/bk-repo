@@ -38,9 +38,8 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class FixToolController(
-    private val fixToolService: FixToolService
-) {
+class FixToolController(private val fixToolService: FixToolService) {
+
     @ApiOperation("修复package管理功能")
     @GetMapping("/ext/package/populate")
     fun fixPackageVersion(): List<PackageManagerResponse> {

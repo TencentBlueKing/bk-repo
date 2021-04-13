@@ -29,21 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.docker.resource
+package com.tencent.bkrepo.docker.controller
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import com.tencent.bkrepo.docker.api.Tag
+import com.tencent.bkrepo.docker.constant.DOCKER_TAGS_SUFFIX
 import com.tencent.bkrepo.docker.context.RequestContext
 import com.tencent.bkrepo.docker.response.DockerResponse
 import com.tencent.bkrepo.docker.service.DockerV2LocalRepoService
 import com.tencent.bkrepo.docker.util.UserUtil
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class TagImpl @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) : Tag {
+class TagController @Autowired constructor(val dockerRepo: DockerV2LocalRepoService) {
 
-    override fun list(
+    @GetMapping(DOCKER_TAGS_SUFFIX)
+    fun list(
         userId: String,
         projectId: String,
         repoName: String,
