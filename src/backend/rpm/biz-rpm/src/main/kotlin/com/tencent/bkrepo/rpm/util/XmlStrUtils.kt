@@ -256,7 +256,16 @@ object XmlStrUtils {
             index += buffer.size
             tempStr = content
         }
+        return getValidXmlIndex(prefixIndex, locationIndex, suffixIndex, locationStr, suffixStr)
+    }
 
+    private fun getValidXmlIndex(
+        prefixIndex: Long,
+        locationIndex: Long,
+        suffixIndex: Long,
+        locationStr: String,
+        suffixStr: String
+    ): XmlIndex? {
         return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
             logger.warn(
                 "findPackageIndex failed, locationStr: $locationStr, " +
