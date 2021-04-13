@@ -32,15 +32,15 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
-import com.tencent.bkrepo.rpm.pojo.*
-import com.tencent.bkrepo.rpm.util.XmlStrUtils.searchContent
+import com.tencent.bkrepo.rpm.pojo.IndexType
+import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
+import com.tencent.bkrepo.rpm.pojo.XmlIndex
+import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
-import kotlinx.coroutines.flow.merge
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.util.regex.Pattern
 
@@ -189,7 +189,7 @@ object XmlStrUtils {
     /**
      * 删除rpm包索引
      */
-    fun deletePackageXml(randomAccessFile: RandomAccessFile, xmlIndex: XmlIndex) {
+    private fun deletePackageXml(randomAccessFile: RandomAccessFile, xmlIndex: XmlIndex) {
         updatePackageXml(
             randomAccessFile,
             xmlIndex.prefixIndex,
@@ -231,16 +231,16 @@ object XmlStrUtils {
         loop@ while (randomAccessFile.read(buffer).also { len = it } > 0) {
             val content = String(buffer, 0, len)
             val mergeContent = tempStr + content
-            //只有未定位到location时 ，才查找 prefix 和 location
+            // 只有未定位到location时 ，才查找 prefix 和 location
             if (!location.isFound) {
                 prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
                 location = mergeContent.searchContent(index, locationIndex, locationStr, buffer.size)
             }
-            //在未定位到location时，prefix 保持更新
+            // 在未定位到location时，prefix 保持更新
             if (!location.isFound && prefix.isFound) {
                 prefixIndex = prefix.index
             }
-            //当定位到location时， 查找suffix
+            // 当定位到location时， 查找suffix
             if (location.isFound) {
                 locationIndex = location.index
                 suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
@@ -375,7 +375,7 @@ object XmlStrUtils {
         try {
             var memoryBuffer: ByteArrayOutputStream? = null
             // 插入点离文件末尾小于2M时使用内存缓存
-            val outputStream = if (randomAccessFile.length() - randomAccessFile.filePointer > 2 * 1024 * 1024) {
+            if (randomAccessFile.length() - randomAccessFile.filePointer > 2 * 1024 * 1024) {
                 bufferFile = createTempFile("updatePackageXml_", ".buffer")
                 if (logger.isDebugEnabled) {
                     logger.debug("create buffer file: ${bufferFile.absolutePath}")
@@ -384,9 +384,8 @@ object XmlStrUtils {
             } else {
                 memoryBuffer = ByteArrayOutputStream()
                 memoryBuffer
-            }
-            // 缓存文件后半部分
-            outputStream.use { stream ->
+            }.use { stream ->
+                // 缓存文件后半部分
                 val buffer = newBuffer()
                 var len: Int
                 while (randomAccessFile.read(buffer).also { len = it } > 0) {
@@ -400,22 +399,41 @@ object XmlStrUtils {
                 randomAccessFile.write(newContent)
             }
 
-            if (memoryBuffer != null) {
-                randomAccessFile.write(memoryBuffer.toByteArray())
-            } else {
-                bufferFile!!.inputStream().use { inputStream ->
-                    val buffer = newBuffer()
-                    var len: Int
-                    while (inputStream.read(buffer).also { len = it } > 0) {
-                        randomAccessFile.write(buffer, 0, len)
-                    }
-                }
-            }
+            addSuffixContent(randomAccessFile, memoryBuffer, bufferFile)
+//            if (memoryBuffer != null) {
+//                randomAccessFile.write(memoryBuffer.toByteArray())
+//            } else {
+//                bufferFile!!.inputStream().use { inputStream ->
+//                    val buffer = newBuffer()
+//                    var len: Int
+//                    while (inputStream.read(buffer).also { len = it } > 0) {
+//                        randomAccessFile.write(buffer, 0, len)
+//                    }
+//                }
+//            }
             randomAccessFile.setLength(randomAccessFile.filePointer)
         } finally {
             if (bufferFile != null && bufferFile.exists()) {
                 bufferFile.delete()
                 logger.debug("buffer file(${bufferFile.absolutePath}) deleted")
+            }
+        }
+    }
+
+    private fun addSuffixContent(
+        randomAccessFile: RandomAccessFile,
+        memoryBuffer: ByteArrayOutputStream?,
+        bufferFile: File?
+    ) {
+        if (memoryBuffer != null) {
+            randomAccessFile.write(memoryBuffer.toByteArray())
+        } else {
+            bufferFile!!.inputStream().use { inputStream ->
+                val buffer = newBuffer()
+                var len: Int
+                while (inputStream.read(buffer).also { len = it } > 0) {
+                    randomAccessFile.write(buffer, 0, len)
+                }
             }
         }
     }

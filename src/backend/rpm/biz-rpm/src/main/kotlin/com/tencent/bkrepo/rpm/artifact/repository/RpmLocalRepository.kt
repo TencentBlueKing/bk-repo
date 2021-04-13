@@ -198,8 +198,10 @@ class RpmLocalRepository(
 
         stopWatch.start("getRpmFormat")
         val rpmFormat = Channels.newChannel(artifactFile.getInputStream()).use { RpmFormatUtils.resolveRpmFormat(it) }
-        val rpmMetadata = RpmMetadataUtils.interpret(rpmFormat, artifactFile.getSize(), sha1Digest,
-            artifactRelativePath)
+        val rpmMetadata = RpmMetadataUtils.interpret(
+            rpmFormat, artifactFile.getSize(), sha1Digest,
+            artifactRelativePath
+        )
         stopWatch.stop()
         val rpmVersion = RpmVersion(
             rpmMetadata.packages[0].name,
@@ -726,8 +728,10 @@ class RpmLocalRepository(
             val nodeInfoPage = nodeClient.listNodePage(repo.projectId, repo.name, rpmNodePath, nodeListOption)
                 .data ?: break@loop
             if (nodeInfoPage.records.isEmpty()) break@loop
-            logger.info("populatePackage: found ${nodeInfoPage.records.size}," +
-                " totalRecords: ${nodeInfoPage.totalRecords}")
+            logger.info(
+                "populatePackage: found ${nodeInfoPage.records.size}," +
+                        " totalRecords: ${nodeInfoPage.totalRecords}"
+            )
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {
                 populatePackageByNodeInfo(nodeInfo)
