@@ -33,14 +33,17 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.UT_PROJECT_DESC
-import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_PROJECT_DISPLAY
+import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.service.repo.ProjectService
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -48,14 +51,19 @@ import org.springframework.data.mongodb.core.query.Query
 
 @DisplayName("项目服务测试")
 @DataMongoTest
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ProjectServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val projectDao: ProjectDao
 ) : ServiceBaseTest() {
 
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+    }
+
     @BeforeEach
     fun beforeEach() {
-        initMock()
         removeAllProject()
     }
 
@@ -111,11 +119,10 @@ class ProjectServiceTest @Autowired constructor(
         request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(33), UT_PROJECT_DESC, UT_USER)
         assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
-        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(32), UT_PROJECT_DESC, UT_USER)
-        projectService.createProject(request)
+        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(1), UT_PROJECT_DESC, UT_USER)
+        assertThrows<ErrorCodeException> { projectService.createProject(request) }
 
-        removeAllProject()
-        request = ProjectCreateRequest(UT_PROJECT_ID, "1", UT_PROJECT_DESC, UT_USER)
+        request = ProjectCreateRequest(UT_PROJECT_ID, "1".repeat(32), UT_PROJECT_DESC, UT_USER)
         projectService.createProject(request)
 
         removeAllProject()

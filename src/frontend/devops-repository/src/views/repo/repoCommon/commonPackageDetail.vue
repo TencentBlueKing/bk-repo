@@ -6,6 +6,9 @@
                 <span class="mb10 title" :title="pkg.name">{{ pkg.name }}
                     <span class="ml10 subtitle repo-tag" v-if="pkg.type === 'MAVEN'">{{ pkg.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
                 </span>
+                <span class="mb10 description" :title="pkg.description">
+                    {{ pkg.description }}
+                </span>
                 <div class="flex-align-center">
                     <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
                     <div class="mr50">{{ `${$t('lastModifiedDate')}: ${formatDate(pkg.lastModifiedDate)}` }}</div>
@@ -297,7 +300,6 @@
 .common-package-detail {
     height: 100%;
     .common-package-base-info {
-        height: 100px;
         .common-package-title {
             .title {
                 max-width: 500px;
@@ -312,6 +314,13 @@
                     font-size: 14px;
                     cursor: pointer;
                 }
+            }
+            .description {
+                max-width: 800px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
             }
         }
     }

@@ -27,9 +27,12 @@
                 <bk-form-item :label="$t('repoName')" :required="true" property="name">
                     <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                 </bk-form-item>
+                <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
+                    <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
+                </bk-form-item>
                 <template v-if="repoBaseInfo.type === 'rpm'">
-                    <bk-form-item :label="$t('enableFileLists')">
-                        <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                    <bk-form-item :label="$t('enabledFileLists')">
+                        <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                     </bk-form-item>
                     <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
                         <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
@@ -78,7 +81,8 @@
                 repoBaseInfo: {
                     type: 'generic',
                     name: '',
-                    enableFileLists: false,
+                    public: false,
+                    enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: ''
@@ -155,13 +159,14 @@
                         projectId: this.projectId,
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
+                        public: this.repoBaseInfo.public,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         ...(this.repoBaseInfo.type === 'rpm' ? {
                             configuration: {
                                 type: 'composite',
                                 settings: {
-                                    enableFileLists: this.repoBaseInfo.enableFileLists,
+                                    enabledFileLists: this.repoBaseInfo.enabledFileLists,
                                     repodataDepth: this.repoBaseInfo.repodataDepth,
                                     groupXmlSet: this.repoBaseInfo.groupXmlSet
                                 }

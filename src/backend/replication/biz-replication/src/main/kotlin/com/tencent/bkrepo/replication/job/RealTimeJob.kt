@@ -83,28 +83,32 @@ class RealTimeJob {
     fun run() {
         var isRunning = false
         while (true) {
-            try {
-                if (!isRunning) {
-                    container = DefaultMessageListenerContainer(template)
-                    if (source == DEFAULT_REPLICA_STREAM) {
-                        val request = getChangeStreamRequest()
-                        container.register(request, TOperateLog::class.java)
-                    } else {
-                        val request = getTailCursorRequest()
-                        container.register(request, TOperateLog::class.java)
-                    }
-                    container.start()
-                    logger.info("try to start status :[${container.isRunning}]")
+            isRunning = doJob(isRunning)
+        }
+    }
+
+    private fun doJob(isRunning: Boolean): Boolean {
+        try {
+            if (!isRunning) {
+                container = DefaultMessageListenerContainer(template)
+                if (source == DEFAULT_REPLICA_STREAM) {
+                    val request = getChangeStreamRequest()
+                    container.register(request, TOperateLog::class.java)
+                } else {
+                    val request = getTailCursorRequest()
+                    container.register(request, TOperateLog::class.java)
                 }
-            } catch (ignored: Exception) {
-                logger.error("fail to register container [${ignored.message}]")
-            } finally {
-                logger.info("container running status :[${container.isRunning}]")
-                // get container running status an sleep try
-                isRunning = container.isRunning
-                if (isRunning) return
-                Thread.sleep(retryInterVal)
+                container.start()
+                logger.info("try to start status :[${container.isRunning}]")
             }
+        } catch (ignored: Exception) {
+            logger.error("fail to register container [${ignored.message}]")
+        } finally {
+            logger.info("container running status :[${container.isRunning}]")
+            // get container running status an sleep try
+            if (container.isRunning) return true
+            Thread.sleep(retryInterVal)
+            return false
         }
     }
 

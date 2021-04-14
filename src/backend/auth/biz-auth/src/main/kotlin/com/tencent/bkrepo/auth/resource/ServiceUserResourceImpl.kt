@@ -83,6 +83,21 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun createUserToProject(request: CreateUserToProjectRequest): Response<Boolean> {
+        val userId = SecurityUtils.getUserId()
+        // check 用户权限,非匿名用户
+        if (ANONYMOUS_USER != userId) {
+            val checkRequest =
+                CheckPermissionRequest(
+                    uid = userId,
+                    resourceType = ResourceType.SYSTEM,
+                    action = PermissionAction.WRITE
+                )
+            if (!permissionService.checkPermission(checkRequest)) {
+                logger.warn("check user permission error [$checkRequest]")
+                throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
+            }
+        }
+
         userService.createUserToProject(request)
         val createRoleRequest =
             CreateRoleRequest(

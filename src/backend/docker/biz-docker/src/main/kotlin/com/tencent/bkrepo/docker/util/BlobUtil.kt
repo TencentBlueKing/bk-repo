@@ -91,7 +91,12 @@ object BlobUtil {
     }
 
     // get manifest config blob data
-    fun getManifestConfigBlob(repo: DockerArtifactRepo, filename: String, context: RequestContext, tag: String): DockerArtifact? {
+    fun getManifestConfigBlob(
+        repo: DockerArtifactRepo,
+        filename: String,
+        context: RequestContext,
+        tag: String
+    ): DockerArtifact? {
         val configPath = Joiner.on(SLASH).join(context.artifactName, tag, filename)
         // search blob by full tag path
         logger.info("search manifest config blob in: [$configPath]")

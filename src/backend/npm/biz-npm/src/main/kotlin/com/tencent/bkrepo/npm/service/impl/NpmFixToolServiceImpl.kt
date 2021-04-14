@@ -76,7 +76,10 @@ class NpmFixToolServiceImpl(
         }
         while (packageMetadataList.isNotEmpty()) {
             packageMetadataList.forEach {
-                logger.info("Retrieved ${packageMetadataList.size} records to repair, process: $totalCount/${packageMetadataPage.totalRecords}")
+                logger.info(
+                    "Retrieved ${packageMetadataList.size} records to repair, " +
+                        "process: $totalCount/${packageMetadataPage.totalRecords}"
+                )
                 val packageName = it.fullPath.removePrefix("/.npm/").removeSuffix("/package.json")
                 try {
                     // 修复metadata
@@ -126,9 +129,15 @@ class NpmFixToolServiceImpl(
         }
         if (isModify) {
             storePackageArtifact(packageJson, nodeInfo)
-            logger.info("repair package metadata for package [$packageName] success in repo [$projectId/$repoName], success versions: $successVersionList")
+            logger.info(
+                "repair package metadata for package [$packageName] success " +
+                    "in repo [$projectId/$repoName], success versions: $successVersionList"
+            )
         } else {
-            logger.info("the attribute is already exist in package metadata for package $packageName with version [$existsAttrVersionList] in repo [$projectId/$repoName], not to be repaired.")
+            logger.info(
+                "the attribute is already exist in package metadata for package $packageName " +
+                    "with version [$existsAttrVersionList] in repo [$projectId/$repoName], not to be repaired."
+            )
         }
     }
 
@@ -159,7 +168,7 @@ class NpmFixToolServiceImpl(
         val errorSet = mutableSetOf<String>()
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        pkgNameSet.forEach { it ->
+        pkgNameSet.forEach {
             try {
                 val fullPath = String.format(NPM_PKG_METADATA_FULL_PATH, it)
                 context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
@@ -168,12 +177,7 @@ class NpmFixToolServiceImpl(
                     errorSet.add(it)
                     return@forEach
                 }
-                val timeJsonObject = pkgFileInfo[TIME].asJsonObject
-                timeJsonObject.entrySet().forEach {
-                    if (!it.value.asString.contains('T')) {
-                        timeJsonObject.add(it.key, GsonUtils.gson.toJsonTree(formatDateTime(it.value.asString)))
-                    }
-                }
+                repairTimeFormat(pkgFileInfo)
                 reUploadPkgJson(pkgFileInfo)
                 successSet.add(it)
             } catch (ignored: Exception) {
@@ -181,6 +185,15 @@ class NpmFixToolServiceImpl(
             }
         }
         return DateTimeFormatResponse(successSet, errorSet)
+    }
+
+    private fun repairTimeFormat(pkgFileInfo: JsonObject) {
+        val timeJsonObject = pkgFileInfo[TIME].asJsonObject
+        timeJsonObject.entrySet().forEach {
+            if (!it.value.asString.contains('T')) {
+                timeJsonObject.add(it.key, GsonUtils.gson.toJsonTree(formatDateTime(it.value.asString)))
+            }
+        }
     }
 
     private fun reUploadPkgJson(pkgFileInfo: JsonObject) {
@@ -211,7 +224,10 @@ class NpmFixToolServiceImpl(
             return emptyList()
         }
         val npmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        logger.info("find [${npmLocalRepositoryList.size}] NPM local repository ${repositoryList.map { it.projectId to it.name }}")
+        logger.info(
+            "find [${npmLocalRepositoryList.size}] NPM local" +
+                " repository ${repositoryList.map { it.projectId to it.name }}"
+        )
         npmLocalRepositoryList.forEach {
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
             packageManagerList.add(packageManagerResponse)
@@ -224,7 +240,7 @@ class NpmFixToolServiceImpl(
         var successCount = 0L
         var failedCount = 0L
         var totalCount = 0L
-        // val failedSet = mutableSetOf<String>()
+        val failedSet = mutableSetOf<FailPackageDetail>()
         val startTime = LocalDateTime.now()
 
         // 分页查询文件节点，以package.json文件为后缀
@@ -235,27 +251,27 @@ class NpmFixToolServiceImpl(
             logger.info("no package found in repo [$projectId/$repoName], skip.")
             return PackageManagerResponse.emptyResponse(projectId, repoName)
         }
-        val failedSet: MutableSet<FailPackageDetail> = mutableSetOf()
         while (packageMetadataList.isNotEmpty()) {
-            packageMetadataList.forEach { it ->
+            packageMetadataList.forEach {
                 logger.info(
                     "Retrieved ${packageMetadataPage.totalRecords} records to add package manager " +
                         "in repo [$projectId/$repoName], process: $totalCount/${packageMetadataPage.totalRecords}"
                 )
                 val packageName = it.fullPath.removePrefix("/.npm/").removeSuffix("/package.json")
+                var failPackageDetail: FailPackageDetail? = null
                 try {
                     // 添加包管理
-                    val failPackageDetail = doAddPackageManager(projectId, repoName, packageName, it)
-                    failPackageDetail?.let { failedSet.add(it) }
+                    failPackageDetail = doAddPackageManager(projectId, repoName, packageName, it)
+//                    failPackageDetail?.let { failedSet.add(it) }
                     logger.info("Success to add package manager for [$packageName] in repo [$projectId/$repoName].")
                     successCount += 1
                 } catch (exception: RuntimeException) {
                     logger.error(
-                        "Failed to to add package manager for [$packageName] in repo [$projectId/$repoName].",
+                        "Failed to add package manager for [$packageName] in repo [$projectId/$repoName].",
                         exception
                     )
-                    failedSet.add(FailPackageDetail(packageName, mutableSetOf()))
-                    // failedSet.add(packageName)
+//                    failedSet.add(FailPackageDetail(packageName, mutableSetOf()))
+                    failedSet.add(failPackageDetail!!)
                     failedCount += 1
                 } finally {
                     totalCount += 1
@@ -267,7 +283,8 @@ class NpmFixToolServiceImpl(
         val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
         logger.info(
             "Repair npm package metadata file in repo [$projectId/$repoName], " +
-                "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+                "total: $totalCount, success: $successCount, failed: $failedCount, " +
+                "duration $durationSeconds s totally."
         )
         return PackageManagerResponse(
             projectId = projectId,

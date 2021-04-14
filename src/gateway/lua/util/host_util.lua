@@ -34,7 +34,27 @@ function _M:get_addr(service_name)
     end
 
     local ns_config = config.ns
-    local query_subdomain = config.ns.tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
+    local tag = ns_config.tag
+
+    -- router by project
+    for _, value in ipairs(config.router.project) do
+        local prefix = value.name .. "/"
+        if service_name == "generic" and stringUtil:startswith(ngx.var.path, prefix) then
+            tag = value.tag
+        end
+    end
+
+    -- router by repo
+    for _, value in pairs(config.router.project) do
+        if service_name == "generic" and ngx.var.path ~= nil then
+            local pathArray = stringUtil:split(ngx.var.path, "/")
+            if pathArray ~= nil and _G.next(pathArray) ~= nil and table.getn(pathArray) > 1 and pathArray[2] == value.name then
+                tag = value.tag
+            end
+        end
+    end
+
+    local query_subdomain = tag .. "." .. service_prefix .. service_name .. ".service." .. ns_config.domain
 
     local ips = {} -- address
     local port = nil -- port
@@ -51,7 +71,7 @@ function _M:get_addr(service_name)
 
         local dnsIps = {}
         if type(ns_config.ip) == 'table' then
-            for i, v in ipairs(ns_config.ip) do
+            for _, v in ipairs(ns_config.ip) do
                 table.insert(dnsIps, { v, ns_config.port })
             end
         else
@@ -90,7 +110,7 @@ function _M:get_addr(service_name)
             end
         end
 
-        for i, v in pairs(records) do
+        for _, v in pairs(records) do
             if v.section == dns.SECTION_AN then
                 port = v.port
             end

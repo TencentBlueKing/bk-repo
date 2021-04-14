@@ -149,7 +149,11 @@ class ChartManipulationServiceImpl(
             context.putAttribute(FULL_PATH, mutableListOf(chartFullPath, provFullPath))
             ArtifactContextHolder.getRepository().remove(context)
                 .also { publishEvent(ChartVersionDeleteEvent(this)) }
-                .also { logger.info("delete chart [$name], version: [$version] in repo [$projectId/$repoName] success.") }
+                .also {
+                    logger.info(
+                        "delete chart [$name], version: [$version] in repo [$projectId/$repoName] success."
+                    )
+                }
             // 删除包版本
             helmPackageHandler.deleteVersion(context.userId, name, version, context.artifactInfo)
         }

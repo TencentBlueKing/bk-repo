@@ -56,7 +56,9 @@ class NugetV3ClientServiceImpl(
             val packageVersionList =
                 packageClient.listVersionPage(projectId, repoName, PackageKeys.ofNuget(packageId)).data!!.records
             if (packageVersionList.isEmpty()) {
-                throw NugetException("nuget metadata not found for package [$packageId] in repo [${this.getRepoIdentify()}]")
+                throw NugetException(
+                    "nuget metadata not found for package [$packageId] in repo [${this.getRepoIdentify()}]"
+                )
             }
             val metadataList = packageVersionList.map { it.metadata }.stream()
                 .sorted { o1, o2 -> NugetVersionUtils.compareSemVer(o1["version"] as String, o2["version"] as String) }
@@ -89,7 +91,9 @@ class NugetV3ClientServiceImpl(
             val pagedResultList =
                 packageList.stream().skip(searchRequest.skip.toLong()).limit(searchRequest.take.toLong()).toList()
             if (pagedResultList.isEmpty()) return SearchResponse()
-            val searchResponseDataList = pagedResultList.map { buildSearchResponseData(it, searchRequest, v3RegistrationUrl) }
+            val searchResponseDataList = pagedResultList.map {
+                buildSearchResponseData(it, searchRequest, v3RegistrationUrl)
+            }
             return SearchResponse(packageList.size, searchResponseDataList)
         }
     }
@@ -103,8 +107,11 @@ class NugetV3ClientServiceImpl(
             val packageVersionList = packageClient.listVersionPage(projectId, repoName, key).data!!.records
             // preRelease需要处理
             val sortedPackageVersionList =
-                packageVersionList.stream().sorted { o1, o2 -> NugetVersionUtils.compareSemVer(o1.name, o2.name) }.toList()
-            return NugetV3RegistrationUtils.versionListToSearchResponse(sortedPackageVersionList, this, searchRequest, v3RegistrationUrl)
+                packageVersionList.stream()
+                    .sorted { o1, o2 -> NugetVersionUtils.compareSemVer(o1.name, o2.name) }.toList()
+            return NugetV3RegistrationUtils.versionListToSearchResponse(
+                sortedPackageVersionList, this, searchRequest, v3RegistrationUrl
+            )
         }
     }
 

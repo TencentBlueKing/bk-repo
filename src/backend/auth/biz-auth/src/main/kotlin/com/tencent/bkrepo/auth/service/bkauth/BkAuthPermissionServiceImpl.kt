@@ -72,8 +72,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.info("checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, " +
-                "repoName: $repoName, path: $path, action: $action")
+            logger.info(
+                "checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, " +
+                    "repoName: $repoName, path: $path, action: $action"
+            )
             // 网关请求不允许匿名访问
             if (appId == bkAuthConfig.bkrepoAppId && request.uid == ANONYMOUS_USER) {
                 if (request.uid == ANONYMOUS_USER) {
@@ -90,14 +92,7 @@ class BkAuthPermissionServiceImpl constructor(
                     return checkProjectPermission(uid, projectId!!)
                 }
                 PIPELINE -> {
-                    return when (resourceType) {
-                        ResourceType.REPO -> checkProjectPermission(uid, projectId!!)
-                        ResourceType.NODE -> {
-                            val pipelineId = parsePipelineId(path!!) ?: return false
-                            checkPipelinePermission(uid, projectId!!, pipelineId)
-                        }
-                        else -> throw RuntimeException("resource type not supported: $resourceType")
-                    }
+                    return checkPipelinePermission(uid, projectId!!, path, resourceType)
                 }
                 REPORT -> {
                     return action == PermissionAction.READ || action == PermissionAction.WRITE
@@ -107,6 +102,22 @@ class BkAuthPermissionServiceImpl constructor(
                     return false
                 }
             }
+        }
+    }
+
+    private fun checkPipelinePermission(
+        uid: String,
+        projectId: String,
+        path: String?,
+        resourceType: ResourceType
+    ): Boolean {
+        return when (resourceType) {
+            ResourceType.REPO -> checkProjectPermission(uid, projectId)
+            ResourceType.NODE -> {
+                val pipelineId = parsePipelineId(path ?: return false) ?: return false
+                checkPipelinePermission(uid, projectId!!, pipelineId)
+            }
+            else -> throw RuntimeException("resource type not supported: $resourceType")
         }
     }
 
@@ -128,7 +139,6 @@ class BkAuthPermissionServiceImpl constructor(
             true
         }
     }
-
 
     private fun checkProjectPermission(uid: String, projectId: String): Boolean {
         logger.info("checkProjectPermission: uid: $uid, projectId: $projectId")
@@ -154,9 +164,9 @@ class BkAuthPermissionServiceImpl constructor(
         }
 
         // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report)的仓库和节点权限
-        if ((request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE)
-            && isDevopsRepo(request.repoName!!)
-            && (request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId)) {
+        val resourceCond = request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE
+        val appIdCond = request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId
+        if (resourceCond && isDevopsRepo(request.repoName!!) && appIdCond) {
             return checkDevopsPermission(request)
         }
 

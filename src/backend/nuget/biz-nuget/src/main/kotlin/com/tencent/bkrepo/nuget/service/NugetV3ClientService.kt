@@ -14,7 +14,12 @@ interface NugetV3ClientService {
     /**
      * 根据RegistrationsBaseUrl获取registration的index metadata
      */
-    fun registration(artifactInfo: NugetArtifactInfo, packageId: String, registrationPath: String, isSemver2Endpoint: Boolean): RegistrationIndex
+    fun registration(
+        artifactInfo: NugetArtifactInfo,
+        packageId: String,
+        registrationPath: String,
+        isSemver2Endpoint: Boolean
+    ): RegistrationIndex
 
     /**
      * 下载 [packageId].[packageVersion].nupkg 包

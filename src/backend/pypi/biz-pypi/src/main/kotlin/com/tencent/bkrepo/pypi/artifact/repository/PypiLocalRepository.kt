@@ -149,11 +149,8 @@ class PypiLocalRepository(
                 packageName = name,
                 packageKey = PackageKeys.ofPypi(name),
                 packageType = PackageType.PYPI,
-                packageDescription = null,
-                packageExtension = null,
                 versionName = version,
                 size = context.getArtifactFile("content").getSize(),
-                manifestPath = null,
                 artifactPath = nodeCreateRequest.fullPath,
                 overwrite = true,
                 createdBy = context.userId
@@ -361,8 +358,10 @@ class PypiLocalRepository(
             // 查询的对应的文件节点的metadata
             val metadata = filenodeMetadata(node)
             builder.append(
-                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${node
-                    .fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
+                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${
+                    node
+                        .fullPath
+                }#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
             )
         }
         return builder.toString()
@@ -478,25 +477,13 @@ class PypiLocalRepository(
             totalCount = migrateUrl.sumTasks(simpleHrefs)
             for (e in simpleHrefs) {
                 // 每一个包所包含的文件列表
-                e.text()?.let { packageName ->
-                    val packageMigrateDetail = PackageMigrateDetail(
-                        packageName,
-                        mutableSetOf(),
-                        mutableSetOf()
-                    )
-                    "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
-                        for (fileNode in fileNodes) {
-                            threadPool.submit {
-                                migrateUpload(context, fileNode, verifiedUrl, packageName, packageMigrateDetail)
-                            }
-                        }
-                    }
-                    packageMigrateDetailList.add(packageMigrateDetail)
-                }
+                migratePackage(e, verifiedUrl, threadPool, context)
             }
         }
         threadPool.shutdown()
-        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
+        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {
+            logger.info("migrate thread pool running!")
+        }
         val end = Instant.now()
         val elapseTimeSeconds = Duration.between(start, end)
         insertMigrateData(
@@ -513,6 +500,31 @@ class PypiLocalRepository(
             elapseTimeSeconds,
             null
         )
+    }
+
+    private fun migratePackage(
+        element: Element,
+        verifiedUrl: String,
+        threadPool: ThreadPoolExecutor,
+        context: ArtifactMigrateContext
+    ): PackageMigrateDetail? {
+        // 每一个包所包含的文件列表
+        element.text()?.let { packageName ->
+            val packageMigrateDetail = PackageMigrateDetail(
+                packageName,
+                mutableSetOf(),
+                mutableSetOf()
+            )
+            "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
+                for (fileNode in fileNodes) {
+                    threadPool.submit {
+                        migrateUpload(context, fileNode, verifiedUrl, packageName, packageMigrateDetail)
+                    }
+                }
+            }
+            return packageMigrateDetail
+        }
+        return null
     }
 
     private fun insertMigrateData(
@@ -587,6 +599,7 @@ class PypiLocalRepository(
                 } else {
                     val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename, pypiInfo)
                     store(nodeCreateRequest, artifactFile, context.storageCredentials)
+                    packageMigrateDetail.successVersionList.add(pypiInfo.version)
                 }
             }
         } catch (unknownServiceException: UnknownServiceException) {
@@ -689,6 +702,7 @@ class PypiLocalRepository(
                 )
             }
         }
+
         const val pageLimitCurrent = 0
         const val pageLimitSize = 10
         const val threadAliveTime = 15L

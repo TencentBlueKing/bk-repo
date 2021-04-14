@@ -40,6 +40,7 @@ import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
 import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
@@ -58,6 +59,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     @Autowired
     private lateinit var mongoTemplate: MongoTemplate
 
+    @Value("\${sharding.count:#{null}}")
+    private val fixedShardingCount: Int? = null
+
     /**
      * 分表Field
      */
@@ -69,7 +73,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     /**
      * 分表数
      */
-    private val shardingCount: Int
+    private var shardingCount: Int = 1
 
     init {
         @Suppress("LeakingThis")
@@ -80,13 +84,12 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
         this.shardingField = fieldsWithShardingKey[0]
         this.shardingColumn = determineShardingColumn()
-
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        this.shardingCount = ShardingUtils.shardingCountFor(shardingKey.count)
+        this.shardingCount = determineShardingCount()
     }
 
     @PostConstruct
     private fun init() {
+        updateShardingCountIfNecessary()
         ensureIndex()
     }
 
@@ -129,6 +132,17 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     fun parseSequenceToCollectionName(sequence: Int): String {
         return collectionName + "_" + sequence
+    }
+
+    private fun updateShardingCountIfNecessary() {
+        if (fixedShardingCount != null) {
+            this.shardingCount = fixedShardingCount
+        }
+    }
+
+    private fun determineShardingCount(): Int {
+        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
+        return ShardingUtils.shardingCountFor(shardingKey.count)
     }
 
     private fun determineShardingColumn(): String {

@@ -42,7 +42,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class NodeEventListener : AbstractEventListener() {
+class NodeEventListener : BaseEventListener() {
 
     @Async
     @EventListener(NodeCreatedEvent::class)

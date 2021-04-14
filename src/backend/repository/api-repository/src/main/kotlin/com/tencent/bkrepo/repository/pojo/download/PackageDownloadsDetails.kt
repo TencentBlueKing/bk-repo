@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("包下载明细记录")
-data class PackageDownloadsDetails (
+data class PackageDownloadsDetails(
     @ApiModelProperty("每天下载数量, key格式为yyyy-mm-dd")
     val details: Map<String, Long>
 )

@@ -36,7 +36,6 @@ import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.V1
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
-import java.time.Instant
 
 object HelmUtils {
 

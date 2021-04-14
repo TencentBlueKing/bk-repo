@@ -47,7 +47,8 @@ const val DEFAULT_PASSWORD = "blueking"
 
 const val AUTHORIZATION = "Authorization"
 
-const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
+const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] " +
+    "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
 
 const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 
@@ -58,6 +59,8 @@ const val RANDOM_KEY_LENGTH = 30
 const val BKREPO_TICKET = "bkrepo_ticket"
 
 const val AUTH_REPO_SUFFIX = "/create/repo"
+
+const val AUTH_PROJECT_SUFFIX = "/create/project"
 
 const val AUTH_CLUSTER_PREFIX = "/api/cluster"
 

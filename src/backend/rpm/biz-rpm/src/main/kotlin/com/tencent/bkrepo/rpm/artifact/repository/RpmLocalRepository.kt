@@ -119,6 +119,7 @@ import java.io.BufferedReader
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.nio.channels.Channels
 import java.time.LocalDateTime
@@ -190,6 +191,7 @@ class RpmLocalRepository(
     private fun mark(context: ArtifactUploadContext, repeat: ArtifactRepeat, rpmRepoConf: RpmRepoConf): RpmVersion {
         val repodataDepth = rpmRepoConf.repodataDepth
         val repoDataPojo = XmlStrUtils.resolveRepodataUri(context.artifactInfo.getArtifactFullPath(), repodataDepth)
+
         val artifactFile = context.getArtifactFile()
         val artifactSha256 = context.getArtifactFile().getFileSha256()
         val sha1Digest = artifactFile.getInputStream().sha1()
@@ -198,7 +200,10 @@ class RpmLocalRepository(
 
         stopWatch.start("getRpmFormat")
         val rpmFormat = Channels.newChannel(artifactFile.getInputStream()).use { RpmFormatUtils.resolveRpmFormat(it) }
-        val rpmMetadata = RpmMetadataUtils.interpret(rpmFormat, artifactFile.getSize(), sha1Digest, artifactRelativePath)
+        val rpmMetadata = RpmMetadataUtils.interpret(
+            rpmFormat, artifactFile.getSize(), sha1Digest,
+            artifactRelativePath
+        )
         stopWatch.stop()
         val rpmVersion = RpmVersion(
             rpmMetadata.packages[0].name,
@@ -220,7 +225,9 @@ class RpmLocalRepository(
             1L
         )
         stopWatch.start("storeOthers")
-        storeIndexMarkFile(context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHERS, othersIndexData, artifactSha256)
+        storeIndexMarkFile(
+            context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHERS, othersIndexData, artifactSha256
+        )
         stopWatch.stop()
         if (rpmRepoConf.enabledFileLists) {
             val fileListsIndexData = RpmMetadataFileList(
@@ -235,14 +242,20 @@ class RpmLocalRepository(
                 1L
             )
             stopWatch.start("storeFilelists")
-            storeIndexMarkFile(context, repoDataPojo, repeat, markFileMatedata, IndexType.FILELISTS, fileListsIndexData, artifactSha256)
+            storeIndexMarkFile(
+                context, repoDataPojo, repeat, markFileMatedata,
+                IndexType.FILELISTS, fileListsIndexData, artifactSha256
+            )
             stopWatch.stop()
         }
 
         rpmMetadata.filterRpmFileLists()
         rpmMetadata.packages[0].format.changeLogs.clear()
         stopWatch.start("storePrimary")
-        storeIndexMarkFile(context, repoDataPojo, repeat, markFileMatedata, IndexType.PRIMARY, rpmMetadata, artifactSha256)
+        storeIndexMarkFile(
+            context, repoDataPojo, repeat, markFileMatedata,
+            IndexType.PRIMARY, rpmMetadata, artifactSha256
+        )
         stopWatch.stop()
         if (logger.isDebugEnabled) {
             logger.debug("markStat: $stopWatch")
@@ -264,14 +277,17 @@ class RpmLocalRepository(
         sha256: String?
     ) {
         val repodataUri = repoData.repoDataPath
-        logger.info("storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType, metadata: $metadata")
+        logger.info("storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType," +
+            " metadata: $metadata")
         val artifactFile = when (repeat) {
             FULLPATH_SHA256 -> {
                 logger.warn("artifact repeat is $FULLPATH_SHA256, skip")
                 return
             }
             NONE, FULLPATH -> {
-                ArtifactFileFactory.build(ByteArrayInputStream(XmlStrUtils.toMarkFileXml(rpmXmlMetadata!!, indexType).toByteArray()))
+                ArtifactFileFactory.build(
+                    ByteArrayInputStream(XmlStrUtils.toMarkFileXml(rpmXmlMetadata!!, indexType).toByteArray())
+                )
             }
             else -> {
                 ArtifactFileFactory.build(ByteArrayInputStream("mark".toByteArray()))
@@ -579,14 +595,17 @@ class RpmLocalRepository(
 
         // 更新 primary, others
         storeIndexMarkFile(
-            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY, null, artifactSha256
+            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.PRIMARY,
+            null, artifactSha256
         )
         storeIndexMarkFile(
-            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS, null, artifactSha256
+            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS,
+            null, artifactSha256
         )
         if (rpmRepoConf.enabledFileLists) {
             storeIndexMarkFile(
-                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS, null, artifactSha256
+                context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.FILELISTS,
+                null, artifactSha256
             )
         }
 
@@ -706,10 +725,13 @@ class RpmLocalRepository(
                 deep = false,
                 sort = false
             )
-            val nodeInfoPage = nodeClient.listNodePage(repo.projectId, repo.name, rpmNodePath, nodeListOption).data
-                ?: break@loop
+            val nodeInfoPage = nodeClient.listNodePage(repo.projectId, repo.name, rpmNodePath, nodeListOption)
+                .data ?: break@loop
             if (nodeInfoPage.records.isEmpty()) break@loop
-            logger.info("populatePackage: found ${nodeInfoPage.records.size} , totalRecords: ${nodeInfoPage.totalRecords}")
+            logger.info(
+                "populatePackage: found ${nodeInfoPage.records.size}," +
+                        " totalRecords: ${nodeInfoPage.totalRecords}"
+            )
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {
                 populatePackageByNodeInfo(nodeInfo)
@@ -778,29 +800,33 @@ class RpmLocalRepository(
             val resultFile = File.createTempFile("rpm_", ".xmlStream")
             try {
                 resultFile.outputStream().use { outputStream ->
-                    var line: String? = null
-                    var firstLine = true
-                    while (reader.readLine().also { line = it } != null) {
-                        val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  "))
-                            && line!!.endsWith("<package type=\"rpm\">")
-                        when {
-                            isBugLine -> {
-                                outputStream.write("\n  </package>\n  <package type=\"rpm\">".toByteArray())
-                            }
-                            firstLine -> {
-                                outputStream.write(line!!.toByteArray())
-                                firstLine = false
-                            }
-                            else -> {
-                                outputStream.write("\n$line".toByteArray())
-                            }
-                        }
-                    }
+                    fixRpmXmlContent(reader, outputStream)
                 }
             } catch (e: Exception) {
                 resultFile.delete()
             }
             return resultFile
+        }
+    }
+
+    private fun fixRpmXmlContent(reader: BufferedReader, outputStream: FileOutputStream) {
+        var line: String? = null
+        var firstLine = true
+        while (reader.readLine().also { line = it } != null) {
+            val isBugLine = (line!!.startsWith("  </package  ") || line!!.startsWith("  </packa  ")) &&
+                line!!.endsWith("<package type=\"rpm\">")
+            when {
+                isBugLine -> {
+                    outputStream.write("\n  </package>\n  <package type=\"rpm\">".toByteArray())
+                }
+                firstLine -> {
+                    outputStream.write(line!!.toByteArray())
+                    firstLine = false
+                }
+                else -> {
+                    outputStream.write("\n$line".toByteArray())
+                }
+            }
         }
     }
 
@@ -814,7 +840,8 @@ class RpmLocalRepository(
             return
         }
         logger.info("find primary index: ${indexNode.fullPath}")
-        val originXmlFile = storageService.load(indexNode.sha256!!, Range.full(indexNode.size), null)!!.use { it.unGzipInputStream() }
+        val originXmlFile = storageService.load(indexNode.sha256!!, Range.full(indexNode.size), null)!!
+            .use { it.unGzipInputStream() }
         logger.info("originIndexMd5: ${originXmlFile.md5()}")
         try {
             val fixedXmlFile = fixRpmXml(originXmlFile)

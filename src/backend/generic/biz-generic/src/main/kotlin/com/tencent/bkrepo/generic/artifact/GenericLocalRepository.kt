@@ -70,7 +70,9 @@ class GenericLocalRepository : LocalRepository() {
         super.onDownloadBefore(context)
         val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW) ||
             context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
-        context.useDisposition = !preview
+        if (preview) {
+            context.useDisposition = false
+        }
     }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
@@ -183,21 +185,24 @@ class GenericLocalRepository : LocalRepository() {
         }
         // case sensitive, base64 metadata
         // format X-BKREPO-META: base64(a=1&b=2)
-        request.getHeader(BKREPO_META)?.let {
-            try {
-                val metadataUrl = String(Base64.getDecoder().decode(it))
-                val parts = metadataUrl.split(CharPool.AND)
-                parts.forEach { part ->
-                    val pair = part.trim().split(CharPool.EQUAL, limit = 2)
-                    if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                        val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
-                        val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
-                        metadata[key] = value
-                    }
+        request.getHeader(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
+        return metadata
+    }
+
+    private fun decodeMetadata(header: String): Map<String, String> {
+        val metadata = mutableMapOf<String, String>()
+        try {
+            val metadataUrl = String(Base64.getDecoder().decode(header))
+            metadataUrl.split(CharPool.AND).forEach { part ->
+                val pair = part.trim().split(CharPool.EQUAL, limit = 2)
+                if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
+                    val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
+                    val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
+                    metadata[key] = value
                 }
-            } catch (exception: IllegalArgumentException) {
-                logger.warn("$it is not in valid Base64 scheme.")
             }
+        } catch (exception: IllegalArgumentException) {
+            logger.warn("$header is not in valid Base64 scheme.")
         }
         return metadata
     }

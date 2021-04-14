@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
-import com.tencent.bkrepo.repository.service.StorageCredentialService
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -54,6 +54,8 @@ class FileReferenceCleanupJob(
     private val storageCredentialService: StorageCredentialService
 ) {
 
+    private val mongoTemplate = fileReferenceDao.determineMongoTemplate()
+
     @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次
     @SchedulerLock(name = "FileReferenceCleanupJob", lockAtMostFor = "PT6H")
     fun cleanup() {
@@ -64,31 +66,12 @@ class FileReferenceCleanupJob(
         var fileMissingCount = 0L
         val storageCredentialsMap = mutableMapOf<String, StorageCredentials>()
         val startTimeMillis = System.currentTimeMillis()
-        val query = Query.query(TFileReference::count.isEqualTo(0))
-        val mongoTemplate = fileReferenceDao.determineMongoTemplate()
         for (sequence in 0 until SHARDING_COUNT) {
-            val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
-            val zeroReferenceList = mongoTemplate.find(query, TFileReference::class.java, collectionName)
-            zeroReferenceList.forEach {
-                val storageCredentials = it.credentialsKey?.let { key ->
-                    storageCredentialsMap[key] ?: run {
-                        storageCredentialService.findByKey(key)!!.apply { storageCredentialsMap[key] = this }
-                    }
-                }
-                try {
-                    if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
-                        storageService.delete(it.sha256, storageCredentials)
-                        cleanupCount += 1
-                    } else {
-                        logger.warn("File[${it.sha256}] is missing on [$storageCredentials], skip cleaning up.")
-                        fileMissingCount += 1
-                    }
-                    fileReferenceDao.determineMongoTemplate().remove(it, collectionName)
-                } catch (ignored: Exception) {
-                    logger.error("Failed to delete file[${it.sha256}] on [$storageCredentials].", ignored)
-                    failedCount += 1
-                }
-                totalCount += 1
+            handleCollection(sequence, storageCredentialsMap).let {
+                totalCount = it.totalCount
+                cleanupCount = it.cleanupCount
+                failedCount = it.failedCount
+                fileMissingCount = it.fileMissingCount
             }
         }
         val elapseTimeMillis = System.currentTimeMillis() - startTimeMillis
@@ -97,6 +80,48 @@ class FileReferenceCleanupJob(
                 "file missing[$fileMissingCount], elapse [$elapseTimeMillis] ms totally."
         )
     }
+
+    private fun handleCollection(sequence: Int, cacheMap: MutableMap<String, StorageCredentials>): CleanupResult {
+        val result = CleanupResult()
+        val query = Query.query(TFileReference::count.isEqualTo(0))
+        val collectionName = fileReferenceDao.parseSequenceToCollectionName(sequence)
+        val zeroReferenceList = mongoTemplate.find(query, TFileReference::class.java, collectionName)
+        zeroReferenceList.forEach {
+            val storageCredentials = getCredentials(it.credentialsKey, cacheMap)
+            try {
+                if (it.sha256.isNotBlank() && storageService.exist(it.sha256, storageCredentials)) {
+                    storageService.delete(it.sha256, storageCredentials)
+                    result.cleanupCount += 1
+                } else {
+                    result.fileMissingCount += 1
+                    logger.warn("File[${it.sha256}] is missing on [$storageCredentials], skip cleaning up.")
+                }
+                mongoTemplate.remove(it, collectionName)
+            } catch (ignored: Exception) {
+                result.failedCount += 1
+                logger.error("Failed to delete file[${it.sha256}] on [$storageCredentials].", ignored)
+            }
+            result.totalCount += 1
+        }
+
+        return result
+    }
+
+    private fun getCredentials(key: String?, cacheMap: MutableMap<String, StorageCredentials>): StorageCredentials? {
+        return key?.let {
+            if (cacheMap[it] == null) {
+                storageCredentialService.findByKey(key)!!.apply { cacheMap[it] = this }
+            }
+            cacheMap[it]
+        }
+    }
+
+    data class CleanupResult(
+        var totalCount: Long = 0L,
+        var cleanupCount: Long = 0L,
+        var failedCount: Long = 0L,
+        var fileMissingCount: Long = 0L
+    )
 
     companion object {
         private val logger = LoggerHolder.jobLogger

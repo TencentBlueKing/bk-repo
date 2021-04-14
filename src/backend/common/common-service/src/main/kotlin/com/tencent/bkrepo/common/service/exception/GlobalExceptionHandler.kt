@@ -36,6 +36,8 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpMediaTypeNotSupportedException
 import org.springframework.web.HttpRequestMethodNotSupportedException
@@ -47,7 +49,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 /**
  * 全局统一异常处理
  */
-@Suppress("ThrowableNotThrown")
+@Order(Ordered.LOWEST_PRECEDENCE)
 @RestControllerAdvice
 class GlobalExceptionHandler : AbstractExceptionHandler() {
 

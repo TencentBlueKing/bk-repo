@@ -64,7 +64,10 @@ class NpmVirtualRepository : VirtualRepository() {
                     list.addAll(map as List<NpmSearchInfoMap>)
                 }
             } catch (exception: Exception) {
-                logger.error("list Artifact[${context.artifactInfo}] from Repository[$repoIdentify] failed: ${exception.message}")
+                logger.error(
+                    "list Artifact[${context.artifactInfo}] " +
+                        "from Repository[$repoIdentify] failed: ${exception.message}"
+                )
             }
         }
         return list.subList(0, searchRequest.size)

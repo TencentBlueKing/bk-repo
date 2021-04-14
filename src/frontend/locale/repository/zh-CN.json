@@ -128,10 +128,12 @@
     "expired": "已过期",
     "deleteTokenTitle": "确认删除Token?",
     "versionPlacehodler": "支持前缀搜索版本",
-    "enableFileLists": "启用FileLists",
+    "enabledFileLists": "启用FileLists",
     "repodataDepth": "索引目录深度",
     "groupXmlSet": "分组文件名",
     "permissionConfig": "权限管理",
     "noPermission": "未获得授权",
-    "logout": "退出"
+    "logout": "退出",
+    "publicRepo": "公开仓库",
+    "publicRepoDesc": "公开的仓库将会开放下载"
 }

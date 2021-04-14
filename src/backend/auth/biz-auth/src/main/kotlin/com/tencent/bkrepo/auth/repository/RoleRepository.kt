@@ -41,8 +41,13 @@ interface RoleRepository : MongoRepository<TRole, String> {
     fun findByTypeAndProjectId(type: RoleType, projectId: String): List<TRole>
     fun findByProjectIdAndRepoNameAndType(projectId: String, repoName: String, type: RoleType): List<TRole>
     fun findFirstByRoleIdAndProjectId(roleId: String, projectId: String): TRole?
-    fun findFirstById(Id: String): TRole?
-    fun findFirstByIdAndProjectIdAndType(Id: String, projectId: String, type: RoleType): TRole?
-    fun findFirstByRoleIdAndProjectIdAndRepoName(RoleId: String, projectId: String, repoName: String): TRole?
-    fun findFirstByIdAndProjectIdAndTypeAndRepoName(Id: String, projectId: String, type: RoleType, repoName: String): TRole?
+    fun findFirstById(id: String): TRole?
+    fun findFirstByIdAndProjectIdAndType(id: String, projectId: String, type: RoleType): TRole?
+    fun findFirstByRoleIdAndProjectIdAndRepoName(roleId: String, projectId: String, repoName: String): TRole?
+    fun findFirstByIdAndProjectIdAndTypeAndRepoName(
+        id: String,
+        projectId: String,
+        type: RoleType,
+        repoName: String
+    ): TRole?
 }

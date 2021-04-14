@@ -41,7 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
-abstract class AbstractNpmService {
+open class AbstractNpmService {
 
     @Autowired
     lateinit var nodeClient: NodeClient

@@ -101,7 +101,7 @@ class NpmPackageMetaData : Serializable {
         return this.other
     }
 
-    class Users() : Serializable {
+    class Users : Serializable {
         private var users: MutableMap<String, Any> = mutableMapOf()
 
         @JsonAnySetter
@@ -115,7 +115,7 @@ class NpmPackageMetaData : Serializable {
         }
     }
 
-    class Time() : Serializable {
+    class Time : Serializable {
         private var versions: MutableMap<String, String> = mutableMapOf()
 
         @JsonAnySetter
@@ -154,11 +154,11 @@ class NpmPackageMetaData : Serializable {
         }
     }
 
-    class Versions() : Serializable {
+    class Versions : Serializable {
         var map: MutableMap<String, NpmVersionMetadata> = mutableMapOf()
     }
 
-    class DistTags() : Serializable {
+    class DistTags : Serializable {
         private val tags: MutableMap<String, String> = mutableMapOf()
 
         @JsonAnySetter

@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.helm.utils
 
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.helm.constants.CHART_YAML
 import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
-import org.slf4j.LoggerFactory
 import java.io.InputStream
 import java.util.zip.GZIPInputStream
 
 object DecompressUtil {
-    private val logger = LoggerFactory.getLogger(DecompressUtil::class.java)
     private const val BUFFER_SIZE = 2048
     private const val FILE_NAME = CHART_YAML
 
@@ -82,23 +82,24 @@ object DecompressUtil {
     }
 
     private fun getArchiversContent(archiveInputStream: ArchiveInputStream): String {
-        val stringBuilder = StringBuffer()
+        var zipEntry: ArchiveEntry
         archiveInputStream.use { it ->
-            try {
-                var nextEntry: ArchiveEntry
-                while (it.nextEntry.also { nextEntry = it } != null) {
-                    if ((!nextEntry.isDirectory) && nextEntry.name.split("/").let { it.size == 2 && it.last() == FILE_NAME }) {
-                        var length: Int
-                        val bytes = ByteArray(BUFFER_SIZE)
-                        while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
-                            stringBuilder.append(String(bytes, 0, length))
-                        }
-                        return stringBuilder.toString()
-                    }
+            while (it.nextEntry.also { zipEntry = it } != null) {
+                val entryList = zipEntry.name.split("/")
+                if ((!zipEntry.isDirectory) && entryList.last() == FILE_NAME && entryList.size == 2) {
+                    return parseStream(it)
                 }
-            } catch (ise: IllegalStateException) {
-                logger.error("get archivers content error : ${ise.message}")
             }
+        }
+        throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "Can not find $FILE_NAME")
+    }
+
+    private fun parseStream(archiveInputStream: ArchiveInputStream): String {
+        val stringBuilder = StringBuffer()
+        var length: Int
+        val bytes = ByteArray(BUFFER_SIZE)
+        while ((archiveInputStream.read(bytes).also { length = it }) != -1) {
+            stringBuilder.append(String(bytes, 0, length))
         }
         return stringBuilder.toString()
     }

@@ -51,7 +51,12 @@ class NpmDependentHandler {
     private lateinit var moduleDepsService: ModuleDepsService
 
     @Async
-    fun updatePackageDependents(userId: String, artifactInfo: ArtifactInfo, npmPackageMetaData: NpmPackageMetaData, action: NpmOperationAction) {
+    fun updatePackageDependents(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        npmPackageMetaData: NpmPackageMetaData,
+        action: NpmOperationAction
+    ) {
         val latestVersion = NpmUtils.getLatestVersionFormDistTags(npmPackageMetaData.distTags)
         val versionMetaData = npmPackageMetaData.versions.map[latestVersion]!!
 
@@ -71,7 +76,11 @@ class NpmDependentHandler {
         }
     }
 
-    private fun doDependentWithPublish(userId: String, artifactInfo: ArtifactInfo, versionMetaData: NpmVersionMetadata) {
+    private fun doDependentWithPublish(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        versionMetaData: NpmVersionMetadata
+    ) {
         val name = versionMetaData.name!!
 
         versionMetaData.dependencies?.let { it ->
@@ -98,7 +107,11 @@ class NpmDependentHandler {
         }
     }
 
-    private fun doDependentWithUnPublish(userId: String, artifactInfo: ArtifactInfo, versionMetaData: NpmVersionMetadata) {
+    private fun doDependentWithUnPublish(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        versionMetaData: NpmVersionMetadata
+    ) {
         val name = versionMetaData.name!!
         moduleDepsService.deleteAllByName(
             DepsDeleteRequest(

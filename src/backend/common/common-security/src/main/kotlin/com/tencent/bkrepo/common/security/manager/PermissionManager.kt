@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory
 /**
  * 权限管理类
  */
-class PermissionManager(
+open class PermissionManager(
     private val repositoryClient: RepositoryClient,
     private val permissionResource: ServicePermissionResource,
     private val userResource: ServiceUserResource,
@@ -63,7 +63,7 @@ class PermissionManager(
      * @param action 动作
      * @param projectId 项目id
      */
-    fun checkProjectPermission(
+    open fun checkProjectPermission(
         action: PermissionAction,
         projectId: String
     ) {
@@ -76,7 +76,7 @@ class PermissionManager(
      * @param projectId 项目id
      * @param repoName 仓库名称
      */
-    fun checkRepoPermission(
+    open fun checkRepoPermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
@@ -96,7 +96,7 @@ class PermissionManager(
      * @param path 节点路径
      * @param public 仓库是否为public
      */
-    fun checkNodePermission(
+    open fun checkNodePermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
@@ -119,7 +119,7 @@ class PermissionManager(
             return
         }
         val platformId = SecurityUtils.getPlatformId()
-        checkAnonymous(userId, SecurityUtils.getPlatformId())
+        checkAnonymous(userId, platformId)
 
         if (principalType == PrincipalType.ADMIN) {
             if (!isAdminUser(userId)) {
@@ -188,7 +188,7 @@ class PermissionManager(
             action = action,
             projectId = projectId,
             repoName = repoName,
-            path =  path
+            path = path
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误

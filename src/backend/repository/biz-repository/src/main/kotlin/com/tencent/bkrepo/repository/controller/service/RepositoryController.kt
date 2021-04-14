@@ -41,7 +41,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import com.tencent.bkrepo.repository.service.RepositoryService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.springframework.web.bind.annotation.RestController
 
 /**

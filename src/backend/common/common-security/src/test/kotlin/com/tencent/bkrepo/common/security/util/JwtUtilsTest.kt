@@ -41,6 +41,9 @@ import java.time.Duration
 @DisplayName("JwtUtils工具类测试")
 internal class JwtUtilsTest {
 
+    private val signingKey = JwtUtils.createSigningKey("key")
+    private val emptySigningKey = JwtUtils.createSigningKey("")
+
     @Test
     @DisplayName("测试生成jwt token")
     fun testJwtUtils() {
@@ -57,13 +60,7 @@ internal class JwtUtilsTest {
     @DisplayName("测试过期jwt auth token")
     fun testJwtTokenWithPositiveExpiration() {
         val expiration = Duration.ofSeconds(1)
-        val signingKey = JwtUtils.createSigningKey("")
-        val claims = mutableMapOf<String, Any>("key" to "value")
-        val token = JwtUtils.generateToken(signingKey, expiration, "Taylor", claims)
-        val jws = JwtUtils.validateToken(signingKey, token)
-        Assertions.assertEquals("value", jws.body["key"])
-        Assertions.assertEquals("Taylor", jws.body.subject)
-
+        val token = JwtUtils.generateToken(signingKey, expiration)
         Thread.sleep(2000)
         assertThrows<ExpiredJwtException> { JwtUtils.validateToken(signingKey, token) }
     }
@@ -72,14 +69,8 @@ internal class JwtUtilsTest {
     @DisplayName("测试不过期jwt auth token")
     fun testJwtTokenWithZeroExpiration() {
         val expiration = Duration.ZERO
-        val signingKey = JwtUtils.createSigningKey("")
-        val claims = mutableMapOf<String, Any>("key" to "value")
-        val token = JwtUtils.generateToken(signingKey, expiration, "Taylor", claims)
-        val jws = JwtUtils.validateToken(signingKey, token)
-        Assertions.assertEquals("value", jws.body["key"])
-        Assertions.assertEquals("Taylor", jws.body.subject)
-
-        Thread.sleep(2000)
+        val token = JwtUtils.generateToken(signingKey, expiration)
+        Thread.sleep(1000)
         JwtUtils.validateToken(signingKey, token)
     }
 
@@ -87,14 +78,8 @@ internal class JwtUtilsTest {
     @DisplayName("测试不过期jwt auth token")
     fun testJwtTokenWithNegativeExpiration() {
         val expiration = Duration.ofSeconds(-1)
-        val signingKey = JwtUtils.createSigningKey("")
-        val claims = mutableMapOf<String, Any>("key" to "value")
-        val token = JwtUtils.generateToken(signingKey, expiration, "Taylor", claims)
-        val jws = JwtUtils.validateToken(signingKey, token)
-        Assertions.assertEquals("value", jws.body["key"])
-        Assertions.assertEquals("Taylor", jws.body.subject)
-
-        Thread.sleep(2000)
+        val token = JwtUtils.generateToken(signingKey, expiration)
+        Thread.sleep(1000)
         JwtUtils.validateToken(signingKey, token)
     }
 
@@ -102,9 +87,16 @@ internal class JwtUtilsTest {
     @DisplayName("测试不带subject")
     fun testJwtTokenWithoutSubject() {
         val expiration = Duration.ofSeconds(-1)
-        val signingKey = JwtUtils.createSigningKey("")
         val token = JwtUtils.generateToken(signingKey, expiration)
         val jws = JwtUtils.validateToken(signingKey, token)
         Assertions.assertNull(jws.body.subject)
+    }
+
+    @Test
+    @DisplayName("测试使用空字符串signingKey")
+    fun testJwtTokenWithoutEmptySigningKey() {
+        val expiration = Duration.ofSeconds(-1)
+        val token = JwtUtils.generateToken(emptySigningKey, expiration)
+        JwtUtils.validateToken(emptySigningKey, token)
     }
 }

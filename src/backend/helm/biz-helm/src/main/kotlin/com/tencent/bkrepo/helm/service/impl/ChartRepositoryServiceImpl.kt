@@ -94,9 +94,14 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
         with(artifactInfo) {
             if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
                 val nodeList = queryNodeList(artifactInfo, false)
-                logger.info("query node list success, size [${nodeList.size}] in repo [$projectId/$repoName], start generate index.yaml ... ")
+                logger.info(
+                    "query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +
+                        " start generate index.yaml ... "
+                )
                 val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
-                uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("fresh the index file success in repo [$projectId/$repoName]") }
+                uploadIndexYamlMetadata(indexYamlMetadata).also {
+                    logger.info("fresh the index file success in repo [$projectId/$repoName]")
+                }
                 return
             }
 
@@ -108,12 +113,14 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
             if (nodeList.isNotEmpty()) {
                 val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
                 logger.info(
-                    "start refreshing the index file in repo [$projectId/$repoName], original index file entries size : [${indexYamlMetadata.entriesSize()}]"
+                    "start refreshing the index file in repo [$projectId/$repoName], original index file " +
+                        "entries size : [${indexYamlMetadata.entriesSize()}]"
                 )
                 indexYamlMetadata.generated = TimeFormatUtil.convertToUtcTime(now)
                 uploadIndexYamlMetadata(indexYamlMetadata).also {
                     logger.info(
-                        "refresh the index file success in repo [$projectId/$repoName], current index file entries size : [${indexYamlMetadata.entriesSize()}]"
+                        "refresh the index file success in repo [$projectId/$repoName], " +
+                            "current index file entries size : [${indexYamlMetadata.entriesSize()}]"
                     )
                 }
             }
@@ -127,49 +134,52 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
         isInit: Boolean
     ): HelmIndexYamlMetadata {
         with(artifactInfo) {
-            val indexYamlMetadata = if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
-                HelmUtils.initIndexYamlMetadata()
-            } else {
-                queryOriginalIndexYaml()
-            }
-            if (result.isNotEmpty()) {
-                val context = ArtifactQueryContext()
-                result.forEach { it ->
-                    Thread.sleep(SLEEP_MILLIS)
-                    context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
-                    var chartName: String? = null
-                    var chartVersion: String? = null
-                    try {
-                        val artifactInputStream =
-                            ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
-                        val content = artifactInputStream.use { it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION) }
-                        val chartMetadata = content.byteInputStream().readYamlString<HelmChartMetadata>()
-                        chartName = chartMetadata.name
-                        chartVersion = chartMetadata.version
-                        chartMetadata.urls = listOf(
-                            domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
-                                "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
-                            )
+            val indexYamlMetadata =
+                if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath()) || isInit) {
+                    HelmUtils.initIndexYamlMetadata()
+                } else {
+                    queryOriginalIndexYaml()
+                }
+            if (result.isEmpty()) return indexYamlMetadata
+            val context = ArtifactQueryContext()
+            result.forEach {
+                Thread.sleep(SLEEP_MILLIS)
+                var chartName: String? = null
+                var chartVersion: String? = null
+                try {
+                    val chartMetadata = queryHelmChartMetadata(context, it)
+                    chartName = chartMetadata.name
+                    chartVersion = chartMetadata.version
+                    chartMetadata.urls = listOf(
+                        domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
+                            "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                         )
-                        chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
-                        chartMetadata.digest = it[NODE_SHA256] as String
-                        addIndexEntries(indexYamlMetadata, chartMetadata)
-                    } catch (ex: HelmFileNotFoundException) {
-                        logger.error(
-                            "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
+                    )
+                    chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
+                    chartMetadata.digest = it[NODE_SHA256] as String
+                    addIndexEntries(indexYamlMetadata, chartMetadata)
+                } catch (ex: HelmFileNotFoundException) {
+                    logger.error(
+                        "generate indexFile for chart [$chartName-$chartVersion.tgz] in " +
                                 "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
-                        )
-                    }
+                    )
                 }
             }
             return indexYamlMetadata
         }
     }
 
-    fun addIndexEntries(
-        indexYamlMetadata: HelmIndexYamlMetadata,
-        chartMetadata: HelmChartMetadata
-    ) {
+    private fun queryHelmChartMetadata(context: ArtifactQueryContext, nodeInfo: Map<String, Any?>): HelmChartMetadata {
+        context.putAttribute(FULL_PATH, nodeInfo[NODE_FULL_PATH] as String)
+        val artifactInputStream =
+            ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream
+        val content = artifactInputStream.use {
+            it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
+        }
+        return content.byteInputStream().readYamlString()
+    }
+
+    private fun addIndexEntries(indexYamlMetadata: HelmIndexYamlMetadata, chartMetadata: HelmChartMetadata) {
         val chartName = chartMetadata.name
         val chartVersion = chartMetadata.version
         val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.name)
@@ -217,7 +227,10 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         val nodeList = queryNodeList(artifactInfo, false)
-        logger.info("query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}], size [${nodeList.size}], starting full refresh index.yaml ... ")
+        logger.info(
+            "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
+                ", size [${nodeList.size}], starting full refresh index.yaml ... "
+        )
         val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
         uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
     }

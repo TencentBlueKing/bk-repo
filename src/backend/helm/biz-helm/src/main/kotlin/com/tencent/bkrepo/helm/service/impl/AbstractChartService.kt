@@ -66,7 +66,7 @@ import java.time.LocalDateTime
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
-abstract class AbstractChartService {
+open class AbstractChartService {
     @Autowired
     lateinit var nodeClient: NodeClient
 

@@ -52,7 +52,7 @@ class InfluxMetricsExporter(
     private val influxDB: InfluxDB
 
     init {
-        logger.info("Initializing InfluxMetricsExporter.")
+        logger.info("Initializing InfluxMetricsExporter")
         with(influxProperties) {
             val builder = HttpClientBuilderFactory.create()
             influxDB = InfluxDBImpl(uri, userName.orEmpty(), password.orEmpty(), builder)
@@ -78,7 +78,7 @@ class InfluxMetricsExporter(
             }
             val batchPoints = BatchPoints.database(db).points(points).retentionPolicy(retentionPolicy).build()
             influxDB.write(batchPoints)
-            logger.debug("Export [${points.size}] artifact transfer points to influxdb successfully.")
+            logger.debug("Export [${points.size}] artifact transfer points to influxdb successfully")
         }
     }
 

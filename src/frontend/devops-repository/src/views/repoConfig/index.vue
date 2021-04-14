@@ -29,9 +29,12 @@
                             <bk-form-item :label="$t('repoAddress')">
                                 <span>{{repoAddress}}</span>
                             </bk-form-item>
+                            <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
+                                <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
+                            </bk-form-item>
                             <template v-if="repoType === 'rpm'">
-                                <bk-form-item :label="$t('enableFileLists')">
-                                    <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                                <bk-form-item :label="$t('enabledFileLists')">
+                                    <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
                                     <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
@@ -89,8 +92,9 @@
                 repoBaseInfo: {
                     loading: false,
                     repoName: '',
+                    public: false,
                     repoType: '',
-                    enableFileLists: false,
+                    enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: ''
@@ -176,6 +180,7 @@
             },
             async saveBaseInfo () {
                 const body = {
+                    public: this.repoBaseInfo.public,
                     description: this.repoBaseInfo.description
                 }
                 if (this.repoType === 'rpm') {
@@ -183,7 +188,7 @@
                     body.configuration = {
                         ...this.repoBaseInfo.configuration,
                         settings: {
-                            enableFileLists: this.repoBaseInfo.enableFileLists,
+                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
                             repodataDepth: this.repoBaseInfo.repodataDepth,
                             groupXmlSet: this.repoBaseInfo.groupXmlSet
                         }

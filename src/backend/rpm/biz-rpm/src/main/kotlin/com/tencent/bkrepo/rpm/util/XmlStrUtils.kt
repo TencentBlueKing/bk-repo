@@ -32,10 +32,10 @@
 package com.tencent.bkrepo.rpm.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool.DASH
-import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.pojo.RepoDataPojo
 import com.tencent.bkrepo.rpm.pojo.XmlIndex
+import com.tencent.bkrepo.rpm.pojo.Index
 import com.tencent.bkrepo.rpm.util.xStream.pojo.RpmXmlMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch
@@ -63,8 +63,16 @@ object XmlStrUtils {
     /**
      * 针对重复节点则替换相应数据
      */
-    fun updatePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String, markContent: ByteArray): Int {
-        logger.info("updatePackageIndex: indexType: $indexType, locationStr: ${locationStr.replace("\n", "")}")
+    fun updatePackageIndex(
+        randomAccessFile: RandomAccessFile,
+        indexType: IndexType,
+        locationStr: String,
+        markContent: ByteArray
+    ): Int {
+        logger.info(
+            "updatePackageIndex: indexType: $indexType, " +
+                    "locationStr: ${locationStr.replace("\n", "")}"
+        )
         val stopWatch = StopWatch("updatePackageIndex")
 
         stopWatch.start("findPackageIndex")
@@ -93,11 +101,13 @@ object XmlStrUtils {
     /**
      * 删除包对应的索引
      * [indexType] 索引类型
-     * [file] 需要删除内容的索引文件
-     * [location] rpm构件相对repodata的目录
+     * [locationStr] rpm构件相对repodata的目录
      */
     fun deletePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String): Int {
-        logger.info("deletePackageIndex: indexType: $indexType, locationStr: ${locationStr.replace("\n", "")}")
+        logger.info(
+            "deletePackageIndex: indexType: $indexType, " +
+                    "locationStr: ${locationStr.replace("\n", "")}"
+        )
 
         val stopWatch = StopWatch("deletePackageIndex")
         stopWatch.start("findIndex")
@@ -171,7 +181,7 @@ object XmlStrUtils {
     /**
      * 插入rpm包索引
      */
-    fun insertPackageXml(randomAccessFile: RandomAccessFile, newContent: ByteArray) {
+    private fun insertPackageXml(randomAccessFile: RandomAccessFile, newContent: ByteArray) {
         val insertIndex = randomAccessFile.length() - METADATA_SUFFIX.length
         updatePackageXml(randomAccessFile, insertIndex, 0, newContent)
     }
@@ -179,8 +189,13 @@ object XmlStrUtils {
     /**
      * 删除rpm包索引
      */
-    fun deletePackageXml(randomAccessFile: RandomAccessFile, xmlIndex: XmlIndex) {
-        updatePackageXml(randomAccessFile, xmlIndex.prefixIndex, xmlIndex.suffixEndIndex - xmlIndex.prefixIndex, "".toByteArray())
+    private fun deletePackageXml(randomAccessFile: RandomAccessFile, xmlIndex: XmlIndex) {
+        updatePackageXml(
+            randomAccessFile,
+            xmlIndex.prefixIndex,
+            xmlIndex.suffixEndIndex - xmlIndex.prefixIndex,
+            "".toByteArray()
+        )
     }
 
     /**
@@ -203,6 +218,10 @@ object XmlStrUtils {
         var locationIndex: Long = -1L
         var suffixIndex: Long = -1L
 
+        var prefix = Index(-1L, false)
+        var location = Index(-1L, false)
+        var suffix = Index(-1L, false)
+
         val buffer = ByteArray(locationStr.toByteArray().size)
         var len: Int
         var index: Long = 0
@@ -211,37 +230,48 @@ object XmlStrUtils {
         randomAccessFile.seek(0L)
         loop@ while (randomAccessFile.read(buffer).also { len = it } > 0) {
             val content = String(buffer, 0, len)
-            if (locationIndex < 0) {
-                val prefix = (tempStr + content).searchContent(index, prefixIndex, prefixStr, buffer.size)
-                val location = (tempStr + content).searchContent(index, locationIndex, locationStr, buffer.size)
-                if (location.isFound) {
-                    locationIndex = location.index
-                    val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
-                    if (suffix.index > locationIndex) {
-                        suffixIndex = suffix.index
-                        break@loop
-                    }
-                }
-                if (!location.isFound && prefix.isFound) {
-                    prefixIndex = prefix.index
-                }
-                if (location.isFound && prefix.isFound && prefix.index < location.index) {
-                    prefixIndex = prefix.index
-                }
+            val mergeContent = tempStr + content
+            // 只有未定位到location时 ，才查找 prefix 和 location
+            if (!location.isFound) {
+                prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
+                location = mergeContent.searchContent(index, locationIndex, locationStr, buffer.size)
             }
-            if (locationIndex > 0) {
-                val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
-                if (suffix.index > locationIndex) {
-                    suffixIndex = suffix.index
-                    break@loop
-                }
+            // 在未定位到location时，prefix 保持更新
+            if (!location.isFound && prefix.isFound) {
+                prefixIndex = prefix.index
+            }
+            // 当定位到location时， 查找suffix
+            if (location.isFound) {
+                locationIndex = location.index
+                suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
+            }
+
+            if (location.isFound && prefix.isFound && prefix.index < location.index) {
+                prefixIndex = prefix.index
+            }
+            if (suffix.isFound && suffix.index > locationIndex) {
+                suffixIndex = suffix.index
+                break@loop
             }
             index += buffer.size
             tempStr = content
         }
+        return getValidXmlIndex(prefixIndex, locationIndex, suffixIndex, locationStr, suffixStr)
+    }
 
+    private fun getValidXmlIndex(
+        prefixIndex: Long,
+        locationIndex: Long,
+        suffixIndex: Long,
+        locationStr: String,
+        suffixStr: String
+    ): XmlIndex? {
         return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
-            logger.warn("findPackageIndex failed, locationStr: $locationStr, prefixIndex: $prefixIndex, locationIndex: $locationIndex, suffixIndex: $suffixIndex")
+            logger.warn(
+                "findPackageIndex failed, locationStr: $locationStr, " +
+                        "prefixIndex: $prefixIndex, " +
+                        "locationIndex: $locationIndex, suffixIndex: $suffixIndex"
+            )
             null
         } else {
             val suffixEndIndex = suffixIndex + suffixStr.length
@@ -273,8 +303,17 @@ object XmlStrUtils {
     /**
      * 更新索引文件中 package 数量
      */
-    fun updatePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType, changCount: Int, calculatePackage: Boolean) {
-        logger.info("updatePackageCount, indexType: $indexType, changCount: $changCount, calculatePackage: $calculatePackage")
+    fun updatePackageCount(
+        randomAccessFile: RandomAccessFile,
+        indexType: IndexType,
+        changCount: Int,
+        calculatePackage: Boolean
+    ) {
+        logger.info(
+            "updatePackageCount, indexType: $indexType, " +
+                    "changCount: $changCount, " +
+                    "calculatePackage: $calculatePackage"
+        )
         val currentCount = resolvePackageCount(randomAccessFile, indexType)
         logger.info("currentCount: $currentCount")
 
@@ -292,7 +331,8 @@ object XmlStrUtils {
         val packageCountIndex = when (indexType) {
             IndexType.PRIMARY ->
                 """<?xml version="1.0" encoding="UTF-8" ?>
-<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages="""".length
+<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages=""""
+                    .length
             IndexType.FILELISTS ->
                 """<?xml version="1.0" encoding="UTF-8" ?>
 <metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="""".length
@@ -300,19 +340,33 @@ object XmlStrUtils {
                 """<?xml version="1.0" encoding="UTF-8" ?>
 <metadata xmlns="http://linux.duke.edu/metadata/other" packages="""".length
         }
-        updatePackageXml(randomAccessFile, packageCountIndex.toLong(), currentCount.toString().length.toLong(), packageCount.toString().toByteArray())
+        updatePackageXml(
+            randomAccessFile,
+            packageCountIndex.toLong(),
+            currentCount.toString().length.toLong(),
+            packageCount.toString().toByteArray()
+        )
     }
 
     /**
      * 更新索引
      * [randomAccessFile] 文件内容
-     * [index] 更新位置
+     * [updateIndex] 更新位置
      * [cleanLength] 清理长度
      * [newContent] 新内容
      */
-    fun updatePackageXml(randomAccessFile: RandomAccessFile, updateIndex: Long, cleanLength: Long, newContent: ByteArray) {
+    fun updatePackageXml(
+        randomAccessFile: RandomAccessFile,
+        updateIndex: Long,
+        cleanLength: Long,
+        newContent: ByteArray
+    ) {
         if (logger.isDebugEnabled) {
-            logger.debug("updatePackageXml: updateIndex: $updateIndex, cleanLength: $cleanLength, newContentSize: ${newContent.size}")
+            logger.debug(
+                "updatePackageXml: updateIndex: $updateIndex, " +
+                        "cleanLength: $cleanLength, " +
+                        "newContentSize: ${newContent.size}"
+            )
         }
 
         randomAccessFile.seek(updateIndex + cleanLength)
@@ -330,7 +384,7 @@ object XmlStrUtils {
         try {
             var memoryBuffer: ByteArrayOutputStream? = null
             // 插入点离文件末尾小于2M时使用内存缓存
-            val outputStream = if (randomAccessFile.length() - randomAccessFile.filePointer > 2 * 1024 * 1024) {
+            if (randomAccessFile.length() - randomAccessFile.filePointer > 2 * 1024 * 1024) {
                 bufferFile = createTempFile("updatePackageXml_", ".buffer")
                 if (logger.isDebugEnabled) {
                     logger.debug("create buffer file: ${bufferFile.absolutePath}")
@@ -339,9 +393,8 @@ object XmlStrUtils {
             } else {
                 memoryBuffer = ByteArrayOutputStream()
                 memoryBuffer
-            }
-            // 缓存文件后半部分
-            outputStream.use { stream ->
+            }.use { stream ->
+                // 缓存文件后半部分
                 val buffer = newBuffer()
                 var len: Int
                 while (randomAccessFile.read(buffer).also { len = it } > 0) {
@@ -355,22 +408,30 @@ object XmlStrUtils {
                 randomAccessFile.write(newContent)
             }
 
-            if (memoryBuffer != null) {
-                randomAccessFile.write(memoryBuffer.toByteArray())
-            } else {
-                bufferFile!!.inputStream().use { inputStream ->
-                    val buffer = newBuffer()
-                    var len: Int
-                    while (inputStream.read(buffer).also { len = it } > 0) {
-                        randomAccessFile.write(buffer, 0, len)
-                    }
-                }
-            }
+            addSuffixContent(randomAccessFile, memoryBuffer, bufferFile)
             randomAccessFile.setLength(randomAccessFile.filePointer)
         } finally {
             if (bufferFile != null && bufferFile.exists()) {
                 bufferFile.delete()
                 logger.debug("buffer file(${bufferFile.absolutePath}) deleted")
+            }
+        }
+    }
+
+    private fun addSuffixContent(
+        randomAccessFile: RandomAccessFile,
+        memoryBuffer: ByteArrayOutputStream?,
+        bufferFile: File?
+    ) {
+        if (memoryBuffer != null) {
+            randomAccessFile.write(memoryBuffer.toByteArray())
+        } else {
+            bufferFile!!.inputStream().use { inputStream ->
+                val buffer = newBuffer()
+                var len: Int
+                while (inputStream.read(buffer).also { len = it } > 0) {
+                    randomAccessFile.write(buffer, 0, len)
+                }
             }
         }
     }
@@ -414,7 +475,8 @@ object XmlStrUtils {
      */
     fun resolvePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType): Int {
         val regex = when (indexType) {
-            IndexType.PRIMARY -> """^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages="(\d+)">$"""
+            IndexType.PRIMARY -> ("""^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
+                    """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$""").trimMargin()
             IndexType.FILELISTS -> """^<metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="(\d+)">$"""
             IndexType.OTHERS -> """^<metadata xmlns="http://linux.duke.edu/metadata/other" packages="(\d+)">$"""
         }
@@ -441,7 +503,9 @@ object XmlStrUtils {
     fun toMarkFileXml(rpmXmlMetadata: RpmXmlMetadata, indexType: IndexType): String {
         val prefix = when (indexType) {
             IndexType.OTHERS -> "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"1\">\n"
-            IndexType.PRIMARY -> "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n"
+            IndexType.PRIMARY ->
+                "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" " +
+                        "xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n"
             IndexType.FILELISTS -> "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"1\">\n"
         }
         return rpmXmlMetadata.toXml().removePrefix(prefix).removeSuffix(METADATA_SUFFIX)
