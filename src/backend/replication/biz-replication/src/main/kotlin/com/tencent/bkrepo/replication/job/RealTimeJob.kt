@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.replication.job
 
+import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_LOG
 import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_SOURCE
-import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_log
 import com.tencent.bkrepo.replication.handler.NodeEventConsumer
 import com.tencent.bkrepo.replication.model.TOperateLog
 import com.tencent.bkrepo.repository.pojo.log.OperateType
@@ -91,7 +91,7 @@ class RealTimeJob {
         try {
             if (!isRunning) {
                 container = DefaultMessageListenerContainer(template)
-                if (source == DEFAULT_REPLICA_log) {
+                if (source == DEFAULT_REPLICA_LOG) {
                     val request = getTailCursorRequest()
                     container.register(request, TOperateLog::class.java)
                 } else {
