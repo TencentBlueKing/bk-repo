@@ -50,4 +50,6 @@ interface RoleRepository : MongoRepository<TRole, String> {
         type: RoleType,
         repoName: String
     ): TRole?
+
+    fun findAllByProjectIdAndUsersContains(projectId: String, userId: String): List<TRole>?
 }

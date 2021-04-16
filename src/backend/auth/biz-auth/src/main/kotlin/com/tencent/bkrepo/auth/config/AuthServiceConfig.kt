@@ -146,7 +146,11 @@ class AuthServiceConfig {
 
     @Bean
     @ConditionalOnMissingBean(RoleService::class)
-    fun roleService(roleRepository: RoleRepository) = RoleServiceImpl(roleRepository)
+    fun roleService(
+        roleRepository: RoleRepository,
+        userRepository: UserRepository,
+        mongoTemplate: MongoTemplate
+    ) = RoleServiceImpl(roleRepository, userRepository, mongoTemplate)
 
     @Bean
     @ConditionalOnMissingBean(UserService::class)

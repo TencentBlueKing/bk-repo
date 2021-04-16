@@ -39,6 +39,8 @@ import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
+import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -107,5 +109,13 @@ class ServiceRoleResourceImpl @Autowired constructor(
         repoName: String?
     ): Response<List<Role>> {
         return ResponseBuilder.success(roleService.listRoleByProject(projectId, repoName))
+    }
+
+    override fun listUserByRoleId(id: String): Response<Set<UserResult>> {
+        return ResponseBuilder.success(roleService.listUserByRoleId(id))
+    }
+
+    override fun updateRoleInfo(id: String, updateRoleRequest: UpdateRoleRequest): Response<Boolean> {
+        return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
     }
 }

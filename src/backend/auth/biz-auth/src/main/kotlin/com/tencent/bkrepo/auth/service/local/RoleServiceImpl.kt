@@ -36,13 +36,22 @@ import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
+import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.repository.RoleRepository
+import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 
 class RoleServiceImpl constructor(
-    private val roleRepository: RoleRepository
+    private val roleRepository: RoleRepository,
+    private val userRepository: UserRepository,
+    private val mongoTemplate: MongoTemplate
 ) : RoleService {
 
     override fun createRole(request: CreateRoleRequest): String? {
@@ -69,7 +78,8 @@ class RoleServiceImpl constructor(
                 name = request.name,
                 projectId = request.projectId,
                 repoName = request.repoName,
-                admin = request.admin
+                admin = request.admin,
+                description = request.description
             )
         )
         return result.id
@@ -91,6 +101,29 @@ class RoleServiceImpl constructor(
         logger.debug("get  role  detail rid : [$rid] , projectId : [$projectId], repoName: [$repoName]")
         val result = roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(rid, projectId, repoName) ?: return null
         return transfer(result)
+    }
+
+    override fun updateRoleInfo(id: String, updateRoleRequest: UpdateRoleRequest): Boolean {
+        val query = Query().addCriteria(Criteria.where(TRole::id.name).`is`(id))
+        val update = Update()
+        with(updateRoleRequest) {
+            name?.let { update.set(TRole::name.name, name) }
+            description?.let { update.set(TRole::description.name, description) }
+            userIds?.let { update.set(TRole::users.name, userIds) }
+        }
+        val record = mongoTemplate.updateFirst(query, update, TRole::class.java)
+        if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
+        return false
+    }
+
+    override fun listUserByRoleId(id: String): Set<UserResult> {
+        val userIds = roleRepository.findFirstById(id)!!.users ?: return mutableSetOf()
+        val result = mutableSetOf<UserResult>()
+        for (userId in userIds) {
+            val tUser = userRepository.findFirstByUserId(userId) ?: continue
+            result.add(UserResult(tUser.userId, tUser.name))
+        }
+        return result
     }
 
     override fun listRoleByProject(projectId: String, repoName: String?): List<Role> {
@@ -120,7 +153,9 @@ class RoleServiceImpl constructor(
             type = tRole.type,
             name = tRole.name,
             projectId = tRole.projectId,
-            admin = tRole.admin
+            admin = tRole.admin,
+            users = tRole.users,
+            description = tRole.description
         )
     }
 
