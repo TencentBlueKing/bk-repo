@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.replication.job
 
+import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_LOG
 import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_SOURCE
-import com.tencent.bkrepo.replication.config.DEFAULT_REPLICA_STREAM
 import com.tencent.bkrepo.replication.handler.NodeEventConsumer
 import com.tencent.bkrepo.replication.model.TOperateLog
 import com.tencent.bkrepo.repository.pojo.log.OperateType
@@ -68,7 +68,7 @@ class RealTimeJob {
 
     private lateinit var container: MessageListenerContainer
 
-    @Value("\${replication.source:'log'}")
+    @Value("\${replication.source:stream}")
     private var source: String = DEFAULT_REPLICA_SOURCE
 
     @Scheduled(cron = "00 */30 * * * ?")
@@ -82,8 +82,7 @@ class RealTimeJob {
     @SchedulerLock(name = "RealTimeJob", lockAtMostFor = "PT1H")
     fun run() {
         var isRunning = false
-        // TODO("这里改成isRunning暂时让代码能run起来")
-        while (isRunning) {
+        while (!isRunning) {
             isRunning = doJob(isRunning)
         }
     }
@@ -92,11 +91,11 @@ class RealTimeJob {
         try {
             if (!isRunning) {
                 container = DefaultMessageListenerContainer(template)
-                if (source == DEFAULT_REPLICA_STREAM) {
-                    val request = getChangeStreamRequest()
+                if (source == DEFAULT_REPLICA_LOG) {
+                    val request = getTailCursorRequest()
                     container.register(request, TOperateLog::class.java)
                 } else {
-                    val request = getTailCursorRequest()
+                    val request = getChangeStreamRequest()
                     container.register(request, TOperateLog::class.java)
                 }
                 container.start()
