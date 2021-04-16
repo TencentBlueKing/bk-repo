@@ -64,8 +64,8 @@ import java.util.concurrent.TimeUnit
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 class BlobReplicationController(
+    storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val storageProperties: StorageProperties,
     private val storageCredentialsClient: StorageCredentialsClient
 ) {
 
@@ -112,7 +112,7 @@ class BlobReplicationController(
 
     private fun findStorageCredentials(storageKey: String?): StorageCredentials {
         if (storageKey.isNullOrBlank()) {
-            return storageProperties.defaultStorageCredentials()
+            return defaultCredentials
         }
         return storageCredentialsClient.findByKey(storageKey).data ?: defaultCredentials
     }

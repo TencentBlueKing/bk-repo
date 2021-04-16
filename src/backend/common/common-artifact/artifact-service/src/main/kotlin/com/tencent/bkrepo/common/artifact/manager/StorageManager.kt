@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
+import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -63,7 +65,8 @@ import org.slf4j.LoggerFactory
 @Suppress("TooGenericExceptionCaught")
 class StorageManager(
     private val storageService: StorageService,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val clusterProperties: ClusterProperties
 ) {
 
     /**
@@ -99,20 +102,40 @@ class StorageManager(
         node: NodeDetail?,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
-        if (node == null || node.folder) return null
+        if (node == null || node.folder) {
+            return null
+        }
         try {
             val request = HttpContextHolder.getRequestOrNull()
             val range = request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
             if (node.size == 0L || request?.method == HttpMethod.HEAD.name) {
                 return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
             }
-            return storageService.load(node.sha256.orEmpty(), range, storageCredentials)
+            val sha256 = node.sha256.orEmpty()
+            return storageService.load(sha256, range, storageCredentials)
+                ?: loadByProxyIfNecessary(sha256, range, storageCredentials)
         } catch (exception: IllegalArgumentException) {
+            logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
                 status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
+    }
+
+    /**
+     * 通过中心节点代理拉取文件
+     */
+    private fun loadByProxyIfNecessary(
+        sha256: String,
+        range: Range,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        if (clusterProperties.role == RoleType.CENTER) {
+            return null
+        }
+        // TODO("代理拉取并保存")
+        return null
     }
 
     companion object {
