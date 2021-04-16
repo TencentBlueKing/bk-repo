@@ -48,7 +48,6 @@ open class HttpAuthSecurity {
     var anonymousEnabled: Boolean = true
     var basicAuthEnabled: Boolean = true
     var platformAuthEnabled: Boolean = true
-    var openApiAuthEnabled: Boolean = true
     var jwtAuthEnabled: Boolean = true
     var authenticationManager: AuthenticationManager? = null
     var jwtAuthProperties: JwtAuthProperties? = null
@@ -86,14 +85,6 @@ open class HttpAuthSecurity {
      */
     fun disablePlatformAuth(): HttpAuthSecurity {
         platformAuthEnabled = false
-        return this
-    }
-
-    /**
-     * 禁用OpenApi认证，默认开启
-     */
-    fun disableOpenApiAuth(): HttpAuthSecurity {
-        openApiAuthEnabled = false
         return this
     }
 

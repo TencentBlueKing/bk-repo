@@ -37,7 +37,6 @@ package com.tencent.bkrepo.common.security.constant
 const val BASIC_AUTH_PREFIX = "Basic "
 const val BASIC_AUTH_PROMPT = "Basic realm=\"Authentication Required\""
 const val PLATFORM_AUTH_PREFIX = "Platform "
-const val OPENAPI_AUTH_PREFIX = "OpenApi "
 const val BEARER_AUTH_PREFIX = "Bearer "
 const val AUTH_HEADER_UID = "X-BKREPO-UID"
 
