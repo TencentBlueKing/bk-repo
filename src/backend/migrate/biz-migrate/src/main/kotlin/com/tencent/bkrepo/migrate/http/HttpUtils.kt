@@ -29,26 +29,41 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.constant
+package com.tencent.bkrepo.migrate.http
 
-/**
- * 认证相关
- */
-const val BASIC_AUTH_PREFIX = "Basic "
-const val BASIC_AUTH_PROMPT = "Basic realm=\"Authentication Required\""
-const val PLATFORM_AUTH_PREFIX = "Platform "
-const val OPENAPI_AUTH_PREFIX = "OpenApi "
-const val BEARER_AUTH_PREFIX = "Bearer "
-const val AUTH_HEADER_UID = "X-BKREPO-UID"
+import com.tencent.bkrepo.migrate.pojo.ApiResponse
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.slf4j.LoggerFactory
 
-/**
- * micro service header user id key
- */
-const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
+object HttpUtils {
+    fun doRequest(
+        okHttpClient: OkHttpClient,
+        request: Request,
+        retry: Int = 0,
+        acceptCode: Set<Int> = setOf()
+    ): ApiResponse {
+        try {
+            val response = okHttpClient.newBuilder().build().newCall(request).execute()
+            val responseCode = response.code()
+            val responseContent = response.body()!!.string()
+            if (response.isSuccessful || acceptCode.contains(responseCode)) {
+                return ApiResponse(responseCode, responseContent)
+            }
+            logger.warn("http request failed, code: $responseCode, responseContent: $responseContent")
+        } catch (e: Exception) {
+            if (retry > 0) {
+                logger.warn("http request error, cause: ${e.message}")
+            } else {
+                logger.error("http request error", e)
+            }
+        }
+        if (retry > 0) {
+            return doRequest(okHttpClient, request, retry - 1, acceptCode)
+        } else {
+            throw RuntimeException("http request error")
+        }
+    }
 
-/**
- * micro service header security token
- */
-const val MS_AUTH_HEADER_SECURITY_TOKEN = "X-BKREPO-SECURITY-TOKEN"
-
-const val ANY_URI_PATTERN = "/**"
+    private val logger = LoggerFactory.getLogger(HttpUtils::class.java)
+}

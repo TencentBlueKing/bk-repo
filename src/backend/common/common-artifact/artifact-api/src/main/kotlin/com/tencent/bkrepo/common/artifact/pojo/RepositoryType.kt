@@ -44,7 +44,8 @@ enum class RepositoryType {
     HELM,
     COMPOSER,
     RPM,
-    NUGET;
+    NUGET,
+    MIGRATE;
 
     companion object {
         fun ofValueOrDefault(type: String): RepositoryType {

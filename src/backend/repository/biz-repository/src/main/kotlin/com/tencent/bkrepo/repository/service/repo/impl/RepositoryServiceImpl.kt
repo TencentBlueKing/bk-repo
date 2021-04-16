@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
@@ -268,7 +269,11 @@ class RepositoryServiceImpl(
         val criteria = where(TRepository::projectId).isEqualTo(projectId)
         criteria.and(TRepository::display).ne(false)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
-        repoType?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
+        if (repoType != null && repoType.isNotBlank()) {
+            criteria.and(TRepository::type).isEqualTo(repoType.toUpperCase())
+        } else {
+            criteria.and(TRepository::type).ne(RepositoryType.MIGRATE)
+        }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
     }
 

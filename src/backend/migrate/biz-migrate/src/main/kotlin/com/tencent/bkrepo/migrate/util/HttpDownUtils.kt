@@ -29,26 +29,21 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.constant
+package com.tencent.bkrepo.migrate.util
 
-/**
- * 认证相关
- */
-const val BASIC_AUTH_PREFIX = "Basic "
-const val BASIC_AUTH_PROMPT = "Basic realm=\"Authentication Required\""
-const val PLATFORM_AUTH_PREFIX = "Platform "
-const val OPENAPI_AUTH_PREFIX = "OpenApi "
-const val BEARER_AUTH_PREFIX = "Bearer "
-const val AUTH_HEADER_UID = "X-BKREPO-UID"
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
-/**
- * micro service header user id key
- */
-const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
+object HttpDownUtils {
 
-/**
- * micro service header security token
- */
-const val MS_AUTH_HEADER_SECURITY_TOKEN = "X-BKREPO-SECURITY-TOKEN"
-
-const val ANY_URI_PATTERN = "/**"
+    fun String.downloadUrlHttpClient(value: String?): InputStream {
+        val url = URL(this)
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        if (value != null) {
+            connection.setRequestProperty("Authorization", "Basic $value")
+        }
+        return connection.inputStream
+    }
+}

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.http.openapi.OpenApiAuthHandler
 import com.tencent.bkrepo.common.security.http.platform.PlatformAuthHandler
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.springframework.beans.factory.ObjectProvider
@@ -86,6 +87,9 @@ class HttpAuthSecurityConfiguration(
         }
         if (httpAuthSecurity.jwtAuthEnabled) {
             httpAuthSecurity.addHttpAuthHandler(JwtAuthHandler(jwtAuthProperties))
+        }
+        if (httpAuthSecurity.openApiAuthEnabled) {
+            httpAuthSecurity.addHttpAuthHandler(OpenApiAuthHandler(authenticationManager))
         }
     }
 }
