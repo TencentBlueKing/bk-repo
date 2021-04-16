@@ -82,7 +82,8 @@ class RealTimeJob {
     @SchedulerLock(name = "RealTimeJob", lockAtMostFor = "PT1H")
     fun run() {
         var isRunning = false
-        while (true) {
+        // TODO("这里改成isRunning暂时让代码能run起来")
+        while (isRunning) {
             isRunning = doJob(isRunning)
         }
     }

@@ -79,6 +79,12 @@ class ArtifactFileFactory(
             }
         }
 
+        fun build(multipartFile: MultipartFile, storageCredentials: StorageCredentials): ArtifactFile {
+            return MultipartArtifactFile(multipartFile, monitor, properties, storageCredentials).apply {
+                track(this)
+            }
+        }
+
         private fun getStorageCredentials(): StorageCredentials {
             return ArtifactContextHolder.getRepoDetail()?.storageCredentials ?: properties.defaultStorageCredentials()
         }
