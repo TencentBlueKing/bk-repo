@@ -197,6 +197,11 @@ open class PermissionServiceImpl constructor(
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
 
+        // check user locked
+        if (user.locked) {
+            return false
+        }
+
         // check user admin permission
         if (user.admin || !request.appId.isNullOrBlank()) return true
 
@@ -375,10 +380,10 @@ open class PermissionServiceImpl constructor(
     ): Criteria {
         val criteria = Criteria()
         var celeriac = criteria.orOperator(
-            Criteria.where(TPermission::users.name).`is`(uid),
+            Criteria.where(TPermission::users.name).`in`(uid),
             Criteria.where(TPermission::roles.name).`in`(roles)
-        ).and(TPermission::resourceType.name).`is`(resourceType.toString()).and(TPermission::users.name)
-            .`is`(action.toString())
+        ).and(TPermission::resourceType.name).`is`(resourceType.toString()).and(TPermission::actions.name)
+            .`in`(action.toString())
         if (resourceType != ResourceType.SYSTEM) {
             celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
         }
