@@ -127,11 +127,11 @@ class RoleServiceImpl constructor(
     }
 
     override fun listUserByRoleId(id: String): Set<UserResult> {
-        val userIds = userRepository.findAllByRolesIn(listOf(id))
         val result = mutableSetOf<UserResult>()
-        for (userId in userIds) {
-            val tUser = userRepository.findFirstByUserId(userId.userId) ?: continue
-            result.add(UserResult(tUser.userId, tUser.name))
+        userRepository.findAllByRolesIn(listOf(id)).let { users ->
+            for (user in users) {
+                result.add(UserResult(user.userId, user.name))
+            }
         }
         return result
     }
