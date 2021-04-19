@@ -202,22 +202,6 @@ open class PermissionServiceImpl constructor(
             return false
         }
 
-        val roles = mutableListOf<String>()
-        roles.addAll(user.roles)
-
-        val projectRoles = request.projectId?.let {
-            roleRepository.findAllByProjectIdAndType(
-                projectId = it,
-                type = RoleType.PROJECT
-            )
-        } ?: listOf()
-        for (projectRole in projectRoles) {
-            userRepository.findFirstByUserIdAndRolesIn(
-                userId = request.uid,
-                rids = listOf(projectRole.roleId)
-            )?.let { roles.add(projectRole.id!!) }
-        }
-
         // check user admin permission
         if (user.admin || !request.appId.isNullOrBlank()) return true
 
@@ -228,7 +212,7 @@ open class PermissionServiceImpl constructor(
         if (checkRepoAdmin(request, user.roles)) return true
 
         // check repo action action
-        return checkRepoAction(request, roles)
+        return checkRepoAction(request, user.roles)
     }
 
     private fun checkProjectAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
