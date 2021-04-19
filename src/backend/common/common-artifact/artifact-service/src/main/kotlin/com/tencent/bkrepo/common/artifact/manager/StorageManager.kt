@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
@@ -45,6 +46,8 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
+import com.tencent.bkrepo.replication.api.BlobReplicationClient
+import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -113,7 +116,7 @@ class StorageManager(
             }
             val sha256 = node.sha256.orEmpty()
             return storageService.load(sha256, range, storageCredentials)
-                ?: loadByProxyIfNecessary(sha256, range, storageCredentials)
+                ?: loadFromCenterIfNecessary(sha256, range, storageCredentials)
         } catch (exception: IllegalArgumentException) {
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
@@ -126,7 +129,7 @@ class StorageManager(
     /**
      * 通过中心节点代理拉取文件
      */
-    private fun loadByProxyIfNecessary(
+    private fun loadFromCenterIfNecessary(
         sha256: String,
         range: Range,
         storageCredentials: StorageCredentials?
@@ -134,7 +137,22 @@ class StorageManager(
         if (clusterProperties.role == RoleType.CENTER) {
             return null
         }
-        // TODO("代理拉取并保存")
+        return loadFromCenter(sha256, range, storageCredentials)
+    }
+
+    private fun loadFromCenter(
+        sha256: String,
+        range: Range,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        val clusterInfo = RemoteClusterInfo(
+            url = clusterProperties.center.url.orEmpty(),
+            username = clusterProperties.center.username.orEmpty(),
+            password = clusterProperties.center.password.orEmpty(),
+            certificate = clusterProperties.center.certificate.orEmpty()
+        )
+        val client = FeignClientFactory.create<BlobReplicationClient>(clusterInfo)
+//        client.pull()
         return null
     }
 

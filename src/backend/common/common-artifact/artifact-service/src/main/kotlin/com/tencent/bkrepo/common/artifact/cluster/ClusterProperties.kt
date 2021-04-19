@@ -41,7 +41,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
 data class ClusterProperties(
     var role: RoleType = RoleType.CENTER,
     @NestedConfigurationProperty
-    var center: CenterInfo
+    var center: CenterInfo = CenterInfo()
 )
 
 enum class RoleType {

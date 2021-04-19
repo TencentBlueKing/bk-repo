@@ -35,8 +35,8 @@ package com.tencent.bkrepo.common.artifact.cluster
  * 集群信息
  */
 data class CenterInfo(
-    var url: String,
-    var username: String,
-    var password: String,
+    var url: String? = null,
+    var username: String? = null,
+    var password: String? = null,
     var certificate: String? = null
 )
