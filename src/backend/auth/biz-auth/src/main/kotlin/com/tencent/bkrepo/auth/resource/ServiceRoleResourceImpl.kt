@@ -45,7 +45,9 @@ import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.RestController
+import java.lang.Exception
 
 @RestController
 class ServiceRoleResourceImpl @Autowired constructor(
@@ -115,6 +117,7 @@ class ServiceRoleResourceImpl @Autowired constructor(
         return ResponseBuilder.success(roleService.listUserByRoleId(id))
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     override fun updateRoleInfo(id: String, updateRoleRequest: UpdateRoleRequest): Response<Boolean> {
         return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
     }

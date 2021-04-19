@@ -206,13 +206,16 @@ open class PermissionServiceImpl constructor(
         roles.addAll(user.roles)
 
         val projectRoles = request.projectId?.let {
-            roleRepository.findAllByProjectIdAndUsersContains(
+            roleRepository.findAllByProjectIdAndType(
                 projectId = it,
-                userId = request.uid
+                type = RoleType.PROJECT
             )
         } ?: listOf()
         for (projectRole in projectRoles) {
-            roles.add(projectRole.id!!)
+            userRepository.findFirstByUserIdAndRolesIn(
+                userId = request.uid,
+                rids = listOf(projectRole.roleId)
+            )?.let { roles.add(projectRole.id!!) }
         }
 
         // check user admin permission

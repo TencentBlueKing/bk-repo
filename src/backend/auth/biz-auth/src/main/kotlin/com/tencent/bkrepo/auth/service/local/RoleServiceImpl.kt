@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.exception.RoleUpdateException
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -50,6 +52,7 @@ import org.springframework.data.mongodb.core.query.Update
 
 class RoleServiceImpl constructor(
     private val roleRepository: RoleRepository,
+    private val userService: UserService,
     private val userRepository: UserRepository,
     private val mongoTemplate: MongoTemplate
 ) : RoleService {
@@ -109,18 +112,25 @@ class RoleServiceImpl constructor(
         with(updateRoleRequest) {
             name?.let { update.set(TRole::name.name, name) }
             description?.let { update.set(TRole::description.name, description) }
-            userIds?.let { update.set(TRole::users.name, userIds) }
         }
         val record = mongoTemplate.updateFirst(query, update, TRole::class.java)
-        if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
-        return false
+        val roleRecord = record.modifiedCount == 1L || record.matchedCount == 1L
+
+        val userRecord = updateRoleRequest.userIds?.map { it }?.let { idList ->
+            userService.addUserToRoleBatch(idList, id)
+        } ?: true
+        if (roleRecord && userRecord) {
+            return true
+        } else {
+            throw RoleUpdateException("update role failed!")
+        }
     }
 
     override fun listUserByRoleId(id: String): Set<UserResult> {
-        val userIds = roleRepository.findFirstById(id)!!.users ?: return mutableSetOf()
+        val userIds = userRepository.findAllByRolesIn(listOf(id))
         val result = mutableSetOf<UserResult>()
         for (userId in userIds) {
-            val tUser = userRepository.findFirstByUserId(userId) ?: continue
+            val tUser = userRepository.findFirstByUserId(userId.userId) ?: continue
             result.add(UserResult(tUser.userId, tUser.name))
         }
         return result
@@ -154,7 +164,6 @@ class RoleServiceImpl constructor(
             name = tRole.name,
             projectId = tRole.projectId,
             admin = tRole.admin,
-            users = tRole.users,
             description = tRole.description
         )
     }
