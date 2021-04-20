@@ -35,23 +35,25 @@ import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
+import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import feign.Client
-import feign.Contract
 import feign.Feign
 import feign.Logger
 import feign.Request
 import feign.RequestInterceptor
-import feign.Retryer
-import feign.codec.Decoder
-import feign.codec.Encoder
-import feign.codec.ErrorDecoder
 import org.springframework.cloud.openfeign.FeignLoggerFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * 自定义FeignClient创建工厂类，用于创建集群间调用的Feign Client
+ */
 object FeignClientFactory {
 
+    /**
+     * [remoteClusterInfo] 为远程集群信息
+     */
     inline fun <reified T> create(remoteClusterInfo: RemoteClusterInfo): T {
         return create(T::class.java, remoteClusterInfo)
     }
@@ -60,23 +62,25 @@ object FeignClientFactory {
     fun <T> create(target: Class<T>, remoteClusterInfo: RemoteClusterInfo): T {
         val cache = clientCacheMap.getOrPut(target) { mutableMapOf() }
         return cache.getOrPut(remoteClusterInfo) {
-            builder.logLevel(Logger.Level.BASIC)
-                .logger(loggerFactory.create(target))
+            Feign.builder().logLevel(Logger.Level.BASIC)
+                .logger(SpringContextUtils.getBean<FeignLoggerFactory>().create(target))
                 .client(createClient(remoteClusterInfo))
                 .requestInterceptor(createInterceptor(remoteClusterInfo))
-                .encoder(encoder)
-                .decoder(decoder)
-                .contract(contract)
-                .retryer(retryer)
+                .encoder(SpringContextUtils.getBean())
+                .decoder(SpringContextUtils.getBean())
+                .contract(SpringContextUtils.getBean())
+                .retryer(SpringContextUtils.getBean())
                 .options(options)
-                .errorDecoder(errorDecoder)
+                .errorDecoder(SpringContextUtils.getBean())
                 .target(target, remoteClusterInfo.url) as Any
         } as T
     }
 
     private fun createInterceptor(remoteClusterInfo: RemoteClusterInfo): RequestInterceptor {
         return RequestInterceptor {
-//            it.header(AUTHORIZATION, encode)
+            if (remoteClusterInfo.username.isNotBlank()) {
+                it.header(AUTHORIZATION, BasicAuthUtils.encode(remoteClusterInfo.username, remoteClusterInfo.password))
+            }
         }
     }
 
@@ -92,12 +96,5 @@ object FeignClientFactory {
 
     private const val TIME_OUT_SECONDS = 60L
     private val clientCacheMap = mutableMapOf<Class<*>, MutableMap<RemoteClusterInfo, Any>>()
-    private val builder = SpringContextUtils.getBean(Feign.Builder::class.java)
-    private val loggerFactory = SpringContextUtils.getBean(FeignLoggerFactory::class.java)
-    private val encoder = SpringContextUtils.getBean(Encoder::class.java)
-    private val decoder = SpringContextUtils.getBean(Decoder::class.java)
-    private val contract = SpringContextUtils.getBean(Contract::class.java)
-    private val retryer = SpringContextUtils.getBean(Retryer::class.java)
-    private val errorDecoder = SpringContextUtils.getBean(ErrorDecoder::class.java)
     private val options = Request.Options(TIME_OUT_SECONDS, TimeUnit.SECONDS, TIME_OUT_SECONDS, TimeUnit.SECONDS, true)
 }

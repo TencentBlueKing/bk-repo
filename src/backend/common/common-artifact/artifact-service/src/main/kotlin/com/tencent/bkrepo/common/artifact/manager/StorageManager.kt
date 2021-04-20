@@ -39,14 +39,14 @@ import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
+import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.replication.api.BlobReplicationClient
+import com.tencent.bkrepo.replication.api.StorageReplicationClient
+import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -54,7 +54,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 
 /**
- * 存储Manager
+ * 存储管理类
  *
  * 虽然[StorageService]提供了构件存储服务，但保存一个文件节点需要两步操作:
  *   1. [StorageService]保存文件数据
@@ -64,6 +64,7 @@ import org.slf4j.LoggerFactory
  *   2. 不支持事务，如果文件保存成功，但节点创建失败，会导致产生垃圾文件并且无法清理
  *
  * 所以提供StorageManager，简化依赖源的操作并减少错误率
+ * addition: 增加了向中心节点代理拉取文件的逻辑
  */
 @Suppress("TooGenericExceptionCaught")
 class StorageManager(
@@ -71,6 +72,23 @@ class StorageManager(
     private val nodeClient: NodeClient,
     private val clusterProperties: ClusterProperties
 ) {
+
+    /**
+     * 中心节点集群信息
+     */
+    private val centerClusterInfo = RemoteClusterInfo(
+        url = clusterProperties.center.url.orEmpty(),
+        username = clusterProperties.center.username.orEmpty(),
+        password = clusterProperties.center.password.orEmpty(),
+        certificate = clusterProperties.center.certificate.orEmpty()
+    )
+
+    /**
+     * 存储同步client
+     */
+    private val storageReplicationClient: StorageReplicationClient by lazy {
+        FeignClientFactory.create<StorageReplicationClient>(centerClusterInfo)
+    }
 
     /**
      * 存储构件[artifactFile]到[storageCredentials]上，并根据[request]创建节点
@@ -108,15 +126,8 @@ class StorageManager(
         if (node == null || node.folder) {
             return null
         }
-        try {
-            val request = HttpContextHolder.getRequestOrNull()
-            val range = request?.let { HttpRangeUtils.resolveRange(it, node.size) } ?: Range.full(node.size)
-            if (node.size == 0L || request?.method == HttpMethod.HEAD.name) {
-                return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-            }
-            val sha256 = node.sha256.orEmpty()
-            return storageService.load(sha256, range, storageCredentials)
-                ?: loadFromCenterIfNecessary(sha256, range, storageCredentials)
+        val range = try {
+            getRequestOrNull()?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
         } catch (exception: IllegalArgumentException) {
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
@@ -124,6 +135,10 @@ class StorageManager(
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
+
+        val sha256 = node.sha256.orEmpty()
+        return storageService.load(sha256, range, storageCredentials)
+            ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
     }
 
     /**
@@ -132,27 +147,51 @@ class StorageManager(
     private fun loadFromCenterIfNecessary(
         sha256: String,
         range: Range,
-        storageCredentials: StorageCredentials?
+        storageKey: String?
     ): ArtifactInputStream? {
-        if (clusterProperties.role == RoleType.CENTER) {
+        if (clusterProperties.role == RoleType.CENTER || !existInCenter(sha256, storageKey)) {
             return null
         }
-        return loadFromCenter(sha256, range, storageCredentials)
+        return loadFromCenter(sha256, range, storageKey)
     }
 
+    /**
+     * 判断数据在中心节点是否存在
+     * 请求异常返回false
+     */
+    private fun existInCenter(sha256: String, storageKey: String?): Boolean {
+        return try {
+            storageReplicationClient.check(sha256, storageKey).data ?: false
+        } catch (exception: Exception) {
+            logger.error("Failed to check blob data[$sha256] in center node", exception)
+            false
+        }
+    }
+
+    /**
+     * 通过中心节点代理拉取文件
+     */
     private fun loadFromCenter(
         sha256: String,
         range: Range,
-        storageCredentials: StorageCredentials?
+        storageKey: String?
     ): ArtifactInputStream? {
-        val clusterInfo = RemoteClusterInfo(
-            url = clusterProperties.center.url.orEmpty(),
-            username = clusterProperties.center.username.orEmpty(),
-            password = clusterProperties.center.password.orEmpty(),
-            certificate = clusterProperties.center.certificate.orEmpty()
-        )
-        val client = FeignClientFactory.create<BlobReplicationClient>(clusterInfo)
-//        client.pull()
+        try {
+            val request = BlobPullRequest(sha256, range, storageKey)
+            val response = storageReplicationClient.pull(request)
+            check(response.status() == HttpStatus.OK.value) {
+                "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
+            }
+            val artifactInputStream = response.body()?.asInputStream()?.artifactStream(range)
+            if (artifactInputStream != null && range.isFullContent()) {
+                val listener = ProxyBlobCacheWriter(storageService, sha256)
+                artifactInputStream.addListener(listener)
+            }
+            logger.error("Pull blob data[$sha256] from center node")
+            return artifactInputStream
+        } catch (exception: Exception) {
+            logger.error("Failed to pull blob data[$sha256] from center node", exception)
+        }
         return null
     }
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,38 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.common.security.util
 
-import com.tencent.bkrepo.common.artifact.stream.Range
-import org.springframework.http.HttpHeaders
-import java.util.regex.Pattern
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
+import org.springframework.util.Base64Utils
+import java.util.Base64
 
 /**
- * Http Range请求工具类
+ * Basic Auth 工具类
  */
-object HttpRangeUtils {
-
-    private val RANGE_HEADER_PATTERN = Pattern.compile("bytes=(\\d+)?-(\\d+)?")
+object BasicAuthUtils {
 
     /**
-     * 从[request]中解析Range，[total]代表总长度
+     * basic auth编码
+     * @return Basic base64(username:password)
      */
-    @Throws(IllegalArgumentException::class)
-    fun resolveRange(request: HttpServletRequest, total: Long): Range {
-        val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
-        if (rangeHeader.isNullOrEmpty()) return Range.full(total)
-        val matcher = RANGE_HEADER_PATTERN.matcher(rangeHeader)
-        require(matcher.matches()) { "Invalid range header: $rangeHeader" }
-        require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
-        return if (matcher.group(1).isNullOrEmpty()) {
-            val start = total - matcher.group(2).toLong()
-            val end = total - 1
-            Range(start, end, total)
-        } else {
-            val start = matcher.group(1).toLong()
-            val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
-            Range(start, end, total)
-        }
+    fun encode(username: String, password: String): String {
+        val byteArray = ("$username${StringPool.COLON}$password").toByteArray(Charsets.UTF_8)
+        val encodedValue = Base64Utils.encodeToString(byteArray)
+        return "$BASIC_AUTH_PREFIX$encodedValue"
+    }
+
+    /**
+     * basic auth解码
+     */
+    fun decode(content: String): Pair<String, String> {
+        val normalized = content.removePrefix(BASIC_AUTH_PREFIX)
+        val decodedHeader = String(Base64.getDecoder().decode(normalized))
+        val parts = decodedHeader.split(StringPool.COLON)
+        require(parts.size >= 2)
+        return Pair(parts[0], parts[1])
     }
 }

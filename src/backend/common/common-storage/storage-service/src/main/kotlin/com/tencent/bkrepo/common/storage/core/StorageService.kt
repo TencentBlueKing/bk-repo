@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import java.nio.file.Path
 
 /**
  * 存储服务接口
@@ -153,4 +154,9 @@ interface StorageService {
      * 健康检查
      */
     fun checkHealth(storageCredentials: StorageCredentials? = null)
+
+    /**
+     * 获取临时目录
+     */
+    fun getTempPath(storageCredentials: StorageCredentials? = null): Path
 }

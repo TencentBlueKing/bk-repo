@@ -35,28 +35,23 @@ import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.multipart.MultipartFile
 
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "BlobReplicationClient")
-interface BlobReplicationClient {
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "StorageReplicationClient")
+interface StorageReplicationClient {
 
     /**
      * 从远程集群拉取文件数据
      * @param request 拉取请求
      */
     @PostMapping(BLOB_PULL_URI)
-    fun pull(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
-        @RequestBody request: BlobPullRequest
-    ): FeignResponse
+    fun pull(@RequestBody request: BlobPullRequest): FeignResponse
 
     /**
      * 推送文件数据到远程集群
@@ -65,7 +60,6 @@ interface BlobReplicationClient {
      */
     @PostMapping(BLOB_PUSH_URI, consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun push(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestParam sha256: String,
         @RequestPart file: MultipartFile
     ): Response<Void>
@@ -77,7 +71,6 @@ interface BlobReplicationClient {
      */
     @GetMapping(BLOB_CHECK_URI)
     fun check(
-        @RequestHeader(HttpHeaders.AUTHORIZATION) token: String,
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null
     ): Response<Boolean>

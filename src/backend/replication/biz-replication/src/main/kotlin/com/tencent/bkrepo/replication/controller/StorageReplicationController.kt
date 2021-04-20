@@ -45,9 +45,9 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.replication.api.BlobReplicationClient.Companion.BLOB_CHECK_URI
-import com.tencent.bkrepo.replication.api.BlobReplicationClient.Companion.BLOB_PULL_URI
-import com.tencent.bkrepo.replication.api.BlobReplicationClient.Companion.BLOB_PUSH_URI
+import com.tencent.bkrepo.replication.api.StorageReplicationClient.Companion.BLOB_CHECK_URI
+import com.tencent.bkrepo.replication.api.StorageReplicationClient.Companion.BLOB_PULL_URI
+import com.tencent.bkrepo.replication.api.StorageReplicationClient.Companion.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource
@@ -63,7 +63,7 @@ import java.util.concurrent.TimeUnit
 
 @Principal(type = PrincipalType.ADMIN)
 @RestController
-class BlobReplicationController(
+class StorageReplicationController(
     storageProperties: StorageProperties,
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient
