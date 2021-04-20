@@ -36,6 +36,8 @@ import com.tencent.bkrepo.auth.constant.AUTH_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
+import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
+import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -47,6 +49,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -120,4 +123,17 @@ interface ServiceRoleResource {
         @ApiParam(value = "仓库名")
         @RequestParam repoName: String? = null
     ): Response<List<Role>>
+
+    @ApiOperation("查询用户组下用户列表")
+    @GetMapping("/users/{id}")
+    fun listUserByRoleId(
+        @PathVariable id: String
+    ): Response<Set<UserResult>>
+
+    @ApiOperation("编辑用户组信息")
+    @PutMapping("/{id}")
+    fun updateRoleInfo(
+        @PathVariable id: String,
+        @RequestBody updateRoleRequest: UpdateRoleRequest
+    ): Response<Boolean>
 }
