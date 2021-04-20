@@ -51,13 +51,11 @@ class ProxyBlobCacheWriter(
 ) : StreamReadListener {
 
     private val receivedPath = storageService.getTempPath().resolve(digest.plus(LOCK_SUFFIX))
-    private val channel: FileChannel
+    private val channel = FileChannel.open(receivedPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
     private var outputStream: FileOutputStream? = null
     private var lock: FileLock? = null
 
     init {
-        Files.createDirectories(storageService.getTempPath())
-        channel = FileChannel.open(receivedPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
         try {
             lock = channel.tryLock()
             outputStream = receivedPath.toFile().outputStream()
@@ -96,6 +94,7 @@ class ProxyBlobCacheWriter(
         if (lock != null) {
             outputStream?.flush()
             outputStream?.closeQuietly()
+            Files.deleteIfExists(receivedPath)
             channel.closeQuietly()
             lock?.releaseQuietly()
             lock = null

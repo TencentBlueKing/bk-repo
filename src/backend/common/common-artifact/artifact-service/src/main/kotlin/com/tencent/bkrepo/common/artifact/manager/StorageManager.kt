@@ -163,7 +163,7 @@ class StorageManager(
         return try {
             storageReplicationClient.check(sha256, storageKey).data ?: false
         } catch (exception: Exception) {
-            logger.error("Failed to check blob data[$sha256] in center node", exception)
+            logger.error("Failed to check blob data[$sha256] in center node.", exception)
             false
         }
     }
@@ -187,10 +187,10 @@ class StorageManager(
                 val listener = ProxyBlobCacheWriter(storageService, sha256)
                 artifactInputStream.addListener(listener)
             }
-            logger.error("Pull blob data[$sha256] from center node")
+            logger.info("Pull blob data[$sha256] from center node.")
             return artifactInputStream
         } catch (exception: Exception) {
-            logger.error("Failed to pull blob data[$sha256] from center node", exception)
+            logger.error("Failed to pull blob data[$sha256] from center node.", exception)
         }
         return null
     }
