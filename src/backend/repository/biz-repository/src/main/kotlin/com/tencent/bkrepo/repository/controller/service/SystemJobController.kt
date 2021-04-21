@@ -35,8 +35,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.job.FileReferenceCleanupJob
-import com.tencent.bkrepo.repository.job.FileSynchronizeJob
 import com.tencent.bkrepo.repository.job.NodeDeletedCorrectionJob
 import com.tencent.bkrepo.repository.job.PackageDownloadsMigrationJob
 import com.tencent.bkrepo.repository.job.PackageVersionCorrectionJob
@@ -51,20 +49,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/job")
 class SystemJobController(
-    private val fileSynchronizeJob: FileSynchronizeJob,
     private val storageInstanceMigrationJob: StorageInstanceMigrationJob,
-    private val fileReferenceCleanupJob: FileReferenceCleanupJob,
     private val rootNodeCleanupJob: RootNodeCleanupJob,
     private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
     private val packageDownloadsMigrationJob: PackageDownloadsMigrationJob,
     private val packageVersionCorrectionJob: PackageVersionCorrectionJob
 ) {
-
-    @PostMapping("/sync/file")
-    fun synchronizeFile(): Response<Void> {
-        fileSynchronizeJob.run()
-        return ResponseBuilder.success()
-    }
 
     @PostMapping("/migrate/storage/{projectId}/{repoName}/{newKey}")
     fun migrate(
@@ -73,12 +63,6 @@ class SystemJobController(
         @PathVariable newKey: String
     ): Response<Void> {
         storageInstanceMigrationJob.migrate(projectId, repoName, newKey)
-        return ResponseBuilder.success()
-    }
-
-    @PostMapping("/cleanup/reference")
-    fun cleanupFileReference(): Response<Void> {
-        fileReferenceCleanupJob.cleanup()
         return ResponseBuilder.success()
     }
 
