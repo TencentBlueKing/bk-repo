@@ -54,12 +54,6 @@ config = {
         name = "devops",
         tag = "devops"
       }
-    },
-    repo = {
-      {
-        name = "log",
-        tag = "devcloud"
-      }
     }
   }
 }
