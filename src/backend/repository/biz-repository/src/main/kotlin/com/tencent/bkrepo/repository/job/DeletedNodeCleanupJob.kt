@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
@@ -51,6 +52,7 @@ import java.time.LocalDateTime
 /**
  * 清理被标记为删除的node，同时减少文件引用
  */
+@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class DeletedNodeCleanupJob(
     private val nodeDao: NodeDao,

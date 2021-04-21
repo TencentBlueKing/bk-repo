@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.ShareRecordDao
 import com.tencent.bkrepo.repository.model.TShareRecord
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
@@ -45,6 +46,7 @@ import java.time.LocalDateTime
 /**
  * Share record 清理任务
  */
+@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class ShareRecordCleanupJob(
     private val shareRecordDao: ShareRecordDao
