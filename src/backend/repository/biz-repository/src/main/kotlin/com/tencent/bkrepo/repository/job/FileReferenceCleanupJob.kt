@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.model.TFileReference
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
@@ -47,6 +48,7 @@ import org.springframework.stereotype.Component
 /**
  * 清理引用=0的文件
  */
+@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class FileReferenceCleanupJob(
     private val fileReferenceDao: FileReferenceDao,

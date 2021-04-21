@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.service.node.NodeService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -47,6 +48,7 @@ import java.time.LocalDateTime
 /**
  * 标记已过期的节点为已删除
  */
+@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class ExpiredNodeMarkupJob(
     private val nodeDao: NodeDao,

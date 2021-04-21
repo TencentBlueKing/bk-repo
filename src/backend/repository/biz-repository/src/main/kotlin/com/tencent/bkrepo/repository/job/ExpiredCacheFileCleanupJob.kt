@@ -37,12 +37,14 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 /**
  * 清理缓存文件定时任务
  */
+@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class ExpiredCacheFileCleanupJob(
     private val storageService: StorageService,
