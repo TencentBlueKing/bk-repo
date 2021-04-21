@@ -3,7 +3,7 @@
         <div v-show="!query" class="repo-generic-side" v-bkloading="{ isLoading: treeLoading }">
             <div class="important-search">
                 <bk-input
-                    v-model="importantSearch"
+                    v-model.trim="importantSearch"
                     placeholder=""
                     :clearable="true"
                     :right-icon="'bk-icon icon-search'">
@@ -138,12 +138,12 @@
                         <span class="break-all">{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
                     </bk-form-item>
                     <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path">
-                        <bk-input v-model="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
+                        <bk-input v-model.trim="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
                 <template v-else-if="formDialog.type === 'rename'">
                     <bk-form-item :label="$t('name')" :required="true" property="name">
-                        <bk-input v-model="formDialog.name" :placeholder="$t('folderNamePlacehodler')"></bk-input>
+                        <bk-input v-model.trim="formDialog.name" :placeholder="$t('folderNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
                 <template v-else-if="formDialog.type === 'share'">
@@ -158,7 +158,7 @@
                         </bk-tag-input>
                     </bk-form-item>
                     <bk-form-item :label="`${$t('validity')}(${$t('day')})`" :required="true" property="time">
-                        <bk-input v-model="formDialog.time" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                        <bk-input v-model.trim="formDialog.time" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                     </bk-form-item>
                 </template>
             </bk-form>

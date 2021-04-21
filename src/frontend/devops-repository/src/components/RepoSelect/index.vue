@@ -9,7 +9,7 @@
             <div class="repo-select-search">
                 <bk-input
                     class="docker-tag-search"
-                    v-model="repoNameInput"
+                    v-model.trim="repoNameInput"
                     :placeholder="$t('pleaseInput') + $t('repository') + $t('name')"
                     clearable>
                 </bk-input>

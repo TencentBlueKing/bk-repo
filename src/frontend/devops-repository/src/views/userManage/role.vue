@@ -3,7 +3,7 @@
         <div class="mb20 flex-align-center">
             <bk-input
                 class="role-search"
-                v-model="role"
+                v-model.trim="role"
                 :right-icon="'bk-icon icon-search'"
                 clearable
                 :placeholder="`共有${roleList.length}个用户组`">
@@ -39,10 +39,10 @@
             :title="editRoleConfig.id ? '编辑用户组' : '添加用户组'">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
                 <bk-form-item label="名称" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model="editRoleConfig.name"></bk-input>
+                    <bk-input v-model.trim="editRoleConfig.name"></bk-input>
                 </bk-form-item>
                 <bk-form-item label="简介">
-                    <bk-input type="textarea" v-model="editRoleConfig.description"></bk-input>
+                    <bk-input type="textarea" v-model.trim="editRoleConfig.description"></bk-input>
                 </bk-form-item>
             </bk-form>
             <div slot="footer">

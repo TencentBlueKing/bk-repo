@@ -59,6 +59,9 @@
                             this.goHome(data.currentProjectId)
                         }
                     })
+                    window.globalVue.$on('change::$userInfo', data => { // 用户信息
+                        this.SET_USER_INFO(data.userInfo)
+                    })
                     window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换
                         this.goHome()
                     })
@@ -71,8 +74,6 @@
                     window.globalVue.$on('order::syncLocale', locale => {
                         this.$setLocale(locale)
                     })
-                    this.getUserList()
-                    this.getUserInfo()
                 }
                 localStorage.setItem('projectId', urlProjectId || localProjectId || '')
                 !urlProjectId && this.$router.replace({
@@ -110,7 +111,7 @@
             Vue.config.errorHandler = callback
         },
         methods: {
-            ...mapMutations(['SET_USER_INFO', 'SET_USER_LIST']),
+            ...mapMutations(['SET_USER_INFO']),
             ...mapActions(['getRepoUserList', 'getProjectList', 'ajaxUserInfo']),
             goHome (projectId) {
                 const params = projectId ? { projectId } : {}
@@ -118,22 +119,6 @@
                     name: 'repoList',
                     params
                 })
-            },
-            getUserList () {
-                if (this.$userList) this.SET_USER_LIST(this.$userList)
-                else {
-                    setTimeout(() => {
-                        this.getUserList()
-                    }, 1000)
-                }
-            },
-            getUserInfo () {
-                if (this.$userInfo) this.SET_USER_INFO(this.$userInfo)
-                else {
-                    setTimeout(() => {
-                        this.getUserInfo()
-                    }, 1000)
-                }
             }
         }
     }

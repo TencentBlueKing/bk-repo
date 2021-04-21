@@ -23,7 +23,7 @@
             <bk-form-item>
                 <bk-input
                     class="login-input"
-                    v-model="loginForm.username"
+                    v-model.trim="loginForm.username"
                     size="large"
                     :placeholder="$t('username')"
                     left-icon="bk-icon icon-user">
@@ -32,7 +32,7 @@
             <bk-form-item>
                 <bk-input
                     class="login-input"
-                    v-model="loginForm.password"
+                    v-model.trim="loginForm.password"
                     type="password"
                     size="large"
                     :native-attributes="{
