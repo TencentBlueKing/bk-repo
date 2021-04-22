@@ -29,28 +29,6 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
-
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT;
-
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
+dependencies {
+    api("org.springframework.boot:spring-boot-starter-data-redis")
 }

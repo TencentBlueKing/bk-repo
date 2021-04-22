@@ -29,28 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.git.artifact
+
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.git.artifact.repository.GitLocalRepository
+import com.tencent.bkrepo.git.artifact.repository.GitRemoteRepository
+import com.tencent.bkrepo.git.artifact.repository.GitVirtualRepository
+import org.springframework.stereotype.Component
 
 /**
- * 仓库类型
+ * Maven 依赖源配置
  */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT;
+@Component
+class GitArtifactConfigurer : ArtifactConfigurerSupport() {
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
+    override fun getRepositoryType() = RepositoryType.GIT
+    override fun getLocalRepository() = SpringContextUtils.getBean<GitLocalRepository>()
+    override fun getRemoteRepository() = SpringContextUtils.getBean<GitRemoteRepository>()
+    override fun getVirtualRepository() = SpringContextUtils.getBean<GitVirtualRepository>()
+
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/git")
         }
     }
 }
