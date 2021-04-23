@@ -37,7 +37,7 @@
         </div>
         <main class="repo-search-result flex-column" v-bkloading="{ isLoading }"
             :style="{
-                height: `calc(100% - ${showRepoSearch ? 300 : 80}px)`
+                height: `calc(100% - ${showRepoSearch ? 290 : 70}px)`
             }">
             <template v-if="resultList.length">
                 <main class="mb10 result-list">

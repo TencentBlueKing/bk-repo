@@ -42,7 +42,9 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserResult
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -222,4 +224,34 @@ interface ServiceUserResource {
         @ApiParam(value = "用户id")
         @RequestParam(value = "bkrepo_ticket") bkrepoToken: String?
     ): Response<Map<String, Any>>
+
+    @ApiOperation("用户分页列表")
+    @GetMapping("page/{pageNumber}/{pageSize}")
+    fun userPage(
+        @PathVariable pageNumber: Int,
+        @PathVariable pageSize: Int,
+        @RequestParam user: String? = null,
+        @RequestParam admin: Boolean?,
+        @RequestParam locked: Boolean?
+    ): Response<Page<UserInfo>>
+
+    @ApiOperation("修改用户密码")
+    @PutMapping("/update/password/{uid}")
+    fun updatePassword(
+        @PathVariable uid: String,
+        @RequestParam oldPwd: String,
+        @RequestParam newPwd: String
+    ): Response<Boolean>
+
+    @ApiOperation("用户info ")
+    @GetMapping("/userinfo/{uid}")
+    fun userInfoById(@PathVariable uid: String): Response<UserInfo?>
+
+    @ApiOperation("用户info ")
+    @GetMapping("/reset/{uid}")
+    fun resetPassword(@PathVariable uid: String): Response<Boolean>
+
+    @ApiOperation("检验是否有系统中是否存在同名userId ")
+    @GetMapping("/repeat/{uid}")
+    fun repeatUid(@PathVariable uid: String): Response<Boolean>
 }

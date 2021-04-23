@@ -42,13 +42,17 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.sensitive.DesensitizedUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -98,7 +102,11 @@ class UserServiceImpl constructor(
                 tokens = emptyList(),
                 roles = emptyList(),
                 asstUsers = request.asstUsers,
-                group = request.group
+                group = request.group,
+                email = request.email,
+                phone = request.phone,
+                createdDate = LocalDateTime.now(),
+                lastModifiedDate = LocalDateTime.now()
             )
         )
         return true
@@ -151,7 +159,9 @@ class UserServiceImpl constructor(
     override fun listUser(rids: List<String>): List<User> {
         logger.debug("list user rids : [$rids]")
         return if (rids.isEmpty()) {
-            userRepository.findAll().map { transferUser(it) }
+            // 排除被锁定的用户
+            val query = Query(Criteria(TUser::locked.name).`is`(false))
+            mongoTemplate.find(query, TUser::class.java).map { transferUser(it) }
         } else {
             userRepository.findAllByRolesIn(rids).map { transferUser(it) }
         }
@@ -232,11 +242,21 @@ class UserServiceImpl constructor(
             update.set(TUser::pwd.name, pwd)
         }
         request.admin?.let {
-            update.set(TUser::admin.name, request.admin!!)
+            update.set(TUser::admin.name, request.admin)
         }
         request.name?.let {
-            update.set(TUser::name.name, request.name!!)
+            update.set(TUser::name.name, request.name)
         }
+        request.email?.let {
+            update.set(TUser::email.name, request.email)
+        }
+        request.locked?.let {
+            update.set(TUser::locked.name, request.locked)
+        }
+        request.phone?.let {
+            update.set(TUser::phone.name, request.phone)
+        }
+        update.set(TUser::lastModifiedDate.name, LocalDateTime.now())
         val result = mongoTemplate.updateFirst(query, update, TUser::class.java)
         if (result.modifiedCount == 1L) return true
         return false
@@ -338,6 +358,66 @@ class UserServiceImpl constructor(
         val query = Query.query(criteria)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
         return transferUser(result)
+    }
+
+    override fun userPage(
+        pageNumber: Int,
+        pageSize: Int,
+        user: String?,
+        admin: Boolean?,
+        locked: Boolean?
+    ): Page<UserInfo> {
+        val criteria = Criteria()
+        user?.let {
+            criteria.orOperator(
+                Criteria.where(TUser::userId.name).regex("^$user"),
+                Criteria.where(TUser::name.name).regex("^$user")
+            )
+        }
+        admin?.let { criteria.and(TUser::admin.name).`is`(admin) }
+        locked?.let { criteria.and(TUser::locked.name).`is`(locked) }
+        val query = Query.query(criteria)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = mongoTemplate.count(query, TUser::class.java)
+        val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map { transferUserInfo(it) }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    override fun getUserInfoById(uid: String): UserInfo? {
+        val tUser = userRepository.findFirstByUserId(uid) ?: return null
+        return transferUserInfo(tUser)
+    }
+
+    override fun updatePassword(uid: String, oldPwd: String, newPwd: String): Boolean {
+        val query = Query.query(
+            Criteria().andOperator(
+                Criteria.where(TUser::userId.name).`is`(uid),
+                Criteria.where(TUser::pwd.name).`is`(DataDigestUtils.md5FromStr(oldPwd))
+            )
+        )
+        val user = mongoTemplate.find(query, TUser::class.java)
+        if (user.isNotEmpty()) {
+            val updateQuery = Query(Criteria(TUser::userId.name).`is`(uid))
+            val update = Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(newPwd))
+            val record = mongoTemplate.updateFirst(updateQuery, update, TUser::class.java)
+            if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
+        }
+        throw ErrorCodeException(CommonMessageCode.MODIFY_PASSWORD_FAILED, "modify password failed!")
+    }
+
+    override fun resetPassword(uid: String): Boolean {
+        // todo 鉴权
+        val updateQuery = Query(Criteria(TUser::userId.name).`is`(uid))
+        val update = Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(DEFAULT_PASSWORD))
+        val record = mongoTemplate.updateFirst(updateQuery, update, TUser::class.java)
+        if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
+        return false
+    }
+
+    override fun repeatUid(uid: String): Boolean {
+        val query = Query(Criteria(TUser::userId.name).`is`(uid))
+        val record = mongoTemplate.find(query, TUser::class.java)
+        return record.isNotEmpty()
     }
 
     companion object {

@@ -1,9 +1,9 @@
 <template>
     <div id="app" class="flex-column" v-bkloading="{ isLoading }">
-        <Header v-if="!iframeMode" />
+        <Header v-if="mode !== 'ci'" />
         <main class="bkrepo-main-container"
             :style="{
-                height: iframeMode ? '100%' : 'calc(100% - 50px)'
+                height: mode === 'ci' ? '100%' : 'calc(100% - 50px)'
             }">
             <router-view></router-view>
         </main>
@@ -22,12 +22,14 @@
         components: { Login, Header },
         data () {
             return {
-                isLoading: false,
-                iframeMode: MODE_CONFIG === 'ci'
+                isLoading: false
             }
         },
         computed: {
             ...mapState(['projectList']),
+            mode () {
+                return MODE_CONFIG
+            },
             projectId () {
                 return this.$route.params.projectId
             }
@@ -43,7 +45,7 @@
 
             const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
-            if (this.iframeMode) {
+            if (this.mode === 'ci') {
                 window.Vue = Vue
                 const script = document.createElement('script')
                 script.type = 'text/javascript'
@@ -81,7 +83,7 @@
                 })
             } else {
                 this.isLoading = true
-                await Promise.all([this.ajaxUserInfo(), this.getProjectList()])
+                await Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()])
                 if (!(urlProjectId && this.projectList.find(v => v.id === urlProjectId))) {
                     let projectId = ''
                     if (this.projectList.find(v => v.id === localProjectId)) {
@@ -109,7 +111,7 @@
         },
         methods: {
             ...mapMutations(['SET_USER_INFO', 'SET_USER_LIST']),
-            ...mapActions(['getProjectList', 'ajaxUserInfo']),
+            ...mapActions(['getRepoUserList', 'getProjectList', 'ajaxUserInfo']),
             goHome (projectId) {
                 const params = projectId ? { projectId } : {}
                 this.$router.replace({
