@@ -54,6 +54,8 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import java.io.File
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -329,10 +331,21 @@ abstract class AbstractStorageService : StorageService {
         )
         try {
             future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
-        } catch (timeoutException: TimeoutException) {
+        } catch (ignored: TimeoutException) {
             throw HealthCheckFailedException(StorageHealthMonitor.IO_TIMEOUT_MESSAGE)
-        } catch (exception: Exception) {
-            throw HealthCheckFailedException(exception.message.orEmpty())
+        } catch (ignored: Exception) {
+            throw HealthCheckFailedException(ignored.message.orEmpty())
+        }
+    }
+    /**
+     * 获取临时目录
+     */
+    override fun getTempPath(storageCredentials: StorageCredentials?): Path {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        return if (credentials.cache.enabled) {
+            Paths.get(credentials.cache.path, StringPool.TEMP)
+        } else {
+            Paths.get(fileStorage.getTempPath(credentials))
         }
     }
 
@@ -363,8 +376,7 @@ abstract class AbstractStorageService : StorageService {
      *   fs: /data/store/temp
      */
     private fun getTempClient(credentials: StorageCredentials): FileSystemClient {
-        val tempPath = getTempPath(credentials) ?: fileStorage.getTempPath(credentials)
-        return FileSystemClient(tempPath)
+        return FileSystemClient(getTempPath(credentials))
     }
 
     /**
@@ -407,11 +419,6 @@ abstract class AbstractStorageService : StorageService {
         fileStorage.store(HEALTH_CHECK_PATH, filename, inputStream, size, credentials)
         fileStorage.delete(HEALTH_CHECK_PATH, filename, credentials)
     }
-
-    /**
-     * 获取临时目录
-     */
-    open fun getTempPath(credentials: StorageCredentials): String? = null
 
     companion object {
         private const val CURRENT_PATH = StringPool.EMPTY

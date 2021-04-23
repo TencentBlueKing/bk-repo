@@ -29,38 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.repository.api
 
-import com.tencent.bkrepo.common.artifact.stream.Range
-import org.springframework.http.HttpHeaders
-import java.util.regex.Pattern
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 /**
- * Http Range请求工具类
+ * 存储凭证服务接口
  */
-object HttpRangeUtils {
-
-    private val RANGE_HEADER_PATTERN = Pattern.compile("bytes=(\\d+)?-(\\d+)?")
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StorageCredentialsClient")
+@RequestMapping("/service/storage/credentials")
+interface StorageCredentialsClient {
 
     /**
-     * 从[request]中解析Range，[total]代表总长度
+     * 查询凭证详情
+     * @param key storage key
      */
-    @Throws(IllegalArgumentException::class)
-    fun resolveRange(request: HttpServletRequest, total: Long): Range {
-        val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
-        if (rangeHeader.isNullOrEmpty()) return Range.full(total)
-        val matcher = RANGE_HEADER_PATTERN.matcher(rangeHeader)
-        require(matcher.matches()) { "Invalid range header: $rangeHeader" }
-        require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
-        return if (matcher.group(1).isNullOrEmpty()) {
-            val start = total - matcher.group(2).toLong()
-            val end = total - 1
-            Range(start, end, total)
-        } else {
-            val start = matcher.group(1).toLong()
-            val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
-            Range(start, end, total)
-        }
-    }
+    @GetMapping("/detail")
+    fun findByKey(@RequestParam key: String? = null): Response<StorageCredentials?>
 }

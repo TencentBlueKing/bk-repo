@@ -33,11 +33,11 @@ package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.replication.api.ReplicationClient
-import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.model.TReplicationTask
 import com.tencent.bkrepo.replication.model.TReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
@@ -75,7 +75,7 @@ class ReplicationContext(val task: TReplicationTask) {
 
         with(task.setting.remoteClusterInfo) {
             authToken = encodeAuthToken(username, password)
-            replicationClient = FeignClientFactory.create(ReplicationClient::class.java, this)
+            replicationClient = FeignClientFactory.create(this)
             httpClient = HttpClientBuilderFactory.create(certificate, true).addInterceptor(
                 BasicAuthInterceptor(username, password)
             ).connectionPool(ConnectionPool(20, 10, TimeUnit.MINUTES)).build()

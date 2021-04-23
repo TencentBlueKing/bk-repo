@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,38 +29,52 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.replication.pojo.blob
 
-import com.tencent.bkrepo.common.artifact.stream.Range
-import org.springframework.http.HttpHeaders
-import java.util.regex.Pattern
-import javax.servlet.http.HttpServletRequest
+import org.springframework.util.FileCopyUtils
+import org.springframework.web.multipart.MultipartFile
+import java.io.File
+import java.io.InputStream
+import java.nio.file.Files
 
 /**
- * Http Range请求工具类
+ * 基于InputStream的multipart file实现
  */
-object HttpRangeUtils {
+class InputStreamMultipartFile(
+    private val inputStream: InputStream,
+    private val size: Long,
+    private val name: String = "file",
+    private val originalFilename: String = ""
+) : MultipartFile {
+    override fun getInputStream(): InputStream {
+        return inputStream
+    }
 
-    private val RANGE_HEADER_PATTERN = Pattern.compile("bytes=(\\d+)?-(\\d+)?")
+    override fun getName(): String {
+        return name
+    }
 
-    /**
-     * 从[request]中解析Range，[total]代表总长度
-     */
-    @Throws(IllegalArgumentException::class)
-    fun resolveRange(request: HttpServletRequest, total: Long): Range {
-        val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
-        if (rangeHeader.isNullOrEmpty()) return Range.full(total)
-        val matcher = RANGE_HEADER_PATTERN.matcher(rangeHeader)
-        require(matcher.matches()) { "Invalid range header: $rangeHeader" }
-        require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
-        return if (matcher.group(1).isNullOrEmpty()) {
-            val start = total - matcher.group(2).toLong()
-            val end = total - 1
-            Range(start, end, total)
-        } else {
-            val start = matcher.group(1).toLong()
-            val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
-            Range(start, end, total)
-        }
+    override fun getOriginalFilename(): String {
+        return originalFilename
+    }
+
+    override fun getContentType(): String? {
+        return null
+    }
+
+    override fun isEmpty(): Boolean {
+        return size == 0L
+    }
+
+    override fun getSize(): Long {
+        return size
+    }
+
+    override fun getBytes(): ByteArray {
+        return inputStream.readBytes()
+    }
+
+    override fun transferTo(dest: File) {
+        FileCopyUtils.copy(inputStream, Files.newOutputStream(dest.toPath()))
     }
 }

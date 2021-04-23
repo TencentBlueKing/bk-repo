@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,38 +29,57 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.repository.job.base
 
-import com.tencent.bkrepo.common.artifact.stream.Range
-import org.springframework.http.HttpHeaders
-import java.util.regex.Pattern
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.repository.config.RepositoryProperties
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 /**
- * Http Range请求工具类
+ * 支持动态开关的任务
  */
-object HttpRangeUtils {
+abstract class SwitchableJob : AsyncRepoJob {
 
-    private val RANGE_HEADER_PATTERN = Pattern.compile("bytes=(\\d+)?-(\\d+)?")
+    @Autowired
+    lateinit var repositoryProperties: RepositoryProperties
 
     /**
-     * 从[request]中解析Range，[total]代表总长度
+     * 执行任务过程
      */
-    @Throws(IllegalArgumentException::class)
-    fun resolveRange(request: HttpServletRequest, total: Long): Range {
-        val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
-        if (rangeHeader.isNullOrEmpty()) return Range.full(total)
-        val matcher = RANGE_HEADER_PATTERN.matcher(rangeHeader)
-        require(matcher.matches()) { "Invalid range header: $rangeHeader" }
-        require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
-        return if (matcher.group(1).isNullOrEmpty()) {
-            val start = total - matcher.group(2).toLong()
-            val end = total - 1
-            Range(start, end, total)
-        } else {
-            val start = matcher.group(1).toLong()
-            val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
-            Range(start, end, total)
+    open fun execute() {
+        if (!shouldExecute()) {
+            return
         }
+        logger.info("Start to execute async job[${getJobName()}]")
+        measureTimeMillis { doExecute() }.apply {
+            val elapsedTime = HumanReadable.time(this, TimeUnit.MILLISECONDS)
+            logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.")
+        }
+    }
+
+    /**
+     * 调用任务
+     */
+    open fun doExecute() {
+        run()
+    }
+
+    /**
+     * 判断当前节点是否任务执行
+     */
+    open fun shouldExecute(): Boolean {
+        return repositoryProperties.job.enabled
+    }
+
+    /**
+     * 染污名称
+     */
+    open fun getJobName(): String = javaClass.simpleName
+
+    companion object {
+        private val logger = LoggerHolder.jobLogger
     }
 }

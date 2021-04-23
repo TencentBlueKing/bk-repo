@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,38 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.repository.job.base
 
-import com.tencent.bkrepo.common.artifact.stream.Range
-import org.springframework.http.HttpHeaders
-import java.util.regex.Pattern
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
+import com.tencent.bkrepo.common.artifact.cluster.RoleType
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
- * Http Range请求工具类
+ * 只在中心节点执行的定时任务
  */
-object HttpRangeUtils {
+abstract class CenterNodeJob : LockableJob() {
 
-    private val RANGE_HEADER_PATTERN = Pattern.compile("bytes=(\\d+)?-(\\d+)?")
+    @Autowired
+    private lateinit var clusterProperties: ClusterProperties
 
     /**
-     * 从[request]中解析Range，[total]代表总长度
+     * 判断是否支持
      */
-    @Throws(IllegalArgumentException::class)
-    fun resolveRange(request: HttpServletRequest, total: Long): Range {
-        val rangeHeader = request.getHeader(HttpHeaders.RANGE)?.trim()
-        if (rangeHeader.isNullOrEmpty()) return Range.full(total)
-        val matcher = RANGE_HEADER_PATTERN.matcher(rangeHeader)
-        require(matcher.matches()) { "Invalid range header: $rangeHeader" }
-        require(matcher.groupCount() >= 1) { "Invalid range header: $rangeHeader" }
-        return if (matcher.group(1).isNullOrEmpty()) {
-            val start = total - matcher.group(2).toLong()
-            val end = total - 1
-            Range(start, end, total)
-        } else {
-            val start = matcher.group(1).toLong()
-            val end = if (matcher.group(2).isNullOrEmpty()) total - 1 else matcher.group(2).toLong()
-            Range(start, end, total)
-        }
+    override fun shouldExecute(): Boolean {
+        return super.shouldExecute() && clusterProperties.role == RoleType.CENTER
     }
 }

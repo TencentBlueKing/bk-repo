@@ -32,6 +32,7 @@
 dependencies {
     api(project(":repository:api-repository"))
     api(project(":auth:api-auth"))
+    api(project(":replication:api-replication"))
     api(project(":common:common-service"))
     api(project(":common:common-security"))
     api(project(":common:common-plugin"))

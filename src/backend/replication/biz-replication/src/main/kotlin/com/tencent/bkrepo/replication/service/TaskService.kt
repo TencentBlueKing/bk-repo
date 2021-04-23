@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.replication.api.ReplicationClient
-import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.job.ReplicationContext
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicationTask
@@ -164,7 +164,7 @@ class TaskService(
     fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
-                val replicationService = FeignClientFactory.create(ReplicationClient::class.java, this)
+                val replicationService = FeignClientFactory.create<ReplicationClient>(this)
                 val authToken = ReplicationContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: RuntimeException) {
