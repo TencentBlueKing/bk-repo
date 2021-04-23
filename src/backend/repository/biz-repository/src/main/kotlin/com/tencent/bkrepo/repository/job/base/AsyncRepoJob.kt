@@ -29,43 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job
-
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.dao.ShareRecordDao
-import com.tencent.bkrepo.repository.job.base.CenterNodeJob
-import com.tencent.bkrepo.repository.model.TShareRecord
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
-import java.time.Duration
-import java.time.LocalDateTime
+package com.tencent.bkrepo.repository.job.base
 
 /**
- * Share record 清理任务
+ * 仓库后台任务接口
  */
-@Component
-class ShareRecordCleanupJob(
-    private val shareRecordDao: ShareRecordDao
-) : CenterNodeJob() {
+interface AsyncRepoJob {
 
-    @Scheduled(cron = "0 0 1 * * ?") // 每天凌晨1点执行
-    override fun execute() {
-        super.execute()
-    }
-
-    override fun run() {
-        val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
-        val query = Query.query(where(TShareRecord::expireDate).lt(expireDate))
-        val result = shareRecordDao.remove(query)
-        logger.info("[${result.deletedCount}] expired share record has been clean up.")
-    }
-
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
-
-    companion object {
-        private val logger = LoggerHolder.jobLogger
-        private const val RESERVE_DAYS = 7L
-    }
+    /**
+     * 执行任务逻辑
+     */
+    fun run()
 }

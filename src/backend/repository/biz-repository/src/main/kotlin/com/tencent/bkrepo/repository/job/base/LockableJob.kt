@@ -29,43 +29,41 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job
+package com.tencent.bkrepo.repository.job.base
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.dao.ShareRecordDao
-import com.tencent.bkrepo.repository.job.base.CenterNodeJob
-import com.tencent.bkrepo.repository.model.TShareRecord
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
+import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockingTaskExecutor
+import org.springframework.beans.factory.annotation.Autowired
 import java.time.Duration
-import java.time.LocalDateTime
 
 /**
- * Share record 清理任务
+ * 支持加锁的任务
  */
-@Component
-class ShareRecordCleanupJob(
-    private val shareRecordDao: ShareRecordDao
-) : CenterNodeJob() {
+abstract class LockableJob : SwitchableJob() {
 
-    @Scheduled(cron = "0 0 1 * * ?") // 每天凌晨1点执行
-    override fun execute() {
-        super.execute()
+    @Autowired
+    private lateinit var lockingTaskExecutor: LockingTaskExecutor
+
+    override fun doExecute() {
+        lockingTaskExecutor.executeWithLock(Runnable { doExecute() }, getLockConfiguration())
     }
 
-    override fun run() {
-        val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
-        val query = Query.query(where(TShareRecord::expireDate).lt(expireDate))
-        val result = shareRecordDao.remove(query)
-        logger.info("[${result.deletedCount}] expired share record has been clean up.")
-    }
+    /**
+     * 锁名称
+     */
+    open fun getLockName(): String = super.getJobName()
 
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
+    /**
+     * 最长加锁时间
+     */
+    open fun getLockAtLeastFor(): Duration = Duration.ofSeconds(1)
 
-    companion object {
-        private val logger = LoggerHolder.jobLogger
-        private const val RESERVE_DAYS = 7L
+    /**
+     * 最少加锁时间
+     */
+    open fun getLockAtMostFor(): Duration = Duration.ofMinutes(1)
+
+    private fun getLockConfiguration(): LockConfiguration {
+        return LockConfiguration(getLockName(), getLockAtMostFor(), getLockAtLeastFor())
     }
 }

@@ -29,43 +29,57 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.job
+package com.tencent.bkrepo.repository.job.base
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.repository.dao.ShareRecordDao
-import com.tencent.bkrepo.repository.job.base.CenterNodeJob
-import com.tencent.bkrepo.repository.model.TShareRecord
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
-import java.time.Duration
-import java.time.LocalDateTime
+import com.tencent.bkrepo.repository.config.RepositoryProperties
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 
 /**
- * Share record 清理任务
+ * 支持动态开关的任务
  */
-@Component
-class ShareRecordCleanupJob(
-    private val shareRecordDao: ShareRecordDao
-) : CenterNodeJob() {
+abstract class SwitchableJob : AsyncRepoJob {
 
-    @Scheduled(cron = "0 0 1 * * ?") // 每天凌晨1点执行
-    override fun execute() {
-        super.execute()
+    @Autowired
+    lateinit var repositoryProperties: RepositoryProperties
+
+    /**
+     * 执行任务过程
+     */
+    open fun execute() {
+        if (!shouldExecute()) {
+            return
+        }
+        logger.info("Start to execute async job[${getJobName()}]")
+        measureTimeMillis { doExecute() }.apply {
+            val elapsedTime = HumanReadable.time(this, TimeUnit.MILLISECONDS)
+            logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.")
+        }
     }
 
-    override fun run() {
-        val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
-        val query = Query.query(where(TShareRecord::expireDate).lt(expireDate))
-        val result = shareRecordDao.remove(query)
-        logger.info("[${result.deletedCount}] expired share record has been clean up.")
+    /**
+     * 调用任务
+     */
+    open fun doExecute() {
+        run()
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
+    /**
+     * 判断当前节点是否任务执行
+     */
+    open fun shouldExecute(): Boolean {
+        return repositoryProperties.job.enabled
+    }
+
+    /**
+     * 染污名称
+     */
+    open fun getJobName(): String = javaClass.simpleName
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val RESERVE_DAYS = 7L
     }
 }
