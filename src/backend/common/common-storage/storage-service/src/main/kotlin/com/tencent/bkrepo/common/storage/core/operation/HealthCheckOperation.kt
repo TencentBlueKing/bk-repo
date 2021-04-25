@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,16 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.repository.context
+package com.tencent.bkrepo.common.storage.core.operation
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 /**
- * 构件下载context
+ * 监控检查操作
  */
-open class ArtifactDownloadContext(
-    repo: RepositoryDetail? = null,
-    artifact: ArtifactInfo? = null,
-    var useDisposition: Boolean = false
-) : ArtifactContext(repo, artifact)
+interface HealthCheckOperation {
+    /**
+     * 健康检查
+     */
+    fun checkHealth(storageCredentials: StorageCredentials? = null)
+}

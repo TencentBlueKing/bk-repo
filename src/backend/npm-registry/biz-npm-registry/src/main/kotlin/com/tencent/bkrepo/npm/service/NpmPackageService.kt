@@ -307,8 +307,7 @@ class NpmPackageService(
             val content = npmPackage.toJsonString().toByteArray()
             val artifactResource = ArtifactResource(
                 inputStream = content.inputStream().artifactStream(Range.full(content.size.toLong())),
-                artifact = PACKAGE_JSON,
-                useDisposition = false
+                artifact = PACKAGE_JSON
             )
             ArtifactResourceWriter.write(artifactResource)
         }
@@ -336,8 +335,7 @@ class NpmPackageService(
             val content = versionMetadata.toJsonString().toByteArray()
             val artifactResource = ArtifactResource(
                 inputStream = content.inputStream().artifactStream(Range.full(content.size.toLong())),
-                artifact = PACKAGE_JSON,
-                useDisposition = false
+                artifact = PACKAGE_JSON
             )
             ArtifactResourceWriter.write(artifactResource)
         }

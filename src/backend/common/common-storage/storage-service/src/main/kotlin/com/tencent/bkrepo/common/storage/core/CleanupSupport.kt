@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,16 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.repository.context
+package com.tencent.bkrepo.common.storage.core
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 
 /**
- * 构件下载context
+ * 文件清理操作实现类
  */
-open class ArtifactDownloadContext(
-    repo: RepositoryDetail? = null,
-    artifact: ArtifactInfo? = null,
-    var useDisposition: Boolean = false
-) : ArtifactContext(repo, artifact)
+abstract class CleanupSupport : HealthCheckSupport() {
+
+    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempClient = getTempClient(credentials)
+        return tempClient.cleanUp(credentials.cache.expireDays)
+    }
+}

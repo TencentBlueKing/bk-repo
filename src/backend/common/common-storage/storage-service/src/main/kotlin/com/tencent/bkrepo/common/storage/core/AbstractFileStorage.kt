@@ -59,6 +59,10 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     @Autowired
     protected lateinit var storageProperties: StorageProperties
 
+    protected val defaultClient: Client by lazy {
+        onCreateClient(storageProperties.defaultStorageCredentials() as Credentials)
+    }
+
     private val retryTemplate = RetryTemplate()
 
     private val clientCache: LoadingCache<Credentials, Client> by lazy {
@@ -66,10 +70,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
             override fun load(credentials: Credentials): Client = onCreateClient(credentials)
         }
         CacheBuilder.newBuilder().maximumSize(MAX_CACHE_CLIENT).build(cacheLoader)
-    }
-
-    val defaultClient: Client by lazy {
-        onCreateClient(storageProperties.defaultStorageCredentials() as Credentials)
     }
 
     init {
