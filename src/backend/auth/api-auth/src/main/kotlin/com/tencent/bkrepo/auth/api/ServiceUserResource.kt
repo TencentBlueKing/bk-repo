@@ -251,7 +251,7 @@ interface ServiceUserResource {
     @GetMapping("/reset/{uid}")
     fun resetPassword(@PathVariable uid: String): Response<Boolean>
 
-    @ApiOperation("检验是否有系统中是否存在同名userId ")
+    @ApiOperation("检验系统中是否存在同名userId ")
     @GetMapping("/repeat/{uid}")
     fun repeatUid(@PathVariable uid: String): Response<Boolean>
 }
