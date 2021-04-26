@@ -91,7 +91,7 @@ class ListViewServiceImpl(
             val rowList = itemList.map { RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256)) }
             writePageContent(ListViewObject(currentPath, headerList, rowList, FOOTER, true))
         } else {
-            val context = ArtifactDownloadContext(useDisposition = false)
+            val context = ArtifactDownloadContext()
             ArtifactContextHolder.getRepository().download(context)
         }
     }

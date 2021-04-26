@@ -41,13 +41,10 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import org.quartz.Scheduler
 import org.quartz.impl.StdSchedulerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.openfeign.FeignClientsConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
 
 @Configuration
-@Import(FeignClientsConfiguration::class)
 @EnableConfigurationProperties(ReplicationProperties::class)
 class ReplicationConfigurer : ArtifactConfigurerSupport() {
 

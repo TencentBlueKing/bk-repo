@@ -111,10 +111,6 @@ class CacheStorageService(
         return fileStorage.exist(path, filename, credentials)
     }
 
-    override fun getTempPath(credentials: StorageCredentials): String {
-        return Paths.get(credentials.cache.path, TEMP).toString()
-    }
-
     /**
      * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
      */
