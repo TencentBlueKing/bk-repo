@@ -133,8 +133,8 @@ abstract class FileBlockSupport : CleanupSupport() {
         val digestInputStream = digest.byteInputStream()
         val digestSize = digest.length.toLong()
         try {
-            tempClient.store(blockId, "$sequence${BLOCK_SUFFIX}", blockInputStream, blockSize, overwrite)
-            tempClient.store(blockId, "$sequence${SHA256_SUFFIX}", digestInputStream, digestSize, overwrite)
+            tempClient.store(blockId, "$sequence$BLOCK_SUFFIX", blockInputStream, blockSize, overwrite)
+            tempClient.store(blockId, "$sequence$SHA256_SUFFIX", digestInputStream, digestSize, overwrite)
             logger.info("Success to store block [$blockId/$sequence]")
         } catch (exception: Exception) {
             logger.error("Failed to store block [$blockId/$sequence] on [${credentials.key}]", exception)
