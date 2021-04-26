@@ -50,8 +50,6 @@ data class Role(
     val repoName: String? = null,
     @ApiModelProperty("管理员")
     val admin: Boolean = false,
-    @ApiModelProperty("绑定的用户")
-    val users: Set<String> = mutableSetOf(),
     @ApiModelProperty("描述信息")
     val description: String? = null
 )
