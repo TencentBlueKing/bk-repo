@@ -40,7 +40,7 @@ import kotlin.math.abs
 /**
  * 构件文件接口
  */
-interface ArtifactFile: FileHashAccessor {
+interface ArtifactFile : FileHashAccessor {
 
     /**
      * 获取文件流，使用完记得关闭
