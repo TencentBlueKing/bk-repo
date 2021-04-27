@@ -53,6 +53,7 @@ interface RoleRepository : MongoRepository<TRole, String> {
     ): TRole?
 
     fun findTRoleById(id: ObjectId): TRole?
+    fun deleteTRolesById(id: ObjectId)
 
     fun findFirstByProjectIdAndTypeAndName(projectId: String, type: RoleType, name: String): TRole?
 }
