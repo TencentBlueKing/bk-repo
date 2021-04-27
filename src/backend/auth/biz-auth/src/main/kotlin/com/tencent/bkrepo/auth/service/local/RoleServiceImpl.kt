@@ -43,7 +43,9 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -59,14 +61,18 @@ class RoleServiceImpl constructor(
 
     override fun createRole(request: CreateRoleRequest): String? {
         logger.info("create  role  request : [$request] ")
-        var role: TRole? = if (request.type == RoleType.REPO) {
+        val role: TRole? = if (request.type == RoleType.REPO) {
             roleRepository.findFirstByRoleIdAndProjectIdAndRepoName(
-                request.roleId,
+                request.roleId!!,
                 request.projectId,
                 request.repoName!!
             )
         } else {
-            roleRepository.findFirstByRoleIdAndProjectId(request.roleId, request.projectId)
+            roleRepository.findFirstByProjectIdAndTypeAndName(
+                projectId = request.projectId,
+                type = RoleType.PROJECT,
+                name = request.name
+            )
         }
 
         role?.let {
@@ -74,9 +80,14 @@ class RoleServiceImpl constructor(
             return role.id
         }
 
+        val roleId = when (request.type) {
+            RoleType.REPO -> request.roleId!!
+            RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId)
+        }
+
         val result = roleRepository.insert(
             TRole(
-                roleId = request.roleId,
+                roleId = roleId,
                 type = request.type,
                 name = request.name,
                 projectId = request.projectId,
@@ -86,6 +97,14 @@ class RoleServiceImpl constructor(
             )
         )
         return result.id
+    }
+
+    private fun findUsableProjectTypeRoleId(roleId: String?, projectId: String): String {
+        var tempRoleId = roleId ?: "${projectId}_role_${IDUtil.shortUUID()}"
+        while (true) {
+            val role = roleRepository.findFirstByRoleIdAndProjectId(tempRoleId, projectId)
+            if (role == null) return tempRoleId else tempRoleId = "${projectId}_role_${IDUtil.shortUUID()}"
+        }
     }
 
     override fun detail(id: String): Role? {
@@ -107,14 +126,17 @@ class RoleServiceImpl constructor(
     }
 
     override fun updateRoleInfo(id: String, updateRoleRequest: UpdateRoleRequest): Boolean {
-        val query = Query().addCriteria(Criteria.where(TRole::id.name).`is`(id))
-        val update = Update()
+        var roleRecord = true
         with(updateRoleRequest) {
-            name?.let { update.set(TRole::name.name, name) }
-            description?.let { update.set(TRole::description.name, description) }
+            if (name != null || description != null) {
+                val query = Query().addCriteria(Criteria.where(TRole::id.name).`is`(id))
+                val update = Update()
+                name?.let { update.set(TRole::name.name, name) }
+                description?.let { update.set(TRole::description.name, description) }
+                val record = mongoTemplate.updateFirst(query, update, TRole::class.java)
+                roleRecord = record.modifiedCount == 1L || record.matchedCount == 1L
+            }
         }
-        val record = mongoTemplate.updateFirst(query, update, TRole::class.java)
-        val roleRecord = record.modifiedCount == 1L || record.matchedCount == 1L
 
         val userRecord = updateRoleRequest.userIds?.map { it }?.let { idList ->
             userService.addUserToRoleBatch(idList, id)
@@ -147,9 +169,14 @@ class RoleServiceImpl constructor(
 
     override fun deleteRoleByid(id: String): Boolean {
         logger.info("delete  role  id : [$id]")
-        roleRepository.findFirstById(id) ?: run {
+        val role = roleRepository.findTRoleById(ObjectId(id))
+        if (role == null) {
             logger.warn("delete role [$id ] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
+        } else {
+            if (listUserByRoleId(role.id!!).isNotEmpty()) {
+                throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_USER_NOT_EMPTY)
+            }
         }
 
         roleRepository.deleteById(id)
@@ -157,6 +184,8 @@ class RoleServiceImpl constructor(
     }
 
     private fun transfer(tRole: TRole): Role {
+        val userList = userRepository.findAllByRolesIn(listOf(tRole.id!!))
+        val users = userList.map { it.userId }
         return Role(
             id = tRole.id,
             roleId = tRole.roleId,
@@ -164,6 +193,7 @@ class RoleServiceImpl constructor(
             name = tRole.name,
             projectId = tRole.projectId,
             admin = tRole.admin,
+            users = users,
             description = tRole.description
         )
     }
