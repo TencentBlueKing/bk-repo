@@ -1,3 +1,5 @@
+package com.tencent.bkrepo.git.artifact
+
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
@@ -29,28 +31,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.git.constant.BLANK
+import com.tencent.bkrepo.git.constant.DOT_GIT
 
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT;
+open class GitRepositoryArtifactInfo(
+    projectId: String,
+    repoName: String,
+    artifactUri: String,
+    open var path: String ? = BLANK
+) : ArtifactInfo(projectId, repoName, artifactUri) {
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
+    override fun getArtifactName(): String {
+        return String.format("%s/%s/%s", projectId, repoName, this.getArtifactFullPath())
+    }
+
+    override fun getArtifactFullPath(): String {
+        return String.format("%s%s", DOT_GIT, path)
     }
 }

@@ -29,28 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.git
 
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT;
+import com.tencent.bkrepo.common.service.condition.MicroService
+import org.springframework.boot.runApplication
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
+@MicroService
+class GitApplication
+
+fun main(args: Array<String>) {
+    runApplication<GitApplication>(*args)
 }

@@ -29,28 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.git.artifact.repository
 
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT;
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
+import com.tencent.bkrepo.repository.api.StageClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+
+@Component
+class GitLocalRepository(private val stageClient: StageClient) : LocalRepository() {
+
+    override fun onUploadBefore(context: ArtifactUploadContext) {
+        super.onUploadBefore(context)
+        with(context.artifactInfo as GitRepositoryArtifactInfo) {
+            logger.info(
+                "User[${context.userId}] prepare to publish git hub uri [$path] " +
+                    "on ${getRepoIdentify()}"
+            )
+        }
+    }
+
+    override fun onUpload(context: ArtifactUploadContext) {
+        super.onUpload(context)
+        context.response.contentType = MediaTypes.APPLICATION_JSON
+        context.response.writer.println(ResponseBuilder.success().toJsonString())
+    }
 
     companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
+        private val logger: Logger = LoggerFactory.getLogger(GitLocalRepository::class.java)
     }
 }

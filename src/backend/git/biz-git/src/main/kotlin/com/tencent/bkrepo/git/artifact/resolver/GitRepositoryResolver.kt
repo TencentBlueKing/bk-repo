@@ -29,28 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.git.artifact.resolver
 
-/**
- * 仓库类型
- */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT;
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
+import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
+@Component
+@Resolver(GitRepositoryArtifactInfo::class)
+class GitRepositoryResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): GitRepositoryArtifactInfo {
+        return GitRepositoryArtifactInfo(projectId, repoName, artifactUri)
     }
 }
