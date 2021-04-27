@@ -48,7 +48,6 @@ import org.springframework.data.mongodb.core.mapping.Field
     CompoundIndex(name = "repoName_idx", def = "{'repoName': 1}", background = true)
 )
 data class TRole(
-    @Field("_id")
     val id: String? = null,
     val roleId: String,
     val type: RoleType,

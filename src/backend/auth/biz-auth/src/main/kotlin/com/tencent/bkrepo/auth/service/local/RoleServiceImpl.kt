@@ -139,6 +139,8 @@ class RoleServiceImpl constructor(
         }
 
         val userRecord = updateRoleRequest.userIds?.map { it }?.let { idList ->
+            val users = userRepository.findAllByRolesIn(listOf(id))
+            userService.removeUserFromRoleBatch(users.map { it.userId }, id)
             userService.addUserToRoleBatch(idList, id)
         } ?: true
         if (roleRecord && userRecord) {
