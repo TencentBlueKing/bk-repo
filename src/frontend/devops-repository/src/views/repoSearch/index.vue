@@ -13,7 +13,7 @@
             <div>
                 <bk-input
                     class="mr20 file-name-search"
-                    v-model="packageNameInput"
+                    v-model.trim="packageNameInput"
                     :placeholder="$t('pleaseInput') + $t('packageName')"
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"

@@ -3,7 +3,7 @@
         <div class="mb20 flex-align-center">
             <bk-input
                 class="user-search"
-                v-model="userInput"
+                v-model.trim="userInput"
                 clearable
                 :placeholder="'请输入账号/中文名'"
                 @enter="handlerPaginationChange()"
@@ -75,16 +75,16 @@
             :draggable="false">
             <bk-form class="mr50" :label-width="110" :model="editUserDialog" :rules="rules" ref="editUserDialog">
                 <bk-form-item class="mt30" :label="$t('account')" :required="true" property="userId">
-                    <bk-input v-model="editUserDialog.userId" :disabled="!editUserDialog.add" maxlength="32" :placeholder="$t('userIdPlacehodler')"></bk-input>
+                    <bk-input v-model.trim="editUserDialog.userId" :disabled="!editUserDialog.add" maxlength="32" :placeholder="$t('userIdPlacehodler')"></bk-input>
                 </bk-form-item>
                 <bk-form-item class="mt30" :label="$t('chineseName')" :required="true" property="name">
-                    <bk-input v-model="editUserDialog.name"></bk-input>
+                    <bk-input v-model.trim="editUserDialog.name"></bk-input>
                 </bk-form-item>
                 <bk-form-item class="mt30" :label="$t('email')" :required="true" property="email">
-                    <bk-input v-model="editUserDialog.email" type="email"></bk-input>
+                    <bk-input v-model.trim="editUserDialog.email" type="email"></bk-input>
                 </bk-form-item>
                 <bk-form-item class="mt30" label="电话">
-                    <bk-input v-model="editUserDialog.phone"></bk-input>
+                    <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
             </bk-form>
             <div slot="footer">

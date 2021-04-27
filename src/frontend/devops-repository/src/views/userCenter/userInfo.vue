@@ -24,7 +24,7 @@
                         <i v-if="mode === 'standalone' && !editItem.key" class="ml20 devops-icon icon-edit hover-btn" @click="editUserInfo(item)"></i>
                     </div>
                     <div v-else class="flex-align-center">
-                        <bk-input v-model="editItem.value"></bk-input>
+                        <bk-input v-model.trim="editItem.value"></bk-input>
                         <i class="ml20 devops-icon icon-check-1" @click="confirmEdit"></i>
                         <i class="ml20 devops-icon icon-close" @click="cancelEdit"></i>
                     </div>
@@ -45,7 +45,7 @@
                 <bk-form-item label="原密码" :required="true" property="oldPwd" error-display-type="normal">
                     <bk-input
                         class="login-input"
-                        v-model="pwdDialog.oldPwd"
+                        v-model.trim="pwdDialog.oldPwd"
                         type="password"
                         maxlength="32"
                         :native-attributes="{
@@ -57,7 +57,7 @@
                 <bk-form-item label="新密码" :required="true" property="newPwd" error-display-type="normal">
                     <bk-input
                         class="login-input"
-                        v-model="pwdDialog.newPwd"
+                        v-model.trim="pwdDialog.newPwd"
                         type="password"
                         maxlength="32"
                         :native-attributes="{
@@ -70,7 +70,7 @@
                 <bk-form-item label="确认密码" :required="true" property="check" error-display-type="normal">
                     <bk-input
                         class="login-input"
-                        v-model="pwdDialog.check"
+                        v-model.trim="pwdDialog.check"
                         type="password"
                         maxlength="32"
                         :native-attributes="{
