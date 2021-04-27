@@ -3,7 +3,7 @@
         <div class="mb20 flex-align-center">
             <bk-input
                 class="role-search"
-                v-model="role"
+                v-model.trim="role"
                 :right-icon="'bk-icon icon-search'"
                 clearable
                 :placeholder="`共有${roleList.length}个用户组`">
@@ -39,10 +39,10 @@
             :title="editRoleConfig.id ? '编辑用户组' : '添加用户组'">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
                 <bk-form-item label="名称" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model="editRoleConfig.name"></bk-input>
+                    <bk-input v-model.trim="editRoleConfig.name"></bk-input>
                 </bk-form-item>
                 <bk-form-item label="简介">
-                    <bk-input type="textarea" v-model="editRoleConfig.description"></bk-input>
+                    <bk-input type="textarea" v-model.trim="editRoleConfig.description"></bk-input>
                 </bk-form-item>
             </bk-form>
             <div slot="footer">
@@ -59,8 +59,13 @@
             <div class="show-userlist-content" slot="content">
                 <div class="add-user flex-align-center">
                     <div style="width:280px">
-                        <bk-select class="select-user" multiple show-select-all v-model="editRoleUsers.addUsers"
-                            placeholder="请选择用户" searchable>
+                        <bk-select class="select-user"
+                            v-model="editRoleUsers.addUsers"
+                            multiple
+                            searchable
+                            placeholder="请选择用户"
+                            :enable-virtual-scroll="Object.values(userList).length > 3000"
+                            :list="Object.values(userList)">
                             <bk-option v-for="option in Object.values(userList)"
                                 :key="option.id"
                                 :id="option.id"

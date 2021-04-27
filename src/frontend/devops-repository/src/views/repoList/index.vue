@@ -23,7 +23,7 @@
             <div class="repo-list-search">
                 <label class="form-label">{{$t('repoName')}}:</label>
                 <bk-input
-                    v-model="query.name"
+                    v-model.trim="query.name"
                     class="form-input"
                     :placeholder="$t('enterSearch')"
                     :clearable="true"
