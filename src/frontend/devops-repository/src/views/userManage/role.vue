@@ -18,6 +18,7 @@
             :data="filterRoleList"
             :outer-border="false"
             :row-border="false"
+            :row-style="{ cursor: 'pointer' }"
             size="small"
             @row-click="showUsers"
         >
