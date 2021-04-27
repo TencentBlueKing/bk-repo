@@ -25,7 +25,7 @@
                 :style="showRepoSearch ? 'margin-top: 20px' : ''">
                 <bk-input
                     class="repo-search-select"
-                    v-model="packageNameInput"
+                    v-model.trim="packageNameInput"
                     clearable
                     @enter="searchHandler"
                     @clear="searchHandler"

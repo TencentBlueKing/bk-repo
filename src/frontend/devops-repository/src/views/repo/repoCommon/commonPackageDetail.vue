@@ -23,7 +23,7 @@
                         <div class="mb20 flex-align-center">
                             <bk-input
                                 class="common-version-search"
-                                v-model="versionInput"
+                                v-model.trim="versionInput"
                                 clearable
                                 :placeholder="$t('versionPlacehodler')"
                                 @enter="handlerPaginationChange()"
