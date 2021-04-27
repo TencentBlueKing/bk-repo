@@ -139,6 +139,8 @@ class RoleServiceImpl constructor(
         }
 
         val userRecord = updateRoleRequest.userIds?.map { it }?.let { idList ->
+            val users = userRepository.findAllByRolesIn(listOf(id))
+            userService.removeUserFromRoleBatch(users.map { it.userId }, id)
             userService.addUserToRoleBatch(idList, id)
         } ?: true
         if (roleRecord && userRecord) {
@@ -177,9 +179,8 @@ class RoleServiceImpl constructor(
             if (listUserByRoleId(role.id!!).isNotEmpty()) {
                 throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_USER_NOT_EMPTY)
             }
+            roleRepository.deleteTRolesById(ObjectId(role.id))
         }
-
-        roleRepository.deleteById(id)
         return true
     }
 

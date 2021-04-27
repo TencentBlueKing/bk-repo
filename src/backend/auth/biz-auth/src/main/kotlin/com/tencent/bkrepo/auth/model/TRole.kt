@@ -35,7 +35,6 @@ import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
-import org.springframework.data.mongodb.core.mapping.Field
 
 /**
  * 角色
@@ -48,7 +47,6 @@ import org.springframework.data.mongodb.core.mapping.Field
     CompoundIndex(name = "repoName_idx", def = "{'repoName': 1}", background = true)
 )
 data class TRole(
-    @Field("_id")
     val id: String? = null,
     val roleId: String,
     val type: RoleType,
