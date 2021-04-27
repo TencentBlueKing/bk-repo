@@ -59,8 +59,13 @@
             <div class="show-userlist-content" slot="content">
                 <div class="add-user flex-align-center">
                     <div style="width:280px">
-                        <bk-select class="select-user" multiple show-select-all v-model="editRoleUsers.addUsers"
-                            placeholder="请选择用户" searchable>
+                        <bk-select class="select-user"
+                            v-model="editRoleUsers.addUsers"
+                            multiple
+                            searchable
+                            placeholder="请选择用户"
+                            :enable-virtual-scroll="Object.values(userList).length > 3000"
+                            :list="Object.values(userList)">
                             <bk-option v-for="option in Object.values(userList)"
                                 :key="option.id"
                                 :id="option.id"
