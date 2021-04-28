@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -44,7 +43,6 @@ import org.springframework.stereotype.Component
 /**
  * deleted = null -> deleted = 0 的文件
  */
-@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class NodeDeletedCorrectionJob(
     private val nodeDao: NodeDao
