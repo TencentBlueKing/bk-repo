@@ -258,7 +258,7 @@ class GitRemoteRepository : RemoteRepository() {
         }
         // name hash 多级目录
         val sha1 = "$projectId$repoName".sha1()
-        val dir = File(File(directory, sha1.substring(0, 20)), sha1.substring(20, 40))
+        val dir = File(File(directory, sha1.substring(0, 2)), sha1)
         if (!directory.isDirectory && !dir.mkdir())
             throw throw IOException("failed to create tmp work directory ${dir.canonicalPath}")
 
