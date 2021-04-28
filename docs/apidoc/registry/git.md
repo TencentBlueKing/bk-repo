@@ -22,11 +22,6 @@
   | hub_type | enum | 否 | 无 | 仓库类型[github] | hub type[github] |
   | owner | string | 否 | 无 | 仓库拥有者，hub_type传的情况必须传 | hub owner,required when hub_type have a value |
 
-- 请求样例
-
-```shell
-curl --location --request POST 'http://localhost:25810/project1/bk-ci/sync?hub_type=github&owner=Tencent'
-```
 
 - 响应体
 
@@ -44,7 +39,7 @@ curl --location --request POST 'http://localhost:25810/project1/bk-ci/sync?hub_t
   请求成功无返回数据
   
 ### 查询文件内容
-- API: POST /{projectId}/{repoName}/raw/{ref}/{path}
+- API: POST /{projectId}/{repoName}/raw/{ref}/{path}?hub_type={hub_type}&owner={owner}
 
 - API 名称: get_file_content
 
@@ -67,11 +62,6 @@ curl --location --request POST 'http://localhost:25810/project1/bk-ci/sync?hub_t
   | hub_type | enum | 否 | 无 | 仓库类型[github] | hub type[github] |
   | owner | string | 否 | 无 | 仓库拥有者，hub_type传的情况必须传 | hub owner,required when hub_type have a value |
 
-- 请求样例
-
-```shell
-curl --location --request GET 'http://localhost:25810/project1/bk-ci/raw/master/docs/install/agent.en.md?hub_type=github&owner=Tencent'
-```
 
 - 响应体
     [文件流]

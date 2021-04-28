@@ -29,3 +29,4 @@
   - [docker扩展接口](/apidoc/registry/docker.md)
   - [npm扩展接口](/apidoc/registry/npm.md)
   - [rpm扩展接口](/apidoc/registry/rpm.md)
+  - [git扩展接口](/apidoc/registry/git.md)
