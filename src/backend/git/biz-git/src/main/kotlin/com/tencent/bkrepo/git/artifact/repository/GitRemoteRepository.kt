@@ -154,10 +154,17 @@ class GitRemoteRepository : RemoteRepository() {
         directory: File
     ): NodeDetail {
         val gitDir = assembleGitDir(directory)
-        git.checkout()
-            .setStartPoint(gitContentArtifactInfo.objectId)
-            .addPath(gitContentArtifactInfo.path)
-            .call()
+        try {
+            git.checkout()
+                    .setStartPoint(gitContentArtifactInfo.objectId)
+                    .addPath(gitContentArtifactInfo.path)
+                    .call()
+        } catch (e: Exception) {
+            throw ErrorCodeException(
+                    GitMessageCode.GIT_PATH_NOT_FOUND,
+                    gitContentArtifactInfo.path!!, gitContentArtifactInfo.ref
+            )
+        }
 
         val filePath = "${directory.canonicalPath}/${gitContentArtifactInfo.path}"
         val checkoutFile = File(filePath)
