@@ -72,7 +72,7 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.info(
+            logger.debug(
                 "checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, " +
                     "repoName: $repoName, path: $path, action: $action"
             )
@@ -87,19 +87,19 @@ class BkAuthPermissionServiceImpl constructor(
             if (!bkAuthConfig.devopsAuthEnabled) return true // devops 鉴权未开启
             if (request.uid == ANONYMOUS_USER && bkAuthConfig.devopsAllowAnonymous) return true // 允许 devops 匿名访问
 
-            when (repoName) {
-                CUSTOM -> {
-                    return checkProjectPermission(uid, projectId!!)
+            return when (repoName) {
+                CUSTOM, LOG -> {
+                    checkProjectPermission(uid, projectId!!)
                 }
                 PIPELINE -> {
-                    return checkPipelinePermission(uid, projectId!!, path, resourceType)
+                    checkPipelinePermission(uid, projectId!!, path, resourceType)
                 }
                 REPORT -> {
-                    return action == PermissionAction.READ || action == PermissionAction.WRITE
+                    action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
                     logger.warn("invalid repoName: $repoName")
-                    return false
+                    false
                 }
             }
         }
@@ -152,7 +152,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun isDevopsRepo(repoName: String): Boolean {
-        return repoName == CUSTOM || repoName == PIPELINE || repoName == REPORT
+        return repoName == CUSTOM || repoName == PIPELINE || repoName == REPORT || repoName == LOG
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
@@ -163,7 +163,7 @@ class BkAuthPermissionServiceImpl constructor(
             return true
         }
 
-        // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report)的仓库和节点权限
+        // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report/log)的仓库和节点权限
         val resourceCond = request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE
         val appIdCond = request.appId == bkAuthConfig.devopsAppId || request.appId == bkAuthConfig.bkrepoAppId
         if (resourceCond && isDevopsRepo(request.repoName!!) && appIdCond) {
@@ -178,5 +178,6 @@ class BkAuthPermissionServiceImpl constructor(
         private const val CUSTOM = "custom"
         private const val PIPELINE = "pipeline"
         private const val REPORT = "report"
+        private const val LOG = "log"
     }
 }
