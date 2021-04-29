@@ -31,14 +31,15 @@
 
 package com.tencent.bkrepo.common.storage.monitor
 
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
-import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -79,10 +80,14 @@ class StorageHealthMonitor(
                         future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
                         changeToHealthy()
                         true
-                    } catch (timeoutException: TimeoutException) {
+                    } catch (ignored: TimeoutException) {
                         changeToUnhealthy(IO_TIMEOUT_MESSAGE)
-                    } catch (exception: IOException) {
-                        changeToUnhealthy(exception.message ?: StringPool.UNKNOWN)
+                    } catch (exception: ExecutionException) {
+                        changeToUnhealthy(exception.cause?.message ?: UNKNOWN)
+                    } catch (exception: InterruptedException) {
+                        changeToUnhealthy(exception.message ?: UNKNOWN)
+                    } catch (exception: CancellationException) {
+                        changeToUnhealthy(exception.message ?: UNKNOWN)
                     } finally {
                         checker.clean()
                     }
