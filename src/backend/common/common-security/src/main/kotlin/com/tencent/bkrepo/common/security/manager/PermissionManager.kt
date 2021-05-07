@@ -178,7 +178,7 @@ open class PermissionManager(
         }
         val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
-        checkAnonymous(userId, SecurityUtils.getPlatformId())
+        checkAnonymous(userId, platformId)
 
         // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(
