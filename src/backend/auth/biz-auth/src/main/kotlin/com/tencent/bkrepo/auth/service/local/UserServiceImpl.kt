@@ -48,6 +48,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -80,6 +81,11 @@ class UserServiceImpl constructor(
     override fun createUser(request: CreateUserRequest): Boolean {
         // todo 校验
         logger.info("create user request : [${DesensitizedUtils.toString(request)}]")
+        // create a anonymous user is not allowed
+        if (request.userId == ANONYMOUS_USER) {
+            logger.warn("create user [${request.userId}]  is exist.")
+            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
+        }
         val user = userRepository.findFirstByUserId(request.userId)
         user?.let {
             logger.warn("create user [${request.userId}]  is exist.")
