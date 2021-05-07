@@ -5,7 +5,7 @@ import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
 import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
 import com.tencent.bkrepo.nuget.model.v3.search.SearchResponse
 
-interface NugetV3ClientService {
+interface NugetV3PackageService {
     /**
      * 获取index.json内容
      */
@@ -27,7 +27,7 @@ interface NugetV3ClientService {
     fun download(artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String)
 
     /**
-     * 根绝[searchRequest]里面的条件进行搜索
+     * 根据[searchRequest]里面的条件进行搜索
      */
     fun search(artifactInfo: NugetArtifactInfo, searchRequest: SearchRequest): SearchResponse
 }

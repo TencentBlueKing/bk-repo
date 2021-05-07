@@ -6,13 +6,15 @@ import java.net.URI
 import java.util.StringJoiner
 
 object NugetUtils {
+    private const val NUGET_FULL_PATH = "/%s/%s.%s.nupkg"
+    private const val NUGET_PACKAGE_NAME = "%s.%s.nupkg"
 
     fun getNupkgFullPath(id: String, version: String): String {
-        return String.format("/%s/%s.%s.nupkg", id, id, version).toLowerCase()
+        return String.format(NUGET_FULL_PATH, id, id, version).toLowerCase()
     }
 
     fun getNupkgFileName(id: String, version: String): String {
-        return String.format("%s.%s.nupkg", id, version).toLowerCase()
+        return String.format(NUGET_PACKAGE_NAME, id, version).toLowerCase()
     }
 
     fun getServiceDocumentResource(): String {

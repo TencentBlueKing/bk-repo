@@ -44,27 +44,3 @@ data class NuspecPackage(
     val metadata: NuspecMetadata,
     val files: MutableList<NuspecFile>?
 )
-
-// data class NupkgMetadata(
-//     // Required elements (id version description authors)
-//     // Specifies the minimum version of the NuGet client that can install this package
-//     @JacksonXmlProperty(isAttribute = true)
-//     val minClientVersion: String?,
-//     val id: String,
-//     val version: String,
-//     val description: String,
-//     val authors: String,
-//     val title: String?,
-//     val owners: String?,
-//     val requireLicenseAcceptance: Boolean,
-//     val licenseUrl: String?,
-//     val projectUrl: String?,
-//     val iconUrl: String?,
-//     val summary: String?,
-//     val language: String?,
-//     val dependencies: MutableList<Dependency>? = mutableListOf()
-// ){
-//     fun isValid():Boolean{
-//         return id.isNotBlank() && version.isNotBlank()
-//     }
-// }

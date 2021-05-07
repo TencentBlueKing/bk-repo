@@ -29,11 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.nuget.artifact
+package com.tencent.bkrepo.nuget.artifact.resolver
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 

@@ -1,22 +1,19 @@
 package com.tencent.bkrepo.nuget.service.impl
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
-import com.tencent.bkrepo.nuget.constants.FULL_PATH
+import com.tencent.bkrepo.nuget.constant.FULL_PATH
 import com.tencent.bkrepo.nuget.exception.NugetException
 import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
 import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
 import com.tencent.bkrepo.nuget.model.v3.search.SearchResponse
 import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseData
-import com.tencent.bkrepo.nuget.service.NugetV3ClientService
+import com.tencent.bkrepo.nuget.service.NugetV3PackageService
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetVersionUtils
@@ -28,9 +25,9 @@ import java.io.IOException
 import kotlin.streams.toList
 
 @Service
-class NugetV3ClientServiceImpl(
+class NugetV3PackageServiceImpl(
     private val nugetPackageHandler: NugetPackageHandler
-) : NugetV3ClientService, NugetAbstractService() {
+) : NugetV3PackageService, NugetAbstractService() {
 
     override fun getFeed(artifactInfo: NugetArtifactInfo): String {
         return try {
@@ -73,7 +70,6 @@ class NugetV3ClientServiceImpl(
         }
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun download(artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String) {
         val nupkgFileName = NugetUtils.getNupkgFileName(packageId, packageVersion)
         val context = ArtifactDownloadContext()
@@ -81,7 +77,6 @@ class NugetV3ClientServiceImpl(
         ArtifactContextHolder.getRepository().download(context)
     }
 
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun search(artifactInfo: NugetArtifactInfo, searchRequest: SearchRequest): SearchResponse {
         logger.info("handling search request in repo [${artifactInfo.getRepoIdentify()}], parameter: $searchRequest")
         with(artifactInfo) {
@@ -116,6 +111,6 @@ class NugetV3ClientServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NugetV3ClientServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(NugetV3PackageServiceImpl::class.java)
     }
 }

@@ -17,13 +17,13 @@ open class NugetAbstractService {
     fun getV2Url(artifactInfo: ArtifactInfo): String {
         val url = HttpContextHolder.getRequest().requestURL
         val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
-        return domain.append(SLASH).append(artifactInfo.getRepoIdentify()).toString()
+        return domain.append(artifactInfo.getRepoIdentify()).toString()
     }
 
     fun getV3Url(artifactInfo: ArtifactInfo): String {
         val url = HttpContextHolder.getRequest().requestURL
         val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
-        return domain.append(SLASH).append("v3").append(SLASH).append(artifactInfo.getRepoIdentify()).toString()
+        return domain.append(artifactInfo.getRepoIdentify()).append(SLASH).append("v3").toString()
     }
 
     /**
