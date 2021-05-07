@@ -90,8 +90,8 @@ init:
     enabled: true
     image:
       registry: mirrors.tencent.com
-      repository: bkrepo/init
-      tag: 1.0.9
+      repository: bkrepo/bkrepo-init
+      tag: 1.0.10
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
@@ -138,8 +138,8 @@ gateway:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/gateway
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-gateway
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -175,8 +175,8 @@ repository:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/repository
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-repository
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -212,8 +212,8 @@ auth:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/auth
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-auth
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -244,12 +244,14 @@ auth:
 ## generic服务配置
 generic:
   enabled: true
-  config: {}
+  config:
+    ## 创建文件分享链接的host地址
+    host: http://bkrepo.com/generic
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/generic
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-generic
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -284,8 +286,8 @@ docker:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/docker
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-docker
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -320,8 +322,8 @@ npm:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/npm
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-npm
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -356,8 +358,8 @@ pypi:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/pypi
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-pypi
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -392,8 +394,8 @@ helm:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: bkrepo/helm
-    tag: 1.0.9
+    repository: bkrepo/bkrepo-helm
+    tag: 1.0.10
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
