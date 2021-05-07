@@ -34,6 +34,7 @@ package com.tencent.bkrepo.docker.manifest
 import com.fasterxml.jackson.databind.JsonNode
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.docker.artifact.DockerArtifact
 import com.tencent.bkrepo.docker.artifact.DockerArtifactRepo
@@ -161,7 +162,7 @@ class ManifestProcess constructor(val repo: DockerArtifactRepo) {
         val digest = manifest.get(CONFIG).get(DOCKER_DIGEST).asText()
         val fileName = DockerDigest(digest).fileName()
         val configFile = getManifestConfigBlob(repo, fileName, context, tag) ?: return ByteArray(0)
-        logger.info("get manifest config file [$configFile]")
+        logger.debug("get manifest config file [${configFile.toJsonString()}]")
         val downloadContext = DownloadContext(context).sha256(configFile.sha256!!).length(configFile.length)
         val stream = repo.download(downloadContext)
         stream.use {
