@@ -61,7 +61,6 @@ import com.tencent.bkrepo.docker.pojo.DockerTag
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -273,22 +272,6 @@ class DockerArtifactRepo @Autowired constructor(
     }
 
     /**
-     * set attributes of a file
-     * @param projectId project of the repo
-     * @param repoName name of the repo
-     * @param fullPath the path of file
-     * @param data metadata
-     */
-    fun setAttributes(projectId: String, repoName: String, fullPath: String, data: Map<String, String>) {
-        logger.debug("set attributes request [$projectId, $repoName, $fullPath, $data]")
-        val result = metadataService.saveMetadata(MetadataSaveRequest(projectId, repoName, fullPath, data))
-        if (result.isNotOk()) {
-            logger.error("set attribute [$projectId,$repoName,$fullPath,$data] fail")
-            throw DockerFileSaveFailedException("set attribute fail")
-        }
-    }
-
-    /**
      * get attributes of a file
      * @param projectId project of the repo
      * @param repoName name of the repo
@@ -386,7 +369,7 @@ class DockerArtifactRepo @Autowired constructor(
 
     // get artifact list by name
     fun getArtifactListByName(projectId: String, repoName: String, artifactName: String): List<Map<String, Any?>> {
-        var queryModel = NodeQueryBuilder()
+        val queryModel = NodeQueryBuilder()
             .select(DOCKER_NODE_FULL_PATH, DOCKER_NODE_PATH, DOCKER_NODE_SIZE)
             .projectId(projectId)
             .repoName(repoName)
@@ -431,7 +414,7 @@ class DockerArtifactRepo @Autowired constructor(
         pageSize: Int,
         name: String?
     ): List<DockerImage> {
-        var queryModel = NodeQueryBuilder().select(
+        val queryModel = NodeQueryBuilder().select(
             DOCKER_NODE_FULL_PATH,
             DOCKER_NODE_PATH,
             DOCKER_NODE_SIZE,
