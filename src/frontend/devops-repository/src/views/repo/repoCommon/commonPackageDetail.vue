@@ -37,6 +37,7 @@
                             :data="versionList"
                             :outer-border="false"
                             :row-border="false"
+                            :row-style="{ cursor: 'pointer' }"
                             size="small"
                             @row-click="toCommonVersionDetail"
                         >

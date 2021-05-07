@@ -203,7 +203,7 @@ open class PermissionServiceImpl constructor(
         }
 
         // check user admin permission
-        if (user.admin || !request.appId.isNullOrBlank()) return true
+        if (user.admin) return true
 
         // check role project admin
         if (checkProjectAdmin(request, user.roles)) return true
