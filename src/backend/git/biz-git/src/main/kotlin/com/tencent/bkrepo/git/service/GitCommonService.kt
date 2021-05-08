@@ -11,6 +11,8 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
 import com.tencent.bkrepo.git.constant.DOT_GIT
+import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_NUMBER
+import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_SIZE
 import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.constant.R_HEADS
 import com.tencent.bkrepo.git.constant.R_REMOTE_ORIGIN
@@ -71,8 +73,8 @@ class GitCommonService {
             // 一般情况不会走到这里，除非服务器本地文件被清理了
             logger.info("acquire git file from storage")
             val nodeListOption = NodeListOption(
-                pageNumber = 1,
-                pageSize = 10000,
+                pageNumber = GIT_NODE_LIST_PAGE_NUMBER,
+                pageSize = GIT_NODE_LIST_PAGE_SIZE,
                 includeFolder = false,
                 includeMetadata = true,
                 deep = true,

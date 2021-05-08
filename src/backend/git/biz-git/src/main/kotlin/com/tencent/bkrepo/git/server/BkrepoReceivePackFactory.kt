@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.git.server
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import org.eclipse.jgit.lib.Config
 import org.eclipse.jgit.lib.PersonIdent
@@ -23,12 +24,12 @@ class BkrepoReceivePackFactory {
         var user = artifactContext.userId
         if (cfg.set) {
             if (cfg.enabled) {
-                if ("" == user) user = "anonymous"
+                if (user.isNullOrEmpty()) user = ANONYMOUS_USER
                 return createFor(req, db, user)
             }
             throw ServiceNotEnabledException()
         }
-        if ("" != user) return createFor(req, db, user)
+        if (user.isNotEmpty() ) return createFor(req, db, user)
         throw ServiceNotAuthorizedException()
     }
 

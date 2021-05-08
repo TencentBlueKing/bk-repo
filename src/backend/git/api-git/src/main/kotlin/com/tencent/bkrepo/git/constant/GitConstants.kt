@@ -14,6 +14,8 @@ const val PARAMETER_OWNER = "owner"
 const val PATH_SYNC = "sync"
 const val REDIS_LOCK_KEY_PREFIX = "git:lock:"
 const val REDIS_SET_REPO_TO_UPDATE = "git:repo:to_update"
+const val GIT_NODE_LIST_PAGE_NUMBER = 1
+const val GIT_NODE_LIST_PAGE_SIZE= 10000
 
 fun convertorLockKey(key: String): String {
     return "$REDIS_LOCK_KEY_PREFIX$key"
