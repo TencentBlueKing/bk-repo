@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,17 +29,40 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    api(project(":replication:api-replication"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-plugin:plugin-service"))
-    api(project(":common:common-storage:storage-service"))
+package com.tencent.bkrepo.common.plugin.api
 
-    api("org.springframework.boot:spring-boot-starter-aop")
-    api("org.influxdb:influxdb-java")
+/**
+ * 扩展注册器
+ */
+interface ExtensionRegistry {
 
+    /**
+     * 注册扩展controller
+     * @param plugin 插件名称
+     * @param type 扩展controller class类型
+     */
+    fun registerExtensionController(plugin: String, name: String, type: Class<*>)
+
+    /**
+     * 注册扩展点
+     * @param plugin 插件名称
+     * @param type 扩展point class类型
+     */
+    fun registerExtensionPoint(plugin: String, name: String, type: Class<*>)
+
+    /**
+     * 查找扩展点
+     * @param type 扩展点类型
+     */
+    fun <T : ExtensionPoint> findExtensionPoints(type: Class<T>): List<T>
+
+    /**
+     * 注销插件[plugin]相关的扩展point
+     */
+    fun unregisterExtensionPointsByPlugin(plugin: String)
+
+    /**
+     * 注销插件[plugin]相关的扩展controller
+     */
+    fun unregisterExtensionControllerByPlugin(plugin: String)
 }
