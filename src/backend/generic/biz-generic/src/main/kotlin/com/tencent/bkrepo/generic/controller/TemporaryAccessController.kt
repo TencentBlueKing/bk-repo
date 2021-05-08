@@ -34,19 +34,19 @@ package com.tencent.bkrepo.generic.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
+import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TokenType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -60,34 +60,28 @@ class TemporaryAccessController(
 ) {
 
     @PostMapping("/token/create")
-    fun createToken(
-        @RequestAttribute userId: String,
-        @RequestBody request: TemporaryTokenCreateRequest
-    ): Response<List<TemporaryAccessToken>> {
+    fun createToken(@RequestBody request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
         with(request) {
             fullPathSet.forEach {
                 permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
             }
-            return temporaryAccessService.createToken(request)
+            return ResponseBuilder.success(temporaryAccessService.createToken(request))
         }
     }
 
     @PostMapping("/url/create")
-    fun createUrl(
-        @RequestAttribute userId: String,
-        @RequestBody request: TemporaryTokenCreateRequest
-    ): Response<List<TemporaryAccessUrl>> {
+    fun createUrl(@RequestBody request: TemporaryUrlCreateRequest): Response<List<TemporaryAccessUrl>> {
         with(request) {
             fullPathSet.forEach {
                 permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
             }
-            return temporaryAccessService.createUrl(request)
+            return ResponseBuilder.success(temporaryAccessService.createUrl(request))
         }
     }
 
     @GetMapping("/download/$GENERIC_MAPPING_URI")
     fun downloadByToken(
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        artifactInfo: GenericArtifactInfo,
         @RequestParam token: String
     ) {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
@@ -97,9 +91,9 @@ class TemporaryAccessController(
 
     @PutMapping("/upload/$GENERIC_MAPPING_URI")
     fun uploadByToken(
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-        @RequestParam token: String,
-        file: ArtifactFile
+        artifactInfo: GenericArtifactInfo,
+        file: ArtifactFile,
+        @RequestParam token: String
     ) {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         temporaryAccessService.upload(artifactInfo, file)

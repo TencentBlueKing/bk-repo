@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,17 +29,20 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    api(project(":replication:api-replication"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-plugin:plugin-service"))
-    api(project(":common:common-storage:storage-service"))
+package com.tencent.bkrepo.common.plugin.spring
 
-    api("org.springframework.boot:spring-boot-starter-aop")
-    api("org.influxdb:influxdb-java")
+import com.tencent.bkrepo.common.plugin.core.DefaultPluginManager
+import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
+@Configuration
+@ConditionalOnClass(name = ["org.springframework.boot.actuate.endpoint.annotation.Endpoint"])
+@AutoConfigureAfter(EndpointAutoConfiguration::class)
+class PluginEndpointAutoConfiguration {
+
+    @Bean
+    fun pluginEndpoint(defaultPluginManager: DefaultPluginManager) = PluginEndpoint(defaultPluginManager)
 }

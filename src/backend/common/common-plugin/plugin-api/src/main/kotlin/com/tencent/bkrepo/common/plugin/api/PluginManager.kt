@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,17 +29,43 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":repository:api-repository"))
-    api(project(":auth:api-auth"))
-    api(project(":replication:api-replication"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-plugin:plugin-service"))
-    api(project(":common:common-storage:storage-service"))
+package com.tencent.bkrepo.common.plugin.api
 
-    api("org.springframework.boot:spring-boot-starter-aop")
-    api("org.influxdb:influxdb-java")
+/**
+ * 插件管理器
+ */
+interface PluginManager {
 
+    /**
+     * 加载插件
+     */
+    fun load()
+
+    /**
+     * 查找扩展点列表
+     * @param clazz 扩展点类型
+     */
+    fun <T : ExtensionPoint> findExtensionPoints(clazz: Class<T>): List<T>
+
+    /**
+     * 获取注册的插件列表
+     */
+    fun getPluginMap(): Map<String, PluginInfo>
 }
+
+/**
+ * 查找扩展点, kotlin风格扩展函数
+ */
+inline fun <reified T : ExtensionPoint> PluginManager.find(): List<T> {
+    return this.findExtensionPoints(T::class.java)
+}
+
+/**
+ * 查找扩展点并遍历执行扩展逻辑
+ */
+inline fun <reified T : ExtensionPoint> PluginManager.applyExtension(block: T.() -> Unit) {
+    this.findExtensionPoints(T::class.java).forEach {
+        block(it)
+    }
+}
+
