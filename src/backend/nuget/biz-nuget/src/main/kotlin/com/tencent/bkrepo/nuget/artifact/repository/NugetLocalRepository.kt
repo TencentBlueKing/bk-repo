@@ -34,14 +34,10 @@ package com.tencent.bkrepo.nuget.artifact.repository
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.nuget.constant.FULL_PATH
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
@@ -65,7 +61,7 @@ class NugetLocalRepository(
                 projectId, repoName, PackageKeys.ofNuget(packageName.toLowerCase()), version
             ).data?.let {
                 throw ErrorCodeException(
-                    messageCode = NugetMessageCode.VERSION_EXITED,
+                    messageCode = NugetMessageCode.VERSION_EXISTED,
                     params = arrayOf(version),
                     status = HttpStatus.CONFLICT
                 )
@@ -90,16 +86,6 @@ class NugetLocalRepository(
     private fun uploadNupkg(context: ArtifactUploadContext) {
         val request = buildNodeCreateRequest(context).copy(overwrite = true)
         storageManager.storeArtifactFile(request, context.getArtifactFile(), context.storageCredentials)
-    }
-
-    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
-        with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
-            val responseName = artifactInfo.getResponseName()
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
-        }
     }
 
     /**

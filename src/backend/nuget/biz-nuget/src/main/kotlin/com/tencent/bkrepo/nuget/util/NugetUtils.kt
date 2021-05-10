@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.nuget.util
 
+import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.apache.commons.io.IOUtils
 import java.net.URI
 import java.util.StringJoiner
@@ -25,6 +28,18 @@ object NugetUtils {
     fun getFeedResource(): String {
         val inputStream = this.javaClass.classLoader.getResourceAsStream("v3/nugetRootFeedIndex.json")
         return inputStream.use { IOUtils.toString(it, "UTF-8") }
+    }
+
+    fun getV2Url(artifactInfo: ArtifactInfo): String {
+        val url = HttpContextHolder.getRequest().requestURL
+        val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
+        return domain.append(artifactInfo.getRepoIdentify()).toString()
+    }
+
+    fun getV3Url(artifactInfo: ArtifactInfo): String {
+        val url = HttpContextHolder.getRequest().requestURL
+        val domain = url.delete(url.length - HttpContextHolder.getRequest().requestURI.length, url.length)
+        return domain.append(artifactInfo.getRepoIdentify()).append(CharPool.SLASH).append("v3").toString()
     }
 
     fun buildPackageContentUrl(v3RegistrationUrl: String, packageId: String, version: String): URI {

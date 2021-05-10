@@ -3,6 +3,7 @@ package com.tencent.bkrepo.nuget.service
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 
 interface NugetClientService {
@@ -20,7 +21,7 @@ interface NugetClientService {
     /**
      * download nuget package
      */
-    fun download(userId: String, artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String)
+    fun download(userId: String, artifactInfo: NugetDownloadArtifactInfo)
 
     /**
      * find packages By id

@@ -39,11 +39,11 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.service.NugetClientService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
@@ -76,15 +76,13 @@ class NugetClientController(
         nugetClientService.publish(userId, publishInfo)
     }
 
-    @GetMapping("/Download/{packageId}/{packageVersion}")
+    @GetMapping("/Download/{id}/{version}")
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun download(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: NugetArtifactInfo,
-        @PathVariable packageId: String,
-        @PathVariable packageVersion: String
+        artifactInfo: NugetDownloadArtifactInfo
     ) {
-        nugetClientService.download(userId, artifactInfo, packageId, packageVersion)
+        nugetClientService.download(userId, artifactInfo)
     }
 
     @GetMapping("/FindPackagesById()", produces = ["application/xml"])
@@ -102,7 +100,7 @@ class NugetClientController(
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     fun delete(
         @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: NugetDeleteArtifactInfo
+        artifactInfo: NugetDeleteArtifactInfo
     ) {
         nugetClientService.delete(userId, artifactInfo)
     }

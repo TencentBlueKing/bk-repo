@@ -4,7 +4,8 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 
 enum class NugetMessageCode(private val key: String) : MessageCode {
     PACKAGE_CONTENT_INVALID("nuget.package.content.invalid"),
-    VERSION_EXITED("nuget.version.existed"),
+    VERSION_EXISTED("nuget.version.existed"),
+    PACKAGE_VERSIONS_NOT_EXISTED("nuget.versions.not.existed"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

@@ -6,11 +6,12 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.constant.FULL_PATH
 import com.tencent.bkrepo.nuget.model.v2.search.NuGetSearchRequest
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.service.NugetClientService
 import com.tencent.bkrepo.nuget.util.NugetUtils
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Service
 import java.io.IOException
 
 @Service
-class NugetClientServiceImpl : NugetClientService, NugetAbstractService() {
+class NugetClientServiceImpl : NugetClientService, ArtifactService() {
 
     override fun getServiceDocument(artifactInfo: NugetArtifactInfo) {
         val response = HttpContextHolder.getResponse()
@@ -40,7 +41,7 @@ class NugetClientServiceImpl : NugetClientService, NugetAbstractService() {
     override fun publish(userId: String, publishInfo: NugetPublishArtifactInfo) {
         logger.info("user [$userId] handling publish package request in repo [${publishInfo.getRepoIdentify()}]")
         val context = ArtifactUploadContext(publishInfo.artifactFile)
-        ArtifactContextHolder.getRepository().upload(context)
+        repository.upload(context)
         logger.info(
             "user [$userId] publish nuget package [${publishInfo.nuspecPackage.metadata.id}] with version " +
                 "[${publishInfo.nuspecPackage.metadata.version}] success to repo [${publishInfo.getRepoIdentify()}]"
@@ -49,11 +50,8 @@ class NugetClientServiceImpl : NugetClientService, NugetAbstractService() {
         context.response.writer.write("Successfully published NuPkg to: ${publishInfo.getArtifactFullPath()}")
     }
 
-    override fun download(userId: String, artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String) {
-        val nupkgFileName = NugetUtils.getNupkgFileName(packageId, packageVersion)
-        val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, nupkgFileName)
-        ArtifactContextHolder.getRepository().download(context)
+    override fun download(userId: String, artifactInfo: NugetDownloadArtifactInfo) {
+        repository.download(ArtifactDownloadContext())
     }
 
     override fun findPackagesById(artifactInfo: NugetArtifactInfo, searchRequest: NuGetSearchRequest) {

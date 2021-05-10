@@ -1,15 +1,13 @@
 package com.tencent.bkrepo.nuget.service
 
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
+import com.tencent.bkrepo.nuget.pojo.response.VersionListResponse
 import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
 import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
 import com.tencent.bkrepo.nuget.model.v3.search.SearchResponse
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
 
 interface NugetV3PackageService {
-    /**
-     * 获取index.json内容
-     */
-    fun getFeed(artifactInfo: NugetArtifactInfo): String
 
     /**
      * 根据RegistrationsBaseUrl获取registration的index metadata
@@ -22,9 +20,19 @@ interface NugetV3PackageService {
     ): RegistrationIndex
 
     /**
-     * 下载 [packageId].[packageVersion].nupkg 包
+     * 下载 .nupkg 包
      */
-    fun download(artifactInfo: NugetArtifactInfo, packageId: String, packageVersion: String)
+    fun downloadPackageContent(artifactInfo: NugetDownloadArtifactInfo)
+
+    /**
+     * 下载 .nuspec 包
+     */
+    fun downloadPackageManifest(artifactInfo: NugetDownloadArtifactInfo)
+
+    /**
+     * 查询包的所有版本
+     */
+    fun packageVersions(artifactInfo: NugetArtifactInfo, packageId: String): VersionListResponse
 
     /**
      * 根据[searchRequest]里面的条件进行搜索
