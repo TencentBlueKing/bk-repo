@@ -168,8 +168,6 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        logger.info("check permission, request : $request")
-
         // 校验蓝盾平台账号项目权限
         if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {
             return true
