@@ -188,13 +188,15 @@ class DockerV2LocalRepoService @Autowired constructor(
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("get manifest params [$context,$reference]")
         // packageRepo.addDownloadStatic(context, reference)
-        return try {
+
+        // get manifest by sha256
+        if (DockerDigest.isValid(reference)) {
             val digest = DockerDigest(reference)
-            manifestProcess.getManifestByDigest(context, digest, httpHeaders)
-        } catch (exception: IllegalArgumentException) {
-            logger.warn("unable to parse digest, get manifest by tag [$context,$reference]")
-            manifestProcess.getManifestByTag(context, reference, httpHeaders)
+            return manifestProcess.getManifestByDigest(context, digest, httpHeaders)
         }
+        // get manifest by tag
+        logger.info("unable to parse digest, get manifest by tag [$context,$reference]")
+        return manifestProcess.getManifestByTag(context, reference, httpHeaders)
     }
 
     override fun getRepoList(

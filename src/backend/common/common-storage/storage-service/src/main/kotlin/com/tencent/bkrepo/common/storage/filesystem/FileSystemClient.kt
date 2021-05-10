@@ -52,6 +52,8 @@ import java.nio.file.StandardCopyOption
  */
 class FileSystemClient(private val root: String) {
 
+    constructor(path: Path): this(path.toString())
+
     fun touch(dir: String, filename: String): File {
         val filePath = Paths.get(this.root, dir, filename)
         filePath.createFile()

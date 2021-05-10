@@ -31,43 +31,42 @@
 
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.dao.TemporaryTokenDao
+import com.tencent.bkrepo.repository.job.base.CenterNodeJob
 import com.tencent.bkrepo.repository.model.TTemporaryToken
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
  * Temporary token 清理任务
  */
-@ConditionalOnProperty("repository.job.enabled", matchIfMissing = true)
 @Component
 class TemporaryTokenCleanupJob(
     private val temporaryTokenDao: TemporaryTokenDao
-) {
+) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 3 * * ?") // 每天凌晨3点执行
-    @SchedulerLock(name = "TemporaryTokenCleanupJob", lockAtMostFor = "PT1H")
-    fun cleanup() {
-        logger.info("Starting to clean up expired temporary token.")
-        executeAndMeasureTime {
-            val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
-            val criteria = where(TTemporaryToken::expireDate).lt(expireDate)
-                .orOperator(where(TTemporaryToken::permits).lt(1))
-            val query = Query.query(criteria)
-            temporaryTokenDao.remove(query)
-        }.apply {
-            logger.info(
-                "[${first.deletedCount}] expired temporary token has been clean up, elapse [${second.seconds}] s."
-            )
-        }
+    override fun execute() {
+        super.execute()
     }
+
+    override fun run() {
+        val expireDate = LocalDateTime.now().minusDays(RESERVE_DAYS)
+        val criteria = where(TTemporaryToken::expireDate).lt(expireDate)
+            .orOperator(where(TTemporaryToken::permits).lt(1))
+        val query = Query.query(criteria)
+        val result = temporaryTokenDao.remove(query)
+        logger.info(
+            "[${result.deletedCount}] expired temporary token has been clean up."
+        )
+    }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
 
     companion object {
         private val logger = LoggerHolder.jobLogger

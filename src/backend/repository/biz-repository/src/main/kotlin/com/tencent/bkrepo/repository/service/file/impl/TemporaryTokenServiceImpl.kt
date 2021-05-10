@@ -96,7 +96,7 @@ class TemporaryTokenServiceImpl(
     }
 
     /**
-     * 验证数据格式，格式化fullPath
+     * 验证数据格式， 格式化fullPath
      */
     private fun validateAndNormalize(request: TemporaryTokenCreateRequest): List<String> {
         with(request) {

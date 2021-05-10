@@ -1,10 +1,13 @@
 <template>
     <div class="bkrepo-user-container flex-align-center">
-        <span>{{ userInfo.username }}</span>
+        <span>{{ userInfo.name || userInfo.username }}</span>
         <i class="ml5 bk-icon icon-angle-down"></i>
         <ul class="user-menu">
             <li class="flex-align-center">
-                <router-link class="hover-btn" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                <router-link class="hover-btn" :to="{ name: 'userCenter' }">{{ $t('userCenter') }}</router-link>
+            </li>
+            <li v-if="userInfo.admin" class="flex-align-center">
+                <router-link class="hover-btn" :to="{ name: 'userManage' }">{{ $t('userManage') }}</router-link>
             </li>
             <li class="flex-align-center">
                 <span class="hover-btn" @click="logout">{{ $t('logout') }}</span>
@@ -13,8 +16,7 @@
     </div>
 </template>
 <script>
-    import { mapState, mapMutations } from 'vuex'
-    import cookie from 'js-cookie'
+    import { mapState, mapMutations, mapActions } from 'vuex'
     export default {
         name: 'bkrepoUser',
         computed: {
@@ -22,10 +24,7 @@
         },
         methods: {
             ...mapMutations(['SHOW_LOGIN_DIALOG']),
-            logout () {
-                cookie.remove('bkrepo_ticket')
-                this.SHOW_LOGIN_DIALOG()
-            }
+            ...mapActions(['logout'])
         }
     }
 </script>

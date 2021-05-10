@@ -45,6 +45,7 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
@@ -56,6 +57,7 @@ import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -268,6 +270,33 @@ class ServiceUserResourceImpl @Autowired constructor(
             logger.warn("validate user token false [$bkrepoToken]")
             throw ErrorCodeException(AuthMessageCode.AUTH_LOGIN_TOKEN_CHECK_FAILED)
         }
+    }
+
+    override fun userPage(
+        pageNumber: Int,
+        pageSize: Int,
+        user: String?,
+        admin: Boolean?,
+        locked: Boolean?
+    ): Response<Page<UserInfo>> {
+        val result = userService.userPage(pageNumber, pageSize, user, admin, locked)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun userInfoById(uid: String): Response<UserInfo?> {
+        return ResponseBuilder.success(userService.getUserInfoById(uid))
+    }
+
+    override fun updatePassword(uid: String, oldPwd: String, newPwd: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.updatePassword(uid, oldPwd, newPwd))
+    }
+
+    override fun resetPassword(uid: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.resetPassword(uid))
+    }
+
+    override fun repeatUid(uid: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.repeatUid(uid))
     }
 
     companion object {

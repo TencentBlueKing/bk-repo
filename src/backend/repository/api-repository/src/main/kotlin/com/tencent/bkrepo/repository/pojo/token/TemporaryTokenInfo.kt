@@ -51,7 +51,7 @@ data class TemporaryTokenInfo(
     @ApiModelProperty("过期时间")
     val expireDate: String?,
     @ApiModelProperty("允许下载次数")
-    var permits: Int?,
+    val permits: Int?,
     @ApiModelProperty("token类型")
     val type: TokenType
 )

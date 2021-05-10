@@ -1,6 +1,6 @@
 <template>
     <div class="repo-token-container">
-        <header class="repo-token-header">
+        <!-- <header class="repo-token-header">
             <div class="flex-center">
                 {{ $t('token') }}
             </div>
@@ -9,7 +9,7 @@
                     {{$t('returnBack')}}
                 </bk-button>
             </div>
-        </header>
+        </header> -->
         <main class="repo-token-main" v-bkloading="{ isLoading }">
             <div class="mb20 repo-token-operation">
                 <bk-button theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
@@ -118,14 +118,14 @@
 @import '@/scss/conf';
 .repo-token-container {
     height: 100%;
-    .repo-token-header {
-        height: 50px;
-        padding: 0 20px;
-        display: flex;
-        align-items: center;
-        font-size: 14px;
-        background-color: white;
-    }
+    // .repo-token-header {
+    //     height: 50px;
+    //     padding: 0 20px;
+    //     display: flex;
+    //     align-items: center;
+    //     font-size: 14px;
+    //     background-color: white;
+    // }
     .repo-token-operation {
         flex: 1;
         display: flex;
@@ -133,10 +133,11 @@
         align-items: center;
     }
     .repo-token-main {
-        height: calc(100% - 80px);
-        margin-top: 20px;
-        padding: 20px;
-        background-color: white;
+        height: 100%;
+        // height: calc(100% - 70px);
+        // margin-top: 20px;
+        // padding: 20px;
+        // background-color: white;
         .icon-delete {
             font-size: 16px;
         }

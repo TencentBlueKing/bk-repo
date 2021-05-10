@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import cookie from 'js-cookie'
 
 import repoGeneric from './repoGeneric'
 import repoCommon from './repoCommon'
@@ -92,5 +93,16 @@ export default {
                 }
             }))
         })
+    },
+    logout () {
+        if (MODE_CONFIG === 'standalone') {
+            cookie.remove('bkrepo_ticket')
+            location.reload()
+        } else {
+            window.postMessage({
+                action: 'toggleLoginDialog'
+            }, '*')
+            location.href = window.getLoginUrl()
+        }
     }
 }

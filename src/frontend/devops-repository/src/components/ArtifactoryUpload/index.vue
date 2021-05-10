@@ -8,7 +8,7 @@
             <div class="ml20 mr20 upload-file-info">
                 <bk-form :label-width="80" :model="file" :rules="rules" ref="fileName">
                     <bk-form-item :label="$t('fileName')" :required="true" :property="'name'">
-                        <bk-input :disabled="Boolean(progress)" v-model="file.name"></bk-input>
+                        <bk-input :disabled="Boolean(progress)" v-model.trim="file.name"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('overwrite')" :required="true" :property="'overwrite'">
                         <bk-radio-group v-model="file.overwrite">

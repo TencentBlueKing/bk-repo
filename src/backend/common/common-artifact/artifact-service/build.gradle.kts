@@ -32,10 +32,11 @@
 dependencies {
     api(project(":repository:api-repository"))
     api(project(":auth:api-auth"))
+    api(project(":replication:api-replication"))
     api(project(":common:common-service"))
     api(project(":common:common-security"))
-    api(project(":common:common-plugin"))
     api(project(":common:common-artifact:artifact-api"))
+    api(project(":common:common-plugin:plugin-service"))
     api(project(":common:common-storage:storage-service"))
 
     api("org.springframework.boot:spring-boot-starter-aop")

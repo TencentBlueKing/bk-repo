@@ -50,11 +50,10 @@ import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
-import com.tencent.bkrepo.generic.constant.HEADER_PREVIEW
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.constant.PARAM_PREVIEW
+import com.tencent.bkrepo.generic.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -68,10 +67,10 @@ class GenericLocalRepository : LocalRepository() {
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         super.onDownloadBefore(context)
-        val preview = HeaderUtils.getBooleanHeader(HEADER_PREVIEW) ||
-            context.request.getParameter(PARAM_PREVIEW)?.toBoolean() ?: false
-        if (preview) {
-            context.useDisposition = false
+        // 控制浏览器直接下载，或打开预览
+        val isDownload = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
+        if (isDownload) {
+            context.useDisposition = true
         }
     }
 

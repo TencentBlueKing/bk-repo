@@ -37,16 +37,22 @@ export function throttle (func, interval = DEFAULT_TIME_INTERVAL) {
 export function throttleMessage (fn, delay = 1000) {
     let lastTime = 0
     return function (messageBody) {
-        if (messageBody.theme !== 'error') {
-            fn(messageBody)
+        // 设置默认配置
+        const message = {
+            offsetY: 80,
+            ellipsisLine: 0,
+            ...messageBody
+        }
+        if (message.theme !== 'error') {
+            fn(message)
             return
         }
-        if (['property', 'defined'].find(ignore => !messageBody.message || messageBody.message.indexOf(ignore) !== -1)) {
-            throw new Error(messageBody.message)
+        if (['property', 'defined'].find(ignore => !message.message || message.message.indexOf(ignore) !== -1)) {
+            throw new Error(message.message)
         }
         const now = +new Date()
         if (lastTime + delay > now) return
-        fn(messageBody)
+        fn(message)
         lastTime = now
     }
 }

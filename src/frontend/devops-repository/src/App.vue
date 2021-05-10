@@ -1,9 +1,9 @@
 <template>
     <div id="app" class="flex-column" v-bkloading="{ isLoading }">
-        <Header v-if="!iframeMode" />
+        <Header v-if="mode !== 'ci'" />
         <main class="bkrepo-main-container"
             :style="{
-                height: iframeMode ? '100%' : 'calc(100% - 50px)'
+                height: mode === 'ci' ? '100%' : 'calc(100% - 50px)'
             }">
             <router-view></router-view>
         </main>
@@ -22,12 +22,14 @@
         components: { Login, Header },
         data () {
             return {
-                isLoading: false,
-                iframeMode: MODE_CONFIG === 'ci'
+                isLoading: false
             }
         },
         computed: {
             ...mapState(['projectList']),
+            mode () {
+                return MODE_CONFIG
+            },
             projectId () {
                 return this.$route.params.projectId
             }
@@ -43,7 +45,7 @@
 
             const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
-            if (this.iframeMode) {
+            if (this.mode === 'ci') {
                 window.Vue = Vue
                 const script = document.createElement('script')
                 script.type = 'text/javascript'
@@ -57,6 +59,9 @@
                             this.goHome(data.currentProjectId)
                         }
                     })
+                    window.globalVue.$on('change::$userInfo', data => { // 用户信息
+                        this.SET_USER_INFO(data.userInfo)
+                    })
                     window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换
                         this.goHome()
                     })
@@ -69,8 +74,6 @@
                     window.globalVue.$on('order::syncLocale', locale => {
                         this.$setLocale(locale)
                     })
-                    this.getUserList()
-                    this.getUserInfo()
                 }
                 localStorage.setItem('projectId', urlProjectId || localProjectId || '')
                 !urlProjectId && this.$router.replace({
@@ -81,7 +84,7 @@
                 })
             } else {
                 this.isLoading = true
-                await Promise.all([this.ajaxUserInfo(), this.getProjectList()])
+                await Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()])
                 if (!(urlProjectId && this.projectList.find(v => v.id === urlProjectId))) {
                     let projectId = ''
                     if (this.projectList.find(v => v.id === localProjectId)) {
@@ -108,30 +111,14 @@
             Vue.config.errorHandler = callback
         },
         methods: {
-            ...mapMutations(['SET_USER_INFO', 'SET_USER_LIST']),
-            ...mapActions(['getProjectList', 'ajaxUserInfo']),
+            ...mapMutations(['SET_USER_INFO']),
+            ...mapActions(['getRepoUserList', 'getProjectList', 'ajaxUserInfo']),
             goHome (projectId) {
                 const params = projectId ? { projectId } : {}
                 this.$router.replace({
                     name: 'repoList',
                     params
                 })
-            },
-            getUserList () {
-                if (this.$userList) this.SET_USER_LIST(this.$userList)
-                else {
-                    setTimeout(() => {
-                        this.getUserList()
-                    }, 1000)
-                }
-            },
-            getUserInfo () {
-                if (this.$userInfo) this.SET_USER_INFO(this.$userInfo)
-                else {
-                    setTimeout(() => {
-                        this.getUserInfo()
-                    }, 1000)
-                }
             }
         }
     }

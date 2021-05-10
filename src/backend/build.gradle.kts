@@ -47,6 +47,7 @@ allprojects {
             dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
             dependency("com.google.code.gson:gson:2.8.6")
+            dependency("org.eclipse.jgit:org.eclipse.jgit:5.11.0.202103091610-r")
         }
     }
     configurations.all {

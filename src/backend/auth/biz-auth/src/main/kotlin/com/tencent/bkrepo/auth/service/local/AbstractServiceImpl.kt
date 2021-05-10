@@ -42,9 +42,11 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -84,8 +86,9 @@ open class AbstractServiceImpl constructor(
 
     // check role is exist
     fun checkRoleExist(roleId: String) {
-        roleRepository.findFirstById(roleId) ?: run {
-            logger.warn(" role not  exist.")
+        val role = roleRepository.findTRoleById(ObjectId(roleId))
+        role ?: run {
+            logger.warn("role not  exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_ROLE_NOT_EXIST)
         }
     }
@@ -172,6 +175,18 @@ open class AbstractServiceImpl constructor(
             locked = tUser.locked,
             tokens = tUser.tokens,
             roles = tUser.roles
+        )
+    }
+
+    fun transferUserInfo(tUser: TUser): UserInfo {
+        return UserInfo(
+            userId = tUser.userId,
+            name = tUser.name,
+            locked = tUser.locked,
+            email = tUser.email,
+            phone = tUser.phone,
+            createdDate = tUser.createdDate,
+            admin = tUser.admin
         )
     }
 

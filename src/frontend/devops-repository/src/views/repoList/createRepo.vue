@@ -25,7 +25,7 @@
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('repoName')" :required="true" property="name">
-                    <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                    <bk-input v-model.trim="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
                     <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
@@ -35,7 +35,7 @@
                         <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                     </bk-form-item>
                     <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
-                        <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
+                        <bk-input v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
                         <bk-tag-input
@@ -56,7 +56,7 @@
                 <bk-form-item :label="$t('description')">
                     <bk-input type="textarea"
                         maxlength="200"
-                        v-model="repoBaseInfo.description"
+                        v-model.trim="repoBaseInfo.description"
                         :placeholder="$t('repoDescriptionPlacehodler')">
                     </bk-input>
                 </bk-form-item>
@@ -198,7 +198,7 @@
         background-color: white;
     }
     .create-repo-main {
-        height: calc(100% - 80px);
+        height: calc(100% - 70px);
         margin-top: 20px;
         padding-top: 20px;
         display: flex;

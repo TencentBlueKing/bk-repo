@@ -41,7 +41,7 @@ class ArtifactResource(
     val artifact: String,
     val node: NodeDetail? = null,
     val channel: ArtifactChannel = ArtifactChannel.LOCAL,
-    var useDisposition: Boolean = true
+    var useDisposition: Boolean = false
 ) {
     var characterEncoding: String = StringPool.UTF_8
     var status: HttpStatus? = null
