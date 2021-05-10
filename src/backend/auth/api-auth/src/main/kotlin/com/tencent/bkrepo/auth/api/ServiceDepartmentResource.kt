@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_DEPARTMENT"], description = "服务-用户接口")
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceDepartmentResource")
-@RequestMapping(AUTH_API_DEPARTMENT_PREFIX, AUTH_SERVICE_DEPARTMENT_PREFIX)
+@RequestMapping(AUTH_SERVICE_DEPARTMENT_PREFIX, AUTH_API_DEPARTMENT_PREFIX)
 interface ServiceDepartmentResource {
 
     @ApiOperation("部门列表")
