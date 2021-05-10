@@ -371,8 +371,25 @@ class UserServiceImpl constructor(
             Criteria.where("tokens.id").`is`(pwd)
         ).and(TUser::userId.name).`is`(userId)
         val query = Query.query(criteria)
-        val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
-        return transferUser(result)
+        val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
+            return null
+        }
+        // password 匹配成功，返回
+        if (result.pwd == hashPwd && result.userId == userId) {
+            return transferUser(result)
+        }
+
+        // token 匹配成功
+        result.tokens.forEach {
+            // 永久token，校验通过，临时token校验有效期
+            if (it.id == pwd && it.expiredAt == null) {
+                return transferUser(result)
+            } else if (it.id == pwd && it.expiredAt != null && it!!.expiredAt!!.isAfter(LocalDateTime.now())) {
+                return transferUser(result)
+            }
+        }
+
+        return null
     }
 
     override fun userPage(
