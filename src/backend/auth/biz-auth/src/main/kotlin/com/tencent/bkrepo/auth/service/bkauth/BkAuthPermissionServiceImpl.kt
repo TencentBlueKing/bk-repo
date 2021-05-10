@@ -81,7 +81,7 @@ class BkAuthPermissionServiceImpl constructor(
             }
 
             if (request.uid == ANONYMOUS_USER && bkAuthConfig.devopsAllowAnonymous) {
-                logger.info("devops anonymous pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                logger.warn("devops anonymous pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
                 return true // 允许 devops 匿名访问
             }
 
