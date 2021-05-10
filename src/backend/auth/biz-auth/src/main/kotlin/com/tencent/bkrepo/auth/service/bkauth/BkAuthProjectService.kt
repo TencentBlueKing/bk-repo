@@ -72,6 +72,7 @@ class BkAuthProjectService @Autowired constructor(
 
         val accessToken = bkAuthTokenService.getAccessToken(BkAuthServiceCode.ARTIFACTORY)
         val url = "${bkAuthConfig.getBkAuthServer()}/projects/$projectCode/users/$user/verfiy?access_token=$accessToken"
+        logger.debug("isProjectMember, requestUrl: $url")
         val body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), "")
         val request = Request.Builder().url(url).post(body).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)

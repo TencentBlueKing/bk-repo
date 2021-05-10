@@ -68,4 +68,3 @@ inline fun <reified T : ExtensionPoint> PluginManager.applyExtension(block: T.()
         block(it)
     }
 }
-

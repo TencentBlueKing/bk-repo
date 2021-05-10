@@ -72,10 +72,6 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.debug(
-                "checkDevopsPermission, platformAppId: $appId, userId: $uid, projectId: $projectId, " +
-                    "repoName: $repoName, path: $path, action: $action"
-            )
             // 网关请求不允许匿名访问
             if (appId == bkAuthConfig.bkrepoAppId && request.uid == ANONYMOUS_USER) {
                 if (request.uid == ANONYMOUS_USER) {
@@ -84,10 +80,12 @@ class BkAuthPermissionServiceImpl constructor(
                 }
             }
 
-            if (!bkAuthConfig.devopsAuthEnabled) return true // devops 鉴权未开启
-            if (request.uid == ANONYMOUS_USER && bkAuthConfig.devopsAllowAnonymous) return true // 允许 devops 匿名访问
+            if (request.uid == ANONYMOUS_USER && bkAuthConfig.devopsAllowAnonymous) {
+                logger.warn("devops anonymous pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                return true // 允许 devops 匿名访问
+            }
 
-            return when (repoName) {
+            val pass = when (repoName) {
                 CUSTOM, LOG -> {
                     checkProjectPermission(uid, projectId!!)
                 }
@@ -102,6 +100,20 @@ class BkAuthPermissionServiceImpl constructor(
                     false
                 }
             }
+
+            // 校验不通过的权限只输出日志，暂时不拦截
+            if (!pass) {
+                return if (!bkAuthConfig.devopsAuthEnabled) {
+                    logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                    true
+                } else {
+                    logger.info("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                    false
+                }
+            }
+
+            logger.info("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+            return pass
         }
     }
 
@@ -156,8 +168,6 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        logger.info("check permission, request : $request")
-
         // 校验蓝盾平台账号项目权限
         if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {
             return true
