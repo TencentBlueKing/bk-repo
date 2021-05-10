@@ -284,20 +284,18 @@ class UserServiceImpl constructor(
             var id = IDUtil.genRandomId()
             var createdTime = LocalDateTime.now()
             existTokens.forEach {
-                //如果临时token已经存在，尝试更新token的过期时间
-                if (it.name == name) {
-                    if (it.expiredAt != null) {
-                        // 先删除token
-                        removeToken(userId, name)
-                        id = it.id
-                        createdTime = it.createdAt
-                    } else {
-                        logger.warn("user token exist [$name]")
-                        throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
-                    }
+                // 如果临时token已经存在，尝试更新token的过期时间
+                if (it.name == name && it.expiredAt != null) {
+                    // 先删除token
+                    removeToken(userId, name)
+                    id = it.id
+                    createdTime = it.createdAt
+                } else if (it.name == name && it.expiredAt == null) {
+                    logger.warn("user token exist [$name]")
+                    throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
                 }
             }
-            //创建token
+            // 创建token
             val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
             val update = Update()
             var expiredTime: LocalDateTime? = null
