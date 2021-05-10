@@ -323,7 +323,7 @@ class UserServiceImpl constructor(
             return null
         } catch (ignored: DateTimeParseException) {
             logger.error("add user token false [$ignored]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_ERROR)
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_TIME_ERROR)
         }
     }
 
