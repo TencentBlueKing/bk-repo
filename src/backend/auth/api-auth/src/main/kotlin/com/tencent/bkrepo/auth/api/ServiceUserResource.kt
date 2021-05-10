@@ -202,7 +202,7 @@ interface ServiceUserResource {
         @PathVariable token: String
     ): Response<Boolean>
 
-    @ApiOperation("校验用户token")
+    @ApiOperation("校验用户会话token")
     @PostMapping("/login")
     fun loginUser(
         @ApiParam(value = "用户id")
