@@ -281,18 +281,25 @@ class UserServiceImpl constructor(
 
             val existUserInfo = getUserById(userId)
             val existTokens = existUserInfo!!.tokens
+            var id = IDUtil.genRandomId()
+            var createdTime = LocalDateTime.now()
             existTokens.forEach {
-                if (it.name == name) {
+                // 如果临时token已经存在，尝试更新token的过期时间
+                if (it.name == name && it.expiredAt != null) {
+                    // 先删除token
+                    removeToken(userId, name)
+                    id = it.id
+                    createdTime = it.createdAt
+                } else if (it.name == name && it.expiredAt == null) {
                     logger.warn("user token exist [$name]")
                     throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
                 }
             }
+            // 创建token
             val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
             val update = Update()
-            val id = IDUtil.genRandomId()
-            val now = LocalDateTime.now()
             var expiredTime: LocalDateTime? = null
-            if (expiredAt != null && expiredAt.length != 0) {
+            if (expiredAt != null && expiredAt.isNotEmpty()) {
                 val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 expiredTime = LocalDateTime.parse(expiredAt, dateTimeFormatter)
                 // conv time
@@ -301,7 +308,7 @@ class UserServiceImpl constructor(
             val userToken = Token(
                 name = name,
                 id = id,
-                createdAt = now,
+                createdAt = createdTime,
                 expiredAt = expiredTime
             )
             update.addToSet(TUser::tokens.name, userToken)
@@ -359,8 +366,10 @@ class UserServiceImpl constructor(
         logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val criteria = Criteria()
-        criteria.orOperator(Criteria.where(TUser::pwd.name).`is`(hashPwd), Criteria.where("tokens.id").`is`(pwd))
-            .and(TUser::userId.name).`is`(userId)
+        criteria.orOperator(
+            Criteria.where(TUser::pwd.name).`is`(hashPwd),
+            Criteria.where("tokens.id").`is`(pwd)
+        ).and(TUser::userId.name).`is`(userId)
         val query = Query.query(criteria)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: return null
         return transferUser(result)
