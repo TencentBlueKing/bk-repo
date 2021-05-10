@@ -64,7 +64,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceUserResource")
-@RequestMapping(AUTH_API_USER_PREFIX, AUTH_SERVICE_USER_PREFIX)
+@RequestMapping(AUTH_SERVICE_USER_PREFIX, AUTH_API_USER_PREFIX)
 interface ServiceUserResource {
 
     @ApiOperation("创建项目用户")
