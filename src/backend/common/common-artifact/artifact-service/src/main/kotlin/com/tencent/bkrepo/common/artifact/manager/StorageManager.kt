@@ -39,12 +39,14 @@ import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.replication.api.StorageReplicationClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
@@ -126,8 +128,9 @@ class StorageManager(
         if (node == null || node.folder) {
             return null
         }
+        val request = getRequestOrNull()
         val range = try {
-            getRequestOrNull()?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
+            request?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
         } catch (exception: IllegalArgumentException) {
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
@@ -135,7 +138,9 @@ class StorageManager(
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
-
+        if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
+            return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        }
         val sha256 = node.sha256.orEmpty()
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
