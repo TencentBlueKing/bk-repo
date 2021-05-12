@@ -49,6 +49,10 @@ object DecompressUtil {
         return nuspecContent.readXmlString()
     }
 
+    fun InputStream.resolverNuspecMetadata(): String {
+        return getNuspec(ZipArchiveInputStream(this))
+    }
+
     /**
      * 获取nupkg 压缩中的'.nuspec'文件
      * [archiveInputStream] 压缩文件流

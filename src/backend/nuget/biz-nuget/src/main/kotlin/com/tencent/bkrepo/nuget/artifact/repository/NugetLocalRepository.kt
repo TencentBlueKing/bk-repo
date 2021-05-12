@@ -32,16 +32,24 @@
 package com.tencent.bkrepo.nuget.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
 import com.tencent.bkrepo.nuget.handler.NugetPackageHandler
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
+import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspecMetadata
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
@@ -86,6 +94,30 @@ class NugetLocalRepository(
     private fun uploadNupkg(context: ArtifactUploadContext) {
         val request = buildNodeCreateRequest(context).copy(overwrite = true)
         storageManager.storeArtifactFile(request, context.getArtifactFile(), context.storageCredentials)
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        // download package manifest
+        return with(context) {
+            if (request.requestURL.endsWith(".nuspec")) {
+                val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+                val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+                val responseName = artifactInfo.getResponseName()
+                val byteInputStream = inputStream.use { it.resolverNuspecMetadata() }.byteInputStream()
+                val artifactFile = ArtifactFileFactory.build(byteInputStream)
+                val size = artifactFile.getSize()
+                val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+                val artifactResource = ArtifactResource(
+                    artifactStream, responseName, node, ArtifactChannel.LOCAL, useDisposition
+                )
+                // 临时文件删除
+                artifactFile.delete()
+                artifactResource.contentType = MediaTypes.APPLICATION_XML
+                artifactResource
+            } else {
+                super.onDownload(context)
+            }
+        }
     }
 
     /**
