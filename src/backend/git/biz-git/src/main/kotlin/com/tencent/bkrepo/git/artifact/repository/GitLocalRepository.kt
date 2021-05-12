@@ -33,18 +33,22 @@ package com.tencent.bkrepo.git.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
-import com.tencent.bkrepo.repository.api.StageClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class GitLocalRepository(private val stageClient: StageClient) : LocalRepository() {
+class GitLocalRepository : LocalRepository() {
 
+    @Autowired
+    lateinit var gitRemoteRepository: GitRemoteRepository
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
         with(context.artifactInfo as GitRepositoryArtifactInfo) {
@@ -63,5 +67,9 @@ class GitLocalRepository(private val stageClient: StageClient) : LocalRepository
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(GitLocalRepository::class.java)
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return gitRemoteRepository.onDownload(context)
     }
 }

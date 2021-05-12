@@ -32,6 +32,5 @@
 dependencies{
     api(project(":git:api-git"))
     api(project(":common:common-redis"))
-    implementation("org.eclipse.jgit:org.eclipse.jgit")
-
+    implementation("org.eclipse.jgit:org.eclipse.jgit.http.server")
 }
