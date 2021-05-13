@@ -20,14 +20,6 @@ class NugetV3PackageController(
     private val nugetV3PackageService: NugetV3PackageService
 ) {
 
-//    @GetMapping("/registration-semver2/{packageId}/index.json", produces = [MediaTypes.APPLICATION_JSON])
-//    fun registrationSemver2Index(
-//        @ArtifactPathVariable artifactInfo: NugetArtifactInfo,
-//        @PathVariable packageId: String
-//    ): RegistrationIndex {
-//        return nugetV3PackageService.registration(artifactInfo, packageId, "registration-semver2", true)
-//    }
-
     @GetMapping("/query", produces = [MediaTypes.APPLICATION_JSON])
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun search(

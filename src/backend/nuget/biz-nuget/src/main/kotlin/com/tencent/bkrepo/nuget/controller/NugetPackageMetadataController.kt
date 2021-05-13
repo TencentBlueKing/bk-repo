@@ -1,12 +1,10 @@
 package com.tencent.bkrepo.nuget.controller
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
-import com.tencent.bkrepo.nuget.service.NugetV3PackageService
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import com.tencent.bkrepo.nuget.service.NugetPackageMetadataService
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -17,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/{projectId}/{repoName}/v3")
 class NugetPackageMetadataController(
-    private val nugetV3PackageService: NugetV3PackageService
+    private val nugetPackageMetadataService: NugetPackageMetadataService
 ) {
     /**
      * GET {@id}/{LOWER_ID}/index.json
@@ -26,11 +24,24 @@ class NugetPackageMetadataController(
      *
      * RegistrationsBaseUrl/3.6.0+
      */
-    @GetMapping("/registration-semver2/{packageId}/index.json", produces = [MediaTypes.APPLICATION_JSON])
+    @GetMapping("/registration-semver2/{id}/index.json", produces = [MediaTypes.APPLICATION_JSON])
     fun registrationSemver2Index(
-        @ArtifactPathVariable artifactInfo: NugetArtifactInfo,
-        @PathVariable packageId: String
-    ): RegistrationIndex {
-        return nugetV3PackageService.registration(artifactInfo, packageId, "registration-semver2", true)
+        artifactInfo: NugetRegistrationArtifactInfo
+    ): ResponseEntity<Any> {
+        return nugetPackageMetadataService.registrationIndex(artifactInfo, "registration-semver2", true)
+    }
+
+    @GetMapping("/registration-semver2/{id}/page/{lowerVersion}/{upperVersion}.json")
+    fun registrationSemver2Page(
+        artifactInfo: NugetRegistrationArtifactInfo
+    ): ResponseEntity<Any> {
+        return nugetPackageMetadataService.registrationPage(artifactInfo, "registration-semver2", true)
+    }
+
+    @GetMapping("/registration-semver2/{id}/{version}.json")
+    fun registrationSemver2Leaf(
+        artifactInfo: NugetRegistrationArtifactInfo
+    ): ResponseEntity<Any> {
+        return nugetPackageMetadataService.registrationLeaf(artifactInfo, "registration-semver2", true)
     }
 }

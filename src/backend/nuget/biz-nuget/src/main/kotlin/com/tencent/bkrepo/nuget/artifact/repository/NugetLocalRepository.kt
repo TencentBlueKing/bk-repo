@@ -80,9 +80,7 @@ class NugetLocalRepository(
     override fun onUpload(context: ArtifactUploadContext) {
         with(context.artifactInfo as NugetPublishArtifactInfo) {
             uploadNupkg(context)
-            nugetPackageHandler.createPackageVersion(
-                context.userId, this, nuspecPackage.metadata, size
-            )
+            nugetPackageHandler.createPackageVersion(context)
             context.response.status = HttpStatus.CREATED.value
             context.response.writer.write("Successfully published NuPkg to: ${getArtifactFullPath()}")
         }

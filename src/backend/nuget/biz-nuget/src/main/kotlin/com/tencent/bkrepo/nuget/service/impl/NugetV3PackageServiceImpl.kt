@@ -1,11 +1,7 @@
 package com.tencent.bkrepo.nuget.service.impl
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.exception.NugetException
-import com.tencent.bkrepo.nuget.model.v3.RegistrationIndex
 import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
 import com.tencent.bkrepo.nuget.model.v3.search.SearchResponse
 import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseData
@@ -24,33 +20,6 @@ import kotlin.streams.toList
 class NugetV3PackageServiceImpl(
     private val packageClient: PackageClient
 ) : NugetV3PackageService, ArtifactService() {
-
-    override fun registration(
-        artifactInfo: NugetArtifactInfo,
-        packageId: String,
-        registrationPath: String,
-        isSemver2Endpoint: Boolean
-    ): RegistrationIndex {
-        with(artifactInfo) {
-            val packageVersionList =
-                packageClient.listVersionPage(projectId, repoName, PackageKeys.ofNuget(packageId)).data!!.records
-            if (packageVersionList.isEmpty()) {
-                throw NugetException(
-                    "nuget metadata not found for package [$packageId] in repo [${this.getRepoIdentify()}]"
-                )
-            }
-            val metadataList = packageVersionList.map { it.metadata }.stream()
-                .sorted { o1, o2 -> NugetVersionUtils.compareSemVer(o1["version"] as String, o2["version"] as String) }
-                .toList()
-            try {
-                val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
-                return NugetV3RegistrationUtils.metadataToRegistrationIndex(metadataList, v3RegistrationUrl)
-            } catch (ignored: JsonProcessingException) {
-                logger.error("failed to deserialize metadata to registration index json")
-                throw ignored
-            }
-        }
-    }
 
     override fun search(artifactInfo: NugetArtifactInfo, searchRequest: SearchRequest): SearchResponse {
         logger.info("handling search request in repo [${artifactInfo.getRepoIdentify()}], parameter: $searchRequest")

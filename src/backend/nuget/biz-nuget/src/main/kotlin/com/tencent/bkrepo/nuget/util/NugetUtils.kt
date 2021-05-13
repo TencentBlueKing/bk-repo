@@ -49,7 +49,7 @@ object NugetUtils {
                     v3RegistrationUrl.removeSuffix("registration-semver2").plus("flatcontainer")
                 )
             )
-            .add(packageId).add(version).add(getNupkgFileName(packageId, version))
+            .add(packageId.toLowerCase()).add(version).add(getNupkgFileName(packageId, version))
         return URI.create(packageContentUrl.toString())
     }
 

@@ -30,7 +30,7 @@ class NugetPackageContentController(
      *
      * return binary stream
      */
-    @GetMapping("/{id}/{version}/{id}.{version}.nupkg")
+    @GetMapping("/{id}/{version}/*.nupkg")
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun downloadPackageContent(
         artifactInfo: NugetDownloadArtifactInfo

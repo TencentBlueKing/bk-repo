@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.nuget.handler
 
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.model.nuspec.Dependency
@@ -8,7 +9,7 @@ import com.tencent.bkrepo.nuget.model.nuspec.FrameworkAssembly
 import com.tencent.bkrepo.nuget.model.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.model.nuspec.Reference
 import com.tencent.bkrepo.nuget.model.nuspec.ReferenceGroup
-import com.tencent.bkrepo.nuget.util.NugetUtils
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -29,24 +30,21 @@ class NugetPackageHandler {
      * 创建包版本
      */
     fun createPackageVersion(
-        userId: String,
-        artifactInfo: NugetArtifactInfo,
-        nuspecMetadata: NuspecMetadata,
-        size: Long
+        context: ArtifactUploadContext
     ) {
-        nuspecMetadata.apply {
-            var metadata: Map<String, Any>? = null
-            logger.info(
-                "start index nuget metadata for package [$id] and version [$version] " +
-                    "in repo [${artifactInfo.getRepoIdentify()}]"
-            )
-            measureTimeMillis { metadata = indexMetadata(this) }.apply {
+        with(context.artifactInfo as NugetPublishArtifactInfo) {
+            nuspecPackage.metadata.apply {
+                var metadata: Map<String, Any>? = null
                 logger.info(
-                    "finished index nuget metadata for package [$id] and version [$version] " +
-                        "in repo [${artifactInfo.getRepoIdentify()}], elapse [$this] ms."
+                    "start index nuget metadata for package [$id] and version [$version] " +
+                        "in repo [${getRepoIdentify()}]"
                 )
-            }
-            with(artifactInfo) {
+                measureTimeMillis { metadata = indexMetadata(this) }.apply {
+                    logger.info(
+                        "finished index nuget metadata for package [$id] and version [$version] " +
+                            "in repo [${getRepoIdentify()}], elapse [$this] ms."
+                    )
+                }
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
@@ -56,15 +54,15 @@ class NugetPackageHandler {
                     packageDescription = description,
                     versionName = version,
                     size = size,
-                    manifestPath = null,
-                    artifactPath = getContentPath(id, version),
-                    stageTag = null,
+                    artifactPath = getArtifactFullPath(),
                     metadata = metadata,
                     overwrite = true,
-                    createdBy = userId
+                    createdBy = context.userId
                 )
                 packageClient.createVersion(packageVersionCreateRequest).apply {
-                    logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
+                    logger.info(
+                        "user: [${context.userId}] create package version [$packageVersionCreateRequest] success!"
+                    )
                 }
             }
         }
@@ -75,24 +73,27 @@ class NugetPackageHandler {
         if (nuspecMetadata.isValid()) {
             with(nuspecMetadata) {
                 metadata["id"] = id
-                /*metadata["version"] = version
-                metadata["title"] = title ?: StringPool.EMPTY
+                metadata["version"] = version
                 metadata["authors"] = authors
-                metadata["summary"] = summary ?: StringPool.EMPTY
-                metadata["copyright"] = copyright ?: StringPool.EMPTY
-                metadata["releaseNotes"] = releaseNotes ?: StringPool.EMPTY
-                metadata["owners"] = owners ?: StringPool.EMPTY
                 metadata["description"] = description
-                metadata["requireLicenseAcceptance"] = requireLicenseAcceptance ?: false
-                metadata["projectUrl"] = projectUrl ?: StringPool.EMPTY
-                metadata["iconUrl"] = iconUrl ?: StringPool.EMPTY
-                metadata["icon"] = icon ?: StringPool.EMPTY
-                metadata["licenseUrl"] = licenseUrl ?: StringPool.EMPTY
-                metadata["tags"] = tags ?: StringPool.EMPTY
-                metadata["language"] = language ?: StringPool.EMPTY*/
-                metadata["dependency"] = buildDependencies(dependencies)
-                metadata["reference"] = buildReferences(references)
-                metadata["frameworks"] = buildFrameworks(frameworkAssemblies)
+                owners?.let { metadata["owners"] = it }
+                projectUrl?.let { metadata["projectUrl"] = it }
+                licenseUrl?.let { metadata["licenseUrl"] = it }
+                license?.let { metadata["license"] = it }
+                iconUrl?.let { metadata["iconUrl"] = it }
+                icon?.let { metadata["icon"] = it }
+                requireLicenseAcceptance?.let { metadata["requireLicenseAcceptance"] = it }
+                developmentDependency?.let { metadata["developmentDependency"] = it }
+                summary?.let { metadata["summary"] = it }
+                releaseNotes?.let { metadata["releaseNotes"] = it }
+                copyright?.let { metadata["copyright"] = it }
+                language?.let { metadata["language"] = it }
+                tags?.let { metadata["tags"] = it }
+                serviceable?.let { metadata["serviceable"] = it }
+                title?.let { metadata["title"] = it }
+                dependencies?.let { metadata["dependency"] = buildDependencies(it) }
+                references?.let { metadata["reference"] = buildReferences(it) }
+                frameworkAssemblies?.let { metadata["frameworks"] = buildFrameworks(it) }
             }
         }
         return metadata
@@ -101,8 +102,8 @@ class NugetPackageHandler {
     /**
      * 构造Frameworks
      */
-    private fun buildFrameworks(frameworkAssemblies: MutableList<FrameworkAssembly>?): Set<String> {
-        if (frameworkAssemblies != null && frameworkAssemblies.isNotEmpty()) {
+    private fun buildFrameworks(frameworkAssemblies: MutableList<FrameworkAssembly>): Set<String> {
+        if (frameworkAssemblies.isNotEmpty()) {
             val values = hashSetOf<String>()
             val iterator = frameworkAssemblies.iterator()
             while (iterator.hasNext()) {
@@ -125,8 +126,8 @@ class NugetPackageHandler {
     /**
      * 构造references
      */
-    private fun buildReferences(references: MutableList<Any>?): Set<String> {
-        if (references != null && references.isNotEmpty()) {
+    private fun buildReferences(references: MutableList<Any>): Set<String> {
+        if (references.isNotEmpty()) {
             val values = hashSetOf<String>()
             val iterator = references.iterator()
             while (iterator.hasNext()) {
@@ -156,8 +157,8 @@ class NugetPackageHandler {
     /**
      * 构造dependencies
      */
-    private fun buildDependencies(dependencies: List<Any>?): Set<String> {
-        if (dependencies != null && dependencies.isNotEmpty()) {
+    private fun buildDependencies(dependencies: List<Any>): Set<String> {
+        if (dependencies.isNotEmpty()) {
             val values = hashSetOf<String>()
             val iterator = dependencies.iterator()
             while (iterator.hasNext()) {
@@ -186,10 +187,6 @@ class NugetPackageHandler {
 
     fun getDependencyValue(dependency: Dependency, targetFramework: String): String {
         return StringJoiner(":").add(dependency.id).add(dependency.version).add(targetFramework).toString()
-    }
-
-    fun getContentPath(name: String, version: String): String {
-        return NugetUtils.getNupkgFileName(name, version)
     }
 
     // 删除包版本

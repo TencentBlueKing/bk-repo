@@ -6,6 +6,7 @@ enum class NugetMessageCode(private val key: String) : MessageCode {
     PACKAGE_CONTENT_INVALID("nuget.package.content.invalid"),
     VERSION_EXISTED("nuget.version.existed"),
     PACKAGE_VERSIONS_NOT_EXISTED("nuget.versions.not.existed"),
+    PACKAGE_METADATA_LIST_NOT_FOUND("nuget.metadata.list.not.fount"),
     ;
 
     override fun getBusinessCode() = ordinal + 1
