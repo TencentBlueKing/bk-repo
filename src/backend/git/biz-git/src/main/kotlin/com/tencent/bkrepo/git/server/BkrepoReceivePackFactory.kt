@@ -29,7 +29,7 @@ class BkrepoReceivePackFactory {
             }
             throw ServiceNotEnabledException()
         }
-        if (user.isNotEmpty() ) return createFor(req, db, user)
+        if (user.isNotEmpty()) return createFor(req, db, user)
         throw ServiceNotAuthorizedException()
     }
 

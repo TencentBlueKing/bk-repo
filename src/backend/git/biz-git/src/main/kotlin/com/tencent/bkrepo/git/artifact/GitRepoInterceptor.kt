@@ -60,6 +60,7 @@ class GitRepoInterceptor : HandlerInterceptor {
                         category = RepositoryCategory.REMOTE,
                         type = RepositoryType.GIT,
                         public = false,
+                        storageCredentialsKey = properties.storageCredentialsKey,
                         configuration = RemoteConfiguration(
                             url = uri
                         )
