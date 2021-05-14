@@ -38,14 +38,18 @@ import java.time.Duration
 
 /**
  * 支持加锁的任务
+ * 如果任务已经被其它节点执行，则跳过忽略执行
  */
 abstract class LockableJob : SwitchableJob() {
 
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
-    override fun doExecute() {
-        lockingTaskExecutor.executeWithLock(Runnable { doExecute() }, getLockConfiguration())
+
+    override fun triggerJob(): Boolean {
+        val task = LockingTaskExecutor.TaskWithResult { super.triggerJob() }
+        val result = lockingTaskExecutor.executeWithLock(task, getLockConfiguration())
+        return result.wasExecuted()
     }
 
     /**

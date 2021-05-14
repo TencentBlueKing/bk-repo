@@ -37,7 +37,7 @@ package com.tencent.bkrepo.repository.job.base
 interface AsyncRepoJob {
 
     /**
-     * 执行任务逻辑
+     * 执行任务逻辑，此方式内部为实际的任务逻辑
      */
     fun run()
 }
