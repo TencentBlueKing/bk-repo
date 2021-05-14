@@ -167,8 +167,9 @@ class RepositoryServiceImpl(
             if (checkExist(projectId, name)) {
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
+            // 解析存储凭证
+            val credentialsKey = resolveStorageCredentialsKey(this)
             // 确保存储凭证Key一定存在
-            val credentialsKey = storageCredentialsKey ?: repositoryProperties.defaultStorageCredentialsKey
             val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
                     CommonMessageCode.RESOURCE_NOT_FOUND,
@@ -407,6 +408,23 @@ class RepositoryServiceImpl(
         val data = repositoryDao.find(pageQuery).map { convertToDetail(it)!! }
 
         return Page(pageNumber, pageSize, count, data)
+    }
+
+    /**
+     * 解析存储凭证key
+     * 规则：
+     * 1. 如果请求指定了storageCredentialsKey，则使用指定的
+     * 2. 如果没有指定，则使用根据仓库类型配置的默认storageCredentialsKey
+     * 3. 如果没有仓库类型配有配置默认storageCredentialsKey，则使用全局默认storageCredentialsKey
+     */
+    private fun resolveStorageCredentialsKey(request: RepoCreateRequest): String? {
+        with(repositoryProperties) {
+            return if (!request.storageCredentialsKey.isNullOrBlank()) {
+                request.storageCredentialsKey
+            } else {
+                repoStorageMapping[request.type] ?: defaultStorageCredentialsKey
+            }
+        }
     }
 
     companion object {
