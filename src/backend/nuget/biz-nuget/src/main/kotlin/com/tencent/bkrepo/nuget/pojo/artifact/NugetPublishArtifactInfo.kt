@@ -3,7 +3,7 @@ package com.tencent.bkrepo.nuget.pojo.artifact
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.model.nuspec.NuspecPackage
+import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecPackage
 import com.tencent.bkrepo.nuget.util.NugetUtils
 
 /**

@@ -56,7 +56,30 @@ class NugetPackageMetadataServiceImpl(
         registrationPath: String,
         isSemver2Endpoint: Boolean
     ): ResponseEntity<Any> {
-        TODO("Not yet implemented")
+        with(artifactInfo) {
+            val packageVersionList =
+                packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
+            if (packageVersionList == null || packageVersionList.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
+                    .body(NUGET_V3_NOT_FOUND)
+//              throw NugetMetadataListNotFoundException(NUGET_V3_NOT_FOUND)
+            }
+            val metadataList = packageVersionList.map { it.metadata }.stream()
+                .sorted { o1, o2 -> NugetVersionUtils.compareSemVer(o1[VERSION] as String, o2[VERSION] as String) }
+                .toList()
+            try {
+                val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
+                return ResponseEntity.ok(
+                    NugetV3RegistrationUtils.metadataToRegistrationPage(
+                        metadataList, packageName, lowerVersion, upperVersion, v3RegistrationUrl
+                    )
+                )
+            } catch (ignored: JsonProcessingException) {
+                logger.error("failed to deserialize metadata to registration index json")
+                throw ignored
+            }
+        }
     }
 
     override fun registrationLeaf(
@@ -64,7 +87,22 @@ class NugetPackageMetadataServiceImpl(
         registrationPath: String,
         isSemver2Endpoint: Boolean
     ): ResponseEntity<Any> {
-        TODO("Not yet implemented")
+        with(artifactInfo) {
+            // 确保version一定存在
+            packageClient.findVersionByName(projectId, repoName, PackageKeys.ofNuget(packageName), version).data
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND.value)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_XML)
+                    .body(NUGET_V3_NOT_FOUND)
+            try {
+                val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath
+                return ResponseEntity.ok(
+                    NugetV3RegistrationUtils.metadataToRegistrationLeaf(packageName, version, true, v3RegistrationUrl)
+                )
+            } catch (ignored: JsonProcessingException) {
+                logger.error("failed to deserialize metadata to registration index json")
+                throw ignored
+            }
+        }
     }
 
     companion object {

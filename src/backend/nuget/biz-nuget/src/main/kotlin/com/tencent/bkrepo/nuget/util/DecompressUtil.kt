@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.tencent.bkrepo.common.api.util.readXmlString
-import com.tencent.bkrepo.nuget.model.nuspec.NuspecPackage
+import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecPackage
 import org.apache.commons.compress.archivers.ArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream
 import java.io.InputStream

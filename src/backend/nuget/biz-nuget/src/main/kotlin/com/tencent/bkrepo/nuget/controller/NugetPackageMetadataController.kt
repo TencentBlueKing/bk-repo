@@ -31,14 +31,17 @@ class NugetPackageMetadataController(
         return nugetPackageMetadataService.registrationIndex(artifactInfo, "registration-semver2", true)
     }
 
-    @GetMapping("/registration-semver2/{id}/page/{lowerVersion}/{upperVersion}.json")
+    @GetMapping(
+        "/registration-semver2/{id}/page/{lowerVersion}/{upperVersion}.json",
+        produces = [MediaTypes.APPLICATION_JSON]
+    )
     fun registrationSemver2Page(
         artifactInfo: NugetRegistrationArtifactInfo
     ): ResponseEntity<Any> {
         return nugetPackageMetadataService.registrationPage(artifactInfo, "registration-semver2", true)
     }
 
-    @GetMapping("/registration-semver2/{id}/{version}.json")
+    @GetMapping("/registration-semver2/{id}/{version}.json", produces = [MediaTypes.APPLICATION_JSON])
     fun registrationSemver2Leaf(
         artifactInfo: NugetRegistrationArtifactInfo
     ): ResponseEntity<Any> {

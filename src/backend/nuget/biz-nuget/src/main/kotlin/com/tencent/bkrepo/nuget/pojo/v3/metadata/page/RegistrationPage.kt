@@ -1,18 +1,15 @@
-package com.tencent.bkrepo.nuget.model.v3
+package com.tencent.bkrepo.nuget.pojo.v3.metadata.page
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationPageItem
 import java.net.URI
 
 data class RegistrationPage(
-    /* The URL to the registration page */
     @JsonProperty("@id")
     val id: URI,
-    /* The number of registration leaves in the page */
     val count: Int,
-    // not required
-    val items: List<RegistrationLeaf>,
+    val items: List<RegistrationPageItem>,
     val lower: String,
-    // not required
     val parent: URI,
     val upper: String
 )
