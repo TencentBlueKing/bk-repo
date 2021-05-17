@@ -55,8 +55,8 @@ class ExpiredNodeMarkupJob(
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 0/6 * * ?") // 凌晨开始，6小时执行一次
-    override fun execute() {
-        super.execute()
+    override fun start() {
+        super.start()
     }
 
     override fun run() {

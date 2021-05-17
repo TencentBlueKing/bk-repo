@@ -51,8 +51,8 @@ class TemporaryTokenCleanupJob(
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 3 * * ?") // 每天凌晨3点执行
-    override fun execute() {
-        super.execute()
+    override fun start() {
+        super.start()
     }
 
     override fun run() {

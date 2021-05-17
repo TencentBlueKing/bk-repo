@@ -51,8 +51,8 @@ class ExpiredCacheFileCleanupJob(
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
-    override fun execute() {
-        super.execute()
+    override fun start() {
+        super.start()
     }
 
     override fun run() {
