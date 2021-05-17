@@ -30,6 +30,6 @@
  */
 
 dependencies {
-    api(project(":common:common-plugin:plugin-api"))
-    compileOnly("org.springframework:spring-webmvc")
+    implementation(project(":common:common-plugin:plugin-api"))
+    implementation("org.springframework:spring-webmvc")
 }
