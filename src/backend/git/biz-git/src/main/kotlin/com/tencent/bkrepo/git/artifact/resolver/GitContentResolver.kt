@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.constant.REF
+import org.eclipse.jgit.lib.ObjectId
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -49,9 +50,11 @@ class GitContentResolver : ArtifactInfoResolver {
         request: HttpServletRequest
     ): GitContentArtifactInfo {
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
-
-        return GitContentArtifactInfo(
+        val gitContentArtifactInfo = GitContentArtifactInfo(
             projectId, repoName, artifactUri, attributes[REF].toString()
         )
+        if (ObjectId.isId(gitContentArtifactInfo.ref))
+            gitContentArtifactInfo.objectId = gitContentArtifactInfo.ref
+        return gitContentArtifactInfo
     }
 }

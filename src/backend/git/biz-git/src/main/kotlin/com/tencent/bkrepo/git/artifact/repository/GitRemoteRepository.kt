@@ -46,6 +46,8 @@ import com.tencent.bkrepo.git.constant.REDIS_SET_REPO_TO_UPDATE
 import com.tencent.bkrepo.git.constant.R_REMOTE_ORIGIN
 import com.tencent.bkrepo.git.service.GitCommonService
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.lib.RepositoryCache
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.TagOpt
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -70,27 +72,35 @@ class GitRemoteRepository : RemoteRepository() {
     lateinit var gitCommonService: GitCommonService
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        with(context) {
-            val gitContentArtifactInfo = artifactInfo as GitContentArtifactInfo
-            val ref = gitContentArtifactInfo.ref
-            val directory = gitCommonService.generateWorkDir(this)
-            val git = gitCommonService.createGit(this, directory)
-            val objectId = git.repository
-                .resolve("${R_REMOTE_ORIGIN}${gitContentArtifactInfo.ref}") ?: let {
-                git.repository.resolve(gitContentArtifactInfo.ref) ?: let {
-                    throw ErrorCodeException(GitMessageCode.GIT_REF_NOT_FOUND, ref)
+        val gitContentArtifactInfo = context.artifactInfo as GitContentArtifactInfo
+        val ref = gitContentArtifactInfo.ref
+        val directory = gitCommonService.generateWorkDir(context)
+        val git = gitCommonService.createGit(context, directory)
+        git.repository.use {
+            if (gitContentArtifactInfo.objectId == null) {
+                val objectId = objectId(git, gitContentArtifactInfo, ref)
+                gitContentArtifactInfo.objectId = objectId.name
+            }
+            with(context) {
+                val node = nodeClient.getNodeDetail(
+                    projectId, repoName,
+                    artifactInfo.getArtifactFullPath()
+                ).data ?: let {
+                    gitCommonService.checkoutFileAndCreateNode(git, gitContentArtifactInfo, context)
                 }
+                val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+                val responseName = artifactInfo.getResponseName()
+                return ArtifactResource(inputStream, responseName, node, ArtifactChannel.PROXY, useDisposition)
             }
-            gitContentArtifactInfo.objectId = objectId.name
-            val node = nodeClient.getNodeDetail(
-                projectId, repoName,
-                artifactInfo.getArtifactFullPath()
-            ).data ?: let {
-                gitCommonService.checkoutFileAndCreateNode(git, gitContentArtifactInfo, context)
+        }
+    }
+
+    private fun objectId(git: Git, gitContentArtifactInfo: GitContentArtifactInfo, ref: String): ObjectId {
+        return git.repository
+            .resolve("${R_REMOTE_ORIGIN}${gitContentArtifactInfo.ref}") ?: let {
+            git.repository.resolve(gitContentArtifactInfo.ref) ?: let {
+                throw ErrorCodeException(GitMessageCode.GIT_REF_NOT_FOUND, ref)
             }
-            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
-            val responseName = artifactInfo.getResponseName()
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.PROXY, useDisposition)
         }
     }
 
@@ -153,6 +163,7 @@ class GitRemoteRepository : RemoteRepository() {
                 "end clone ${remoteConfiguration.url}, " +
                     "clone call spend ${time(nanoTime)}"
             )
+            RepositoryCache.register(git?.repository)
             val toUpdate = redisOperation
                 .getSetMembers(REDIS_SET_REPO_TO_UPDATE)?.contains(artifactInfo.getArtifactName())
             if (toUpdate == true)
