@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyContext
 import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyExtension
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
@@ -129,7 +130,11 @@ class TemporaryAccessService(
                 )
             }
             if (needsNotify) {
-                pluginManager.applyExtension<TemporaryUrlNotifyExtension> { notify(urlList) }
+                val context = TemporaryUrlNotifyContext(
+                    userId = SecurityUtils.getUserId(),
+                    urlList = urlList
+                )
+                pluginManager.applyExtension<TemporaryUrlNotifyExtension> { notify(context) }
             }
             return urlList
         }

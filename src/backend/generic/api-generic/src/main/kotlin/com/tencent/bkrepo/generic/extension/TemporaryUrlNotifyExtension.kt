@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.generic.extension
 
 import com.tencent.bkrepo.common.plugin.api.ExtensionPoint
-import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 
 /**
  * 临时url通知扩展点
@@ -42,5 +41,5 @@ interface TemporaryUrlNotifyExtension : ExtensionPoint {
     /**
      * 创建临时url成功后，并且用户主动要求开启通知的情况下，对被分享者进行通知
      */
-    fun notify(urlList: List<TemporaryAccessUrl>)
+    fun notify(context: TemporaryUrlNotifyContext)
 }
