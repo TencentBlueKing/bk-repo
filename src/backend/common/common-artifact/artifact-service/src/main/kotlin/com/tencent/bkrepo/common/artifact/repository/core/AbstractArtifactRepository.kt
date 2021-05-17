@@ -32,11 +32,13 @@
 package com.tencent.bkrepo.common.artifact.repository.core
 
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -45,7 +47,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
-import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
@@ -65,7 +66,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 /**
  * 构件仓库抽象类
  */
-// TooGenericExceptionCaught: 需要捕捉文件传输阶段网络、IO等不可控的异常
+// TooGenericExceptionCaught: 需要捕捉文件传输阶段网络、IO等无法预知的异常
 // LateinitUsage: AbstractArtifactRepository有大量子类，使用构造器注入将造成不便
 @Suppress("TooGenericExceptionCaught", "LateinitUsage")
 abstract class AbstractArtifactRepository : ArtifactRepository {
@@ -178,6 +179,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      * 下载前回调
      */
     open fun onDownloadBefore(context: ArtifactDownloadContext) {
+        // 控制浏览器直接下载，或打开预览
+        context.useDisposition = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
         artifactMetrics.downloadingCount.incrementAndGet()
     }
 
