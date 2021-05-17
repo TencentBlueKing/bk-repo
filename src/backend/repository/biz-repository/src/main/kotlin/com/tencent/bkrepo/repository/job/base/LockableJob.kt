@@ -45,7 +45,6 @@ abstract class LockableJob : SwitchableJob() {
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
-
     override fun triggerJob(): Boolean {
         val task = LockingTaskExecutor.TaskWithResult { super.triggerJob() }
         val result = lockingTaskExecutor.executeWithLock(task, getLockConfiguration())
