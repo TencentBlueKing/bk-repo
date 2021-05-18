@@ -31,15 +31,13 @@ package com.tencent.bkrepo.git.artifact
  * SOFTWARE.
  */
 
-import com.tencent.bkrepo.git.constant.BLANK
-
 class GitContentArtifactInfo(
     projectId: String,
     repoName: String,
     artifactUri: String,
     var ref: String
 ) : GitRepositoryArtifactInfo(projectId, repoName, artifactUri) {
-    var objectId: String = BLANK
+    var objectId: String ? = null
     override var path: String? = artifactUri.substring(1)
 
     override fun getArtifactFullPath(): String {

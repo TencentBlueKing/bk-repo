@@ -11,6 +11,8 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
 import com.tencent.bkrepo.git.constant.DOT_GIT
+import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_NUMBER
+import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_SIZE
 import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.constant.R_HEADS
 import com.tencent.bkrepo.git.constant.R_REMOTE_ORIGIN
@@ -22,13 +24,13 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ListBranchCommand
-import org.eclipse.jgit.internal.storage.file.FileRepository
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.lib.RepositoryCache
+import org.eclipse.jgit.util.FS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import org.springframework.util.StreamUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -51,7 +53,7 @@ class GitCommonService {
         with(artifactContext) {
             val storageCredentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
             val sha1 = "$projectId$repoName".sha1()
-            val dirName = "${storageCredentials.upload.location}/${sha1.substring(0,2)}/${sha1.substring(2,40)}"
+            val dirName = "${storageCredentials.upload.location}/${sha1.substring(0, 2)}/${sha1.substring(2, 40)}"
             val directory = File(dirName)
             if (!directory.isDirectory && !directory.mkdirs()) {
                 throw IOException("failed to create work directory ${directory.canonicalPath}")
@@ -66,13 +68,22 @@ class GitCommonService {
      * */
     fun createGit(artifactContext: ArtifactContext, directory: File): Git {
         with(artifactContext) {
-            if (directory.listFiles()?.isNotEmpty() == true)
-                return Git(FileRepository(assembleGitDir(directory)))
+            if (RepositoryCache.FileKey
+                .isGitRepository(File(directory, DOT_GIT), FS.DETECTED)
+            )
+                return Git(
+                    RepositoryCache
+                        .open(
+                            RepositoryCache.FileKey
+                                .lenient(directory, FS.DETECTED)
+                        )
+                )
+
             // 一般情况不会走到这里，除非服务器本地文件被清理了
             logger.info("acquire git file from storage")
             val nodeListOption = NodeListOption(
-                pageNumber = 1,
-                pageSize = 10000,
+                pageNumber = GIT_NODE_LIST_PAGE_NUMBER,
+                pageSize = GIT_NODE_LIST_PAGE_SIZE,
                 includeFolder = false,
                 includeMetadata = true,
                 deep = true,
@@ -100,19 +111,22 @@ class GitCommonService {
             logger.debug("success create file ${file.canonicalPath}")
             inputStream.use { i ->
                 FileOutputStream(file).use { o ->
-                    StreamUtils.copy(i, o)
+                    i.copyTo(o)
                 }
             }
         }
-        val gitDir = assembleGitDir(dir)
-        return Git(FileRepository(gitDir))
-    }
 
-    /**
-     * 拼接.git路径
-     * */
-    fun assembleGitDir(rootDir: File): String {
-        return "${rootDir.canonicalPath}/$DOT_GIT"
+        if (!RepositoryCache.FileKey
+            .isGitRepository(File(dir, DOT_GIT), FS.DETECTED)
+        )
+            throw ErrorCodeException(GitMessageCode.GIT_REPO_NOT_SYNC)
+        return Git(
+            RepositoryCache
+                .open(
+                    RepositoryCache.FileKey
+                        .lenient(dir, FS.DETECTED)
+                )
+        )
     }
 
     /**
