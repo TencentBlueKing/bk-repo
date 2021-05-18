@@ -1,11 +1,10 @@
 package com.tencent.bkrepo.nuget.service.impl
 
-import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
-import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
-import com.tencent.bkrepo.nuget.model.v3.search.SearchResponse
-import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseData
-import com.tencent.bkrepo.nuget.service.NugetV3PackageService
+import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
+import com.tencent.bkrepo.nuget.pojo.response.search.NugetSearchResponse
+import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseData
+import com.tencent.bkrepo.nuget.service.NugetSearchService
 import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetVersionUtils
@@ -17,11 +16,10 @@ import org.springframework.stereotype.Service
 import kotlin.streams.toList
 
 @Service
-class NugetV3PackageServiceImpl(
+class NugetSearchServiceImpl(
     private val packageClient: PackageClient
-) : NugetV3PackageService, ArtifactService() {
-
-    override fun search(artifactInfo: NugetArtifactInfo, searchRequest: SearchRequest): SearchResponse {
+) : NugetSearchService {
+    override fun search(artifactInfo: NugetArtifactInfo, searchRequest: NugetSearchRequest): NugetSearchResponse {
         logger.info("handling search request in repo [${artifactInfo.getRepoIdentify()}], parameter: $searchRequest")
         with(artifactInfo) {
             val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + "/registration-semver2"
@@ -29,17 +27,17 @@ class NugetV3PackageServiceImpl(
             val packageList = packageClient.listPackagePage(projectId, repoName, packageListOption).data!!.records
             val pagedResultList =
                 packageList.stream().skip(searchRequest.skip.toLong()).limit(searchRequest.take.toLong()).toList()
-            if (pagedResultList.isEmpty()) return SearchResponse()
+            if (pagedResultList.isEmpty()) return NugetSearchResponse()
             val searchResponseDataList = pagedResultList.map {
                 buildSearchResponseData(it, searchRequest, v3RegistrationUrl)
             }
-            return SearchResponse(packageList.size, searchResponseDataList)
+            return NugetSearchResponse(packageList.size, searchResponseDataList)
         }
     }
 
     private fun buildSearchResponseData(
         packageSummary: PackageSummary,
-        searchRequest: SearchRequest,
+        searchRequest: NugetSearchRequest,
         v3RegistrationUrl: String
     ): SearchResponseData {
         with(packageSummary) {
@@ -55,6 +53,6 @@ class NugetV3PackageServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(NugetV3PackageServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(NugetSearchServiceImpl::class.java)
     }
 }

@@ -5,9 +5,9 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
-import com.tencent.bkrepo.nuget.model.v3.search.SearchRequest
-import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseData
-import com.tencent.bkrepo.nuget.model.v3.search.SearchResponseDataVersion
+import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
+import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseData
+import com.tencent.bkrepo.nuget.pojo.response.search.SearchResponseDataVersion
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.DependencyGroups
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationCatalogEntry
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationIndex
@@ -222,13 +222,14 @@ object NugetV3RegistrationUtils {
     fun versionListToSearchResponse(
         sortedPackageVersionList: List<PackageVersion>,
         packageSummary: PackageSummary,
-        searchRequest: SearchRequest,
+        searchRequest: NugetSearchRequest,
         v3RegistrationUrl: String
     ): SearchResponseData {
         val latestVersionPackage = sortedPackageVersionList.last()
         val searchResponseDataVersionList =
-            sortedPackageVersionList.filter { searchRequest.prerelease || !isPreRelease(latestVersionPackage.name) }
-                .map { buildSearchResponseDataVersion(it, packageSummary.name, v3RegistrationUrl) }
+            sortedPackageVersionList.filter {
+                searchRequest.prerelease ?: false || !isPreRelease(latestVersionPackage.name)
+            }.map { buildSearchResponseDataVersion(it, packageSummary.name, v3RegistrationUrl) }
         val writeValueAsString = JsonUtils.objectMapper.writeValueAsString(latestVersionPackage.metadata)
         val nuspecMetadata = JsonUtils.objectMapper.readValue(writeValueAsString, NuspecMetadata::class.java)
         return buildSearchResponseData(v3RegistrationUrl, searchResponseDataVersionList, nuspecMetadata, packageSummary)
@@ -244,7 +245,6 @@ object NugetV3RegistrationUtils {
             return SearchResponseData(
                 id = NugetUtils.buildRegistrationIndexUrl(v3RegistrationUrl, id),
                 version = version,
-                packageId = id,
                 description = description,
                 versions = searchResponseDataVersionList,
                 authors = authors.split(','),

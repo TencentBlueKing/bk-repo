@@ -2,7 +2,6 @@ package com.tencent.bkrepo.nuget.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
@@ -62,7 +61,7 @@ class NugetPackageContentController(
     @GetMapping("/{packageId}/index.json")
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun packageVersions(
-        @ArtifactPathVariable artifactInfo: NugetArtifactInfo,
+        artifactInfo: NugetArtifactInfo,
         @PathVariable packageId: String
     ): ResponseEntity<VersionListResponse> {
         val versionList = packageContentService.packageVersions(artifactInfo, packageId)
