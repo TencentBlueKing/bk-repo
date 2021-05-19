@@ -51,8 +51,8 @@ class FileSynchronizeJob(
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 0 ? * 6")
-    override fun execute() {
-        super.execute()
+    override fun start() {
+        super.start()
     }
 
     override fun run() {

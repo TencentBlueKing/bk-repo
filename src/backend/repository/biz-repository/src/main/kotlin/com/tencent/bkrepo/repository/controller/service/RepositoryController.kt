@@ -85,32 +85,4 @@ class RepositoryController(
     override fun pageByType(page: Int, size: Int, repoType: String): Response<Page<RepositoryDetail>> {
         return ResponseBuilder.success(repositoryService.listRepoPageByType(repoType, page, size))
     }
-
-    override fun query(projectId: String, repoName: String, type: String): Response<RepositoryDetail?> {
-        return getRepoDetail(projectId, repoName, type)
-    }
-
-    override fun query(projectId: String, repoName: String): Response<RepositoryDetail?> {
-        return getRepoDetail(projectId, repoName, null)
-    }
-
-    override fun getRepoDetailWithType(
-        projectId: String,
-        repoName: String,
-        type: String?
-    ): Response<RepositoryDetail?> {
-        return getRepoDetail(projectId, repoName, type)
-    }
-
-    override fun create(request: RepoCreateRequest): Response<RepositoryDetail> {
-        return createRepo(request)
-    }
-
-    override fun update(request: RepoUpdateRequest): Response<Void> {
-        return updateRepo(request)
-    }
-
-    override fun delete(request: RepoDeleteRequest): Response<Void> {
-        return deleteRepo(request)
-    }
 }

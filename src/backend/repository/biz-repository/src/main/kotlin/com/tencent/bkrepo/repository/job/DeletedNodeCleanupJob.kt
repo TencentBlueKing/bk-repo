@@ -59,8 +59,8 @@ class DeletedNodeCleanupJob(
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 2/6 * * ?") // 2点开始，6小时执行一次
-    override fun execute() {
-        super.execute()
+    override fun start() {
+        super.start()
     }
 
     override fun run() {

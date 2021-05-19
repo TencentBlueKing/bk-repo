@@ -32,11 +32,10 @@
 package com.tencent.bkrepo.repository.job.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import org.springframework.beans.factory.annotation.Autowired
-import java.util.concurrent.TimeUnit
-import kotlin.system.measureTimeMillis
 
 /**
  * 支持动态开关的任务
@@ -47,35 +46,39 @@ abstract class SwitchableJob : AsyncRepoJob {
     lateinit var repositoryProperties: RepositoryProperties
 
     /**
-     * 执行任务过程
+     * 触发任务入口
      */
-    open fun execute() {
+    open fun start() {
         if (!shouldExecute()) {
             return
         }
-        logger.info("Start to execute async job[${getJobName()}]")
-        measureTimeMillis { doExecute() }.apply {
-            val elapsedTime = HumanReadable.time(this, TimeUnit.MILLISECONDS)
-            logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.")
+        executeAndMeasureTime { triggerJob() }.apply {
+            if (first) {
+                val elapsedTime = HumanReadable.time(second.toNanos())
+                logger.info("Job[${getJobName()}] execution completed, elapse $elapsedTime.")
+            }
         }
     }
 
     /**
-     * 调用任务
+     * 触发任务逻辑
+     * @return 是执行
      */
-    open fun doExecute() {
+    open fun triggerJob(): Boolean {
+        logger.info("Start to execute async job[${getJobName()}]")
         run()
+        return true
     }
 
     /**
-     * 判断当前节点是否任务执行
+     * 判断当前节点是否执行该任务
      */
     open fun shouldExecute(): Boolean {
         return repositoryProperties.job.enabled
     }
 
     /**
-     * 染污名称
+     * 返回任务名称
      */
     open fun getJobName(): String = javaClass.simpleName
 

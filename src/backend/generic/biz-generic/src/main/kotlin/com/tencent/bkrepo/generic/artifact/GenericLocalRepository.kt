@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -53,7 +52,6 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -64,15 +62,6 @@ import javax.servlet.http.HttpServletRequest
 
 @Component
 class GenericLocalRepository : LocalRepository() {
-
-    override fun onDownloadBefore(context: ArtifactDownloadContext) {
-        super.onDownloadBefore(context)
-        // 控制浏览器直接下载，或打开预览
-        val isDownload = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
-        if (isDownload) {
-            context.useDisposition = true
-        }
-    }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)

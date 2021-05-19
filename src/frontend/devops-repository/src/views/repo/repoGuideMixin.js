@@ -570,6 +570,12 @@ export default {
                 }
             ]
         },
+        gitGuide () {
+            return []
+        },
+        gitInstall () {
+            return []
+        },
         articleGuide () {
             return this[`${this.$route.params.repoType}Guide`]
         },

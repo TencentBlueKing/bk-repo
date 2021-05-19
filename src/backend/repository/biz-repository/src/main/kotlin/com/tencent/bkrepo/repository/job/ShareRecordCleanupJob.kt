@@ -51,8 +51,8 @@ class ShareRecordCleanupJob(
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 1 * * ?") // 每天凌晨1点执行
-    override fun execute() {
-        super.execute()
+    override fun start() {
+        super.start()
     }
 
     override fun run() {

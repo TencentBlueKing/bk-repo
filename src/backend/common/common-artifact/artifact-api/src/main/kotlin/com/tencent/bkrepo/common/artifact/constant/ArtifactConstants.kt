@@ -100,3 +100,8 @@ const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
  * 流水线仓库
  */
 const val PIPELINE = "pipeline"
+
+/**
+ * 文件访问请求是否为直接下载
+ */
+const val PARAM_DOWNLOAD = "download"

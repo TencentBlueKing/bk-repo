@@ -2,42 +2,49 @@ package com.tencent.bkrepo.git.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
 import com.tencent.bkrepo.git.service.GitService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Suppress("MVCPathVariableInspection")
-@RequestMapping("{projectId}/{repoName}", produces = [MediaTypes.APPLICATION_JSON])
+@RequestMapping("{projectId}/{repoName}.git")
 @RestController
 class GitController(
     private val gitService: GitService
 ) {
-
     /**
-     * 同步仓库
-     * 同步仓库前，需要先配置好远程仓库配置，包括url,认证信息等
+     * git clone
+     * git push
      * */
-    @PostMapping("sync")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun sync(gitRepositoryArtifactInfo: GitRepositoryArtifactInfo) {
-        gitService.sync(gitRepositoryArtifactInfo)
+    @GetMapping("info/refs")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun infoRefs(
+        infoRepository: GitRepositoryArtifactInfo,
+        @RequestParam("service") svc: String
+    ) {
+        gitService.infoRefs(infoRepository, svc)
     }
 
     /**
-     * 获取仓库内容
-     * @param ref The name of the commit/branch/tag.
-     * Default: the repository’s default branch (usually master)
-     * @param path path parameter
+     * git clone
      * */
-    @GetMapping("/raw/{ref}/**")
+    @PostMapping("git-upload-pack")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun getContent(gitContentArtifactInfo: GitContentArtifactInfo) {
-        gitService.getContent(gitContentArtifactInfo)
+    fun gitUploadPack(infoRepository: GitRepositoryArtifactInfo) {
+        gitService.gitUploadPack()
+    }
+
+    /**
+     * git push
+     * */
+    @PostMapping("git-receive-pack")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun gitReceivePack(infoRepository: GitRepositoryArtifactInfo) {
+        gitService.gitReceivePack()
     }
 }

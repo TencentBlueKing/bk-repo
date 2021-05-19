@@ -34,7 +34,6 @@ class GitRepoInterceptor : HandlerInterceptor {
 
     private val logger = LoggerFactory.getLogger(GitRepoInterceptor::class.java)
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        // /project1/gh-test/sync?hub_type=github&owner=chengmboy&uri=https://github.com/chengmboy/gh-test.git
         val type = request.getParameter(PARAMETER_HUBTYPE)
         type?.let {
             try {
@@ -53,7 +52,7 @@ class GitRepoInterceptor : HandlerInterceptor {
                 uriAttribute[REPO_NAME] = realRepoName
 
                 if (!request.requestURI.endsWith(PATH_SYNC)) return true
-                logger.debug("receive sync request $uri")
+                logger.info("receive sync request $uri")
                 repositoryClient.getRepoDetail(projectId, realRepoName).data ?: let {
                     val req = RepoCreateRequest(
                         projectId = projectId,
@@ -61,18 +60,18 @@ class GitRepoInterceptor : HandlerInterceptor {
                         category = RepositoryCategory.REMOTE,
                         type = RepositoryType.GIT,
                         public = false,
+                        storageCredentialsKey = properties.storageCredentialsKey,
                         configuration = RemoteConfiguration(
                             url = uri
                         )
                     )
                     repositoryClient.createRepo(req)
-                    logger.debug("create projectId $projectId repo $realRepoName")
+                    logger.info("create projectId $projectId repo $realRepoName")
                 }
             } catch (e: IllegalArgumentException) {
                 throw ErrorCodeException(GitMessageCode.GIT_HUB_TYPE_NOT_SUPPORT, type)
             } catch (e: Exception) {
-
-                logger.debug("pre handle error", e)
+                logger.error("pre handle error", e)
                 return false
             }
         }
