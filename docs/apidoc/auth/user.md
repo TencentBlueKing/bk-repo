@@ -14,7 +14,6 @@
 {
     "userId":"public",
     "name":"public",
-    "admin":true,
     "pwd":"blueking",
     "group":true,
     "asstUsers":["tt"]
@@ -30,7 +29,6 @@
 |name|string|是|无|用户名|the  name|
 |pwd|string|是|无|用户密码|the user password|
 |userId|string|是|无|用户id|the user id|
-|admin|bool|否|false|是否管理员|is admin|
 |asstUsers|string array|否|[]|关联用户|association user|
 |group|boot |否|false|是否群组账号|is group user|
 - output:
@@ -66,7 +64,6 @@
 
 ``` json
 {
-    "admin":true,
     "name":"string",
     "pwd":"string",
     "userId":"string",
@@ -126,7 +123,6 @@
 
 ``` json
 {
-    "admin":true,
     "name":"string",
     "pwd":"string",
     "userId":"string",
@@ -148,7 +144,7 @@
 |name|string|是|无|用户名|the  name|
 |pwd|string|是|无|用户密码|the user password|
 |userId|string|是|无|用户id|the user id|
-|admin|bool|否|false|是否管理员|is admin|
+|userId|string|是|无|用户id|the user id|
 |asstUsers|string array|否|[]|关联用户|association user|
 |group|boot |否|false|是否群组账号|is group user|
 |projectId|string|是|无|关联到的项目|the association project|
@@ -356,7 +352,7 @@
 
 ``` json
 {
-    "admin":true,
+    "admin":false,
     "name":"string",
     "pwd":"string",
     "asstUsers":["owen"]
