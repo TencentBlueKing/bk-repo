@@ -38,8 +38,6 @@ data class UpdateUserRequest(
     val name: String? = null,
     @ApiModelProperty("密码")
     val pwd: String? = null,
-    @ApiModelProperty("管理员")
-    val admin: Boolean? = null,
     @ApiModelProperty("lock状态")
     val locked: Boolean? = null,
     @ApiModelProperty("管理员")

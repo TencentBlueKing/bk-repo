@@ -64,23 +64,18 @@ const val AUTH_PROJECT_SUFFIX = "/create/project"
 
 const val AUTH_CLUSTER_PREFIX = "/api/cluster"
 
-const val AUTH_PERMISSION_PREFIX = "/permission"
 const val AUTH_API_PERMISSION_PREFIX = "/api/permission"
 const val AUTH_SERVICE_PERMISSION_PREFIX = "/service/permission"
 
-const val AUTH_ROLE_PREFIX = "/role"
 const val AUTH_API_ROLE_PREFIX = "/api/role"
 const val AUTH_SERVICE_ROLE_PREFIX = "/service/role"
 
-const val AUTH_USER_PREFIX = "/user"
 const val AUTH_API_USER_PREFIX = "/api/user"
 const val AUTH_SERVICE_USER_PREFIX = "/service/user"
 
-const val AUTH_DEPARTMENT_PREFIX = "/department"
 const val AUTH_API_DEPARTMENT_PREFIX = "/api/department"
 const val AUTH_SERVICE_DEPARTMENT_PREFIX = "/service/department"
 
-const val AUTH_ACCOUNT_PREFIX = "/account"
 const val AUTH_SERVICE_ACCOUNT_PREFIX = "/service/account"
 const val AUTH_API_ACCOUNT_PREFIX = "/api/account"
 
