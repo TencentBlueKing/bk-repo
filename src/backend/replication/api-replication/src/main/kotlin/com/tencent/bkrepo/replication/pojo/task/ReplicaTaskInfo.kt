@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.replication.pojo.task
 
 import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
-import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 
 data class ReplicaTaskInfo(
     val id: String,

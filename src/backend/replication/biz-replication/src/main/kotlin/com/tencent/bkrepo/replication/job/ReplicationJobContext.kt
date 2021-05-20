@@ -32,22 +32,22 @@
 package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
+import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.model.TReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import java.time.LocalDateTime
 
 class ReplicationJobContext(val task: TReplicaTask) {
-    val taskLog: TReplicationTaskLog
+    val taskRecord: TReplicaRecord
     val progress: ReplicationProgress = ReplicationProgress()
     var status: ReplicationStatus = ReplicationStatus.REPLICATING
     val taskLogKey: String = uniqueId()
     lateinit var masterClusterNode: ClusterNodeInfo
 
     init {
-        taskLog = TReplicationTaskLog(
+        taskRecord = TReplicaRecord(
             taskKey = task.key,
             status = status,
             taskLogKey = taskLogKey,

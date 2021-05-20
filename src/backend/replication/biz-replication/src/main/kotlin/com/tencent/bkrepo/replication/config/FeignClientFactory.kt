@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.createSSL
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import feign.Client
 import feign.Contract
 import feign.Feign

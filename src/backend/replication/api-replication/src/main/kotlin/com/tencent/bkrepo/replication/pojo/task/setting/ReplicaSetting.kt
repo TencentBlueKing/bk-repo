@@ -29,10 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.setting
+package com.tencent.bkrepo.replication.pojo.task.setting
 
-enum class ConflictStrategy {
-    SKIP,
-    OVERWRITE,
-    FAST_FAIL
-}
+/**
+ * 任务设置
+ */
+data class ReplicaSetting(
+    /**
+     * 限速（byte per second），<=0代表不限速
+     */
+    val rateLimit: Long = 0,
+    /**
+     * 是否同步元数据
+     */
+    val includeMetadata: Boolean = true,
+    /**
+     * 冲突解决策略
+     */
+    val conflictStrategy: ConflictStrategy = ConflictStrategy.SKIP,
+    /**
+     * 错误处理策略
+     */
+    val errorStrategy: ErrorStrategy = ErrorStrategy.CONTINUE,
+    /**
+     * 执行计划
+     */
+    val executionPlan: ExecutionPlan = ExecutionPlan()
+)

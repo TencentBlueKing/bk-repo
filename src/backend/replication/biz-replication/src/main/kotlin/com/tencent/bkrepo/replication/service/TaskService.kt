@@ -33,13 +33,13 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import org.springframework.data.mongodb.core.query.Query
 
 interface TaskService {

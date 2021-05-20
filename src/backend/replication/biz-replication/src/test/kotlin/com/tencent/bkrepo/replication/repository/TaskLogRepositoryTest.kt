@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.replication.repository
 
-import com.tencent.bkrepo.replication.model.TReplicationTaskLog
+import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import org.junit.jupiter.api.Assertions
@@ -100,8 +100,8 @@ internal class TaskLogRepositoryTest {
         taskKey: String = TEST_KEY,
         status: ReplicationStatus = ReplicationStatus.SUCCESS,
         startTime: LocalDateTime = LocalDateTime.now()
-    ): TReplicationTaskLog {
-        return TReplicationTaskLog(
+    ): TReplicaRecord {
+        return TReplicaRecord(
             taskKey = taskKey,
             status = status,
             replicationProgress = ReplicationProgress(),

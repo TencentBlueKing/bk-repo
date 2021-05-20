@@ -29,24 +29,68 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.model
 
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@ApiModel("创建任务请求")
-data class ReplicationTaskUpdateRequest(
-    @ApiModelProperty("任务名称", required = true)
-    val name: String,
-    @ApiModelProperty("任务唯一key", required = true)
-    val taskKey: String,
-    @ApiModelProperty("任务相关设置", required = true)
+/**
+ * 同步对象
+ */
+@Document("replica_object")
+data class TReplicaObject(
+    var id: String? = null,
+    /**
+     * 任务唯一key
+     */
+    @Indexed(unique = true)
+    val key: String,
+    /**
+     * 项目id
+     */
+    val projectId: String,
+    /**
+     * 同步类型
+     */
+    val replicaType: ReplicaType,
+    /**
+     * 任务设置
+     */
     val setting: ReplicaSetting,
-    @ApiModelProperty("同步对象相关信息", required = true)
-    val replicationInfo: List<ReplicationInfo>,
-    @ApiModelProperty("校验远程连接是否成功", required = true)
-    val validateConnectivity: Boolean = true,
-    @ApiModelProperty("描述", required = false)
-    val description: String? = null
+    /**
+     * 远程集群集合
+     */
+    val remoteClusterSet: Set<ClusterNodeName>,
+    /**
+     * 任务描述
+     */
+    val description: String? = null,
+    /**
+     * 当前状态
+     */
+    var status: ReplicationStatus = ReplicationStatus.WAITING,
+    /**
+     * 下次执行时间
+     */
+    var nextExecutionTime: LocalDateTime? = null,
+    /**
+     * 执行次数
+     */
+    var executionTimes: Long,
+    /**
+     * 是否启用
+     */
+    var enabled: Boolean = true,
+    /**
+     * 审计信息
+     */
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime
 )

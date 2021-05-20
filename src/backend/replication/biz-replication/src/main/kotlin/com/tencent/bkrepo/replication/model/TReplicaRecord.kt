@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,13 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.setting
+package com.tencent.bkrepo.replication.model
 
-data class RemoteClusterInfo(
-    val key: String = "",
-    val name: String = "",
-    val url: String = "",
-    val certificate: String? = null,
-    val username: String = "",
-    val password: String = ""
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
+
+/**
+ * 同步任务执行记录
+ */
+@Document("replica_record")
+data class TReplicaRecord(
+    var id: String? = null,
+    /**
+     * 关联的task key
+     */
+    @Indexed
+    val taskKey: String,
+    /**
+     * 运行状态
+     */
+    var status: ExecutionStatus,
+    /**
+     * 开启时间
+     */
+    var startTime: LocalDateTime,
+    /**
+     * 结束时间
+     */
+    var endTime: LocalDateTime? = null,
+    /**
+     * 错误原因
+     */
+    var errorReason: String? = null
 )

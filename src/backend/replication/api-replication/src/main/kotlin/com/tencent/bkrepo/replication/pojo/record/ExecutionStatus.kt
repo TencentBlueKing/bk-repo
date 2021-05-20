@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,24 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.setting
-
-import java.time.LocalDateTime
+package com.tencent.bkrepo.replication.pojo.record
 
 /**
- * 执行计划
+ * 任务运行状态
  */
-data class ExecutionPlan(
+enum class ExecutionStatus {
     /**
-     * 执行一次，创建后立即执行
+     * 运行中
      */
-    val executeImmediately: Boolean = true,
+    RUNNING,
+
     /**
-     * 执行一次，指定时间执行
+     * 执行成功
      */
-    val executeTime: LocalDateTime? = null,
+    SUCCESS,
+
     /**
-     * cron表达式定时执行
+     * 执行失败
      */
-    val cronExpression: String? = null
-)
+    FAILED
+}

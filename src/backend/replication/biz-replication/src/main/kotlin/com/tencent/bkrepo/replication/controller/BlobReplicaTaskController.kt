@@ -36,9 +36,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.log.ReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.service.TaskLogService

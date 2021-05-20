@@ -41,7 +41,7 @@ import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.ReplicationPackageDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils

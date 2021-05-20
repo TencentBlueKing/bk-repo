@@ -29,24 +29,47 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.model
 
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@ApiModel("创建任务请求")
-data class ReplicationTaskUpdateRequest(
-    @ApiModelProperty("任务名称", required = true)
-    val name: String,
-    @ApiModelProperty("任务唯一key", required = true)
-    val taskKey: String,
-    @ApiModelProperty("任务相关设置", required = true)
-    val setting: ReplicaSetting,
-    @ApiModelProperty("同步对象相关信息", required = true)
-    val replicationInfo: List<ReplicationInfo>,
-    @ApiModelProperty("校验远程连接是否成功", required = true)
-    val validateConnectivity: Boolean = true,
-    @ApiModelProperty("描述", required = false)
-    val description: String? = null
+/**
+ * 同步任务执行记录详情
+ * 记录-详情：1 to N
+ */
+@Document("replica_record_detail")
+data class TReplicaRecordDetail(
+    var id: String? = null,
+    /**
+     * 关联的record id
+     */
+    @Indexed
+    val recordId: String,
+    /**
+     * local cluster
+     */
+    val localCluster: String,
+    /**
+     * 远程cluster
+     */
+    val remoteCluster: String,
+    /**
+     * 运行状态
+     */
+    var status: ExecutionStatus,
+    /**
+     * 开启时间
+     */
+    var startTime: LocalDateTime,
+    /**
+     * 结束时间
+     */
+    var endTime: LocalDateTime? = null,
+    /**
+     * 错误原因
+     */
+    var errorReason: String? = null
 )

@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("replication_task_log_detail")
-class TReplicationTaskLogDetail(
+class wTReplicationTaskLogDetail(
     var id: String? = null,
     @Indexed
     var taskLogKey: String,

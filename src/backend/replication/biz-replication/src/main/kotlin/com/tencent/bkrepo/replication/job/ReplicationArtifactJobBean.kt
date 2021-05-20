@@ -44,10 +44,10 @@ import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
 import com.tencent.bkrepo.replication.pojo.request.RepoInfo
-import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.ArtifactReplicationFailLevel
 import com.tencent.bkrepo.replication.pojo.task.ArtifactReplicationResult
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.repository.TaskLogDetailRepository
 import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import com.tencent.bkrepo.replication.repository.TaskRepository
@@ -130,7 +130,7 @@ class ReplicationArtifactJobBean(
                         // 记录异常
                         logger.error("replica to cluster:[${it.name}] failed, message: ${exception.message}")
                         // 任务执行失败
-                        replicationJobContext.taskLog.errorReason = exception.message
+                        replicationJobContext.taskRecord.errorReason = exception.message
                         completeReplica(replicationJobContext, ReplicationStatus.FAILED)
                     }
                 }
@@ -141,13 +141,13 @@ class ReplicationArtifactJobBean(
             }
         } catch (exception: Exception) {
             // 记录异常
-            replicationJobContext.taskLog.errorReason = exception.message
+            replicationJobContext.taskRecord.errorReason = exception.message
             completeReplica(replicationJobContext, ReplicationStatus.FAILED)
         } finally {
             // 保存结果
-            replicationJobContext.taskLog.endTime = LocalDateTime.now()
+            replicationJobContext.taskRecord.endTime = LocalDateTime.now()
             persistTask(replicationJobContext)
-            logger.info("Replica task[$taskId] finished, task log: ${replicationJobContext.taskLog}.")
+            logger.info("Replica task[$taskId] finished, task log: ${replicationJobContext.taskRecord}.")
         }
     }
 
@@ -198,9 +198,9 @@ class ReplicationArtifactJobBean(
     }
 
     private fun persistTaskLog(context: ReplicationJobContext) {
-        context.taskLog.status = context.status
-        context.taskLog.replicationProgress = context.progress
-        taskLogRepository.save(context.taskLog)
+        context.taskRecord.status = context.status
+        context.taskRecord.replicationProgress = context.progress
+        taskLogRepository.save(context.taskRecord)
     }
 
     private fun persistTaskLogDetail(

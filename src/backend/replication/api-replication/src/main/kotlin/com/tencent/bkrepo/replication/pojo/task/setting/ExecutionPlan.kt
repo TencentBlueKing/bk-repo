@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,24 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.pojo.task.setting
 
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@ApiModel("创建任务请求")
-data class ReplicationTaskUpdateRequest(
-    @ApiModelProperty("任务名称", required = true)
-    val name: String,
-    @ApiModelProperty("任务唯一key", required = true)
-    val taskKey: String,
-    @ApiModelProperty("任务相关设置", required = true)
-    val setting: ReplicaSetting,
-    @ApiModelProperty("同步对象相关信息", required = true)
-    val replicationInfo: List<ReplicationInfo>,
-    @ApiModelProperty("校验远程连接是否成功", required = true)
-    val validateConnectivity: Boolean = true,
-    @ApiModelProperty("描述", required = false)
-    val description: String? = null
+/**
+ * 执行计划
+ */
+data class ExecutionPlan(
+    /**
+     * 执行一次，创建后立即执行
+     */
+    val executeImmediately: Boolean = true,
+    /**
+     * 执行一次，指定时间执行
+     */
+    val executeTime: LocalDateTime? = null,
+    /**
+     * cron表达式定时执行
+     */
+    val cronExpression: String? = null
 )

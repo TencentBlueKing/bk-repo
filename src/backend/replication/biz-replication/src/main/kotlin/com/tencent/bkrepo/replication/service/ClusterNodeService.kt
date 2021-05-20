@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeDeleteRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 
 interface ClusterNodeService {
     /**

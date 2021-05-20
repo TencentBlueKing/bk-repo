@@ -33,7 +33,7 @@ package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.replication.model.TReplicationTaskLog
+import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.pojo.log.ReplicationTaskLog
 import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import org.springframework.data.domain.Sort
@@ -63,20 +63,20 @@ class TaskLogService(
     }
 
     fun listLogPage(taskKey: String, pageNumber: Int, pageSize: Int): Page<ReplicationTaskLog> {
-        val criteria = where(TReplicationTaskLog::taskKey).isEqualTo(taskKey)
-        val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TReplicationTaskLog::startTime.name))
+        val criteria = where(TReplicaRecord::taskKey).isEqualTo(taskKey)
+        val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TReplicaRecord::startTime.name))
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val totalRecords = mongoTemplate.count(query, TReplicationTaskLog::class.java)
+        val totalRecords = mongoTemplate.count(query, TReplicaRecord::class.java)
         val records = mongoTemplate.find(
             query.with(pageRequest),
-            TReplicationTaskLog::class.java
+            TReplicaRecord::class.java
         ).map { convert(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     companion object {
-        private fun convert(log: TReplicationTaskLog?): ReplicationTaskLog? {
-            return log?.let {
+        private fun convert(record: TReplicaRecord?): ReplicationTaskLog? {
+            return record?.let {
                 ReplicationTaskLog(
                     taskKey = it.taskKey,
                     taskLogKey = it.taskLogKey,

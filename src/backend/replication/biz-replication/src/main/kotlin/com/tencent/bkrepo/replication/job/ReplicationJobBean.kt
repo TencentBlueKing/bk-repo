@@ -42,8 +42,8 @@ import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
-import com.tencent.bkrepo.replication.pojo.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import com.tencent.bkrepo.replication.service.ReplicationService
@@ -102,13 +102,13 @@ class ReplicationJobBean(
             completeReplica(replicationContext, ReplicationStatus.SUCCESS)
         } catch (exception: Exception) {
             // 记录异常
-            replicationContext.taskLog.errorReason = exception.message
+            replicationContext.taskRecord.errorReason = exception.message
             completeReplica(replicationContext, ReplicationStatus.FAILED)
         } finally {
             // 保存结果
-            replicationContext.taskLog.endTime = LocalDateTime.now()
+            replicationContext.taskRecord.endTime = LocalDateTime.now()
             persistTask(replicationContext)
-            logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskLog}.")
+            logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskRecord}.")
         }
     }
 
@@ -149,9 +149,9 @@ class ReplicationJobBean(
     }
 
     private fun persistTaskLog(context: ReplicationContext) {
-        context.taskLog.status = context.status
-        context.taskLog.replicationProgress = context.progress
-        taskLogRepository.save(context.taskLog)
+        context.taskRecord.status = context.status
+        context.taskRecord.replicationProgress = context.progress
+        taskLogRepository.save(context.taskRecord)
     }
 
     private fun startReplica(context: ReplicationContext) {

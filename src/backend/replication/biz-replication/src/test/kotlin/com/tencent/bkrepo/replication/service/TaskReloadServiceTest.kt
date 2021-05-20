@@ -36,13 +36,13 @@ import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
 import com.tencent.bkrepo.replication.job.ReplicationJobBean
-import com.tencent.bkrepo.replication.pojo.setting.ExecutionPlan
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
+import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll

@@ -31,36 +31,68 @@
 
 package com.tencent.bkrepo.replication.model
 
-import com.tencent.bkrepo.replication.pojo.common.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.request.TaskType
-import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
+/**
+ * 同步任务
+ */
 @Document("replica_task")
 data class TReplicaTask(
     var id: String? = null,
+    /**
+     * 任务唯一key
+     */
     @Indexed(unique = true)
     val key: String,
-    @Indexed(unique = true)
+    /**
+     * 任务名称
+     */
     var name: String,
-    val localProjectId: String,
-    val localRepoName: String,
-    val remoteProjectId: String?,
-    val remoteRepoName: String?,
-    val taskType: TaskType,
+    /**
+     * 项目id
+     */
+    val projectId: String,
+    /**
+     * 同步类型
+     */
     val replicaType: ReplicaType,
+    /**
+     * 任务设置
+     */
     val setting: ReplicaSetting,
-    val remoteClusterSet: Set<String>,
-    val packageConstraints: Set<PackageConstraint>? = null,
-    val pathConstraints: Set<String>? = null,
+    /**
+     * 远程集群集合
+     */
+    val remoteClusterSet: Set<ClusterNodeName>,
+    /**
+     * 任务描述
+     */
     val description: String? = null,
+    /**
+     * 当前状态
+     */
+    var status: ReplicationStatus = ReplicationStatus.WAITING,
+    /**
+     * 下次执行时间
+     */
+    var nextExecutionTime: LocalDateTime? = null,
+    /**
+     * 执行次数
+     */
+    var executionTimes: Long,
+    /**
+     * 是否启用
+     */
     var enabled: Boolean = true,
-    var status: ReplicationStatus,
-
+    /**
+     * 审计信息
+     */
     var createdBy: String,
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,

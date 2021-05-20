@@ -29,24 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.pojo.cluster
 
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-
-@ApiModel("创建任务请求")
-data class ReplicationTaskUpdateRequest(
-    @ApiModelProperty("任务名称", required = true)
-    val name: String,
-    @ApiModelProperty("任务唯一key", required = true)
-    val taskKey: String,
-    @ApiModelProperty("任务相关设置", required = true)
-    val setting: ReplicaSetting,
-    @ApiModelProperty("同步对象相关信息", required = true)
-    val replicationInfo: List<ReplicationInfo>,
-    @ApiModelProperty("校验远程连接是否成功", required = true)
-    val validateConnectivity: Boolean = true,
-    @ApiModelProperty("描述", required = false)
-    val description: String? = null
+/**
+ * 集群名称
+ */
+data class ClusterNodeName(
+    /**
+     * 集群唯一id
+     */
+    val id: String,
+    /**
+     * 集群名称
+     */
+    val name: String
 )

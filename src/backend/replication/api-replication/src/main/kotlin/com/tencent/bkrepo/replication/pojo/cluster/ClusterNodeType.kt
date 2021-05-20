@@ -1,5 +1,8 @@
 package com.tencent.bkrepo.replication.pojo.cluster
 
+/**
+ * 集群类型
+ */
 enum class ClusterNodeType {
     // 中心节点
     CENTER,

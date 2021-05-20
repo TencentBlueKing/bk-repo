@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,22 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.model
+package com.tencent.bkrepo.replication.pojo.task.setting
 
-import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+/**
+ * 出错时的处理策略
+ */
+enum class ErrorStrategy {
+    /**
+     * 出错时继续执行
+     */
+    CONTINUE,
 
-@Document("replica_log")
-data class TReplicationTaskLog(
-    var id: String? = null,
-    @Indexed
-    val taskKey: String,
-    var status: ReplicationStatus,
-    var replicationProgress: ReplicationProgress,
-    var startTime: LocalDateTime,
-    var endTime: LocalDateTime? = null,
-    var errorReason: String? = null
-)
+    /**
+     * 出错后本次任务失败
+     */
+    FAST_FAIL
+}

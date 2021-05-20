@@ -35,11 +35,11 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.replication.api.ClusterReplicaClient
+import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.model.TReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import okhttp3.OkHttpClient
@@ -51,7 +51,7 @@ class ReplicationContext(val task: TReplicaTask) {
     val normalizedUrl: String
     val clusterReplicaClient: ClusterReplicaClient
     val httpClient: OkHttpClient
-    val taskLog: TReplicationTaskLog
+    val taskRecord: TReplicaRecord
     val progress: ReplicationProgress = ReplicationProgress()
     var status: ReplicationStatus = ReplicationStatus.REPLICATING
     lateinit var projectDetailList: List<ReplicationProjectDetail>
@@ -61,7 +61,7 @@ class ReplicationContext(val task: TReplicaTask) {
     lateinit var remoteRepoName: String
 
     init {
-        taskLog = TReplicationTaskLog(
+        taskRecord = TReplicaRecord(
             taskKey = task.key,
             status = status,
             startTime = LocalDateTime.now(),

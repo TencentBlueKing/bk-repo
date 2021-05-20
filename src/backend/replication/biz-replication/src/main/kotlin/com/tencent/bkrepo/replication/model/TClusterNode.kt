@@ -51,11 +51,13 @@ data class TClusterNode(
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
 
-    var key: String,
+    /**
+     * 集群名称，允许重复
+     */
     var name: String,
     var url: String,
-    var username: String,
-    val password: String,
+    var username: String?,
+    val password: String?,
     val certificate: String?,
     val type: ClusterNodeType
 )
