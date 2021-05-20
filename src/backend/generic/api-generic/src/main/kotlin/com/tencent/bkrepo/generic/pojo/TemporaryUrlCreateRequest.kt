@@ -54,6 +54,8 @@ data class TemporaryUrlCreateRequest(
     val permits: Int? = null,
     @ApiModelProperty("token类型")
     val type: TokenType,
+    @ApiModelProperty("指定临时访问链接host")
+    val host: String? = null,
     @ApiModelProperty("是否通知用户")
     val needsNotify: Boolean = false
 )
