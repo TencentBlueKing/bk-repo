@@ -32,32 +32,45 @@
 package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 /**
- * 集群节点模型
+ * 集群节点
  */
 @Document("cluster_node")
-@CompoundIndexes(
-    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
-)
 data class TClusterNode(
     var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-
     /**
      * 集群名称，允许重复
      */
     var name: String,
+    /**
+     * 集群类型
+     */
+    val type: ClusterNodeType,
+    /**
+     * 集群访问地址
+     */
     var url: String,
+    /**
+     * 集群访问用户名, 独立集群需要此字段
+     */
     var username: String?,
+    /**
+     * 集群访问密码, 独立集群需要此字段
+     */
     val password: String?,
+    /**
+     * 集群访问证书, 独立集群需要此字段
+     */
     val certificate: String?,
-    val type: ClusterNodeType
+
+    /**
+     * 审计信息
+     */
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime
 )

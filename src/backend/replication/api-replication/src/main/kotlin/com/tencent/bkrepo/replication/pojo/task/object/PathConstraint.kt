@@ -29,52 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.model
-
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+package com.tencent.bkrepo.replication.pojo.task.`object`
 
 /**
- * 同步任务执行记录详情
- * 记录-详情：1 to N
+ * 路径限制
  */
-@Document("replica_record_detail")
-data class TReplicaRecordDetail(
-    var id: String? = null,
+data class PathConstraint(
     /**
-     * 关联的record id
+     * 节点路径
      */
-    @Indexed
-    val recordId: String,
-    /**
-     * local cluster
-     */
-    val localCluster: String,
-    /**
-     * 远程cluster
-     */
-    val remoteCluster: String,
-    /**
-     * 运行状态
-     */
-    var status: ExecutionStatus,
-    /**
-     * 同步进度
-     */
-    val progress: ReplicaProgress,
-    /**
-     * 开启时间
-     */
-    var startTime: LocalDateTime,
-    /**
-     * 结束时间
-     */
-    var endTime: LocalDateTime? = null,
-    /**
-     * 错误原因
-     */
-    var errorReason: String? = null
+    val path: String
 )

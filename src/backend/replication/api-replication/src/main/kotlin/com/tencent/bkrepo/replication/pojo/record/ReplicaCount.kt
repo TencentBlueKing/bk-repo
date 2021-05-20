@@ -29,18 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.common
+package com.tencent.bkrepo.replication.pojo.record
 
 /**
- * 包/版本限制
+ * 同步数量
  */
-data class PackageConstraint(
+data class ReplicaCount(
     /**
-     * 包唯一key
+     * 总量
      */
-    val packageKey: String,
+    var total: Long,
     /**
-     * 包版本列表
+     * 成功数量
      */
-    val versionSet: Set<String>? = null
+    var success: Long,
+    /**
+     * 跳过数量
+     */
+    var skip: Long,
+    /**
+     * 失败数量
+     */
+    var failed: Long
 )

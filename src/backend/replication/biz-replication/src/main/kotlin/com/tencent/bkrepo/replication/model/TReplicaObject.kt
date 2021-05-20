@@ -31,13 +31,11 @@
 
 package com.tencent.bkrepo.replication.model
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.replication.pojo.task.`object`.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.`object`.PathConstraint
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
 
 /**
  * 同步对象
@@ -51,46 +49,31 @@ data class TReplicaObject(
     @Indexed(unique = true)
     val key: String,
     /**
-     * 项目id
+     * 本地项目
      */
-    val projectId: String,
+    val localProjectId: String,
     /**
-     * 同步类型
+     * 本地仓库
      */
-    val replicaType: ReplicaType,
+    val localRepoName: String,
     /**
-     * 任务设置
+     * 远程项目
      */
-    val setting: ReplicaSetting,
+    val remoteProjectId: String,
     /**
-     * 远程集群集合
+     * 远程仓库
      */
-    val remoteClusterSet: Set<ClusterNodeName>,
+    val remoteRepoName: String,
     /**
-     * 任务描述
+     * 仓库类型
      */
-    val description: String? = null,
+    val repoType: RepositoryType,
     /**
-     * 当前状态
+     * 包限制
      */
-    var status: ReplicationStatus = ReplicationStatus.WAITING,
+    val packageConstraints: List<PackageConstraint>?,
     /**
-     * 下次执行时间
+     * 节点限制
      */
-    var nextExecutionTime: LocalDateTime? = null,
-    /**
-     * 执行次数
-     */
-    var executionTimes: Long,
-    /**
-     * 是否启用
-     */
-    var enabled: Boolean = true,
-    /**
-     * 审计信息
-     */
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime
+    val pathConstraints: List<PathConstraint>?
 )
