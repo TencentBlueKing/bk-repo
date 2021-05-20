@@ -33,7 +33,7 @@ package com.tencent.bkrepo.replication.handler.event
 
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.replication.handler.BaseHandler
-import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.service.ReplicationService
 import org.slf4j.LoggerFactory
@@ -69,11 +69,11 @@ abstract class BaseEventHandler : BaseHandler() {
         return cacheDetail
     }
 
-    fun getRemoteProjectId(task: TReplicationTask, sourceProjectId: String): String {
+    fun getRemoteProjectId(task: TReplicaTask, sourceProjectId: String): String {
         return task.remoteProjectId ?: task.localProjectId ?: sourceProjectId
     }
 
-    fun getRemoteRepoName(task: TReplicationTask, sourceRepoName: String): String {
+    fun getRemoteRepoName(task: TReplicaTask, sourceRepoName: String): String {
         return task.remoteRepoName ?: task.localRepoName ?: sourceRepoName
     }
 

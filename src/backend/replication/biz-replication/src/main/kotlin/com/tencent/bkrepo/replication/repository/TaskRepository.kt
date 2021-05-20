@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,11 +31,12 @@
 
 package com.tencent.bkrepo.replication.repository
 
-import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface TaskRepository : MongoRepository<TReplicationTask, String> {
-    fun findByKey(taskKey: String): TReplicationTask?
+interface TaskRepository : MongoRepository<TReplicaTask, String> {
+    fun findByKey(taskKey: String): TReplicaTask?
+    fun findByName(name: String): TReplicaTask?
 }

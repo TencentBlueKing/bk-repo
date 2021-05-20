@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -45,9 +45,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.replication.api.StorageReplicationClient.Companion.BLOB_CHECK_URI
-import com.tencent.bkrepo.replication.api.StorageReplicationClient.Companion.BLOB_PULL_URI
-import com.tencent.bkrepo.replication.api.StorageReplicationClient.Companion.BLOB_PUSH_URI
+import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.core.io.InputStreamResource
@@ -61,9 +59,13 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import java.util.concurrent.TimeUnit
 
+/**
+ * blob数据同步接口
+ * 用于同个集群中不同节点之间blob数据同步
+ */
 @Principal(type = PrincipalType.ADMIN)
 @RestController
-class StorageReplicationController(
+class BlobReplicaController(
     storageProperties: StorageProperties,
     private val storageService: StorageService,
     private val storageCredentialsClient: StorageCredentialsClient
@@ -75,7 +77,7 @@ class StorageReplicationController(
         .expireAfterWrite(CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
         .build(CacheLoader.from { key -> findStorageCredentials(key) })
 
-    @PostMapping(BLOB_PULL_URI)
+    @PostMapping(BlobReplicaClient.BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
             val credentials = credentialsCache.get(storageKey.orEmpty())
@@ -85,7 +87,7 @@ class StorageReplicationController(
         }
     }
 
-    @PostMapping(BLOB_PUSH_URI)
+    @PostMapping(BlobReplicaClient.BLOB_PUSH_URI)
     fun push(
         @RequestParam sha256: String,
         @RequestPart file: MultipartFile
@@ -101,7 +103,7 @@ class StorageReplicationController(
         return ResponseBuilder.success()
     }
 
-    @GetMapping(BLOB_CHECK_URI)
+    @GetMapping(BlobReplicaClient.BLOB_CHECK_URI)
     fun check(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null
@@ -122,3 +124,4 @@ class StorageReplicationController(
         private const val CACHE_EXPIRE_MINUTES = 5L
     }
 }
+

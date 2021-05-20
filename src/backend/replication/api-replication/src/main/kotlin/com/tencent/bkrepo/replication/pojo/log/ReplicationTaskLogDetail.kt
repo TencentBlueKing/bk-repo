@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,18 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.pojo.log
 
-import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
-import com.tencent.bkrepo.replication.pojo.task.ReplicationType
+import com.tencent.bkrepo.replication.pojo.task.ArtifactReplicationFailLevel
+import com.tencent.bkrepo.replication.pojo.task.ArtifactReplicationResult
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
 
-data class ReplicationTaskCreateRequest(
-    val type: ReplicationType = ReplicationType.FULL,
-    val includeAllProject: Boolean,
-    val localProjectId: String? = null,
-    val localRepoName: String? = null,
-    val remoteProjectId: String? = null,
-    val remoteRepoName: String? = null,
-    val setting: ReplicationSetting,
-    val validateConnectivity: Boolean = true
+data class ReplicationTaskLogDetail(
+    val taskLogKey: String,
+    val status: ArtifactReplicationResult,
+    val masterName: String,
+    val slaveName: String,
+    val projectId: String,
+    val repoName: String? = null,
+    val packageName: String? = null,
+    val packageKey: String? = null,
+    val type: PackageType? = null,
+    val version: String? = null,
+    val failLevelArtifact: ArtifactReplicationFailLevel? = null,
+    val errorReason: String? = null
 )

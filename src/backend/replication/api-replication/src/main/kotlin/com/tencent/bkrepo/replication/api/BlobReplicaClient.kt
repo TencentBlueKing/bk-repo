@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.api
 
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.constant.FeignResponse
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.MediaType
@@ -43,8 +44,11 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.multipart.MultipartFile
 
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "StorageReplicationClient")
-interface StorageReplicationClient {
+/**
+ * 同一集群不同节点之间的blob数据同步接口
+ */
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "BlobReplicaClient")
+interface BlobReplicaClient {
 
     /**
      * 从远程集群拉取文件数据
@@ -81,5 +85,3 @@ interface StorageReplicationClient {
         const val BLOB_CHECK_URI = "/replica/blob/check"
     }
 }
-
-typealias FeignResponse = feign.Response

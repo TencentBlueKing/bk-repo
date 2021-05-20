@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,32 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.model
+package com.tencent.bkrepo.replication.pojo.task
 
-import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.ReplicationType
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
+import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
 
-@Document("replication_task")
-data class TReplicationTask(
-    var id: String? = null,
-    @Indexed(unique = true)
+data class ReplicaTaskInfo(
+    val id: String,
+    val name: String,
     val key: String,
     var createdBy: String,
-    var createdDate: LocalDateTime,
+    var createdDate: String,
     var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
+    var lastModifiedDate: String,
 
-    val includeAllProject: Boolean,
-    val localProjectId: String? = null,
-    val localRepoName: String? = null,
-    val remoteProjectId: String? = null,
-    val remoteRepoName: String? = null,
+    val localProjectId: String,
+    val replicationInfo: List<ReplicationInfo>,
 
-    var type: ReplicationType,
-    var setting: ReplicationSetting,
-    var status: ReplicationStatus
+    val type: ReplicationType,
+    val setting: ReplicaSetting,
+    val status: ReplicationStatus,
+    val enabled: Boolean,
+    val lastRunTime: String? = null,
+    val nextRunTime: String? = null,
+    val description: String? = null
 )

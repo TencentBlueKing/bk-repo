@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit
 object FeignClientFactory {
 
     /**
-     * [remoteClusterInfo] 为远程集群信息
+     * [remoteClusterInfo]为远程集群信息
      */
     inline fun <reified T> create(remoteClusterInfo: RemoteClusterInfo): T {
         return create(T::class.java, remoteClusterInfo)

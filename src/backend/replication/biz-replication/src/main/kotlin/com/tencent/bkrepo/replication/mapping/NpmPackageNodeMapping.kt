@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,7 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.constant
+package com.tencent.bkrepo.replication.mapping
 
-const val DEFAULT_GROUP_ID = "REPLICA"
-const val TASK_ID = "TASK_ID"
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+
+class NpmPackageNodeMapping : PackageNodeMapping {
+    override fun match(type: RepositoryType): Boolean {
+        return type == RepositoryType.NPM
+    }
+
+    override fun handle(key: String, version: String, ext: Map<String, Any>): List<String> {
+        val name = PackageKeys.resolveNpm(key)
+        return listOf(
+            NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
+            NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version),
+            NPM_PKG_METADATA_FULL_PATH.format(name)
+        )
+    }
+
+    companion object {
+        const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
+        const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
+        const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
+    }
+}

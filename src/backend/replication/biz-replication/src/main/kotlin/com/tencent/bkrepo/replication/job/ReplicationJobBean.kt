@@ -114,7 +114,7 @@ class ReplicationJobBean(
 
     private fun checkVersion(context: ReplicationContext) {
         with(context) {
-            val remoteVersion = replicationClient.version(authToken).data!!
+            val remoteVersion = clusterReplicaClient.version(authToken).data!!
             if (version != remoteVersion) {
                 logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
             }
@@ -245,7 +245,7 @@ class ReplicationJobBean(
             while (fileNodeList.isNotEmpty()) {
                 val fullPathList = fileNodeList.map { it.fullPath }
                 val request = NodeExistCheckRequest(localProjectId, localRepoName, fullPathList)
-                val existFullPathList = context.replicationClient.checkNodeExistList(context.authToken, request).data!!
+                val existFullPathList = context.clusterReplicaClient.checkNodeExistList(context.authToken, request).data!!
                 // 同步不存在的节点
                 fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
                 page += 1
@@ -342,7 +342,7 @@ class ReplicationJobBean(
             }
             // 同步权限数据
             val localPermissionList = repoDataService.listPermission(remoteProjectId, remoteRepoName)
-            val remotePermissionList = replicationClient.listPermission(authToken, localProjectId, localRepoName).data!!
+            val remotePermissionList = clusterReplicaClient.listPermission(authToken, localProjectId, localRepoName).data!!
 
             localPermissionList.forEach { permission ->
                 // 过滤已存在的权限
@@ -367,7 +367,7 @@ class ReplicationJobBean(
                 admin = user.admin,
                 tokens = user.tokens
             )
-            replicationClient.replicaUser(authToken, request).data!!
+            clusterReplicaClient.replicaUser(authToken, request).data!!
         }
     }
 
@@ -393,7 +393,7 @@ class ReplicationJobBean(
                 repoName = repoName,
                 admin = role.admin
             )
-            return replicationClient.replicaRole(authToken, request).data!!.roleId
+            return clusterReplicaClient.replicaRole(authToken, request).data!!.roleId
         }
     }
 
@@ -403,7 +403,7 @@ class ReplicationJobBean(
         userIdList: List<String>
     ) {
         with(context) {
-            replicationClient.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
+            clusterReplicaClient.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
         }
     }
 
@@ -424,7 +424,7 @@ class ReplicationJobBean(
                 createBy = SYSTEM_USER,
                 updatedBy = SYSTEM_USER
             )
-            replicationClient.replicaPermission(authToken, request)
+            clusterReplicaClient.replicaPermission(authToken, request)
         }
     }
 

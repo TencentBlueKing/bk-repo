@@ -39,15 +39,13 @@ import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.replication.api.StorageReplicationClient
+import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -88,8 +86,8 @@ class StorageManager(
     /**
      * 存储同步client
      */
-    private val storageReplicationClient: StorageReplicationClient by lazy {
-        FeignClientFactory.create<StorageReplicationClient>(centerClusterInfo)
+    private val blobReplicaClient: BlobReplicaClient by lazy {
+        FeignClientFactory.create<BlobReplicaClient>(centerClusterInfo)
     }
 
     /**
@@ -128,9 +126,8 @@ class StorageManager(
         if (node == null || node.folder) {
             return null
         }
-        val request = getRequestOrNull()
         val range = try {
-            request?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
+            getRequestOrNull()?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
         } catch (exception: IllegalArgumentException) {
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
@@ -138,9 +135,7 @@ class StorageManager(
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
-        if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
-            return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        }
+
         val sha256 = node.sha256.orEmpty()
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
@@ -166,7 +161,7 @@ class StorageManager(
      */
     private fun existInCenter(sha256: String, storageKey: String?): Boolean {
         return try {
-            storageReplicationClient.check(sha256, storageKey).data ?: false
+            blobReplicaClient.check(sha256, storageKey).data ?: false
         } catch (exception: Exception) {
             logger.error("Failed to check blob data[$sha256] in center node.", exception)
             false
@@ -183,7 +178,7 @@ class StorageManager(
     ): ArtifactInputStream? {
         try {
             val request = BlobPullRequest(sha256, range, storageKey)
-            val response = storageReplicationClient.pull(request)
+            val response = blobReplicaClient.pull(request)
             check(response.status() == HttpStatus.OK.value) {
                 "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
             }

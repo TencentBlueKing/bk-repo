@@ -44,9 +44,15 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.message.ReplicationException
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -58,12 +64,21 @@ class RepoDataService(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
+    private val packageClient: PackageClient,
     private val metadataClient: MetadataClient,
     private val permissionResource: ServicePermissionResource,
     private val roleResource: ServiceRoleResource,
     private val userResource: ServiceUserResource,
     private val storageService: StorageService
 ) {
+
+    fun checkProjectExists(projectId: String): Boolean {
+        return projectClient.getProjectInfo(projectId).data?.let { true } ?: false
+    }
+
+    fun checkRepoExists(projectId: String, repoName: String, type: String? = null): Boolean {
+        return repositoryClient.checkExist(projectId, repoName, type).data!!
+    }
 
     fun listProject(projectId: String? = null): List<ProjectInfo> {
         return if (projectId == null) {
@@ -93,6 +108,14 @@ class RepoDataService(
         return nodeClient.countFileNode(repositoryInfo.projectId, repositoryInfo.name, ROOT).data!!
     }
 
+    fun getNodeDetail(
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): NodeDetail? {
+        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+    }
+
     fun listFileNode(
         projectId: String,
         repoName: String,
@@ -106,6 +129,63 @@ class RepoDataService(
             includeMetadata = true,
             deep = true
         ).data!!.records
+    }
+
+    fun listFileNode(
+        projectId: String,
+        repoName: String,
+        fullPath: List<String>
+    ): List<NodeInfo> {
+        return nodeClient.listFileNode(
+            projectId, repoName, fullPath
+        ).data!!
+    }
+
+    fun listPackage(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): List<PackageSummary> {
+        val packageListOption = PackageListOption(pageNumber, pageSize)
+        return packageClient.listPackagePage(projectId, repoName, packageListOption).data!!.records
+    }
+
+    fun queryPackage(
+        projectId: String,
+        repoName: String,
+        packageKey: String
+    ): PackageSummary {
+        return packageClient.findPackageByKey(projectId, repoName, packageKey).data!!
+    }
+
+    fun queryPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): PackageVersion {
+        return packageClient.findVersionByName(projectId, repoName, packageKey, version).data!!
+    }
+
+    fun checkPackageVersionExists(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): Boolean {
+        return packageClient.findVersionByName(projectId, repoName, packageKey, version).data?.let { true } ?: false
+    }
+
+    fun listPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): List<PackageVersion> {
+        val versionListOption = VersionListOption(pageNumber, pageSize)
+        return packageClient.listVersionPage(projectId, repoName, packageKey, versionListOption).data!!.records
     }
 
     fun getMetadata(nodeInfo: NodeInfo): Map<String, Any> {

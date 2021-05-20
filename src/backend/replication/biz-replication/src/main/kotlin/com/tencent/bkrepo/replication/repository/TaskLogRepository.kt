@@ -40,4 +40,5 @@ interface TaskLogRepository : MongoRepository<TReplicationTaskLog, String> {
     fun deleteByTaskKey(taskKey: String)
     fun findFirstByTaskKeyOrderByStartTimeDesc(taskKey: String): TReplicationTaskLog?
     fun findByTaskKeyOrderByStartTimeDesc(taskKey: String): List<TReplicationTaskLog>
+    fun findByTaskLogKey(taskLogKey: String): TReplicationTaskLog?
 }

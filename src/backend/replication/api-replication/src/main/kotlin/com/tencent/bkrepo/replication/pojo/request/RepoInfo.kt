@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,25 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task
+package com.tencent.bkrepo.replication.pojo.request
 
-import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-data class ReplicationTaskInfo(
-    val id: String,
-    val key: String,
-    var createdBy: String,
-    var createdDate: String,
-    var lastModifiedBy: String,
-    var lastModifiedDate: String,
-
-    val includeAllProject: Boolean,
-    val localProjectId: String? = null,
-    val localRepoName: String? = null,
-    val remoteProjectId: String? = null,
-    val remoteRepoName: String? = null,
-
-    val type: ReplicationType,
-    val setting: ReplicationSetting,
-    val status: ReplicationStatus
+@ApiModel("仓库信息")
+data class RepoInfo(
+    @ApiModelProperty("仓库名称", required = true)
+    val localRepoName: String,
+    @ApiModelProperty("仓库类型", required = true)
+    val type: String,
+    @ApiModelProperty("制品包信息", required = true)
+    val packageInfo: List<PackageInfo>
 )

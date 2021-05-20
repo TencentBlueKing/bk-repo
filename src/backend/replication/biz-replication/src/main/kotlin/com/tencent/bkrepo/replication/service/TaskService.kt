@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,190 +31,49 @@
 
 package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.replication.api.ReplicationClient
-import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.message.ReplicationMessageCode
-import com.tencent.bkrepo.replication.model.TReplicationTask
-import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
-import com.tencent.bkrepo.replication.pojo.setting.ExecutionPlan
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
+import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus.Companion.UNDO_STATUS_SET
-import com.tencent.bkrepo.replication.pojo.task.ReplicationTaskInfo
+import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
-import com.tencent.bkrepo.replication.repository.TaskLogRepository
-import com.tencent.bkrepo.replication.repository.TaskRepository
-import org.quartz.CronExpression
-import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
-@Service
-class TaskService(
-    private val taskRepository: TaskRepository,
-    private val taskLogRepository: TaskLogRepository,
-    private val mongoTemplate: MongoTemplate
-) {
+interface TaskService {
+    /**
+     * 创建任务
+     */
+    fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo
 
-    fun create(userId: String, request: ReplicationTaskCreateRequest): ReplicationTaskInfo {
-        with(request) {
-            validate(this)
-            val task = TReplicationTask(
-                key = uniqueId(),
-                includeAllProject = includeAllProject,
-                localProjectId = if (includeAllProject) null else localProjectId,
-                localRepoName = if (includeAllProject) null else localRepoName,
-                remoteProjectId = if (includeAllProject) null else remoteProjectId,
-                remoteRepoName = if (includeAllProject) null else remoteRepoName,
-                type = type,
-                setting = setting,
-                status = ReplicationStatus.WAITING,
+    /**
+     * 查询任务详情
+     */
+    fun detail(taskKey: String): ReplicaTaskInfo?
+    fun listAllRemoteTask(type: ReplicationType): List<TReplicaTask>
+    fun listUndoFullTask(): List<TReplicaTask>
+    fun list(): List<ReplicaTaskInfo>
+    fun listReplicationTaskInfoPage(
+        userId: String,
+        name: String?,
+        enabled: Boolean?,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<ReplicaTaskInfo>
 
-                createdBy = userId,
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now()
-            )
-            taskRepository.insert(task)
-            logger.info("Create replica task[$request] success.")
-            return convert(task)!!
-        }
-    }
-
-    fun detail(taskKey: String): ReplicationTaskInfo? {
-        return taskRepository.findByKey(taskKey)?.let { convert(it) }
-    }
-
-    fun listAllRemoteTask(type: ReplicationType): List<TReplicationTask> {
-        val typeCriteria = TReplicationTask::type.isEqualTo(type)
-        val statusCriteria = TReplicationTask::status.inValues(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
-        val criteria = Criteria().andOperator(typeCriteria, statusCriteria)
-
-        return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
-    }
-
-    fun listRelativeTask(
-        type: ReplicationType,
-        localProjectId: String?,
-        localRepoName: String?
-    ): List<TReplicationTask> {
-        val typeCriteria = TReplicationTask::type.isEqualTo(type)
-        val statusCriteria = TReplicationTask::status.inValues(ReplicationStatus.WAITING, ReplicationStatus.REPLICATING)
-        val includeAllCriteria = TReplicationTask::includeAllProject.isEqualTo(true)
-        val projectCriteria = TReplicationTask::localProjectId.isEqualTo(localProjectId)
-        val repoCriteria = TReplicationTask::localProjectId.isEqualTo(localProjectId)
-            .orOperator(
-                TReplicationTask::localRepoName.isEqualTo(localRepoName),
-                TReplicationTask::localRepoName.isEqualTo(null)
-            )
-        val detailCriteria = if (localProjectId == null && localRepoName == null) {
-            includeAllCriteria
-        } else if (localProjectId != null && localRepoName == null) {
-            Criteria().orOperator(includeAllCriteria, projectCriteria)
-        } else {
-            Criteria().orOperator(includeAllCriteria, repoCriteria)
-        }
-        val criteria = Criteria().andOperator(typeCriteria, statusCriteria, detailCriteria)
-
-        return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
-    }
-
-    fun listUndoFullTask(): List<TReplicationTask> {
-        val criteria = Criteria.where(TReplicationTask::type.name).`is`(ReplicationType.FULL)
-            .and(TReplicationTask::status.name).`in`(UNDO_STATUS_SET)
-        return mongoTemplate.find(Query(criteria), TReplicationTask::class.java)
-    }
-
-    fun list(): List<ReplicationTaskInfo> {
-        return taskRepository.findAll().map { convert(it)!! }
-    }
-
-    fun interrupt(taskKey: String) {
-        val task =
-            taskRepository.findByKey(taskKey) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
-        if (task.status == ReplicationStatus.REPLICATING) {
-            task.status = ReplicationStatus.INTERRUPTED
-            taskRepository.save(task)
-        } else {
-            throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
-        }
-    }
-
-    fun delete(taskKey: String) {
-        val task = taskRepository.findByKey(taskKey)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, taskKey)
-        taskRepository.delete(task)
-        if (task.type == ReplicationType.FULL) {
-            taskLogRepository.deleteByTaskKey(taskKey)
-        }
-    }
+    fun buildListQuery(userId: String, name: String?, enabled: Boolean?): Query
+    fun isAdminUser(userId: String): Boolean
+    fun interrupt(taskKey: String)
+    fun delete(taskKey: String)
+    fun toggleStatus(userId: String, taskKey: String)
+    fun execute(taskKey: String)
+    fun canUpdated(taskKey: String): Boolean
+    fun update(userId: String, request: ReplicationTaskUpdateRequest): ReplicaTaskInfo
 
     @Suppress("TooGenericExceptionCaught")
-    fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
-        with(remoteClusterInfo) {
-            try {
-                val replicationService = FeignClientFactory.create<ReplicationClient>(this)
-                val authToken = ReplicationContext.encodeAuthToken(username, password)
-                replicationService.ping(authToken)
-            } catch (exception: RuntimeException) {
-                val message = exception.message ?: UNKNOWN
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, message)
-            }
-        }
-    }
-
-    private fun validate(request: ReplicationTaskCreateRequest) {
-        with(request) {
-            if (!includeAllProject && localProjectId == null) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, request::localProjectId.name)
-            }
-            if (!setting.executionPlan.executeImmediately && setting.executionPlan.executeTime == null) {
-                val cronExpression = setting.executionPlan.cronExpression
-                    ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, ExecutionPlan::cronExpression.name)
-                if (!CronExpression.isValidExpression(cronExpression)) {
-                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cronExpression)
-                }
-            }
-            if (validateConnectivity) {
-                tryConnect(setting.remoteClusterInfo)
-            }
-        }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(TaskService::class.java)
-
-        private fun convert(task: TReplicationTask?): ReplicationTaskInfo? {
-            return task?.let {
-                ReplicationTaskInfo(
-                    id = it.id!!,
-                    key = it.key,
-                    includeAllProject = it.includeAllProject,
-                    localProjectId = it.localProjectId,
-                    localRepoName = it.localRepoName,
-                    remoteProjectId = it.remoteProjectId,
-                    remoteRepoName = it.remoteRepoName,
-                    type = it.type,
-                    setting = it.setting,
-                    status = it.status,
-
-                    createdBy = it.createdBy,
-                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                    lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
-                )
-            }
-        }
-    }
+    fun tryConnect(remoteClusterInfo: RemoteClusterInfo)
+    fun validate(setting: ReplicaSetting, replicationInfo: List<ReplicationInfo>)
 }
+

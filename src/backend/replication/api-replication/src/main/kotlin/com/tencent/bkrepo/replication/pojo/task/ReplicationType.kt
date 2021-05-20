@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.replication.pojo.task
 
 enum class ReplicationType {
+    // 全量同步
     FULL,
+    // 增量同步
     INCREMENTAL
 }

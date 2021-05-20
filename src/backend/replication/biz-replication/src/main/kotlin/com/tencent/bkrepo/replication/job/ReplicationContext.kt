@@ -33,28 +33,23 @@ package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
-import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
-import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
-import com.tencent.bkrepo.replication.api.ReplicationClient
-import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.api.ClusterReplicaClient
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.model.TReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import okhttp3.ConnectionPool
 import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
 import java.time.LocalDateTime
-import java.util.concurrent.TimeUnit
 
-class ReplicationContext(val task: TReplicationTask) {
+class ReplicationContext(val task: TReplicaTask) {
     val authToken: String
     val normalizedUrl: String
-    val replicationClient: ReplicationClient
+    val clusterReplicaClient: ClusterReplicaClient
     val httpClient: OkHttpClient
     val taskLog: TReplicationTaskLog
     val progress: ReplicationProgress = ReplicationProgress()

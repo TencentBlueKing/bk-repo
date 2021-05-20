@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -95,10 +96,16 @@ class ReplicationService(
         }
     }
 
+    fun replicaPackageVersionCreatedRequest(context: ReplicationContext, request: PackageVersionCreateRequest) {
+        with(context) {
+            clusterReplicaClient.replicaPackageVersionCreatedRequest(authToken, request)
+        }
+    }
+
     fun replicaNodeCreateRequest(context: ReplicationContext, request: NodeCreateRequest) {
         with(context) {
             if (request.folder) {
-                replicationClient.replicaNodeCreateRequest(authToken, request)
+                clusterReplicaClient.replicaNodeCreateRequest(authToken, request)
             } else {
                 replicaFile(context, request)
             }
@@ -112,73 +119,73 @@ class ReplicationService(
         fullPath: String
     ): Boolean {
         with(context) {
-            return replicationClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: false
+            return clusterReplicaClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: false
         }
     }
 
     fun replicaNodeRenameRequest(context: ReplicationContext, request: NodeRenameRequest) {
         with(context) {
-            replicationClient.replicaNodeRenameRequest(authToken, request)
+            clusterReplicaClient.replicaNodeRenameRequest(authToken, request)
         }
     }
 
     fun replicaNodeUpdateRequest(context: ReplicationContext, request: NodeUpdateRequest) {
         with(context) {
-            replicationClient.replicaNodeUpdateRequest(authToken, request)
+            clusterReplicaClient.replicaNodeUpdateRequest(authToken, request)
         }
     }
 
     fun replicaNodeCopyRequest(context: ReplicationContext, request: NodeMoveCopyRequest) {
         with(context) {
-            replicationClient.replicaNodeCopyRequest(authToken, request)
+            clusterReplicaClient.replicaNodeCopyRequest(authToken, request)
         }
     }
 
     fun replicaNodeMoveRequest(context: ReplicationContext, request: NodeMoveCopyRequest) {
         with(context) {
-            replicationClient.replicaNodeMoveRequest(authToken, request)
+            clusterReplicaClient.replicaNodeMoveRequest(authToken, request)
         }
     }
 
     fun replicaNodeDeleteRequest(context: ReplicationContext, request: NodeDeleteRequest) {
         with(context) {
-            replicationClient.replicaNodeDeleteRequest(authToken, request)
+            clusterReplicaClient.replicaNodeDeleteRequest(authToken, request)
         }
     }
 
     fun replicaRepoCreateRequest(context: ReplicationContext, request: RepoCreateRequest) {
         with(context) {
-            replicationClient.replicaRepoCreateRequest(authToken, request)
+            clusterReplicaClient.replicaRepoCreateRequest(authToken, request)
         }
     }
 
     fun replicaRepoUpdateRequest(context: ReplicationContext, request: RepoUpdateRequest) {
         with(context) {
-            replicationClient.replicaRepoUpdateRequest(authToken, request)
+            clusterReplicaClient.replicaRepoUpdateRequest(authToken, request)
         }
     }
 
     fun replicaRepoDeleteRequest(context: ReplicationContext, request: RepoDeleteRequest) {
         with(context) {
-            replicationClient.replicaRepoDeleteRequest(authToken, request)
+            clusterReplicaClient.replicaRepoDeleteRequest(authToken, request)
         }
     }
 
     fun replicaProjectCreateRequest(context: ReplicationContext, request: ProjectCreateRequest) {
         with(context) {
-            replicationClient.replicaProjectCreateRequest(authToken, request)
+            clusterReplicaClient.replicaProjectCreateRequest(authToken, request)
         }
     }
 
     fun replicaMetadataSaveRequest(context: ReplicationContext, request: MetadataSaveRequest) {
         with(context) {
-            replicationClient.replicaMetadataSaveRequest(authToken, request)
+            clusterReplicaClient.replicaMetadataSaveRequest(authToken, request)
         }
     }
 
     fun replicaMetadataDeleteRequest(context: ReplicationContext, request: MetadataDeleteRequest) {
         with(context) {
-            replicationClient.replicaMetadataDeleteRequest(authToken, request)
+            clusterReplicaClient.replicaMetadataDeleteRequest(authToken, request)
         }
     }
 

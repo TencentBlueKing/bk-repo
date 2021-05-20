@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,12 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.setting
+package com.tencent.bkrepo.replication.pojo.cluster
 
-data class ReplicationSetting(
-    val includeMetadata: Boolean = true,
-    val includePermission: Boolean = false,
-    val conflictStrategy: ConflictStrategy = ConflictStrategy.SKIP,
-    val remoteClusterInfo: RemoteClusterInfo,
-    val executionPlan: ExecutionPlan = ExecutionPlan()
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+/**
+ * 添加集群节点请求
+ */
+@ApiModel("添加集群节点请求")
+data class UserClusterNodeCreateRequest(
+    @ApiModelProperty("添加的集群名称", required = true)
+    val name: String,
+    @ApiModelProperty("集群地址", required = true)
+    val url: String,
+    @ApiModelProperty("集群的证书", required = false)
+    val certificate: String? = null,
+    @ApiModelProperty("集群认证用户名", required = true)
+    val username: String,
+    @ApiModelProperty("集群认证密码", required = true)
+    val password: String,
+    @ApiModelProperty("集群节点类型", required = true)
+    val type: ClusterNodeType = ClusterNodeType.STANDALONE
 )

@@ -40,6 +40,6 @@ enum class ReplicationStatus {
     FAILED;
 
     companion object {
-        val UNDO_STATUS_SET = setOf(WAITING, REPLICATING)
+        val UNDO_STATUS = setOf(WAITING, REPLICATING)
     }
 }

@@ -32,10 +32,10 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.replication.model.TReplicationTask
-import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
+import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
@@ -102,7 +102,7 @@ class TaskServiceTest {
         val undoFullTaskList = taskService.listUndoFullTask()
         Assertions.assertEquals(2, undoFullTaskList.size)
         undoFullTaskList.forEach {
-            Assertions.assertTrue(it.status in ReplicationStatus.UNDO_STATUS_SET)
+            Assertions.assertTrue(it.status in ReplicationStatus.UNDO_STATUS)
             Assertions.assertEquals(it.type, ReplicationType.FULL)
         }
     }
@@ -138,14 +138,14 @@ class TaskServiceTest {
         remoteRepoName: String? = null
     ) {
         val remoteClusterInfo = RemoteClusterInfo(url = "", username = "", password = "")
-        val request = ReplicationTaskCreateRequest(
+        val request = ReplicaTaskCreateRequest(
             type = ReplicationType.INCREMENTAL,
             includeAllProject = includeAllProject,
             localProjectId = localProjectId,
             localRepoName = localRepoName,
             remoteProjectId = remoteProjectId,
             remoteRepoName = remoteRepoName,
-            setting = ReplicationSetting(remoteClusterInfo = remoteClusterInfo),
+            setting = ReplicaSetting(remoteClusterInfo = remoteClusterInfo),
             validateConnectivity = false
         )
         taskService.create("system", request)
@@ -154,9 +154,9 @@ class TaskServiceTest {
     private fun insertFullTask(
         taskKey: String,
         status: ReplicationStatus = ReplicationStatus.WAITING
-    ): TReplicationTask {
+    ): TReplicaTask {
         val remoteClusterInfo = RemoteClusterInfo(url = "", username = "", password = "")
-        val task = TReplicationTask(
+        val task = TReplicaTask(
             key = taskKey,
             type = ReplicationType.FULL,
             createdBy = "system",
@@ -168,7 +168,7 @@ class TaskServiceTest {
             localRepoName = "localRepoName",
             remoteProjectId = "remoteProjectId",
             remoteRepoName = "remoteRepoName",
-            setting = ReplicationSetting(remoteClusterInfo = remoteClusterInfo),
+            setting = ReplicaSetting(remoteClusterInfo = remoteClusterInfo),
             status = status
         )
         return taskRepository.insert(task)

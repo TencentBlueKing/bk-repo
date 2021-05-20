@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.replication.handler
 
 import com.tencent.bkrepo.common.storage.innercos.retry
-import com.tencent.bkrepo.replication.model.TReplicationTask
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
 import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
@@ -91,14 +91,14 @@ open class BaseHandler {
         }
     }
 
-    fun getRelativeTaskList(projectId: String, repoName: String? = null): List<TReplicationTask> {
+    fun getRelativeTaskList(projectId: String, repoName: String? = null): List<TReplicaTask> {
         return taskService.listRelativeTask(ReplicationType.INCREMENTAL, projectId, repoName)
     }
 
     fun forEachRelativeTask(
         projectId: String,
         repoName: String? = null,
-        block: (TReplicationTask) -> Unit
+        block: (TReplicaTask) -> Unit
     ) {
         getRelativeTaskList(projectId, repoName).forEach { task ->
             retry(times = 3, delayInSeconds = 0) {

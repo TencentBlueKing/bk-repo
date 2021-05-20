@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -43,7 +43,7 @@ class ReplicationQuartzJob : InterruptableJob {
 
     private var currentThread: Thread? = null
     private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
-    private val replicationJobBean = SpringContextUtils.getBean(ReplicationJobBean::class.java)
+    private val replicationJobBean = SpringContextUtils.getBean(ReplicationArtifactJobBean::class.java)
 
     override fun execute(context: JobExecutionContext) {
         currentThread = Thread.currentThread()

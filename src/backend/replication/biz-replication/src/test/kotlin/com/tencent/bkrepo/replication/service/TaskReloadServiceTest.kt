@@ -36,12 +36,12 @@ import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
 import com.tencent.bkrepo.replication.job.ReplicationJobBean
-import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.setting.ReplicationSetting
+import com.tencent.bkrepo.replication.pojo.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.ReplicationTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.junit.jupiter.api.Assertions
@@ -135,16 +135,16 @@ private class TaskReloadServiceTest {
         verify(replicationJobBean, atLeast(5)).execute(task.id)
     }
 
-    private fun createTask(type: ReplicationType, executionPlan: ExecutionPlan = ExecutionPlan()): ReplicationTaskInfo {
+    private fun createTask(type: ReplicationType, executionPlan: ExecutionPlan = ExecutionPlan()): ReplicaTaskInfo {
         val remoteClusterInfo = RemoteClusterInfo(url = "", username = "", password = "")
-        val request = ReplicationTaskCreateRequest(
+        val request = ReplicaTaskCreateRequest(
             type = type,
             includeAllProject = true,
             localProjectId = "localProjectId",
             localRepoName = "localRepoName",
             remoteProjectId = "remoteProjectId",
             remoteRepoName = "remoteRepoName",
-            setting = ReplicationSetting(remoteClusterInfo = remoteClusterInfo, executionPlan = executionPlan),
+            setting = ReplicaSetting(remoteClusterInfo = remoteClusterInfo, executionPlan = executionPlan),
             validateConnectivity = false
         )
         return taskService.create("system", request)

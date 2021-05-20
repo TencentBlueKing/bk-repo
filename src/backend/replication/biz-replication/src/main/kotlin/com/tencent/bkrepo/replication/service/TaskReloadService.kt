@@ -34,17 +34,13 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID
 import com.tencent.bkrepo.replication.job.ReplicationQuartzJob
-import com.tencent.bkrepo.replication.model.TReplicationTask
-import org.quartz.CronScheduleBuilder
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import org.quartz.JobBuilder
 import org.quartz.JobDetail
 import org.quartz.Trigger
-import org.quartz.TriggerBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import java.time.ZoneId
-import java.util.Date
 
 @Service
 class TaskReloadService(
@@ -56,7 +52,7 @@ class TaskReloadService(
      * 定时从数据库中重新加载任务列表
      * 已存在的任务: 根据id判断是否存在，存在则跳过
      * 新增的任务: 加入到scheduler
-     * 修改的任务: 每次修改任务会删除旧任务，因此id会变更，可以当做新任务假如
+     * 修改的任务: 每次修改任务会删除旧任务，因此id会变更，可以当做新任务加入
      * 删除的任务: 当job执行时，判断数据库中是否存在对应的task，如果不存在表示该任务过期了，跳过执行即可
      */
     @Scheduled(initialDelay = 10 * 1000, fixedDelay = 10 * 1000)
@@ -93,7 +89,7 @@ class TaskReloadService(
         }
     }
 
-    private fun createJobDetail(task: TReplicationTask): JobDetail {
+    private fun createJobDetail(task: TReplicaTask): JobDetail {
         return JobBuilder.newJob(ReplicationQuartzJob::class.java)
             .withIdentity(task.id, DEFAULT_GROUP_ID)
             .usingJobData(TASK_ID, task.id)
@@ -101,7 +97,7 @@ class TaskReloadService(
             .build()
     }
 
-    private fun createTrigger(task: TReplicationTask): Trigger {
+    private fun createTrigger(task: TReplicaTask): Trigger {
         with(task.setting.executionPlan) {
             return when {
                 executeImmediately -> {
