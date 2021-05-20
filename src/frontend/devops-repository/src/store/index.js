@@ -53,7 +53,7 @@ export default new Vuex.Store({
                 return {
                     ...item,
                     children,
-                    name: item.metadata.displayName || item.name
+                    name: (item.metadata && item.metadata.displayName) || item.name
                 }
             })
             tree.splice(0, tree.length, ...list)
