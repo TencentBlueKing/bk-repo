@@ -39,6 +39,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 
 /**
  * 同步对象
+ * 同步任务 - 同步对象： 1 to N
  */
 @Document("replica_object")
 data class TReplicaObject(
@@ -46,7 +47,7 @@ data class TReplicaObject(
     /**
      * 任务唯一key
      */
-    @Indexed(unique = true)
+    @Indexed
     val key: String,
     /**
      * 本地项目

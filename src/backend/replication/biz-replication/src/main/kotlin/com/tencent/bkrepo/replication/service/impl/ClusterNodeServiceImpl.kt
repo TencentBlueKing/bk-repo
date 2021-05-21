@@ -36,11 +36,11 @@ class ClusterNodeServiceImpl(
         return convert(clusterNodeDao.findByName(name))
     }
 
-    override fun checkExist(name: String): Boolean {
+    override fun checkNameExist(name: String): Boolean {
         return clusterNodeDao.findByName(name) != null
     }
 
-    override fun getMasterNodeInfo(): ClusterNodeInfo {
+    override fun getCenterNode(): ClusterNodeInfo {
         val clusterInfoList = clusterNodeDao.findByType(ClusterNodeType.MASTER).map { convert(it)!! }
         require(clusterInfoList.size == 1) { "find no or more than one master cluster." }
         return clusterInfoList.first()
@@ -53,7 +53,7 @@ class ClusterNodeServiceImpl(
     override fun createClusterNode(request: ClusterNodeCreateRequest): ClusterNodeInfo {
         with(request) {
             validateParameter(this)
-            if (checkExist(name)) {
+            if (checkNameExist(name)) {
                 throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
             }
             // 主节点唯一

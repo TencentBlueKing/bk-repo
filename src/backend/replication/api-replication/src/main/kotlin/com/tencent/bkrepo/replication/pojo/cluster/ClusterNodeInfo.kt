@@ -39,18 +39,18 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("集群节点信息")
 data class ClusterNodeInfo(
-    @ApiModelProperty("集群key")
-    val key: String,
-    @ApiModelProperty("添加的集群名称")
+    @ApiModelProperty("集群id")
+    val id: String,
+    @ApiModelProperty("集群名称")
     val name: String,
+    @ApiModelProperty("集群节点类型")
+    val type: ClusterNodeType,
     @ApiModelProperty("集群地址")
     val url: String,
     @ApiModelProperty("集群的证书")
     val certificate: String? = null,
-    @ApiModelProperty("集群节点类型")
-    val type: ClusterNodeType,
     @ApiModelProperty("集群认证用户名")
-    val username: String,
+    val username: String? = null,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建日期")

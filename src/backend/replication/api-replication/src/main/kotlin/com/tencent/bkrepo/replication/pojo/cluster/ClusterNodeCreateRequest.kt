@@ -45,12 +45,10 @@ data class ClusterNodeCreateRequest(
     val url: String,
     @ApiModelProperty("集群的证书", required = false)
     val certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = true)
-    val username: String,
-    @ApiModelProperty("集群认证密码", required = true)
-    val password: String,
+    @ApiModelProperty("集群认证用户名", required = false)
+    val username: String? = null,
+    @ApiModelProperty("集群认证密码", required = false)
+    val password: String? = null,
     @ApiModelProperty("集群节点类型", required = true)
-    val type: ClusterNodeType,
-    @ApiModelProperty("操作用户", required = false)
-    val operator: String
+    val type: ClusterNodeType
 )

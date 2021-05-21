@@ -35,11 +35,13 @@ import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 
 /**
- * 项目数据访问层
+ * 集群节点数据访问层
  */
 @Repository
 class ClusterNodeDao : SimpleMongoDao<TClusterNode>() {
@@ -52,20 +54,13 @@ class ClusterNodeDao : SimpleMongoDao<TClusterNode>() {
     }
 
     /**
-     * 根据名称[type]查找集群节点
+     * 查找集群节点
+     * @param name 集群名称，前缀匹配
+     * @param type 集群类型
      */
-    fun findByType(type: ClusterNodeType): List<TClusterNode> {
-        return this.find(Query(TClusterNode::type.isEqualTo(type)))
-    }
-
-    /**
-     * 根据[id]删除节点
-     */
-    fun deleteById(id: String?) {
-        if (id.isNullOrBlank()) {
-            return
-        }
-        val query = Query(TClusterNode::id.isEqualTo(id))
-        this.remove(query)
+    fun listByNameAndType(name: String?, type: ClusterNodeType?): List<TClusterNode> {
+        val criteria = where(TClusterNode::type).isEqualTo(type)
+            .and(TClusterNode::name).regex("^$name")
+        return this.find(Query(criteria))
     }
 }

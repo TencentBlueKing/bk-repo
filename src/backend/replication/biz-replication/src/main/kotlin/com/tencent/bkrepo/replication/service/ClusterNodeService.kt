@@ -31,71 +31,57 @@
 
 package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeDeleteRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 
 interface ClusterNodeService {
     /**
-     * 查询主节点信息
+     * 查询id为[id]的节点信息
      */
-    fun getMasterNodeInfo(): ClusterNodeInfo
+    fun getByClusterId(id: String): ClusterNodeInfo?
 
     /**
      * 查询名称为[name]的节点信息
      */
-    fun getClusterNodeInfo(name: String): ClusterNodeInfo?
+    fun getByClusterName(name: String): ClusterNodeInfo?
+
+    /**
+     * 查询中心节点
+     */
+    fun getCenterNode(): ClusterNodeInfo
+
+    /**
+     * 查询边缘节点列表
+     */
+    fun listEdgeNodes(): List<ClusterNodeInfo>
+
+    /**
+     * 查询所有的集群节点
+     * @param name 集群名称过滤，前缀匹配
+     * @param type 集群类型过滤
+     */
+    fun listClusterNodes(name: String?, type: ClusterNodeType?): List<ClusterNodeInfo>
 
     /**
      * 判断名称为[name]的集群节点是否存在
      */
-    fun checkExist(name: String): Boolean
+    fun existClusterName(name: String): Boolean
 
     /**
      * 根据[request]创建集群节点，创建成功后返回集群节点信息
      */
-    fun createClusterNode(request: ClusterNodeCreateRequest): ClusterNodeInfo
+    fun create(request: ClusterNodeCreateRequest): ClusterNodeInfo
 
     /**
-     * 根据请求[clusterNodeDeleteRequest]删除集群节点
+     * 根据集群[id]删除集群节点
      */
-    fun deleteClusterNode(clusterNodeDeleteRequest: ClusterNodeDeleteRequest)
-
-    /**
-     * 查询所有的集群节点
-     */
-    fun listClusterNode(name: String?, type: String?): List<ClusterNodeInfo>
-
-    /**
-     * 查询[set]列表里面的集群slave节点
-     */
-    fun listClusterNode(set: Set<String>): List<RemoteClusterInfo>
-
-    /**
-     * 查询[list]列表key里面的集群salve节点
-     */
-    fun listClusterNode(list: List<String>): List<RemoteClusterInfo>
-
-    /**
-     * 分页查询集群节点
-     *
-     * @param pageNumber 当前页
-     * @param pageSize 分页数量
-     * @param name 集群节点名称
-     */
-    fun listClusterNodePage(name: String?, type: String?, pageNumber: Int, pageSize: Int): Page<ClusterNodeInfo>
-
-    /**
-     * 查询集群节点详情
-     *
-     * @param name 集群节点名称
-     */
-    fun detailClusterNode(name: String): ClusterNodeInfo
+    fun deleteById(id: String)
 
     /**
      * 尝试连接远程集群，连接失败抛[ErrorCodeException]异常
      */
+    @Throws(ErrorCodeException::class)
     fun tryConnect(it: String)
 }

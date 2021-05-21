@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -42,8 +43,9 @@ import java.time.LocalDateTime
 data class TClusterNode(
     var id: String? = null,
     /**
-     * 集群名称，允许重复
+     * 集群名称，不允许重复
      */
+    @Indexed(unique = true)
     var name: String,
     /**
      * 集群类型

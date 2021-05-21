@@ -107,7 +107,7 @@ class ReplicationArtifactJobBean(
             return
         }
         val replicationJobContext = ReplicationJobContext(task)
-        replicationJobContext.masterClusterNode = clusterNodeService.getMasterNodeInfo()
+        replicationJobContext.masterClusterNode = clusterNodeService.getCenterNode()
         var taskSuccess = true
         try {
             // 检查本地项目是否存在

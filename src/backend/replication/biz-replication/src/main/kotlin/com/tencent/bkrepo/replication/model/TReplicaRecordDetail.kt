@@ -50,11 +50,11 @@ data class TReplicaRecordDetail(
     @Indexed
     val recordId: String,
     /**
-     * local cluster
+     * 本地cluster名称
      */
     val localCluster: String,
     /**
-     * 远程cluster
+     * 远程cluster名称
      */
     val remoteCluster: String,
     /**
