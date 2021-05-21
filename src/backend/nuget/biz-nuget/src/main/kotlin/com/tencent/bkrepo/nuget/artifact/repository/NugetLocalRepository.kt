@@ -123,9 +123,15 @@ class NugetLocalRepository(
      */
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo as NugetDeleteArtifactInfo) {
-            packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
-                removeVersion(this, it, context.userId)
-            } ?: throw VersionNotFoundException("No package with the provided ID and VERSION exists")
+            if (version.isNotBlank()) {
+                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                    removeVersion(this, it, context.userId)
+                } ?: throw VersionNotFoundException("No package with the provided ID and VERSION exists")
+            } else {
+                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
+                    removeVersion(this, it, context.userId)
+                }
+            }
         }
         context.response.status = HttpStatus.NO_CONTENT.value
     }
