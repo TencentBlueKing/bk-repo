@@ -223,9 +223,9 @@ export default {
         )
     },
     // 分享文件
-    shareArtifactory (_, { projectId, repoName, body, fullPath = '' }) {
+    shareArtifactory (_, body) {
         return Vue.prototype.$ajax.post(
-            `${prefix}/share/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            `/generic/temporary/url/create`,
             body
         )
     },
