@@ -29,18 +29,56 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.service
+
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 
 /**
- * 任务类型
+ * 同步任务管理服务接口
  */
-enum class TaskType {
+interface ReplicaTaskService {
+
     /**
-     * 同步所有数据(blob + metadata)
+     * 分页查询同步任务
      */
-    FULL,
+    fun listTasksPage(param: TaskPageParam): Page<ReplicaTaskInfo>
+
     /**
-     * 仅同步blob数据
+     * 查询所有待执行的调度任务
+     * 待执行定义:
+     * 1. 立即执行还未执行
+     * 2. 指定时间执行还未执行
+     * 3. cron表达式周期执行
      */
-    BLOB
+    fun listUndoScheduledTasks(): List<ReplicaTaskInfo>
+
+    /**
+     * 根据任务key查询任务信息
+     * @param key 任务key
+     */
+    fun getByTaskKey(key: String): ReplicaTaskInfo
+
+    /**
+     * 根据任务key查询任务详情
+     * @param key 任务key
+     */
+    fun getDetailByTaskKey(key: String): ReplicaTaskDetail
+
+    /**
+     * 创建同步任务
+     * 目前只允许创建ReplicaType.SCHEDULED类型的任务
+     *
+     * @param request 创建请求
+     */
+    fun create(request: ReplicaTaskCreateRequest)
+
+    /**
+     * 根据[key]删除同步任务
+     * @param key 任务唯一key
+     */
+    fun deleteByTaskKey(key: String)
 }

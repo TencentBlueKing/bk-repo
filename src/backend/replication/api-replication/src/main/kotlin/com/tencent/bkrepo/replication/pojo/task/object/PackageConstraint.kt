@@ -31,16 +31,16 @@
 
 package com.tencent.bkrepo.replication.pojo.task.`object`
 
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
 /**
  * 包/版本限制
  */
+@ApiModel("包/版本限制")
 data class PackageConstraint(
-    /**
-     * 包唯一key
-     */
+    @ApiModelProperty("包唯一key")
     val packageKey: String,
-    /**
-     * 包版本列表
-     */
+    @ApiModelProperty("包版本列表")
     val versions: List<String>? = null
 )

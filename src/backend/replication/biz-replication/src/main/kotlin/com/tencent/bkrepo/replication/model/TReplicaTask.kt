@@ -32,8 +32,8 @@
 package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -47,6 +47,7 @@ data class TReplicaTask(
     var id: String? = null,
     /**
      * 任务唯一key
+     * 任务更新后删除旧的数据，插入新的task，保持key不变
      */
     @Indexed(unique = true)
     val key: String,
@@ -57,6 +58,7 @@ data class TReplicaTask(
     /**
      * 项目id
      */
+    @Indexed
     val projectId: String,
     /**
      * 同步类型
@@ -69,19 +71,23 @@ data class TReplicaTask(
     /**
      * 远程集群集合
      */
-    val remoteClusterSet: Set<ClusterNodeName>,
+    val remoteClusters: Set<ClusterNodeName>,
     /**
      * 任务描述
      */
-    val description: String? = null,
+    val description: String?,
     /**
-     * 当前状态
+     * 上次执行状态
      */
-    var status: ReplicationStatus = ReplicationStatus.WAITING,
+    var lastExecutionStatus: ExecutionStatus,
+    /**
+     * 上次执行时间
+     */
+    var lastExecutionTime: LocalDateTime?,
     /**
      * 下次执行时间
      */
-    var nextExecutionTime: LocalDateTime? = null,
+    var nextExecutionTime: LocalDateTime?,
     /**
      * 执行次数
      */

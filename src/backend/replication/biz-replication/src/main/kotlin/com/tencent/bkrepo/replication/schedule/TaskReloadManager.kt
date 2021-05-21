@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,55 +29,65 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.schedule
 
-import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
-import com.tencent.bkrepo.replication.constant.TASK_ID
 import com.tencent.bkrepo.replication.job.ReplicationQuartzJob
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_KEY_TASK_ID
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.quartz.CronScheduleBuilder
 import org.quartz.JobBuilder
 import org.quartz.JobDetail
 import org.quartz.Trigger
+import org.quartz.TriggerBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
+import java.time.ZoneId
+import java.util.Date
 
+/**
+ * 同步任务加载管理类
+ * 负责定时加载任务信息到调度器中
+ */
 @Service
-class TaskReloadService(
-    private val taskService: TaskService,
-    private val scheduleService: ScheduleService
+class TaskReloadManager(
+    private val replicaTaskService: ReplicaTaskService,
+    private val taskScheduler: ReplicaTaskScheduler
 ) {
 
     /**
      * 定时从数据库中重新加载任务列表
+     * quartz scheduler中的job关联的是task id
      * 已存在的任务: 根据id判断是否存在，存在则跳过
      * 新增的任务: 加入到scheduler
      * 修改的任务: 每次修改任务会删除旧任务，因此id会变更，可以当做新任务加入
      * 删除的任务: 当job执行时，判断数据库中是否存在对应的task，如果不存在表示该任务过期了，跳过执行即可
      */
-    @Scheduled(initialDelay = 10 * 1000, fixedDelay = 10 * 1000)
+    @Scheduled(initialDelay = RELOAD_INITIAL_DELAY, fixedDelay = RELOAD_FIXED_DELAY)
     fun reloadTask() {
-        val cronTaskList = taskService.listUndoFullTask()
-        val taskIdList = cronTaskList.map { it.id!! }
-        val jobKeyList = scheduleService.listJobKeys().map { it.name }
-        val expiredTaskId = jobKeyList subtract taskIdList
+        val scheduledTasks = replicaTaskService.listUndoScheduledTasks()
+        val taskIds = scheduledTasks.map { it.id }
+        val jobKeys = taskScheduler.listJobKeys().map { it.name }
+        val expiredTaskId = jobKeys subtract taskIds
 
         var newTaskCount = 0
         var expiredTaskCount = 0
-        val totalCount = cronTaskList.size
+        val totalCount = scheduledTasks.size
 
         // 移除过期job
         expiredTaskId.forEach {
-            scheduleService.deleteJob(it)
+            taskScheduler.deleteJob(it)
             expiredTaskCount += 1
         }
 
         // 创建新job
-        cronTaskList.forEach {
-            if (!scheduleService.checkExists(it.id!!)) {
+        scheduledTasks.forEach {
+            if (!taskScheduler.exist(it.id)) {
                 val jobDetail = createJobDetail(it)
                 val trigger = createTrigger(it)
-                scheduleService.scheduleJob(jobDetail, trigger)
+                taskScheduler.scheduleJob(jobDetail, trigger)
                 newTaskCount += 1
             }
         }
@@ -91,8 +101,8 @@ class TaskReloadService(
 
     private fun createJobDetail(task: TReplicaTask): JobDetail {
         return JobBuilder.newJob(ReplicationQuartzJob::class.java)
-            .withIdentity(task.id, DEFAULT_GROUP_ID)
-            .usingJobData(TASK_ID, task.id)
+            .withIdentity(task.id, REPLICA_JOB_GROUP)
+            .usingJobData(JOB_KEY_TASK_ID, task.id)
             .requestRecovery()
             .build()
     }
@@ -102,19 +112,19 @@ class TaskReloadService(
             return when {
                 executeImmediately -> {
                     TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, DEFAULT_GROUP_ID)
+                        .withIdentity(task.id, REPLICA_JOB_GROUP)
                         .startNow()
                         .build()
                 }
                 executeTime != null -> {
                     TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, DEFAULT_GROUP_ID)
+                        .withIdentity(task.id, REPLICA_JOB_GROUP)
                         .startAt(Date.from(executeTime!!.atZone(ZoneId.systemDefault()).toInstant()))
                         .build()
                 }
                 else -> {
                     TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, DEFAULT_GROUP_ID)
+                        .withIdentity(task.id, REPLICA_JOB_GROUP)
                         .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
                         .build()
                 }
@@ -123,6 +133,16 @@ class TaskReloadService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(TaskReloadService::class.java)
+        private val logger = LoggerFactory.getLogger(TaskReloadManager::class.java)
+
+        /**
+         * 进程启动后加载任务延迟时间
+         */
+        private const val RELOAD_INITIAL_DELAY = 10 * 1000L
+
+        /**
+         * 重新加载任务固定延迟时间
+         */
+        private const val RELOAD_FIXED_DELAY = 10 * 1000L
     }
 }

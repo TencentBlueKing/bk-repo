@@ -46,9 +46,9 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import com.tencent.bkrepo.replication.repository.TaskRepository
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ReplicationService
 import com.tencent.bkrepo.replication.service.RepoDataService
-import com.tencent.bkrepo.replication.service.ScheduleService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -69,7 +69,7 @@ class ReplicationJobBean(
     private val taskLogRepository: TaskLogRepository,
     private val repoDataService: RepoDataService,
     private val replicationService: ReplicationService,
-    private val scheduleService: ScheduleService
+    private val replicaTaskScheduler: ReplicaTaskScheduler
 ) {
 
     @Value("\${spring.application.version}")
@@ -79,8 +79,8 @@ class ReplicationJobBean(
         logger.info("Start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
             logger.warn("Task[$taskId] does not exist, delete job and trigger.")
-            if (scheduleService.checkExists(taskId)) {
-                scheduleService.deleteJob(taskId)
+            if (replicaTaskScheduler.exist(taskId)) {
+                replicaTaskScheduler.deleteJob(taskId)
             }
             return
         }

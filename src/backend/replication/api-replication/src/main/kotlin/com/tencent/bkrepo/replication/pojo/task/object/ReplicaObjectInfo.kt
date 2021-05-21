@@ -29,41 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task
+package com.tencent.bkrepo.replication.pojo.task.`object`
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
-@ApiModel("同步任务信息")
-data class ReplicaTaskInfo(
-    @ApiModelProperty("任务id，全局唯一")
-    val id: String,
-    @ApiModelProperty("任务key，全局唯一")
-    val key: String,
-    @ApiModelProperty("任务名称，允许重复")
-    val name: String,
-    @ApiModelProperty("所属项目")
-    val projectId: String,
-    @ApiModelProperty("同步类型")
-    val replicaType: ReplicaType,
-    @ApiModelProperty("任务设置")
-    val setting: ReplicaSetting,
-    @ApiModelProperty("远程集群集合")
-    val remoteClusters: Set<ClusterNodeName>,
-    @ApiModelProperty("任务描述")
-    val description: String? = null,
-    @ApiModelProperty("上次执行状态")
-    var lastExecutionStatus: ReplicationStatus,
-    @ApiModelProperty("上次执行时间")
-    var lastExecutionTime: LocalDateTime? = null,
-    @ApiModelProperty("下次执行时间")
-    var nextExecutionTime: LocalDateTime? = null,
-    @ApiModelProperty("执行次数")
-    var executionTimes: Long,
-    @ApiModelProperty("是否启用")
-    var enabled: Boolean = true
+@ApiModel("同步对象信息")
+data class ReplicaObjectInfo(
+    @ApiModelProperty("本地仓库")
+    val localRepoName: String,
+    @ApiModelProperty("远程项目")
+    val remoteProjectId: String,
+    @ApiModelProperty("远程仓库")
+    val remoteRepoName: String,
+    @ApiModelProperty("仓库类型")
+    val repoType: RepositoryType,
+    @ApiModelProperty("包限制条件")
+    val packageConstraints: List<PackageConstraint>?,
+    @ApiModelProperty("路径限制条件")
+    val pathConstraints: List<PathConstraint>?
 )

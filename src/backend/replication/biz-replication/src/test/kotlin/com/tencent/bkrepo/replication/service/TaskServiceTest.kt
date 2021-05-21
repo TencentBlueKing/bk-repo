@@ -34,9 +34,9 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.junit.jupiter.api.Assertions

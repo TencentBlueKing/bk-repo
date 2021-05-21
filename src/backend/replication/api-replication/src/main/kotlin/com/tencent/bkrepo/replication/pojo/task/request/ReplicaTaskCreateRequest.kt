@@ -29,11 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task
+package com.tencent.bkrepo.replication.pojo.task.request
 
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.request.TaskType
 import com.tencent.bkrepo.replication.pojo.task.`object`.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.`object`.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -42,28 +42,20 @@ import io.swagger.annotations.ApiModelProperty
 data class ReplicaTaskCreateRequest(
     @ApiModelProperty("任务名称", required = true)
     val name: String,
-    @ApiModelProperty("本地项目", required = true)
-    val localProjectId: String,
-    @ApiModelProperty("本地仓库", required = true)
-    val localRepoName: String,
-    @ApiModelProperty("远程仓库, 为空则保持和localProjectId一致", required = false)
-    val remoteProjectId: String? = null,
-    @ApiModelProperty("远程仓库, 为空则保持和localRepoName一致", required = false)
-    val remoteRepoName: String? = null,
-    @ApiModelProperty("任务类型", required = true)
-    val taskType: TaskType = TaskType.FULL,
+    @ApiModelProperty("所属项目", required = true)
+    val projectId: String,
     @ApiModelProperty("同步类型", required = true)
-    val replicaType: ReplicaType = ReplicaType.FULL,
+    val replicaType: ReplicaType = ReplicaType.TIMED,
     @ApiModelProperty("任务设置", required = true)
     val setting: ReplicaSetting,
-    @ApiModelProperty("任务是否启用", required = true)
-    val enabled: Boolean = true,
-    @ApiModelProperty("远程集群名称列表", required = true)
-    val remoteClusterSet: Set<String>,
+    @ApiModelProperty("远程集群集合", required = true)
+    val remoteClusterIds: Set<String>,
     @ApiModelProperty("包限制条件", required = false)
     val packageConstraints: Set<PackageConstraint>? = null,
     @ApiModelProperty("路径限制条件，包限制点路径限制都为空则同步整个仓库数据", required = false)
-    val pathConstraints: Set<String>? = null,
-    @ApiModelProperty("描述", required = false)
+    val pathConstraints: Set<PathConstraint>? = null,
+    @ApiModelProperty("是否启用", required = true)
+    var enabled: Boolean = true,
+    @ApiModelProperty("任务描述", required = false)
     val description: String? = null
 )

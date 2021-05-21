@@ -37,13 +37,15 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
 import com.tencent.bkrepo.replication.job.ReplicationJobBean
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.repository.TaskRepository
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.schedule.TaskReloadManager
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -63,8 +65,8 @@ import java.time.LocalDateTime
 @DataMongoTest(properties = ["logging.level.com.tencent=DEBUG"])
 @Import(
     TaskService::class,
-    ScheduleService::class,
-    TaskReloadService::class,
+    ReplicaTaskScheduler::class,
+    TaskReloadManager::class,
     SpringContextUtils::class,
     JobAutoConfiguration::class,
     ReplicationConfigurer::class,
@@ -72,7 +74,7 @@ import java.time.LocalDateTime
     TaskLogService::class
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-private class TaskReloadServiceTest {
+private class TaskReloadManagerTest {
 
     @Autowired
     private lateinit var taskService: TaskService

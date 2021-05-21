@@ -52,17 +52,17 @@ import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.repository.TaskLogDetailRepository
 import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import com.tencent.bkrepo.replication.repository.TaskRepository
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.replication.service.ScheduleService
 import com.tencent.bkrepo.replication.service.TaskService
 import com.tencent.bkrepo.replication.util.CronUtils
 import org.quartz.CronExpression
@@ -74,7 +74,6 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -89,7 +88,7 @@ class TaskServiceImpl(
     private val taskLogDetailRepository: TaskLogDetailRepository,
     private val mongoTemplate: MongoTemplate,
     private val clusterNodeService: ClusterNodeService,
-    private val scheduleService: ScheduleService,
+    private val replicaTaskScheduler: ReplicaTaskScheduler,
     private val userResource: ServiceUserResource
 ) : TaskService {
 
@@ -103,7 +102,7 @@ class TaskServiceImpl(
                 localProjectId = localProjectId,
                 localRepoName = localRepoName,
                 remoteProjectId =
-                replicationInfo = replicationInfo,
+                    replicationInfo = replicationInfo,
                 type = type,
                 setting = setting,
                 status = ReplicationStatus.WAITING,
@@ -157,7 +156,6 @@ class TaskServiceImpl(
                 }
             }
         }
-
     }
 
     override fun detail(taskKey: String): ReplicaTaskInfo? {
@@ -257,11 +255,11 @@ class TaskServiceImpl(
         } else {
             // 如果是cronJob，则等待加载job后触发执行
             if (task.setting.executionPlan.cronExpression != null) {
-                if (!scheduleService.checkExists(task.id!!)) {
+                if (!replicaTaskScheduler.exist(task.id!!)) {
                     // 提示用户等待几秒, 这里如果创建任务加载进去可能会和后面扫描任务之后添加job产生冲突
                     throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, taskKey)
                 }
-                scheduleService.triggerJob(JobKey.jobKey(task.id!!, DEFAULT_GROUP_ID))
+                replicaTaskScheduler.triggerJob(JobKey.jobKey(task.id!!, DEFAULT_GROUP_ID))
             } else {
                 // 如果任务不存在，并且状态不为waiting状态，则不会被reloadTask加载，将其添加进调度器
                 if (task.status != ReplicationStatus.WAITING) {
@@ -274,7 +272,7 @@ class TaskServiceImpl(
                         .withIdentity(task.id, DEFAULT_GROUP_ID)
                         .startNow()
                         .build()
-                    scheduleService.scheduleJob(jobDetail, trigger)
+                    replicaTaskScheduler.scheduleJob(jobDetail, trigger)
                 } else {
                     // 提示用户该任务未执行
                     throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, taskKey)

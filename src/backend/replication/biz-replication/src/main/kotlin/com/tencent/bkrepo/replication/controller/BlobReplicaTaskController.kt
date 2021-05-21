@@ -39,8 +39,8 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.log.ReplicationTaskLog
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.service.TaskLogService
 import com.tencent.bkrepo.replication.service.TaskService
 import io.swagger.annotations.ApiOperation
@@ -171,4 +171,3 @@ class BlobReplicaTaskController(
         return ResponseBuilder.success(taskLogService.latest(taskKey))
     }
 }
-
