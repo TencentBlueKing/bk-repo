@@ -111,8 +111,8 @@ class ReplicaTaskScheduler(
         const val REPLICA_JOB_GROUP = "REPLICA"
 
         /**
-         * quartz job data中的键名，用来保存task id
+         * quartz job data中的键名，用来保存task key
          */
-        const val JOB_KEY_TASK_ID = "TASK_ID"
+        const val JOB_DATA_TASK_KEY = "TASK_KEY"
     }
 }

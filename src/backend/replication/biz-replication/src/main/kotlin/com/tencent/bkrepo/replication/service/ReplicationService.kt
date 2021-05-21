@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.exception.ReplicaFileFailedException
-import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.pojo.request.RequestBodyUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -62,7 +62,7 @@ class ReplicationService(
     private val replicationProperties: ReplicationProperties
 ) {
 
-    fun replicaFile(context: ReplicationContext, request: NodeCreateRequest) {
+    fun replicaFile(context: ReplicaContext, request: NodeCreateRequest) {
         with(context) {
             // 查询文件
             val localRepoDetail = currentRepoDetail.localRepoDetail
@@ -96,13 +96,13 @@ class ReplicationService(
         }
     }
 
-    fun replicaPackageVersionCreatedRequest(context: ReplicationContext, request: PackageVersionCreateRequest) {
+    fun replicaPackageVersionCreatedRequest(context: ReplicaContext, request: PackageVersionCreateRequest) {
         with(context) {
             clusterReplicaClient.replicaPackageVersionCreatedRequest(authToken, request)
         }
     }
 
-    fun replicaNodeCreateRequest(context: ReplicationContext, request: NodeCreateRequest) {
+    fun replicaNodeCreateRequest(context: ReplicaContext, request: NodeCreateRequest) {
         with(context) {
             if (request.folder) {
                 clusterReplicaClient.replicaNodeCreateRequest(authToken, request)
@@ -113,7 +113,7 @@ class ReplicationService(
     }
 
     fun checkNodeExistRequest(
-        context: ReplicationContext,
+        context: ReplicaContext,
         projectId: String,
         repoName: String,
         fullPath: String
@@ -123,67 +123,67 @@ class ReplicationService(
         }
     }
 
-    fun replicaNodeRenameRequest(context: ReplicationContext, request: NodeRenameRequest) {
+    fun replicaNodeRenameRequest(context: ReplicaContext, request: NodeRenameRequest) {
         with(context) {
             clusterReplicaClient.replicaNodeRenameRequest(authToken, request)
         }
     }
 
-    fun replicaNodeUpdateRequest(context: ReplicationContext, request: NodeUpdateRequest) {
+    fun replicaNodeUpdateRequest(context: ReplicaContext, request: NodeUpdateRequest) {
         with(context) {
             clusterReplicaClient.replicaNodeUpdateRequest(authToken, request)
         }
     }
 
-    fun replicaNodeCopyRequest(context: ReplicationContext, request: NodeMoveCopyRequest) {
+    fun replicaNodeCopyRequest(context: ReplicaContext, request: NodeMoveCopyRequest) {
         with(context) {
             clusterReplicaClient.replicaNodeCopyRequest(authToken, request)
         }
     }
 
-    fun replicaNodeMoveRequest(context: ReplicationContext, request: NodeMoveCopyRequest) {
+    fun replicaNodeMoveRequest(context: ReplicaContext, request: NodeMoveCopyRequest) {
         with(context) {
             clusterReplicaClient.replicaNodeMoveRequest(authToken, request)
         }
     }
 
-    fun replicaNodeDeleteRequest(context: ReplicationContext, request: NodeDeleteRequest) {
+    fun replicaNodeDeleteRequest(context: ReplicaContext, request: NodeDeleteRequest) {
         with(context) {
             clusterReplicaClient.replicaNodeDeleteRequest(authToken, request)
         }
     }
 
-    fun replicaRepoCreateRequest(context: ReplicationContext, request: RepoCreateRequest) {
+    fun replicaRepoCreateRequest(context: ReplicaContext, request: RepoCreateRequest) {
         with(context) {
             clusterReplicaClient.replicaRepoCreateRequest(authToken, request)
         }
     }
 
-    fun replicaRepoUpdateRequest(context: ReplicationContext, request: RepoUpdateRequest) {
+    fun replicaRepoUpdateRequest(context: ReplicaContext, request: RepoUpdateRequest) {
         with(context) {
             clusterReplicaClient.replicaRepoUpdateRequest(authToken, request)
         }
     }
 
-    fun replicaRepoDeleteRequest(context: ReplicationContext, request: RepoDeleteRequest) {
+    fun replicaRepoDeleteRequest(context: ReplicaContext, request: RepoDeleteRequest) {
         with(context) {
             clusterReplicaClient.replicaRepoDeleteRequest(authToken, request)
         }
     }
 
-    fun replicaProjectCreateRequest(context: ReplicationContext, request: ProjectCreateRequest) {
+    fun replicaProjectCreateRequest(context: ReplicaContext, request: ProjectCreateRequest) {
         with(context) {
             clusterReplicaClient.replicaProjectCreateRequest(authToken, request)
         }
     }
 
-    fun replicaMetadataSaveRequest(context: ReplicationContext, request: MetadataSaveRequest) {
+    fun replicaMetadataSaveRequest(context: ReplicaContext, request: MetadataSaveRequest) {
         with(context) {
             clusterReplicaClient.replicaMetadataSaveRequest(authToken, request)
         }
     }
 
-    fun replicaMetadataDeleteRequest(context: ReplicationContext, request: MetadataDeleteRequest) {
+    fun replicaMetadataDeleteRequest(context: ReplicaContext, request: MetadataDeleteRequest) {
         with(context) {
             clusterReplicaClient.replicaMetadataDeleteRequest(authToken, request)
         }

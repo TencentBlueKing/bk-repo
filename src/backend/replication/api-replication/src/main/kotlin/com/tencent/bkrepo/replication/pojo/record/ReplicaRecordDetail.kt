@@ -29,56 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.pojo.record
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
-import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-/**
- * 同步任务服务接口
- */
-interface ReplicaTaskService {
-
-    /**
-     * 根据任务key查询任务信息
-     * @param key 任务key
-     */
-    fun getByTaskKey(key: String): ReplicaTaskInfo
-
-    /**
-     * 根据任务key查询任务详情
-     * @param key 任务key
-     */
-    fun getDetailByTaskKey(key: String): ReplicaTaskDetail
-
-    /**
-     * 分页查询同步任务
-     */
-    fun listTasksPage(param: TaskPageParam): Page<ReplicaTaskInfo>
-
-    /**
-     * 查询所有待执行的调度任务
-     * 待执行定义:
-     * 1. 立即执行还未执行
-     * 2. 指定时间执行还未执行
-     * 3. cron表达式周期执行
-     */
-    fun listUndoScheduledTasks(): List<ReplicaTaskInfo>
-
-    /**
-     * 创建同步任务
-     * 目前只允许创建ReplicaType.SCHEDULED类型的任务
-     *
-     * @param request 创建请求
-     */
-    fun create(request: ReplicaTaskCreateRequest)
-
-    /**
-     * 根据[key]删除同步任务
-     * @param key 任务唯一key
-     */
-    fun deleteByTaskKey(key: String)
-}
+@ApiModel("同步任务执行记录详情")
+data class ReplicaRecordDetail(
+    @ApiModelProperty("记录id")
+    val recordId: String,
+    @ApiModelProperty("本地集群名称")
+    val localCluster: String,
+    @ApiModelProperty("远程集群名称")
+    val remoteCluster: String,
+    @ApiModelProperty("运行状态")
+    val status: ExecutionStatus,
+    @ApiModelProperty("同步进度")
+    val progress: ReplicaProgress,
+    @ApiModelProperty("开始时间")
+    var startTime: LocalDateTime,
+    @ApiModelProperty("结束时间")
+    var endTime: LocalDateTime? = null,
+    @ApiModelProperty("错误原因，未执行或执行成功则为null")
+    var errorReason: String? = null
+)

@@ -29,35 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.job
+package com.tencent.bkrepo.replication.pojo.record
 
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.constant.TASK_ID
-import net.javacrumbs.shedlock.core.LockConfiguration
-import net.javacrumbs.shedlock.core.LockingTaskExecutor
-import org.quartz.InterruptableJob
-import org.quartz.JobExecutionContext
-import java.time.Duration
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-class ReplicationQuartzJob : InterruptableJob {
-
-    private var currentThread: Thread? = null
-    private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
-    private val replicationJobBean = SpringContextUtils.getBean(ReplicationArtifactJobBean::class.java)
-
-    override fun execute(context: JobExecutionContext) {
-        currentThread = Thread.currentThread()
-        val taskId = context.jobDetail.jobDataMap.getString(TASK_ID)
-        val lockConfiguration = LockConfiguration("ReplicationJob$taskId", lockAtMostFor, lockAtLeastFor)
-        lockingTaskExecutor.executeWithLock(Runnable { replicationJobBean.execute(taskId) }, lockConfiguration)
-    }
-
-    override fun interrupt() {
-        currentThread?.interrupt()
-    }
-
-    companion object {
-        private val lockAtLeastFor = Duration.ofSeconds(1)
-        private val lockAtMostFor = Duration.ofDays(1)
-    }
-}
+@ApiModel("同步任务执行记录")
+data class ReplicaRecordInfo(
+    @ApiModelProperty("记录唯一id")
+    val id: String,
+    @ApiModelProperty("关联任务key")
+    val taskKey: String,
+    @ApiModelProperty("任务状态")
+    var status: ExecutionStatus,
+    @ApiModelProperty("开始时间")
+    var startTime: LocalDateTime,
+    @ApiModelProperty("结束时间")
+    var endTime: LocalDateTime? = null,
+    @ApiModelProperty("错误原因，未执行或执行成功则为null")
+    var errorReason: String? = null
+)

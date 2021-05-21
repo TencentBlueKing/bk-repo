@@ -42,6 +42,7 @@ import com.tencent.bkrepo.replication.service.ClusterNodeService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -52,38 +53,38 @@ import org.springframework.web.bind.annotation.RestController
 
 @Api("集群节点用户接口")
 @RestController
-@RequestMapping("/api/cluster/node")
+@RequestMapping("/api/cluster")
 @Principal(PrincipalType.ADMIN)
 class ClusterNodeController(
     private val clusterNodeService: ClusterNodeService
 ) {
 
     @ApiOperation("根据id查询节点详情")
-    @PostMapping("/query/{id}")
+    @GetMapping("/info/{id}")
     fun getByClusterId(@PathVariable id: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterId(id))
     }
 
     @ApiOperation("根据id查询节点详情")
-    @PostMapping("/query/name")
+    @GetMapping("/info")
     fun getByClusterName(@RequestParam name: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
     }
 
     @ApiOperation("获取中心节点")
-    @PostMapping("/query/center")
+    @GetMapping("/info/center")
     fun queryCenterNode(): Response<ClusterNodeInfo> {
         return ResponseBuilder.success(clusterNodeService.getCenterNode())
     }
 
     @ApiOperation("查询边缘节点列表")
-    @PostMapping("/list/edge")
+    @GetMapping("/list/edge")
     fun listEdgeNodes(): Response<List<ClusterNodeInfo>> {
         return ResponseBuilder.success(clusterNodeService.listEdgeNodes())
     }
 
     @ApiOperation("查询所有的集群节点")
-    @PostMapping("/list/node")
+    @GetMapping("/list")
     fun listClusterNodes(
         name: String? = null,
         type: ClusterNodeType? = null
@@ -92,7 +93,7 @@ class ClusterNodeController(
     }
 
     @ApiOperation("根据名称判断集群节点是否存在")
-    @PostMapping("/exist/name")
+    @GetMapping("/exist")
     fun existClusterName(
         @RequestParam name: String
     ): Response<Boolean> {

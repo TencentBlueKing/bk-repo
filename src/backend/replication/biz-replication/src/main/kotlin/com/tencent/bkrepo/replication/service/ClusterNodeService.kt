@@ -37,7 +37,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 
 /**
- * 集群节点管理服务接口
+ * 集群节点服务接口
  */
 interface ClusterNodeService {
 

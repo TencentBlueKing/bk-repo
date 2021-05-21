@@ -51,6 +51,16 @@ abstract class SimpleMongoDao<E> : AbstractMongoDao<E>() {
     private lateinit var mongoTemplate: MongoTemplate
 
     /**
+     * 根据主键"_id"查找记录
+     */
+    fun findById(id: String): E? {
+        if (id.isBlank()) {
+             return null
+        }
+        return this.findOne(Query.query(Criteria.where(ID).isEqualTo(id)))
+    }
+
+    /**
      * 根据主键"_id"删除记录
      */
     fun removeById(id: String) {
