@@ -29,9 +29,8 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.schedule
 
-import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import org.quartz.JobDetail
 import org.quartz.JobKey
 import org.quartz.Scheduler
@@ -42,8 +41,12 @@ import org.quartz.impl.matchers.GroupMatcher
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
+/**
+ * 同步任务调度类
+ * 负责调度执行同步任务
+ */
 @Service
-class ScheduleService(
+class ReplicaTaskScheduler(
     private val scheduler: Scheduler
 ) {
 
@@ -66,11 +69,11 @@ class ScheduleService(
     }
 
     fun listJobKeys(): Set<JobKey> {
-        return scheduler.getJobKeys(GroupMatcher.jobGroupEquals(DEFAULT_GROUP_ID))
+        return scheduler.getJobKeys(GroupMatcher.jobGroupEquals(REPLICA_JOB_GROUP))
     }
 
     fun interruptJob(id: String) {
-        val jobKey = JobKey.jobKey(id, DEFAULT_GROUP_ID)
+        val jobKey = JobKey.jobKey(id, REPLICA_JOB_GROUP)
         try {
             scheduler.interrupt(jobKey)
             logger.info("Success to interrupt job[$jobKey]")
@@ -80,7 +83,7 @@ class ScheduleService(
     }
 
     fun deleteJob(id: String) {
-        val jobKey = JobKey.jobKey(id, DEFAULT_GROUP_ID)
+        val jobKey = JobKey.jobKey(id, REPLICA_JOB_GROUP)
         try {
             interruptJob(id)
             scheduler.deleteJob(jobKey)
@@ -90,9 +93,9 @@ class ScheduleService(
         }
     }
 
-    fun checkExists(id: String): Boolean {
+    fun exist(id: String): Boolean {
         return try {
-            scheduler.checkExists(JobKey.jobKey(id, DEFAULT_GROUP_ID))
+            scheduler.checkExists(JobKey.jobKey(id, REPLICA_JOB_GROUP))
         } catch (exception: SchedulerException) {
             logger.error("Failed to check exist job[$id].", exception)
             false
@@ -100,6 +103,16 @@ class ScheduleService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ScheduleService::class.java)
+        private val logger = LoggerFactory.getLogger(ReplicaTaskScheduler::class.java)
+
+        /**
+         * quartz scheduler的job group名称
+         */
+        const val REPLICA_JOB_GROUP = "REPLICA"
+
+        /**
+         * quartz job data中的键名，用来保存task id
+         */
+        const val JOB_KEY_TASK_ID = "TASK_ID"
     }
 }

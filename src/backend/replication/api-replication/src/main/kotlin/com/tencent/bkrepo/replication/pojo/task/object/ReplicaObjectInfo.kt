@@ -29,18 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.request
+package com.tencent.bkrepo.replication.pojo.task.`object`
 
-/**
- * 任务类型
- */
-enum class TaskType {
-    /**
-     * 同步所有数据(blob + metadata)
-     */
-    FULL,
-    /**
-     * 仅同步blob数据
-     */
-    BLOB
-}
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("同步对象信息")
+data class ReplicaObjectInfo(
+    @ApiModelProperty("本地仓库")
+    val localRepoName: String,
+    @ApiModelProperty("远程项目")
+    val remoteProjectId: String,
+    @ApiModelProperty("远程仓库")
+    val remoteRepoName: String,
+    @ApiModelProperty("仓库类型")
+    val repoType: RepositoryType,
+    @ApiModelProperty("包限制条件")
+    val packageConstraints: List<PackageConstraint>?,
+    @ApiModelProperty("路径限制条件")
+    val pathConstraints: List<PathConstraint>?
+)

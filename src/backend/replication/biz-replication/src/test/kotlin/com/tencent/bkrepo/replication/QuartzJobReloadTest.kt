@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.replication
 
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
-import com.tencent.bkrepo.replication.service.ScheduleService
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import org.junit.jupiter.api.Test
 import org.quartz.InterruptableJob
 import org.quartz.JobBuilder
@@ -67,7 +67,7 @@ internal class QuartzJobReloadTest {
         repeat(1) {
             thread {
                 val scheduler = createScheduler("scheduler$it")
-                val scheduleService = ScheduleService(scheduler)
+                val scheduleService = ReplicaTaskScheduler(scheduler)
                 // 加载任务
                 while (true) {
                     logger.info("Start to reload task")
@@ -87,15 +87,17 @@ internal class QuartzJobReloadTest {
 
                     // 创建新job
                     taskIdList.forEach { id ->
-                        if (!scheduleService.checkExists(id)) {
+                        if (!scheduleService.exist(id)) {
                             val jobDetail = createJobDetail(id)
                             val trigger = createTrigger(id)
                             scheduleService.scheduleJob(jobDetail, trigger)
                             newTaskCount += 1
                         }
                     }
-                    logger.info("Success to reload replication task, " +
-                        "total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount")
+                    logger.info(
+                        "Success to reload replication task, " +
+                            "total: $totalCount, new: $newTaskCount, expired: $expiredTaskCount"
+                    )
                     sleep(3)
                 }
             }

@@ -45,7 +45,7 @@ object CronUtils {
     /**
      * 判断表达式是否有效
      */
-    fun isValid(cronExpression: String) : Boolean {
+    fun isValid(cronExpression: String): Boolean {
         return CronExpression.isValidExpression(cronExpression)
     }
 

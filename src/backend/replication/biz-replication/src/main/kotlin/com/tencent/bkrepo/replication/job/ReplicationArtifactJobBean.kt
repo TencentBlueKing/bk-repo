@@ -51,10 +51,10 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.repository.TaskLogDetailRepository
 import com.tencent.bkrepo.replication.repository.TaskLogRepository
 import com.tencent.bkrepo.replication.repository.TaskRepository
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicationArtifactService
 import com.tencent.bkrepo.replication.service.RepoDataService
-import com.tencent.bkrepo.replication.service.ScheduleService
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -81,7 +81,7 @@ class ReplicationArtifactJobBean(
     private val taskLogDetailRepository: TaskLogDetailRepository,
     private val repoDataService: RepoDataService,
     private val replicationArtifactService: ReplicationArtifactService,
-    private val scheduleService: ScheduleService,
+    private val replicaTaskScheduler: ReplicaTaskScheduler,
     private val clusterNodeService: ClusterNodeService,
     private val packageNodeMappingHandler: PackageNodeMappingHandler
 ) {
@@ -92,8 +92,8 @@ class ReplicationArtifactJobBean(
         logger.info("Start to execute replication task[$taskId].")
         val task = taskRepository.findByIdOrNull(taskId) ?: run {
             logger.warn("Task[$taskId] does not exist, delete job and trigger.")
-            if (scheduleService.checkExists(taskId)) {
-                scheduleService.deleteJob(taskId)
+            if (replicaTaskScheduler.exist(taskId)) {
+                replicaTaskScheduler.deleteJob(taskId)
             }
             return
         }

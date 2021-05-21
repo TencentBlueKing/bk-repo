@@ -31,12 +31,11 @@
 
 package com.tencent.bkrepo.replication.pojo.task.`object`
 
-/**
- * 路径限制
- */
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("路径限制")
 data class PathConstraint(
-    /**
-     * 节点路径
-     */
+    @ApiModelProperty("路径")
     val path: String
 )

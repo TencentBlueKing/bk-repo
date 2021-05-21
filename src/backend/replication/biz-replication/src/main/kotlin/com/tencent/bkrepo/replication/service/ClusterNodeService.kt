@@ -36,7 +36,11 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 
+/**
+ * 集群节点管理服务接口
+ */
 interface ClusterNodeService {
+
     /**
      * 查询id为[id]的节点信息
      */

@@ -29,41 +29,56 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task
+package com.tencent.bkrepo.replication.service
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 
-@ApiModel("同步任务信息")
-data class ReplicaTaskInfo(
-    @ApiModelProperty("任务id，全局唯一")
-    val id: String,
-    @ApiModelProperty("任务key，全局唯一")
-    val key: String,
-    @ApiModelProperty("任务名称，允许重复")
-    val name: String,
-    @ApiModelProperty("所属项目")
-    val projectId: String,
-    @ApiModelProperty("同步类型")
-    val replicaType: ReplicaType,
-    @ApiModelProperty("任务设置")
-    val setting: ReplicaSetting,
-    @ApiModelProperty("远程集群集合")
-    val remoteClusters: Set<ClusterNodeName>,
-    @ApiModelProperty("任务描述")
-    val description: String? = null,
-    @ApiModelProperty("上次执行状态")
-    var lastExecutionStatus: ReplicationStatus,
-    @ApiModelProperty("上次执行时间")
-    var lastExecutionTime: LocalDateTime? = null,
-    @ApiModelProperty("下次执行时间")
-    var nextExecutionTime: LocalDateTime? = null,
-    @ApiModelProperty("执行次数")
-    var executionTimes: Long,
-    @ApiModelProperty("是否启用")
-    var enabled: Boolean = true
-)
+/**
+ * 同步任务管理服务接口
+ */
+interface ReplicaTaskService {
+
+    /**
+     * 根据任务key查询任务信息
+     * @param key 任务key
+     */
+    fun getByTaskKey(key: String): ReplicaTaskInfo
+
+    /**
+     * 根据任务key查询任务详情
+     * @param key 任务key
+     */
+    fun getDetailByTaskKey(key: String): ReplicaTaskDetail
+
+    /**
+     * 分页查询同步任务
+     */
+    fun listTasksPage(param: TaskPageParam): Page<ReplicaTaskInfo>
+
+    /**
+     * 查询所有待执行的调度任务
+     * 待执行定义:
+     * 1. 立即执行还未执行
+     * 2. 指定时间执行还未执行
+     * 3. cron表达式周期执行
+     */
+    fun listUndoScheduledTasks(): List<ReplicaTaskInfo>
+
+    /**
+     * 创建同步任务
+     * 目前只允许创建ReplicaType.SCHEDULED类型的任务
+     *
+     * @param request 创建请求
+     */
+    fun create(request: ReplicaTaskCreateRequest)
+
+    /**
+     * 根据[key]删除同步任务
+     * @param key 任务唯一key
+     */
+    fun deleteByTaskKey(key: String)
+}

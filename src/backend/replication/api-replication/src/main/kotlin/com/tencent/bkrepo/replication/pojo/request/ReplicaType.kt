@@ -35,8 +35,8 @@ package com.tencent.bkrepo.replication.pojo.request
  * 同步类型
  */
 enum class ReplicaType {
-    // 全量同步
-    FULL,
-    // 增量同步
-    INCREMENTAL
+    // 调度同步，指定时间/定时执行
+    SCHEDULED,
+    // 实时同步，有新数据立即同步
+    REAL_TIME
 }
