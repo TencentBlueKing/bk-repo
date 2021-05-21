@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.replication.api.ClusterReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
@@ -39,7 +40,7 @@ class ClusterNodeServiceImpl(
 
     override fun getCenterNode(): ClusterNodeInfo {
         val clusterInfoList = clusterNodeDao.listByNameAndType(type = ClusterNodeType.CENTER)
-        require(clusterInfoList.size == 1) { "find no or more than one master cluster." }
+        require(clusterInfoList.size == 1) { "find no or more than one center cluster node." }
         return clusterInfoList.map { convert(it)!! }.first()
     }
 
@@ -62,12 +63,12 @@ class ClusterNodeServiceImpl(
                 throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
             }
             // 中心节点唯一
-            if (type == ClusterNodeType.CENTER && checkCenterNodeExist(type)) {
-                throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
+            if (type == ClusterNodeType.CENTER && checkCenterNodeExist()) {
+                throw ErrorCodeException(ReplicationMessageCode.CLUSTER_CENTER_NODE_EXISTS, name)
             }
             val clusterNode = TClusterNode(
                 name = name,
-                url = url,
+                url = UrlFormatter.formatUrl(url),
                 username = username,
                 password = password,
                 certificate = certificate,
@@ -88,17 +89,15 @@ class ClusterNodeServiceImpl(
         }
     }
 
-    fun checkCenterNodeExist(type: ClusterNodeType): Boolean {
-        val clusterNodeList = clusterNodeDao.listByNameAndType(name = null, type = type)
+    private fun checkCenterNodeExist(): Boolean {
+        val clusterNodeList = clusterNodeDao.listByNameAndType(type = ClusterNodeType.CENTER)
         return clusterNodeList.isNotEmpty() && clusterNodeList.size == 1
     }
 
     override fun deleteById(id: String) {
         getByClusterId(id)?.let {
             clusterNodeRepository.deleteById(id)
-        } ?: throw ErrorCodeException(
-            ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, "don't find cluster node for id [$id]"
-        )
+        } ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, id)
         logger.info("delete cluster node for id [$id] success.")
     }
 
@@ -126,10 +125,12 @@ class ClusterNodeServiceImpl(
 
     private fun validateParameter(request: ClusterNodeCreateRequest) {
         with(request) {
-            Preconditions.checkNotNull(name, this::name.name)
-            Preconditions.checkNotNull(url, this::url.name)
-            Preconditions.checkNotNull(type, this::type.name)
-            if (!Pattern.matches(CLUSTER_NODE_NAME_PATTERN, name)) {
+            Preconditions.checkNotBlank(name, this::name.name)
+            Preconditions.checkNotBlank(url, this::url.name)
+            Preconditions.checkNotBlank(type, this::type.name)
+            if (name.length < CLUSTER_NAME_LENGTH_MIN ||
+                name.length > CLUSTER_NAME_LENGTH_MAX
+            ) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
             }
             if (!Pattern.matches(CLUSTER_NODE_URL_PATTERN, url)) {
@@ -140,8 +141,9 @@ class ClusterNodeServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterNodeServiceImpl::class.java)
-        private const val CLUSTER_NODE_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
         private const val CLUSTER_NODE_URL_PATTERN = "[a-zA-z]+://[^\\s]*"
+        private const val CLUSTER_NAME_LENGTH_MIN = 2
+        private const val CLUSTER_NAME_LENGTH_MAX = 32
 
         private fun convert(tClusterNode: TClusterNode?): ClusterNodeInfo? {
             return tClusterNode?.let {
