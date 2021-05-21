@@ -699,7 +699,7 @@
                 const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + '?download=true',
                         '_self'
                     )
                 }).catch(e => {
