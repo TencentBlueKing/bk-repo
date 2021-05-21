@@ -74,7 +74,6 @@ const val AUTH_API_USER_PREFIX = "/api/user"
 const val AUTH_SERVICE_USER_PREFIX = "/service/user"
 
 const val AUTH_API_DEPARTMENT_PREFIX = "/api/department"
-const val AUTH_SERVICE_DEPARTMENT_PREFIX = "/service/department"
 
 const val AUTH_SERVICE_ACCOUNT_PREFIX = "/service/account"
 const val AUTH_API_ACCOUNT_PREFIX = "/api/account"

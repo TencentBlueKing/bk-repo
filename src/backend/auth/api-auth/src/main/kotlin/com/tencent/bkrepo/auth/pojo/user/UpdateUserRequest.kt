@@ -38,11 +38,12 @@ data class UpdateUserRequest(
     val name: String? = null,
     @ApiModelProperty("密码")
     val pwd: String? = null,
+    @ApiModelProperty("绑定用户")
+    val asstUsers: List<String> = emptyList(),
     @ApiModelProperty("lock状态")
     val locked: Boolean? = null,
     @ApiModelProperty("管理员")
     val email: String? = null,
     @ApiModelProperty("联系电话")
     val phone: String? = null
-
 )
