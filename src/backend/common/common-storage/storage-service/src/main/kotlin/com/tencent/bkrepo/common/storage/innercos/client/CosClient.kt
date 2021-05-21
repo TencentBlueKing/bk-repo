@@ -72,7 +72,6 @@ import kotlin.math.max
  * Cos Client
  */
 class CosClient(val credentials: InnerCosCredentials) {
-
     private val config: ClientConfig = ClientConfig(credentials)
 
     /**
