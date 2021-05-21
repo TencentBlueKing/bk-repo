@@ -36,6 +36,6 @@ data class RemoteClusterInfo(
     val name: String = "",
     val url: String = "",
     val certificate: String? = null,
-    val username: String = "",
-    val password: String = ""
+    val username: String? = null,
+    val password: String? = null
 )

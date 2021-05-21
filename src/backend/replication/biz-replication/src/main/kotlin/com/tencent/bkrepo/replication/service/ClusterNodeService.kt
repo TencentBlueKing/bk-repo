@@ -72,7 +72,7 @@ interface ClusterNodeService {
     /**
      * 根据[request]创建集群节点，创建成功后返回集群节点信息
      */
-    fun create(request: ClusterNodeCreateRequest): ClusterNodeInfo
+    fun create(userId: String, request: ClusterNodeCreateRequest): ClusterNodeInfo
 
     /**
      * 根据集群[id]删除集群节点
@@ -83,5 +83,5 @@ interface ClusterNodeService {
      * 尝试连接远程集群，连接失败抛[ErrorCodeException]异常
      */
     @Throws(ErrorCodeException::class)
-    fun tryConnect(it: String)
+    fun tryConnect(name: String)
 }

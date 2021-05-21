@@ -39,7 +39,13 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 enum class ReplicationMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
     REMOTE_CLUSTER_CONNECT_ERROR(1, "remote.cluster.connect.error"),
     REMOTE_CLUSTER_SSL_ERROR(2, "remote.cluster.ssl.error"),
-    TASK_STATUS_INVALID(3, "task.status.invalid");
+    TASK_STATUS_INVALID(3, "task.status.invalid"),
+    TASK_ENABLED_FALSE(4, "task.enabled.false"),
+    CLUSTER_NODE_EXISTS(5, "cluster.node.existed"),
+    CLUSTER_NODE_NOT_FOUND(6, "cluster.node.notfound"),
+    SCHEDULED_JOB_LOADING(7, "schedule.job.loading"),
+    TASK_DISABLE_UPDATE(8, "task.disable.update"),
+    ;
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

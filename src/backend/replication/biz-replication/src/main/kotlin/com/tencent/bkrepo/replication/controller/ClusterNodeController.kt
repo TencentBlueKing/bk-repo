@@ -31,20 +31,17 @@
 
 package com.tencent.bkrepo.replication.controller
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeDeleteRequest
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.UserClusterNodeCreateRequest
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -61,81 +58,72 @@ class ClusterNodeController(
     private val clusterNodeService: ClusterNodeService
 ) {
 
-    @ApiOperation("获取集群主节点")
-    @PostMapping("/query/master")
-    fun queryMasterName(): Response<String> {
-        return ResponseBuilder.success()
+    @ApiOperation("根据id查询节点详情")
+    @PostMapping("/query/{id}")
+    fun getByClusterId(@PathVariable id: String): Response<ClusterNodeInfo?> {
+        return ResponseBuilder.success(clusterNodeService.getByClusterId(id))
+    }
+
+    @ApiOperation("根据id查询节点详情")
+    @PostMapping("/query/name")
+    fun getByClusterName(@RequestParam name: String): Response<ClusterNodeInfo?> {
+        return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
+    }
+
+    @ApiOperation("获取中心节点")
+    @PostMapping("/query/center")
+    fun queryCenterNode(): Response<ClusterNodeInfo> {
+        return ResponseBuilder.success(clusterNodeService.getCenterNode())
+    }
+
+    @ApiOperation("查询边缘节点列表")
+    @PostMapping("/list/edge")
+    fun listEdgeNodes(): Response<List<ClusterNodeInfo>> {
+        return ResponseBuilder.success(clusterNodeService.listEdgeNodes())
+    }
+
+    @ApiOperation("查询所有的集群节点")
+    @PostMapping("/list/node")
+    fun listClusterNodes(
+        name: String? = null,
+        type: ClusterNodeType? = null
+    ): Response<List<ClusterNodeInfo>> {
+        return ResponseBuilder.success(clusterNodeService.listClusterNodes(name, type))
+    }
+
+    @ApiOperation("根据名称判断集群节点是否存在")
+    @PostMapping("/exist/name")
+    fun existClusterName(
+        @RequestParam name: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(clusterNodeService.existClusterName(name))
     }
 
     @ApiOperation("创建集群节点")
     @PostMapping("/create")
-    @Principal(PrincipalType.ADMIN)
-    fun createClusterNode(
+    fun create(
         @RequestAttribute userId: String,
-        @RequestBody userClusterCreateRequest: UserClusterNodeCreateRequest
+        @RequestBody request: ClusterNodeCreateRequest
     ): Response<Void> {
-        val createRequest = with(userClusterCreateRequest) {
-            com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest(
-                name = name,
-                url = url,
-                certificate = certificate,
-                username = username,
-                password = password,
-                type = type,
-                operator = userId
-            )
-        }
-        clusterNodeService.createClusterNode(createRequest)
+        clusterNodeService.create(userId, request)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("删除集群节点")
-    @DeleteMapping("/delete/{name}")
-    @Principal(PrincipalType.ADMIN)
+    @ApiOperation("根据id删除集群节点")
+    @DeleteMapping("/delete/{id}")
     fun deleteClusterNode(
-        @RequestAttribute userId: String,
-        @ApiParam(value = "集群节点名称", required = true)
-        @PathVariable name: String
+        @PathVariable id: String
     ): Response<Void> {
-        clusterNodeService.deleteClusterNode(ClusterNodeDeleteRequest(name, userId))
+        clusterNodeService.deleteById(id)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("列表查询集群节点")
-    @GetMapping("/list")
-    fun listClusterNode(
-        @RequestAttribute userId: String,
-        @ApiParam(value = "集群名称", required = false)
-        @RequestParam name: String? = null,
-        @ApiParam(value = "集群类型", required = false)
-        @RequestParam type: String? = null
-    ): Response<List<ClusterNodeInfo>> {
-        return ResponseBuilder.success(clusterNodeService.listClusterNode(name, type))
-    }
-
-    @ApiOperation("分页查询集群节点")
-    @GetMapping("/page/{pageNumber}/{pageSize}")
-    fun listClusterNodePage(
-        @RequestAttribute userId: String,
-        @ApiParam(value = "当前页", required = true, example = "0")
-        @PathVariable pageNumber: Int,
-        @ApiParam(value = "分页大小", required = true, example = "20")
-        @PathVariable pageSize: Int,
-        @ApiParam(value = "集群名称", required = false)
-        @RequestParam name: String? = null,
-        @ApiParam(value = "集群类型", required = false)
-        @RequestParam type: String? = null
-    ): Response<Page<ClusterNodeInfo>> {
-        return ResponseBuilder.success(clusterNodeService.listClusterNodePage(name, type, pageNumber, pageSize))
-    }
-
-    @ApiOperation("查询节点详情")
-    @GetMapping("/detail")
-    fun detailClusterNode(
-        @RequestAttribute userId: String,
-        @ApiParam(value = "集群名称", required = true)
+    @ApiOperation("测试集群间通信")
+    @PostMapping("/tryConnect")
+    fun tryConnect(
         @RequestParam name: String
-    ): Response<ClusterNodeInfo> {
-        return ResponseBuilder.success(clusterNodeService.detailClusterNode(name))
+    ): Response<Void> {
+        clusterNodeService.tryConnect(name)
+        return ResponseBuilder.success()
     }
 }
