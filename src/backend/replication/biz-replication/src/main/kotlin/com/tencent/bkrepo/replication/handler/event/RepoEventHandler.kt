@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.replication.handler.event
 
-import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.message.repo.RepoCreatedMessage
 import com.tencent.bkrepo.replication.message.repo.RepoDeletedMessage
 import com.tencent.bkrepo.replication.message.repo.RepoUpdatedMessage
@@ -48,7 +48,7 @@ class RepoEventHandler : BaseEventHandler() {
     fun handle(message: RepoCreatedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, name).forEach {
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 this.copy(
                     projectId = getRemoteProjectId(it, projectId),
                     name = getRemoteRepoName(it, name)
@@ -61,7 +61,7 @@ class RepoEventHandler : BaseEventHandler() {
     fun handle(message: RepoUpdatedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, name).forEach {
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 this.copy(
                     projectId = getRemoteProjectId(it, projectId),
                     name = getRemoteRepoName(it, name)
@@ -74,7 +74,7 @@ class RepoEventHandler : BaseEventHandler() {
     fun handle(message: RepoDeletedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, name).forEach {
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 this.copy(
                     projectId = getRemoteProjectId(it, projectId),
                     name = getRemoteRepoName(it, name)

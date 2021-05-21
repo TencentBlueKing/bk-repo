@@ -44,8 +44,8 @@ import com.tencent.bkrepo.replication.api.ClusterReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID
-import com.tencent.bkrepo.replication.job.ReplicationContext
-import com.tencent.bkrepo.replication.job.ReplicationQuartzJob
+import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
@@ -263,7 +263,7 @@ class TaskServiceImpl(
             } else {
                 // 如果任务不存在，并且状态不为waiting状态，则不会被reloadTask加载，将其添加进调度器
                 if (task.status != ReplicationStatus.WAITING) {
-                    val jobDetail = JobBuilder.newJob(ReplicationQuartzJob::class.java)
+                    val jobDetail = JobBuilder.newJob(ScheduledReplicaJob::class.java)
                         .withIdentity(task.id, DEFAULT_GROUP_ID)
                         .usingJobData(TASK_ID, task.id)
                         .requestRecovery()
@@ -319,7 +319,7 @@ class TaskServiceImpl(
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ClusterReplicaClient::class.java, this)
-                val authToken = ReplicationContext.encodeAuthToken(username, password)
+                val authToken = ReplicaContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: StringPool.UNKNOWN

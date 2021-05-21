@@ -32,14 +32,16 @@
 package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.constant.TASK_ID
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.quartz.InterruptableJob
 import org.quartz.JobExecutionContext
 import java.time.Duration
 
-class ReplicationQuartzJob : InterruptableJob {
+/**
+ * 调度类型同步任务job
+ */
+class ScheduledReplicaJob : InterruptableJob {
 
     private var currentThread: Thread? = null
     private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
@@ -47,8 +49,9 @@ class ReplicationQuartzJob : InterruptableJob {
 
     override fun execute(context: JobExecutionContext) {
         currentThread = Thread.currentThread()
-        val taskId = context.jobDetail.jobDataMap.getString(TASK_ID)
-        val lockConfiguration = LockConfiguration("ReplicationJob$taskId", lockAtMostFor, lockAtLeastFor)
+        val taskId = context.jobDetail.key.name
+        val lockName = buildLockName(taskId)
+        val lockConfiguration = LockConfiguration(lockName, lockAtMostFor, lockAtLeastFor)
         lockingTaskExecutor.executeWithLock(Runnable { replicationJobBean.execute(taskId) }, lockConfiguration)
     }
 
@@ -56,8 +59,21 @@ class ReplicationQuartzJob : InterruptableJob {
         currentThread?.interrupt()
     }
 
+    private fun buildLockName(taskId: String): String {
+        return REPLICA_LOCK_NAME_PREFIX + taskId
+    }
+
     companion object {
+        /**
+         * 任务最短加锁时间
+         */
         private val lockAtLeastFor = Duration.ofSeconds(1)
+
+        /**
+         * 任务最长加锁时间
+         */
         private val lockAtMostFor = Duration.ofDays(1)
+
+        private const val REPLICA_LOCK_NAME_PREFIX = "REPLICA_JOB_"
     }
 }

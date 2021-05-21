@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.replication.handler.event
 
-import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.message.metadata.MetadataDeletedMessage
 import com.tencent.bkrepo.replication.message.metadata.MetadataSavedMessage
 import org.springframework.context.event.EventListener
@@ -45,7 +45,7 @@ class MetaDataEventHandler : BaseEventHandler() {
     fun handle(message: MetadataSavedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 this.copy(
                     projectId = getRemoteProjectId(it, projectId),
                     repoName = getRemoteRepoName(it, repoName)
@@ -58,7 +58,7 @@ class MetaDataEventHandler : BaseEventHandler() {
     fun handle(message: MetadataDeletedMessage) {
         with(message.request) {
             getRelativeTaskList(projectId, repoName).forEach {
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 this.copy(
                     projectId = getRemoteProjectId(it, projectId),
                     repoName = getRemoteRepoName(it, repoName)

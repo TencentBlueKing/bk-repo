@@ -46,7 +46,9 @@ import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
 import java.time.LocalDateTime
 
-class ReplicationContext(val task: TReplicaTask) {
+
+class ReplicaContext(val task: TReplicaTask) {
+    val remoteClusters: List<RemoteClusterInfo>
     val authToken: String
     val normalizedUrl: String
     val clusterReplicaClient: ClusterReplicaClient

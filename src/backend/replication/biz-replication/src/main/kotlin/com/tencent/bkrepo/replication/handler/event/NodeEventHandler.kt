@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.replication.handler.event
 
 import com.tencent.bkrepo.replication.exception.WaitPreorderNodeFailedException
-import com.tencent.bkrepo.replication.job.ReplicationContext
+import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.message.node.NodeCopiedMessage
 import com.tencent.bkrepo.replication.message.node.NodeCreatedMessage
 import com.tencent.bkrepo.replication.message.node.NodeDeletedMessage
@@ -59,7 +59,7 @@ class NodeEventHandler : BaseEventHandler() {
             forEachRelativeTask(projectId, repoName) {
                 val remoteProjectId = getRemoteProjectId(it, projectId)
                 val remoteRepoName = getRemoteRepoName(it, repoName)
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 val repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: return@forEachRelativeTask
                 context.currentRepoDetail = repoDetail
                 logger.info("start to handle create event [$projectId,$repoName,$fullPath]")
@@ -78,7 +78,7 @@ class NodeEventHandler : BaseEventHandler() {
             forEachRelativeTask(projectId, repoName) {
                 val remoteProjectId = getRemoteProjectId(it, projectId)
                 val remoteRepoName = getRemoteRepoName(it, repoName)
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 val repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: return@forEachRelativeTask
                 context.currentRepoDetail = repoDetail
 
@@ -100,7 +100,7 @@ class NodeEventHandler : BaseEventHandler() {
             forEachRelativeTask(projectId, repoName) {
                 val remoteProjectId = getRemoteProjectId(it, projectId)
                 val remoteRepoName = getRemoteRepoName(it, repoName)
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 val repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: return@forEachRelativeTask
                 context.currentRepoDetail = repoDetail
 
@@ -122,7 +122,7 @@ class NodeEventHandler : BaseEventHandler() {
             forEachRelativeTask(projectId, repoName) {
                 val remoteProjectId = getRemoteProjectId(it, projectId)
                 val remoteRepoName = getRemoteRepoName(it, repoName)
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 val repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: return@forEachRelativeTask
                 context.currentRepoDetail = repoDetail
 
@@ -144,7 +144,7 @@ class NodeEventHandler : BaseEventHandler() {
             forEachRelativeTask(projectId, repoName) {
                 val remoteProjectId = getRemoteProjectId(it, projectId)
                 val remoteRepoName = getRemoteRepoName(it, repoName)
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 val repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: return@forEachRelativeTask
                 context.currentRepoDetail = repoDetail
 
@@ -166,7 +166,7 @@ class NodeEventHandler : BaseEventHandler() {
             forEachRelativeTask(projectId, repoName) {
                 val remoteProjectId = getRemoteProjectId(it, projectId)
                 val remoteRepoName = getRemoteRepoName(it, repoName)
-                val context = ReplicationContext(it)
+                val context = ReplicaContext(it)
                 val repoDetail = getRepoDetail(projectId, repoName, remoteRepoName) ?: return@forEachRelativeTask
                 context.currentRepoDetail = repoDetail
 
@@ -183,7 +183,7 @@ class NodeEventHandler : BaseEventHandler() {
 
     // wait max 120s for pre order node
     private fun waitForPreorderNode(
-        context: ReplicationContext,
+        context: ReplicaContext,
         projectId: String,
         repoName: String,
         fullPath: String

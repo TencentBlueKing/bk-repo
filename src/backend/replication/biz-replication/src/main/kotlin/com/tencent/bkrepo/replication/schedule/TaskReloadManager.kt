@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.replication.schedule
 
-import com.tencent.bkrepo.replication.job.ReplicationQuartzJob
-import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_KEY_TASK_ID
+import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.quartz.CronScheduleBuilder
@@ -99,40 +99,40 @@ class TaskReloadManager(
         }
     }
 
-    private fun createJobDetail(task: TReplicaTask): JobDetail {
-        return JobBuilder.newJob(ReplicationQuartzJob::class.java)
+    /**
+     * 根据任务信息创建job detail
+     */
+    private fun createJobDetail(task: ReplicaTaskInfo): JobDetail {
+        return JobBuilder.newJob(ScheduledReplicaJob::class.java)
             .withIdentity(task.id, REPLICA_JOB_GROUP)
-            .usingJobData(JOB_KEY_TASK_ID, task.id)
+            .usingJobData(JOB_DATA_TASK_KEY, task.key)
             .requestRecovery()
             .build()
     }
 
-    private fun createTrigger(task: TReplicaTask): Trigger {
+    /**
+     * 根据任务信息创建job trigger
+     */
+    private fun createTrigger(task: ReplicaTaskInfo): Trigger {
         with(task.setting.executionPlan) {
-            return when {
+            val builder = TriggerBuilder.newTrigger().withIdentity(task.id, REPLICA_JOB_GROUP)
+            when {
                 executeImmediately -> {
-                    TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, REPLICA_JOB_GROUP)
-                        .startNow()
-                        .build()
+                    builder.startNow()
                 }
                 executeTime != null -> {
-                    TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, REPLICA_JOB_GROUP)
-                        .startAt(Date.from(executeTime!!.atZone(ZoneId.systemDefault()).toInstant()))
-                        .build()
+                    builder.startAt(Date.from(executeTime!!.atZone(ZoneId.systemDefault()).toInstant()))
                 }
                 else -> {
-                    TriggerBuilder.newTrigger()
-                        .withIdentity(task.id, REPLICA_JOB_GROUP)
-                        .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
-                        .build()
+                    builder.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
                 }
             }
+            return builder.build()
         }
     }
 
     companion object {
+
         private val logger = LoggerFactory.getLogger(TaskReloadManager::class.java)
 
         /**
