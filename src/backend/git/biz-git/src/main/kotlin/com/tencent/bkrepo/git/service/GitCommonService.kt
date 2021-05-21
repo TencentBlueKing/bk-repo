@@ -6,10 +6,10 @@ import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
+import com.tencent.bkrepo.git.config.GitProperties
 import com.tencent.bkrepo.git.constant.DOT_GIT
 import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_NUMBER
 import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_SIZE
@@ -47,13 +47,12 @@ class GitCommonService {
     lateinit var storageManager: StorageManager
 
     @Autowired
-    lateinit var storageProperties: StorageProperties
+    lateinit var gitProperties: GitProperties
 
     fun generateWorkDir(artifactContext: ArtifactContext): File {
         with(artifactContext) {
-            val storageCredentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
             val sha1 = "$projectId$repoName".sha1()
-            val dirName = "${storageCredentials.upload.location}/${sha1.substring(0, 2)}/${sha1.substring(2, 40)}"
+            val dirName = "${gitProperties.locationDir}/${sha1.substring(0, 2)}/${sha1.substring(2, 40)}"
             val directory = File(dirName)
             if (!directory.isDirectory && !directory.mkdirs()) {
                 throw IOException("failed to create work directory ${directory.canonicalPath}")
