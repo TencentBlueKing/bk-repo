@@ -43,6 +43,18 @@ import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 interface ReplicaTaskService {
 
     /**
+     * 根据任务key查询任务信息
+     * @param key 任务key
+     */
+    fun getByTaskKey(key: String): ReplicaTaskInfo
+
+    /**
+     * 根据任务key查询任务详情
+     * @param key 任务key
+     */
+    fun getDetailByTaskKey(key: String): ReplicaTaskDetail
+
+    /**
      * 分页查询同步任务
      */
     fun listTasksPage(param: TaskPageParam): Page<ReplicaTaskInfo>
@@ -55,18 +67,6 @@ interface ReplicaTaskService {
      * 3. cron表达式周期执行
      */
     fun listUndoScheduledTasks(): List<ReplicaTaskInfo>
-
-    /**
-     * 根据任务key查询任务信息
-     * @param key 任务key
-     */
-    fun getByTaskKey(key: String): ReplicaTaskInfo
-
-    /**
-     * 根据任务key查询任务详情
-     * @param key 任务key
-     */
-    fun getDetailByTaskKey(key: String): ReplicaTaskDetail
 
     /**
      * 创建同步任务
