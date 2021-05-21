@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceClustersource")
 @RequestMapping(AUTH_CLUSTER_PREFIX)
+@Deprecated("即将删除的代码")
 interface ServiceClusterResource {
 
     @ApiOperation("添加集群")
