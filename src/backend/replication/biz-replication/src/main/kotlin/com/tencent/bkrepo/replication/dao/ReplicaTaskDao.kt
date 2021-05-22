@@ -50,4 +50,14 @@ class ReplicaTaskDao : SimpleMongoDao<TReplicaTask>() {
         return this.findOne(Query(TReplicaTask::key.isEqualTo(key)))
     }
 
+    /**
+     * 根据[key]删除任务
+     */
+    fun deleteByKey(key: String) {
+        if (key.isBlank()) {
+            return
+        }
+        val query = Query(TReplicaTask::key.isEqualTo(key))
+        this.remove(query)
+    }
 }

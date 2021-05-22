@@ -29,33 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.service
+package com.tencent.bkrepo.replication.dao
 
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
 /**
- * 同步任务执行记录服务接口
+ * 同步任务数据访问层
  */
-interface ReplicaRecordService {
+@Repository
+class ReplicaRecordDetailDao : SimpleMongoDao<TReplicaRecordDetail>() {
 
     /**
-     * 根据任务key查询执行记录
-     * 返回结果按照开始时间倒排，最后执行的在最前
-     * @param key 任务key
+     * 根据[recordId]查找任务
      */
-    fun listRecordsByTaskKey(key: String): List<ReplicaRecordInfo>
+    fun listByRecordId(recordId: String): List<TReplicaRecordDetail> {
+        val query = Query(TReplicaRecordDetail::recordId.isEqualTo(recordId))
+            .with(Sort.by(Sort.Direction.DESC, TReplicaRecordDetail::startTime.name))
+        return this.find(query)
+    }
 
     /**
-     * 根据记录id查询执行详情列表
-     * 返回结果按照开始时间倒排，最后执行的在最前
-     * @param recordId 执行记录id
+     * 根据[recordId]删除任务
      */
-    fun listDetailsByRecordId(recordId: String): List<ReplicaRecordDetail>
-
-    /**
-     * 根据任务key删除执行记录
-     * @param key 任务key
-     */
-    fun deleteByTaskKey(key: String)
+    fun deleteByRecordId(recordId: String) {
+        if (recordId.isBlank()) {
+            return
+        }
+        val query = Query(TReplicaRecordDetail::recordId.isEqualTo(recordId))
+        this.remove(query)
+    }
 }

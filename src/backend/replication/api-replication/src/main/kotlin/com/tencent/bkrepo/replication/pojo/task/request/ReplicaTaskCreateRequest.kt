@@ -45,7 +45,7 @@ data class ReplicaTaskCreateRequest(
     @ApiModelProperty("所属项目", required = true)
     val projectId: String,
     @ApiModelProperty("同步类型", required = true)
-    val replicaType: ReplicaType = ReplicaType.TIMED,
+    val replicaType: ReplicaType = ReplicaType.SCHEDULED,
     @ApiModelProperty("任务设置", required = true)
     val setting: ReplicaSetting,
     @ApiModelProperty("远程集群集合", required = true)

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.replication.pojo.task
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
@@ -57,7 +58,7 @@ data class ReplicaTaskInfo(
     @ApiModelProperty("任务描述")
     val description: String? = null,
     @ApiModelProperty("上次执行状态")
-    var lastExecutionStatus: ReplicationStatus,
+    var lastExecutionStatus: ExecutionStatus,
     @ApiModelProperty("上次执行时间")
     var lastExecutionTime: LocalDateTime? = null,
     @ApiModelProperty("下次执行时间")
