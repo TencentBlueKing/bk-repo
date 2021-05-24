@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
-import com.tencent.bkrepo.replication.api.ClusterReplicaClient
+import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.ReplicationPackageDetail
@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit
 class ReplicationArtifactContext(val task: TReplicaTask, remoteClusterInfo: RemoteClusterInfo) {
     val authToken: String
     val normalizedUrl: String
-    val clusterReplicaClient: ClusterReplicaClient
+    val artifactReplicaClient: ArtifactReplicaClient
     val httpClient: OkHttpClient
     val currentClusterName: String = remoteClusterInfo.name
     lateinit var projectDetail: ReplicationProjectDetail
@@ -61,7 +61,7 @@ class ReplicationArtifactContext(val task: TReplicaTask, remoteClusterInfo: Remo
     init {
         with(remoteClusterInfo) {
             authToken = encodeAuthToken(username, password)
-            clusterReplicaClient = FeignClientFactory.create(ClusterReplicaClient::class.java, this)
+            artifactReplicaClient = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
             httpClient = HttpClientBuilderFactory.create(certificate, true).addInterceptor(
                 BasicAuthInterceptor(username, password)
             ).connectionPool(ConnectionPool(20, 10, TimeUnit.MINUTES)).build()

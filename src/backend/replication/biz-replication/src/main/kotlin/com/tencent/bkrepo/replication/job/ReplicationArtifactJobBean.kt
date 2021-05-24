@@ -162,7 +162,7 @@ class ReplicationArtifactJobBean(
 
     private fun checkVersion(context: ReplicationArtifactContext) {
         with(context) {
-            val remoteVersion = clusterReplicaClient.version(authToken).data!!
+            val remoteVersion = artifactReplicaClient.version(authToken).data!!
             if (version != remoteVersion) {
                 logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
             }
@@ -451,7 +451,7 @@ class ReplicationArtifactJobBean(
             val request =
                 PackageVersionExistCheckRequest(localProjectId, localRepoName, packageSummary.key, versionList)
             val existPackageVersionList =
-                clusterReplicaClient.checkPackageVersionExistList(authToken, request).data!!
+                artifactReplicaClient.checkPackageVersionExistList(authToken, request).data!!
             // 如果为空，说明该版本远程仓库中不存在，进行同步
             // 同步不存在的包版本
             replicaPackageVersion(
@@ -582,7 +582,7 @@ class ReplicationArtifactJobBean(
             val fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, fullPathList)
             // fileNodeList.forEach { fullPathList.add(it.fullPath) }
             val request = NodeExistCheckRequest(localProjectId, localRepoName, fullPathList)
-            val existFullPathList = clusterReplicaClient.checkNodeExistList(authToken, request).data!!
+            val existFullPathList = artifactReplicaClient.checkNodeExistList(authToken, request).data!!
             // 同步不存在的节点
             fileNodeList.forEach { replicaNode(it, context, jobContext, existFullPathList) }
         }

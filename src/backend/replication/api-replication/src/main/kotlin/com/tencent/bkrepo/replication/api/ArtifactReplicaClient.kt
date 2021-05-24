@@ -59,7 +59,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaClient")
-interface ClusterReplicaClient {
+interface ArtifactReplicaClient {
 
     @GetMapping("/ping")
     fun ping(): Response<Void>

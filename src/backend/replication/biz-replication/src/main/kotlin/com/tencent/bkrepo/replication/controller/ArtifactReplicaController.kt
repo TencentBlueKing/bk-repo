@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.replication.api.ClusterReplicaClient
+import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
@@ -76,14 +76,14 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Principal(type = PrincipalType.ADMIN)
 @RestController
-class ClusterReplicaController(
+class ArtifactReplicaController(
     private val projectClient: ProjectClient,
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
     private val metadataClient: MetadataClient,
     private val storageService: StorageService
-) : ClusterReplicaClient {
+) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION

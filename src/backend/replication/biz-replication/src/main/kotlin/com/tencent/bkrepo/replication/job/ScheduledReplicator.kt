@@ -29,26 +29,45 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.job
+
+import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 
 /**
- * 同步进度
+ * 调度同步类
  */
-data class ReplicaProgress(
+@Service
+class ScheduledReplicator1(
+
+) {
+
+    @Value("\${spring.application.version}")
+    private var version: String = DEFAULT_VERSION
+
     /**
-     * 同步blob文件数量
+     * 开始执行同步
      */
-    var blob: ReplicaCount? = null,
+    fun start(context: ReplicaContext) {
+        // 检查版本
+        checkVersion(context)
+    }
+
     /**
-     * 同步节点数量
+     * 校验和远程集群版本是否一致
      */
-    var node: ReplicaCount? = null,
-    /**
-     * 同步包版本数量
-     */
-    var version: ReplicaCount? = null,
-    /**
-     * 同步文件数据数量, 单位bytes
-     */
-    var totalSize: Long = 0
-)
+    private fun checkVersion(context: ReplicaContext) {
+        with(context) {
+            val remoteVersion = artifactReplicaClient.version().data.orEmpty()
+            if (version != remoteVersion) {
+                logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
+            }
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ScheduledReplicator1::class.java)
+    }
+}

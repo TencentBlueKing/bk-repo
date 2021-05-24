@@ -47,10 +47,12 @@ data class ClusterNodeInfo(
     val type: ClusterNodeType,
     @ApiModelProperty("集群地址")
     val url: String,
-    @ApiModelProperty("集群的证书")
-    val certificate: String? = null,
-    @ApiModelProperty("集群认证用户名")
-    val username: String? = null,
+    @ApiModelProperty("集群访问用户名，独立集群需要此字段")
+    val username: String?,
+    @ApiModelProperty("集群访问密码，独立集群需要此字段")
+    val password: String?,
+    @ApiModelProperty("集群的证书，独立集群需要此字段")
+    val certificate: String?,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建日期")

@@ -31,13 +31,51 @@
 
 package com.tencent.bkrepo.replication.service
 
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 
 /**
  * 同步任务执行记录服务接口
  */
 interface ReplicaRecordService {
+
+    /**
+     * 初始化一条同步记录
+     * @param taskKey 任务key
+     */
+    fun initialRecord(taskKey: String): ReplicaRecordInfo
+
+    /**
+     * 完成同步记录
+     * @param recordId 记录id
+     * @param status 执行状态
+     * @param errorReason 错误原因，当status为失败情况下才设置
+     */
+    fun completeRecord(recordId: String, status: ExecutionStatus, errorReason: String? = null)
+
+    /**
+     * 初始化一条同步详情
+     * @param request 同步详情初始化请求
+     */
+    fun initialRecordDetail(request: RecordDetailInitialRequest): ReplicaRecordDetail
+
+    /**
+     * 更新同步详情进度
+     * @param detailId 同步详情id
+     * @param progress 同步进度
+     */
+    fun updateRecordDetailProgress(detailId: String, progress: ReplicaProgress)
+
+    /**
+     * 完成同步详情
+     * @param detailId 记录id
+     * @param status 执行状态
+     * @param errorReason 错误原因，当status为失败情况下才设置
+     */
+    fun completeRecordDetail(detailId: String, status: ExecutionStatus, errorReason: String? = null)
 
     /**
      * 根据任务key查询执行记录

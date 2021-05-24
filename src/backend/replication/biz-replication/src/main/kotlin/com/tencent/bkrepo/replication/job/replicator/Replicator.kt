@@ -29,26 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.job.replicator
+
+import com.tencent.bkrepo.replication.job.ReplicaContext
 
 /**
- * 同步进度
+ * 同步器
  */
-data class ReplicaProgress(
+interface Replicator {
+
     /**
-     * 同步blob文件数量
+     * 执行同步
+     * @param context 同步上下文
      */
-    var blob: ReplicaCount? = null,
-    /**
-     * 同步节点数量
-     */
-    var node: ReplicaCount? = null,
-    /**
-     * 同步包版本数量
-     */
-    var version: ReplicaCount? = null,
-    /**
-     * 同步文件数据数量, 单位bytes
-     */
-    var totalSize: Long = 0
-)
+    fun replica(context: ReplicaContext)
+}

@@ -29,26 +29,53 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.job.replicator
+
+import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
+import com.tencent.bkrepo.replication.job.ReplicaContext
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 
 /**
- * 同步进度
+ * 调度类任务同步器
  */
-data class ReplicaProgress(
+abstract class ScheduledReplicator : Replicator {
+
+    @Value("\${spring.application.version}")
+    private var version: String = DEFAULT_VERSION
+
+    override fun replica(context: ReplicaContext) {
+        checkVersion(context)
+        doReplica(context)
+    }
+
     /**
-     * 同步blob文件数量
+     * 同步具体逻辑，由子类实现
      */
-    var blob: ReplicaCount? = null,
+    abstract fun doReplica(context: ReplicaContext)
+
     /**
-     * 同步节点数量
+     * 校验和远程集群版本是否一致
      */
-    var node: ReplicaCount? = null,
+    protected fun checkVersion(context: ReplicaContext) {
+        with(context) {
+            val remoteVersion = artifactReplicaClient.version().data.orEmpty()
+            if (version != remoteVersion) {
+                logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
+            }
+        }
+    }
+
     /**
-     * 同步包版本数量
+     * 持久化任务
      */
-    var version: ReplicaCount? = null,
-    /**
-     * 同步文件数据数量, 单位bytes
-     */
-    var totalSize: Long = 0
-)
+    protected fun persistTaskLog(context: ReplicaContext) {
+        context.taskRecord.status = context.status
+        context.taskRecord.replicationProgress = context.progress
+        taskLogRepository.save(context.taskRecord)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ScheduledReplicator::class.java)
+    }
+}

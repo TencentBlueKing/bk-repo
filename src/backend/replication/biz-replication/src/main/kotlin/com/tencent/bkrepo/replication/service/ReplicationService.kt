@@ -98,14 +98,14 @@ class ReplicationService(
 
     fun replicaPackageVersionCreatedRequest(context: ReplicaContext, request: PackageVersionCreateRequest) {
         with(context) {
-            clusterReplicaClient.replicaPackageVersionCreatedRequest(authToken, request)
+            artifactReplicaClient.replicaPackageVersionCreatedRequest(authToken, request)
         }
     }
 
     fun replicaNodeCreateRequest(context: ReplicaContext, request: NodeCreateRequest) {
         with(context) {
             if (request.folder) {
-                clusterReplicaClient.replicaNodeCreateRequest(authToken, request)
+                artifactReplicaClient.replicaNodeCreateRequest(authToken, request)
             } else {
                 replicaFile(context, request)
             }
@@ -119,73 +119,73 @@ class ReplicationService(
         fullPath: String
     ): Boolean {
         with(context) {
-            return clusterReplicaClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: false
+            return artifactReplicaClient.checkNodeExist(authToken, projectId, repoName, fullPath).data ?: false
         }
     }
 
     fun replicaNodeRenameRequest(context: ReplicaContext, request: NodeRenameRequest) {
         with(context) {
-            clusterReplicaClient.replicaNodeRenameRequest(authToken, request)
+            artifactReplicaClient.replicaNodeRenameRequest(authToken, request)
         }
     }
 
     fun replicaNodeUpdateRequest(context: ReplicaContext, request: NodeUpdateRequest) {
         with(context) {
-            clusterReplicaClient.replicaNodeUpdateRequest(authToken, request)
+            artifactReplicaClient.replicaNodeUpdateRequest(authToken, request)
         }
     }
 
     fun replicaNodeCopyRequest(context: ReplicaContext, request: NodeMoveCopyRequest) {
         with(context) {
-            clusterReplicaClient.replicaNodeCopyRequest(authToken, request)
+            artifactReplicaClient.replicaNodeCopyRequest(authToken, request)
         }
     }
 
     fun replicaNodeMoveRequest(context: ReplicaContext, request: NodeMoveCopyRequest) {
         with(context) {
-            clusterReplicaClient.replicaNodeMoveRequest(authToken, request)
+            artifactReplicaClient.replicaNodeMoveRequest(authToken, request)
         }
     }
 
     fun replicaNodeDeleteRequest(context: ReplicaContext, request: NodeDeleteRequest) {
         with(context) {
-            clusterReplicaClient.replicaNodeDeleteRequest(authToken, request)
+            artifactReplicaClient.replicaNodeDeleteRequest(authToken, request)
         }
     }
 
     fun replicaRepoCreateRequest(context: ReplicaContext, request: RepoCreateRequest) {
         with(context) {
-            clusterReplicaClient.replicaRepoCreateRequest(authToken, request)
+            artifactReplicaClient.replicaRepoCreateRequest(authToken, request)
         }
     }
 
     fun replicaRepoUpdateRequest(context: ReplicaContext, request: RepoUpdateRequest) {
         with(context) {
-            clusterReplicaClient.replicaRepoUpdateRequest(authToken, request)
+            artifactReplicaClient.replicaRepoUpdateRequest(authToken, request)
         }
     }
 
     fun replicaRepoDeleteRequest(context: ReplicaContext, request: RepoDeleteRequest) {
         with(context) {
-            clusterReplicaClient.replicaRepoDeleteRequest(authToken, request)
+            artifactReplicaClient.replicaRepoDeleteRequest(authToken, request)
         }
     }
 
     fun replicaProjectCreateRequest(context: ReplicaContext, request: ProjectCreateRequest) {
         with(context) {
-            clusterReplicaClient.replicaProjectCreateRequest(authToken, request)
+            artifactReplicaClient.replicaProjectCreateRequest(authToken, request)
         }
     }
 
     fun replicaMetadataSaveRequest(context: ReplicaContext, request: MetadataSaveRequest) {
         with(context) {
-            clusterReplicaClient.replicaMetadataSaveRequest(authToken, request)
+            artifactReplicaClient.replicaMetadataSaveRequest(authToken, request)
         }
     }
 
     fun replicaMetadataDeleteRequest(context: ReplicaContext, request: MetadataDeleteRequest) {
         with(context) {
-            clusterReplicaClient.replicaMetadataDeleteRequest(authToken, request)
+            artifactReplicaClient.replicaMetadataDeleteRequest(authToken, request)
         }
     }
 
