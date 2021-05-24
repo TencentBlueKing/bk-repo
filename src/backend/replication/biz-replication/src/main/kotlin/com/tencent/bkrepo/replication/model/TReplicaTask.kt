@@ -84,7 +84,7 @@ data class TReplicaTask(
     /**
      * 上次执行状态
      */
-    var lastExecutionStatus: ExecutionStatus,
+    var lastExecutionStatus: ExecutionStatus?,
     /**
      * 上次执行时间
      */

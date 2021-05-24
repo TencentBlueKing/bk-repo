@@ -58,7 +58,7 @@ data class ReplicaTaskInfo(
     @ApiModelProperty("任务描述")
     val description: String? = null,
     @ApiModelProperty("上次执行状态")
-    var lastExecutionStatus: ExecutionStatus,
+    var lastExecutionStatus: ExecutionStatus? = null,
     @ApiModelProperty("上次执行时间")
     var lastExecutionTime: LocalDateTime? = null,
     @ApiModelProperty("下次执行时间")

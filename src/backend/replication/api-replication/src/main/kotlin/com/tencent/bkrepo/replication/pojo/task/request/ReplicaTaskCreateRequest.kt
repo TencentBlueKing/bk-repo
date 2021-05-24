@@ -35,6 +35,7 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.`object`.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.`object`.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -42,8 +43,12 @@ import io.swagger.annotations.ApiModelProperty
 data class ReplicaTaskCreateRequest(
     @ApiModelProperty("任务名称", required = true)
     val name: String,
-    @ApiModelProperty("所属项目", required = true)
+    @ApiModelProperty("本地所属项目", required = true)
     val projectId: String,
+    @ApiModelProperty("远程所属项目", required = true)
+    val remoteProjectId: String = projectId,
+    @ApiModelProperty("所属仓库信息", required = true)
+    val repoInfo: Set<ReplicaRepoInfo>,
     @ApiModelProperty("同步类型", required = true)
     val replicaType: ReplicaType = ReplicaType.SCHEDULED,
     @ApiModelProperty("任务设置", required = true)
@@ -57,5 +62,7 @@ data class ReplicaTaskCreateRequest(
     @ApiModelProperty("是否启用", required = true)
     var enabled: Boolean = true,
     @ApiModelProperty("任务描述", required = false)
-    val description: String? = null
+    val description: String? = null,
+    @ApiModelProperty("操作用户", required = false)
+    val operator: String = SYSTEM_USER
 )
