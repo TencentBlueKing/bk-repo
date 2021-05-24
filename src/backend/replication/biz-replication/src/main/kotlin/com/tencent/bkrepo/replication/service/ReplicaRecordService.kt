@@ -42,8 +42,9 @@ interface ReplicaRecordService {
 
     /**
      * 初始化一条同步记录
+     * @param taskKey 任务key
      */
-    fun initialRecord(): ReplicaRecordInfo
+    fun initialRecord(taskKey: String): ReplicaRecordInfo
 
     /**
      * 完成同步记录
