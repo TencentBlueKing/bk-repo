@@ -92,6 +92,20 @@ interface ReplicaRecordService {
     fun listDetailsByRecordId(recordId: String): List<ReplicaRecordDetail>
 
     /**
+     * 根据id查询执行记录
+     *
+     * @param id 记录id
+     */
+    fun getRecordById(id: String): ReplicaRecordInfo?
+
+    /**
+     * 根据id查询执行记录详情
+     *
+     * @param id 记录详情id
+     */
+    fun getRecordDetailById(id: String): ReplicaRecordDetail?
+
+    /**
      * 根据任务key删除执行记录
      * @param key 任务key
      */
