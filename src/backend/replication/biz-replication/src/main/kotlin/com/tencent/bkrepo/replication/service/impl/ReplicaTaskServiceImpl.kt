@@ -17,7 +17,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.`object`.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan

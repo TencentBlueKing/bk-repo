@@ -29,52 +29,41 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.model
+package com.tencent.bkrepo.replication.manager
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.stereotype.Component
 
 /**
- * 同步对象
- * 同步任务 - 同步对象： 1 to N
+ * 远程数据管理类
+ * 用于访问远程集群数据
  */
-@Document("replica_object")
-data class TReplicaObject(
-    var id: String? = null,
+@Component
+class RemoteDataManager: ClusterDataManager {
+
+    override fun findProjectById(projectId: String): ProjectInfo? {
+        TODO("Not yet implemented")
+    }
+
+    override fun findRepoByName(projectId: String, repoName: String, type: String?): RepositoryDetail? {
+        TODO("Not yet implemented")
+    }
+
     /**
-     * 任务唯一key
+     * 同步项目
      */
-    @Indexed
-    val taskKey: String,
+    fun replicaProject(context: ReplicaContext, request: ProjectCreateRequest) {
+        context.artifactReplicaClient.replicaProjectCreateRequest(request)
+    }
+
     /**
-     * 本地项目
+     * 同步仓库
      */
-    val localProjectId: String,
-    /**
-     * 本地仓库
-     */
-    val localRepoName: String,
-    /**
-     * 远程项目
-     */
-    val remoteProjectId: String,
-    /**
-     * 远程仓库
-     */
-    val remoteRepoName: String,
-    /**
-     * 仓库类型
-     */
-    val repoType: RepositoryType,
-    /**
-     * 包限制
-     */
-    val packageConstraints: List<PackageConstraint>?,
-    /**
-     * 节点限制
-     */
-    val pathConstraints: List<PathConstraint>?
-)
+    fun replicaRepo(context: ReplicaContext, request: RepoCreateRequest) {
+        context.artifactReplicaClient.replicaRepoCreateRequest(request)
+    }
+}

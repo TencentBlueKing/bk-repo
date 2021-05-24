@@ -176,10 +176,8 @@ interface PackageClient {
 
     /**
      * 包版本数据填充，该过程会自动累加downloads和version数量到包信息中
-     *
      * 1. 如果包已经存在则不会更新包，跳到步骤2，否则创建新包
      * 2. 遍历versionList进行版本创建，如果版本已经存在则跳过。
-     *
      */
     @ApiOperation("包版本数据填充")
     @PostMapping("/package/populate")

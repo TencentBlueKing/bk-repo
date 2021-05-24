@@ -32,13 +32,51 @@
 package com.tencent.bkrepo.replication.job.replicator
 
 import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import org.springframework.stereotype.Component
 
 /**
  * 构件同步器
  * metadata + blob
  */
-class ArtifactReplicator: Replicator {
-    override fun replica(context: ReplicaContext) {
-        TODO("Not yet implemented")
+@Component
+class ArtifactReplicator: ScheduledReplicator() {
+    override fun replicaProject(context: ReplicaContext) {
+        with(context) {
+            val localProject = localDataManager.findProjectById(localProjectId)
+            require(localProject != null) { "Local project[$localProjectId] does not exist" }
+            if (remoteDataManager.findProjectById(remoteProjectId) != null) {
+                return
+            }
+            val request = ProjectCreateRequest(
+                name = remoteProjectId,
+                displayName = remoteProjectId,
+                description = localProject.description,
+                operator = localProject.createdBy
+            )
+            remoteDataManager.replicaProject(context, request)
+        }
+    }
+
+    override fun replicaRepo(context: ReplicaContext) {
+        with(context) {
+            val localRepo = localDataManager.findRepoByName(localProjectId, localRepoName, localRepoType.name)
+            require(localRepo != null) { "Local repository[$localRepoName] does not exist" }
+            if (remoteDataManager.findRepoByName(remoteProjectId, remoteRepoName, remoteRepoType.name) != null) {
+                return
+            }
+            val request = RepoCreateRequest(
+                projectId = remoteProjectId,
+                name = remoteRepoName,
+                type = remoteRepoType,
+                category = localRepo.category,
+                public = localRepo.public,
+                description = localRepo.description,
+                configuration = localRepo.configuration,
+                operator = localRepo.createdBy
+            )
+            remoteDataManager.replicaRepo(context, request)
+        }
     }
 }

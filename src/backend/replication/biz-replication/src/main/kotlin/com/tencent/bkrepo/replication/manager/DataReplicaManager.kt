@@ -29,18 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.`object`
+package com.tencent.bkrepo.replication.manager
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import org.springframework.stereotype.Component
 
 /**
- * 包/版本限制
+ * 数据同步管理类
  */
-@ApiModel("包/版本限制")
-data class PackageConstraint(
-    @ApiModelProperty("包唯一key")
-    val packageKey: String,
-    @ApiModelProperty("包版本列表")
-    val versions: List<String>? = null
-)
+@Component
+class DataReplicaManager {
+
+    fun replicaProjectCreateRequest(context: ReplicaContext, request: ProjectCreateRequest) {
+        with(context) {
+            artifactReplicaClient.replicaProjectCreateRequest(request)
+        }
+    }
+
+}

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
@@ -43,15 +44,29 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.pojo.task.`object`.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
 
 class ReplicaContext(
-    private val taskDetail: ReplicaTaskDetail,
-    private val taskObject: ReplicaObjectInfo,
-    val clusterNodeInfo: ClusterNodeInfo
+    val taskDetail: ReplicaTaskDetail,
+    val taskObject: ReplicaObjectInfo,
+    val clusterNodeInfo: ClusterNodeInfo,
+    val detailId: String
 ) {
+    // 任务信息
+    val task = taskDetail.task
+
+    // 本地仓库信息
+    val localProjectId: String = task.projectId
+    val localRepoName: String = taskObject.localRepoName
+    val localRepoType: RepositoryType = taskObject.repoType
+
+    // 远程仓库信息
+    val remoteProjectId: String = taskObject.remoteProjectId
+    val remoteRepoName: String = taskObject.remoteRepoName
+    val remoteRepoType: RepositoryType =  taskObject.repoType
+
     val remoteUrl: String
     val artifactReplicaClient: ArtifactReplicaClient
     val httpClient: OkHttpClient
