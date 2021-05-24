@@ -35,6 +35,7 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 
 /**
  * 同步任务执行记录服务接口
@@ -57,9 +58,9 @@ interface ReplicaRecordService {
 
     /**
      * 初始化一条同步详情
-     * @param recordId 同步详情id
+     * @param request 同步详情初始化请求
      */
-    fun initialRecordDetail(recordId: String): ReplicaRecordDetail
+    fun initialRecordDetail(request: RecordDetailInitialRequest): ReplicaRecordDetail
 
     /**
      * 更新同步详情进度

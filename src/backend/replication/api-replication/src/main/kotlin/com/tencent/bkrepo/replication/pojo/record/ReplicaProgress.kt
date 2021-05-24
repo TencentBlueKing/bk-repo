@@ -38,17 +38,17 @@ data class ReplicaProgress(
     /**
      * 同步blob文件数量
      */
-    var blob: ReplicaCount?,
+    var blob: ReplicaCount? = null,
     /**
      * 同步节点数量
      */
-    var node: ReplicaCount?,
+    var node: ReplicaCount? = null,
     /**
      * 同步包版本数量
      */
-    var version: ReplicaCount?,
+    var version: ReplicaCount? = null,
     /**
      * 同步文件数据数量, 单位bytes
      */
-    var totalSize: Long
+    var totalSize: Long = 0
 )

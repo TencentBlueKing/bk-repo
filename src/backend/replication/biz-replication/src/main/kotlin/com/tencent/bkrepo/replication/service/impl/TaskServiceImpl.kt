@@ -40,7 +40,7 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.replication.api.ClusterReplicaClient
+import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID
@@ -318,7 +318,7 @@ class TaskServiceImpl(
     override fun tryConnect(remoteClusterInfo: RemoteClusterInfo) {
         with(remoteClusterInfo) {
             try {
-                val replicationService = FeignClientFactory.create(ClusterReplicaClient::class.java, this)
+                val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
                 val authToken = ReplicaContext.encodeAuthToken(username, password)
                 replicationService.ping(authToken)
             } catch (exception: RuntimeException) {

@@ -31,57 +31,54 @@
 
 package com.tencent.bkrepo.replication.job
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
+import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
-import com.tencent.bkrepo.replication.api.ClusterReplicaClient
-import com.tencent.bkrepo.replication.model.TReplicaRecord
-import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
-import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
+import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.pojo.task.`object`.ReplicaObjectInfo
 import okhttp3.OkHttpClient
 import org.springframework.util.Base64Utils
-import java.time.LocalDateTime
 
-
-class ReplicaContext(val task: TReplicaTask) {
-    val remoteClusters: List<RemoteClusterInfo>
-    val authToken: String
-    val normalizedUrl: String
-    val clusterReplicaClient: ClusterReplicaClient
+class ReplicaContext(
+    private val taskDetail: ReplicaTaskDetail,
+    private val taskObject: ReplicaObjectInfo,
+    val clusterNodeInfo: ClusterNodeInfo
+) {
+    val remoteUrl: String
+    val artifactReplicaClient: ArtifactReplicaClient
     val httpClient: OkHttpClient
-    val taskRecord: TReplicaRecord
-    val progress: ReplicationProgress = ReplicationProgress()
-    var status: ReplicationStatus = ReplicationStatus.REPLICATING
-    lateinit var projectDetailList: List<ReplicationProjectDetail>
-    lateinit var currentProjectDetail: ReplicationProjectDetail
-    lateinit var currentRepoDetail: ReplicationRepoDetail
-    lateinit var remoteProjectId: String
-    lateinit var remoteRepoName: String
+    val progress: ReplicaProgress = ReplicaProgress()
+
+    private val cluster: RemoteClusterInfo = RemoteClusterInfo(
+        name = clusterNodeInfo.name,
+        url = clusterNodeInfo.url,
+        username = clusterNodeInfo.username,
+        password = clusterNodeInfo.password,
+        certificate = clusterNodeInfo.certificate
+    )
 
     init {
-        taskRecord = TReplicaRecord(
-            taskKey = task.key,
-            status = status,
-            startTime = LocalDateTime.now(),
-            replicationProgress = progress
-        )
-
-        with(task.setting.remoteClusterInfo) {
-            authToken = encodeAuthToken(username, password)
-            replicationClient = FeignClientFactory.create(this)
-            httpClient = HttpClientBuilderFactory.create(certificate, true).addInterceptor(
-                BasicAuthInterceptor(username, password)
-            ).connectionPool(ConnectionPool(20, 10, TimeUnit.MINUTES)).build()
-            normalizedUrl = normalizeUrl(this)
-        }
+        remoteUrl = normalizeUrl(cluster)
+        artifactReplicaClient = FeignClientFactory.create(cluster)
+        httpClient = HttpClientBuilderFactory.create(cluster.certificate, true)
+            .addInterceptor(BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty()))
+            // .connectionPool(ConnectionPool(20, 10, TimeUnit.MINUTES))
+            .build()
     }
 
+    /**
+     * 判断任务是否为cron执行任务
+     */
     fun isCronJob(): Boolean {
-        return task.setting.executionPlan.cronExpression != null
+        return taskDetail.task.setting.executionPlan.cronExpression != null
     }
 
     companion object {
@@ -94,7 +91,7 @@ class ReplicaContext(val task: TReplicaTask) {
         fun normalizeUrl(remoteClusterInfo: RemoteClusterInfo): String {
             val normalizedUrl = remoteClusterInfo.url
                 .trim()
-                .trimEnd(StringPool.SLASH[0])
+                .trimEnd(CharPool.SLASH)
                 .removePrefix(StringPool.HTTP)
                 .removePrefix(StringPool.HTTPS)
             val prefix = if (remoteClusterInfo.certificate == null) StringPool.HTTP else StringPool.HTTPS
