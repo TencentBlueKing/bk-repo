@@ -152,8 +152,9 @@ class ClusterNodeServiceImpl(
                     name = it.name,
                     type = it.type,
                     url = it.url,
-                    certificate = it.certificate,
                     username = it.username,
+                    password = it.password,
+                    certificate = it.certificate,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
@@ -165,7 +166,6 @@ class ClusterNodeServiceImpl(
         private fun convertRemoteInfo(tClusterNode: TClusterNode?): RemoteClusterInfo? {
             return tClusterNode?.let {
                 RemoteClusterInfo(
-                    key = it.id!!,
                     name = it.name,
                     url = it.url,
                     certificate = it.certificate,
