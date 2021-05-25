@@ -29,34 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.job
+package com.tencent.bkrepo.replication.pojo.task.objects
 
-import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
-import com.tencent.bkrepo.replication.model.TReplicaRecord
-import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicationProgress
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import java.time.LocalDateTime
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-class ReplicationJobContext(val task: TReplicaTask) {
-    val taskRecord: TReplicaRecord
-    val progress: ReplicationProgress = ReplicationProgress()
-    var status: ReplicationStatus = ReplicationStatus.REPLICATING
-    val taskLogKey: String = uniqueId()
-    lateinit var masterClusterNode: ClusterNodeInfo
-
-    init {
-        taskRecord = TReplicaRecord(
-            taskKey = task.key,
-            status = status,
-            taskLogKey = taskLogKey,
-            startTime = LocalDateTime.now(),
-            replicationProgress = progress
-        )
-    }
-
-    fun isCronJob(): Boolean {
-        return task.setting.executionPlan.cronExpression != null
-    }
-}
+@ApiModel("路径限制")
+data class PathConstraint(
+    @ApiModelProperty("路径")
+    val path: String
+)

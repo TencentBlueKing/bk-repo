@@ -29,52 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.model
+package com.tencent.bkrepo.replication.pojo.task.objects
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 同步对象
- * 同步任务 - 同步对象： 1 to N
- */
-@Document("replica_object")
-data class TReplicaObject(
-    var id: String? = null,
-    /**
-     * 任务唯一key
-     */
-    @Indexed
-    val taskKey: String,
-    /**
-     * 本地项目
-     */
-    val localProjectId: String,
-    /**
-     * 本地仓库
-     */
+@ApiModel("同步对象信息")
+data class ReplicaObjectInfo(
+    @ApiModelProperty("本地仓库")
     val localRepoName: String,
-    /**
-     * 远程项目
-     */
+    @ApiModelProperty("远程项目")
     val remoteProjectId: String,
-    /**
-     * 远程仓库
-     */
+    @ApiModelProperty("远程仓库")
     val remoteRepoName: String,
-    /**
-     * 仓库类型
-     */
+    @ApiModelProperty("仓库类型")
     val repoType: RepositoryType,
-    /**
-     * 包限制
-     */
+    @ApiModelProperty("包限制条件")
     val packageConstraints: List<PackageConstraint>?,
-    /**
-     * 节点限制
-     */
+    @ApiModelProperty("路径限制条件")
     val pathConstraints: List<PathConstraint>?
 )

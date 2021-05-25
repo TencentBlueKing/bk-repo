@@ -29,13 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.`object`
+package com.tencent.bkrepo.replication.pojo.task.objects
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("路径限制")
-data class PathConstraint(
-    @ApiModelProperty("路径")
-    val path: String
+/**
+ * 包/版本限制
+ */
+@ApiModel("包/版本限制")
+data class PackageConstraint(
+    @ApiModelProperty("包唯一key")
+    val packageKey: String,
+    @ApiModelProperty("包版本列表")
+    val versions: List<String>? = null
 )

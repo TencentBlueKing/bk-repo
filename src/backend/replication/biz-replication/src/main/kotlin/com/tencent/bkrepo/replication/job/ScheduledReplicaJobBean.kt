@@ -37,7 +37,6 @@ import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.job.replicator.ArtifactReplicator
 import com.tencent.bkrepo.replication.job.replicator.BlobReplicator
 import com.tencent.bkrepo.replication.job.replicator.Replicator
@@ -54,7 +53,7 @@ import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.`object`.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -82,8 +81,6 @@ import java.util.concurrent.TimeUnit
 @Suppress("TooGenericExceptionCaught")
 @Component
 class ScheduledReplicaJobBean(
-    private val replicator: Replicator,
-    private val replicaTaskDao: ReplicaTaskDao,
     private val clusterNodeService: ClusterNodeService,
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
@@ -91,9 +88,6 @@ class ScheduledReplicaJobBean(
     private val replicationService: ReplicationService,
     private val replicaTaskScheduler: ReplicaTaskScheduler
 ) {
-
-
-
     private val threadPoolExecutor: ThreadPoolExecutor = buildThreadPoolExecutor()
 
     /**
@@ -120,7 +114,7 @@ class ScheduledReplicaJobBean(
         } finally {
             // 保存结果
             replicationContext.taskRecord.endTime = LocalDateTime.now()
-            persistTask(replicationContext)
+            completeReplica(replicationContext)
             logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskRecord}.")
         }
     }
@@ -140,17 +134,11 @@ class ScheduledReplicaJobBean(
             try {
                 val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
                 require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
-                taskDetail.objects.forEach { taskObject ->
+                taskDetail.objects.map { taskObject ->
                     // 初始化record detail
                     val context = initialContext(taskDetail, taskObject, taskRecord, clusterNode)
                     val scheduledReplicator = chooseReplicator(context)
                     scheduledReplicator.replica(context)
-                    // 更新task
-                    persistTask(context)
-                    // 开始同步
-                    startReplica(context)
-                    // 完成同步
-                    completeReplica(context, ReplicationStatus.SUCCESS)
                 }
                 ExecutionResult(status = ExecutionStatus.SUCCESS)
             } catch (exception: Throwable) {
@@ -219,28 +207,6 @@ class ScheduledReplicaJobBean(
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
         return ThreadPoolExecutor(100, 500, 30, TimeUnit.SECONDS,
             ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.AbortPolicy())
-    }
-
-
-
-    private fun completeReplica(context: ReplicaContext, status: ReplicationStatus) {
-        if (context.isCronJob()) {
-            context.status = ReplicationStatus.WAITING
-        } else {
-            context.status = status
-        }
-    }
-
-    private fun persistTask(context: ReplicaContext) {
-        context.task.status = context.status
-        taskRepository.save(context.task)
-        persistTaskLog(context)
-    }
-
-    private fun persistTaskLog(context: ReplicaContext) {
-        context.taskRecord.status = context.status
-        context.taskRecord.replicationProgress = context.progress
-        taskLogRepository.save(context.taskRecord)
     }
 
     private fun startReplica(context: ReplicaContext) {

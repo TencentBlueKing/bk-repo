@@ -29,45 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.job
+package com.tencent.bkrepo.replication.manager
 
-import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.stereotype.Component
 
 /**
- * 调度同步类
+ * 本地数据管理类
+ * 用于访问本地集群数据
  */
-@Service
-class ScheduledReplicator1(
-
-) {
-
-    @Value("\${spring.application.version}")
-    private var version: String = DEFAULT_VERSION
-
-    /**
-     * 开始执行同步
-     */
-    fun start(context: ReplicaContext) {
-        // 检查版本
-        checkVersion(context)
+@Component
+class LocalDataManager(
+    private val projectClient: ProjectClient,
+    private val repositoryClient: RepositoryClient,
+    private val nodeClient: NodeClient,
+    private val packageClient: PackageClient,
+    private val metadataClient: MetadataClient,
+    private val storageService: StorageService
+) : ClusterDataManager {
+    override fun findProjectById(projectId: String): ProjectInfo? {
+        return projectClient.getProjectInfo(projectId).data
     }
 
-    /**
-     * 校验和远程集群版本是否一致
-     */
-    private fun checkVersion(context: ReplicaContext) {
-        with(context) {
-            val remoteVersion = artifactReplicaClient.version().data.orEmpty()
-            if (version != remoteVersion) {
-                logger.warn("Local cluster's version[$version] is different from remote cluster[$remoteVersion].")
-            }
-        }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ScheduledReplicator1::class.java)
+    override fun findRepoByName(projectId: String, repoName: String, type: String?): RepositoryDetail? {
+        return repositoryClient.getRepoDetail(projectId, repoName, type).data
     }
 }

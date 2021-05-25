@@ -31,9 +31,18 @@
 
 package com.tencent.bkrepo.replication.job.replicator
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.manager.RemoteDataManager
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 
 /**
@@ -44,15 +53,117 @@ abstract class ScheduledReplicator : Replicator {
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 
+    @Autowired
+    private lateinit var replicaRecordService: ReplicaRecordService
+
+    @Autowired
+    protected lateinit var localDataManager: LocalDataManager
+
+    @Autowired
+    protected lateinit var remoteDataManager: RemoteDataManager
+
     override fun replica(context: ReplicaContext) {
-        checkVersion(context)
-        doReplica(context)
+        with(context) {
+            checkVersion(this)
+            // 同步项目
+            replicaProject(this)
+            // 同步仓库
+            replicaRepo(this)
+            if (includeAllData(this)) {
+                replicaAllData(this)
+            } else {
+                taskObject.packageConstraints.orEmpty().forEach {
+                    replicaByPackageConstraint(this, it)
+                }
+                taskObject.pathConstraints.orEmpty().forEach {
+                    replicaByPathConstraint(this, it)
+                }
+            }
+            completeReplica(this)
+        }
     }
 
     /**
-     * 同步具体逻辑，由子类实现
+     * 同步项目
      */
-    abstract fun doReplica(context: ReplicaContext)
+    abstract fun replicaProject(context: ReplicaContext)
+
+    /**
+     * 同步仓库
+     */
+    abstract fun replicaRepo(context: ReplicaContext)
+
+    /**
+     * 同步包具体逻辑，由子类实现
+     */
+    abstract fun replicaPackage(context: ReplicaContext)
+
+    /**
+     * 同步节点具体逻辑，由子类实现
+     */
+    abstract fun replicaNode(context: ReplicaContext)
+
+    /**
+     * 同步整个仓库数据
+     */
+    private fun replicaAllData(context: ReplicaContext) {
+        with(context) {
+            if (taskObject.repoType == RepositoryType.GENERIC) {
+                // 同步节点
+            } else {
+                // 同步包
+            }
+        }
+    }
+
+    /**
+     * 同步指定包的数据
+     */
+    private fun replicaByPackageConstraint(context: ReplicaContext, constraint: PackageConstraint) {
+        with(context) {
+            // 检查包是否存在
+            val packageSummary = packageClient.findPackageByKey(
+                projectId = localProjectId,
+                repoName = taskObject.localRepoName,
+                packageKey = constraint.packageKey
+            ).data
+            check(packageSummary != null) {
+                "Package[$constraint.packageKey] not found in repo[${taskObject.localRepoName}]"
+            }
+            val versions = if (constraint.versions == null) {
+                // 同步所有版本
+                // list all version
+            } else {
+                // 同步指定版本
+                packageClient.listAllVersion(
+                    projectId = localProjectId,
+                    repoName = taskObject.localRepoName,
+                    packageKey = constraint.packageKey,
+                    option = VersionListOption()
+                )
+                constraint.versions.orEmpty().forEach {
+
+                }
+            }
+        }
+    }
+
+    /**
+     * 同步指定路径的数据
+     * 广度优先遍历
+     */
+    private fun replicaByPathConstraint(context: ReplicaContext, constraint: PathConstraint) {
+        // nodeClient.list
+        constraint.path
+    }
+
+    /**
+     * 是否包含所有仓库数据
+     */
+    private fun includeAllData(context: ReplicaContext): Boolean {
+        return context.taskObject.packageConstraints != null &&
+            context.taskObject.pathConstraints != null
+    }
 
     /**
      * 校验和远程集群版本是否一致
@@ -67,12 +178,21 @@ abstract class ScheduledReplicator : Replicator {
     }
 
     /**
-     * 持久化任务
+     * 持久化同步进度
      */
-    protected fun persistTaskLog(context: ReplicaContext) {
-        context.taskRecord.status = context.status
-        context.taskRecord.replicationProgress = context.progress
-        taskLogRepository.save(context.taskRecord)
+    protected fun persistProgress(context: ReplicaContext) {
+        with(context) {
+            replicaRecordService.updateRecordDetailProgress(detailId, progress)
+        }
+    }
+
+    /**
+     * 持久化同步进度
+     */
+    protected fun completeReplica(context: ReplicaContext) {
+        with(context) {
+            replicaRecordService.completeRecordDetail(detailId, status = ExecutionStatus.SUCCESS)
+        }
     }
 
     companion object {

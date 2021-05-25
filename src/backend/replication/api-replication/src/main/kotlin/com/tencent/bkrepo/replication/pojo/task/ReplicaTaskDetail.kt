@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.replication.pojo.task
 
-import com.tencent.bkrepo.replication.pojo.task.`object`.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

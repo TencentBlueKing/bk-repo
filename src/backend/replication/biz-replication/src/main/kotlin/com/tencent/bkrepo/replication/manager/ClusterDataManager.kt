@@ -29,24 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.`object`
+package com.tencent.bkrepo.replication.manager
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
-@ApiModel("同步对象信息")
-data class ReplicaObjectInfo(
-    @ApiModelProperty("本地仓库")
-    val localRepoName: String,
-    @ApiModelProperty("远程项目")
-    val remoteProjectId: String,
-    @ApiModelProperty("远程仓库")
-    val remoteRepoName: String,
-    @ApiModelProperty("仓库类型")
-    val repoType: RepositoryType,
-    @ApiModelProperty("包限制条件")
-    val packageConstraints: List<PackageConstraint>?,
-    @ApiModelProperty("路径限制条件")
-    val pathConstraints: List<PathConstraint>?
-)
+/**
+ * 集群数据管理类
+ * 用于访问集群数据
+ */
+interface ClusterDataManager {
+
+    /**
+     * 查找项目
+     */
+    fun findProjectById(projectId: String): ProjectInfo?
+
+    /**
+     * 查找仓库
+     */
+    fun findRepoByName(projectId: String, repoName: String, type: String? = null): RepositoryDetail?
+
+}

@@ -32,13 +32,16 @@
 package com.tencent.bkrepo.replication.job.replicator
 
 import com.tencent.bkrepo.replication.job.ReplicaContext
+import org.springframework.stereotype.Component
 
 /**
  * blob数据同步器
  * blob
  */
-class BlobReplicator: Replicator {
-    override fun replica(context: ReplicaContext) {
+@Component
+class BlobReplicator: ScheduledReplicator() {
+
+    override fun doReplica(context: ReplicaContext) {
         TODO("Not yet implemented")
     }
 }
