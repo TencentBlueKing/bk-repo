@@ -2,11 +2,13 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.mongodb.DuplicateKeyException
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.replication.dao.ReplicaObjectDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
@@ -66,17 +68,21 @@ class ReplicaTaskServiceImpl(
 
     override fun create(request: ReplicaTaskCreateRequest) {
         with(request) {
-            validateParameter(this)
+            validateRequest(this)
             val key = uniqueId()
+            val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) as String
             // 查询集群节点信息
             val clusterNodeSet = remoteClusterIds.map {
-                convert(clusterNodeService.getByClusterId(it))
-                    ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, it)
+                val clusterNodeName = (convert(clusterNodeService.getByClusterId(it))
+                    ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, it))
+                // 验证连接可用
+                clusterNodeService.tryConnect(clusterNodeName.name)
+                clusterNodeName
             }.toSet()
             val task = TReplicaTask(
                 key = key,
                 name = name,
-                projectId = projectId,
+                projectId = localProjectId,
                 replicaType = replicaType,
                 setting = setting,
                 remoteClusters = clusterNodeSet,
@@ -87,22 +93,22 @@ class ReplicaTaskServiceImpl(
                 nextExecutionTime = null,
                 executionTimes = 0L,
                 enabled = enabled,
-                createdBy = operator,
+                createdBy = userId,
                 createdDate = LocalDateTime.now(),
-                lastModifiedBy = operator,
+                lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now()
             )
             // 创建replicaObject
-            val replicaObjectList = repoInfo.map {
+            val replicaObjectList = replicaTaskObjects.map {
                 TReplicaObject(
                     taskKey = key,
-                    localProjectId = projectId,
-                    localRepoName = it.repoName,
+                    localProjectId = localProjectId,
                     remoteProjectId = remoteProjectId,
+                    localRepoName = it.localRepoName,
                     remoteRepoName = it.remoteRepoName,
                     repoType = it.repoType,
-                    packageConstraints = packageConstraints?.toList(),
-                    pathConstraints = pathConstraints?.toList()
+                    packageConstraints = it.packageConstraints?.toList(),
+                    pathConstraints = it.pathConstraints?.toList()
                 )
             }
             try {
@@ -114,12 +120,12 @@ class ReplicaTaskServiceImpl(
         }
     }
 
-    private fun validateParameter(request: ReplicaTaskCreateRequest) {
+    private fun validateRequest(request: ReplicaTaskCreateRequest) {
         with(request) {
             Preconditions.checkNotBlank(name, this::name.name)
-            Preconditions.checkNotBlank(projectId, this::projectId.name)
-            Preconditions.checkNotBlank(remoteProjectId, this::remoteProjectId.name)
-            Preconditions.checkNotBlank(repoInfo, this::repoInfo.name)
+            Preconditions.checkNotBlank(localProjectId, this::name.name)
+            Preconditions.checkNotBlank(remoteProjectId, this::name.name)
+            Preconditions.checkNotBlank(replicaTaskObjects, this::replicaTaskObjects.name)
             Preconditions.checkNotBlank(remoteClusterIds, this::remoteClusterIds.name)
             // 校验计划名称长度
             if (name.length < TASK_NAME_LENGTH_MIN || name.length > TASK_NAME_LENGTH_MAX) {
@@ -134,7 +140,8 @@ class ReplicaTaskServiceImpl(
                 }
             }
             // 校验同步策略，按仓库同步可以选择多个仓库，按包或者节点同步只能在某个仓库下进行操作
-            if (repoInfo.size > 1 && (!packageConstraints.isNullOrEmpty() || !packageConstraints.isNullOrEmpty())) {
+            if (replicaTaskObjects.size > 1 && (!replicaTaskObjects.first().packageConstraints.isNullOrEmpty() ||
+                    !replicaTaskObjects.first().pathConstraints.isNullOrEmpty())) {
                 throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
             }
         }
