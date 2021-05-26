@@ -36,10 +36,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
@@ -49,13 +47,11 @@ import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
-import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.repository.TaskLogDetailRepository
@@ -91,72 +87,6 @@ class TaskServiceImpl(
     private val replicaTaskScheduler: ReplicaTaskScheduler,
     private val userResource: ServiceUserResource
 ) : TaskService {
-
-    override fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo {
-        with(request) {
-
-            validateRequest(request)
-            val task = TReplicaTask(
-                name = name,
-                key = StringPool.uniqueId(),
-                localProjectId = localProjectId,
-                localRepoName = localRepoName,
-                remoteProjectId =
-                    replicationInfo = replicationInfo,
-                type = type,
-                setting = setting,
-                status = ReplicationStatus.WAITING,
-                enabled = enabled,
-                createdBy = SecurityUtils.getUserId(),
-                createdDate = LocalDateTime.now(),
-                lastModifiedBy = SecurityUtils.getUserId(),
-                lastModifiedDate = LocalDateTime.now(),
-                description = description
-            )
-            taskRepository.insert(task)
-            logger.info("Create replica task[$request] success.")
-            return convert(task)!!
-        }
-    }
-
-    /**
-     * 验证
-     */
-    private fun validateRequest(request: ReplicaTaskCreateRequest) {
-        with(request) {
-            // 验证是否存在
-            taskRepository.findByName(name)?.let {
-                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
-            }
-            // 校验参数
-            Preconditions.checkNotNull(name, this::name.name)
-            Preconditions.checkNotNull(localProjectId, this::localProjectId.name)
-            Preconditions.checkNotNull(localRepoName, this::localRepoName.name)
-            // 暂时只支持全量
-            Preconditions.checkArgument(replicaType == ReplicaType.INCREMENTAL, this::replicaType.name)
-            // 远程集群不能为空
-            remoteClusterSet.forEach { clusterNodeService.tryConnect(it) }
-            // 包限制条件和路径限制条件只能选其一
-            Preconditions.checkArgument(packageConstraints != null && pathConstraints != null, "Constraints")
-            // 包限制条件
-            packageConstraints?.forEach { pkg ->
-                Preconditions.checkNotBlank(pkg.packageKey, this::packageConstraints.name)
-                pkg.versionSet?.forEach { version -> Preconditions.checkNotBlank(version, "versionSet") }
-            }
-            // 路径限制条件
-            pathConstraints?.forEach { PathUtils.normalizeFullPath(it) }
-            // 执行计划验证
-            if (!setting.executionPlan.executeImmediately) {
-                setting.executionPlan.executeTime?.let {
-                    Preconditions.checkArgument(it.isAfter(LocalDateTime.now()), "executeTime")
-                } ?: run {
-                    val cronExpression = setting.executionPlan.cronExpression
-                    Preconditions.checkNotBlank(cronExpression, "cronExpression")
-                    Preconditions.checkArgument(CronUtils.isValid(cronExpression.orEmpty()), "cronExpression")
-                }
-            }
-        }
-    }
 
     override fun detail(taskKey: String): ReplicaTaskInfo? {
         return taskRepository.findByKey(taskKey)?.let { convert(it) }

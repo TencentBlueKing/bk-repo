@@ -12,6 +12,7 @@ import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.repository.ClusterNodeRepository
@@ -32,6 +33,11 @@ class ClusterNodeServiceImpl(
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
         return convert(clusterNodeRepository.findByIdOrNull(id))
+    }
+
+    override fun getClusterNameById(id: String): ClusterNodeName {
+        return convertNodeName(clusterNodeDao.findById(id))
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, id)
     }
 
     override fun getByClusterName(name: String): ClusterNodeInfo? {
@@ -171,6 +177,15 @@ class ClusterNodeServiceImpl(
                     certificate = it.certificate,
                     username = it.username,
                     password = it.password
+                )
+            }
+        }
+
+        private fun convertNodeName(tClusterNode: TClusterNode?): ClusterNodeName? {
+            return tClusterNode?.let {
+                ClusterNodeName(
+                    id = it.id!!,
+                    name = it.name
                 )
             }
         }

@@ -34,6 +34,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 
 /**
@@ -45,6 +46,11 @@ interface ClusterNodeService {
      * 查询id为[id]的节点信息
      */
     fun getByClusterId(id: String): ClusterNodeInfo?
+
+    /**
+     * 查询id为[id]的节点名称
+     */
+    fun getClusterNameById(id: String): ClusterNodeName
 
     /**
      * 查询名称为[name]的节点信息

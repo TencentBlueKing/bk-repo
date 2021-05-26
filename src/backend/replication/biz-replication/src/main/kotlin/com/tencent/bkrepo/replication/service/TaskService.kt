@@ -38,15 +38,10 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicationInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicationTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationType
-import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import org.springframework.data.mongodb.core.query.Query
 
 interface TaskService {
-    /**
-     * 创建任务
-     */
-    fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo
 
     /**
      * 查询任务详情
