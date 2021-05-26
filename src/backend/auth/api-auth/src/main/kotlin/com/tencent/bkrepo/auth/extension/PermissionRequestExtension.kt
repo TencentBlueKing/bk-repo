@@ -24,7 +24,7 @@ package com.tencent.bkrepo.auth.extension
 import com.tencent.bkrepo.common.plugin.api.ExtensionPoint
 
 /**
- * 临时url通知扩展点
+ * git项目校验权限
  */
 interface PermissionRequestExtension : ExtensionPoint {
 
