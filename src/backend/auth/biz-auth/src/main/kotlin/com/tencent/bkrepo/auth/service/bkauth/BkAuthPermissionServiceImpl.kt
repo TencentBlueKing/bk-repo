@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.extension.PermissionRequestContext
+import com.tencent.bkrepo.auth.extension.PermissionRequestExtension
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
@@ -43,22 +45,24 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.plugin.api.PluginManager
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
- * 对接蓝鲸权限中心2.x
+ * 对接蓝鲸权限中心v0
  */
 class BkAuthPermissionServiceImpl constructor(
-    private val userRepository: UserRepository,
-    private val roleRepository: RoleRepository,
-    private val permissionRepository: PermissionRepository,
-    private val mongoTemplate: MongoTemplate,
-    private val repositoryClient: RepositoryClient,
+    userRepository: UserRepository,
+    roleRepository: RoleRepository,
+    permissionRepository: PermissionRepository,
+    mongoTemplate: MongoTemplate,
+    repositoryClient: RepositoryClient,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthService: BkAuthService,
-    private val bkAuthProjectService: BkAuthProjectService
+    private val bkAuthProjectService: BkAuthProjectService,
+    private val pluginManager: PluginManager
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
     private fun parsePipelineId(path: String): String? {
         val roads = path.split("/")
@@ -168,6 +172,21 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
+
+        // git ci项目校验单独权限
+        if (request.projectId != null && request.projectId!!.startsWith(GIT_PROJECT_PREFIX, true)) {
+            val context = PermissionRequestContext(
+                userId = request.uid,
+                projectId = request.projectId!!
+            )
+            var gitCheck = true
+            pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
+                gitCheck = it.check(context)
+                if (!gitCheck) return false
+            }
+            return gitCheck
+        }
+
         // 校验蓝盾平台账号项目权限
         if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {
             return true
@@ -189,5 +208,6 @@ class BkAuthPermissionServiceImpl constructor(
         private const val PIPELINE = "pipeline"
         private const val REPORT = "report"
         private const val LOG = "log"
+        private const val GIT_PROJECT_PREFIX = "git_"
     }
 }
