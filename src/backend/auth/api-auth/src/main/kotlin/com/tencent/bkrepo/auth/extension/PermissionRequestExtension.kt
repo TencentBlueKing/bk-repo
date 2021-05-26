@@ -28,9 +28,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-dependencies {
-    api(fileTree(mapOf("dir" to "lib", "include" to listOf("*.jar"))))
-    implementation(project(":common:common-api"))
-    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
-    api(project(":common:common-plugin:plugin-api"))
+
+package com.tencent.bkrepo.auth.extension
+
+import com.tencent.bkrepo.common.plugin.api.ExtensionPoint
+
+/**
+ * git项目校验权限
+ */
+interface PermissionRequestExtension : ExtensionPoint {
+
+    /**
+     * 创建临时url成功后，并且用户主动要求开启通知的情况下，对被分享者进行通知
+     */
+    fun check(context: PermissionRequestContext): Boolean
 }

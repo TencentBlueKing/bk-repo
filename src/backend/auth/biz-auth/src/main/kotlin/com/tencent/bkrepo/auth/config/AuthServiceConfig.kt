@@ -51,6 +51,7 @@ import com.tencent.bkrepo.auth.service.local.ClusterServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
+import com.tencent.bkrepo.common.plugin.api.PluginManager
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
@@ -129,7 +130,8 @@ class AuthServiceConfig {
         repositoryClient: RepositoryClient,
         bkAuthConfig: BkAuthConfig,
         bkAuthService: BkAuthService,
-        bkAuthProjectService: BkAuthProjectService
+        bkAuthProjectService: BkAuthProjectService,
+        pluginManager: PluginManager
     ): PermissionService {
         logger.debug("init BkAuthPermissionServiceImpl")
         return BkAuthPermissionServiceImpl(
@@ -140,7 +142,8 @@ class AuthServiceConfig {
             repositoryClient,
             bkAuthConfig,
             bkAuthService,
-            bkAuthProjectService
+            bkAuthProjectService,
+            pluginManager
         )
     }
 

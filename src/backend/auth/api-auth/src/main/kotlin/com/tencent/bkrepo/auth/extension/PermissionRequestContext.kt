@@ -28,9 +28,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-dependencies {
-    api(fileTree(mapOf("dir" to "lib", "include" to listOf("*.jar"))))
-    implementation(project(":common:common-api"))
-    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
-    api(project(":common:common-plugin:plugin-api"))
-}
+
+package com.tencent.bkrepo.auth.extension
+
+/**
+ * 权限校验context
+ */
+data class PermissionRequestContext(
+    val userId: String,
+    val projectId: String
+)
