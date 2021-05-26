@@ -179,6 +179,7 @@ class BkAuthPermissionServiceImpl constructor(
                 userId = request.uid,
                 projectId = request.projectId!!
             )
+            logger.debug("check git project permission [$context]")
             var gitCheck = true
             pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
                 gitCheck = it.check(context)
