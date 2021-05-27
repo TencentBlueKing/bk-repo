@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,17 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.endpoint
+package com.tencent.bkrepo.repository.config
 
-import com.tencent.bkrepo.common.storage.innercos.cl5.CL5Info
-import com.tencent.bkrepo.common.storage.innercos.cl5.CL5Utils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
 /**
- * 基于cl5的域名解析器
+ * 仓库-存储映射
+ * 用于新建仓库时指定storage credentials key
+ * 优先级：仓库名称 > 仓库类型
  */
-class CL5EndpointResolver(private val cl5Info: CL5Info) : EndpointResolver {
+data class RepoStorageMapping (
+    /**
+     * 仓库名称-存储映射
+     */
+    var names: MutableMap<String, String> = mutableMapOf(),
 
-    override fun resolveEndpoint(endpoint: String): String {
-        return CL5Utils.route(cl5Info).toString()
-    }
-}
+    /**
+     * 仓库类型-存储映射
+     */
+    var types: MutableMap<RepositoryType, String> = mutableMapOf()
+)

@@ -247,9 +247,6 @@ class UserServiceImpl constructor(
             val pwd = DataDigestUtils.md5FromStr(request.pwd!!)
             update.set(TUser::pwd.name, pwd)
         }
-        request.admin?.let {
-            update.set(TUser::admin.name, request.admin)
-        }
         request.name?.let {
             update.set(TUser::name.name, request.name)
         }

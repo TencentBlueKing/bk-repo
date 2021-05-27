@@ -121,7 +121,7 @@ class TemporaryAccessService(
                     projectId = it.projectId,
                     repoName = it.repoName,
                     fullPath = it.fullPath,
-                    url = generateAccessUrl(it, type),
+                    url = generateAccessUrl(it, type, host),
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate,
@@ -200,8 +200,9 @@ class TemporaryAccessService(
     /**
      * 根据token生成url
      */
-    private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType): String {
-        val builder = StringBuilder(UrlFormatter.formatHost(genericProperties.host))
+    private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
+        val urlHost = if (!host.isNullOrBlank()) host else genericProperties.host
+        val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
         when (tokenType) {
             TokenType.DOWNLOAD -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT)
             TokenType.UPLOAD -> builder.append(TEMPORARY_UPLOAD_ENDPOINT)

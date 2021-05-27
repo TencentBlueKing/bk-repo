@@ -80,7 +80,7 @@
 
 ## 下载文件
 
-- API: GET /generic/{project}/{repo}/{path}
+- API: GET /generic/{project}/{repo}/{path}?download=true
 - API 名称: download
 - 功能说明：
   - 中文：下载通用制品文件
@@ -96,6 +96,7 @@
   |project|string|是|无|项目名称|project name|
   |repo|string|是|无|仓库名称|repo name|
   |path|string|是|无|完整路径|full path|
+  |download|boolean|否|false|是否为下载请求。如果为true，响应体会添加Content-Disposition，强制浏览器进行下载；不加此参数，浏览器将根据情况展示文件预览 |is download request|
 
 - 请求头
 
@@ -110,7 +111,7 @@
   |Accept-Ranges|string|RFC 2616 中定义的服务器接收Range范围|RFC 2616 Accept-Ranges|
   |Cache-Control|string|RFC 2616 中定义的缓存指令|RFC 2616 Cache-Control|
   |Connection|string|RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。|RFC 2616 Connection|
-  |Content-Disposition|string|RFC 2616 中定义的文件名称|RFC 2616 Content-Disposition|
+  |Content-Disposition|string|RFC 2616 中定义的文件名称，当download=true才会添加此参数|RFC 2616 Content-Disposition|
   |Content-Length|long|RFC 2616 中定义的 HTTP 响应内容长度（字节）|RFC 2616 Content Length|
   |Content-Range|string|RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部|RFC 2616 Content-Range|
   |Content-Type|string|RFC 2616 中定义的 HTTP 响应内容类型（MIME）|RFC 2616 Content Length|

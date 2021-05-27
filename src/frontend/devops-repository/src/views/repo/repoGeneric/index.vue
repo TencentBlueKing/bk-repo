@@ -147,18 +147,30 @@
                     </bk-form-item>
                 </template>
                 <template v-else-if="formDialog.type === 'share'">
-                    <bk-form-item :label="$t('share') + $t('object')" :required="true" property="user">
+                    <bk-form-item label="授权用户" property="user">
                         <bk-tag-input
                             v-model="formDialog.user"
                             :list="Object.values(userList)"
-                            :clearable="false"
+                            placeholder="授权访问用户，为空则任意用户可访问，按Enter键确认"
                             trigger="focus"
                             allow-create
                             has-delete-icon>
                         </bk-tag-input>
                     </bk-form-item>
-                    <bk-form-item :label="`${$t('validity')}(${$t('day')})`" :required="true" property="time">
-                        <bk-input v-model.trim="formDialog.time" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                    <bk-form-item label="授权IP" property="ip">
+                        <bk-tag-input
+                            v-model="formDialog.ip"
+                            placeholder="授权访问IP，为空则任意IP可访问，按Enter键确认"
+                            trigger="focus"
+                            allow-create
+                            has-delete-icon>
+                        </bk-tag-input>
+                    </bk-form-item>
+                    <bk-form-item label="访问次数" property="permits">
+                        <bk-input v-model.trim="formDialog.permits" placeholder="请输入数字，小于等于0则永久有效"></bk-input>
+                    </bk-form-item>
+                    <bk-form-item :label="`${$t('validity')}(${$t('day')})`" property="time">
+                        <bk-input v-model.trim="formDialog.time" placeholder="请输入数字，小于等于0则永久有效"></bk-input>
                     </bk-form-item>
                 </template>
             </bk-form>
@@ -235,6 +247,8 @@
                     name: '',
                     title: '',
                     user: [],
+                    ip: [],
+                    permits: 1,
                     time: 1
                 },
                 // formDialog Rules
@@ -263,22 +277,17 @@
                             trigger: 'blur'
                         }
                     ],
-                    user: [
+                    permits: [
                         {
-                            required: true,
-                            message: this.$t('pleaseInput') + this.$t('user'),
+                            regex: /^[0-9]*$/,
+                            message: '请输入数字',
                             trigger: 'blur'
                         }
                     ],
                     time: [
                         {
-                            required: true,
-                            message: this.$t('pleaseInput') + this.$t('validity'),
-                            trigger: 'blur'
-                        },
-                        {
                             regex: /^[0-9]*$/,
-                            message: this.$t('pleaseInput') + this.$t('legit') + this.$t('validity'),
+                            message: '请输入数字',
                             trigger: 'blur'
                         }
                     ]
@@ -386,7 +395,7 @@
                     this.artifactoryList = records.map(v => {
                         return {
                             ...v,
-                            name: v.metadata.displayName || v.name
+                            name: (v.metadata && v.metadata.displayName) || v.name
                         }
                     })
                 }).finally(() => {
@@ -408,7 +417,7 @@
                     this.artifactoryList = records.map(v => {
                         return {
                             ...v,
-                            name: v.metadata.displayName || v.name
+                            name: (v.metadata && v.metadata.displayName) || v.name
                         }
                     })
                 }).finally(() => {
@@ -540,6 +549,8 @@
                     type: 'share',
                     title: `${this.$t('share')} (${this.selectedRow.name})`,
                     user: [],
+                    ip: [],
+                    permits: 1,
                     time: 1
                 }
             },
@@ -604,11 +615,14 @@
                 return this.shareArtifactory({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    fullPath: this.selectedRow.fullPath,
-                    body: {
-                        authorizedUserList: this.formDialog.user,
-                        expireSeconds: this.formDialog.time * 86400
-                    }
+                    fullPathSet: [this.selectedRow.fullPath],
+                    type: 'DOWNLOAD',
+                    host: `${location.origin}/web/generic`,
+                    needsNotify: true,
+                    ...(this.formDialog.ip.length ? { authorizedIpSet: this.formDialog.ip } : {}),
+                    ...(this.formDialog.user.length ? { authorizedUserSet: this.formDialog.user } : {}),
+                    ...(Number(this.formDialog.time) > 0 ? { expireSeconds: Number(this.formDialog.time) * 86400 } : {}),
+                    ...(Number(this.formDialog.permits) > 0 ? { permits: Number(this.formDialog.permits) } : {})
                 })
             },
             async deleteRes () {
@@ -699,7 +713,7 @@
                 const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + '?download=true',
                         '_self'
                     )
                 }).catch(e => {

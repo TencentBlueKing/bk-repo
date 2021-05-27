@@ -7,9 +7,11 @@ import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.git.artifact.GitContentArtifactInfo
 import com.tencent.bkrepo.git.artifact.GitRepositoryArtifactInfo
+import com.tencent.bkrepo.git.config.GitProperties
 import com.tencent.bkrepo.git.constant.DOT_GIT
 import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_NUMBER
 import com.tencent.bkrepo.git.constant.GIT_NODE_LIST_PAGE_SIZE
@@ -32,8 +34,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 
 @Service
 class GitCommonService {
@@ -47,13 +53,18 @@ class GitCommonService {
     lateinit var storageManager: StorageManager
 
     @Autowired
-    lateinit var storageProperties: StorageProperties
+    lateinit var gitProperties: GitProperties
+
+    @Autowired
+    lateinit var properties: StorageProperties
+
+    @Autowired
+    lateinit var storageService: StorageService
 
     fun generateWorkDir(artifactContext: ArtifactContext): File {
         with(artifactContext) {
-            val storageCredentials = storageCredentials ?: storageProperties.defaultStorageCredentials()
             val sha1 = "$projectId$repoName".sha1()
-            val dirName = "${storageCredentials.upload.location}/${sha1.substring(0, 2)}/${sha1.substring(2, 40)}"
+            val dirName = "${gitProperties.locationDir}/${sha1.substring(0, 2)}/${sha1.substring(2, 40)}"
             val directory = File(dirName)
             if (!directory.isDirectory && !directory.mkdirs()) {
                 throw IOException("failed to create work directory ${directory.canonicalPath}")
@@ -206,7 +217,20 @@ class GitCommonService {
         context: ArtifactContext
     ): Pair<ArtifactFile, NodeCreateRequest> {
         with(context) {
-            val artifactFile = file.toArtifactFile()
+            // 因为目前生产上配置的CacheStorageService会move掉文件，所以这里拷贝一份用于CacheStorageService issues/446
+            val cacheEnabled = properties.defaultStorageCredentials().cache.enabled
+            val artifactFile :ArtifactFile = if (cacheEnabled && !storageService.exist(
+                            file.toArtifactFile()
+                                    .getFileSha256(),
+                            storageCredentials) ) {
+                val dst = File(file.canonicalPath+"_tmp_#446")
+                Files.copy(FileInputStream(file),Paths.get(dst.canonicalPath),StandardCopyOption.REPLACE_EXISTING)
+                dst.toArtifactFile()
+            }else{
+                file.toArtifactFile()
+            }
+
+
             val gitArtifactInfo = artifactInfo as GitRepositoryArtifactInfo
             // .git目录的文件，root path为src/.git，其他文件为src/。计算出文件的相对src的路径
             gitArtifactInfo.path = FileUtil.entryName(file, workDir)

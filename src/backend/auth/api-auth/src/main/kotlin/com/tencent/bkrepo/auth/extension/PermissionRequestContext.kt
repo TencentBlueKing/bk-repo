@@ -29,56 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.constant
+package com.tencent.bkrepo.auth.extension
 
 /**
- * 认证相关
+ * 权限校验context
  */
-
-const val PROJECT_MANAGE_ID = "project_manage"
-
-const val PROJECT_MANAGE_NAME = "项目管理员"
-
-const val REPO_MANAGE_ID = "repo_manage"
-
-const val REPO_MANAGE_NAME = "仓库管理员"
-
-const val DEFAULT_PASSWORD = "blueking"
-
-const val AUTHORIZATION = "Authorization"
-
-const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] " +
-    "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
-
-const val BASIC_AUTH_HEADER_PREFIX = "Basic "
-
-const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
-
-const val RANDOM_KEY_LENGTH = 30
-
-const val BKREPO_TICKET = "bkrepo_ticket"
-
-const val AUTH_REPO_SUFFIX = "/create/repo"
-
-const val AUTH_PROJECT_SUFFIX = "/create/project"
-
-const val AUTH_CLUSTER_PREFIX = "/api/cluster"
-
-const val AUTH_API_PERMISSION_PREFIX = "/api/permission"
-const val AUTH_SERVICE_PERMISSION_PREFIX = "/service/permission"
-
-const val AUTH_API_ROLE_PREFIX = "/api/role"
-const val AUTH_SERVICE_ROLE_PREFIX = "/service/role"
-
-const val AUTH_API_USER_PREFIX = "/api/user"
-const val AUTH_SERVICE_USER_PREFIX = "/service/user"
-
-const val AUTH_API_DEPARTMENT_PREFIX = "/api/department"
-
-const val AUTH_SERVICE_ACCOUNT_PREFIX = "/service/account"
-const val AUTH_API_ACCOUNT_PREFIX = "/api/account"
-
-const val AUTH_ADMIN = "admin"
-const val AUTH_BUILTIN_ADMIN = "repo_admin"
-const val AUTH_BUILTIN_USER = "repo_user"
-const val AUTH_BUILTIN_VIEWER = "repo_viewer"
+data class PermissionRequestContext(
+    val userId: String,
+    val projectId: String
+)

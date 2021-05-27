@@ -29,23 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.endpoint
+package com.tencent.bkrepo.auth.extension
 
-class RegionEndpointBuilder : EndpointBuilder {
+import com.tencent.bkrepo.common.plugin.api.ExtensionPoint
 
-    override fun buildEndpoint(region: String, bucket: String): String {
-        return "%s.%s.tencent-cloud.com".format(bucket, formatRegion(region))
-    }
+/**
+ * git项目校验权限
+ */
+interface PermissionRequestExtension : ExtensionPoint {
 
-    companion object {
-        private fun formatRegion(region: String): String? {
-            return if (region == "hk" || region == "njc" || region == "gzc") {
-                "$region.vod"
-            } else if (region == "sh" || region == "sz") {
-                "$region.gfp"
-            } else {
-                region
-            }
-        }
-    }
+    /**
+     * 创建临时url成功后，并且用户主动要求开启通知的情况下，对被分享者进行通知
+     */
+    fun check(context: PermissionRequestContext): Boolean
 }
