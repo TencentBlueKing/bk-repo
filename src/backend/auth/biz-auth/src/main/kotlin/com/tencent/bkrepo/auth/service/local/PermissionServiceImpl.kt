@@ -222,8 +222,11 @@ open class PermissionServiceImpl constructor(
     private fun checkProjectAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         if (roles.isNotEmpty() && request.projectId != null) {
             roles.forEach {
-                val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
-                if (role != null && role.admin) return true
+                it?.let {
+                    val role =
+                        roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
+                    if (role != null && role.admin) return true
+                }
             }
         }
         return false
