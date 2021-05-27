@@ -180,12 +180,9 @@ class BkAuthPermissionServiceImpl constructor(
                 projectId = request.projectId!!
             )
             logger.debug("check git project permission [$context]")
-            var gitCheck = true
             pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
-                gitCheck = it.check(context)
-                if (!gitCheck) return false
+                return it.check(context)
             }
-            return gitCheck
         }
 
         // 校验蓝盾平台账号项目权限
