@@ -2,51 +2,9 @@
 
 [toc]
 
-## 说明
-
-- 现有方案需要把`operate_log` collection设置为Capped Collection
-
-```bash
-db.operate_log.isCapped()
-db.runCommand({"convertToCapped":"operate_log",size:10000})
-```
-
-## 测试集群连通状态
-
-- API: GET /replication/api/cluster/tryConnect
-- API 名称: test_connect
-- 功能说明：
-	- 中文：测试集群连通状态
-	- English：test connect status
-
-- 请求体:
-
-  ``` json
-  {
-      "name":"shanghai"
-  }
-  ```
-
-- 请求字段说明
-
-  |字段|类型|是否必须|默认值|说明|Description|
-  |---|---|---|---|---|---|
-  |name|string|是|无|节点名称|cluster node name|
-
-- 响应体:
-
-  ```
-  {
-    "code": 0,
-    "message": null,
-    "data": null,
-    "traceId": null
-  }
-  ```
-
 ## 创建集群同步任务
 
-- API: POST  /replication//api/task/cluster
+- API: POST  /replication/api/task/cluster
 - API 名称: create_replication_task
 - 功能说明：
 	- 中文：创建集群同步任务
