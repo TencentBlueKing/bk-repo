@@ -44,6 +44,10 @@ data class ClusterNodeInfo(
     @ApiModelProperty("集群名称")
     val name: String,
     @ApiModelProperty("集群节点类型")
+    val status: ClusterNodeStatus,
+    @ApiModelProperty("集群状态为非健康时显示失败原因")
+    val errorReason: String?,
+    @ApiModelProperty("集群节点类型")
     val type: ClusterNodeType,
     @ApiModelProperty("集群地址")
     val url: String,

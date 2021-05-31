@@ -65,7 +65,7 @@ class ClusterNodeController(
         return ResponseBuilder.success(clusterNodeService.getByClusterId(id))
     }
 
-    @ApiOperation("根据id查询节点详情")
+    @ApiOperation("根据name查询节点详情")
     @GetMapping("/info")
     fun getByClusterName(@RequestParam name: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterName(name))

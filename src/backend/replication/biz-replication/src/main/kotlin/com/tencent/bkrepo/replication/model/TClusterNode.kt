@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.model
 
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -47,6 +48,14 @@ data class TClusterNode(
      */
     @Indexed(unique = true)
     var name: String,
+    /**
+     * 集群状态
+     */
+    val status: ClusterNodeStatus,
+    /**
+     * 状态为非健康时显示失败原因
+     */
+    val errorReason: String? = null,
     /**
      * 集群类型
      */

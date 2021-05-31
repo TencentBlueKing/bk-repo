@@ -13,6 +13,7 @@ import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.repository.ClusterNodeRepository
@@ -74,6 +75,7 @@ class ClusterNodeServiceImpl(
             }
             val clusterNode = TClusterNode(
                 name = name,
+                status = ClusterNodeStatus.HEALTHY,
                 url = UrlFormatter.formatUrl(url),
                 username = username,
                 password = password,
@@ -84,6 +86,8 @@ class ClusterNodeServiceImpl(
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now()
             )
+            // 检测远程集群网络连接是否可用
+            tryConnect(convertRemoteInfo(clusterNode)!!)
             return try {
                 clusterNodeDao.insert(clusterNode)
                     .also { logger.info("Create cluster node [$name] with url [$url] success.") }
@@ -156,6 +160,8 @@ class ClusterNodeServiceImpl(
                 ClusterNodeInfo(
                     id = it.id!!,
                     name = it.name,
+                    status = it.status,
+                    errorReason = it.errorReason,
                     type = it.type,
                     url = it.url,
                     username = it.username,
