@@ -167,8 +167,8 @@
   |name|string|任务名称|task name|
   |projectId|string/所属项目id|task projectId|
   |replicaType|enum|[SCHEDULED,REAL_TIME]|replica type|
-  |setting|object|是|无|计划相关设置|task setting|
-  |remoteClusters|set|是|无|远程集成节点信息|the remote cluster node info|
+  |setting|object|计划相关设置|task setting|
+  |remoteClusters|set|远程集成节点信息|the remote cluster node info|
   |description|string|任务描述信息|task description|
   |lastExecutionStatus|enum|[RUNNING,SUCCESS,FAILED]|task last execution status|
   |lastExecutionTime|date|上次执行时间|task last execution time|

@@ -27,13 +27,13 @@ import org.springframework.web.bind.annotation.RestController
 class ReplicaRecordController(
     private val replicaRecordService: ReplicaRecordService
 ) {
-    @ApiOperation("根据key查询任务执行日志")
+    @ApiOperation("根据taskKey查询任务执行日志")
     @GetMapping("/list/{key}")
     fun listRecordsByTaskKey(@PathVariable key: String): Response<List<ReplicaRecordInfo>> {
         return ResponseBuilder.success(replicaRecordService.listRecordsByTaskKey(key))
     }
 
-    @ApiOperation("根据key查询任务执行日志")
+    @ApiOperation("根据recordId查询任务执行日志详情")
     @GetMapping("/detail/list/{recordId}")
     fun listDetailsByRecordId(@PathVariable recordId: String): Response<List<ReplicaRecordDetail>> {
         return ResponseBuilder.success(replicaRecordService.listDetailsByRecordId(recordId))
