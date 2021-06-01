@@ -34,7 +34,7 @@ package com.tencent.bkrepo.replication.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
-import org.springframework.data.mongodb.core.query.Criteria
+import com.tencent.bkrepo.replication.util.ClusterQueryHelper
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
@@ -58,9 +58,6 @@ class ClusterNodeDao : SimpleMongoDao<TClusterNode>() {
      * @param type 集群类型
      */
     fun listByNameAndType(name: String? = null, type: ClusterNodeType? = null): List<TClusterNode> {
-        val criteria = Criteria()
-        name?.let { criteria.and(TClusterNode::name.name).regex("^$name") }
-        type?.let { criteria.and(TClusterNode::type.name).isEqualTo(type) }
-        return this.find(Query(criteria))
+        return this.find(ClusterQueryHelper.clusterListQuery(name, type))
     }
 }

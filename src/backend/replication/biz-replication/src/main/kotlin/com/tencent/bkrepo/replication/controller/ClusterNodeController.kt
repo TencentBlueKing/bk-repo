@@ -31,10 +31,12 @@
 
 package com.tencent.bkrepo.replication.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
@@ -90,6 +92,14 @@ class ClusterNodeController(
         type: ClusterNodeType? = null
     ): Response<List<ClusterNodeInfo>> {
         return ResponseBuilder.success(clusterNodeService.listClusterNodes(name, type))
+    }
+
+    @ApiOperation("查询所有的集群节点")
+    @GetMapping("/page")
+    fun listClusterNodesPage(
+        option: ClusterListOption
+    ): Response<Page<ClusterNodeInfo>> {
+        return ResponseBuilder.success(clusterNodeService.listClusterNodesPage(option))
     }
 
     @ApiOperation("根据名称判断集群节点是否存在")

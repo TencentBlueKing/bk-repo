@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
@@ -73,6 +75,13 @@ interface ClusterNodeService {
      * @param type 集群类型过滤
      */
     fun listClusterNodes(name: String?, type: ClusterNodeType?): List<ClusterNodeInfo>
+
+    /**
+     * 分页查询节点列表
+     *
+     * @param option 列表选项
+     */
+    fun listClusterNodesPage(option: ClusterListOption): Page<ClusterNodeInfo>
 
     /**
      * 判断名称为[name]的集群节点是否存在

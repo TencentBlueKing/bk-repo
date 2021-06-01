@@ -3,13 +3,16 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TClusterNode
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
@@ -18,6 +21,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.repository.ClusterNodeRepository
 import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.replication.util.ClusterQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.repository.findByIdOrNull
@@ -57,6 +61,14 @@ class ClusterNodeServiceImpl(
 
     override fun listClusterNodes(name: String?, type: ClusterNodeType?): List<ClusterNodeInfo> {
         return clusterNodeDao.listByNameAndType(name, type).map { convert(it)!! }
+    }
+
+    override fun listClusterNodesPage(option: ClusterListOption): Page<ClusterNodeInfo> {
+        val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
+        val query = ClusterQueryHelper.clusterListQuery(option.name, option.type)
+        val totalRecords = clusterNodeDao.count(query)
+        val records = clusterNodeDao.find(query.with(pageRequest)).map { convert(it)!! }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     override fun existClusterName(name: String): Boolean {

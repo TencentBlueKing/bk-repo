@@ -181,7 +181,7 @@
   |---|---|---|---|
   |id|string|集群节点id|cluster node id|
   |name|string|集群节点名称|cluster node name|
-  |status|enum|集群节点状态|cluster node status|
+  |status|enum|[HEALTHY,UNHEALTHY]|cluster node status|
   |errorReason|string/集群状态问题错误原因|cluster node status failed reason|
   |type|string|集群节点类型|cluster node type|
   |url|string|集群节点url|cluster node url|
@@ -376,7 +376,7 @@
   |---|---|---|---|
   |id|string|集群节点id|cluster node id|
   |name|string|集群节点名称|cluster node name|
-  |status|enum|集群节点状态|cluster node status|
+  |status|enum|[HEALTHY,UNHEALTHY]|cluster node status|
   |errorReason|string/集群状态问题错误原因|cluster node status failed reason|
   |type|string|集群节点类型|cluster node type|
   |url|string|集群节点url|cluster node url|
