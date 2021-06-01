@@ -387,3 +387,72 @@
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
+
+## 分页列表查询集群节点
+
+- API: GET /replication/api/cluster/page?name=shanghai&type=EDGE
+- API 名称: list_cluster_node_page
+- 功能说明：
+  - 中文：分页列表查询集群节点
+  - English：list cluster node page
+- 请求体
+  此接口无请求体
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |pageNumber|int|是|无|当前页|page number|
+  |pageSize|int|是|无|分页数量|page size|
+  |name|string|否|无|集群节点名称|cluster name|
+  |type|string|否|无|[EDGE,CENTER,STANDALONE]|cluster type|
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+      "pageNumber": 0,
+      "pageSize": 1,
+      "totalRecords": 18,
+      "totalPages": 2,
+      "records": [
+        {
+      	  "id":"609a57ddba727966d138c51e",
+      	  "name":"shanghai",
+          "status":"HEALTHY",
+          "errorReason":null,
+          "type":"EDGE",
+          "url":"http://backup.bkrepo.xxx.com",
+          "username":"admin",
+          "password":"password",
+          "certificate":null,
+          "createdBy" : "system",
+          "createdDate" : "2020-03-16T12:13:03.371",
+          "lastModifiedBy" : "system",
+          "lastModifiedDate" : "2020-03-16T12:13:03.371"
+        }
+      ]
+    },
+    "traceId": null
+  }
+  ```
+
+- data字段说明
+
+  |字段|类型|说明|Description|
+  |---|---|---|---|
+  |id|string|集群节点id|cluster node id|
+  |name|string|集群节点名称|cluster node name|
+  |status|enum|[HEALTHY,UNHEALTHY]|cluster node status|
+  |errorReason|string/集群状态问题错误原因|cluster node status failed reason|
+  |type|string|集群节点类型|cluster node type|
+  |url|string|集群节点url|cluster node url|
+  |username|string|集群节点用户名|cluster node username|
+  |password|string|集群节点密码|cluster node password|
+  |certificate|string|集群节点证书|cluster node certificate|
+  |createdBy|string|创建者|create user|
+  |createdDate|string|创建时间|create time|
+  |lastModifiedBy|string|上次修改者|last modify user|
+  |lastModifiedDate|string|上次修改时间|last modify time|
