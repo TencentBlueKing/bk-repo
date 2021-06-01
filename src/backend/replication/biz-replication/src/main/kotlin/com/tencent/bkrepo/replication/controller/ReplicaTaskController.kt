@@ -41,6 +41,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -53,6 +54,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 数据同步任务接口
  */
+@Api("任务接口")
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api/task")

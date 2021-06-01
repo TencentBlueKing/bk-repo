@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
@@ -9,9 +11,11 @@ import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
@@ -126,6 +130,21 @@ class ReplicaRecordServiceImpl(
             replicaRecordDetailDao.deleteByRecordId(it.id!!)
         }
         replicaRecordDao.deleteByTaskKey(key)
+    }
+
+    override fun listRecordDetailPage(
+        recordId: String,
+        option: ReplicaRecordDetailListOption
+    ): Page<ReplicaRecordDetail> {
+        val pageNumber = option.pageNumber
+        val pageSize = option.pageSize
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val query = TaskRecordQueryHelper.detailListQuery(
+            recordId, option.packageName, option.repoName, option.clusterName
+        )
+        val totalRecords = replicaRecordDetailDao.count(query)
+        val records = replicaRecordDetailDao.find(query.with(pageRequest)).map { convert(it)!! }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     companion object {

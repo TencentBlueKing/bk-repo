@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.replication.service
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 
@@ -110,4 +112,12 @@ interface ReplicaRecordService {
      * @param key 任务key
      */
     fun deleteByTaskKey(key: String)
+
+    /**
+     * 分页查询执行日志详情列表
+     *
+     * @param recordId 日志id
+     * @param option 列表选项
+     */
+    fun listRecordDetailPage(recordId: String, option: ReplicaRecordDetailListOption): Page<ReplicaRecordDetail>
 }
