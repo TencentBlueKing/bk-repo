@@ -1,6 +1,7 @@
 <template>
     <div class="repo-list-container">
         <header class="repo-list-header">
+            <!-- ci模式下只有generic类型 -->
             <div class="repo-list-search" v-if="MODE_CONFIG !== 'ci'">
                 <label class="form-label">{{$t('repoType')}}:</label>
                 <bk-select
