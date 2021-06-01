@@ -182,6 +182,15 @@ class ReplicaTaskServiceImpl(
         logger.info("delete task [$key] success.")
     }
 
+    override fun toggleStatus(key: String) {
+        val task = taskRepository.findByKey(key)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
+        task.enabled = !task.enabled
+        task.lastModifiedBy = SecurityUtils.getUserId()
+        task.lastModifiedDate = LocalDateTime.now()
+        taskRepository.save(task)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaTaskServiceImpl::class.java)
         private const val TASK_NAME_LENGTH_MIN = 2

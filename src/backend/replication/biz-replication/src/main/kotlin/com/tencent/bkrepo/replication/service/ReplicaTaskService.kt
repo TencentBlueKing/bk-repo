@@ -81,4 +81,9 @@ interface ReplicaTaskService {
      * @param key 任务唯一key
      */
     fun deleteByTaskKey(key: String)
+
+    /**
+     * 根据[key]切换任务状态
+     */
+    fun toggleStatus(key: String)
 }
