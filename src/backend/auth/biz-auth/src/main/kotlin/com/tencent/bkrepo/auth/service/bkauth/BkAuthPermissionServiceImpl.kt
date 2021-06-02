@@ -83,7 +83,7 @@ class BkAuthPermissionServiceImpl constructor(
             //         return false
             //     }
             // }
-            logger.info("check devops permission request [$request]")
+            logger.debug("check devops permission request [$request]")
             // devops请求，根据配置允许匿名访问
             if (appId == bkAuthConfig.devopsAppId &&
                 request.uid == ANONYMOUS_USER &&
