@@ -13,6 +13,8 @@ import com.tencent.bkrepo.git.constant.PARAMETER_HUBTYPE
 import com.tencent.bkrepo.git.constant.PARAMETER_OWNER
 import com.tencent.bkrepo.git.constant.DOT_GIT
 import com.tencent.bkrepo.git.constant.PATH_SYNC
+import com.tencent.bkrepo.git.constant.X_DEVOPS_BUILD_ID
+import com.tencent.bkrepo.git.constant.X_DEVOPS_PIPELINE_ID
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
@@ -52,7 +54,11 @@ class GitRepoInterceptor : HandlerInterceptor {
                 uriAttribute[REPO_NAME] = realRepoName
 
                 if (!request.requestURI.endsWith(PATH_SYNC)) return true
-                logger.info("receive sync request $uri")
+                logger.info(
+                    "receive $X_DEVOPS_BUILD_ID:${request.getHeader(X_DEVOPS_BUILD_ID)} " +
+                        "$X_DEVOPS_PIPELINE_ID:${request.getHeader(X_DEVOPS_PIPELINE_ID)} " +
+                        "sync request $uri"
+                )
                 repositoryClient.getRepoDetail(projectId, realRepoName).data ?: let {
                     val req = RepoCreateRequest(
                         projectId = projectId,
