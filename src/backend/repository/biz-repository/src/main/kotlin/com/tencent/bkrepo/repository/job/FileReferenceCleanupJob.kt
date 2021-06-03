@@ -75,7 +75,7 @@ class FileReferenceCleanupJob(
         }
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(6)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     private fun cleanupCollection(sequence: Int, context: JobContext) {
         val query = Query.query(TFileReference::count.isEqualTo(0))
