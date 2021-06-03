@@ -118,7 +118,7 @@ class BkAuthPermissionServiceImpl constructor(
             }
 
             // 校验不通过的权限只输出日志，暂时不拦截
-            if (bkAuthConfig.devopsAuthEnabled) {
+            if (!pass) {
                 return if (!bkAuthConfig.devopsAuthEnabled) {
                     logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
                     true
