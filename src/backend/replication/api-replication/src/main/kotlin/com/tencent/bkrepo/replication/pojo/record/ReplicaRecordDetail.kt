@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.replication.pojo.record
 
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
@@ -43,6 +45,12 @@ data class ReplicaRecordDetail(
     val localCluster: String,
     @ApiModelProperty("远程集群名称")
     val remoteCluster: String,
+    @ApiModelProperty("本地仓库名称")
+    val localRepoName: String,
+    @ApiModelProperty("包限制")
+    val packageConstraint: PackageConstraint? = null,
+    @ApiModelProperty("路径名称")
+    val pathConstraint: PathConstraint? = null,
     @ApiModelProperty("运行状态")
     val status: ExecutionStatus,
     @ApiModelProperty("同步进度")

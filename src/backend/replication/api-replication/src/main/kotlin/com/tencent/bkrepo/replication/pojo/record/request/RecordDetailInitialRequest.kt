@@ -41,5 +41,7 @@ data class RecordDetailInitialRequest(
     @ApiModelProperty("本地集群名称")
     val localCluster: String,
     @ApiModelProperty("远程集群名称")
-    val remoteCluster: String
+    val remoteCluster: String,
+    @ApiModelProperty("本地仓库名称")
+    val localRepoName: String
 )

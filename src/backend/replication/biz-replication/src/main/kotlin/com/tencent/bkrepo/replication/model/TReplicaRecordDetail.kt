@@ -33,6 +33,8 @@ package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
@@ -57,6 +59,18 @@ data class TReplicaRecordDetail(
      * 远程cluster名称
      */
     val remoteCluster: String,
+    /**
+     * 本地仓库名称
+     */
+    val localRepoName: String,
+    /**
+     * 包限制
+     */
+    val packageConstraint: PackageConstraint? = null,
+    /**
+     * 路径限制
+     */
+    val pathConstraint: PathConstraint? = null,
     /**
      * 运行状态
      */

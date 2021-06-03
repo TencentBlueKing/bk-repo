@@ -170,7 +170,8 @@ class ScheduledReplicaJobBean(
         val request = RecordDetailInitialRequest(
             recordId = taskRecord.id,
             localCluster = taskDetail.task.projectId,
-            remoteCluster = clusterNodeInfo.name
+            remoteCluster = clusterNodeInfo.name,
+            localRepoName = taskObject.localRepoName
         )
         val detail = replicaRecordService.initialRecordDetail(request)
         return ReplicaContext(taskDetail, taskObject, clusterNodeInfo)
