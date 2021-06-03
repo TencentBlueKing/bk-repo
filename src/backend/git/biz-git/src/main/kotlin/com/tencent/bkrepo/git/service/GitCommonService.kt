@@ -219,17 +219,18 @@ class GitCommonService {
         with(context) {
             // 因为目前生产上配置的CacheStorageService会move掉文件，所以这里拷贝一份用于CacheStorageService issues/446
             val cacheEnabled = properties.defaultStorageCredentials().cache.enabled
-            val artifactFile :ArtifactFile = if (cacheEnabled && !storageService.exist(
-                            file.toArtifactFile()
-                                    .getFileSha256(),
-                            storageCredentials) ) {
-                val dst = File(file.canonicalPath+"_tmp_#446")
-                Files.copy(FileInputStream(file),Paths.get(dst.canonicalPath),StandardCopyOption.REPLACE_EXISTING)
+            val artifactFile: ArtifactFile = if (cacheEnabled && !storageService.exist(
+                file.toArtifactFile()
+                    .getFileSha256(),
+                storageCredentials
+            )
+            ) {
+                val dst = File(file.canonicalPath + "_tmp_#446")
+                Files.copy(FileInputStream(file), Paths.get(dst.canonicalPath), StandardCopyOption.REPLACE_EXISTING)
                 dst.toArtifactFile()
-            }else{
+            } else {
                 file.toArtifactFile()
             }
-
 
             val gitArtifactInfo = artifactInfo as GitRepositoryArtifactInfo
             // .git目录的文件，root path为src/.git，其他文件为src/。计算出文件的相对src的路径

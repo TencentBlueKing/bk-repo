@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
  * 用于新建仓库时指定storage credentials key
  * 优先级：仓库名称 > 仓库类型
  */
-data class RepoStorageMapping (
+data class RepoStorageMapping(
     /**
      * 仓库名称-存储映射
      */
