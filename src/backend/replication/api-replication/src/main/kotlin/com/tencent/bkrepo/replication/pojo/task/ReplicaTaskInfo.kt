@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.pojo.task
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
@@ -49,6 +50,8 @@ data class ReplicaTaskInfo(
     val name: String,
     @ApiModelProperty("所属项目")
     val projectId: String,
+    @ApiModelProperty("同步对象类型", required = true)
+    val replicaObjectType: ReplicaObjectType,
     @ApiModelProperty("同步类型")
     val replicaType: ReplicaType,
     @ApiModelProperty("任务设置")

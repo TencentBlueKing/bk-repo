@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.model
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
@@ -61,6 +62,10 @@ data class TReplicaTask(
      */
     @Indexed
     val projectId: String,
+    /**
+     * 同步对象类型
+     */
+    val replicaObjectType: ReplicaObjectType,
     /**
      * 同步类型
      */

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.pojo.task.request
 
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
@@ -43,6 +44,8 @@ data class ReplicaTaskCreateRequest(
     val name: String,
     @ApiModelProperty("本地项目", required = true)
     val localProjectId: String,
+    @ApiModelProperty("同步对象类型", required = true)
+    val replicaObjectType: ReplicaObjectType,
     @ApiModelProperty("任务对象信息", required = true)
     val replicaTaskObjects: List<ReplicaObjectInfo>,
     @ApiModelProperty("同步类型", required = true)

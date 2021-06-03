@@ -14,6 +14,7 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
@@ -82,6 +83,7 @@ class ReplicaTaskServiceImpl(
                 key = key,
                 name = name,
                 projectId = localProjectId,
+                replicaObjectType = replicaObjectType,
                 replicaType = replicaType,
                 setting = setting,
                 remoteClusters = clusterNodeSet,
@@ -135,31 +137,15 @@ class ReplicaTaskServiceImpl(
             }
             // 暂时只支持SCHEDULED,实时同步暂不支持
             Preconditions.checkArgument(replicaType == ReplicaType.SCHEDULED, this::replicaType.name)
-            // 校验同步策略，按仓库同步可以选择多个仓库，按包或者节点同步只能在某个仓库下进行操作
-            if (replicaTaskObjects.size > 1 && (!replicaTaskObjects.first().packageConstraints.isNullOrEmpty() ||
-                    !replicaTaskObjects.first().pathConstraints.isNullOrEmpty())) {
-                throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
-            }
-            // 包限制条件和路径限制条件只能选其一
-            replicaTaskObjects.forEach {
-                Preconditions.checkArgument(
-                    !it.packageConstraints.isNullOrEmpty() && !it.pathConstraints.isNullOrEmpty(), "Constraints"
-                )
-                // 包限制条件
-                if (!it.packageConstraints.isNullOrEmpty()) {
-                    it.packageConstraints?.forEach { pkg ->
-                        Preconditions.checkNotBlank(pkg.packageKey, pkg::packageKey.name)
-                        pkg.versions?.forEach { version -> Preconditions.checkNotBlank(version, "versions") }
-                    }
-                }
-                // 路径限制条件
-                if (!it.pathConstraints.isNullOrEmpty()) {
-                    it.pathConstraints?.forEach { pathConstraints ->
-                        PathUtils.normalizeFullPath(pathConstraints.path)
-                    }
-                }
-            }
+            // 校验同步策略，按仓库同步可以选择多个仓库，按包或者节点同步只能在单个仓库下进行操作
+            validateReplicaObject(this)
             // 执行计划验证
+            validateExecutionPlan(this)
+        }
+    }
+
+    private fun validateExecutionPlan(request: ReplicaTaskCreateRequest) {
+        with(request) {
             if (!setting.executionPlan.executeImmediately) {
                 setting.executionPlan.executeTime?.let {
                     Preconditions.checkArgument(it.isAfter(LocalDateTime.now()), "executeTime")
@@ -167,6 +153,39 @@ class ReplicaTaskServiceImpl(
                     val cronExpression = setting.executionPlan.cronExpression
                     Preconditions.checkNotBlank(cronExpression, "cronExpression")
                     Preconditions.checkArgument(CronUtils.isValid(cronExpression.orEmpty()), "cronExpression")
+                }
+            }
+        }
+    }
+
+    private fun validateReplicaObject(request: ReplicaTaskCreateRequest) {
+        when (request.replicaObjectType) {
+            ReplicaObjectType.REPOSITORY -> {
+                request.replicaTaskObjects.forEach {
+                    if (!it.packageConstraints.isNullOrEmpty() || !it.pathConstraints.isNullOrEmpty()) {
+                        throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+                    }
+                }
+            }
+            ReplicaObjectType.PACKAGE -> {
+                if (request.replicaTaskObjects.size != 1) {
+                    throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+                }
+                val packageConstraints = request.replicaTaskObjects.first().packageConstraints
+                Preconditions.checkNotBlank(packageConstraints, "packageConstraints")
+                packageConstraints?.forEach { pkg ->
+                    Preconditions.checkNotBlank(pkg.packageKey, pkg::packageKey.name)
+                    pkg.versions?.forEach { version -> Preconditions.checkNotBlank(version, "versions") }
+                }
+            }
+            ReplicaObjectType.PATH -> {
+                if (request.replicaTaskObjects.size != 1) {
+                    throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+                }
+                val pathConstraints = request.replicaTaskObjects.first().pathConstraints
+                Preconditions.checkNotBlank(pathConstraints, "pathConstraints")
+                pathConstraints?.forEach { pathConstraint ->
+                    PathUtils.normalizeFullPath(pathConstraint.path)
                 }
             }
         }
@@ -203,6 +222,7 @@ class ReplicaTaskServiceImpl(
                     key = it.key,
                     name = it.name,
                     projectId = it.projectId,
+                    replicaObjectType = it.replicaObjectType,
                     replicaType = it.replicaType,
                     setting = it.setting,
                     remoteClusters = it.remoteClusters,
