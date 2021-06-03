@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
@@ -43,7 +42,6 @@ import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
-import com.tencent.bkrepo.npm.exception.NpmArgumentNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
@@ -64,7 +62,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.InputStream
 
 @Service
 class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
@@ -78,7 +75,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
     @Transactional(rollbackFor = [Throwable::class])
     override fun detailVersion(artifactInfo: NpmArtifactInfo, packageKey: String, version: String): PackageVersionInfo {
         val name = PackageKeys.resolveNpm(packageKey)
-        val packageMetadata = queryPackageInfo(name)
+        val packageMetadata = queryPackageInfo(artifactInfo, name, false)
         if (!packageMetadata.versions.map.keys.contains(version)) {
             throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
         }
@@ -133,7 +130,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         logger.info("npm delete package version request: [$deleteRequest]")
         with(deleteRequest) {
             checkRepositoryExist(projectId, repoName)
-            val packageMetadata = queryPackageInfo(name)
+            val packageMetadata = queryPackageInfo(artifactInfo, name, false)
             val versionEntries = packageMetadata.versions.map.entries
             val iterator = versionEntries.iterator()
             // 如果删除最后一个版本直接删除整个包
@@ -146,7 +143,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 packageMetadata.versions.map[version]?.dist?.tarball?.substringAfterLast(
                     artifactInfo.getRepoIdentify()
                 ).orEmpty()
-            npmClientService.deleteVersion(operator, artifactInfo, name, version, tgzPath)
+            npmClientService.deleteVersion(artifactInfo, name, version, tgzPath)
             // 修改package.json文件的内容
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
         }
@@ -241,16 +238,6 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             }
         }
         return devDependenciesList
-    }
-
-    private fun queryPackageInfo(pkgName: String): NpmPackageMetaData {
-        pkgName.takeIf { pkgName.isNotBlank() } ?: throw NpmArgumentNotFoundException("argument [$pkgName] not found.")
-        val context = ArtifactQueryContext()
-        context.putAttribute(NPM_FILE_FULL_PATH, NpmUtils.getPackageMetadataPath(pkgName))
-        val inputStream =
-            ArtifactContextHolder.getRepository().query(context) as? InputStream
-                ?: throw NpmArtifactNotFoundException("package [$pkgName/package.json] not found.")
-        return inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
     }
 
     companion object {
