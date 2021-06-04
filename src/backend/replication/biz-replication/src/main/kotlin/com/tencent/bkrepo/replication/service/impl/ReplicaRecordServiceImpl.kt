@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
+import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
@@ -24,7 +25,8 @@ import java.time.LocalDateTime
 @Service
 class ReplicaRecordServiceImpl(
     private val replicaRecordDao: ReplicaRecordDao,
-    private val replicaRecordDetailDao: ReplicaRecordDetailDao
+    private val replicaRecordDetailDao: ReplicaRecordDetailDao,
+    private val replicaTaskDao: ReplicaTaskDao
 ) : ReplicaRecordService {
     override fun initialRecord(taskKey: String): ReplicaRecordInfo {
         val record = TReplicaRecord(
@@ -53,7 +55,12 @@ class ReplicaRecordServiceImpl(
                 errorReason = errorReason
             )
         }
+        val tReplicaTask = replicaTaskDao.findByKey(record.taskKey)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, record.taskKey)
+        tReplicaTask.lastExecutionStatus = status
         replicaRecordDao.save(record)
+        replicaTaskDao.save(tReplicaTask)
+        logger.info("complete record [$recordId], status from [${replicaRecordInfo.status}] to [$status].")
     }
 
     override fun initialRecordDetail(request: RecordDetailInitialRequest): ReplicaRecordDetail {

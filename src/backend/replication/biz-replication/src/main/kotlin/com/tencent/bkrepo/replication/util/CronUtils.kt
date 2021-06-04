@@ -36,7 +36,11 @@ import org.quartz.CronExpression
 import org.quartz.CronScheduleBuilder
 import org.quartz.TriggerBuilder
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.Date
+
 
 object CronUtils {
 
@@ -65,7 +69,7 @@ object CronUtils {
     }
 
     // 获取下次执行时间
-    fun getNextTriggerTime(id: String, cron: String): String? {
+    fun getNextTriggerTime(id: String, cron: String): LocalDateTime? {
         if (!CronExpression.isValidExpression(cron)) {
             return null
         }
@@ -73,6 +77,6 @@ object CronUtils {
             .withSchedule(CronScheduleBuilder.cronSchedule(cron)).build()
         val time0 = trigger.startTime
         val time1 = trigger.getFireTimeAfter(time0)
-        return dateFormat.format(time1.time)
+        return time1.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
     }
 }
