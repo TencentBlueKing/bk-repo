@@ -21,7 +21,7 @@
         props: {
             codeList: {
                 type: Array,
-                default: []
+                default: () => []
             },
             lineNumber: {
                 type: Boolean,

@@ -26,6 +26,9 @@ const repoDetail = () => import(/* webpackChunkName: "repoDetail" */'@/views/rep
 // const repoToken = () => import(/* webpackChunkName: "repoToken" */'@/views/repoToken')
 const userCenter = () => import(/* webpackChunkName: "userCenter" */'@/views/userCenter')
 const userManage = () => import(/* webpackChunkName: "userManage" */'@/views/userManage')
+const nodeManage = () => import(/* webpackChunkName: "nodeManage" */'@/views/nodeManage')
+const createPlan = () => import(/* webpackChunkName: "createPlan" */'@/views/nodeManage/createPlan')
+const logDetail = () => import(/* webpackChunkName: "logDetail" */'@/views/nodeManage/plan/logDetail')
 
 const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/repo/repoGeneric')
 
@@ -159,6 +162,54 @@ const routes = [
                 component: userManage,
                 meta: {
                     title: '用户管理'
+                }
+            },
+            {
+                path: 'nodeManage',
+                name: 'nodeManage',
+                component: nodeManage,
+                meta: {
+                    title: '节点管理'
+                }
+            },
+            {
+                path: 'planManage',
+                name: 'planManage',
+                component: nodeManage,
+                meta: {
+                    title: '分发计划'
+                }
+            },
+            {
+                path: 'nodeManage/createPlan',
+                name: 'createPlan',
+                component: createPlan,
+                meta: {
+                    title: '创建计划'
+                }
+            },
+            {
+                path: 'nodeManage/editPlan/:planId',
+                name: 'editPlan',
+                component: createPlan,
+                meta: {
+                    title: '编辑计划'
+                }
+            },
+            {
+                path: 'nodeManage/planDetail/:planId',
+                name: 'planDetail',
+                component: createPlan,
+                meta: {
+                    title: '计划详情'
+                }
+            },
+            {
+                path: 'nodeManage/logDetail/:logId',
+                name: 'logDetail',
+                component: logDetail,
+                meta: {
+                    title: '日志详情'
                 }
             }
         ]
