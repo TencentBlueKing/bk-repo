@@ -19,8 +19,7 @@
                 placeholder="请选择项目"
                 @change="changeProject"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
-                :list="projectList"
-            >
+                :list="projectList">
                 <bk-option v-for="option in projectList"
                     :key="option.id"
                     :id="option.id"
@@ -48,7 +47,7 @@
                 localStorage.setItem('projectId', projectId)
                 if (this.projectId === projectId) return
                 this.$router.push({
-                    name: this.$route.name || 'repoList',
+                    name: 'repoList',
                     params: {
                         projectId
                     },

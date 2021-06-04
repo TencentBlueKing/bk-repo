@@ -108,7 +108,7 @@
                         },
                         {
                             validator: this.asynCheckRepoName,
-                            message: this.$t('repoName') + this.$t('repeat'),
+                            message: this.$t('repoName') + '已存在',
                             trigger: 'blur'
                         }
                     ],
