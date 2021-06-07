@@ -54,7 +54,7 @@
                     <template slot-scope="props">
                         <div class="repo-name" @click="toRepoDetail(props.row)">
                             <icon size="24" :name="props.row.repoType" />
-                            <span class="ml10">{{props.row.name}}</span>
+                            <span class="ml10">{{replaceRepoName(props.row.name)}}</span>
                         </div>
                     </template>
                 </bk-table-column>
@@ -95,9 +95,9 @@
                     type: ''
                 },
                 pagination: {
-                    count: 1,
+                    count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 }
             }

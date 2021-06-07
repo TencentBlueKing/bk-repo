@@ -94,8 +94,8 @@
                 repoType: this.$route.query.type,
                 pagination: {
                     current: 1,
-                    limit: 10,
-                    count: 20,
+                    limit: 20,
+                    count: 0,
                     limitList: [10, 20, 40]
                 },
                 resultList: []

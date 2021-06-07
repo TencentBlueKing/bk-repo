@@ -74,7 +74,7 @@
                 <bk-button class="detail-btn" theme="primary" @click.stop="showDetail()">{{ $t('showDetail') }}</bk-button>
                 <div class="actions-btn flex-column">
                     <template v-if="selectedRow.fullPath !== selectedTreeNode.fullPath || query">
-                        <template v-if="repoName !== 'pipeline' && repoName !== 'report'">
+                        <template v-if="repoName !== 'pipeline'">
                             <bk-button @click.stop="renameRes()" text theme="primary">
                                 <i class="mr5 devops-icon icon-edit"></i>
                                 {{ $t('rename') }}
@@ -104,7 +104,7 @@
                         </template>
                     </template>
                     <template v-else>
-                        <template v-if="repoName !== 'pipeline' && repoName !== 'report'">
+                        <template v-if="repoName !== 'pipeline'">
                             <bk-button @click.stop="addFolder()" text theme="primary">
                                 <i class="mr5 devops-icon icon-folder-plus"></i>
                                 {{$t('create') + $t('folder')}}
@@ -230,9 +230,9 @@
                 selectedTreeNode: {},
                 // 分页信息
                 pagination: {
-                    count: 1,
+                    count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 },
                 // table单击事件，debounce
@@ -326,6 +326,17 @@
             repoName () {
                 return this.$route.query.name
             }
+        },
+        beforeRouteEnter (to, from, next) {
+            // 前端隐藏report仓库/log仓库
+            if (to.query.name === 'report' || to.query.name === 'log') {
+                next({
+                    name: 'repoList',
+                    params: {
+                        projectId: to.params.projectId
+                    }
+                })
+            } else next()
         },
         watch: {
             '$route.query.name' () {
