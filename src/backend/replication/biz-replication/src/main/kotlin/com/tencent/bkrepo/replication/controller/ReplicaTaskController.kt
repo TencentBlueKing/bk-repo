@@ -63,7 +63,7 @@ class ReplicaTaskController(
 ) {
     @ApiOperation("创建任务")
     @PostMapping("/create")
-    fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo> {
+    fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<Void> {
         replicaTaskService.create(request)
         return ResponseBuilder.success()
     }

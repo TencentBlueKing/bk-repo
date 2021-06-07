@@ -34,6 +34,7 @@ import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoTaskQuery
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class ReplicaTaskServiceImpl(
@@ -251,7 +252,11 @@ class ReplicaTaskServiceImpl(
                     lastExecutionTime = it.lastExecutionTime,
                     nextExecutionTime = it.nextExecutionTime,
                     executionTimes = it.executionTimes,
-                    enabled = it.enabled
+                    enabled = it.enabled,
+                    createdBy = it.createdBy,
+                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    lastModifiedBy = it.lastModifiedBy,
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }

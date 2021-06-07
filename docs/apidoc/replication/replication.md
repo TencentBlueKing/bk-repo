@@ -13,36 +13,37 @@
 
   ```json
   {
-    "name":"计划",
-    "localProjectId":"bkrepo",
-    "replicaTaskObjects":[
+    "name": "计划",
+    "localProjectId": "bkrepo",
+    "replicaObjectType": "REPOSITORY",
+    "replicaTaskObjects": [
       {
-        "localRepoName":"maven-local",
-        "remoteProjectId":"bkrepo",
-        "remoteRepoName":"maven-local",
-        "repoType":"MAVEN",
-        "packageConstraints":[
+        "localRepoName": "maven-local",
+        "remoteProjectId": "bkrepo",
+        "remoteRepoName": "maven-local",
+        "repoType": "MAVEN",
+        "packageConstraints": [
           {
-            "packageKey":"gav://com.alibaba:fastjson",
-            "versions":["1.2.47","1.2.48"]
+            "packageKey": "gav://com.alibaba:fastjson",
+            "versions": ["1.2.47","1.2.48"]
           }
         ],
-        "pathConstraints":[]
+        "pathConstraints": []
       }
     ],
-    "replicaType":"SCHEDULED",
-    "setting":{
-      "rateLimit":0,
-      "includeMetadata":true,
-      "conflictStrategy":"SKIP",
-      "errorStrategy":"CONTINUE",
-      "executionPlan":{
-        "executeImmediately":true
+    "replicaType": "SCHEDULED",
+    "setting": {
+      "rateLimit": 0,
+      "includeMetadata": true,
+      "conflictStrategy": "SKIP",
+      "errorStrategy": "CONTINUE",
+      "executionPlan": {
+        "executeImmediately": true
       }
     },
-    "remoteClusterIds":["651095dfe0524ce9b3ab53d13532361c","329fbcda45944fb9ae5c2573acd7bd2a"],
-    "enabled":true,
-    "description":"test replica task"
+    "remoteClusterIds": ["651095dfe0524ce9b3ab53d13532361c","329fbcda45944fb9ae5c2573acd7bd2a"],
+    "enabled": true,
+    "description": "test replica task"
   }
   ```
 
@@ -52,6 +53,7 @@
   |---|---|---|---|---|---|
   |name|string|是|无|计划名称|replication name|
   |localProjectId|string|是|无|本地项目ID|the local project Id|
+  |replicaObjectType|enum|是|无|[REPOSITORY,PACKAGE,PATH]|replication object type|
   |replicaTaskObjects|object|是|无|同步对象信息|replication object info|
   |replicaType|enum|是|SCHEDULED|[SCHEDULED,REAL_TIME]|replication type|
   |setting|object|是|无|计划相关设置|task setting|
@@ -122,22 +124,22 @@
     "code": 0,
     "message": null,
     "data": {
-      "id":"609b573353ccce752bf9b85f",
-      "key":"784e49c5ba974a1e8ac503a840f65eb5",
-      "name":"测试分发计划",
-      "projectId":"bkrepo",
-      "replicaType":"SCHEDULED",
-      "setting":{
-        "rateLimit":0,
-        "includeMetadata":true,
-        "conflictStrategy":"SKIP",
-        "errorStrategy":"CONTINUE",
-        "executionPlan":{
-          "executeImmediately":true
+      "id": "609b573353ccce752bf9b85f",
+      "key": "784e49c5ba974a1e8ac503a840f65eb5",
+      "name": "测试分发计划",
+      "projectId": "bkrepo",
+      "replicaObjectType": "REPOSITORY",
+      "replicaType": "SCHEDULED",
+      "setting": {
+        "rateLimit": 0,
+        "includeMetadata": true,
+        "conflictStrategy": "SKIP",
+        "errorStrategy": "CONTINUE",
+        "executionPlan": {
+          "executeImmediately": true
         }
       },
-      "remoteClusters":
-      [
+      "remoteClusters": [
         {
           "id": "651095dfe0524ce9b3ab53d13532361c",
           "name": "shanghai"
@@ -147,12 +149,16 @@
           "name": "beijing"
         }
       ],
-      "description":"for test",
-      "lastExecutionStatus":"SUCCESS",
-      "lastExecutionTime":"2020-03-16T12:00:00.000",
-      "nextExecutionTime":"2020-03-17T12:00:00.000",
+      "description": "for test",
+      "lastExecutionStatus": "SUCCESS",
+      "lastExecutionTime": "2020-03-16T12:00:00.000",
+      "nextExecutionTime": "2020-03-17T12:00:00.000",
       "executionTimes": 5,
-      "enabled": true
+      "enabled": true,
+      "createdBy" : "system",
+      "createdDate" : "2020-03-16T12:13:03.371",
+      "lastModifiedBy" : "system",
+      "lastModifiedDate" : "2020-03-16T12:13:03.371"
     },
     "traceId": null
   }
@@ -166,6 +172,7 @@
   |key|string|任务唯一key|task key|
   |name|string|任务名称|task name|
   |projectId|string/所属项目id|task projectId|
+  |replicaObjectType|enum|是|无|[REPOSITORY,PACKAGE,PATH]|replication object type|
   |replicaType|enum|[SCHEDULED,REAL_TIME]|replica type|
   |setting|object|计划相关设置|task setting|
   |remoteClusters|set|远程集成节点信息|the remote cluster node info|
@@ -175,6 +182,10 @@
   |nextExecutionTime|date|下次执行时间|task next execution time|
   |executionTimes|long|执行次数|execution times|
   |enabled|bool|是|true|计划是否启动|do task enabled|
+  |createdBy|string|创建者|create user|
+  |createdDate|string|创建时间|create time|
+  |lastModifiedBy|string|上次修改者|last modify user|
+  |lastModifiedDate|string|上次修改时间|last modify time|
 
 ## 根据key查询任务详情
 
@@ -199,22 +210,22 @@
     "message": null,
     "data": {
       "task": {
-          "id":"609b573353ccce752bf9b85f",
-          "key":"784e49c5ba974a1e8ac503a840f65eb5",
-          "name":"测试分发计划",
-          "projectId":"bkrepo",
-          "replicaType":"SCHEDULED",
-          "setting":{
+          "id": "609b573353ccce752bf9b85f",
+          "key": "784e49c5ba974a1e8ac503a840f65eb5",
+          "name": "测试分发计划",
+          "projectId": "bkrepo",
+          "replicaObjectType": "REPOSITORY",
+          "replicaType": "SCHEDULED",
+          "setting": {
             "rateLimit":0,
             "includeMetadata":true,
-            "conflictStrategy":"SKIP",
-            "errorStrategy":"CONTINUE",
+            "conflictStrategy": "SKIP",
+            "errorStrategy": "CONTINUE",
             "executionPlan":{
               "executeImmediately":true
             }
           },
-          "remoteClusters":
-          [
+          "remoteClusters": [
             {
               "id": "651095dfe0524ce9b3ab53d13532361c",
               "name": "shanghai"
@@ -224,12 +235,16 @@
               "name": "beijing"
             }
           ],
-          "description":"for test",
-          "lastExecutionStatus":"SUCCESS",
-          "lastExecutionTime":"2020-03-16T12:00:00.000",
-          "nextExecutionTime":"2020-03-17T12:00:00.000",
+          "description": "for test",
+          "lastExecutionStatus": "SUCCESS",
+          "lastExecutionTime": "2020-03-16T12:00:00.000",
+          "nextExecutionTime": "2020-03-17T12:00:00.000",
           "executionTimes": 5,
-          "enabled": true
+          "enabled": true,
+          "createdBy" : "system",
+          "createdDate" : "2020-03-16T12:13:03.371",
+          "lastModifiedBy" : "system",
+          "lastModifiedDate" : "2020-03-16T12:13:03.371"
       },
       "objects": [
         {
@@ -304,22 +319,22 @@
       "totalPages": 2,
       "records": [
         {
-          "id":"609b573353ccce752bf9b85f",
-          "key":"784e49c5ba974a1e8ac503a840f65eb5",
-          "name":"testTask",
-          "projectId":"bkrepo",
-          "replicaType":"SCHEDULED",
-          "setting":{
+          "id": "609b573353ccce752bf9b85f",
+          "key": "784e49c5ba974a1e8ac503a840f65eb5",
+          "name": "testTask",
+          "projectId": "bkrepo",
+          "replicaObjectType": "REPOSITORY",
+          "replicaType": "SCHEDULED",
+          "setting": {
             "rateLimit":0,
             "includeMetadata":true,
-            "conflictStrategy":"SKIP",
-            "errorStrategy":"CONTINUE",
-            "executionPlan":{
+            "conflictStrategy": "SKIP",
+            "errorStrategy": "CONTINUE",
+            "executionPlan": {
               "executeImmediately":true
             }
           },
-          "remoteClusters":
-          [
+          "remoteClusters": [
             {
               "id": "651095dfe0524ce9b3ab53d13532361c",
               "name": "shanghai"
@@ -329,12 +344,16 @@
               "name": "beijing"
             }
           ],
-          "description":"for test",
-          "lastExecutionStatus":"SUCCESS",
-          "lastExecutionTime":"2020-03-16T12:00:00.000",
-          "nextExecutionTime":"2020-03-17T12:00:00.000",
+          "description": "for test",
+          "lastExecutionStatus": "SUCCESS",
+          "lastExecutionTime": "2020-03-16T12:00:00.000",
+          "nextExecutionTime": "2020-03-17T12:00:00.000",
           "executionTimes": 5,
-          "enabled": true
+          "enabled": true,
+          "createdBy" : "system",
+          "createdDate" : "2020-03-16T12:13:03.371",
+          "lastModifiedBy" : "system",
+          "lastModifiedDate" : "2020-03-16T12:13:03.371"
         }
       ]
     },

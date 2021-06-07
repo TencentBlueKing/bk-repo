@@ -69,5 +69,13 @@ data class ReplicaTaskInfo(
     @ApiModelProperty("执行次数")
     var executionTimes: Long,
     @ApiModelProperty("是否启用")
-    var enabled: Boolean = true
+    var enabled: Boolean = true,
+    @ApiModelProperty("创建者")
+    val createdBy: String,
+    @ApiModelProperty("创建日期")
+    val createdDate: String,
+    @ApiModelProperty("上次修改者")
+    val lastModifiedBy: String,
+    @ApiModelProperty("上次修改日期")
+    val lastModifiedDate: String
 )
