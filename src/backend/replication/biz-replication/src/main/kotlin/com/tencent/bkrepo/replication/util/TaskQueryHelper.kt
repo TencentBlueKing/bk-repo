@@ -4,6 +4,7 @@ import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.TaskSortType
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -21,13 +22,14 @@ object TaskQueryHelper {
     fun buildListQuery(
         name: String? = null,
         lastExecutionStatus: ExecutionStatus? = null,
-        enabled: Boolean? = null
+        enabled: Boolean? = null,
+        sortType: TaskSortType?
     ): Query {
         val criteria = Criteria()
         name?.takeIf { it.isNotBlank() }?.apply { criteria.and(TReplicaTask::name).regex("^$this") }
         lastExecutionStatus?.apply { criteria.and(TReplicaTask::lastExecutionStatus).isEqualTo("$this") }
         enabled?.apply { criteria.and(TReplicaTask::enabled).isEqualTo("$this") }
-        return Query(criteria).with(Sort.by(Sort.Direction.DESC, TReplicaTask::createdDate.name))
+        return Query(criteria).with(Sort.by(Sort.Direction.DESC, sortType?.key))
     }
 
     fun undoTaskQuery(): Query {

@@ -57,7 +57,7 @@ class ReplicaTaskServiceImpl(
 
     override fun listTasksPage(param: TaskPageParam): Page<ReplicaTaskInfo> {
         with(param) {
-            val query = buildListQuery(name, lastExecutionStatus, enabled)
+            val query = buildListQuery(name, lastExecutionStatus, enabled, sortType)
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val totalRecords = replicaTaskDao.count(query)
             val records = replicaTaskDao.find(query.with(pageRequest)).map { convert(it)!! }

@@ -34,6 +34,7 @@ package com.tencent.bkrepo.replication.pojo.task.request
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.task.TaskSortType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -48,5 +49,7 @@ data class TaskPageParam(
     @ApiModelProperty("上次执行状态")
     val lastExecutionStatus: ExecutionStatus? = null,
     @ApiModelProperty("计划是否开启")
-    val enabled: Boolean? = null
+    val enabled: Boolean? = null,
+    @ApiModelProperty("排序字段")
+    val sortType: TaskSortType? = TaskSortType.CREATED_TIME
 )

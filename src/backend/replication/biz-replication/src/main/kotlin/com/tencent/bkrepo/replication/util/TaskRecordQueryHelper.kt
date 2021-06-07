@@ -20,11 +20,11 @@ object TaskRecordQueryHelper {
     ): Query {
         val criteria = where(TReplicaRecordDetail::recordId).isEqualTo(recordId)
             .apply {
-                packageName?.let { and(TReplicaRecordDetail::packageName).regex("^$it") }
+                packageName?.let { and("packageConstraint.packageKey").regex("^$it") }
             }.apply {
-                repoName?.let { and(TReplicaRecordDetail::repoName).regex("^$it") }
+                repoName?.let { and(TReplicaRecordDetail::localRepoName).isEqualTo(it) }
             }.apply {
-                clusterName?.let { and(TReplicaRecordDetail::remoteCluster).regex("^$it") }
+                clusterName?.let { and(TReplicaRecordDetail::remoteCluster).isEqualTo(it) }
             }
         return Query(criteria)
             .with(Sort.by(Sort.Order(Sort.Direction.DESC, TReplicaRecordDetail::startTime.name)))

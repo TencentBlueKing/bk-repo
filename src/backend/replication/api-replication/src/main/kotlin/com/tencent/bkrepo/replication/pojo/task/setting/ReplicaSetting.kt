@@ -52,6 +52,10 @@ data class ReplicaSetting(
      */
     val errorStrategy: ErrorStrategy = ErrorStrategy.CONTINUE,
     /**
+     * 执行计划策略
+     */
+    val executionStrategy: ExecutionStrategy = ExecutionStrategy.IMMEDIATELY,
+    /**
      * 执行计划
      */
     val executionPlan: ExecutionPlan = ExecutionPlan()
