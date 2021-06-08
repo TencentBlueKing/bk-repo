@@ -48,13 +48,16 @@ export default {
                     type
                 }
             }
-        )
+        ).then(res => ({
+            ...res,
+            records: res.records.filter(v => v.name !== 'report' && v.name !== 'log')
+        })) // 前端隐藏report仓库/log仓库
     },
     // 查询仓库列表
     getRepoListAll (_, { projectId }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/list/${projectId}`
-        )
+        ).then(res => res.filter(v => v.name !== 'report' && v.name !== 'log')) // 前端隐藏report仓库/log仓库
     },
     // 查询仓库信息
     getRepoInfo (_, { projectId, repoName, repoType }) {

@@ -106,9 +106,9 @@
                 userInput: '',
                 userList: [],
                 pagination: {
-                    count: 1,
+                    count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     limitList: [10, 20, 40]
                 },
                 editUserDialog: {
