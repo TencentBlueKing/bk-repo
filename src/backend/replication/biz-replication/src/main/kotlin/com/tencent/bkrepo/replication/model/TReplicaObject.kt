@@ -48,7 +48,7 @@ data class TReplicaObject(
      * 任务唯一key
      */
     @Indexed
-    val taskKey: String,
+    var taskKey: String,
     /**
      * 本地项目
      */

@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.util
 
+import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
@@ -12,7 +13,7 @@ import org.springframework.data.mongodb.core.query.where
  */
 object TaskRecordQueryHelper {
 
-    fun detailListQuery(
+    fun recordDetailListQuery(
         recordId: String,
         packageName: String? = null,
         repoName: String? = null,
@@ -28,5 +29,11 @@ object TaskRecordQueryHelper {
             }
         return Query(criteria)
             .with(Sort.by(Sort.Order(Sort.Direction.DESC, TReplicaRecordDetail::startTime.name)))
+    }
+
+    fun recordListQuery(key: String): Query {
+        val criteria = where(TReplicaRecord::taskKey).isEqualTo(key)
+        return Query(criteria)
+            .with(Sort.by(Sort.Order(Sort.Direction.DESC, TReplicaRecord::startTime.name)))
     }
 }

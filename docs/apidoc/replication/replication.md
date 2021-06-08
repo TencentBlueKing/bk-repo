@@ -4,7 +4,7 @@
 
 ## 创建集群同步任务
 
-- API: POST  /replication/api/task/cluster
+- API: POST  /replication/api/task/create
 - API 名称: create_replication_task
 - 功能说明：
 	- 中文：创建集群同步任务
@@ -422,4 +422,39 @@
     "traceId": null
   }
   ```
+  
+## 复制集群同步任务
 
+- API: POST  /replication/api/task/copy
+- API 名称: copy_replication_task
+- 功能说明：
+	- 中文：复制集群同步任务
+	- English：copy replication task
+- 请求体:
+
+  ```json
+  {
+    "name": "task_copy",
+    "key": "e8d095dfe0524ce9b3ab53d1353239h8",
+    "description": "copy replica task"
+  }
+  ```
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |name|string|是|无|计划名称|replication name|
+  |key|string|是|无|任务唯一key|task unique key|
+  |description|sting|否|无|描述|description|
+  
+- 响应体
+
+  ```
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```

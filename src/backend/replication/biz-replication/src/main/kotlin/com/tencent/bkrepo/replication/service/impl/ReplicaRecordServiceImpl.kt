@@ -118,6 +118,14 @@ class ReplicaRecordServiceImpl(
         return replicaRecordDao.listByTaskKey(key).map { convert(it)!! }
     }
 
+    override fun listRecordsPage(key: String, pageNumber: Int, pageSize: Int): Page<ReplicaRecordInfo> {
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val query = TaskRecordQueryHelper.recordListQuery(key)
+        val totalRecords = replicaRecordDao.count(query)
+        val records = replicaRecordDao.find(query.with(pageRequest)).map { convert(it)!! }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
     override fun listDetailsByRecordId(recordId: String): List<ReplicaRecordDetail> {
         return replicaRecordDetailDao.listByRecordId(recordId).map { convert(it)!! }
     }
@@ -148,7 +156,7 @@ class ReplicaRecordServiceImpl(
         val pageNumber = option.pageNumber
         val pageSize = option.pageSize
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val query = TaskRecordQueryHelper.detailListQuery(
+        val query = TaskRecordQueryHelper.recordDetailListQuery(
             recordId, option.packageName, option.repoName, option.clusterName
         )
         val totalRecords = replicaRecordDetailDao.count(query)

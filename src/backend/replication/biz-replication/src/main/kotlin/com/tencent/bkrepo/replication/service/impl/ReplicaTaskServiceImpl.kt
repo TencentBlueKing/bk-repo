@@ -22,6 +22,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.repository.TaskRepository
@@ -229,6 +230,41 @@ class ReplicaTaskServiceImpl(
 
     private fun isCronJob(tReplicaTask: TReplicaTask): Boolean {
         return !tReplicaTask.setting.executionPlan.cronExpression.isNullOrBlank()
+    }
+
+    override fun copy(request: ReplicaTaskCopyRequest) {
+        with(request) {
+            // 校验同名任务冲突
+            taskRepository.findByName(name)?.let {
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
+            }
+            // 获取任务
+            val tReplicaTask = replicaTaskDao.findByKey(key)
+                ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
+            // 初始化任务状态设置
+            val copyKey = uniqueId()
+            val userId = SecurityUtils.getUserId()
+            val copiedReplicaTask = tReplicaTask.copy(
+                key = copyKey,
+                name = name,
+                status = ReplicationStatus.WAITING,
+                lastExecutionStatus = null,
+                lastExecutionTime = null,
+                nextExecutionTime = null,
+                executionTimes = 0L,
+                lastModifiedBy = userId,
+                lastModifiedDate = LocalDateTime.now(),
+                description = description
+            )
+            val replicaObjectList = replicaObjectDao.findByTaskKey(key)
+            val copiedObjectList = replicaObjectList.map { it.copy(taskKey = copyKey) }
+            try {
+                replicaObjectDao.insert(copiedObjectList)
+                replicaTaskDao.insert(copiedReplicaTask)
+            } catch (exception: DuplicateKeyException) {
+                logger.warn("copy task[$name] error: [${exception.message}]")
+            }
+        }
     }
 
     companion object {
