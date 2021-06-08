@@ -2,14 +2,14 @@ package com.tencent.bkrepo.replication.mapping
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
-interface PackageNodeMapping {
+interface PackageNodeMapper {
     /**
      * 匹配仓库类型
      */
-    fun match(type: RepositoryType): Boolean
+    fun type(): RepositoryType
 
     /**
      * 匹配对应node节点的fullPath
      */
-    fun handle(key: String, version: String, ext: Map<String, Any>): List<String>
+    fun map(key: String, version: String, extension: Map<String, Any>): List<String>
 }

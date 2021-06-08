@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,19 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.replication.mapping
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 
-@ApiModel("包列表选项")
-data class PackageListOption(
-    @ApiModelProperty("当前页")
-    var pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
-    var pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("包名称, 根据该字段模糊搜索")
-    var packageName: String? = null
-)
+class NpmPackageNodeMapper : PackageNodeMapper {
+
+    override fun type() = RepositoryType.NPM
+
+    override fun map(key: String, version: String, ext: Map<String, Any>): List<String> {
+        val name = PackageKeys.resolveNpm(key)
+        return listOf(
+            NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
+            NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version),
+            NPM_PKG_METADATA_FULL_PATH.format(name)
+        )
+    }
+
+    companion object {
+        const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
+        const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
+        const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
+    }
+
+}

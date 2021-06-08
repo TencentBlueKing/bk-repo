@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,41 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.manager
+package com.tencent.bkrepo.replication.job
 
-import com.tencent.bkrepo.replication.job.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 
-/**
- * 远程数据管理类
- * 用于访问远程集群数据
- */
-@Component
-class RemoteDataManager: ClusterDataManager {
+class ReplicaExecutionContext(
+    val replicaContext: ReplicaContext,
+    val detail: ReplicaRecordDetail
+) {
+    /**
+     * 执行状态
+     */
+    var status = ExecutionStatus.SUCCESS
 
-    override fun findProjectById(projectId: String): ProjectInfo? {
-        TODO("Not yet implemented")
-    }
+    /**
+     * 同步进度
+     */
 
-    override fun findRepoByName(projectId: String, repoName: String, type: String?): RepositoryDetail? {
-        TODO("Not yet implemented")
+    val progress = ReplicaProgress()
+
+    /**
+     * 错误原因
+     */
+    private var errorReason = StringBuilder()
+
+    /**
+     * 添加错误原因
+     */
+    fun appendErrorReason(reason: String) {
+        errorReason.appendln(reason)
     }
 
     /**
-     * 同步项目
+     * 构造错误原因
      */
-    fun replicaProject(context: ReplicaContext, request: ProjectCreateRequest) {
-        context.artifactReplicaClient.replicaProjectCreateRequest(request)
-    }
-
-    /**
-     * 同步仓库
-     */
-    fun replicaRepo(context: ReplicaContext, request: RepoCreateRequest) {
-        context.artifactReplicaClient.replicaRepoCreateRequest(request)
+    fun buildErrorReason(): String {
+        return errorReason.toString()
     }
 }

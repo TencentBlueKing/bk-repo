@@ -39,22 +39,24 @@ import java.time.LocalDateTime
 
 @ApiModel("同步任务执行记录详情")
 data class ReplicaRecordDetail(
+    @ApiModelProperty("详情id")
+    var id: String,
     @ApiModelProperty("记录id")
-    val recordId: String,
+    var recordId: String,
     @ApiModelProperty("本地集群名称")
-    val localCluster: String,
+    var localCluster: String,
     @ApiModelProperty("远程集群名称")
-    val remoteCluster: String,
+    var remoteCluster: String,
     @ApiModelProperty("本地仓库名称")
-    val localRepoName: String,
+    var localRepoName: String,
     @ApiModelProperty("包限制")
-    val packageConstraint: PackageConstraint? = null,
+    var packageConstraint: PackageConstraint? = null,
     @ApiModelProperty("路径名称")
-    val pathConstraint: PathConstraint? = null,
+    var pathConstraint: PathConstraint? = null,
     @ApiModelProperty("运行状态")
-    val status: ExecutionStatus,
+    var status: ExecutionStatus,
     @ApiModelProperty("同步进度")
-    val progress: ReplicaProgress,
+    var progress: ReplicaProgress,
     @ApiModelProperty("开始时间")
     var startTime: LocalDateTime,
     @ApiModelProperty("结束时间")

@@ -37,6 +37,12 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.stereotype.Component
@@ -53,12 +59,115 @@ class LocalDataManager(
     private val packageClient: PackageClient,
     private val metadataClient: MetadataClient,
     private val storageService: StorageService
-) : ClusterDataManager {
-    override fun findProjectById(projectId: String): ProjectInfo? {
-        return projectClient.getProjectInfo(projectId).data
+) {
+
+    /**
+     * 查找项目
+     * 项目不存在抛异常
+     */
+    @Throws(IllegalStateException::class)
+    fun findProjectById(projectId: String): ProjectInfo {
+        val project = projectClient.getProjectInfo(projectId).data
+        check(project != null) { "Local project[$projectId] does not exist" }
+        return project
     }
 
-    override fun findRepoByName(projectId: String, repoName: String, type: String?): RepositoryDetail? {
-        return repositoryClient.getRepoDetail(projectId, repoName, type).data
+    /**
+     * 判断项目是否存在
+     */
+    fun existProject(projectId: String): Boolean {
+        return projectClient.getProjectInfo(projectId).data != null
+    }
+
+    /**
+     * 查找仓库
+     * 仓库不存在抛异常
+     */
+    @Throws(IllegalStateException::class)
+    fun findRepoByName(projectId: String, repoName: String, type: String? = null): RepositoryDetail {
+        val repo = repositoryClient.getRepoDetail(projectId, repoName, type).data
+        check(repo != null) { "Local repository[$repoName] does not exist" }
+        return repo
+    }
+
+    /**
+     * 判断仓库是否存在
+     */
+    fun existRepo(projectId: String, repoName: String, type: String? = null): Boolean {
+        return repositoryClient.getRepoDetail(projectId, repoName, type).data != null
+    }
+
+    /**
+     * 根据packageKey查找包信息
+     */
+    @Throws(IllegalStateException::class)
+    fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary {
+        val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey).data
+        check(packageSummary != null) { "Local package[$packageKey] does not exist" }
+        return packageSummary
+    }
+
+    /**
+     * 查询所有版本
+     */
+    @Throws(IllegalStateException::class)
+    fun listAllVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        option: VersionListOption
+    ): List<PackageVersion> {
+        val versions = packageClient.listAllVersion(projectId, repoName, packageKey, option).data
+        check(versions != null) { "Local package [$packageKey] does not exist" }
+        return versions
+    }
+
+    /**
+     * 查询指定版本
+     */
+    @Throws(IllegalStateException::class)
+    fun findPackageVersion(projectId: String, repoName: String, packageKey: String, version: String): PackageVersion {
+        val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+        check(packageVersion != null) { "Local package version [$version] does not exist" }
+        return packageVersion
+    }
+
+    /**
+     * 查找节点
+     */
+    @Throws(IllegalStateException::class)
+    fun findNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail {
+        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        check(nodeDetail != null) { "Local node path [$fullPath] does not exist" }
+        return nodeDetail
+    }
+
+    /**
+     * 分页查询包
+     */
+    @Throws(IllegalStateException::class)
+    fun listPackagePage(projectId: String, repoName: String, option: PackageListOption): List<PackageSummary> {
+        val packages = packageClient.listPackagePage(
+            projectId = projectId,
+            repoName = repoName,
+            option = option
+        ).data?.records
+        check(packages != null) { "Local packages not found" }
+        return packages
+    }
+
+    /**
+     * 查询目录下的文件列表
+     */
+    fun listNode(projectId: String, repoName: String, fullPath: String): List<NodeInfo> {
+        val nodes = nodeClient.listNode(
+            projectId = projectId,
+            repoName = repoName,
+            path = fullPath,
+            includeFolder = true,
+            deep = false
+        ).data
+        check(nodes != null) { "Local packages not found" }
+        return nodes
     }
 }

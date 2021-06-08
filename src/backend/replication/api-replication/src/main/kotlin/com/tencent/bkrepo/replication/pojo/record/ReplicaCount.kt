@@ -36,10 +36,6 @@ package com.tencent.bkrepo.replication.pojo.record
  */
 data class ReplicaCount(
     /**
-     * 总量
-     */
-    var total: Long,
-    /**
      * 成功数量
      */
     var success: Long,

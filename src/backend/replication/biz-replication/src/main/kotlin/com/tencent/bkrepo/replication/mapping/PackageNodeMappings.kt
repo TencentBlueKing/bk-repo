@@ -29,25 +29,37 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.manager
+package com.tencent.bkrepo.replication.mapping
 
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
 /**
- * 集群数据管理类
- * 用于访问集群数据
+ * 包和节点的映射关系
  */
-interface ClusterDataManager {
+object PackageNodeMappings {
+
+    private val mappers = mutableMapOf<RepositoryType, PackageNodeMapper>()
+
+    init {
+        addMapper(MavenPackageNodeMapper())
+        addMapper(NpmPackageNodeMapper())
+    }
+
+    private fun addMapper(mapper: PackageNodeMapper) {
+        mappers[mapper.type()] = mapper
+    }
 
     /**
-     * 查找项目
+     * @param type 仓库类型
+     * @param key 包名
+     * @param version 版本名称
+     * @param extension 扩展属性
+     *
+     * @return 返回
      */
-    fun findProjectById(projectId: String): ProjectInfo?
-
-    /**
-     * 查找仓库
-     */
-    fun findRepoByName(projectId: String, repoName: String, type: String? = null): RepositoryDetail?
-
+    fun map(type: RepositoryType, key: String, version: String, extension: Map<String, Any>): List<String> {
+        val mapper = mappers[type]
+        check(mapper != null) { "mapper[$type] not found" }
+        return mapper.map(key, version, extension)
+    }
 }

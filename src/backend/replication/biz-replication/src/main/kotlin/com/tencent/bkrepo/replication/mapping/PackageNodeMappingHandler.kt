@@ -38,12 +38,12 @@ import javax.annotation.PostConstruct
 @Component
 class PackageNodeMappingHandler {
 
-    private val packageNodeMappingList = mutableListOf<PackageNodeMapping>()
+    private val packageNodeMappingList = mutableListOf<PackageNodeMapper>()
 
     @PostConstruct
     fun init() {
-        this.packageNodeMappingList.add(MavenPackageNodeMapping())
-        this.packageNodeMappingList.add(NpmPackageNodeMapping())
+        this.packageNodeMappingList.add(MavenPackageNodeMapper())
+        this.packageNodeMappingList.add(NpmPackageNodeMapper())
     }
 
     fun getMappingList(

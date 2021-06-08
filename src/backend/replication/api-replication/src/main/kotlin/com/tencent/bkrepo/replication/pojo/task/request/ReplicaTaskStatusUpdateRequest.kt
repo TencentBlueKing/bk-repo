@@ -29,28 +29,5 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.mapping
+package com.tencent.bkrepo.replication.pojo.task.request
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
-
-class NpmPackageNodeMapping : PackageNodeMapping {
-    override fun match(type: RepositoryType): Boolean {
-        return type == RepositoryType.NPM
-    }
-
-    override fun handle(key: String, version: String, ext: Map<String, Any>): List<String> {
-        val name = PackageKeys.resolveNpm(key)
-        return listOf(
-            NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
-            NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version),
-            NPM_PKG_METADATA_FULL_PATH.format(name)
-        )
-    }
-
-    companion object {
-        const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
-        const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
-        const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
-    }
-}

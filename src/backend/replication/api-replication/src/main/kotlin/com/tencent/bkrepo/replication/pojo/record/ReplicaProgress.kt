@@ -36,19 +36,19 @@ package com.tencent.bkrepo.replication.pojo.record
  */
 data class ReplicaProgress(
     /**
-     * 同步blob文件数量
+     * 成功数量
      */
-    var blob: ReplicaCount? = null,
+    var success: Long = 0,
     /**
-     * 同步节点数量
+     * 跳过数量
      */
-    var node: ReplicaCount? = null,
+    var skip: Long = 0,
     /**
-     * 同步包版本数量
+     * 失败数量
      */
-    var version: ReplicaCount? = null,
+    var failed: Long = 0,
     /**
-     * 同步文件数据数量, 单位bytes
+     * 数据大小, 单位bytes
      */
     var totalSize: Long = 0
 )

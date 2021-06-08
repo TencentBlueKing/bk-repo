@@ -58,7 +58,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @RequestMapping("/replica")
-@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaClient")
+@FeignClient(REPLICATION_SERVICE_NAME, contextId = "ArtifactReplicaClient")
 interface ArtifactReplicaClient {
 
     @GetMapping("/ping")
@@ -138,6 +138,11 @@ interface ArtifactReplicaClient {
     fun replicaMetadataDeleteRequest(
         @RequestBody request: MetadataDeleteRequest
     ): Response<Void>
+
+    @PostMapping("/package/version/exist")
+    fun checkPackageVersionExist(
+        @RequestBody request: PackageVersionExistCheckRequest
+    ): Response<Boolean>
 
     @PostMapping("/package/version/exist/list")
     fun checkPackageVersionExistList(

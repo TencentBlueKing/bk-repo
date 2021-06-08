@@ -50,7 +50,7 @@ data class ReplicaSetting(
     /**
      * 错误处理策略
      */
-    val errorStrategy: ErrorStrategy = ErrorStrategy.CONTINUE,
+    val errorStrategy: ErrorStrategy = ErrorStrategy.FAST_FAIL,
     /**
      * 执行计划
      */

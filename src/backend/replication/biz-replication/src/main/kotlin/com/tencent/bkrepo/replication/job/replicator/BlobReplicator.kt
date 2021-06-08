@@ -32,16 +32,37 @@
 package com.tencent.bkrepo.replication.job.replicator
 
 import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component
 
 /**
- * blob数据同步器
- * blob
+ * blob文件数据同步器
  */
 @Component
 class BlobReplicator: ScheduledReplicator() {
+    override fun replicaProject(context: ReplicaContext) {
+        // do nothing
+    }
 
-    override fun doReplica(context: ReplicaContext) {
+    override fun replicaRepo(context: ReplicaContext) {
+        // do nothing
+    }
+
+    override fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary) {
+        // do nothing
+    }
+
+    override fun replicaPackageVersion(context: ReplicaContext, packageVersion: PackageVersion): Boolean {
         TODO("Not yet implemented")
+    }
+
+    override fun replicaFile(replicaContext: ReplicaContext, nodeDetail: NodeDetail): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun replicaDir(replicaContext: ReplicaContext, nodeDetail: NodeDetail): Boolean {
+        // do nothing
     }
 }

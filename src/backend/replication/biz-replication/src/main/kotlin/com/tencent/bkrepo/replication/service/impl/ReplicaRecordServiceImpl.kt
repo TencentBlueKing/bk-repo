@@ -175,6 +175,7 @@ class ReplicaRecordServiceImpl(
         private fun convert(tReplicaRecordDetail: TReplicaRecordDetail?): ReplicaRecordDetail? {
             return tReplicaRecordDetail?.let {
                 ReplicaRecordDetail(
+                    id = it.id.orEmpty(),
                     recordId = it.recordId,
                     localCluster = it.localCluster,
                     remoteCluster = it.remoteCluster,

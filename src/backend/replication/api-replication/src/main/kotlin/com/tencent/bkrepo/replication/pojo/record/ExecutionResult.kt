@@ -29,22 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.manager
-
-import com.tencent.bkrepo.replication.job.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import org.springframework.stereotype.Component
+package com.tencent.bkrepo.replication.pojo.record
 
 /**
- * 数据同步管理类
+ * 执行结果
  */
-@Component
-class DataReplicaManager {
+data class ExecutionResult(
+    val status: ExecutionStatus,
+    val progress: ReplicaProgress? = null,
+    val errorReason: String? = null
+) {
+    companion object {
+        fun fail(errorReason: String?): ExecutionResult {
+            return ExecutionResult(status = ExecutionStatus.FAILED, errorReason = errorReason.orEmpty())
+        }
 
-    fun replicaProjectCreateRequest(context: ReplicaContext, request: ProjectCreateRequest) {
-        with(context) {
-            artifactReplicaClient.replicaProjectCreateRequest(request)
+        fun success(): ExecutionResult {
+            return ExecutionResult(status = ExecutionStatus.FAILED)
         }
     }
-
 }

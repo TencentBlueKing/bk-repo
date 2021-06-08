@@ -42,7 +42,8 @@ import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
-import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import okhttp3.OkHttpClient
@@ -51,8 +52,8 @@ import org.springframework.util.Base64Utils
 class ReplicaContext(
     val taskDetail: ReplicaTaskDetail,
     val taskObject: ReplicaObjectInfo,
-    val clusterNodeInfo: ClusterNodeInfo,
-    val detailId: String
+    val taskRecord: ReplicaRecordInfo,
+    val clusterNodeInfo: ClusterNodeInfo
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -67,10 +68,12 @@ class ReplicaContext(
     val remoteRepoName: String = taskObject.remoteRepoName
     val remoteRepoType: RepositoryType =  taskObject.repoType
 
+    // 同步状态
+    var status = ExecutionStatus.RUNNING
+
     val remoteUrl: String
     val artifactReplicaClient: ArtifactReplicaClient
     val httpClient: OkHttpClient
-    val progress: ReplicaProgress = ReplicaProgress()
 
     private val cluster: RemoteClusterInfo = RemoteClusterInfo(
         name = clusterNodeInfo.name,
@@ -89,12 +92,6 @@ class ReplicaContext(
             .build()
     }
 
-    /**
-     * 判断任务是否为cron执行任务
-     */
-    fun isCronJob(): Boolean {
-        return taskDetail.task.setting.executionPlan.cronExpression != null
-    }
 
     companion object {
         fun encodeAuthToken(username: String, password: String): String {

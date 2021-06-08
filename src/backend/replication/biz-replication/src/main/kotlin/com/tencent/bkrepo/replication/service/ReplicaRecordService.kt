@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
@@ -74,10 +75,9 @@ interface ReplicaRecordService {
     /**
      * 完成同步详情
      * @param detailId 记录id
-     * @param status 执行状态
-     * @param errorReason 错误原因，当status为失败情况下才设置
+     * @param result 执行结果
      */
-    fun completeRecordDetail(detailId: String, status: ExecutionStatus, errorReason: String? = null)
+    fun completeRecordDetail(detailId: String, result: ExecutionResult)
 
     /**
      * 根据任务key查询执行记录

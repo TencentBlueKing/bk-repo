@@ -35,12 +35,11 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 
-class MavenPackageNodeMapping : PackageNodeMapping {
-    override fun match(type: RepositoryType): Boolean {
-        return type == RepositoryType.MAVEN
-    }
+class MavenPackageNodeMapper : PackageNodeMapper {
 
-    override fun handle(key: String, version: String, ext: Map<String, Any>): List<String> {
+    override fun type() = RepositoryType.MAVEN
+
+    override fun map(key: String, version: String, ext: Map<String, Any>): List<String> {
         val gavKey = PackageKeys.resolveGav(key)
         val groupId = gavKey.substringBefore(StringPool.COLON).replace(StringPool.DOT, StringPool.SLASH)
         val artifactId = gavKey.substringAfter(StringPool.COLON)

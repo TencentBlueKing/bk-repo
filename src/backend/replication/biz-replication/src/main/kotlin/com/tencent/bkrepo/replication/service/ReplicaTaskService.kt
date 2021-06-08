@@ -44,6 +44,12 @@ import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 interface ReplicaTaskService {
 
     /**
+     * 根据任务id查询任务信息
+     * @param taskId 任务id
+     */
+    fun getByTaskId(taskId: String): ReplicaTaskInfo?
+
+    /**
      * 根据任务key查询任务信息
      * @param key 任务key
      */

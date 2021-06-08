@@ -45,7 +45,7 @@ class ScheduledReplicaJob : InterruptableJob {
 
     private var currentThread: Thread? = null
     private val lockingTaskExecutor = SpringContextUtils.getBean(LockingTaskExecutor::class.java)
-    private val replicationJobBean = SpringContextUtils.getBean(ReplicationArtifactJobBean::class.java)
+    private val replicationJobBean = SpringContextUtils.getBean(ScheduledReplicaJobBean::class.java)
 
     override fun execute(context: JobExecutionContext) {
         currentThread = Thread.currentThread()

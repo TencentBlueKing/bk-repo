@@ -32,28 +32,17 @@
 package com.tencent.bkrepo.replication.job
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.role.Role
-import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.job.replicator.ArtifactReplicator
 import com.tencent.bkrepo.replication.job.replicator.BlobReplicator
 import com.tencent.bkrepo.replication.job.replicator.Replicator
-import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.pojo.ReplicationProjectDetail
-import com.tencent.bkrepo.replication.pojo.ReplicationRepoDetail
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
-import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
-import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
-import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -61,14 +50,10 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.service.ReplicationService
 import com.tencent.bkrepo.replication.service.RepoDataService
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
@@ -98,24 +83,29 @@ class ScheduledReplicaJobBean(
     fun execute(taskId: String) {
         logger.info("Start to execute replication task[$taskId].")
         val task = findAndCheckTask(taskId) ?: return
+        var status = ExecutionStatus.SUCCESS
+        var errorReason: String? = null
+        var recordId: String? = null
         try {
             // 查询同步对象
-            val taskDetail = replicaTaskService.getDetailByTaskKey(taskId)
-            // 创建同步记录
-            val taskRecord = replicaRecordService.initialRecord(taskDetail.task.key)
-            task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.forEach {
-                it.get()
+            val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+            // 开启新的同步记录
+            val taskRecord = replicaTaskService.startNewRecord(task.key).apply { recordId = id }
+            val result = task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
+            result.forEach {
+                if (it.status == ExecutionStatus.FAILED) {
+                    status = ExecutionStatus.FAILED
+                    errorReason = "部分数据同步失败"
+                }
             }
-
         } catch (exception: Exception) {
             // 记录异常
-            replicationContext.taskRecord.errorReason = exception.message
-            completeReplica(replicationContext, ReplicationStatus.FAILED)
+            status = ExecutionStatus.FAILED
+            errorReason = exception.message.orEmpty()
         } finally {
             // 保存结果
-            replicationContext.taskRecord.endTime = LocalDateTime.now()
-            completeReplica(replicationContext)
-            logger.info("Replica task[$taskId] finished, task log: ${replicationContext.taskRecord}.")
+            replicaRecordService.completeRecord(recordId!!, status, errorReason)
+            logger.info("Replica task[$taskId], record[$recordId] finished")
         }
     }
 
@@ -134,15 +124,17 @@ class ScheduledReplicaJobBean(
             try {
                 val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
                 require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
+                var status = ExecutionStatus.SUCCESS
                 taskDetail.objects.map { taskObject ->
-                    // 初始化record detail
-                    val context = initialContext(taskDetail, taskObject, taskRecord, clusterNode)
-                    val scheduledReplicator = chooseReplicator(context)
-                    scheduledReplicator.replica(context)
+                    val context = ReplicaContext(taskDetail, taskObject, taskRecord, clusterNode)
+                    chooseReplicator(context).replica(context)
+                    if (context.status == ExecutionStatus.FAILED) {
+                        status = context.status
+                    }
                 }
-                ExecutionResult(status = ExecutionStatus.SUCCESS)
+                ExecutionResult(status)
             } catch (exception: Throwable) {
-                ExecutionResult(status = ExecutionStatus.FAILED, errorReason = exception.message.orEmpty())
+                ExecutionResult.fail(exception.message)
             }
         }
     }
@@ -151,7 +143,7 @@ class ScheduledReplicaJobBean(
      * 根据context选择合适的数据同步类
      */
     private fun chooseReplicator(context: ReplicaContext): Replicator {
-        return when(context.clusterNodeInfo.type) {
+        return when (context.clusterNodeInfo.type) {
             ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ArtifactReplicator>()
             ClusterNodeType.EDGE -> SpringContextUtils.getBean<BlobReplicator>()
             else -> throw UnsupportedOperationException()
@@ -159,31 +151,12 @@ class ScheduledReplicaJobBean(
     }
 
     /**
-     * 初始化执行记录详情
-     */
-    private fun initialContext(
-        taskDetail: ReplicaTaskDetail,
-        taskObject: ReplicaObjectInfo,
-        taskRecord: ReplicaRecordInfo,
-        clusterNodeInfo: ClusterNodeInfo
-    ): ReplicaContext {
-        val request = RecordDetailInitialRequest(
-            recordId = taskRecord.id,
-            localCluster = taskDetail.task.projectId,
-            remoteCluster = clusterNodeInfo.name,
-            localRepoName = taskObject.localRepoName
-        )
-        val detail = replicaRecordService.initialRecordDetail(request)
-        return ReplicaContext(taskDetail, taskObject, clusterNodeInfo)
-    }
-
-    /**
      * 查找并检查任务状态
      * @return 如果任务不存在或不能被执行，返回null，否则返回任务信息
      */
-    private fun findAndCheckTask(taskId: String): TReplicaTask? {
+    private fun findAndCheckTask(taskId: String): ReplicaTaskInfo? {
         // 任务不存在，删除任务
-        val task = replicaTaskDao.findById(taskId) ?: run {
+        val task = replicaTaskService.getByTaskId(taskId) ?: run {
             logger.warn("Task[$taskId] does not exist, delete job and trigger.")
             replicaTaskScheduler.deleteJob(taskId)
             return null
@@ -206,74 +179,10 @@ class ScheduledReplicaJobBean(
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
-        return ThreadPoolExecutor(100, 500, 30, TimeUnit.SECONDS,
-            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.AbortPolicy())
-    }
-
-    private fun startReplica(context: ReplicaContext) {
-        checkInterrupted()
-        context.projectDetailList.forEach {
-            val localProjectId = it.localProjectInfo.name
-            val remoteProjectId = it.remoteProjectId
-            val repoCount = it.repoDetailList.size
-            logger.info("Start to replica project [$localProjectId] to [$remoteProjectId], repo count: $repoCount.")
-            try {
-                context.currentProjectDetail = it
-                context.remoteProjectId = it.remoteProjectId
-                replicaProject(context)
-                logger.info("Success to replica project [$localProjectId] to [$remoteProjectId].")
-                context.progress.successProject += 1
-            } catch (interruptedException: InterruptedException) {
-                throw interruptedException
-            } catch (exception: RuntimeException) {
-                context.progress.failedProject += 1
-                logger.error("Failed to replica project [$localProjectId] to [$remoteProjectId].", exception)
-            } finally {
-                context.progress.replicatedProject += 1
-                persistTaskLog(context)
-            }
-        }
-    }
-
-    private fun replicaProject(context: ReplicaContext) {
-        checkInterrupted()
-        with(context.currentProjectDetail) {
-            // 创建项目
-            val request = ProjectCreateRequest(
-                name = remoteProjectId,
-                displayName = localProjectInfo.displayName,
-                description = localProjectInfo.description,
-                operator = localProjectInfo.createdBy
-            )
-            replicationService.replicaProjectCreateRequest(context, request)
-            // 同步权限
-            replicaUserAndPermission(context)
-            // 同步仓库
-            this.repoDetailList.forEach {
-                val localRepoKey = "${it.localRepoDetail.projectId}/${it.localRepoDetail.name}"
-                val remoteRepoKey = "${context.remoteProjectId}/${it.remoteRepoName}"
-                val fileCount = it.fileCount
-                logger.info("Start to replica repository [$localRepoKey] to [$remoteRepoKey], file count: $fileCount.")
-                try {
-                    context.currentRepoDetail = it
-                    context.remoteRepoName = it.remoteRepoName
-                    replicaRepo(context)
-                    context.progress.successRepo += 1
-                    logger.info("Success to replica repository [$localRepoKey] to [$remoteRepoKey].")
-                } catch (interruptedException: InterruptedException) {
-                    throw interruptedException
-                } catch (exception: RuntimeException) {
-                    context.progress.failedRepo += 1
-                    logger.error(
-                        "Failed to replica repository [$localRepoKey] to [$remoteRepoKey].",
-                        exception
-                    )
-                } finally {
-                    context.progress.replicatedRepo += 1
-                    persistTaskLog(context)
-                }
-            }
-        }
+        return ThreadPoolExecutor(
+            100, 500, 30, TimeUnit.SECONDS,
+            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.AbortPolicy()
+        )
     }
 
     private fun replicaRepo(context: ReplicaContext) {
@@ -364,170 +273,6 @@ class ScheduledReplicaJobBean(
         }
     }
 
-    private fun replicaUserAndPermission(context: ReplicaContext, isRepo: Boolean = false) {
-        with(context) {
-            if (task.setting.includePermission) {
-                return
-            }
-            val remoteProjectId = remoteProjectId
-            val remoteRepoName = if (isRepo) remoteRepoName else null
-            val localProjectId = currentProjectDetail.localProjectInfo.name
-            val localRepoName = if (isRepo) currentRepoDetail.localRepoDetail.name else null
-
-            // 查询所有相关联的角色, 该步骤可以查询到所有角色
-            val localRoleList = repoDataService.listRole(localProjectId, localRepoName)
-            // 查询所有角色所关联的用户，该步骤不能查询到所有用户
-            val localUserList = repoDataService.listUser(localRoleList.map { it.id!! })
-            // 记录已经遍历过的用户
-            val traversedUserList = mutableListOf<String>()
-            // 集群间的roleId映射关系
-            val roleIdMap = mutableMapOf<String, String>()
-            localUserList.forEach {
-                // 创建用户
-                createUser(this, it)
-                traversedUserList.add(it.userId)
-            }
-            localRoleList.forEach { role ->
-                // 创建角色
-                val remoteRoleId = createRole(this, role, remoteProjectId, remoteRepoName)
-                roleIdMap[role.roleId] = remoteRoleId
-                // 包含该角色的用户列表
-                val userIdList =
-                    localUserList.filter { user -> user.roles.contains(role.id) }.map { user -> user.userId }
-                // 创建角色-用户绑定关系
-                createUserRoleRelationShip(this, remoteRoleId, userIdList)
-            }
-            // 同步权限数据
-            val localPermissionList = repoDataService.listPermission(remoteProjectId, remoteRepoName)
-            val remotePermissionList =
-                artifactReplicaClient.listPermission(authToken, localProjectId, localRepoName).data!!
-
-            localPermissionList.forEach { permission ->
-                // 过滤已存在的权限
-                if (containsPermission(permission, remotePermissionList)) {
-                    return@forEach
-                }
-                // 创建用户
-                permission.users.filter { !traversedUserList.contains(it) }.forEach {
-                    createUser(this, it)
-                }
-                createPermission(this, permission, roleIdMap)
-            }
-        }
-    }
-
-    private fun createUser(context: ReplicaContext, user: User) {
-        with(context) {
-            val request = UserReplicaRequest(
-                userId = user.userId,
-                name = user.name,
-                pwd = user.pwd!!,
-                admin = user.admin,
-                tokens = user.tokens
-            )
-            artifactReplicaClient.replicaUser(authToken, request).data!!
-        }
-    }
-
-    private fun createUser(context: ReplicaContext, uid: String) {
-        with(context) {
-            val userInfo = repoDataService.getUserDetail(uid)!!
-            createUser(this, userInfo)
-        }
-    }
-
-    private fun createRole(
-        context: ReplicaContext,
-        role: Role,
-        projectId: String,
-        repoName: String? = null
-    ): String {
-        with(context) {
-            val request = RoleReplicaRequest(
-                roleId = role.roleId,
-                name = role.name,
-                type = role.type,
-                projectId = projectId,
-                repoName = repoName,
-                admin = role.admin
-            )
-            return artifactReplicaClient.replicaRole(authToken, request).data!!.roleId
-        }
-    }
-
-    private fun createUserRoleRelationShip(
-        context: ReplicaContext,
-        remoteRoleId: String,
-        userIdList: List<String>
-    ) {
-        with(context) {
-            artifactReplicaClient.replicaUserRoleRelationShip(authToken, remoteRoleId, userIdList)
-        }
-    }
-
-    private fun createPermission(context: ReplicaContext, permission: Permission, roleIdMap: Map<String, String>) {
-        with(context) {
-            // 查询角色对应id
-            val roles = permission.roles
-            // 创建权限
-            val request = CreatePermissionRequest(
-                resourceType = permission.resourceType,
-                projectId = permission.projectId,
-                permName = permission.permName,
-                repos = permission.repos,
-                includePattern = permission.includePattern,
-                excludePattern = permission.excludePattern,
-                users = permission.users,
-                roles = roles,
-                createBy = SYSTEM_USER,
-                updatedBy = SYSTEM_USER
-            )
-            artifactReplicaClient.replicaPermission(authToken, request)
-        }
-    }
-
-    private fun containsPermission(permission: Permission, permissionList: List<Permission>): Boolean {
-        permissionList.forEach {
-            if (it.projectId == permission.projectId && it.permName == permission.permName) {
-                return true
-            }
-        }
-        return false
-    }
-
-    private fun convertReplicationProject(
-        localProjectInfo: ProjectInfo,
-        localRepoName: String? = null,
-        remoteProjectId: String? = null,
-        remoteRepoName: String? = null
-    ): ReplicationProjectDetail {
-        return with(localProjectInfo) {
-            val repoDetailList = repoDataService.listRepository(this.name, localRepoName).map {
-                convertReplicationRepo(it, remoteRepoName)
-            }
-            ReplicationProjectDetail(
-                localProjectInfo = this,
-                remoteProjectId = remoteProjectId ?: this.name,
-                repoDetailList = repoDetailList
-            )
-        }
-    }
-
-    private fun convertReplicationRepo(
-        localRepoInfo: RepositoryInfo,
-        remoteRepoName: String? = null
-    ): ReplicationRepoDetail {
-        return with(localRepoInfo) {
-            val repoDetail = repoDataService.getRepositoryDetail(projectId, name)
-            val fileCount = repoDataService.countFileNode(this)
-            ReplicationRepoDetail(
-                localRepoDetail = repoDetail!!,
-                fileCount = fileCount,
-                remoteRepoName = remoteRepoName ?: this.name
-            )
-        }
-    }
-
     private fun checkInterrupted() {
         if (Thread.interrupted()) {
             throw InterruptedException("Interrupted by user")
@@ -536,15 +281,5 @@ class ScheduledReplicaJobBean(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScheduledReplicaJobBean::class.java)
-        private const val pageSize = 500
     }
 }
-
-/**
- * 执行结果
- */
-data class ExecutionResult(
-    val status: ExecutionStatus,
-    val errorReason: String? = null
-)
-
