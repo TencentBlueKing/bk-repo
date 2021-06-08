@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 
 /**
@@ -80,14 +81,14 @@ interface ReplicaRecordService {
     fun completeRecordDetail(detailId: String, result: ExecutionResult)
 
     /**
-     * 根据任务key查询执行记录
+     * 根据任务[key]查询执行记录
      * 返回结果按照开始时间倒排，最后执行的在最前
      * @param key 任务key
      */
     fun listRecordsByTaskKey(key: String): List<ReplicaRecordInfo>
 
     /**
-     * 根据任务key分页查询执行记录
+     * 根据任务[key]分页查询执行记录
      *
      * @param key 任务key
      * @param pageNumber 当前页
@@ -96,28 +97,35 @@ interface ReplicaRecordService {
     fun listRecordsPage(key: String, pageNumber: Int, pageSize: Int): Page<ReplicaRecordInfo>
 
     /**
-     * 根据记录id查询执行详情列表
+     * 根据[recordId]查询执行详情列表
      * 返回结果按照开始时间倒排，最后执行的在最前
      * @param recordId 执行记录id
      */
     fun listDetailsByRecordId(recordId: String): List<ReplicaRecordDetail>
 
     /**
-     * 根据id查询执行记录
+     * 根据[recordId]查询执行记录信息和任务信息
+     *
+     * @param recordId 执行记录id
+     */
+    fun getRecordAndTaskInfoByRecordId(recordId: String): ReplicaTaskRecordInfo
+
+    /**
+     * 根据[id]查询执行记录
      *
      * @param id 记录id
      */
     fun getRecordById(id: String): ReplicaRecordInfo?
 
     /**
-     * 根据id查询执行记录详情
+     * 根据[id]查询执行记录详情
      *
      * @param id 记录详情id
      */
     fun getRecordDetailById(id: String): ReplicaRecordDetail?
 
     /**
-     * 根据任务key删除执行记录
+     * 根据任务[key]删除执行记录
      * @param key 任务key
      */
     fun deleteByTaskKey(key: String)

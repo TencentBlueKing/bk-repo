@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -27,6 +28,12 @@ import org.springframework.web.bind.annotation.RestController
 class ReplicaRecordController(
     private val replicaRecordService: ReplicaRecordService
 ) {
+    @ApiOperation("根据recordId查询任务执行日志详情")
+    @GetMapping("/{recordId}")
+    fun getRecordAndTaskInfoByRecordId(@PathVariable recordId: String): Response<ReplicaTaskRecordInfo> {
+        return ResponseBuilder.success(replicaRecordService.getRecordAndTaskInfoByRecordId(recordId))
+    }
+
     @ApiOperation("根据taskKey查询任务执行日志")
     @GetMapping("/list/{key}")
     fun listRecordsByTaskKey(@PathVariable key: String): Response<List<ReplicaRecordInfo>> {

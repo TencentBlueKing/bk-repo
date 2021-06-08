@@ -9,11 +9,13 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
+import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
@@ -86,15 +88,15 @@ class ReplicaRecordServiceImpl(
     override fun updateRecordDetailProgress(detailId: String, progress: ReplicaProgress) {
         val replicaRecordDetail = findRecordDetailById(detailId)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, detailId)
-        replicaRecordDetail.progress.blob = progress.blob
-        replicaRecordDetail.progress.node = progress.node
-        replicaRecordDetail.progress.version = progress.version
+        replicaRecordDetail.progress.success = progress.success
+        replicaRecordDetail.progress.skip = progress.skip
+        replicaRecordDetail.progress.failed = progress.failed
         replicaRecordDetail.progress.totalSize = progress.totalSize
         replicaRecordDetailDao.save(replicaRecordDetail)
         logger.info("Update record detail [$detailId] success.")
     }
 
-    override fun completeRecordDetail(detailId: String, status: ExecutionStatus, errorReason: String?) {
+    override fun completeRecordDetail(detailId: String, result: ExecutionResult) {
         val replicaRecordDetail = getRecordDetailById(detailId)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, detailId)
         val recordDetail = with(replicaRecordDetail) {
@@ -104,11 +106,11 @@ class ReplicaRecordServiceImpl(
                 localCluster = localCluster,
                 remoteCluster = remoteCluster,
                 localRepoName = localRepoName,
-                status = status,
-                progress = progress,
+                status = result.status,
+                progress = result.progress!!,
                 startTime = startTime,
                 endTime = LocalDateTime.now(),
-                errorReason = errorReason
+                errorReason = result.errorReason
             )
         }
         replicaRecordDetailDao.save(recordDetail)
@@ -128,6 +130,15 @@ class ReplicaRecordServiceImpl(
 
     override fun listDetailsByRecordId(recordId: String): List<ReplicaRecordDetail> {
         return replicaRecordDetailDao.listByRecordId(recordId).map { convert(it)!! }
+    }
+
+    override fun getRecordAndTaskInfoByRecordId(recordId: String): ReplicaTaskRecordInfo {
+        val replicaRecordInfo = getRecordById(recordId)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, recordId)
+        val taskKey = replicaRecordInfo.taskKey
+        val replicaTask = replicaTaskDao.findByKey(taskKey)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, taskKey)
+        return ReplicaTaskRecordInfo(replicaTask.replicaObjectType, replicaRecordInfo)
     }
 
     override fun getRecordById(id: String): ReplicaRecordInfo? {

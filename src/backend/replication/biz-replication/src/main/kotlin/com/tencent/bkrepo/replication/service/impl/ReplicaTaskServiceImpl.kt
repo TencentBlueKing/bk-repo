@@ -45,8 +45,12 @@ class ReplicaTaskServiceImpl(
     private val clusterNodeService: ClusterNodeService,
     private val taskRepository: TaskRepository
 ) : ReplicaTaskService {
+    override fun getByTaskId(taskId: String): ReplicaTaskInfo? {
+        return replicaTaskDao.findById(taskId)?.let { convert(it) }
+    }
+
     override fun getByTaskKey(key: String): ReplicaTaskInfo {
-        return replicaTaskDao.findByKey(key)?.let { convert(it)!! }
+        return replicaTaskDao.findByKey(key)?.let { convert(it) }
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
     }
 
