@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 
@@ -101,4 +102,9 @@ interface ReplicaTaskService {
      * 3. 修改上次运行状态为执行中
      */
     fun startNewRecord(key: String): ReplicaRecordInfo
+
+    /**
+     * 复制同步任务
+     */
+    fun copy(request: ReplicaTaskCopyRequest)
 }

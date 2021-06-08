@@ -4,7 +4,7 @@
 
 ## 创建集群同步任务
 
-- API: POST  /replication/api/task/cluster
+- API: POST  /replication/api/task/create
 - API 名称: create_replication_task
 - 功能说明：
 	- 中文：创建集群同步任务
@@ -37,6 +37,7 @@
       "includeMetadata": true,
       "conflictStrategy": "SKIP",
       "errorStrategy": "CONTINUE",
+      "executionStrategy": "IMMEDIATELY",
       "executionPlan": {
         "executeImmediately": true
       }
@@ -80,6 +81,7 @@
   |includeMetadata|bool|是|true|是否同步元数据|do include metadata|
   |conflictStrategy|enum|是|SKIP|[SKIP,OVERWRITE,FAST_FAIL]|conflict strategy|
   |errorStrategy|enum|是|CONTINUE|[CONTINUE,FAST_FAIL]|error strategy|
+  |executionStrategy|enum|是|IMMEDIATELY|[IMMEDIATELY,SPECIFIED_TIME,CRON_EXPRESSION]|execution strategy|
   |executionPlan|object|是|无|调度策略|execution plan|
 
 - executionPlan对象说明
@@ -135,6 +137,7 @@
         "includeMetadata": true,
         "conflictStrategy": "SKIP",
         "errorStrategy": "CONTINUE",
+        "executionStrategy": "IMMEDIATELY",
         "executionPlan": {
           "executeImmediately": true
         }
@@ -221,6 +224,7 @@
             "includeMetadata":true,
             "conflictStrategy": "SKIP",
             "errorStrategy": "CONTINUE",
+            "executionStrategy": "IMMEDIATELY",
             "executionPlan":{
               "executeImmediately":true
             }
@@ -289,7 +293,7 @@
 
 ## 分页查询任务
 
-- API: GET /replication/api/task/page?name=test&lastExecutionStatus=SUCCESS&enabled=true&pageNumber=0&pageSize=20
+- API: GET /replication/api/task/page?name=test&lastExecutionStatus=SUCCESS&enabled=true&sortType=CREATE_TIME&pageNumber=0&pageSize=20
 - API 名称: list_task_page
 - 功能说明：
   - 中文：分页查询任务
@@ -303,6 +307,7 @@
   |name|string|否|无|任务名称，支持前缀模糊匹配|task name|
   |lastExecutionStatus|enum|否|无|上次执行状态|last execution status|
   |enabled|bool|否|无|任务启停状态|do task enabled|
+  |sortType|enum|否|CREATED_TIME|[CREATE_TIME,LAST_EXECUTION_TIME,NEXT_EXECUTION_TIME]|sort by time|
   |pageNumber|int|是|无|当前页|page number|
   |pageSize|int|是|无|分页数量|page size|
 
@@ -330,6 +335,7 @@
             "includeMetadata":true,
             "conflictStrategy": "SKIP",
             "errorStrategy": "CONTINUE",
+            "executionStrategy": "IMMEDIATELY",
             "executionPlan": {
               "executeImmediately":true
             }
@@ -416,4 +422,39 @@
     "traceId": null
   }
   ```
+  
+## 复制集群同步任务
 
+- API: POST  /replication/api/task/copy
+- API 名称: copy_replication_task
+- 功能说明：
+	- 中文：复制集群同步任务
+	- English：copy replication task
+- 请求体:
+
+  ```json
+  {
+    "name": "task_copy",
+    "key": "e8d095dfe0524ce9b3ab53d1353239h8",
+    "description": "copy replica task"
+  }
+  ```
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |name|string|是|无|计划名称|replication name|
+  |key|string|是|无|任务唯一key|task unique key|
+  |description|sting|否|无|描述|description|
+  
+- 响应体
+
+  ```
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```

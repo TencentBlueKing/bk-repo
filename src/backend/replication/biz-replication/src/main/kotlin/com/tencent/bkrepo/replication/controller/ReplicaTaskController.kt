@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -99,6 +100,13 @@ class ReplicaTaskController(
     @PostMapping("/toggle/status/{key}")
     fun toggleStatus(@PathVariable key: String): Response<Void> {
         replicaTaskService.toggleStatus(key)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("任务复制")
+    @PostMapping("/copy")
+    fun copy(@RequestBody request: ReplicaTaskCopyRequest): Response<Void> {
+        replicaTaskService.copy(request)
         return ResponseBuilder.success()
     }
 }

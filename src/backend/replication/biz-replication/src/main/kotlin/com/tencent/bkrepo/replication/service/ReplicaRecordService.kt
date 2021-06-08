@@ -87,6 +87,15 @@ interface ReplicaRecordService {
     fun listRecordsByTaskKey(key: String): List<ReplicaRecordInfo>
 
     /**
+     * 根据任务key分页查询执行记录
+     *
+     * @param key 任务key
+     * @param pageNumber 当前页
+     * @param pageSize 分页大小
+     */
+    fun listRecordsPage(key: String, pageNumber: Int, pageSize: Int): Page<ReplicaRecordInfo>
+
+    /**
      * 根据记录id查询执行详情列表
      * 返回结果按照开始时间倒排，最后执行的在最前
      * @param recordId 执行记录id

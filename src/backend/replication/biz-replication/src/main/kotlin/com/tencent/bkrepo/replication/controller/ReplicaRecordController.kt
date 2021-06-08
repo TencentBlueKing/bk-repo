@@ -33,13 +33,23 @@ class ReplicaRecordController(
         return ResponseBuilder.success(replicaRecordService.listRecordsByTaskKey(key))
     }
 
+    @ApiOperation("根据taskKey分页查询任务执行日志")
+    @GetMapping("/page/{key}/{pageNumber}/{pageSize}")
+    fun listRecordsPage(
+        @PathVariable key: String,
+        @PathVariable pageNumber: Int,
+        @PathVariable pageSize: Int
+    ): Response<Page<ReplicaRecordInfo>> {
+        return ResponseBuilder.success(replicaRecordService.listRecordsPage(key, pageNumber, pageSize))
+    }
+
     @ApiOperation("根据recordId查询任务执行日志详情")
     @GetMapping("/detail/list/{recordId}")
     fun listDetailsByRecordId(@PathVariable recordId: String): Response<List<ReplicaRecordDetail>> {
         return ResponseBuilder.success(replicaRecordService.listDetailsByRecordId(recordId))
     }
 
-    @ApiOperation("根据key分页查询任务执行日志")
+    @ApiOperation("根据recordId分页查询任务执行日志")
     @GetMapping("/detail/page/{recordId}")
     fun listRecordDetailPage(
         @ApiParam(value = "执行记录id", required = true)
