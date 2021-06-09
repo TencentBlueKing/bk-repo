@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,10 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo
 
-@Suppress("ALL")
-abstract class IamBaseReq(
-    open var bk_app_code: String,
-    open var bk_app_secret: String,
-    open var bk_username: String,
-    open val bk_token: String = ""
+data class BkciAuthListResponse(
+    val status: Int,
+    val data: List<String>
 )
