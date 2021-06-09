@@ -33,7 +33,6 @@ package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -42,17 +41,14 @@ import org.springframework.stereotype.Service
  */
 @Service
 class BkAuthPipelineService(
-    private val bkAuthService: BkAuthService
+    private val bkAuthService: BkciAuthService
 ) {
     fun listPermissionedPipelines(uid: String, projectId: String): List<String> {
         return bkAuthService.getUserResourceByPermission(
             user = uid,
-            serviceCode = BkAuthServiceCode.PIPELINE,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             projectCode = projectId,
-            permission = BkAuthPermission.LIST,
-            supplier = null,
-            retryIfTokenInvalid = true
+            action = BkAuthPermission.DOWNLOAD,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT
         )
     }
 
@@ -60,12 +56,10 @@ class BkAuthPipelineService(
         logger.info("hasPermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
         return bkAuthService.validateUserResourcePermission(
             user = uid,
-            serviceCode = BkAuthServiceCode.PIPELINE,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             projectCode = projectId,
+            action = BkAuthPermission.DOWNLOAD,
             resourceCode = pipelineId,
-            permission = BkAuthPermission.DOWNLOAD,
-            retryIfTokenInvalid = true
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT
         )
     }
 

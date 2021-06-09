@@ -29,12 +29,8 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.iam
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-data class Action(
-    val id: String,
-    @JsonProperty("related_resource_types")
-    val relatedResourceTypes: List<RelatedResourceTypes>?
+data class ActionRes(
+    val id: String
 )

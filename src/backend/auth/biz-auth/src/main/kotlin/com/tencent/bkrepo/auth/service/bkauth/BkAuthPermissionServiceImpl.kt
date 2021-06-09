@@ -34,9 +34,6 @@ package com.tencent.bkrepo.auth.service.bkauth
 import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.extension.PermissionRequestContext
 import com.tencent.bkrepo.auth.extension.PermissionRequestExtension
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -60,7 +57,7 @@ class BkAuthPermissionServiceImpl constructor(
     mongoTemplate: MongoTemplate,
     repositoryClient: RepositoryClient,
     private val bkAuthConfig: BkAuthConfig,
-    private val bkAuthService: BkAuthService,
+    private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
     private val pluginManager: PluginManager
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
@@ -76,13 +73,6 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            // // 网关请求不允许匿名访问
-            // if (appId == bkAuthConfig.bkrepoAppId && request.uid == ANONYMOUS_USER) {
-            //     if (request.uid == ANONYMOUS_USER) {
-            //         logger.warn("no anonymous access")
-            //         return false
-            //     }
-            // }
             logger.debug("check devops permission request [$request]")
             // devops请求，根据配置允许匿名访问
             if (appId == bkAuthConfig.devopsAppId &&
@@ -152,15 +142,7 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String): Boolean {
         logger.info("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
         return try {
-            return bkAuthService.validateUserResourcePermission(
-                user = uid,
-                serviceCode = BkAuthServiceCode.PIPELINE,
-                resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-                projectCode = projectId,
-                resourceCode = pipelineId,
-                permission = BkAuthPermission.DOWNLOAD,
-                retryIfTokenInvalid = true
-            )
+            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId)
         } catch (e: Exception) {
             // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
@@ -177,10 +159,6 @@ class BkAuthPermissionServiceImpl constructor(
             logger.warn("checkPipelinePermission error:  ${e.message}")
             true
         }
-    }
-
-    private fun isDevopsRepo(repoName: String): Boolean {
-        return repoName == CUSTOM || repoName == PIPELINE || repoName == REPORT || repoName == LOG
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
