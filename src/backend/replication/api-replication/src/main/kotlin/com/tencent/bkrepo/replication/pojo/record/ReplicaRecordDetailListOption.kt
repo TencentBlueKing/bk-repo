@@ -13,8 +13,12 @@ class ReplicaRecordDetailListOption(
     val pageSize: Int = DEFAULT_PAGE_SIZE,
     @ApiModelProperty("包名称, 根据该字段模糊搜索")
     val packageName: String? = null,
-    @ApiModelProperty("仓库名称, 根据该字段模糊搜索")
+    @ApiModelProperty("仓库名称")
     val repoName: String? = null,
-    @ApiModelProperty("远程节点节点名称, 根据该字段模糊搜索")
-    val clusterName: String? = null
+    @ApiModelProperty("远程节点名称")
+    val clusterName: String? = null,
+    @ApiModelProperty("路径名称, 根据该字段前缀匹配")
+    val path: String? = null,
+    @ApiModelProperty("执行状态")
+    val status: ExecutionStatus? = null
 )

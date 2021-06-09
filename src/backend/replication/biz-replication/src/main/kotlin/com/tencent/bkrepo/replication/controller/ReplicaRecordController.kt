@@ -56,7 +56,7 @@ class ReplicaRecordController(
         return ResponseBuilder.success(replicaRecordService.listDetailsByRecordId(recordId))
     }
 
-    @ApiOperation("根据recordId分页查询任务执行日志")
+    @ApiOperation("根据recordId分页查询任务执行日志详情")
     @GetMapping("/detail/page/{recordId}")
     fun listRecordDetailPage(
         @ApiParam(value = "执行记录id", required = true)

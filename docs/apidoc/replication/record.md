@@ -209,8 +209,8 @@
   |localCluster|string|本地集群名称|local cluster node name|
   |remoteCluster|string|远程集群名称|remote cluster node name|
   |localRepoName|string|本地仓库名称|local repository name|
-  |packageConstraints|list|否|无|包限制|package constraints|
-  |pathConstraints|list|否|无|路径限制|path constraints|
+  |packageConstraints|object|否|无|包限制|package constraints|
+  |pathConstraints|object|否|无|路径限制|path constraints|
   |status|enum|[RUNNING,SUCCESS,FAILED]|task execute status|
   |progress|object|同步进度|task execute progress|
   |startTime|date|任务开始执行时间|task execute start time|
@@ -243,8 +243,10 @@
   |pageNumber|int|是|无|当前页|page number|
   |pageSize|int|是|无|分页数量|page size|
   |packageName|string|否|无|包名称，支持前缀模糊匹配|package name|
-  |repoName|string|否|无|仓库名称，支持前缀模糊匹配|repo name|
-  |clusterName|string|否|无|远程节点名称，支持前缀模糊匹配|cluster node name|
+  |repoName|string|否|无|仓库名称|repo name|
+  |clusterName|string|否|无|远程节点名称|cluster node name|
+  |path|string|否|无|路径名称，支持前缀模糊匹配|file path|
+  |status|enum|否|无|[SUCCESS,RUNNING,FAILED]|execute status|
 
 - 响应体
 
@@ -261,14 +263,16 @@
         {
           "id": "979b573d53efcd752bf9b762",
           "recordId": "609b573d53ccce752bf9b860",
-          "localCluster": "651095dfe0524ce9b3ab53d13532361c",
-          "remoteCluster": "SUCCESS",
+          "localCluster": "wuxi",
+          "remoteCluster": "wuhan",
           "localRepoName": "npm-local",
           "packageConstraint": {
             "packageKey": "npm://helloworld",
             "versions": ["1.1.0","1.3.0"]
           },
-          "pathConstraint": null,
+          "pathConstraint": {
+            "path": "/busy/box.txt"
+          },
           "status": "SUCCESS",
           "progress": {
             "success": 10,
@@ -295,8 +299,8 @@
   |localCluster|string|本地集群名称|local cluster node name|
   |remoteCluster|string|远程集群名称|remote cluster node name|
   |localRepoName|string|本地仓库名称|local repository name|
-  |packageConstraints|list|否|无|包限制|package constraints|
-  |pathConstraints|list|否|无|路径限制|path constraints|
+  |packageConstraints|object|否|无|包限制|package constraints|
+  |pathConstraints|object|否|无|路径限制|path constraints|
   |status|enum|[RUNNING,SUCCESS,FAILED]|task execute status|
   |progress|object|同步进度|task execute progress|
   |startTime|date|任务开始执行时间|task execute start time|

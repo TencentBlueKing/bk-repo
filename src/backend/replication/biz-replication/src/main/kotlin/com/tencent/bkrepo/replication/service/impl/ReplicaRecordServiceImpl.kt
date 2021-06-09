@@ -167,9 +167,7 @@ class ReplicaRecordServiceImpl(
         val pageNumber = option.pageNumber
         val pageSize = option.pageSize
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val query = TaskRecordQueryHelper.recordDetailListQuery(
-            recordId, option.packageName, option.repoName, option.clusterName
-        )
+        val query = TaskRecordQueryHelper.recordDetailListQuery(recordId, option)
         val totalRecords = replicaRecordDetailDao.count(query)
         val records = replicaRecordDetailDao.find(query.with(pageRequest)).map { convert(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)
