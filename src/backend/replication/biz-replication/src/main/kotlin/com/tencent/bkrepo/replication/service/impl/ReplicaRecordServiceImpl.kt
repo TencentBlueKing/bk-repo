@@ -72,6 +72,7 @@ class ReplicaRecordServiceImpl(
                 localCluster = localCluster,
                 remoteCluster = remoteCluster,
                 localRepoName = localRepoName,
+                repoType = repoType,
                 status = ExecutionStatus.RUNNING,
                 progress = ReplicaProgress(),
                 startTime = LocalDateTime.now()
@@ -106,6 +107,7 @@ class ReplicaRecordServiceImpl(
                 localCluster = localCluster,
                 remoteCluster = remoteCluster,
                 localRepoName = localRepoName,
+                repoType = repoType,
                 status = result.status,
                 progress = result.progress!!,
                 startTime = startTime,
@@ -197,6 +199,7 @@ class ReplicaRecordServiceImpl(
                     localCluster = it.localCluster,
                     remoteCluster = it.remoteCluster,
                     localRepoName = it.localRepoName,
+                    repoType = it.repoType,
                     packageConstraint = it.packageConstraint,
                     pathConstraint = it.pathConstraint,
                     status = it.status,

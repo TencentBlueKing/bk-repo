@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.model
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
@@ -63,6 +64,10 @@ data class TReplicaRecordDetail(
      * 本地仓库名称
      */
     val localRepoName: String,
+    /**
+     * 仓库类型
+     */
+    val repoType: RepositoryType,
     /**
      * 包限制
      */

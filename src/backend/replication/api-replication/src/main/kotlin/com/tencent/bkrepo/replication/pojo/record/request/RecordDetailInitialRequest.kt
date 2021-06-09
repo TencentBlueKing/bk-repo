@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.pojo.record.request
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -43,5 +44,7 @@ data class RecordDetailInitialRequest(
     @ApiModelProperty("远程集群名称")
     val remoteCluster: String,
     @ApiModelProperty("本地仓库名称")
-    val localRepoName: String
+    val localRepoName: String,
+    @ApiModelProperty("本地仓库类型")
+    val repoType: RepositoryType
 )

@@ -179,6 +179,7 @@
         "localCluster": "651095dfe0524ce9b3ab53d13532361c",
         "remoteCluster": "SUCCESS",
         "localRepoName": "npm-local",
+        "repoType": "NPM",
         "packageConstraint": {
           "packageKey": "npm://helloworld",
           "versions": ["1.1.0","1.3.0"]
@@ -209,6 +210,7 @@
   |localCluster|string|本地集群名称|local cluster node name|
   |remoteCluster|string|远程集群名称|remote cluster node name|
   |localRepoName|string|本地仓库名称|local repository name|
+  |repoType|enum|[DOCKER,NPM,RPM,...]|local repository type|
   |packageConstraints|object|否|无|包限制|package constraints|
   |pathConstraints|object|否|无|路径限制|path constraints|
   |status|enum|[RUNNING,SUCCESS,FAILED]|task execute status|
@@ -266,6 +268,7 @@
           "localCluster": "wuxi",
           "remoteCluster": "wuhan",
           "localRepoName": "npm-local",
+          "repoType": "NPM",
           "packageConstraint": {
             "packageKey": "npm://helloworld",
             "versions": ["1.1.0","1.3.0"]
@@ -299,6 +302,7 @@
   |localCluster|string|本地集群名称|local cluster node name|
   |remoteCluster|string|远程集群名称|remote cluster node name|
   |localRepoName|string|本地仓库名称|local repository name|
+  |repoType|enum|[DOCKER,NPM,RPM,...]|local repository type|
   |packageConstraints|object|否|无|包限制|package constraints|
   |pathConstraints|object|否|无|路径限制|path constraints|
   |status|enum|[RUNNING,SUCCESS,FAILED]|task execute status|

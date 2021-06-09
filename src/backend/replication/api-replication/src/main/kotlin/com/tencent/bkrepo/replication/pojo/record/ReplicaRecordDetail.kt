@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.pojo.record
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import io.swagger.annotations.ApiModel
@@ -49,6 +50,8 @@ data class ReplicaRecordDetail(
     var remoteCluster: String,
     @ApiModelProperty("本地仓库名称")
     var localRepoName: String,
+    @ApiModelProperty("仓库类型")
+    val repoType: RepositoryType,
     @ApiModelProperty("包限制")
     var packageConstraint: PackageConstraint? = null,
     @ApiModelProperty("路径名称")
