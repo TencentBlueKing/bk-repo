@@ -31,15 +31,21 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
+import com.tencent.bkrepo.auth.config.BkAuthConfig
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
 class BkAuthProjectService @Autowired constructor(
-    private val bkAuthService: BkciAuthService
+    private val bkAuthService: BkAuthService,
+    private val bkciAuthService: BkciAuthService,
+    private val bkAuthConfig: BkAuthConfig
 ) {
 
     fun isProjectMember(user: String, projectCode: String, retryIfTokenInvalid: Boolean = false): Boolean {
-        return bkAuthService.isProjectMember(user, projectCode)
+        if (bkAuthConfig.getBkciAuthServer().isNullOrEmpty()) {
+            return bkAuthService.isProjectMember(user, projectCode, retryIfTokenInvalid)
+        }
+        return bkciAuthService.isProjectMember(user, projectCode)
     }
 }

@@ -81,7 +81,7 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.warn("validateProjectUsers error: [$exception]")
+            logger.error("validateProjectUsers error: [$exception]")
             false
         }
     }
@@ -114,7 +114,7 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.warn("validateUserResourcePermission error: [$exception]")
+            logger.error("validateUserResourcePermission error: [$exception]")
             false
         }
     }
@@ -138,7 +138,7 @@ class BkciAuthService @Autowired constructor(
             logger.debug("getUserResourceByPermission result : [${apiResponse.content}]")
             return responseObject.data
         } catch (exception: Exception) {
-            logger.warn("getUserResourceByPermission error: [$exception]")
+            logger.error("getUserResourceByPermission error: [$exception]")
             emptyList()
         }
     }
