@@ -40,6 +40,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -60,7 +61,7 @@ class GrafanaController @Autowired constructor(
     }
 
     @PostMapping("/query")
-    fun query(request: QueryRequest): ResponseEntity<Any> {
+    fun query(@RequestBody request: QueryRequest): ResponseEntity<Any> {
         var result = grafanaService.query(request)
         val response = JsonUtils.objectMapper.writeValueAsString(result)
         return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
