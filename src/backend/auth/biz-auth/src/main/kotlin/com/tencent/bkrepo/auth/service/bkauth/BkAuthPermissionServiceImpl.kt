@@ -83,7 +83,7 @@ class BkAuthPermissionServiceImpl constructor(
                 return true
             }
 
-            // 校验蓝盾平台账号项目权限
+            // project权限
             if (request.resourceType == ResourceType.PROJECT) {
                 // devops直接放过
                 if (request.appId == bkAuthConfig.devopsAppId) return true
@@ -91,7 +91,7 @@ class BkAuthPermissionServiceImpl constructor(
                 return checkProjectPermission(uid, projectId!!)
             }
 
-            // 其它请求根据仓库类型判断
+            // repo或者node权限
             val pass = when (repoName) {
                 CUSTOM, LOG -> {
                     checkProjectPermission(uid, projectId!!)
@@ -103,22 +103,17 @@ class BkAuthPermissionServiceImpl constructor(
                     action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
-                    checkProjectPermission(uid, projectId!!)
+                    super.checkPermission(request)
                 }
             }
 
             // 校验不通过的权限只输出日志，暂时不拦截
             if (!pass) {
-                return if (!bkAuthConfig.devopsAuthEnabled) {
-                    logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
-                    true
-                } else {
-                    logger.info("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
-                    false
-                }
+                logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                return !bkAuthConfig.devopsAuthEnabled
             }
 
-            logger.info("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+            logger.debug("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
             return pass
         }
     }
@@ -140,7 +135,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String): Boolean {
-        logger.info("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
+        logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
         return try {
             return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId)
         } catch (e: Exception) {
@@ -151,7 +146,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun checkProjectPermission(uid: String, projectId: String): Boolean {
-        logger.info("checkProjectPermission: uid: $uid, projectId: $projectId")
+        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId")
         return try {
             bkAuthProjectService.isProjectMember(uid, projectId, retryIfTokenInvalid = true)
         } catch (e: Exception) {
@@ -175,13 +170,6 @@ class BkAuthPermissionServiceImpl constructor(
             }
         }
 
-        // 校验蓝盾平台账号项目权限
-        // if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {
-        //     return true
-        // }
-
-        // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report/log)的仓库和节点权限
-        // val resourceCond = request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE
         // devops体系账号校验
         val appIdCond = request.appId == bkAuthConfig.devopsAppId ||
             request.appId == bkAuthConfig.bkrepoAppId ||
