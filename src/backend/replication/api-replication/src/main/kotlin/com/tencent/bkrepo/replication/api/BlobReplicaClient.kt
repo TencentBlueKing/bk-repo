@@ -59,13 +59,14 @@ interface BlobReplicaClient {
 
     /**
      * 推送文件数据到远程集群
-     * @param sha256 文件sha256，用于校验
      * @param file Multipart格式文件数据
+     * @param sha256 文件sha256，用于校验
      */
     @PostMapping(BLOB_PUSH_URI, consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun push(
+        @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
-        @RequestPart file: MultipartFile
+        @RequestParam storageKey: String? = null
     ): Response<Void>
 
     /**

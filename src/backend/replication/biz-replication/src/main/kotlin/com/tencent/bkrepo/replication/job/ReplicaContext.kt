@@ -31,29 +31,24 @@
 
 package com.tencent.bkrepo.replication.job
 
-import com.tencent.bkrepo.common.api.constant.CharPool
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
+import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import okhttp3.OkHttpClient
-import org.springframework.util.Base64Utils
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 class ReplicaContext(
     val taskDetail: ReplicaTaskDetail,
     val taskObject: ReplicaObjectInfo,
     val taskRecord: ReplicaRecordInfo,
-    val clusterNodeInfo: ClusterNodeInfo
+    val localRepo: RepositoryDetail,
+    val remoteCluster: ClusterNodeInfo
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -66,48 +61,23 @@ class ReplicaContext(
     // 远程仓库信息
     val remoteProjectId: String = taskObject.remoteProjectId
     val remoteRepoName: String = taskObject.remoteRepoName
-    val remoteRepoType: RepositoryType =  taskObject.repoType
+    val remoteRepoType: RepositoryType = taskObject.repoType
+    lateinit var remoteRepo: RepositoryDetail
 
     // 同步状态
     var status = ExecutionStatus.RUNNING
-
-    val remoteUrl: String
     val artifactReplicaClient: ArtifactReplicaClient
-    val httpClient: OkHttpClient
-
-    private val cluster: RemoteClusterInfo = RemoteClusterInfo(
-        name = clusterNodeInfo.name,
-        url = clusterNodeInfo.url,
-        username = clusterNodeInfo.username,
-        password = clusterNodeInfo.password,
-        certificate = clusterNodeInfo.certificate
-    )
+    val blobReplicaClient: BlobReplicaClient
 
     init {
-        remoteUrl = normalizeUrl(cluster)
+        val cluster = RemoteClusterInfo(
+            name = remoteCluster.name,
+            url = remoteCluster.url,
+            username = remoteCluster.username,
+            password = remoteCluster.password,
+            certificate = remoteCluster.certificate
+        )
         artifactReplicaClient = FeignClientFactory.create(cluster)
-        httpClient = HttpClientBuilderFactory.create(cluster.certificate, true)
-            .addInterceptor(BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty()))
-            // .connectionPool(ConnectionPool(20, 10, TimeUnit.MINUTES))
-            .build()
-    }
-
-
-    companion object {
-        fun encodeAuthToken(username: String, password: String): String {
-            val byteArray = ("$username$COLON$password").toByteArray(Charsets.UTF_8)
-            val encodedValue = Base64Utils.encodeToString(byteArray)
-            return "$BASIC_AUTH_PREFIX$encodedValue"
-        }
-
-        fun normalizeUrl(remoteClusterInfo: RemoteClusterInfo): String {
-            val normalizedUrl = remoteClusterInfo.url
-                .trim()
-                .trimEnd(CharPool.SLASH)
-                .removePrefix(StringPool.HTTP)
-                .removePrefix(StringPool.HTTPS)
-            val prefix = if (remoteClusterInfo.certificate == null) StringPool.HTTP else StringPool.HTTPS
-            return "$prefix$normalizedUrl"
-        }
+        blobReplicaClient = FeignClientFactory.create(cluster)
     }
 }

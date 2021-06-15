@@ -87,19 +87,22 @@ class BlobReplicaController(
         }
     }
 
+
     @PostMapping(BlobReplicaClient.BLOB_PUSH_URI)
     fun push(
+        @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
-        @RequestPart file: MultipartFile
+        @RequestParam storageKey: String? = null
     ): Response<Void> {
-        if (storageService.exist(sha256, defaultCredentials)) {
+        val credentials = credentialsCache.get(storageKey.orEmpty())
+        if (storageService.exist(sha256, credentials)) {
             return ResponseBuilder.success()
         }
-        val artifactFile = ArtifactFileFactory.build(file, defaultCredentials)
+        val artifactFile = ArtifactFileFactory.build(file, credentials)
         if (artifactFile.getFileSha256() != sha256) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
         }
-        storageService.store(sha256, artifactFile, defaultCredentials)
+        storageService.store(sha256, artifactFile, credentials)
         return ResponseBuilder.success()
     }
 

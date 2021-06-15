@@ -31,8 +31,10 @@
 
 package com.tencent.bkrepo.replication.job.replicator
 
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.mapping.PackageNodeMappings
+import com.tencent.bkrepo.replication.pojo.blob.InputStreamMultipartFile
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -47,11 +49,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * 构件数据同步器
- * metadata + blob
+ * 集群间数据同步类
  */
 @Component
-class ArtifactReplicator : ScheduledReplicator() {
+class ClusterReplicator : ScheduledReplicator() {
     override fun replicaProject(context: ReplicaContext) {
         with(context) {
             val localProject = localDataManager.findProjectById(localProjectId)
@@ -78,14 +79,12 @@ class ArtifactReplicator : ScheduledReplicator() {
                 configuration = localRepo.configuration,
                 operator = localRepo.createdBy
             )
-            artifactReplicaClient.replicaRepoCreateRequest(request)
+            context.remoteRepo = artifactReplicaClient.replicaRepoCreateRequest(request).data!!
         }
     }
 
     override fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary) {
-        with(context) {
-            // do nothing
-        }
+        // do nothing
     }
 
     override fun replicaPackageVersion(
@@ -112,13 +111,12 @@ class ArtifactReplicator : ScheduledReplicator() {
                 }
             }
             // 文件数据
-            val fullPathList = PackageNodeMappings.map(
+            PackageNodeMappings.map(
                 type = localRepoType,
                 key = packageSummary.key,
                 version = packageVersion.name,
                 extension = packageVersion.extension
-            )
-            fullPathList.forEach {
+            ).forEach {
                 val node = localDataManager.findNodeDetail(
                     projectId = localProjectId,
                     repoName = localRepoName,
@@ -152,10 +150,17 @@ class ArtifactReplicator : ScheduledReplicator() {
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             return buildNodeCreateRequest(this, node)?.let {
-                // artifactReplicaClient.replicaNodeCreateRequest(it)
+                val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
+                val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
+                val file = InputStreamMultipartFile(rateLimitInputStream, it.size!!)
                 // 1. 同步文件数据
-                artifactReplicaManager.replicaFile(this, it)
+                blobReplicaClient.push(
+                    file = file,
+                    sha256 = it.sha256.orEmpty(),
+                    storageKey = remoteRepo.storageCredentials?.key
+                )
                 // 2. 同步节点信息
+                artifactReplicaClient.replicaNodeCreateRequest(it)
                 true
             } ?: false
         }
@@ -177,7 +182,8 @@ class ArtifactReplicator : ScheduledReplicator() {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> return null
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
-                    else -> { /* do nothing*/
+                    else -> {
+                        // do nothing
                     }
                 }
             }

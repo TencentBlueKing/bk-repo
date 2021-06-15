@@ -42,7 +42,6 @@ import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.constant.TASK_ID
-import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaTask
@@ -249,8 +248,7 @@ class TaskServiceImpl(
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
-                val authToken = ReplicaContext.encodeAuthToken(username, password)
-                replicationService.ping(authToken)
+                replicationService.ping()
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: StringPool.UNKNOWN
                 logger.error("ping cluster [$name] failed, reason: $message")

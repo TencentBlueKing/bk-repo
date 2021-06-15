@@ -31,18 +31,20 @@
 
 package com.tencent.bkrepo.replication.job.replicator
 
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.replication.job.ReplicaContext
+import com.tencent.bkrepo.replication.mapping.PackageNodeMappings
+import com.tencent.bkrepo.replication.pojo.blob.InputStreamMultipartFile
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component
 
 /**
- * blob文件数据同步器
+ * 边缘节点数据同步实现类
  */
 @Component
-class BlobReplicator: ScheduledReplicator() {
-
+class EdgeNodeReplicator : ScheduledReplicator() {
 
     override fun checkVersion(context: ReplicaContext) {
         // do nothing
@@ -60,19 +62,48 @@ class BlobReplicator: ScheduledReplicator() {
         // do nothing
     }
 
+    override fun replicaDir(context: ReplicaContext, node: NodeInfo) {
+        // do nothing
+    }
+
     override fun replicaPackageVersion(
         context: ReplicaContext,
         packageSummary: PackageSummary,
         packageVersion: PackageVersion
     ): Boolean {
-        TODO("Not yet implemented")
+        with(context) {
+            var affected = false
+            // 文件数据
+            PackageNodeMappings.map(
+                type = localRepoType,
+                key = packageSummary.key,
+                version = packageVersion.name,
+                extension = packageVersion.extension
+            ).forEach {
+                val node = localDataManager.findNodeDetail(
+                    projectId = localProjectId,
+                    repoName = localRepoName,
+                    fullPath = it
+                )
+                if (replicaFile(context, node.nodeInfo)) {
+                    affected = true
+                }
+            }
+            return affected
+        }
     }
 
-    override fun replicaFile(replicaContext: ReplicaContext, nodeInfo: NodeInfo): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun replicaDir(replicaContext: ReplicaContext, nodeInfo: NodeInfo) {
-        // do nothing
+    override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
+        with(context) {
+            val sha256 = node.sha256.orEmpty()
+            val artifactInputStream = localDataManager.getBlobData(sha256, node.size, localRepo)
+            val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
+            val file = InputStreamMultipartFile(rateLimitInputStream, node.size)
+            if (blobReplicaClient.check(sha256).data != true) {
+                blobReplicaClient.push(file = file, sha256 = sha256)
+                return true
+            }
+            return false
+        }
     }
 }

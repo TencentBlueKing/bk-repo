@@ -34,6 +34,7 @@ package com.tencent.bkrepo.replication.job.replicator
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
+import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.job.ReplicaExecutionContext
 import com.tencent.bkrepo.replication.manager.ArtifactReplicaManager
@@ -72,6 +73,9 @@ abstract class ScheduledReplicator : Replicator {
 
     @Autowired
     protected lateinit var artifactReplicaManager: ArtifactReplicaManager
+
+    @Autowired
+    protected lateinit var replicationProperties: ReplicationProperties
 
     override fun replica(context: ReplicaContext) {
         with(context) {
@@ -289,8 +293,9 @@ abstract class ScheduledReplicator : Replicator {
         val request = RecordDetailInitialRequest(
             recordId = context.taskRecord.id,
             localCluster = context.taskDetail.task.projectId,
-            remoteCluster = context.clusterNodeInfo.name,
-            localRepoName = context.taskObject.localRepoName
+            remoteCluster = context.remoteCluster.name,
+            localRepoName = context.localRepoName,
+            repoType = context.localRepoType
         )
         val recordDetail = replicaRecordService.initialRecordDetail(request)
         return ReplicaExecutionContext(context, recordDetail)

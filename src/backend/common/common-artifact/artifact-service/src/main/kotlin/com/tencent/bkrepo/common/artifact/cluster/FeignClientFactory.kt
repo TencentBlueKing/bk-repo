@@ -76,10 +76,10 @@ object FeignClientFactory {
         } as T
     }
 
-    private fun createInterceptor(remoteClusterInfo: RemoteClusterInfo): RequestInterceptor {
+    private fun createInterceptor(cluster: RemoteClusterInfo): RequestInterceptor {
         return RequestInterceptor {
-            if (remoteClusterInfo.username.isNotBlank()) {
-                it.header(AUTHORIZATION, BasicAuthUtils.encode(remoteClusterInfo.username, remoteClusterInfo.password))
+            if (!cluster.username.isNullOrBlank()) {
+                it.header(AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
             }
         }
     }

@@ -33,9 +33,10 @@ package com.tencent.bkrepo.replication.job
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.job.replicator.ArtifactReplicator
-import com.tencent.bkrepo.replication.job.replicator.BlobReplicator
+import com.tencent.bkrepo.replication.job.replicator.ClusterReplicator
+import com.tencent.bkrepo.replication.job.replicator.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.job.replicator.Replicator
+import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
@@ -64,7 +65,8 @@ class ScheduledReplicaJobBean(
     private val clusterNodeService: ClusterNodeService,
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
-    private val replicaTaskScheduler: ReplicaTaskScheduler
+    private val replicaTaskScheduler: ReplicaTaskScheduler,
+    private val localDataManager: LocalDataManager
 ) {
     private val threadPoolExecutor: ThreadPoolExecutor = buildThreadPoolExecutor()
 
@@ -119,7 +121,12 @@ class ScheduledReplicaJobBean(
                 require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
                 var status = ExecutionStatus.SUCCESS
                 taskDetail.objects.map { taskObject ->
-                    val context = ReplicaContext(taskDetail, taskObject, taskRecord, clusterNode)
+                    val localRepo = localDataManager.findRepoByName(
+                        taskDetail.task.projectId,
+                        taskObject.localRepoName,
+                        taskObject.repoType.toString()
+                    )
+                    val context = ReplicaContext(taskDetail, taskObject, taskRecord, localRepo, clusterNode)
                     chooseReplicator(context).replica(context)
                     if (context.status == ExecutionStatus.FAILED) {
                         status = context.status
@@ -136,9 +143,9 @@ class ScheduledReplicaJobBean(
      * 根据context选择合适的数据同步类
      */
     private fun chooseReplicator(context: ReplicaContext): Replicator {
-        return when (context.clusterNodeInfo.type) {
-            ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ArtifactReplicator>()
-            ClusterNodeType.EDGE -> SpringContextUtils.getBean<BlobReplicator>()
+        return when (context.remoteCluster.type) {
+            ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
+            ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
             else -> throw UnsupportedOperationException()
         }
     }

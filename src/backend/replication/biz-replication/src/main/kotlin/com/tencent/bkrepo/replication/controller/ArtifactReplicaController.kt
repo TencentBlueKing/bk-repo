@@ -31,20 +31,13 @@
 
 package com.tencent.bkrepo.replication.controller
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
-import com.tencent.bkrepo.replication.pojo.request.NodeReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -67,8 +60,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -81,8 +72,7 @@ class ArtifactReplicaController(
     private val repositoryClient: RepositoryClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient,
-    private val metadataClient: MetadataClient,
-    private val storageService: StorageService
+    private val metadataClient: MetadataClient
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version}")
@@ -108,49 +98,6 @@ class ArtifactReplicaController(
             request.repoName,
             request.fullPathList
         )
-    }
-
-    @PostMapping(FILE_MAPPING_URI, consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun replicaFile(
-        @ArtifactPathVariable
-        artifactInfo: DefaultArtifactInfo,
-        fileMap: ArtifactFileMap,
-        nodeReplicaRequest: NodeReplicaRequest
-    ): Response<NodeDetail> {
-        with(nodeReplicaRequest) {
-            val file = fileMap["file"]!!
-            // 校验
-            if (file.getSize() != size) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "size")
-            }
-            if (sha256.isBlank()) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "sha256")
-            }
-            if (md5.isBlank()) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "md5")
-            }
-            // 保存文件
-            val projectId = artifactInfo.projectId
-            val repoName = artifactInfo.repoName
-            val fullPath = artifactInfo.getArtifactFullPath()
-            val repoInfo = repositoryClient.getRepoDetail(projectId, repoName).data!!
-            storageService.store(sha256, file, repoInfo.storageCredentials)
-            // 保存节点
-            val request = NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath,
-                folder = false,
-                expires = expires,
-                overwrite = true,
-                size = size,
-                sha256 = sha256,
-                md5 = md5,
-                metadata = metadata,
-                operator = userId
-            )
-            return nodeClient.createNode(request)
-        }
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
@@ -219,9 +166,5 @@ class ArtifactReplicaController(
         request: PackageVersionCreateRequest
     ): Response<Void> {
         return packageClient.createVersion(request)
-    }
-
-    companion object {
-        private const val FILE_MAPPING_URI = "/file/{projectId}/{repoName}/**"
     }
 }
