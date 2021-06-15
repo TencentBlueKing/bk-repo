@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.replication
 
-import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
 import org.junit.jupiter.api.Test
 import org.quartz.InterruptableJob
 import org.quartz.JobBuilder
@@ -108,7 +108,7 @@ internal class QuartzJobReloadTest {
 
     private fun createJobDetail(id: String): JobDetail {
         return JobBuilder.newJob(HelloJob::class.java)
-            .withIdentity(id, DEFAULT_GROUP_ID)
+            .withIdentity(id, REPLICA_JOB_GROUP)
             .usingJobData("id", id)
             .requestRecovery()
             .build()
@@ -116,7 +116,7 @@ internal class QuartzJobReloadTest {
 
     private fun createTrigger(id: String): Trigger {
         return TriggerBuilder.newTrigger()
-            .withIdentity(id, DEFAULT_GROUP_ID)
+            .withIdentity(id, REPLICA_JOB_GROUP)
             .startNow()
             .build()
     }
