@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.job.ReplicaExecutionContext
+import com.tencent.bkrepo.replication.manager.ArtifactReplicaManager
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -69,6 +70,9 @@ abstract class ScheduledReplicator : Replicator {
     @Autowired
     protected lateinit var localDataManager: LocalDataManager
 
+    @Autowired
+    protected lateinit var artifactReplicaManager: ArtifactReplicaManager
+
     override fun replica(context: ReplicaContext) {
         with(context) {
             // 检查版本
@@ -96,7 +100,7 @@ abstract class ScheduledReplicator : Replicator {
     /**
      * 校验和远程集群版本是否一致
      */
-    protected fun checkVersion(context: ReplicaContext) {
+    protected open fun checkVersion(context: ReplicaContext) {
         with(context) {
             val remoteVersion = artifactReplicaClient.version().data.orEmpty()
             if (version != remoteVersion) {
@@ -189,10 +193,10 @@ abstract class ScheduledReplicator : Replicator {
      * 同步节点
      * 采用广度优先遍历
      */
-    private fun replicaByPath(context: ReplicaExecutionContext, nodeInfo: NodeInfo) {
+    private fun replicaByPath(context: ReplicaExecutionContext, node: NodeInfo) {
         with(context) {
-            if (!nodeInfo.folder) {
-                val executed = replicaFile(replicaContext, nodeInfo)
+            if (!node.folder) {
+                val executed = replicaFile(replicaContext, node)
                 if (executed) {
                     progress.success += 1
                 } else {
@@ -200,12 +204,12 @@ abstract class ScheduledReplicator : Replicator {
                 }
                 return
             }
-            replicaDir(replicaContext, nodeInfo)
+            replicaDir(replicaContext, node)
             // 查询子节点
             localDataManager.listNode(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.localRepoName,
-                fullPath = nodeInfo.fullPath
+                fullPath = node.fullPath
             ).forEach {
                 if (it.folder) {
                     replicaByPath(this, it)
@@ -238,6 +242,7 @@ abstract class ScheduledReplicator : Replicator {
         versionNames: List<String>? = null
     ) {
         with(context) {
+            replicaPackage(replicaContext, packageSummary)
             val versions = if (versionNames == null) {
                 // 查询所有版本
                 localDataManager.listAllVersion(
@@ -329,13 +334,13 @@ abstract class ScheduledReplicator : Replicator {
      * 同步文件具体逻辑，由子类实现
      * @return 是否执行了同步，如果远程存在相同文件，则返回false
      */
-    abstract fun replicaFile(replicaContext: ReplicaContext, nodeInfo: NodeInfo): Boolean
+    abstract fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean
 
     /**
      * 同步目录节点具体逻辑，由子类实现
      * @return 是否执行了同步，如果远程存在相同目录，则返回false
      */
-    abstract fun replicaDir(replicaContext: ReplicaContext, nodeInfo: NodeInfo): Boolean
+    abstract fun replicaDir(context: ReplicaContext, node: NodeInfo)
 
     /**
      * 是否包含所有仓库数据

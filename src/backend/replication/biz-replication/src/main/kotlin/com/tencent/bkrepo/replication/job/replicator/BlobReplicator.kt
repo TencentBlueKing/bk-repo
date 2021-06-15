@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.replication.job.replicator
 
 import com.tencent.bkrepo.replication.job.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component
@@ -42,6 +42,12 @@ import org.springframework.stereotype.Component
  */
 @Component
 class BlobReplicator: ScheduledReplicator() {
+
+
+    override fun checkVersion(context: ReplicaContext) {
+        // do nothing
+    }
+
     override fun replicaProject(context: ReplicaContext) {
         // do nothing
     }
@@ -54,15 +60,19 @@ class BlobReplicator: ScheduledReplicator() {
         // do nothing
     }
 
-    override fun replicaPackageVersion(context: ReplicaContext, packageVersion: PackageVersion): Boolean {
+    override fun replicaPackageVersion(
+        context: ReplicaContext,
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion
+    ): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun replicaFile(replicaContext: ReplicaContext, nodeDetail: NodeDetail): Boolean {
+    override fun replicaFile(replicaContext: ReplicaContext, nodeInfo: NodeInfo): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun replicaDir(replicaContext: ReplicaContext, nodeDetail: NodeDetail): Boolean {
+    override fun replicaDir(replicaContext: ReplicaContext, nodeInfo: NodeInfo) {
         // do nothing
     }
 }

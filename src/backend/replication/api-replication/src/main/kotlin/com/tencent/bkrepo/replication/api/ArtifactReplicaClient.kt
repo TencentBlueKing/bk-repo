@@ -144,11 +144,6 @@ interface ArtifactReplicaClient {
         @RequestBody request: PackageVersionExistCheckRequest
     ): Response<Boolean>
 
-    @PostMapping("/package/version/exist/list")
-    fun checkPackageVersionExistList(
-        @RequestBody request: PackageVersionExistCheckRequest
-    ): Response<List<String>>
-
     @PostMapping("/package/version/create")
     fun replicaPackageVersionCreatedRequest(
         @RequestBody request: PackageVersionCreateRequest
