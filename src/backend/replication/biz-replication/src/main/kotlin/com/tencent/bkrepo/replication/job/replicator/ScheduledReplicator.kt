@@ -37,7 +37,6 @@ import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.job.ReplicaExecutionContext
-import com.tencent.bkrepo.replication.manager.ArtifactReplicaManager
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -70,9 +69,6 @@ abstract class ScheduledReplicator : Replicator {
 
     @Autowired
     protected lateinit var localDataManager: LocalDataManager
-
-    @Autowired
-    protected lateinit var artifactReplicaManager: ArtifactReplicaManager
 
     @Autowired
     protected lateinit var replicationProperties: ReplicationProperties

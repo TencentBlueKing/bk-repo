@@ -31,16 +31,14 @@
 
 package com.tencent.bkrepo.replication.util
 
-import com.tencent.bkrepo.replication.constant.DEFAULT_GROUP_ID
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import org.quartz.CronExpression
 import org.quartz.CronScheduleBuilder
 import org.quartz.TriggerBuilder
 import java.text.SimpleDateFormat
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
-
 
 object CronUtils {
 
@@ -58,7 +56,7 @@ object CronUtils {
         if (!CronExpression.isValidExpression(cron)) {
             return null
         }
-        val trigger = TriggerBuilder.newTrigger().withIdentity(id, DEFAULT_GROUP_ID)
+        val trigger = TriggerBuilder.newTrigger().withIdentity(id, ReplicaTaskScheduler.REPLICA_JOB_GROUP)
             .withSchedule(CronScheduleBuilder.cronSchedule(cron)).build()
         val time0: Date = trigger.startTime
         val time1: Date = trigger.getFireTimeAfter(time0)
@@ -73,7 +71,7 @@ object CronUtils {
         if (!CronExpression.isValidExpression(cron)) {
             return null
         }
-        val trigger = TriggerBuilder.newTrigger().withIdentity(id, DEFAULT_GROUP_ID)
+        val trigger = TriggerBuilder.newTrigger().withIdentity(id, ReplicaTaskScheduler.REPLICA_JOB_GROUP)
             .withSchedule(CronScheduleBuilder.cronSchedule(cron)).build()
         val time0 = trigger.startTime
         val time1 = trigger.getFireTimeAfter(time0)
