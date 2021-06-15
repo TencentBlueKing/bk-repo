@@ -82,11 +82,12 @@ class ReplicaTaskController(
     }
 
     @ApiOperation("分页查询任务")
-    @GetMapping("/page")
+    @GetMapping("/page/{projectId}")
     fun listReplicationTaskInfoPage(
+        projectId: String,
         option: TaskPageParam
     ): Response<Page<ReplicaTaskInfo>> {
-        return ResponseBuilder.success(replicaTaskService.listTasksPage(option))
+        return ResponseBuilder.success(replicaTaskService.listTasksPage(projectId, option))
     }
 
     @ApiOperation("删除任务")

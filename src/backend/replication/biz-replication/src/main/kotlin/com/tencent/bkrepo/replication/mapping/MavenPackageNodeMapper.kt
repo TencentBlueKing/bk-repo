@@ -43,7 +43,7 @@ class MavenPackageNodeMapper : PackageNodeMapper {
         val gavKey = PackageKeys.resolveGav(key)
         val groupId = gavKey.substringBefore(StringPool.COLON).replace(StringPool.DOT, StringPool.SLASH)
         val artifactId = gavKey.substringAfter(StringPool.COLON)
-        return when (ext[packaging] as String?) {
+        return when (val packageType = ext[PACKAGE_TYPE] as? String) {
             "pom" -> {
                 listOf(
                     POM_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
@@ -52,9 +52,9 @@ class MavenPackageNodeMapper : PackageNodeMapper {
                 )
             }
             else -> listOf(
-                JAR_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
-                JAR_MD5_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
-                JAR_SHA1_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
+                JAR_FULL_PATH.format(groupId, artifactId, version, artifactId, version, packageType),
+                JAR_MD5_FULL_PATH.format(groupId, artifactId, version, artifactId, version, packageType),
+                JAR_SHA1_FULL_PATH.format(groupId, artifactId, version, artifactId, version, packageType),
                 POM_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
                 POM_MD5_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
                 POM_SHA1_FULL_PATH.format(groupId, artifactId, version, artifactId, version)
@@ -63,12 +63,12 @@ class MavenPackageNodeMapper : PackageNodeMapper {
     }
 
     companion object {
-        const val packaging = "packaging"
+        const val PACKAGE_TYPE = "packaging"
 
         // groupId/artifactId/version/artifactId-version.xxx
-        const val JAR_FULL_PATH = "%s/%s/%s/%s-%s.jar"
-        const val JAR_MD5_FULL_PATH = "%s/%s/%s/%s-%s.jar.md5"
-        const val JAR_SHA1_FULL_PATH = "%s/%s/%s/%s-%s.jar.sha1"
+        const val JAR_FULL_PATH = "%s/%s/%s/%s-%s.%s"
+        const val JAR_MD5_FULL_PATH = "%s/%s/%s/%s-%s.%s.md5"
+        const val JAR_SHA1_FULL_PATH = "%s/%s/%s/%s-%s.%s.sha1"
         const val POM_FULL_PATH = "%s/%s/%s/%s-%s.pom"
         const val POM_MD5_FULL_PATH = "%s/%s/%s/%s-%s.pom.md5"
         const val POM_SHA1_FULL_PATH = "%s/%s/%s/%s-%s.pom.sha1"

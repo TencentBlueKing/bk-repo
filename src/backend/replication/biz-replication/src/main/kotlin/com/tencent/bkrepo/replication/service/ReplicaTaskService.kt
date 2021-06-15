@@ -65,7 +65,7 @@ interface ReplicaTaskService {
     /**
      * 分页查询同步任务
      */
-    fun listTasksPage(param: TaskPageParam): Page<ReplicaTaskInfo>
+    fun listTasksPage(projectId: String, param: TaskPageParam): Page<ReplicaTaskInfo>
 
     /**
      * 查询所有待执行的调度任务

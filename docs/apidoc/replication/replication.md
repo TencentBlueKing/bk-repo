@@ -293,7 +293,7 @@
 
 ## 分页查询任务
 
-- API: GET /replication/api/task/page?name=test&lastExecutionStatus=SUCCESS&enabled=true&sortType=CREATE_TIME&pageNumber=0&pageSize=20
+- API: GET /replication/api/task/page/{projectId}?name=test&lastExecutionStatus=SUCCESS&enabled=true&sortType=CREATE_TIME&pageNumber=0&pageSize=20
 - API 名称: list_task_page
 - 功能说明：
   - 中文：分页查询任务
@@ -304,6 +304,7 @@
 
   |字段|类型|是否必须|默认值|说明|Description|
   |---|---|---|---|---|---|
+  |projectId|string|是|无|项目id|project id|
   |name|string|否|无|任务名称，支持前缀模糊匹配|task name|
   |lastExecutionStatus|enum|否|无|上次执行状态|last execution status|
   |enabled|bool|否|无|任务启停状态|do task enabled|
