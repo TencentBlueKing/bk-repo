@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.manager
 
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -46,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.stereotype.Component
+import java.io.InputStream
 
 /**
  * 本地数据管理类
@@ -60,6 +62,16 @@ class LocalDataManager(
     private val metadataClient: MetadataClient,
     private val storageService: StorageService
 ) {
+
+    /**
+     * 获取blob文件数据
+     */
+    @Throws(IllegalStateException::class)
+    fun getBlobData(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {
+        val blob = storageService.load(sha256, Range.full(length), repoInfo.storageCredentials)
+        check(blob != null) { "File data[sha256] does not exist" }
+        return blob
+    }
 
     /**
      * 查找项目

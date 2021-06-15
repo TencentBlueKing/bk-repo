@@ -43,15 +43,10 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import com.tencent.bkrepo.replication.service.ReplicationService
-import com.tencent.bkrepo.replication.service.RepoDataService
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ArrayBlockingQueue
@@ -69,8 +64,6 @@ class ScheduledReplicaJobBean(
     private val clusterNodeService: ClusterNodeService,
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
-    private val repoDataService: RepoDataService,
-    private val replicationService: ReplicationService,
     private val replicaTaskScheduler: ReplicaTaskScheduler
 ) {
     private val threadPoolExecutor: ThreadPoolExecutor = buildThreadPoolExecutor()
@@ -183,100 +176,6 @@ class ScheduledReplicaJobBean(
             100, 500, 30, TimeUnit.SECONDS,
             ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.AbortPolicy()
         )
-    }
-
-    private fun replicaRepo(context: ReplicaContext) {
-        checkInterrupted()
-        with(context.currentRepoDetail) {
-            // 创建仓库
-            val replicaRequest = RepoCreateRequest(
-                projectId = context.remoteProjectId,
-                name = context.remoteRepoName,
-                type = localRepoDetail.type,
-                category = localRepoDetail.category,
-                public = localRepoDetail.public,
-                description = localRepoDetail.description,
-                configuration = localRepoDetail.configuration,
-                operator = localRepoDetail.createdBy
-            )
-            replicationService.replicaRepoCreateRequest(context, replicaRequest)
-            // 同步权限
-            replicaUserAndPermission(context, true)
-            // 同步节点
-            var page = 1
-            val localProjectId = localRepoDetail.projectId
-            val localRepoName = localRepoDetail.name
-            var fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, ROOT, page, pageSize)
-            while (fileNodeList.isNotEmpty()) {
-                val fullPathList = fileNodeList.map { it.fullPath }
-                val request = NodeExistCheckRequest(localProjectId, localRepoName, fullPathList)
-                val existFullPathList =
-                    context.artifactReplicaClient.checkNodeExistList(context.authToken, request).data!!
-                // 同步不存在的节点
-                fileNodeList.forEach { replicaNode(it, context, existFullPathList) }
-                page += 1
-                fileNodeList = repoDataService.listFileNode(localProjectId, localRepoName, ROOT, page, pageSize)
-            }
-        }
-    }
-
-    private fun replicaNode(node: NodeInfo, context: ReplicaContext, existFullPathList: List<String>) {
-        checkInterrupted()
-        with(context) {
-            val formattedNodePath = "${node.projectId}/${node.repoName}${node.fullPath}"
-            // 节点冲突检查
-            if (existFullPathList.contains(node.fullPath)) {
-                when (task.setting.conflictStrategy) {
-                    ConflictStrategy.SKIP -> {
-                        logger.debug("File[$formattedNodePath] conflict, skip it.")
-                        progress.conflictedNode += 1
-                        return
-                    }
-                    ConflictStrategy.OVERWRITE -> {
-                        logger.debug("File[$formattedNodePath] conflict, overwrite it.")
-                    }
-                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$formattedNodePath] conflict.")
-                }
-            }
-            try {
-                // 查询元数据
-                val metadata = if (task.setting.includeMetadata) {
-                    node.metadata
-                } else emptyMap()
-                // 同步节点
-                val replicaRequest = NodeCreateRequest(
-                    projectId = remoteProjectId,
-                    repoName = remoteRepoName,
-                    fullPath = node.fullPath,
-                    folder = node.folder,
-                    overwrite = true,
-                    size = node.size,
-                    sha256 = node.sha256!!,
-                    md5 = node.md5!!,
-                    metadata = metadata,
-                    operator = node.createdBy
-                )
-                replicationService.replicaFile(context, replicaRequest)
-                progress.successNode += 1
-                logger.info("Success to replica file [$formattedNodePath].")
-            } catch (interruptedException: InterruptedException) {
-                throw interruptedException
-            } catch (exception: RuntimeException) {
-                progress.failedNode += 1
-                logger.error("Failed to replica file [$formattedNodePath].", exception)
-            } finally {
-                progress.replicatedNode += 1
-                if (progress.replicatedNode % 50 == 0L) {
-                    taskRepository.save(task)
-                }
-            }
-        }
-    }
-
-    private fun checkInterrupted() {
-        if (Thread.interrupted()) {
-            throw InterruptedException("Interrupted by user")
-        }
     }
 
     companion object {

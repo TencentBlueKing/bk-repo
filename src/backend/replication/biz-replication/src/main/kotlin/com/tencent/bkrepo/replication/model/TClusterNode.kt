@@ -76,7 +76,6 @@ data class TClusterNode(
      * 集群访问证书, 独立集群需要此字段
      */
     val certificate: String?,
-
     /**
      * 审计信息
      */

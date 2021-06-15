@@ -203,15 +203,16 @@ class ArtifactReplicaController(
         return metadataClient.deleteMetadata(request)
     }
 
-    override fun checkPackageVersionExistList(
+    override fun checkPackageVersionExist(
         request: PackageVersionExistCheckRequest
-    ): Response<List<String>> {
-        return packageClient.listExistPackageVersion(
+    ): Response<Boolean> {
+        val packageVersion = packageClient.findVersionByName(
             request.projectId,
             request.repoName,
             request.packageKey,
-            request.packageVersionList
-        )
+            request.versionName
+        ).data
+        return ResponseBuilder.success(packageVersion != null)
     }
 
     override fun replicaPackageVersionCreatedRequest(

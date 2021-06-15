@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.job.replicator
 
 import com.tencent.bkrepo.replication.job.ReplicaContext
 import com.tencent.bkrepo.replication.mapping.PackageNodeMappings
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -42,6 +43,8 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 构件数据同步器
@@ -81,8 +84,7 @@ class ArtifactReplicator : ScheduledReplicator() {
 
     override fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary) {
         with(context) {
-            artifactReplicaClient
-            // TODO
+            // do nothing
         }
     }
 
@@ -94,7 +96,13 @@ class ArtifactReplicator : ScheduledReplicator() {
         with(context) {
             // 包版本冲突检查
             val fullPath = "${packageSummary.name}-${packageVersion.name}"
-            if (artifactReplicaClient.checkPackageVersionExist(packageVersion.name).data == true) {
+            val checkRequest = PackageVersionExistCheckRequest(
+                projectId = remoteProjectId,
+                repoName = remoteRepoName,
+                packageKey = packageSummary.key,
+                versionName = packageVersion.name
+            )
+            if (artifactReplicaClient.checkPackageVersionExist(checkRequest).data == true) {
                 when (task.setting.conflictStrategy) {
                     ConflictStrategy.SKIP -> return false
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("Package [$fullPath] conflict.")
@@ -111,8 +119,12 @@ class ArtifactReplicator : ScheduledReplicator() {
                 extension = packageVersion.extension
             )
             fullPathList.forEach {
-                // TODO 同步文件
-                // replicaNode(it, context, jobContext, existFullPathList)
+                val node = localDataManager.findNodeDetail(
+                    projectId = localProjectId,
+                    repoName = localRepoName,
+                    fullPath = it
+                )
+                replicaFile(context, node.nodeInfo)
             }
             // 包数据
             val request = PackageVersionCreateRequest(
@@ -139,19 +151,31 @@ class ArtifactReplicator : ScheduledReplicator() {
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
-            replicaDir(this, node)
-            // TODO 同步文件
-            replicationArtifactService.replicaFile(context, replicaRequest)
+            return buildNodeCreateRequest(this, node)?.let {
+                // artifactReplicaClient.replicaNodeCreateRequest(it)
+                // 1. 同步文件数据
+                artifactReplicaManager.replicaFile(this, it)
+                // 2. 同步节点信息
+                true
+            } ?: false
         }
     }
 
-    override fun replicaDir(context: ReplicaContext, node: NodeInfo): Boolean {
+    override fun replicaDir(context: ReplicaContext, node: NodeInfo) {
+        with(context) {
+            buildNodeCreateRequest(this, node)?.let {
+                artifactReplicaClient.replicaNodeCreateRequest(it)
+            }
+        }
+    }
+
+    private fun buildNodeCreateRequest(context: ReplicaContext, node: NodeInfo): NodeCreateRequest? {
         with(context) {
             val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
             // 节点冲突检查
             if (artifactReplicaClient.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true) {
                 when (task.setting.conflictStrategy) {
-                    ConflictStrategy.SKIP -> return false
+                    ConflictStrategy.SKIP -> return null
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
                     else -> { /* do nothing*/
                     }
@@ -159,8 +183,7 @@ class ArtifactReplicator : ScheduledReplicator() {
             }
             // 查询元数据
             val metadata = if (task.setting.includeMetadata) node.metadata else emptyMap()
-            // 同步节点
-            val replicaRequest = NodeCreateRequest(
+            return NodeCreateRequest(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
                 fullPath = node.fullPath,
@@ -172,11 +195,10 @@ class ArtifactReplicator : ScheduledReplicator() {
                 metadata = metadata,
                 operator = node.createdBy,
                 createdBy = node.createdBy,
-                createdDate = node.createdDate,
+                createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = node.lastModifiedBy,
-                lastModifiedDate = node.lastModifiedDate
+                lastModifiedDate = LocalDateTime.parse(node.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
             )
-            return true
         }
     }
 }

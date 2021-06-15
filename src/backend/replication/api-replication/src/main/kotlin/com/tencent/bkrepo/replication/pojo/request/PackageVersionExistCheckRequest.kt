@@ -35,5 +35,5 @@ data class PackageVersionExistCheckRequest(
     val projectId: String,
     val repoName: String,
     val packageKey: String,
-    val packageVersionList: List<String>
+    val versionName: String
 )
