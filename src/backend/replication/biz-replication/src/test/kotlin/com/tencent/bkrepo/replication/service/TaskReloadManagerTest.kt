@@ -36,10 +36,10 @@ import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
 import com.tencent.bkrepo.replication.job.ScheduledReplicaJobBean
-import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
-import com.tencent.bkrepo.replication.pojo.task.ReplicationType
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
@@ -64,20 +64,19 @@ import java.time.LocalDateTime
 
 @DataMongoTest(properties = ["logging.level.com.tencent=DEBUG"])
 @Import(
-    TaskService::class,
+    ReplicaTaskService::class,
     ReplicaTaskScheduler::class,
     TaskReloadManager::class,
     SpringContextUtils::class,
     JobAutoConfiguration::class,
     ReplicationConfigurer::class,
-    AsyncConfiguration::class,
-    TaskLogService::class
+    AsyncConfiguration::class
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 private class TaskReloadManagerTest {
 
     @Autowired
-    private lateinit var taskService: TaskService
+    private lateinit var replicaTaskService: ReplicaTaskService
 
     @Autowired
     private lateinit var taskRepository: TaskRepository
@@ -99,8 +98,11 @@ private class TaskReloadManagerTest {
 
     @Test
     fun `should execute immediately`() {
-        val task = createTask(ReplicationType.FULL, ExecutionPlan(executeImmediately = true))
-        Assertions.assertEquals(ReplicationStatus.WAITING, taskService.detail(task.key)!!.status)
+        val task = createTask(ReplicaType.SCHEDULED, ExecutionPlan(executeImmediately = true))
+        Assertions.assertEquals(
+            ReplicationStatus.WAITING,
+            replicaTaskService.getByTaskKey(task.key).lastExecutionStatus
+        )
         verify(scheduledReplicaJobBean, times(0)).execute(task.id)
         Thread.sleep(10 * 1000)
         verify(scheduledReplicaJobBean, times(1)).execute(task.id)
@@ -110,7 +112,7 @@ private class TaskReloadManagerTest {
     fun `should execute at specific time`() {
         val executeTime = LocalDateTime.now().plusSeconds(10)
         val executionPlan = ExecutionPlan(executeImmediately = false, executeTime = executeTime)
-        val task = createTask(ReplicationType.FULL, executionPlan)
+        val task = createTask(ReplicaType.SCHEDULED, executionPlan)
         Thread.sleep(9 * 1000)
         verify(scheduledReplicaJobBean, times(0)).execute(task.id)
         Thread.sleep(1 * 1000)
@@ -121,9 +123,9 @@ private class TaskReloadManagerTest {
     fun `should not execute after delete task`() {
         val executeTime = LocalDateTime.now().plusSeconds(25)
         val executionPlan = ExecutionPlan(executeImmediately = false, executeTime = executeTime)
-        val task = createTask(ReplicationType.FULL, executionPlan)
+        val task = createTask(ReplicaType.SCHEDULED, executionPlan)
         Thread.sleep(11 * 1000)
-        taskService.delete(task.key)
+        replicaTaskService.deleteByTaskKey(task.key)
         Thread.sleep(11 * 1000)
         verify(scheduledReplicaJobBean, times(0)).execute(task.id)
     }
@@ -132,23 +134,23 @@ private class TaskReloadManagerTest {
     fun `should execute repeat by cron expression`() {
         val cronExpression = "0/1 * * * * ?"
         val executionPlan = ExecutionPlan(executeImmediately = false, cronExpression = cronExpression)
-        val task = createTask(ReplicationType.FULL, executionPlan)
+        val task = createTask(ReplicaType.SCHEDULED, executionPlan)
         Thread.sleep(16 * 1000)
         verify(scheduledReplicaJobBean, atLeast(5)).execute(task.id)
     }
 
-    private fun createTask(type: ReplicationType, executionPlan: ExecutionPlan = ExecutionPlan()): ReplicaTaskInfo {
-        val remoteClusterInfo = RemoteClusterInfo(url = "", username = "", password = "")
+    private fun createTask(type: ReplicaType, executionPlan: ExecutionPlan = ExecutionPlan()): ReplicaTaskInfo {
+        val setting = ReplicaSetting(executionPlan = executionPlan)
         val request = ReplicaTaskCreateRequest(
-            type = type,
-            includeAllProject = true,
-            localProjectId = "localProjectId",
-            localRepoName = "localRepoName",
-            remoteProjectId = "remoteProjectId",
-            remoteRepoName = "remoteRepoName",
-            setting = ReplicaSetting(remoteClusterInfo = remoteClusterInfo, executionPlan = executionPlan),
-            validateConnectivity = false
+            name = "123",
+            localProjectId = "111",
+            replicaObjectType = ReplicaObjectType.PACKAGE,
+            replicaTaskObjects = listOf(),
+            replicaType = type,
+            setting = setting,
+            remoteClusterIds = setOf(),
+            enabled = true
         )
-        return taskService.create("system", request)
+        return replicaTaskService.create(request) as ReplicaTaskInfo
     }
 }
