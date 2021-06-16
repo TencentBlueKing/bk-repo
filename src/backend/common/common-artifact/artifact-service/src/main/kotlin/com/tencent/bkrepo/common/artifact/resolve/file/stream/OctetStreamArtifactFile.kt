@@ -32,12 +32,9 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRandomName
-import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -60,17 +57,14 @@ open class OctetStreamArtifactFile(
 
     private var hasInitialized: Boolean = false
     private var sha1: String? = null
-    private val listener: DigestCalculateListener
+    private val listener: DigestCalculateListener = DigestCalculateListener()
     private val receiver: SmartStreamReceiver
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
         val enableTransfer = storageProperties.monitor.enableTransfer
-        val rateLimit = storageProperties.rateLimit
-        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer, rateLimit)
-        listener = DigestCalculateListener()
-        if (!storageProperties.isResolveLazily) {
+        receiver = SmartStreamReceiver(storageProperties.receive, enableTransfer, path)
+        if (!storageProperties.receive.resolveLazily) {
             init()
         }
     }
@@ -155,7 +149,7 @@ open class OctetStreamArtifactFile(
             }
             val throughput = receiver.receive(source, listener)
             hasInitialized = true
-            SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
+            // SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
         } finally {
             monitor.remove(receiver)
         }
