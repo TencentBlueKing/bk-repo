@@ -75,7 +75,7 @@ class ReplicaTaskServiceImpl(
         return replicaTaskDao.find(query).map { convert(it)!! }
     }
 
-    override fun create(request: ReplicaTaskCreateRequest) {
+    override fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo {
         with(request) {
             validateRequest(this)
             val key = uniqueId()
@@ -120,11 +120,13 @@ class ReplicaTaskServiceImpl(
                     pathConstraints = it.pathConstraints
                 )
             }
-            try {
+            return try {
                 replicaObjectDao.insert(replicaObjectList)
                 replicaTaskDao.insert(task)
+                convert(task)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert task[$name] error: [${exception.message}]")
+                getByTaskKey(key)
             }
         }
     }

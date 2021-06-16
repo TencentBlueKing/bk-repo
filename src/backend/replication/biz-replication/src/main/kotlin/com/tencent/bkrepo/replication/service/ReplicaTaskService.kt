@@ -82,7 +82,7 @@ interface ReplicaTaskService {
      *
      * @param request 创建请求
      */
-    fun create(request: ReplicaTaskCreateRequest)
+    fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo
 
     /**
      * 根据[key]删除同步任务

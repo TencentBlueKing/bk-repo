@@ -95,11 +95,48 @@
 
 - 响应体
 
-  ```
+  ```json
   {
     "code": 0,
     "message": null,
-    "data": null,
+    "data": {
+      "id": "609b573353ccce752bf9b85f",
+      "key": "784e49c5ba974a1e8ac503a840f65eb5",
+      "name": "测试分发计划",
+      "projectId": "bkrepo",
+      "replicaObjectType": "REPOSITORY",
+      "replicaType": "SCHEDULED",
+      "setting": {
+        "rateLimit": 0,
+        "includeMetadata": true,
+        "conflictStrategy": "SKIP",
+        "errorStrategy": "CONTINUE",
+        "executionStrategy": "IMMEDIATELY",
+        "executionPlan": {
+          "executeImmediately": true
+        }
+      },
+      "remoteClusters": [
+        {
+          "id": "651095dfe0524ce9b3ab53d13532361c",
+          "name": "shanghai"
+        },
+        {
+          "id": "329fbcda45944fb9ae5c2573acd7bd2a",
+          "name": "beijing"
+        }
+      ],
+      "description": "for test",
+      "lastExecutionStatus": "SUCCESS",
+      "lastExecutionTime": "2020-03-16T12:00:00.000",
+      "nextExecutionTime": "2020-03-17T12:00:00.000",
+      "executionTimes": 5,
+      "enabled": true,
+      "createdBy" : "system",
+      "createdDate" : "2020-03-16T12:13:03.371",
+      "lastModifiedBy" : "system",
+      "lastModifiedDate" : "2020-03-16T12:13:03.371"
+    },
     "traceId": null
   }
   ```

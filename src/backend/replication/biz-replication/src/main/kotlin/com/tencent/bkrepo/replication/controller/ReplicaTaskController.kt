@@ -64,9 +64,8 @@ class ReplicaTaskController(
 ) {
     @ApiOperation("创建任务")
     @PostMapping("/create")
-    fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<Void> {
-        replicaTaskService.create(request)
-        return ResponseBuilder.success()
+    fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo> {
+        return ResponseBuilder.success(replicaTaskService.create(request))
     }
 
     @ApiOperation("根据任务key查询任务信息")
@@ -84,7 +83,7 @@ class ReplicaTaskController(
     @ApiOperation("分页查询任务")
     @GetMapping("/page/{projectId}")
     fun listReplicationTaskInfoPage(
-        projectId: String,
+        @PathVariable projectId: String,
         option: TaskPageParam
     ): Response<Page<ReplicaTaskInfo>> {
         return ResponseBuilder.success(replicaTaskService.listTasksPage(projectId, option))
