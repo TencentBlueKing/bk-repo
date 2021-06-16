@@ -78,7 +78,7 @@ class ArtifactReplicaController(
     @Value("\${spring.application.version}")
     private var version: String = DEFAULT_VERSION
 
-    override fun ping() = ResponseBuilder.success()
+    override fun ping(token: String) = ResponseBuilder.success()
 
     override fun version() = ResponseBuilder.success(version)
 

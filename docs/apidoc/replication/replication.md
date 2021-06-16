@@ -345,7 +345,7 @@
   |name|string|否|无|任务名称，支持前缀模糊匹配|task name|
   |lastExecutionStatus|enum|否|无|上次执行状态|last execution status|
   |enabled|bool|否|无|任务启停状态|do task enabled|
-  |sortType|enum|否|CREATED_TIME|[CREATE_TIME,LAST_EXECUTION_TIME,NEXT_EXECUTION_TIME]|sort by time|
+  |sortType|enum|否|CREATED_TIME|[CREATED_TIME,LAST_EXECUTION_TIME,NEXT_EXECUTION_TIME]|sort by time|
   |pageNumber|int|是|无|当前页|page number|
   |pageSize|int|是|无|分页数量|page size|
 

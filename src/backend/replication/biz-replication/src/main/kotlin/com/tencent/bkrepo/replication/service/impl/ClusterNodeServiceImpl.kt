@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.config.FeignClientFactory
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
@@ -125,9 +126,7 @@ class ClusterNodeServiceImpl(
 
     override fun tryConnect(name: String) {
         val clusterNodeInfo = convertRemoteInfo(clusterNodeDao.findByName(name))
-            ?: throw ErrorCodeException(
-                ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, "don't find cluster node [$name]"
-            )
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
         tryConnect(clusterNodeInfo)
     }
 
@@ -136,11 +135,12 @@ class ClusterNodeServiceImpl(
         with(remoteClusterInfo) {
             try {
                 val replicationService = FeignClientFactory.create(ArtifactReplicaClient::class.java, this)
-                replicationService.ping()
+                val authToken = BasicAuthUtils.encode(username.orEmpty(), password.orEmpty())
+                replicationService.ping(authToken)
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.error("ping cluster [$name] failed, reason: $message")
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name, message)
             }
         }
     }
