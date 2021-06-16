@@ -44,7 +44,11 @@ class InputStreamRequestBody(
     override fun contentType(): MediaType? = null
 
     override fun contentLength(): Long {
-        return inputStream.available().toLong()
+        return try {
+            inputStream.available().toLong()
+        } catch (ignored: Exception) {
+            -1
+        }
     }
 
     override fun writeTo(sink: BufferedSink) {
