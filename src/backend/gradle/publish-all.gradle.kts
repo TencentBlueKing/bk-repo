@@ -28,17 +28,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+val allJarRepo: String? by project
+val allJarUsername: String? by project
+val allJarPassword: String? by project
 
-listOf(
-    ":common:common-api",
-    ":common:common-artifact:artifact-api",
-    ":common:common-query:query-api",
-    ":common:common-storage:storage-api",
-    ":generic:api-generic",
-    ":repository:api-repository"
-).map { project(it) }.forEach {
-    it.apply(plugin = "com.tencent.devops.publish")
-    it.configure<PublishingExtension> {
+allprojects {
+    apply(plugin = "com.tencent.devops.publish")
+    configure<PublishingExtension> {
+        repositories {
+            maven {
+                name = "allJar"
+                url = uri(allJarRepo.orEmpty())
+                credentials {
+                    username = allJarUsername
+                    password = allJarPassword
+                }
+            }
+        }
         publications.withType<MavenPublication> {
             pom {
                 name.set(project.name)
