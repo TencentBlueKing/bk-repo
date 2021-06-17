@@ -35,13 +35,12 @@ import com.tencent.bkrepo.common.plugin.api.EXTENSION_LOCATION
 import com.tencent.bkrepo.common.plugin.api.ExtensionType
 import com.tencent.bkrepo.common.plugin.api.PluginInfo
 import com.tencent.bkrepo.common.plugin.api.PluginMetadata
-import org.springframework.core.io.UrlResource
-import org.springframework.core.io.support.PropertiesLoaderUtils
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.LinkedList
+import java.util.Properties
 import java.util.jar.JarFile
 
 /**
@@ -73,10 +72,11 @@ class PluginLoader(
     private fun resolveExtensions(): HashMap<ExtensionType, LinkedList<String>> {
         val result = HashMap<ExtensionType, LinkedList<String>>()
         try {
-            val url = classLoader.getResource(EXTENSION_LOCATION)
-            check(url != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
-            val resource = UrlResource(url)
-            val properties = PropertiesLoaderUtils.loadProperties(resource)
+            val properties = Properties()
+            classLoader.getResourceAsStream(EXTENSION_LOCATION).use {
+                check(it != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
+                properties.load(it)
+            }
             ExtensionType.values().forEach { type ->
                 val list = result.getOrPut(type) { LinkedList() }
                 properties.getProperty(type.identifier).orEmpty()
@@ -136,7 +136,7 @@ class PluginLoader(
                 digest.update(buffer, 0, sizeRead)
                 sizeRead = input.read(buffer)
             }
-            return digest.digest().fold("", { str, it -> str + "%02x".format(it) })
+            return digest.digest().fold("") { str, it -> str + "%02x".format(it) }
         }
     }
 
