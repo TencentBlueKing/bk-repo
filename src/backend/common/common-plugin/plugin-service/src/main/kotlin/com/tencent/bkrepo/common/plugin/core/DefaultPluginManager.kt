@@ -57,31 +57,47 @@ class DefaultPluginManager(
     @EventListener(ApplicationReadyEvent::class)
     @Synchronized
     override fun load() {
-        pluginScanner.scan().forEach {
-            val pluginLoader = PluginLoader(it)
-            val pluginInfo = pluginLoader.loadPlugin()
-            registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
+        try {
+            pluginScanner.scan().forEach {
+                val pluginLoader = PluginLoader(it)
+                val pluginInfo = pluginLoader.loadPlugin()
+                registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
+            }
+        } catch (checked: Exception) {
+            logger.error("Failed to load plugin: ${checked.message}", checked)
+            throw checked
         }
     }
 
     @Synchronized
     override fun load(id: String) {
-        val path = pluginScanner.scan(id)
-        checkNotNull(path) { "Plugin[$id] jar file not found" }
-        val pluginLoader = PluginLoader(path)
-        val pluginInfo = pluginLoader.loadPlugin()
-        registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
+        try {
+            val path = pluginScanner.scan(id)
+            checkNotNull(path) { "Plugin[$id] jar file not found" }
+            val pluginLoader = PluginLoader(path)
+            val pluginInfo = pluginLoader.loadPlugin()
+            registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
+        } catch (checked: Exception) {
+            logger.error("Failed to load plugin[$id]: ${checked.message}", checked)
+            throw checked
+        }
     }
 
     @Synchronized
     override fun unload(id: String) {
-        if (!pluginMap.containsKey(id)) {
-            return
+        try {
+            if (!pluginMap.containsKey(id)) {
+                return
+            }
+            extensionRegistry.unregisterExtensionPointsByPlugin(id)
+            extensionRegistry.unregisterExtensionControllerByPlugin(id)
+            pluginMap.remove(id)
+            logger.info("Success unregister plugin[$id]")
+        } catch (checked: Exception) {
+            logger.error("Failed to unload plugin[$id]: ${checked.message}", checked)
+            throw checked
         }
-        extensionRegistry.unregisterExtensionPointsByPlugin(id)
-        extensionRegistry.unregisterExtensionControllerByPlugin(id)
-        pluginMap.remove(id)
-        logger.info("Success unregister plugin[$id]")
+
     }
 
     override fun <T : ExtensionPoint> findExtensionPoints(clazz: Class<T>): List<T> {
