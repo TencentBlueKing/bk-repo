@@ -41,7 +41,7 @@
         props: {
             article: {
                 type: Array,
-                default: []
+                default: () => []
             }
         },
         data () {

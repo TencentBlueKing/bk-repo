@@ -155,9 +155,9 @@
                 // 当前已请求页数，0代表没有更多
                 dependentsPage: 1,
                 pagination: {
-                    count: 1,
+                    count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 },
                 selectedHistory: {}
@@ -262,10 +262,12 @@
         display: flex;
         .base-info-left {
             flex: 3;
+            overflow-y: auto;
             padding-top: 20px;
             padding-right: 20px;
             border-right: 1px solid $borderWeightColor;
             .base-info-guide {
+                position: relative;
                 border-top: 1px solid $borderWeightColor;
                 .section-main {
                     margin-top: 20px;
@@ -280,12 +282,14 @@
                 }
             }
             .base-info-checksums {
+                position: relative;
                 margin-top: 20px;
                 border-top: 1px solid $borderWeightColor;
             }
         }
         .base-info {
             flex: 2;
+            overflow-y: auto;
             margin-top: 20px;
             margin-left: 20px;
             border-top: 1px solid $borderWeightColor;

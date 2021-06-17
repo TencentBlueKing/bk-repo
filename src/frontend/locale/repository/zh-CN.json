@@ -139,6 +139,8 @@
     "publicRepoDesc": "公开的仓库将会开放下载",
     "userManage": "用户管理",
     "userCenter": "个人中心",
+    "nodeManage": "节点管理",
+    "planManage": "分发计划",
     "userInfo": "个人信息",
     "manage": "管理",
     "admin": "管理者",
@@ -154,5 +156,27 @@
     "deleteUserTitle": "确定删除用户 {0} ?",
     "pwdPlacehodler": "密码长度为8-32个字符，必须包含大小写字母，数字，特殊字符（除空格）",
     "deleteRoleTitle": "确定删除用户组 {0} ?",
-    "deleteRoleSubTitle": "基于该用户组的授权将取消"
+    "deleteRoleSubTitle": "基于该用户组的授权将取消",
+    "cron": {
+        "second": "秒",
+        "minute": "分钟",
+        "hour": "小时",
+        "day": "日",
+        "month": "月",
+        "week": "周",
+        "year": "年",
+        "every": "每{0}",
+        "interval": "区间",
+        "circle": "循环",
+        "enumeration": "枚举",
+        "from": "从",
+        "to": "到",
+        "1": "日",
+        "2": "一",
+        "3": "二",
+        "4": "三",
+        "5": "四",
+        "6": "五",
+        "7": "六"
+    }
 }

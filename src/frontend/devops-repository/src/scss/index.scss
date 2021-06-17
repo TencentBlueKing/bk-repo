@@ -57,6 +57,10 @@ li {
 
 a {
 	text-decoration: none;
+	color: $fontWeightColor;
+	&:hover {
+		color: $primaryColor;
+	}
 }
 
 button,
@@ -92,6 +96,18 @@ label {
 .flex-align-center {
     display: flex;
     align-items: center;
+}
+
+.flex-between-center {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.text-overflow {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 :focus {
@@ -133,8 +149,9 @@ label {
 
 .repo-tag {
     display: inline-block;
-    padding: 5px;
-    border-radius: 5px;
+    padding: 0 10px;
+    line-height: 22px;
+    border-radius: 10px;
     font-size: 12px;
     white-space: nowrap;
     background-color: $primaryLightColor;
@@ -142,4 +159,12 @@ label {
 
 .break-all {
     word-break: break-all;
+}
+
+.w250 {
+    width: 250px!important;
+}
+
+.bk-table-body-wrapper {
+    overflow-y: auto!important;
 }

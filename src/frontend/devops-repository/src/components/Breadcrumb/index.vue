@@ -30,7 +30,7 @@
         props: {
             list: {
                 type: Array,
-                default: []
+                default: () => []
             }
         },
         methods: {
