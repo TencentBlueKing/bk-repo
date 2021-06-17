@@ -140,7 +140,7 @@ class CacheStorageService(
      * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
      */
     private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
-        val isExceedThreshold = range.total > storageProperties.fileSizeThreshold.toBytes()
+        val isExceedThreshold = range.total > storageProperties.receive.fileSizeThreshold.toBytes()
         val isHealth = if (credentials == storageProperties.defaultStorageCredentials()) {
             monitor.health.get()
         } else {

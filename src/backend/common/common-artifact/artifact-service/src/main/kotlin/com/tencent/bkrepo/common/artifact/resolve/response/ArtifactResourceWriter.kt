@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,27 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.util.http
+package com.tencent.bkrepo.common.artifact.resolve.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.constant.StringPool.BYTES
-import com.tencent.bkrepo.common.api.constant.StringPool.NO_CACHE
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
+import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpMethod
+import org.springframework.stereotype.Component
 import org.springframework.web.util.UriUtils
 import java.io.IOException
 import java.time.LocalDateTime
@@ -58,13 +58,10 @@ import java.time.format.DateTimeFormatter
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-object ArtifactResourceWriter {
-
-    private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
-        add("yaml", MediaTypes.APPLICATION_YAML)
-        add("tgz", MediaTypes.APPLICATION_TGZ)
-        add("ico", MediaTypes.APPLICATION_ICO)
-    }
+@Component
+class ArtifactResourceWriter(
+    private val storageProperties: StorageProperties
+) {
 
     @Throws(ArtifactResponseException::class)
     fun write(resource: ArtifactResource): Throughput {
@@ -74,12 +71,12 @@ object ArtifactResourceWriter {
         val node = resource.node
         val range = resource.inputStream.range
 
-        response.bufferSize = STREAM_BUFFER_SIZE
+        response.bufferSize = getBufferSize(resource.inputStream)
         response.characterEncoding = resource.characterEncoding
         response.contentType = resource.contentType ?: determineMediaType(artifact)
         response.status = resource.status?.value ?: resolveStatus(request)
-        response.setHeader(HttpHeaders.ACCEPT_RANGES, BYTES)
-        response.setHeader(HttpHeaders.CACHE_CONTROL, NO_CACHE)
+        response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
+        response.setHeader(HttpHeaders.CACHE_CONTROL, StringPool.NO_CACHE)
         response.setHeader(HttpHeaders.CONTENT_LENGTH, resolveContentLength(range))
         response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
         if (resource.useDisposition) {
@@ -103,7 +100,7 @@ object ArtifactResourceWriter {
     }
 
     private fun resolveContentRange(range: Range): String {
-        return "$BYTES $range"
+        return "${StringPool.BYTES} $range"
     }
 
     private fun resolveLastModified(lastModifiedDate: String): Long {
@@ -120,13 +117,18 @@ object ArtifactResourceWriter {
             return Throughput.EMPTY
         }
         try {
-            return measureThroughput { inputStream.copyTo(response.outputStream, STREAM_BUFFER_SIZE) }
-        } catch (exception: IOException) {
+            return measureThroughput {
+                inputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).copyTo(
+                    out = response.outputStream,
+                    bufferSize = getBufferSize(inputStream)
+                )
+            }
+        } catch (ignored: IOException) {
             // 不处理IOException会CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
             // 由于在上面已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
             // 又因为/error页面不存在，最终返回404，所以这里要对异常进行处理
-            throw ArtifactResponseException(exception.message.orEmpty())
+            throw ArtifactResponseException(ignored.message.orEmpty())
         }
     }
 
@@ -143,4 +145,21 @@ object ArtifactResourceWriter {
     private fun resolveETag(node: NodeDetail): String {
         return node.sha256!!
     }
+
+    private fun getBufferSize(inputStream: ArtifactInputStream): Int {
+        val bufferSize = storageProperties.response.bufferSize.toBytes().toInt()
+        if (bufferSize < 0) {
+            return DEFAULT_BUFFER_SIZE
+        }
+        return if (inputStream.range.length < bufferSize) inputStream.range.length.toInt() else bufferSize
+    }
+
+    companion object {
+        private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
+            add("yaml", MediaTypes.APPLICATION_YAML)
+            add("tgz", MediaTypes.APPLICATION_TGZ)
+            add("ico", MediaTypes.APPLICATION_ICO)
+        }
+    }
 }
+
