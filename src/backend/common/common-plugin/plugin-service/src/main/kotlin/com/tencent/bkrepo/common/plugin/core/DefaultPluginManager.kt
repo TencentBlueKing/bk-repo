@@ -63,9 +63,9 @@ class DefaultPluginManager(
                 val pluginInfo = pluginLoader.loadPlugin()
                 registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
             }
-        } catch (checked: Exception) {
-            logger.error("Failed to load plugin: ${checked.message}", checked)
-            throw checked
+        } catch (ignored: Exception) {
+            logger.error("Failed to load plugin: ${ignored.message}", ignored)
+            throw ignored
         }
     }
 
@@ -77,9 +77,9 @@ class DefaultPluginManager(
             val pluginLoader = PluginLoader(path)
             val pluginInfo = pluginLoader.loadPlugin()
             registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
-        } catch (checked: Exception) {
-            logger.error("Failed to load plugin[$id]: ${checked.message}", checked)
-            throw checked
+        } catch (ignored: Exception) {
+            logger.error("Failed to load plugin[$id]: ${ignored.message}", ignored)
+            throw ignored
         }
     }
 
@@ -93,9 +93,9 @@ class DefaultPluginManager(
             extensionRegistry.unregisterExtensionControllerByPlugin(id)
             pluginMap.remove(id)
             logger.info("Success unregister plugin[$id]")
-        } catch (checked: Exception) {
-            logger.error("Failed to unload plugin[$id]: ${checked.message}", checked)
-            throw checked
+        } catch (ignored: Exception) {
+            logger.error("Failed to unload plugin[$id]: ${ignored.message}", ignored)
+            throw ignored
         }
 
     }

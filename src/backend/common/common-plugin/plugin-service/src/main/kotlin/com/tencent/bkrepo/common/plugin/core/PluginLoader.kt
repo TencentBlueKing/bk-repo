@@ -73,6 +73,15 @@ class PluginLoader(
         val result = HashMap<ExtensionType, LinkedList<String>>()
         try {
             val properties = Properties()
+
+            val url = classLoader.getResource(EXTENSION_LOCATION)
+            println("url:" + url)
+            println("url javaClass: " + url.javaClass)
+
+            val connection = url.openConnection()
+            println("connection: " + connection)
+            println("connection javaClass: " + connection.javaClass)
+
             classLoader.getResourceAsStream(EXTENSION_LOCATION).use {
                 check(it != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
                 properties.load(it)
