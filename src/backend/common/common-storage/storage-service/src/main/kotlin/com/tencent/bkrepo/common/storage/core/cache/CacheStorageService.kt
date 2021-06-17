@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.io.IOException
 import java.nio.file.Paths
 
 /**
@@ -68,9 +67,9 @@ class CacheStorageService(
                 threadPoolTaskExecutor.execute {
                     try {
                         fileStorage.store(path, filename, cachedFile, credentials)
-                    } catch (exception: IOException) {
+                    } catch (ignored: Exception) {
                         // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
-                        logger.error("Failed to async store file [$filename] on [${credentials.key}]", exception)
+                        logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
                     }
                 }
             }
