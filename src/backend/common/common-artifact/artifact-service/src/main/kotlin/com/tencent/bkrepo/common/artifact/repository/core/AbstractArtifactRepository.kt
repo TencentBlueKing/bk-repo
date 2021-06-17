@@ -49,7 +49,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -96,6 +96,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var packageDownloadsClient: PackageDownloadsClient
 
     @Autowired
+    lateinit var artifactResourceWriter: ArtifactResourceWriter
+
+    @Autowired
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
 
     override fun upload(context: ArtifactUploadContext) {
@@ -115,7 +118,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             this.onDownloadBefore(context)
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException(context.artifactInfo.toString())
-            val throughput = ArtifactResourceWriter.write(artifactResponse)
+            val throughput = artifactResourceWriter.write(artifactResponse)
             this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (responseException: ArtifactResponseException) {
             val principal = SecurityUtils.getPrincipal()

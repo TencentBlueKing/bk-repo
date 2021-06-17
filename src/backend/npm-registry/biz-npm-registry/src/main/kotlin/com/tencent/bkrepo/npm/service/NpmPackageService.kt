@@ -43,9 +43,9 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.http.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.security.exception.PermissionException
@@ -79,7 +79,8 @@ import java.time.LocalDateTime
 class NpmPackageService(
     private val npmProperties: NpmProperties,
     private val packageClient: PackageClient,
-    private val packageManager: PackageManager
+    private val packageManager: PackageManager,
+    private val artifactResourceWriter: ArtifactResourceWriter
 ) : ArtifactService() {
 
     fun info(artifactInfo: DefaultArtifactInfo): NpmRegistrySummary {
@@ -309,7 +310,7 @@ class NpmPackageService(
                 inputStream = content.inputStream().artifactStream(Range.full(content.size.toLong())),
                 artifact = PACKAGE_JSON
             )
-            ArtifactResourceWriter.write(artifactResource)
+            artifactResourceWriter.write(artifactResource)
         }
     }
 
@@ -337,7 +338,7 @@ class NpmPackageService(
                 inputStream = content.inputStream().artifactStream(Range.full(content.size.toLong())),
                 artifact = PACKAGE_JSON
             )
-            ArtifactResourceWriter.write(artifactResource)
+            artifactResourceWriter.write(artifactResource)
         }
     }
 

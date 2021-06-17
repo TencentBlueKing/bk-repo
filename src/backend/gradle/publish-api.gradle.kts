@@ -29,40 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.monitor.config
-
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.module.SimpleModule
-import de.codecentric.boot.admin.server.config.EnableAdminServer
-import de.codecentric.boot.admin.server.domain.values.InstanceId
-import de.codecentric.boot.admin.server.services.InstanceIdGenerator
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import java.net.URL
-import javax.annotation.PostConstruct
-
-@Configuration
-@EnableAdminServer
-@EnableConfigurationProperties(MonitorProperties::class)
-class MonitorConfiguration(
-    private val objectMapper: ObjectMapper,
-    private val adminJacksonModule: SimpleModule
-) {
-
-    /**
-     * adapt for moment.js
-     */
-    @PostConstruct
-    fun customObjectMapper() {
-        objectMapper.registerModule(adminJacksonModule)
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-    }
-
-    @Bean
-    fun instanceIdGenerator(): InstanceIdGenerator = InstanceIdGenerator {
-        val url = URL(it.serviceUrl)
-        InstanceId.of("${url.host}-${url.port}")
+listOf(
+    ":common:common-api",
+    ":common:common-artifact:artifact-api",
+    ":common:common-query:query-api",
+    ":common:common-storage:storage-api",
+    ":generic:api-generic",
+    ":repository:api-repository",
+    ":auth:api-auth",
+    ":replication:api-replication"
+).map { project(it) }.forEach {
+    it.apply(plugin = "com.tencent.devops.publish")
+    it.configure<PublishingExtension> {
+        publications.withType<MavenPublication> {
+            pom {
+                name.set(project.name)
+                description.set(project.description ?: project.name)
+                url.set("https://github.com/Tencent/bk-ci")
+                licenses {
+                    license {
+                        name.set("The MIT License (MIT)")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        name.set("bk-ci")
+                        email.set("devops@tencent.com")
+                        url.set("https://bk.tencent.com")
+                        roles.set(listOf("Manager"))
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Tencent/bk-ci.get")
+                    developerConnection.set("scm:git:ssh://github.com/Tencent/bk-ci.git")
+                    url.set("https://github.com/Tencent/bk-ci")
+                }
+            }
+        }
     }
 }

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumen
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -49,7 +50,10 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@Import(ArtifactFileFactory::class)
+@Import(
+    ArtifactFileFactory::class,
+    ArtifactResourceWriter::class
+)
 class ArtifactResolverConfiguration {
 
     @Bean

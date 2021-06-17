@@ -58,4 +58,5 @@ allprojects {
     }
 }
 
-apply(from = rootProject.file("gradle/publish.gradle.kts"))
+apply(from = rootProject.file("gradle/publish-api.gradle.kts"))
+apply(from = rootProject.file("gradle/publish-all.gradle.kts"))

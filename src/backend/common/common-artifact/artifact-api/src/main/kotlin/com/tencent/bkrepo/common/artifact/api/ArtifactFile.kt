@@ -34,8 +34,6 @@ package com.tencent.bkrepo.common.artifact.api
 import com.tencent.bkrepo.common.artifact.file.FileHashAccessor
 import java.io.File
 import java.io.InputStream
-import java.security.SecureRandom
-import kotlin.math.abs
 
 /**
  * 构件文件接口
@@ -81,15 +79,4 @@ interface ArtifactFile : FileHashAccessor {
      * 判断数据存储过程是否降级到本地磁盘
      */
     fun isFallback(): Boolean
-
-    companion object {
-        protected const val ARTIFACT_PREFIX = "artifact_"
-        protected const val ARTIFACT_SUFFIX = ".temp"
-        protected val random = SecureRandom()
-        fun generateRandomName(): String {
-            var randomLong = random.nextLong()
-            randomLong = if (randomLong == Long.MIN_VALUE) 0 else abs(randomLong)
-            return ARTIFACT_PREFIX + randomLong.toString() + ARTIFACT_SUFFIX
-        }
-    }
 }
