@@ -29,34 +29,43 @@
  * SOFTWARE.
  */
 
-plugins {
-    id("com.tencent.devops.boot") version "0.0.2"
-    id("com.tencent.devops.publish") version "0.0.2" apply false
-}
-
-allprojects {
-    group = "com.tencent.bkrepo"
-    version = "1.0.0-SNAPSHOT"
-
-    apply(plugin = "com.tencent.devops.boot")
-    dependencyManagement {
-        dependencies {
-            dependency("com.github.zafarkhaja:java-semver:0.9.0")
-            dependency("org.apache.skywalking:apm-toolkit-logback-1.x:6.6.0")
-            dependency("org.apache.skywalking:apm-toolkit-trace:6.6.0")
-            dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
-            dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
-            dependency("com.google.code.gson:gson:2.8.6")
-            dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:5.11.0.202103091610-r")
-            dependency("org.eclipse.jgit:org.eclipse.jgit:5.11.0.202103091610-r")
+listOf(
+    ":common:common-api",
+    ":common:common-artifact:artifact-api",
+    ":common:common-query:query-api",
+    ":common:common-storage:storage-api",
+    ":generic:api-generic",
+    ":repository:api-repository",
+    ":auth:api-auth",
+    ":replication:api-replication"
+).map { project(it) }.forEach {
+    it.apply(plugin = "com.tencent.devops.publish")
+    it.configure<PublishingExtension> {
+        publications.withType<MavenPublication> {
+            pom {
+                name.set(project.name)
+                description.set(project.description ?: project.name)
+                url.set("https://github.com/Tencent/bk-ci")
+                licenses {
+                    license {
+                        name.set("The MIT License (MIT)")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        name.set("bk-ci")
+                        email.set("devops@tencent.com")
+                        url.set("https://bk.tencent.com")
+                        roles.set(listOf("Manager"))
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Tencent/bk-ci.get")
+                    developerConnection.set("scm:git:ssh://github.com/Tencent/bk-ci.git")
+                    url.set("https://github.com/Tencent/bk-ci")
+                }
+            }
         }
     }
-    configurations.all {
-        exclude(group = "log4j", module = "log4j")
-        exclude(group = "org.slf4j", module = "slf4j-log4j12")
-        exclude(group = "commons-logging", module = "commons-logging")
-    }
 }
-
-apply(from = rootProject.file("gradle/publish-api.gradle.kts"))
-apply(from = rootProject.file("gradle/publish-all.gradle.kts"))
