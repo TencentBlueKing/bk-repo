@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.plugin.api.EXTENSION_LOCATION
 import com.tencent.bkrepo.common.plugin.api.ExtensionType
 import com.tencent.bkrepo.common.plugin.api.PluginInfo
 import com.tencent.bkrepo.common.plugin.api.PluginMetadata
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -58,33 +57,27 @@ class PluginLoader(
     }
 
     fun loadPlugin(): PluginInfo {
-        val digest = calculateDigest()
-        val metadata = resolveMetadata()
-        val extensions = resolveExtensions()
-        return PluginInfo(
-            id = metadata.id,
-            metadata = metadata,
-            digest = digest,
-            extensionPoints = extensions[ExtensionType.POINT].orEmpty(),
-            extensionControllers = extensions[ExtensionType.CONTROLLER].orEmpty()
-        )
+        JarFile(pluginPath.toFile()).use {
+            val digest = calculateDigest()
+            val metadata = resolveMetadata(it)
+            val extensions = resolveExtensions(it)
+            return PluginInfo(
+                id = metadata.id,
+                metadata = metadata,
+                digest = digest,
+                extensionPoints = extensions[ExtensionType.POINT].orEmpty(),
+                extensionControllers = extensions[ExtensionType.CONTROLLER].orEmpty()
+            )
+        }
     }
 
-    private fun resolveExtensions(): HashMap<ExtensionType, LinkedList<String>> {
-        val result = HashMap<ExtensionType, LinkedList<String>>()
+    private fun resolveExtensions(jarFile: JarFile): HashMap<ExtensionType, LinkedList<String>> {
         try {
+            val result = HashMap<ExtensionType, LinkedList<String>>()
             val properties = Properties()
-
-            val url = classLoader.getResource(EXTENSION_LOCATION)
-            logger.info("url:" + url)
-            logger.info("url javaClass: " + url.javaClass)
-
-            val connection = url.openConnection()
-            logger.info("connection: " + connection)
-            logger.info("connection javaClass: " + connection.javaClass)
-
-            classLoader.getResourceAsStream(EXTENSION_LOCATION).use {
-                check(it != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
+            val jarEntry = jarFile.getJarEntry(EXTENSION_LOCATION)
+            check(jarEntry != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
+            jarFile.getInputStream(jarEntry).use {
                 properties.load(it)
             }
             ExtensionType.values().forEach { type ->
@@ -94,33 +87,31 @@ class PluginLoader(
                     .filter { it.isNotBlank() }
                     .forEach { list.add(it.trim()) }
             }
+            return result
         } catch (ex: IOException) {
             throw IllegalArgumentException("Unable to load extensions from location [$EXTENSION_LOCATION]", ex)
         }
-        return result
     }
 
-    private fun resolveMetadata(): PluginMetadata {
+    private fun resolveMetadata(jarFile: JarFile): PluginMetadata {
         try {
-            JarFile(pluginPath.toFile()).use { jar ->
-                val manifest = jar.manifest
-                check(manifest != null) { "[$MANIFEST_LOCATION] does not exist in plugin [$pluginPath]" }
-                val attributes = manifest.mainAttributes
-                val id = attributes.getValue(PLUGIN_ID).orEmpty().trim()
-                check(id.isNotEmpty()) { "Required manifest attribute $PLUGIN_ID is null" }
-                val version = attributes.getValue(PLUGIN_VERSION).orEmpty().trim()
-                val scope = resolveScope(attributes.getValue(PLUGIN_SCOPE).orEmpty().trim())
-                val author = attributes.getValue(PLUGIN_AUTHOR).orEmpty().trim()
-                val description = attributes.getValue(PLUGIN_DESCRIPTION).orEmpty().trim()
-                return PluginMetadata(
-                    id = id,
-                    name = id,
-                    version = version,
-                    scope = scope,
-                    author = author,
-                    description = description
-                )
-            }
+            val manifest = jarFile.manifest
+            check(manifest != null) { "[$MANIFEST_LOCATION] does not exist in plugin [$pluginPath]" }
+            val attributes = manifest.mainAttributes
+            val id = attributes.getValue(PLUGIN_ID).orEmpty().trim()
+            check(id.isNotEmpty()) { "Required manifest attribute $PLUGIN_ID is null" }
+            val version = attributes.getValue(PLUGIN_VERSION).orEmpty().trim()
+            val scope = resolveScope(attributes.getValue(PLUGIN_SCOPE).orEmpty().trim())
+            val author = attributes.getValue(PLUGIN_AUTHOR).orEmpty().trim()
+            val description = attributes.getValue(PLUGIN_DESCRIPTION).orEmpty().trim()
+            return PluginMetadata(
+                id = id,
+                name = id,
+                version = version,
+                scope = scope,
+                author = author,
+                description = description
+            )
         } catch (ex: IOException) {
             throw IllegalArgumentException("Unable to load manifest from location [$MANIFEST_LOCATION]", ex)
         }
@@ -157,7 +148,5 @@ class PluginLoader(
         private const val PLUGIN_SCOPE = "Plugin-Scope"
         private const val PLUGIN_AUTHOR = "Plugin-Author"
         private const val PLUGIN_DESCRIPTION = "Plugin-Description"
-
-        private val logger = LoggerFactory.getLogger(PluginLoader::class.java)
     }
 }
