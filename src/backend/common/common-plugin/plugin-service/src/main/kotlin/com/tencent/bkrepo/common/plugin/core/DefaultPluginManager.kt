@@ -97,7 +97,6 @@ class DefaultPluginManager(
             logger.error("Failed to unload plugin[$id]: ${ignored.message}", ignored)
             throw ignored
         }
-
     }
 
     override fun <T : ExtensionPoint> findExtensionPoints(clazz: Class<T>): List<T> {

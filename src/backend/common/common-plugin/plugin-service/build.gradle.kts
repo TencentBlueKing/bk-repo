@@ -34,5 +34,4 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework:spring-webmvc")
     compileOnly("org.springframework.boot:spring-boot-starter-actuator")
-    compileOnly("org.springframework.boot:spring-boot-loader")
 }
