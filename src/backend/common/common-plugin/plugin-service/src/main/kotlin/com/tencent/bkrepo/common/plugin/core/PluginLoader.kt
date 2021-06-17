@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.plugin.api.EXTENSION_LOCATION
 import com.tencent.bkrepo.common.plugin.api.ExtensionType
 import com.tencent.bkrepo.common.plugin.api.PluginInfo
 import com.tencent.bkrepo.common.plugin.api.PluginMetadata
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -75,12 +76,12 @@ class PluginLoader(
             val properties = Properties()
 
             val url = classLoader.getResource(EXTENSION_LOCATION)
-            println("url:" + url)
-            println("url javaClass: " + url.javaClass)
+            logger.info("url:" + url)
+            logger.info("url javaClass: " + url.javaClass)
 
             val connection = url.openConnection()
-            println("connection: " + connection)
-            println("connection javaClass: " + connection.javaClass)
+            logger.info("connection: " + connection)
+            logger.info("connection javaClass: " + connection.javaClass)
 
             classLoader.getResourceAsStream(EXTENSION_LOCATION).use {
                 check(it != null) { "[$EXTENSION_LOCATION] does not exist in plugin [$pluginPath]" }
@@ -156,5 +157,7 @@ class PluginLoader(
         private const val PLUGIN_SCOPE = "Plugin-Scope"
         private const val PLUGIN_AUTHOR = "Plugin-Author"
         private const val PLUGIN_DESCRIPTION = "Plugin-Description"
+
+        private val logger = LoggerFactory.getLogger(PluginLoader::class.java)
     }
 }
