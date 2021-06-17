@@ -41,7 +41,7 @@ const val OPDATA_GRAFANA_STRING = "string"
 const val OPDATA_CUSTOM = "custom"
 const val OPDATA_PIPELINE = "pipeline"
 
-const val OPDATA_STAT_LIMIT = 59
+const val OPDATA_STAT_LIMIT = 99
 
 const val OPDATA_CUSTOM_NUM = "customNum"
 const val OPDATA_CUSTOM_SIZE = "customSize"
