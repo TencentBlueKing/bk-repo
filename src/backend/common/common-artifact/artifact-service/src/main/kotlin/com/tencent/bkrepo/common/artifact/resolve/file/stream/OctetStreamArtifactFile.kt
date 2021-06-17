@@ -32,9 +32,11 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -149,7 +151,7 @@ open class OctetStreamArtifactFile(
             }
             val throughput = receiver.receive(source, listener)
             hasInitialized = true
-            // SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
+            SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
         } finally {
             monitor.remove(receiver)
         }
