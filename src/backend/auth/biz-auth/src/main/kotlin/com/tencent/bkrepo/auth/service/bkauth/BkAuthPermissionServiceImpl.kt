@@ -103,12 +103,13 @@ class BkAuthPermissionServiceImpl constructor(
                     action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
+                    //校验本地权限
                     super.checkPermission(request)
                 }
             }
 
-            // 校验不通过的权限只输出日志，暂时不拦截
-            if (!pass) {
+            // devops来源的账号，不做拦截
+            if (!pass && appId == bkAuthConfig.devopsAppId) {
                 logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
                 return !bkAuthConfig.devopsAuthEnabled
             }
