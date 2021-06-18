@@ -103,7 +103,7 @@ class BkAuthPermissionServiceImpl constructor(
                     action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
-                    //校验本地权限
+                    // 校验本地权限
                     super.checkPermission(request)
                 }
             }
