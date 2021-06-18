@@ -62,7 +62,13 @@ export default new Vuex.Store({
             state.breadcrumb = data
         },
         SET_USER_LIST (state, data) {
-            state.userList = data
+            state.userList = {
+                ...data,
+                anonymous: {
+                    id: 'anonymous',
+                    name: '--'
+                }
+            }
         },
         SET_USER_INFO (state, data) {
             state.userInfo = {
