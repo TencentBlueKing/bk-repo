@@ -231,6 +231,7 @@ class ReplicaTaskServiceImpl(
             val copyKey = uniqueId()
             val userId = SecurityUtils.getUserId()
             val copiedReplicaTask = tReplicaTask.copy(
+                id = null,
                 key = copyKey,
                 name = name,
                 status = ReplicationStatus.WAITING,
@@ -243,7 +244,7 @@ class ReplicaTaskServiceImpl(
                 description = description
             )
             val replicaObjectList = replicaObjectDao.findByTaskKey(key)
-            val copiedObjectList = replicaObjectList.map { it.copy(taskKey = copyKey) }
+            val copiedObjectList = replicaObjectList.map { it.copy(taskKey = copyKey, id = null) }
             try {
                 replicaObjectDao.insert(copiedObjectList)
                 replicaTaskDao.insert(copiedReplicaTask)
