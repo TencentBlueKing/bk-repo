@@ -17,7 +17,7 @@ export default {
                 {
                     page: {
                         pageNumber: 1,
-                        pageSize: 1000
+                        pageSize: 10000
                     },
                     sort: {
                         properties: [isPipeline ? 'lastModifiedDate' : 'name'],
