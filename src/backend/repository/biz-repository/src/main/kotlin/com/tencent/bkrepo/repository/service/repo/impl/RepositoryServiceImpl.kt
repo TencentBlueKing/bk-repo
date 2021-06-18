@@ -434,7 +434,7 @@ class RepositoryServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
-        private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,63}"
+        private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESCRIPTION_MAX_LENGTH = 200
 
         private fun convertToDetail(

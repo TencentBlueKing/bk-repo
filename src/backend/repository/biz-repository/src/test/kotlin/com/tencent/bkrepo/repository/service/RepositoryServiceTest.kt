@@ -173,6 +173,14 @@ class RepositoryServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("测试仓库名称校验")
+    fun `test repo name`() {
+        repositoryService.createRepo(createRequest("a..."))
+        assertThrows<ErrorCodeException> { repositoryService.createRepo(createRequest("...")) }
+        assertThrows<ErrorCodeException> { repositoryService.createRepo(createRequest("...a")) }
+    }
+
+    @Test
     @DisplayName("测试创建同名仓库")
     fun `should throw exception when repo name exists`() {
         repositoryService.createRepo(createRequest())
