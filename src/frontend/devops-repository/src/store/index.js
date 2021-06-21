@@ -18,7 +18,12 @@ export default new Vuex.Store({
             }
         ],
         projectList: [],
-        userList: {},
+        userList: {
+            anonymous: {
+                id: 'anonymous',
+                name: '--'
+            }
+        },
         userInfo: {
             username: '',
             name: '',
