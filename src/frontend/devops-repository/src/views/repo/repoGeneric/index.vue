@@ -150,7 +150,7 @@
                     <bk-form-item label="授权用户" property="user">
                         <bk-tag-input
                             v-model="formDialog.user"
-                            :list="Object.values(userList)"
+                            :list="Object.values(userList).filter(user => user.id !== 'anonymous')"
                             placeholder="授权访问用户，为空则任意用户可访问，按Enter键确认"
                             trigger="focus"
                             allow-create

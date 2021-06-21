@@ -43,7 +43,7 @@ class BkAuthProjectService @Autowired constructor(
 ) {
 
     fun isProjectMember(user: String, projectCode: String, retryIfTokenInvalid: Boolean = false): Boolean {
-        if (bkAuthConfig.getBkciAuthServer().isNullOrEmpty()) {
+        if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.isProjectMember(user, projectCode, retryIfTokenInvalid)
         }
         return bkciAuthService.isProjectMember(user, projectCode)

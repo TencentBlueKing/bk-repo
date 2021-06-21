@@ -48,7 +48,7 @@ class BkAuthPipelineService(
     private val bkAuthConfig: BkAuthConfig
 ) {
     fun listPermissionedPipelines(uid: String, projectId: String): List<String> {
-        if (bkAuthConfig.getBkciAuthServer().isNullOrEmpty()) {
+        if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.getUserResourceByPermission(
                 user = uid,
                 serviceCode = BkAuthServiceCode.PIPELINE,
@@ -69,7 +69,7 @@ class BkAuthPipelineService(
 
     fun hasPermission(uid: String, projectId: String, pipelineId: String): Boolean {
         logger.debug("hasPermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
-        if (bkAuthConfig.getBkciAuthServer().isNullOrEmpty()) {
+        if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.validateUserResourcePermission(
                 user = uid,
                 serviceCode = BkAuthServiceCode.PIPELINE,

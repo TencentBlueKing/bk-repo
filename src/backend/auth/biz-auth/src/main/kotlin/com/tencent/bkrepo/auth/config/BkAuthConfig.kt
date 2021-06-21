@@ -126,6 +126,10 @@ class BkAuthConfig {
         }
     }
 
+    fun choseBkAuth(): Boolean {
+        return ciAuthServer.isNullOrBlank()
+    }
+
     fun setBkciAuthServer(authServer: String) {
         ciAuthServer = authServer
     }
