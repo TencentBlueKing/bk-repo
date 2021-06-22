@@ -29,12 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.iam
 
-import com.fasterxml.jackson.annotation.JsonProperty
-
-data class ActionPolicyRes(
-    @JsonProperty("policy_id")
-    val policyId: Int,
-    val action: ActionRes
+data class AncestorsApiReq(
+    val system: String,
+    val type: String,
+    val id: String
 )

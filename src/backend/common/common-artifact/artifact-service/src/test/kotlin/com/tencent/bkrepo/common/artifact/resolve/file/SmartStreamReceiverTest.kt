@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 import com.tencent.bkrepo.common.api.constant.StringPool.randomString
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
+import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -73,11 +74,9 @@ internal class SmartStreamReceiverTest {
      */
     @Test
     fun testNormalInMemory() {
-        val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()).toBytes(),
-            filename,
-            primaryPath,
-            true
+        val receiver = createReceiver(
+            true,
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()).toBytes()
         )
         val source = shortContent.byteInputStream()
         receiver.receive(source, DigestCalculateListener())
@@ -95,11 +94,9 @@ internal class SmartStreamReceiverTest {
      */
     @Test
     fun testNormalInFile() {
-        val receiver = SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE - 1L).toBytes(),
-            filename,
-            primaryPath,
-            true
+        val receiver = createReceiver(
+            true,
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE - 1L).toBytes()
         )
         val source = shortContent.byteInputStream()
         receiver.receive(source, DigestCalculateListener())
@@ -163,15 +160,6 @@ internal class SmartStreamReceiverTest {
         return RateLimitInputStream(content.byteInputStream(), DEFAULT_BUFFER_SIZE.toLong())
     }
 
-    private fun createReceiver(enableTransfer: Boolean): SmartStreamReceiver {
-        return SmartStreamReceiver(
-            DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
-            filename,
-            primaryPath,
-            enableTransfer
-        )
-    }
-
     private fun readText(path: Path): String {
         return path.toFile().readText()
     }
@@ -210,5 +198,16 @@ internal class SmartStreamReceiverTest {
             // 文件数据一直
             Assertions.assertEquals(longContent, readText(primaryPath.resolve(filename)))
         }
+    }
+
+    private fun createReceiver(
+        enableTransfer: Boolean,
+        fileSizeThreshold: Long = DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes()
+    ): SmartStreamReceiver {
+        val receive = ReceiveProperties(
+            fileSizeThreshold = DataSize.ofBytes(fileSizeThreshold),
+            rateLimit = DataSize.ofBytes(-1)
+        )
+        return SmartStreamReceiver(receive, enableTransfer, primaryPath, filename)
     }
 }

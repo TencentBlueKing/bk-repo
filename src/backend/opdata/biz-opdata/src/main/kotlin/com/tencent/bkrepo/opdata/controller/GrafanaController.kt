@@ -29,39 +29,46 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.api
+package com.tencent.bkrepo.opdata.controller
 
-import com.tencent.bkrepo.opdata.constant.SERVICE_NAME
+import com.google.common.net.HttpHeaders.CONTENT_TYPE
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
+import com.tencent.bkrepo.opdata.service.GrafanaService
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Api(tags = ["SERVICE_OPDATA"], description = "服务-运营数据接口")
-@FeignClient(SERVICE_NAME, contextId = "ServiceGrafanaOpdata")
+@RestController
 @RequestMapping("/api/grafana")
-interface Grafana {
-
-    @ApiOperation("ping")
+class GrafanaController @Autowired constructor(
+    private val grafanaService: GrafanaService
+) {
     @GetMapping("")
-    fun ping(): ResponseEntity<Any>
+    fun ping(): ResponseEntity<Any> {
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{}")
+    }
 
-    @ApiOperation("search")
     @PostMapping("/search")
-    fun search(): ResponseEntity<Any>
+    fun search(): ResponseEntity<Any> {
+        val result = grafanaService.search()
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(result)
+    }
 
-    @ApiOperation("query")
     @PostMapping("/query")
-    fun query(
-        @RequestBody request: QueryRequest
-    ): ResponseEntity<Any>
+    fun query(@RequestBody request: QueryRequest): ResponseEntity<Any> {
+        var result = grafanaService.query(request)
+        val response = JsonUtils.objectMapper.writeValueAsString(result)
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
+    }
 
-    @ApiOperation("annotations")
     @PostMapping("/annotations")
-    fun annotations(): ResponseEntity<Any>
+    fun annotations(): ResponseEntity<Any> {
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{}")
+    }
 }

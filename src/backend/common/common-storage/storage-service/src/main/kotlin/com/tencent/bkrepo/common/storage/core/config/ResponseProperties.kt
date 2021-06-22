@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,12 +29,21 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.common.storage.core.config
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import org.springframework.util.unit.DataSize
 
-data class Action(
-    val id: String,
-    @JsonProperty("related_resource_types")
-    val relatedResourceTypes: List<RelatedResourceTypes>?
+/**
+ * 文件响应配置
+ */
+data class ResponseProperties(
+    /**
+     * io拷贝buffer大小
+     */
+    var bufferSize: DataSize = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()),
+
+    /**
+     * 每秒传输数据量
+     */
+    var rateLimit: DataSize = DataSize.ofBytes(-1)
 )

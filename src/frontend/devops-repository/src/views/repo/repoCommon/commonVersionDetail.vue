@@ -155,9 +155,9 @@
                 // 当前已请求页数，0代表没有更多
                 dependentsPage: 1,
                 pagination: {
-                    count: 1,
+                    count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 },
                 selectedHistory: {}

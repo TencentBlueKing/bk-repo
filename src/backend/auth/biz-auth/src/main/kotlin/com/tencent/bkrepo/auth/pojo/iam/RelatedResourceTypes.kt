@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,9 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.iam
 
-data class PermissionUrlRequest(
+import com.tencent.bk.sdk.iam.dto.callback.response.AttributeDTO
+import com.tencent.bkrepo.auth.pojo.Instance
+
+data class RelatedResourceTypes(
     val system: String,
-    val action: List<Action>
+    val type: String,
+    val instances: List<List<Instance>>? = emptyList(),
+    val attributes: List<AttributeDTO>? = emptyList()
 )

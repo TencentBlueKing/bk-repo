@@ -50,6 +50,18 @@ class BkAuthConfig {
     private var authServer: String = ""
 
     /**
+     * auth 服务器地址
+     */
+    @Value("\${auth.devops.ciAuthServer:}")
+    private var ciAuthServer: String = ""
+
+    /**
+     * auth 服务器地址
+     */
+    @Value("\${auth.devops.ciAuthToken:}")
+    private var ciAuthToken: String = ""
+
+    /**
      * 流水线资源 appSecret
      */
     @Value("\${auth.devops.pipelineSecret:}")
@@ -104,5 +116,29 @@ class BkAuthConfig {
         } else {
             "http://$authServer"
         }
+    }
+
+    fun getBkciAuthServer(): String {
+        return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {
+            ciAuthServer.removeSuffix("/")
+        } else {
+            "http://$ciAuthServer"
+        }
+    }
+
+    fun choseBkAuth(): Boolean {
+        return ciAuthServer.isNullOrBlank()
+    }
+
+    fun setBkciAuthServer(authServer: String) {
+        ciAuthServer = authServer
+    }
+
+    fun setBkciAuthToken(authToken: String) {
+        ciAuthToken = authToken
+    }
+
+    fun getBkciAuthToken(): String {
+        return ciAuthToken
     }
 }
