@@ -90,7 +90,7 @@ export default {
         )
     },
     // 跨仓库搜索包
-    searchPackageList (_, { projectId, repoType, packageName, current = 1, limit = 20 }) {
+    searchPackageList (_, { projectId, repoType, packageName, repoName, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/package/search`,
             {
@@ -114,6 +114,11 @@ export default {
                             value: repoType.toUpperCase(),
                             operation: 'EQ'
                         },
+                        ...(repoName ? [{
+                            field: 'repoName',
+                            value: repoName,
+                            operation: 'EQ'
+                        }] : []),
                         {
                             field: 'name',
                             value: '*' + packageName + '*',

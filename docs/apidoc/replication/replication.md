@@ -95,11 +95,48 @@
 
 - 响应体
 
-  ```
+  ```json
   {
     "code": 0,
     "message": null,
-    "data": null,
+    "data": {
+      "id": "609b573353ccce752bf9b85f",
+      "key": "784e49c5ba974a1e8ac503a840f65eb5",
+      "name": "测试分发计划",
+      "projectId": "bkrepo",
+      "replicaObjectType": "REPOSITORY",
+      "replicaType": "SCHEDULED",
+      "setting": {
+        "rateLimit": 0,
+        "includeMetadata": true,
+        "conflictStrategy": "SKIP",
+        "errorStrategy": "CONTINUE",
+        "executionStrategy": "IMMEDIATELY",
+        "executionPlan": {
+          "executeImmediately": true
+        }
+      },
+      "remoteClusters": [
+        {
+          "id": "651095dfe0524ce9b3ab53d13532361c",
+          "name": "shanghai"
+        },
+        {
+          "id": "329fbcda45944fb9ae5c2573acd7bd2a",
+          "name": "beijing"
+        }
+      ],
+      "description": "for test",
+      "lastExecutionStatus": "SUCCESS",
+      "lastExecutionTime": "2020-03-16T12:00:00.000",
+      "nextExecutionTime": "2020-03-17T12:00:00.000",
+      "executionTimes": 5,
+      "enabled": true,
+      "createdBy" : "system",
+      "createdDate" : "2020-03-16T12:13:03.371",
+      "lastModifiedBy" : "system",
+      "lastModifiedDate" : "2020-03-16T12:13:03.371"
+    },
     "traceId": null
   }
   ```
@@ -308,7 +345,7 @@
   |name|string|否|无|任务名称，支持前缀模糊匹配|task name|
   |lastExecutionStatus|enum|否|无|上次执行状态|last execution status|
   |enabled|bool|否|无|任务启停状态|do task enabled|
-  |sortType|enum|否|CREATED_TIME|[CREATE_TIME,LAST_EXECUTION_TIME,NEXT_EXECUTION_TIME]|sort by time|
+  |sortType|enum|否|CREATED_TIME|[CREATED_TIME,LAST_EXECUTION_TIME,NEXT_EXECUTION_TIME]|sort by time|
   |pageNumber|int|是|无|当前页|page number|
   |pageSize|int|是|无|分页数量|page size|
 

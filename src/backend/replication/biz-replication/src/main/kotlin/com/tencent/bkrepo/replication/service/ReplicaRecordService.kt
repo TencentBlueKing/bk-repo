@@ -47,6 +47,15 @@ import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialReq
 interface ReplicaRecordService {
 
     /**
+     * 开启新的执行记录，会执行以下动作
+     * 1. 创建新的执行记录并初始化状态
+     * 2. 修改上次运行时间为当前时间，并计算下次运行时间
+     * 3. 修改上次运行状态为执行中
+     * 4. 修改当前任务状态为执行中
+     */
+    fun startNewRecord(key: String): ReplicaRecordInfo
+
+    /**
      * 初始化一条同步记录
      * @param taskKey 任务key
      */

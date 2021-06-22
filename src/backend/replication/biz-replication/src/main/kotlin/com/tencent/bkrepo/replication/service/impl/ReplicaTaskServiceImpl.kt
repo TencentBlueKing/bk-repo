@@ -14,8 +14,6 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -75,7 +73,7 @@ class ReplicaTaskServiceImpl(
         return replicaTaskDao.find(query).map { convert(it)!! }
     }
 
-    override fun create(request: ReplicaTaskCreateRequest) {
+    override fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo {
         with(request) {
             validateRequest(this)
             val key = uniqueId()
@@ -120,11 +118,13 @@ class ReplicaTaskServiceImpl(
                     pathConstraints = it.pathConstraints
                 )
             }
-            try {
+            return try {
                 replicaObjectDao.insert(replicaObjectList)
                 replicaTaskDao.insert(task)
+                convert(task)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert task[$name] error: [${exception.message}]")
+                getByTaskKey(key)
             }
         }
     }
@@ -218,24 +218,6 @@ class ReplicaTaskServiceImpl(
         taskRepository.save(task)
     }
 
-    override fun startNewRecord(key: String): ReplicaRecordInfo {
-        val initialRecord = replicaRecordService.initialRecord(key)
-        val tReplicaTask = replicaTaskDao.findByKey(key)
-            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
-        tReplicaTask.lastExecutionTime = LocalDateTime.now()
-        if (isCronJob(tReplicaTask)) {
-            tReplicaTask.nextExecutionTime =
-                CronUtils.getNextTriggerTime(key, tReplicaTask.setting.executionPlan.cronExpression!!)
-        }
-        tReplicaTask.lastExecutionStatus = ExecutionStatus.RUNNING
-        taskRepository.save(tReplicaTask)
-        return initialRecord
-    }
-
-    private fun isCronJob(tReplicaTask: TReplicaTask): Boolean {
-        return !tReplicaTask.setting.executionPlan.cronExpression.isNullOrBlank()
-    }
-
     override fun copy(request: ReplicaTaskCopyRequest) {
         with(request) {
             // 校验同名任务冲突
@@ -249,6 +231,7 @@ class ReplicaTaskServiceImpl(
             val copyKey = uniqueId()
             val userId = SecurityUtils.getUserId()
             val copiedReplicaTask = tReplicaTask.copy(
+                id = null,
                 key = copyKey,
                 name = name,
                 status = ReplicationStatus.WAITING,
@@ -261,7 +244,7 @@ class ReplicaTaskServiceImpl(
                 description = description
             )
             val replicaObjectList = replicaObjectDao.findByTaskKey(key)
-            val copiedObjectList = replicaObjectList.map { it.copy(taskKey = copyKey) }
+            val copiedObjectList = replicaObjectList.map { it.copy(taskKey = copyKey, id = null) }
             try {
                 replicaObjectDao.insert(copiedObjectList)
                 replicaTaskDao.insert(copiedReplicaTask)

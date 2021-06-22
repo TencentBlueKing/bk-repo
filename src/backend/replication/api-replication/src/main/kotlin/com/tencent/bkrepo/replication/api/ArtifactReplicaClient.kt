@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.replication.api
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
@@ -54,6 +55,7 @@ import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -62,7 +64,7 @@ import org.springframework.web.bind.annotation.RequestParam
 interface ArtifactReplicaClient {
 
     @GetMapping("/ping")
-    fun ping(): Response<Void>
+    fun ping(@RequestHeader(HttpHeaders.AUTHORIZATION) token: String): Response<Void>
 
     @GetMapping("/version")
     fun version(): Response<String>

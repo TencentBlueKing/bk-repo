@@ -9,6 +9,7 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
+import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
@@ -17,7 +18,9 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
+import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -30,6 +33,22 @@ class ReplicaRecordServiceImpl(
     private val replicaRecordDetailDao: ReplicaRecordDetailDao,
     private val replicaTaskDao: ReplicaTaskDao
 ) : ReplicaRecordService {
+
+    override fun startNewRecord(key: String): ReplicaRecordInfo {
+        val initialRecord = initialRecord(key)
+        val tReplicaTask = replicaTaskDao.findByKey(key)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
+        tReplicaTask.status = ReplicationStatus.REPLICATING
+        tReplicaTask.lastExecutionTime = LocalDateTime.now()
+        if (isCronJob(tReplicaTask)) {
+            tReplicaTask.nextExecutionTime =
+                CronUtils.getNextTriggerTime(key, tReplicaTask.setting.executionPlan.cronExpression!!)
+        }
+        tReplicaTask.lastExecutionStatus = ExecutionStatus.RUNNING
+        replicaTaskDao.save(tReplicaTask)
+        return initialRecord
+    }
+
     override fun initialRecord(taskKey: String): ReplicaRecordInfo {
         val record = TReplicaRecord(
             taskKey = taskKey,
@@ -60,6 +79,7 @@ class ReplicaRecordServiceImpl(
         val tReplicaTask = replicaTaskDao.findByKey(record.taskKey)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, record.taskKey)
         tReplicaTask.lastExecutionStatus = status
+        tReplicaTask.status = if (isCronJob(tReplicaTask)) ReplicationStatus.WAITING else ReplicationStatus.COMPLETED
         replicaRecordDao.save(record)
         replicaTaskDao.save(tReplicaTask)
         logger.info("complete record [$recordId], status from [${replicaRecordInfo.status}] to [$status].")
@@ -177,6 +197,10 @@ class ReplicaRecordServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaRecordServiceImpl::class.java)
+
+        private fun isCronJob(tReplicaTask: TReplicaTask): Boolean {
+            return !tReplicaTask.setting.executionPlan.cronExpression.isNullOrBlank()
+        }
 
         private fun convert(tReplicaRecord: TReplicaRecord?): ReplicaRecordInfo? {
             return tReplicaRecord?.let {

@@ -33,13 +33,10 @@ package com.tencent.bkrepo.replication.pojo.task
 
 enum class ReplicationStatus {
     WAITING,
-    PAUSED,
     REPLICATING,
-    SUCCESS,
-    INTERRUPTED,
-    FAILED;
+    COMPLETED;
 
     companion object {
-        val UNDO_STATUS = setOf(WAITING, REPLICATING)
+        val UNDO_STATUS = setOf(WAITING)
     }
 }

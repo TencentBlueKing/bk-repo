@@ -4,7 +4,7 @@
             <div class="flex-center">
                 <div class="mr5 hover-btn flex-center" @click="toRepoDetail">
                     <icon size="24" :name="repoType" />
-                    <span class="ml10">{{repoName}}</span>
+                    <span class="ml10">{{replaceRepoName(repoName)}}</span>
                 </div>
                 <i class="devops-icon icon-angle-right"></i>
                 <span class="ml5">{{$t('repoConfig')}}</span>
@@ -23,7 +23,7 @@
                             <bk-form-item :label="$t('repoName')">
                                 <div class="flex-align-center">
                                     <icon size="24" :name="repoBaseInfo.repoType || repoType" />
-                                    <span class="ml10">{{repoBaseInfo.name || repoName}}</span>
+                                    <span class="ml10">{{replaceRepoName(repoBaseInfo.name || repoName)}}</span>
                                 </div>
                             </bk-form-item>
                             <bk-form-item :label="$t('repoAddress')">

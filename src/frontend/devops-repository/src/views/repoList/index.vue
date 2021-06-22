@@ -1,6 +1,7 @@
 <template>
     <div class="repo-list-container">
         <header class="repo-list-header">
+            <!-- ci模式下只有generic类型 -->
             <div class="repo-list-search" v-if="MODE_CONFIG !== 'ci'">
                 <label class="form-label">{{$t('repoType')}}:</label>
                 <bk-select
@@ -41,19 +42,15 @@
         <main class="repo-list-table" v-bkloading="{ isLoading }">
             <bk-table
                 :data="repoList"
-                height="100%"
+                height="calc(100% - 52px)"
                 :outer-border="false"
                 :row-border="false"
-                size="small"
-                :pagination="pagination"
-                @page-change="current => handlerPaginationChange({ current })"
-                @page-limit-change="limit => handlerPaginationChange({ limit })"
-            >
+                size="small">
                 <bk-table-column :label="$t('repoName')">
                     <template slot-scope="props">
                         <div class="repo-name" @click="toRepoDetail(props.row)">
                             <icon size="24" :name="props.row.repoType" />
-                            <span class="ml10">{{props.row.name}}</span>
+                            <span class="ml10">{{replaceRepoName(props.row.name)}}</span>
                         </div>
                     </template>
                 </bk-table-column>
@@ -74,6 +71,18 @@
                     </template>
                 </bk-table-column>
             </bk-table>
+            <bk-pagination
+                class="mt10"
+                size="small"
+                align="right"
+                show-total-count
+                @change="current => handlerPaginationChange({ current })"
+                @limit-change="limit => handlerPaginationChange({ limit })"
+                :current.sync="pagination.current"
+                :limit="pagination.limit"
+                :count="pagination.count"
+                :limit-list="pagination.limitList">
+            </bk-pagination>
         </main>
     </div>
 </template>
@@ -94,9 +103,9 @@
                     type: ''
                 },
                 pagination: {
-                    count: 1,
+                    count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 }
             }
@@ -204,7 +213,7 @@
             flex-basis: 400px;
             .form-label {
                 font-size: 14px;
-                flex-basis: 80px;
+                flex-basis: 65px;
             }
             .form-input {
                 flex-basis: 300px;

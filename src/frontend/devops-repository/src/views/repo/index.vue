@@ -6,7 +6,7 @@
                 @repo-click="repoChange"
                 :repo-name="repoName"
                 :has-click="repoType !== 'generic' && Boolean(breadcrumb.length)"
-                :repo-list="repoList">
+                :repo-list="repoListAll.map(v => ({ ...v, type: v.type.toLowerCase() }))">
             </repo-select>
             <breadcrumb
                 class="repo-detail-breadcrumb"
@@ -35,15 +35,11 @@
                 <bk-button v-if="repoType !== 'generic'" class="ml20" outline theme="primary" @click="fileSearch">
                     {{$t('searchForPkg')}}
                 </bk-button>
-                <bk-button class="align-right" outline theme="default" @click="resetQueryAndBack">
-                    <i class="devops-icon icon-back2"></i>
-                    {{$t('returnBack')}}
-                </bk-button>
             </div>
             <router-view :ref="repoType" :style="`height: calc(100% - ${showRepoSearch ? '72px' : '20px'});transition: all .3s;`"></router-view>
         </main>
         <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="850">
-            <div slot="header" class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ repoName + $t('guide') }}</div>
+            <div slot="header" class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ replaceRepoName(repoName) + $t('guide') }}</div>
             <repo-guide class="pt20 pb20 pl10 pr10" slot="content" :article="articleGuide"></repo-guide>
         </bk-sideslider>
     </div>
@@ -64,14 +60,13 @@
         mixins: [repoGuideMixin],
         data () {
             return {
-                repoList: [],
                 showRepoSearch: false,
                 showGuide: false,
                 packageNameInput: ''
             }
         },
         computed: {
-            ...mapState(['breadcrumb', 'dockerDomain']),
+            ...mapState(['repoListAll', 'breadcrumb', 'dockerDomain']),
             showFilterIcon () {
                 return this.$route.name === 'commonList' || this.$route.name === 'repoGeneric'
             }
@@ -85,13 +80,17 @@
             },
             '$route.name' () {
                 this.showRepoSearch = false
+            },
+            showRepoSearch (val) {
+                if (!val) {
+                    this.packageNameInput = ''
+                    this.$refs[this.repoType].resetQueryAndBack()
+                }
             }
         },
         created () {
             this.getRepoListAll({
                 projectId: this.projectId
-            }).then(res => {
-                this.repoList = res.map(v => ({ ...v, type: v.type.toLowerCase() }))
             })
             this.repoType === 'docker' && !this.dockerDomain && this.getDockerDomain()
             this.setRepositoryHistory({
@@ -137,10 +136,6 @@
                 this.$refs[this.repoType].searchHandler({
                     name: this.packageNameInput
                 })
-            },
-            resetQueryAndBack () {
-                this.showRepoSearch = false
-                this.$refs[this.repoType].resetQueryAndBack()
             },
             fileSearch () {
                 this.$router.push({

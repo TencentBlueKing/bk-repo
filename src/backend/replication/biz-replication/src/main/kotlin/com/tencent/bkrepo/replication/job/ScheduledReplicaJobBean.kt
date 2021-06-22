@@ -85,7 +85,7 @@ class ScheduledReplicaJobBean(
             // 查询同步对象
             val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
             // 开启新的同步记录
-            val taskRecord = replicaTaskService.startNewRecord(task.key).apply { recordId = id }
+            val taskRecord = replicaRecordService.startNewRecord(task.key).apply { recordId = id }
             val result = task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
             result.forEach {
                 if (it.status == ExecutionStatus.FAILED) {

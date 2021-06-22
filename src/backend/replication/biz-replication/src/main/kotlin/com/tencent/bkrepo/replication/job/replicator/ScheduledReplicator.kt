@@ -347,8 +347,8 @@ abstract class ScheduledReplicator : Replicator {
      * 是否包含所有仓库数据
      */
     private fun includeAllData(context: ReplicaContext): Boolean {
-        return context.taskObject.packageConstraints != null &&
-            context.taskObject.pathConstraints != null
+        return context.taskObject.packageConstraints.isNullOrEmpty() &&
+            context.taskObject.pathConstraints.isNullOrEmpty()
     }
 
     /**

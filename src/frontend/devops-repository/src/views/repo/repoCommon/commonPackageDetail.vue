@@ -159,7 +159,7 @@
                 pagination: {
                     count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 }
             }
@@ -260,7 +260,7 @@
                 const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + '&download=true',
                         '_self'
                     )
                 }).catch(e => {

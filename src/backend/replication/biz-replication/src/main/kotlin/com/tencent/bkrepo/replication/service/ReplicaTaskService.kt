@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
@@ -82,7 +81,7 @@ interface ReplicaTaskService {
      *
      * @param request 创建请求
      */
-    fun create(request: ReplicaTaskCreateRequest)
+    fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo
 
     /**
      * 根据[key]删除同步任务
@@ -94,14 +93,6 @@ interface ReplicaTaskService {
      * 根据[key]切换任务状态
      */
     fun toggleStatus(key: String)
-
-    /**
-     * 开启新的执行记录，会执行以下动作
-     * 1. 创建新的执行记录并初始化状态
-     * 2. 修改上次运行时间为当前时间，并计算下次运行时间
-     * 3. 修改上次运行状态为执行中
-     */
-    fun startNewRecord(key: String): ReplicaRecordInfo
 
     /**
      * 复制同步任务

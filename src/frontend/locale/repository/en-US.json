@@ -139,6 +139,8 @@
     "userManage": "用户管理",
     "userCenter": "个人中心",
     "userInfo": "个人信息",
+    "nodeManage": "节点管理",
+    "planManage": "分发计划",
     "manage": "管理",
     "admin": "管理者",
     "users": "使用者",
@@ -146,5 +148,27 @@
     "userGroup": "用户组",
     "department": "组织",
     "superAdmin": "管理员",
-    "modifyPwd": "修改密码"
+    "modifyPwd": "修改密码",
+    "cron": {
+        "second": "秒",
+        "minute": "分钟",
+        "hour": "小时",
+        "day": "日",
+        "month": "月",
+        "week": "周",
+        "year": "年",
+        "every": "每{0}",
+        "interval": "区间",
+        "circle": "循环",
+        "enumeration": "枚举",
+        "from": "从",
+        "to": "到",
+        "1": "日",
+        "2": "一",
+        "3": "二",
+        "4": "三",
+        "5": "四",
+        "6": "五",
+        "7": "六"
+    }
 }

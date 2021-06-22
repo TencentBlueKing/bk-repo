@@ -60,7 +60,7 @@
         props: {
             list: {
                 type: Array,
-                default: []
+                default: () => []
             },
             deepCount: {
                 type: Number,
@@ -76,7 +76,7 @@
             },
             openList: {
                 type: Array,
-                default: []
+                default: () => []
             }
         },
         computed: {
