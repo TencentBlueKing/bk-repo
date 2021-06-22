@@ -34,7 +34,8 @@ package com.tencent.bkrepo.common.artifact.cluster
 /**
  * 集群信息
  */
-data class CenterInfo(
+data class ClusterInfo(
+    var name: String? = null,
     var url: String? = null,
     var username: String? = null,
     var password: String? = null,

@@ -19,6 +19,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.repository.ClusterNodeRepository
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -128,6 +129,21 @@ class ClusterNodeServiceImpl(
         val clusterNodeInfo = convertRemoteInfo(clusterNodeDao.findByName(name))
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
         tryConnect(clusterNodeInfo)
+    }
+
+    override fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest) {
+        with(request) {
+            val tClusterNode = clusterNodeDao.findByName(name)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+            tClusterNode.copy(
+                status = status,
+                errorReason = errorReason,
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now()
+            )
+            clusterNodeDao.save(tClusterNode)
+            logger.info("update cluster [$name] status from [${tClusterNode.status}] to [$status] success.")
+        }
     }
 
     @Suppress("TooGenericExceptionCaught")

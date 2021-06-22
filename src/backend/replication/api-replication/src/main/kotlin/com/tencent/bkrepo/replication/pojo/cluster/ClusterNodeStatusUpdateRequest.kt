@@ -29,24 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.replication.pojo.cluster
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.NestedConfigurationProperty
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 集群信息
+ * 更新集群节点请求
  */
-@ConfigurationProperties("cluster")
-data class ClusterProperties(
-    var role: RoleType = RoleType.CENTER,
-    @NestedConfigurationProperty
-    var center: ClusterInfo = ClusterInfo(),
-    @NestedConfigurationProperty
-    var self: ClusterInfo = ClusterInfo()
+@ApiModel("更新集群节点请求")
+data class ClusterNodeStatusUpdateRequest(
+    @ApiModelProperty("集群名称", required = true)
+    val name: String,
+    @ApiModelProperty("集群状态", required = false)
+    val status: ClusterNodeStatus = ClusterNodeStatus.HEALTHY,
+    @ApiModelProperty("状态为非健康时显示失败原因", required = false)
+    val errorReason: String? = null,
+    @ApiModelProperty("操作用户", required = true)
+    val operator: String
 )
-
-enum class RoleType {
-    CENTER,
-    EDGE;
-}

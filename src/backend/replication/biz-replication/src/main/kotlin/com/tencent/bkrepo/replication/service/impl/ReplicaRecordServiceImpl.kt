@@ -2,6 +2,7 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
@@ -31,7 +32,8 @@ import java.time.LocalDateTime
 class ReplicaRecordServiceImpl(
     private val replicaRecordDao: ReplicaRecordDao,
     private val replicaRecordDetailDao: ReplicaRecordDetailDao,
-    private val replicaTaskDao: ReplicaTaskDao
+    private val replicaTaskDao: ReplicaTaskDao,
+    private val clusterProperties: ClusterProperties
 ) : ReplicaRecordService {
 
     override fun startNewRecord(key: String): ReplicaRecordInfo {
@@ -89,10 +91,12 @@ class ReplicaRecordServiceImpl(
         with(request) {
             val recordDetail = TReplicaRecordDetail(
                 recordId = recordId,
-                localCluster = localCluster,
+                localCluster = clusterProperties.center.name.orEmpty(),
                 remoteCluster = remoteCluster,
                 localRepoName = localRepoName,
                 repoType = repoType,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
                 status = ExecutionStatus.RUNNING,
                 progress = ReplicaProgress(),
                 startTime = LocalDateTime.now()

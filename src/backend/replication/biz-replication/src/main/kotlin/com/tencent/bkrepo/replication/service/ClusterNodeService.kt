@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatusUpdateRequest
 
 /**
  * 集群节点服务接口
@@ -103,4 +104,9 @@ interface ClusterNodeService {
      */
     @Throws(ErrorCodeException::class)
     fun tryConnect(name: String)
+
+    /**
+     * 根据[request]创建集群节点，创建成功后返回集群节点信息
+     */
+    fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest)
 }
