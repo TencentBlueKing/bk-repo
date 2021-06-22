@@ -154,7 +154,7 @@ abstract class ScheduledReplicator : Replicator {
      * 同步指定包的数据
      */
     private fun replicaByPackageConstraint(replicaContext: ReplicaContext, constraint: PackageConstraint) {
-        val context = initialExecutionContext(replicaContext)
+        val context = initialExecutionContext(replicaContext, packageConstraint = constraint)
         try {
             // 查询本地包信息
             val packageSummary = localDataManager.findPackageByKey(
@@ -174,7 +174,7 @@ abstract class ScheduledReplicator : Replicator {
      * 同步指定路径的数据
      */
     private fun replicaByPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
-        val context = initialExecutionContext(replicaContext)
+        val context = initialExecutionContext(replicaContext, pathConstraint = constraint)
         try {
             val nodeInfo = localDataManager.findNodeDetail(
                 projectId = replicaContext.localProjectId,
@@ -284,14 +284,19 @@ abstract class ScheduledReplicator : Replicator {
     /**
      * 初始化执行过程context
      */
-    private fun initialExecutionContext(context: ReplicaContext): ReplicaExecutionContext {
+    private fun initialExecutionContext(
+        context: ReplicaContext,
+        packageConstraint: PackageConstraint? = null,
+        pathConstraint: PathConstraint? = null
+    ): ReplicaExecutionContext {
         // 创建详情
         val request = RecordDetailInitialRequest(
             recordId = context.taskRecord.id,
-            localCluster = context.taskDetail.task.projectId,
             remoteCluster = context.remoteCluster.name,
             localRepoName = context.localRepoName,
-            repoType = context.localRepoType
+            repoType = context.localRepoType,
+            packageConstraint = packageConstraint,
+            pathConstraint = pathConstraint
         )
         val recordDetail = replicaRecordService.initialRecordDetail(request)
         return ReplicaExecutionContext(context, recordDetail)

@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.replication.pojo.record.request
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -39,12 +41,14 @@ import io.swagger.annotations.ApiModelProperty
 data class RecordDetailInitialRequest(
     @ApiModelProperty("记录id")
     val recordId: String,
-    @ApiModelProperty("本地集群名称")
-    val localCluster: String,
     @ApiModelProperty("远程集群名称")
     val remoteCluster: String,
     @ApiModelProperty("本地仓库名称")
     val localRepoName: String,
     @ApiModelProperty("本地仓库类型")
-    val repoType: RepositoryType
+    val repoType: RepositoryType,
+    @ApiModelProperty("包限制")
+    var packageConstraint: PackageConstraint? = null,
+    @ApiModelProperty("路径名称")
+    var pathConstraint: PathConstraint? = null
 )
