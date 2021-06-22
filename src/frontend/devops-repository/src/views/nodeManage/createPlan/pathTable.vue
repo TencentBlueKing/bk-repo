@@ -42,7 +42,7 @@
         name: 'pathTable',
         components: { pathDialog },
         props: {
-            initData: Object,
+            initData: Array,
             disabled: Boolean
         },
         data () {
@@ -73,7 +73,7 @@
         watch: {
             initData: {
                 handler: function (data) {
-                    const { remoteRepoName, pathConstraints = [] } = JSON.parse(JSON.stringify(data))
+                    const { remoteRepoName, pathConstraints = [] } = JSON.parse(JSON.stringify(data))[0] || {}
                     this.selectedRepoName = remoteRepoName
                     this.pathConstraints = pathConstraints.map(v => v.path)
                 },

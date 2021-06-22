@@ -51,7 +51,7 @@
         name: 'packageTable',
         components: { packageDialog },
         props: {
-            initData: Object,
+            initData: Array,
             disabled: Boolean
         },
         data () {
@@ -82,7 +82,7 @@
         watch: {
             initData: {
                 handler: function (data) {
-                    const { remoteRepoName, remoteProjectId, repoType, packageConstraints = [] } = JSON.parse(JSON.stringify(data))
+                    const { remoteRepoName, remoteProjectId, repoType, packageConstraints = [] } = JSON.parse(JSON.stringify(data))[0] || {}
                     this.selectedRepoName = remoteRepoName
                     this.packageConstraints = packageConstraints.map(pkg => ({
                         ...pkg,
