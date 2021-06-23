@@ -29,11 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.pypi
+package com.tencent.bkrepo.pypi.pojo
 
-const val REMOTE_HTML_CACHE_FULL_PATH = "remoteHtml.html"
-const val FLUSH_CACHE_EXPIRE = 60 * 24
-const val SSL_PORT = 443
-const val XML_RPC_URI = "RPC2"
-const val XML_RPC_OPERATION_OR = "or"
-const val XML_RPC_OPERATION_AND = "and"
+data class PypiSearchPojo2(
+    val action: String,
+    val map: Map<String, List<String>>,
+    val operation: String
+)
