@@ -123,7 +123,9 @@ open class AbstractNpmService {
     ) {
         val oldTarball = versionMetadata.dist?.tarball!!
         versionMetadata.dist?.tarball =
-            NpmUtils.buildPackageTgzTarball(oldTarball, npmProperties.tarball.prefix, name, artifactInfo)
+            NpmUtils.buildPackageTgzTarball(
+                oldTarball, npmProperties.domain, npmProperties.tarball.prefix, name, artifactInfo
+            )
     }
 
     companion object {

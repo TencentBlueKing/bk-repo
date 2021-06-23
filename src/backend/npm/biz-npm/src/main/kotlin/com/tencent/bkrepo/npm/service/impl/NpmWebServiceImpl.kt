@@ -45,6 +45,7 @@ import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
+import com.tencent.bkrepo.npm.pojo.NpmDomainInfo
 import com.tencent.bkrepo.npm.pojo.user.BasicInfo
 import com.tencent.bkrepo.npm.pojo.user.DependenciesInfo
 import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
@@ -147,6 +148,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             // 修改package.json文件的内容
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
         }
+    }
+
+    override fun getAddress(): NpmDomainInfo {
+        return NpmDomainInfo(npmProperties.domain)
     }
 
     fun updatePackageWithDeleteVersion(
