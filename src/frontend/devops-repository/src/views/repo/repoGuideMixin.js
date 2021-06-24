@@ -1,7 +1,7 @@
 import { mapState } from 'vuex'
 export default {
     computed: {
-        ...mapState(['userInfo', 'dockerDomain']),
+        ...mapState(['userInfo', 'domain']),
         projectId () {
             return this.$route.params.projectId
         },
@@ -33,7 +33,7 @@ export default {
                     main: [
                         {
                             subTitle: '配置个人凭证',
-                            codeList: [`docker login -u ${this.userName} -p <PERSONAL_ACCESS_TOKEN> ${this.dockerDomain}`]
+                            codeList: [`docker login -u ${this.userName} -p <PERSONAL_ACCESS_TOKEN> ${this.domain.docker}`]
                         }
                     ]
                 },
@@ -42,11 +42,11 @@ export default {
                     main: [
                         {
                             subTitle: '1、给本地的镜像打标签',
-                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}`]
+                            codeList: [`docker tag <LOCAL_IMAGE_TAG> ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         },
                         {
                             subTitle: '2、推送您的docker 镜像',
-                            codeList: [`docker push ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}`]
+                            codeList: [`docker push ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
                 },
@@ -54,7 +54,7 @@ export default {
                     title: '下载',
                     main: [
                         {
-                            codeList: [`docker pull ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}`]
+                            codeList: [`docker pull ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
                 }
@@ -67,7 +67,7 @@ export default {
                         {
                             subTitle: '使用如下命令去拉取包',
                             codeList: [
-                                `docker pull ${this.dockerDomain}/${this.projectId}/${this.repoName}/${this.packageName}:${this.version}`
+                                `docker pull ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}:${this.version}`
                             ]
                         }
                     ]
@@ -85,11 +85,11 @@ export default {
                         {
                             subTitle: '在项目根目录下（与package.json同级），添加文件.npmrc，拷贝如下信息',
                             codeList: [
-                                `registry=${this.repoUrl}/`,
+                                `registry=${this.domain.npm}/${this.projectId}/${this.repoName}/`,
                                 `always-auth=true`,
-                                `//${this.repoUrl.split('//')[1]}/:username=${this.userName}`,
-                                `//${this.repoUrl.split('//')[1]}/:_password=<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`,
-                                `//${this.repoUrl.split('//')[1]}/:email=<EMAIL>`
+                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:username=${this.userName}`,
+                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:_password=<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`,
+                                `//${this.domain.npm.split('//')[1]}/${this.projectId}/${this.repoName}/:email=<EMAIL>`
                             ]
                         },
                         {
@@ -113,7 +113,7 @@ export default {
                         {
                             subTitle: '设置 npm registry为当前制品库仓库，进入command/shell命令行窗口根据用户凭证登录',
                             codeList: [
-                                `npm config set registry ${this.repoUrl}/`
+                                `npm config set registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`
                             ]
                         },
                         {
@@ -140,7 +140,7 @@ export default {
                         },
                         {
                             subTitle: '2、也可以通过指定registry的方式去拉取包，如下命令',
-                            codeList: [`npm install ${this.packageName} --registry ${this.repoUrl}/`]
+                            codeList: [`npm install ${this.packageName} --registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`]
                         }
                     ]
                 }
@@ -159,7 +159,7 @@ export default {
                         {
                             subTitle: '2、也可以通过指定registry的方式去拉取包，如下命令',
                             codeList: [
-                                `npm install ${this.packageName}@${this.version} --registry ${this.repoUrl}/`
+                                `npm install ${this.packageName}@${this.version} --registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`
                             ]
                         }
                     ]
