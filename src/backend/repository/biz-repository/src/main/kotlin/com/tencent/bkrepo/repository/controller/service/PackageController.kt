@@ -130,6 +130,22 @@ class PackageController(
         return ResponseBuilder.success(pageResult)
     }
 
+    override fun listExistPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        packageVersionList: List<String>
+    ): Response<List<String>> {
+        return ResponseBuilder.success(
+            packageService.listExistPackageVersion(
+                projectId,
+                repoName,
+                packageKey,
+                packageVersionList
+            )
+        )
+    }
+
     override fun listAllVersion(
         projectId: String,
         repoName: String,

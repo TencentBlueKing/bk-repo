@@ -314,6 +314,17 @@ class PackageServiceImpl(
         return Page(pageNumber + 1, query.limit, totalRecords, packageList)
     }
 
+    override fun listExistPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        packageVersionList: List<String>
+    ): List<String> {
+        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
+        val versionQuery = PackageQueryHelper.versionQuery(tPackage.id!!, packageVersionList)
+        return packageVersionDao.find(versionQuery).map { it.name }
+    }
+
     override fun populatePackage(request: PackagePopulateRequest) {
         with(request) {
             // 先查询包是否存在，不存在先创建包

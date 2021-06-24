@@ -76,7 +76,7 @@ class NugetPackageHandler {
                 metadata["version"] = version
                 metadata["authors"] = authors
                 metadata["description"] = description
-                owners?.let { metadata["owners"] = it }
+                /*owners?.let { metadata["owners"] = it }
                 projectUrl?.let { metadata["projectUrl"] = it }
                 licenseUrl?.let { metadata["licenseUrl"] = it }
                 license?.let { metadata["license"] = it }
@@ -90,7 +90,7 @@ class NugetPackageHandler {
                 language?.let { metadata["language"] = it }
                 tags?.let { metadata["tags"] = it }
                 serviceable?.let { metadata["serviceable"] = it }
-                title?.let { metadata["title"] = it }
+                title?.let { metadata["title"] = it }*/
                 dependencies?.let { metadata["dependency"] = buildDependencies(it) }
                 references?.let { metadata["reference"] = buildReferences(it) }
                 frameworkAssemblies?.let { metadata["frameworks"] = buildFrameworks(it) }
