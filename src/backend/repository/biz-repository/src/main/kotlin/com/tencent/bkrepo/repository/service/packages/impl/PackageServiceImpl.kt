@@ -291,7 +291,7 @@ class PackageServiceImpl(
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "artifactPath is null")
         }
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.artifactPath!!)
-        val context = ArtifactDownloadContext(artifact = artifactInfo)
+        val context = ArtifactDownloadContext(artifact = artifactInfo, useDisposition = true)
         ArtifactContextHolder.getRepository().download(context)
     }
 

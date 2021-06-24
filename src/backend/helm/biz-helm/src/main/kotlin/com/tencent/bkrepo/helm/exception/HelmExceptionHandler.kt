@@ -32,8 +32,10 @@
 package com.tencent.bkrepo.helm.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
@@ -62,6 +64,7 @@ class HelmExceptionHandler {
     @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerClientAuthException(exception: AuthenticationException) {
+        HttpContextHolder.getResponse().setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
         val responseObject = HelmErrorResponse(HttpStatus.UNAUTHORIZED.reasonPhrase)
         helmResponse(responseObject, exception)
     }
