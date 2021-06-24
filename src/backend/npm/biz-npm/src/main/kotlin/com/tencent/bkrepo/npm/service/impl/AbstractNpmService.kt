@@ -34,8 +34,10 @@ package com.tencent.bkrepo.npm.service.impl
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
@@ -105,7 +107,7 @@ open class AbstractNpmService {
             ArtifactContextHolder.getRepository().query(context) as? InputStream
                 ?: throw NpmArtifactNotFoundException("document not found")
         val packageMetaData = inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
-        if (showCustomTarball) {
+        if (showCustomTarball && !showDefaultTarball()) {
             val versionsMap = packageMetaData.versions.map
             val iterator = versionsMap.entries.iterator()
             while (iterator.hasNext()) {
@@ -114,6 +116,13 @@ open class AbstractNpmService {
             }
         }
         return packageMetaData
+    }
+
+    private fun showDefaultTarball(): Boolean {
+        val domain = npmProperties.domain
+        val tarballPrefix = npmProperties.tarball.prefix
+        val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX).orEmpty()
+        return npmPrefixHeader.isEmpty() && tarballPrefix.isEmpty() && domain.isEmpty()
     }
 
     protected fun modifyVersionMetadataTarball(
