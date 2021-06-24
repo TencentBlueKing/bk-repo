@@ -74,7 +74,7 @@
                     <template v-else-if="planForm.replicaObjectType === 'PACKAGE'">
                         <package-table
                             ref="planConfig"
-                            :init-data="replicaTaskObjects[0] || {}"
+                            :init-data="replicaTaskObjects"
                             :disabled="disabled"
                             @clearError="clearError">
                         </package-table>
@@ -82,7 +82,7 @@
                     <template v-else-if="planForm.replicaObjectType === 'PATH'">
                         <path-table
                             ref="planConfig"
-                            :init-data="replicaTaskObjects[0] || {}"
+                            :init-data="replicaTaskObjects"
                             :disabled="disabled"
                             @clearError="clearError">
                         </path-table>

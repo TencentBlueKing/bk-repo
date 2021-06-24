@@ -3,12 +3,18 @@
         <div class="mb20 flex-align-center">
             <bk-select
                 class="mr20 w250"
-                v-model.trim="sortType"
-                :clearable="false"
+                v-model="showEnabled"
+                placeholder="计划状态"
                 @change="handlerPaginationChange()">
-                <bk-option id="CREATED_TIME" name="按创建时间排序"></bk-option>
-                <bk-option id="LAST_EXECUTION_TIME" name="按上次执行时间排序"></bk-option>
-                <bk-option id="NEXT_EXECUTION_TIME" name="按下次执行时间排序"></bk-option>
+                <bk-option id="true" name="启用的计划"></bk-option>
+                <bk-option id="false" name="停用的计划"></bk-option>
+            </bk-select>
+            <bk-select
+                class="mr20 w250"
+                v-model="lastExecutionStatus"
+                placeholder="上次执行状态"
+                @change="handlerPaginationChange()">
+                <bk-option v-for="(label, key) in statusMap" :key="key" :id="key" :name="label"></bk-option>
             </bk-select>
             <bk-input
                 class="w250"
@@ -19,15 +25,7 @@
                 @clear="handlerPaginationChange()">
             </bk-input>
             <i class="plan-search-btn devops-icon icon-search" @click="handlerPaginationChange()"></i>
-            <div class="create-user flex-align-center">
-                <bk-checkbox
-                    class="mr20"
-                    v-model="showEnabled"
-                    :true-value="true"
-                    :false-value="undefined"
-                    @change="handlerPaginationChange()">
-                    仅查看启用计划
-                </bk-checkbox>
+            <div class="create-plan flex-align-center">
                 <bk-button theme="primary" @click.stop="$router.push({ name: 'createPlan' })">{{ $t('create') + '计划' }}</bk-button>
             </div>
         </div>
@@ -57,17 +55,17 @@
                     {{ { 'IMMEDIATELY': '立即执行', 'SPECIFIED_TIME': '指定时间', 'CRON_EXPRESSION': '定时执行' }[row.setting.executionStrategy] }}
                 </template>
             </bk-table-column>
-            <bk-table-column label="上次执行时间" width="150">
+            <bk-table-column label="上次执行时间" prop="LAST_EXECUTION_TIME" width="150" :render-header="renderHeader">
                 <template #default="{ row }">
                     {{formatDate(row.lastExecutionTime)}}
                 </template>
             </bk-table-column>
-            <bk-table-column label="运行状态" width="100">
+            <bk-table-column label="上次执行状态" width="100">
                 <template #default="{ row }">
                     <span class="repo-tag" :class="row.lastExecutionStatus">{{statusMap[row.lastExecutionStatus] || '未执行'}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="下次执行时间" width="150">
+            <bk-table-column label="下次执行时间" prop="NEXT_EXECUTION_TIME" width="150" :render-header="renderHeader">
                 <template #default="{ row }">
                     {{formatDate(row.nextExecutionTime)}}
                 </template>
@@ -77,7 +75,7 @@
                     {{userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy}}
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="150">
+            <bk-table-column :label="$t('createdDate')" prop="CREATED_TIME" width="150" :render-header="renderHeader">
                 <template #default="{ row }">
                     {{formatDate(row.createdDate)}}
                 </template>
@@ -93,7 +91,7 @@
             <bk-table-column :label="$t('operation')" width="170">
                 <template #default="{ row }">
                     <div class="flex-align-center">
-                        <!-- <i title="执行" class="mr10 devops-icon icon-play3 hover-btn" :class="{ 'disabled': row.lastExecutionStatus === 'REPLICATING' }" @click.stop="executePlanHandler(row)"></i> -->
+                        <!-- <i title="执行" class="mr10 devops-icon icon-play3 hover-btn" :class="{ 'disabled': row.lastExecutionStatus === 'RUNNING' }" @click.stop="executePlanHandler(row)"></i> -->
                         <!-- <i title="编辑" class="mr10 devops-icon icon-edit hover-btn" @click.stop="editPlanHandler(row)"></i> -->
                         <i title="复制" class="mr10 devops-icon icon-clipboard hover-btn" @click.stop="copyPlanHandler(row)"></i>
                         <i title="删除" class="mr10 devops-icon icon-delete hover-btn" @click.stop="deletePlanHandler(row)"></i>
@@ -115,7 +113,7 @@
             :limit-list="pagination.limitList">
         </bk-pagination>
         <plan-log v-model="planLog.show" :plan-key="planLog.key" :title="planLog.name"></plan-log>
-        <plan-copy-dialog v-bind="planCopy" @cancel="planCopy.show = false"></plan-copy-dialog>
+        <plan-copy-dialog v-bind="planCopy" @cancel="planCopy.show = false" @refresh="handlerPaginationChange()"></plan-copy-dialog>
     </div>
 </template>
 <script>
@@ -124,11 +122,8 @@
     import planLog from './planLog'
     import planCopyDialog from './planCopyDialog'
     const statusMap = {
-        'WAITING': '等待',
-        'PAUSED': '暂停',
-        'REPLICATING': '执行中',
+        'RUNNING': '执行中',
         'SUCCESS': '成功',
-        'INTERRUPTED': '中断',
         'FAILED': '失败'
     }
     export default {
@@ -139,6 +134,7 @@
                 statusMap,
                 isLoading: false,
                 showEnabled: undefined,
+                lastExecutionStatus: '',
                 planInput: '',
                 sortType: 'CREATED_TIME',
                 planList: [],
@@ -176,6 +172,25 @@
                 'checkUpdatePlan',
                 'deletePlan'
             ]),
+            renderHeader (h, { column }) {
+                return h('div', {
+                    class: 'flex-align-center hover-btn',
+                    on: {
+                        click: () => {
+                            this.sortType = column.property
+                            this.handlerPaginationChange()
+                        }
+                    }
+                }, [
+                    h('span', column.label),
+                    h('i', {
+                        class: {
+                            'ml5 devops-icon icon-down-shape': true,
+                            'selected': this.sortType === column.property
+                        }
+                    })
+                ])
+            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
@@ -187,6 +202,7 @@
                     projectId: this.$route.params.projectId,
                     name: this.planInput || undefined,
                     enabled: this.showEnabled || undefined,
+                    lastExecutionStatus: this.lastExecutionStatus || undefined,
                     sortType: this.sortType,
                     current: this.pagination.current,
                     limit: this.pagination.limit
@@ -198,9 +214,9 @@
                 })
             },
             executePlanHandler ({ key, name, lastExecutionStatus }) {
-                if (lastExecutionStatus === 'REPLICATING') return
+                if (lastExecutionStatus === 'RUNNING') return
                 this.$bkInfo({
-                    type: 'error',
+                    type: 'warning',
                     title: `确认执行计划 ${name} ?`,
                     showFooter: true,
                     confirmFn: () => {
@@ -307,7 +323,7 @@
             background-color: #699df4;
         }
     }
-    .create-user {
+    .create-plan {
         flex: 1;
         justify-content: flex-end;
     }
@@ -316,19 +332,25 @@
             color: #2DCB56;
             background-color: #DCFFE2;
         }
-        .FAILED, .INTERRUPTED {
+        .FAILED {
             color: #EA3636;
             background-color: #FFDDDD;
         }
-        .WAITING, .PAUSED, .REPLICATING {
+        .RUNNING {
             color: #FF9C01;
             background-color: #FFE8C3;
         }
-        .devops-icon {
+        /deep/ .devops-icon {
             font-size: 16px;
             &.disabled {
                 color: $disabledColor;
                 cursor: not-allowed;
+            }
+            &.icon-down-shape {
+                color: $fontLigtherColor;
+                &.selected {
+                    color: $fontWeightColor;
+                }
             }
         }
     }

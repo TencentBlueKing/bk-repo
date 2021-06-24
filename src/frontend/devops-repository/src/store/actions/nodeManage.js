@@ -35,7 +35,7 @@ export default {
         )
     },
     // 查询分发计划
-    getPlanList (_, { projectId, name, enabled, sortType = 'CREATED_TIME', current = 1, limit = 10 }) {
+    getPlanList (_, { projectId, name, enabled, lastExecutionStatus, sortType = 'CREATED_TIME', current = 1, limit = 10 }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/task/page/${projectId}`,
             {
@@ -43,6 +43,7 @@ export default {
                     name,
                     enabled,
                     sortType,
+                    lastExecutionStatus,
                     pageNumber: current,
                     pageSize: limit
                 }
@@ -101,9 +102,16 @@ export default {
         )
     },
     // 计划执行日志
-    getPlanLogList (_, { key, current = 1, limit = 10 }) {
+    getPlanLogList (_, { key, status, current = 1, limit = 10 }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/task/record/page/${key}/${current}/${limit}`
+            `${prefix}/task/record/page/${key}`,
+            {
+                params: {
+                    pageNumber: current,
+                    pageSize: limit,
+                    status
+                }
+            }
         )
     },
     // 计划执行日志

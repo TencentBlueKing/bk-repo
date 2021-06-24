@@ -66,8 +66,8 @@
                             searchable
                             placeholder="请选择用户"
                             :enable-virtual-scroll="Object.values(userList).length > 3000"
-                            :list="Object.values(userList)">
-                            <bk-option v-for="option in Object.values(userList)"
+                            :list="Object.values(userList).filter(user => user.id !== 'anonymous')">
+                            <bk-option v-for="option in Object.values(userList).filter(user => user.id !== 'anonymous')"
                                 :key="option.id"
                                 :id="option.id"
                                 :name="option.name">

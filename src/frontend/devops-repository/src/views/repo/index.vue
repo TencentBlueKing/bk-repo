@@ -66,14 +66,18 @@
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'breadcrumb', 'dockerDomain']),
+            ...mapState(['repoListAll', 'breadcrumb', 'domain']),
             showFilterIcon () {
                 return this.$route.name === 'commonList' || this.$route.name === 'repoGeneric'
             }
         },
         watch: {
-            repoType (val) {
-                val === 'docker' && !this.dockerDomain && this.getDockerDomain()
+            repoType: {
+                handler: function (type) {
+                    type === 'docker' && !this.domain[type] && this.getDockerDomain()
+                    type === 'npm' && !this.domain[type] && this.getNpmDomain()
+                },
+                immediate: true
             },
             repoName () {
                 this.showRepoSearch = false
@@ -92,7 +96,6 @@
             this.getRepoListAll({
                 projectId: this.projectId
             })
-            this.repoType === 'docker' && !this.dockerDomain && this.getDockerDomain()
             this.setRepositoryHistory({
                 projectId: this.projectId,
                 repoType: this.repoType,
@@ -108,7 +111,7 @@
             next()
         },
         methods: {
-            ...mapActions(['getRepoListAll', 'getDockerDomain']),
+            ...mapActions(['getRepoListAll', 'getDockerDomain', 'getNpmDomain']),
             setRepositoryHistory (data) {
                 const repositoryHistory = JSON.parse(localStorage.getItem('repositoryHistory') || '{}')
                 repositoryHistory[data.projectId] = {
