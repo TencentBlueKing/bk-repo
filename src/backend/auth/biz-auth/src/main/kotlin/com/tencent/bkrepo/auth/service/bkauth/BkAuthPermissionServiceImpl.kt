@@ -160,16 +160,16 @@ class BkAuthPermissionServiceImpl constructor(
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
         // git ci项目校验单独权限
-        if (request.projectId != null && request.projectId!!.startsWith(GIT_PROJECT_PREFIX, true)) {
-            val context = PermissionRequestContext(
-                userId = request.uid,
-                projectId = request.projectId!!
-            )
-            logger.debug("check git project permission [$context]")
-            pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
-                return it.check(context)
-            }
-        }
+        // if (request.projectId != null && request.projectId!!.startsWith(GIT_PROJECT_PREFIX, true)) {
+        //     val context = PermissionRequestContext(
+        //         userId = request.uid,
+        //         projectId = request.projectId!!
+        //     )
+        //     logger.debug("check git project permission [$context]")
+        //     pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
+        //         return it.check(context)
+        //     }
+        // }
 
         // devops体系账号校验
         val appIdCond = request.appId == bkAuthConfig.devopsAppId ||
