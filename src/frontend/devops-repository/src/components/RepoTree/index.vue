@@ -1,7 +1,7 @@
 <template>
     <ul class="repo-tree-list">
         <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
-            <div v-if="deepCount" class="line-dashed" :class="{ 'more': list.length > 20 }" :style="{
+            <div v-if="deepCount" class="line-dashed" :class="{ 'more': sortable && list.length > 20 }" :style="{
                 'border-width': '0 1px 0 0',
                 'margin-left': (20 * deepCount + 5) + 'px',
                 'height': '100%',
@@ -86,7 +86,7 @@
         computed: {
             treeList () {
                 const list = this.list.filter(v => v.folder)
-                if (list.length > 20 && this.sortable) {
+                if (this.sortable) {
                     const reg = new RegExp(`^${this.selectedNode.roadMap},[0-9]+$`)
                     const isSearch = reg.test(list[0].roadMap) && this.importantSearch
                     return list.sort((a, b) => {

@@ -31,13 +31,26 @@
 
 package com.tencent.bkrepo.npm.service.impl
 
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
+import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
+import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
+import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
+import com.tencent.bkrepo.npm.properties.NpmProperties
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import java.io.InputStream
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -52,6 +65,9 @@ open class AbstractNpmService {
     @Autowired
     lateinit var packageClient: PackageClient
 
+    @Autowired
+    lateinit var npmProperties: NpmProperties
+
     /**
      * 查询仓库是否存在
      */
@@ -65,8 +81,60 @@ open class AbstractNpmService {
     /**
      * check node exists
      */
-    fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
+    fun packageExist(projectId: String, repoName: String, key: String): Boolean {
+        return packageClient.findPackageByKey(projectId, repoName, key).data?.let { true } ?: false
+    }
+
+    /**
+     * check package version exists
+     */
+    fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
+        return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
+    }
+
+    /**
+     * query package metadata
+     */
+    fun queryPackageInfo(
+        artifactInfo: NpmArtifactInfo,
+        name: String,
+        showCustomTarball: Boolean = true
+    ): NpmPackageMetaData {
+        val packageFullPath = NpmUtils.getPackageMetadataPath(name)
+        val context = ArtifactQueryContext()
+        context.putAttribute(NPM_FILE_FULL_PATH, packageFullPath)
+        val inputStream =
+            ArtifactContextHolder.getRepository().query(context) as? InputStream
+                ?: throw NpmArtifactNotFoundException("document not found")
+        val packageMetaData = inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
+        if (showCustomTarball && !showDefaultTarball()) {
+            val versionsMap = packageMetaData.versions.map
+            val iterator = versionsMap.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                modifyVersionMetadataTarball(artifactInfo, name, entry.value)
+            }
+        }
+        return packageMetaData
+    }
+
+    private fun showDefaultTarball(): Boolean {
+        val domain = npmProperties.domain
+        val tarballPrefix = npmProperties.tarball.prefix
+        val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX).orEmpty()
+        return npmPrefixHeader.isEmpty() && tarballPrefix.isEmpty() && domain.isEmpty()
+    }
+
+    protected fun modifyVersionMetadataTarball(
+        artifactInfo: NpmArtifactInfo,
+        name: String,
+        versionMetadata: NpmVersionMetadata
+    ) {
+        val oldTarball = versionMetadata.dist?.tarball!!
+        versionMetadata.dist?.tarball =
+            NpmUtils.buildPackageTgzTarball(
+                oldTarball, npmProperties.domain, npmProperties.tarball.prefix, name, artifactInfo
+            )
     }
 
     companion object {
