@@ -17,6 +17,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
@@ -132,6 +133,8 @@ class ReplicaRecordServiceImpl(
                 remoteCluster = remoteCluster,
                 localRepoName = localRepoName,
                 repoType = repoType,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
                 status = result.status,
                 progress = result.progress!!,
                 startTime = startTime,
@@ -146,9 +149,11 @@ class ReplicaRecordServiceImpl(
         return replicaRecordDao.listByTaskKey(key).map { convert(it)!! }
     }
 
-    override fun listRecordsPage(key: String, pageNumber: Int, pageSize: Int): Page<ReplicaRecordInfo> {
+    override fun listRecordsPage(key: String, option: ReplicaRecordListOption): Page<ReplicaRecordInfo> {
+        val pageNumber = option.pageNumber
+        val pageSize = option.pageSize
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val query = TaskRecordQueryHelper.recordListQuery(key)
+        val query = TaskRecordQueryHelper.recordListQuery(key, option)
         val totalRecords = replicaRecordDao.count(query)
         val records = replicaRecordDao.find(query.with(pageRequest)).map { convert(it)!! }
         return Pages.ofResponse(pageRequest, totalRecords, records)

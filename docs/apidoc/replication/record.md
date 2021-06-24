@@ -112,6 +112,7 @@
   |key|string|是|无|任务唯一id|task id|
   |pageNumber|int|是|无|当前页|page number|
   |pageSize|int|是|无|分页数量|page size|
+  |status|enum|否|无|执行状态|execute status|
 
 - 响应体
 

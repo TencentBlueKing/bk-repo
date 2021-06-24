@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import io.swagger.annotations.Api
@@ -41,13 +42,12 @@ class ReplicaRecordController(
     }
 
     @ApiOperation("根据taskKey分页查询任务执行日志")
-    @GetMapping("/page/{key}/{pageNumber}/{pageSize}")
+    @GetMapping("/page/{key}")
     fun listRecordsPage(
         @PathVariable key: String,
-        @PathVariable pageNumber: Int,
-        @PathVariable pageSize: Int
+        option: ReplicaRecordListOption
     ): Response<Page<ReplicaRecordInfo>> {
-        return ResponseBuilder.success(replicaRecordService.listRecordsPage(key, pageNumber, pageSize))
+        return ResponseBuilder.success(replicaRecordService.listRecordsPage(key, option))
     }
 
     @ApiOperation("根据recordId查询任务执行日志详情")

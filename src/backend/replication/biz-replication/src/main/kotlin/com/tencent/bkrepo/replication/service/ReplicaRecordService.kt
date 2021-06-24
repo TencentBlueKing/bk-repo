@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetailListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 
@@ -100,10 +101,9 @@ interface ReplicaRecordService {
      * 根据任务[key]分页查询执行记录
      *
      * @param key 任务key
-     * @param pageNumber 当前页
-     * @param pageSize 分页大小
+     * @param option 条件
      */
-    fun listRecordsPage(key: String, pageNumber: Int, pageSize: Int): Page<ReplicaRecordInfo>
+    fun listRecordsPage(key: String, option: ReplicaRecordListOption): Page<ReplicaRecordInfo>
 
     /**
      * 根据[recordId]查询执行详情列表
