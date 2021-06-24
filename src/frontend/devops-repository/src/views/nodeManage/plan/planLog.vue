@@ -1,9 +1,17 @@
 <template>
     <bk-sideslider :is-show.sync="showSideslider" :quick-close="true" :width="850" :title="`${title} 执行日志`">
         <template #content>
-            <div class="plan-detail-container">
+            <div class="plan-detail-container" v-bkloading="{ isLoading }">
+                <bk-select
+                    class="mr20 w250"
+                    v-model="status"
+                    placeholder="运行状态"
+                    @change="handlerPaginationChange()">
+                    <bk-option v-for="(label, key) in statusMap" :key="key" :id="key" :name="label"></bk-option>
+                </bk-select>
                 <bk-table
-                    height="calc(100% - 42px)"
+                    class="mt10"
+                    height="calc(100% - 84px)"
                     :data="logList"
                     :outer-border="false"
                     :row-border="false"
@@ -52,11 +60,8 @@
     import { formatDate } from '@/utils'
     import { mapActions } from 'vuex'
     const statusMap = {
-        'WAITING': '等待',
-        'PAUSED': '暂停',
-        'REPLICATING': '执行中',
+        'RUNNING': '执行中',
         'SUCCESS': '成功',
-        'INTERRUPTED': '中断',
         'FAILED': '失败'
     }
     export default {
@@ -72,7 +77,9 @@
         },
         data () {
             return {
+                isLoading: false,
                 statusMap,
+                status: '',
                 logList: [],
                 pagination: {
                     count: 0,
@@ -106,15 +113,17 @@
                 this.getPlanLogListHandler()
             },
             getPlanLogListHandler () {
+                this.isLoading = true
                 this.getPlanLogList({
                     key: this.planKey,
+                    status: this.status || undefined,
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.logList = records
                     this.pagination.count = totalRecords
                 }).finally(() => {
-                    this.loadLog = false
+                    this.isLoading = false
                 })
             },
             showLogDetailHandler ({ id }) {
@@ -141,11 +150,11 @@
         color: #2DCB56;
         background-color: #DCFFE2;
     }
-    .FAILED, .INTERRUPTED {
+    .FAILED {
         color: #EA3636;
         background-color: #FFDDDD;
     }
-    .WAITING, .PAUSED, .REPLICATING {
+    .RUNNING {
         color: #FF9C01;
         background-color: #FFE8C3;
     }

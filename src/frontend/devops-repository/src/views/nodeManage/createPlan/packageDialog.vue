@@ -12,26 +12,29 @@
                 <div class="mb10 flex-align-center">
                     <label class="search-package-label">查询制品：</label>
                     <bk-input class="w250 search-package-display" v-model="packageName" placeholder="请输入制品名称"></bk-input>
-                    <bk-button class="ml20" theme="primary" @click="handleSearchPackage">{{$t('search')}}</bk-button>
+                    <bk-button class="ml20" :loading="isLoading" theme="primary" @click="handleSearchPackage">{{$t('search')}}</bk-button>
                 </div>
                 <div class="ml60 package-list-total">{{ totalRecords }} 个制品匹配</div>
-                <div class="ml60 package-list">
-                    <div class="package-list-item flex-align-center" v-for="pkg in packageList" :key="pkg.fid">
-                        <div class="package-repo flex-align-center" :title="pkg.repoName">
-                            <Icon class="mr5" size="16" :name="pkg.type.toLowerCase()"></Icon>
-                            <div class="repo-name text-overflow">{{ pkg.repoName }}</div>
+                <div class="ml60 package-list" v-bkloading="{ isLoading }">
+                    <template v-if="packageList.length">
+                        <div class="package-list-item flex-align-center" v-for="pkg in packageList" :key="pkg.fid">
+                            <div class="package-repo flex-align-center" :title="pkg.repoName">
+                                <Icon class="mr5" size="16" :name="pkg.type.toLowerCase()"></Icon>
+                                <div class="repo-name text-overflow">{{ pkg.repoName }}</div>
+                            </div>
+                            <div class="package-name text-overflow" :title="pkg.key">
+                                {{ pkg.key }}
+                            </div>
+                            <div class="package-btn flex-align-center">
+                                <bk-button text size="small"
+                                    :disabled="Boolean(checkedPackage.find(v => v.fid === pkg.fid))"
+                                    @click="checkPackage(pkg)">
+                                    {{ checkedPackage.find(v => v.fid === pkg.fid) ? '已选择' : '选择' }}
+                                </bk-button>
+                            </div>
                         </div>
-                        <div class="package-name text-overflow" :title="pkg.key">
-                            {{ pkg.key }}
-                        </div>
-                        <div class="package-btn flex-align-center">
-                            <bk-button text size="small"
-                                :disabled="Boolean(checkedPackage.find(v => v.fid === pkg.fid))"
-                                @click="checkPackage(pkg)">
-                                {{ checkedPackage.find(v => v.fid === pkg.fid) ? '已选择' : '选择' }}
-                            </bk-button>
-                        </div>
-                    </div>
+                    </template>
+                    <empty-data ex-style="margin-top: 20px" v-else></empty-data>
                 </div>
                 <div class="mt20 checked-package" v-if="checkedPackage.length">
                     <label style="font-size:14px">已选择制品</label>
@@ -56,6 +59,7 @@
                                     size="small"
                                     searchable
                                     multiple
+                                    show-select-all
                                     display-tag
                                     :loading="cPkg.loading"
                                     v-model="cPkg.versions">
@@ -82,8 +86,10 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
+    import emptyData from '@/components/EmptyData'
     export default {
         name: 'packageDialog',
+        components: { emptyData },
         props: {
             show: Boolean,
             repo: Object,
@@ -91,6 +97,7 @@
         },
         data () {
             return {
+                isLoading: false,
                 packageName: '',
                 packageList: [],
                 checkedPackage: [],
@@ -107,6 +114,7 @@
             show (val) {
                 if (!val) return
                 this.checkedPackage = this.packageConstraints.slice()
+                this.handleSearchPackage()
             }
         },
         methods: {

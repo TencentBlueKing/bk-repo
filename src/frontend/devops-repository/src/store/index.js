@@ -19,7 +19,12 @@ export default new Vuex.Store({
         ],
         projectList: [],
         repoListAll: [],
-        userList: {},
+        userList: {
+            anonymous: {
+                id: 'anonymous',
+                name: '--'
+            }
+        },
         userInfo: {
             username: '',
             name: '',
@@ -27,7 +32,10 @@ export default new Vuex.Store({
             phone: '',
             admin: true
         },
-        dockerDomain: '',
+        domain: {
+            docker: '',
+            npm: ''
+        },
         clusterList: []
     },
     getters: {
@@ -67,7 +75,13 @@ export default new Vuex.Store({
             state.breadcrumb = data
         },
         SET_USER_LIST (state, data) {
-            state.userList = data
+            state.userList = {
+                ...data,
+                anonymous: {
+                    id: 'anonymous',
+                    name: '--'
+                }
+            }
         },
         SET_USER_INFO (state, data) {
             state.userInfo = {
@@ -75,8 +89,11 @@ export default new Vuex.Store({
                 ...data
             }
         },
-        SET_DOCKER_DOMAIN (state, data) {
-            state.dockerDomain = data
+        SET_DOMAIN (state, { type, domain }) {
+            state.domain = {
+                ...state.domain,
+                [type]: domain
+            }
         },
         SET_CLUSTER_LIST (state, data) {
             state.clusterList = data

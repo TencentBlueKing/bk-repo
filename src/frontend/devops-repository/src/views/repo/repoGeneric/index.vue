@@ -12,6 +12,7 @@
             <repo-tree
                 class="repo-generic-tree"
                 ref="repoTree"
+                :sortable="true"
                 :list="genericTree"
                 :important-search="importantSearch"
                 :open-list="sideTreeOpenList"
@@ -29,8 +30,7 @@
                     :row-border="false"
                     size="small"
                     @row-click="selectRow"
-                    @row-dblclick="openFolder"
-                >
+                    @row-dblclick="openFolder">
                     <bk-table-column :label="$t('fileName')">
                         <template slot-scope="props">
                             <div class="flex-align-center fine-name">
@@ -150,7 +150,7 @@
                     <bk-form-item label="授权用户" property="user">
                         <bk-tag-input
                             v-model="formDialog.user"
-                            :list="Object.values(userList)"
+                            :list="Object.values(userList).filter(user => user.id !== 'anonymous')"
                             placeholder="授权访问用户，为空则任意用户可访问，按Enter键确认"
                             trigger="focus"
                             allow-create
@@ -480,9 +480,9 @@
                 const node = this.selectedTreeNode.children.find(v => v.fullPath === row.fullPath)
                 this.itemClickHandler(node)
                 // 打开选中节点的左侧树的父节点
-                node.roadMap.split(',').forEach((v, i) => {
-                    const roadMap = node.roadMap.slice(0, 2 * i + 1)
-                    !this.sideTreeOpenList.includes(roadMap) && this.sideTreeOpenList.push(roadMap)
+                node.roadMap.split(',').forEach((v, i, arr) => {
+                    const roadMap = arr.slice(0, i + 1).join(',')
+                    this.sideTreeOpenList.push(roadMap)
                 })
             },
             // 控制选中的行，手动添加样式
