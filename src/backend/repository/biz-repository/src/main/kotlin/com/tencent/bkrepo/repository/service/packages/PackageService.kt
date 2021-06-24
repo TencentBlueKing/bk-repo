@@ -227,6 +227,16 @@ interface PackageService {
     fun searchPackage(queryModel: QueryModel): Page<MutableMap<*, *>>
 
     /**
+     * 判断包的版本列表是否存在
+     */
+    fun listExistPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        packageVersionList: List<String>
+    ): List<String>
+
+    /**
      * 填充包版本数据
      *
      * @param request 包版本填充请求
