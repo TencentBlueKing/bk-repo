@@ -13,6 +13,13 @@
                 <span class="mr50">结束时间：{{formatDate(logDetail.endTime)}}</span>
             </div>
             <div class="mb10 log-package-seach flex-align-center">
+                <bk-select
+                    class="mr20 w250"
+                    v-model="status"
+                    placeholder="同步状态"
+                    @change="handlerSearchSelectChange()">
+                    <bk-option v-for="(label, key) in statusMap" :key="key" :id="key" :name="label"></bk-option>
+                </bk-select>
                 <bk-search-select
                     class="search-group"
                     clearable
@@ -24,13 +31,6 @@
                     @clear="handlerSearchSelectChange()"
                     @search="handlerSearchSelectChange()">
                 </bk-search-select>
-                <bk-checkbox
-                    v-model="status"
-                    :true-value="'FAILED'"
-                    :false-value="''"
-                    @change="handlerPaginationChange()">
-                    仅查看同步失败记录
-                </bk-checkbox>
             </div>
             <bk-table
                 height="calc(100% - 144px)"
@@ -49,7 +49,7 @@
                         </div>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="状态" align="center" width="80">
+                <bk-table-column label="同步状态" align="center" width="80">
                     <template #default="{ row }">
                         <span class="repo-tag" :class="row.status">{{statusMap[row.status] || '未执行'}}</span>
                     </template>
@@ -95,11 +95,8 @@
     import { mapGetters, mapActions } from 'vuex'
     import { formatDate } from '@/utils'
     const statusMap = {
-        'WAITING': '等待',
-        'PAUSED': '暂停',
-        'REPLICATING': '执行中',
+        'RUNNING': '执行中',
         'SUCCESS': '成功',
-        'INTERRUPTED': '中断',
         'FAILED': '失败'
     }
     export default {
@@ -233,7 +230,6 @@
             border-bottom: 1px solid $borderLightColor;
         }
         .log-package-seach {
-            justify-content: space-between;
             .search-group {
                 min-width: 250px;
             }
@@ -242,11 +238,11 @@
             color: #2DCB56;
             background-color: #DCFFE2;
         }
-        .FAILED, .INTERRUPTED {
+        .FAILED {
             color: #EA3636;
             background-color: #FFDDDD;
         }
-        .WAITING, .PAUSED, .REPLICATING {
+        .RUNNING {
             color: #FF9C01;
             background-color: #FFE8C3;
         }

@@ -2,17 +2,10 @@
     <div class="node-container" v-bkloading="{ isLoading }">
         <div class="mb20 flex-between-center">
             <div class="node-search flex-align-center">
-                <bk-input
-                    class="w250"
-                    v-model.trim="search.name"
-                    clearable
-                    placeholder="请输入节点名称"
-                    @input="handlerPaginationChange()">
-                </bk-input>
                 <bk-select
-                    class="ml20 w250"
+                    class="mr20 w250"
                     v-model="search.type"
-                    placeholder="请选择节点类型"
+                    placeholder="节点类型"
                     @change="handlerPaginationChange()">
                     <bk-option
                         v-for="(label, type) in typeMap"
@@ -21,6 +14,13 @@
                         :name="label">
                     </bk-option>
                 </bk-select>
+                <bk-input
+                    class="w250"
+                    v-model.trim="search.name"
+                    clearable
+                    placeholder="节点名称"
+                    @input="handlerPaginationChange()">
+                </bk-input>
             </div>
             <bk-button theme="primary" @click.stop="showCreateNode">新增节点</bk-button>
         </div>

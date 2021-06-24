@@ -75,6 +75,7 @@
                         theme: 'success',
                         message: '复制计划' + this.$t('success')
                     })
+                    this.$emit('refresh')
                     this.$emit('cancel')
                 }).finally(() => {
                     this.loading = false

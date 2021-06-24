@@ -3,6 +3,7 @@
         :value="show"
         width="800"
         title="添加文件路径"
+        :position="{ top: 100 }"
         :mask-close="false"
         :close-icon="false">
         <bk-input
