@@ -35,7 +35,7 @@ const val PROJECT_NAME = "bkrepo"
 
 const val SERVICE_NAME = "opdata"
 
-const val opdaOPDATA_GRAFANA_NUMBER = "number"
+const val OPDATA_GRAFANA_NUMBER = "number"
 const val OPDATA_GRAFANA_STRING = "string"
 
 const val OPDATA_CUSTOM = "custom"
