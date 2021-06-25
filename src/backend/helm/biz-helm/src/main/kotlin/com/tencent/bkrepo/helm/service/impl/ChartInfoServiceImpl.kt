@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.user.BasicInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartInfoService
@@ -69,7 +71,8 @@ import java.time.LocalDateTime
 
 @Service
 class ChartInfoServiceImpl(
-    private val chartRepositoryService: ChartRepositoryService
+    private val chartRepositoryService: ChartRepositoryService,
+    private val helmProperties: HelmProperties
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
@@ -186,6 +189,10 @@ class ChartInfoServiceImpl(
             val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
             return PackageVersionInfo(basicInfo, emptyMap())
         }
+    }
+
+    override fun getAddress(): HelmDomainInfo {
+        return HelmDomainInfo(helmProperties.domain)
     }
 
     companion object {
