@@ -53,5 +53,7 @@ data class TemporaryTokenInfo(
     @ApiModelProperty("允许下载次数")
     val permits: Int?,
     @ApiModelProperty("token类型")
-    val type: TokenType
+    val type: TokenType,
+    @ApiModelProperty("创建者")
+    val createdBy: String
 )
