@@ -74,15 +74,6 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
             logger.debug("check devops permission request [$request]")
-            // devops请求，根据配置允许匿名访问
-            if (appId == bkAuthConfig.devopsAppId &&
-                request.uid == ANONYMOUS_USER &&
-                bkAuthConfig.devopsAllowAnonymous
-            ) {
-                logger.warn("devops anonymous pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
-                return true
-            }
-
             // project权限
             if (request.resourceType == ResourceType.PROJECT) {
                 // devops直接放过
@@ -117,6 +108,9 @@ class BkAuthPermissionServiceImpl constructor(
             logger.debug("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
             return pass
         }
+    }
+
+    private fun checkRepoPermission() {
     }
 
     private fun checkPipelinePermission(
@@ -173,7 +167,18 @@ class BkAuthPermissionServiceImpl constructor(
             }
         }
 
-        // devops体系账号校验
+        // devops匿名访问请求处理
+        with(request) {
+            if (appId == bkAuthConfig.devopsAppId &&
+                request.uid == ANONYMOUS_USER &&
+                bkAuthConfig.devopsAllowAnonymous
+            ) {
+                logger.warn("devops anonymous pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                return true
+            }
+        }
+
+        // devops实名访问请求处理
         val appIdCond = request.appId == bkAuthConfig.devopsAppId ||
             request.appId == bkAuthConfig.bkrepoAppId ||
             request.appId == bkAuthConfig.bkcodeAppId
@@ -181,6 +186,7 @@ class BkAuthPermissionServiceImpl constructor(
             return checkDevopsPermission(request)
         }
 
+        // 非devops体系
         return super.checkPermission(request)
     }
 
