@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.extension.PermissionRequestContext
+import com.tencent.bkrepo.auth.extension.PermissionRequestExtension
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -158,16 +160,18 @@ class BkAuthPermissionServiceImpl constructor(
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
         // git ci项目校验单独权限
-        // if (request.projectId != null && request.projectId!!.startsWith(GIT_PROJECT_PREFIX, true)) {
-        //     val context = PermissionRequestContext(
-        //         userId = request.uid,
-        //         projectId = request.projectId!!
-        //     )
-        //     logger.debug("check git project permission [$context]")
-        //     pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
-        //         return it.check(context)
-        //     }
-        // }
+        if (request.projectId!!.startsWith(GIT_PROJECT_PREFIX, true) &&
+            bkAuthConfig.choseBkAuth() && request.projectId != null
+        ) {
+            val context = PermissionRequestContext(
+                userId = request.uid,
+                projectId = request.projectId!!
+            )
+            logger.debug("check git project permission [$context]")
+            pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
+                return it.check(context)
+            }
+        }
 
         // devops体系账号校验
         val appIdCond = request.appId == bkAuthConfig.devopsAppId ||
