@@ -59,7 +59,7 @@ interface ChartInfoService {
     ): PackageVersionInfo
 
     /**
-     * 获取npm域名信息
+     * 获取helm域名信息
      */
-    fun getAddress(): HelmDomainInfo
+    fun getRegistryDomain(): HelmDomainInfo
 }

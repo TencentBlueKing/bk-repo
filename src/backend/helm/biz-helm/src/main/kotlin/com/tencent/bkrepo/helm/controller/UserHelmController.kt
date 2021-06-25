@@ -115,7 +115,7 @@ class UserHelmController(
 
     @ApiOperation("获取helm域名地址")
     @GetMapping("/address")
-    fun getAddress(): Response<HelmDomainInfo> {
-        return ResponseBuilder.success(chartInfoService.getAddress())
+    fun getRegistryDomain(): Response<HelmDomainInfo> {
+        return ResponseBuilder.success(chartInfoService.getRegistryDomain())
     }
 }

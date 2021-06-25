@@ -191,7 +191,7 @@ class ChartInfoServiceImpl(
         }
     }
 
-    override fun getAddress(): HelmDomainInfo {
+    override fun getRegistryDomain(): HelmDomainInfo {
         return HelmDomainInfo(helmProperties.domain)
     }
 

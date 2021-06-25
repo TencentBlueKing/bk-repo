@@ -33,9 +33,7 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readYamlString
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -151,8 +149,9 @@ class ChartRepositoryServiceImpl(
                     chartName = chartMetadata.name
                     chartVersion = chartMetadata.version
                     chartMetadata.urls = listOf(
-                        UrlFormatter.formatUrl(helmProperties.domain).trimEnd(CharPool.SLASH) +
-                            PathUtils.normalizeFullPath("$projectId/$repoName/charts/$chartName-$chartVersion.tgz")
+                        UrlFormatter.format(
+                            helmProperties.domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
+                        )
                     )
                     chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
                     chartMetadata.digest = it[NODE_SHA256] as String
