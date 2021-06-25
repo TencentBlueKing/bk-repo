@@ -150,7 +150,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         }
     }
 
-    override fun getAddress(): NpmDomainInfo {
+    override fun getRegistryDomain(): NpmDomainInfo {
         return NpmDomainInfo(npmProperties.domain)
     }
 

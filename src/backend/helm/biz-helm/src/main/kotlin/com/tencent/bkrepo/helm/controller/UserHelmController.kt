@@ -39,6 +39,7 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.CHART_VERSION_DELETE_URL
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_VERSION_DETAIL
+import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.chart.ChartDeleteRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
@@ -54,6 +55,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+@Suppress("MVCPathVariableInspection")
 @Api("helm产品接口")
 @RestController
 @RequestMapping("/ext")
@@ -109,5 +111,11 @@ class UserHelmController(
             chartManipulationService.deleteVersion(chartDeleteRequest)
             return ResponseBuilder.success()
         }
+    }
+
+    @ApiOperation("获取helm域名地址")
+    @GetMapping("/address")
+    fun getRegistryDomain(): Response<HelmDomainInfo> {
+        return ResponseBuilder.success(chartInfoService.getRegistryDomain())
     }
 }
