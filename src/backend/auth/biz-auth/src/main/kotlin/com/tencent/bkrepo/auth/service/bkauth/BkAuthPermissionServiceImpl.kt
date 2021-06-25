@@ -32,8 +32,6 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
-import com.tencent.bkrepo.auth.extension.PermissionRequestContext
-import com.tencent.bkrepo.auth.extension.PermissionRequestExtension
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -103,8 +101,8 @@ class BkAuthPermissionServiceImpl constructor(
                     action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
-                    // 校验本地权限
-                    super.checkPermission(request)
+                    // 有本地权限，或者蓝盾项目权限，放过
+                    super.checkPermission(request) || checkProjectPermission(uid, projectId!!)
                 }
             }
 
