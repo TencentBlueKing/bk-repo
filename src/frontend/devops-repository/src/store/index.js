@@ -31,7 +31,10 @@ export default new Vuex.Store({
             phone: '',
             admin: true
         },
-        dockerDomain: ''
+        domain: {
+            docker: '',
+            npm: ''
+        }
     },
     getters: {
     },
@@ -81,8 +84,11 @@ export default new Vuex.Store({
                 ...data
             }
         },
-        SET_DOCKER_DOMAIN (state, data) {
-            state.dockerDomain = data
+        SET_DOMAIN (state, { type, domain }) {
+            state.domain = {
+                ...state.domain,
+                [type]: domain
+            }
         },
         SET_PROJECT_LIST (state, data) {
             state.projectList = data
