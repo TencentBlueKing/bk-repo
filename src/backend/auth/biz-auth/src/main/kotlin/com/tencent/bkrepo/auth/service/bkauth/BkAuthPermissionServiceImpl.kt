@@ -110,8 +110,6 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkRepoPermission() {
-    }
 
     private fun checkPipelinePermission(
         uid: String,
