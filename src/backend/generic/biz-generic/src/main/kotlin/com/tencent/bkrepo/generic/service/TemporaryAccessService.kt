@@ -201,7 +201,7 @@ class TemporaryAccessService(
      * 根据token生成url
      */
     private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
-        val urlHost = if (!host.isNullOrBlank()) host else genericProperties.host
+        val urlHost = if (!host.isNullOrBlank()) host else genericProperties.domain
         val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
         when (tokenType) {
             TokenType.DOWNLOAD -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT)
