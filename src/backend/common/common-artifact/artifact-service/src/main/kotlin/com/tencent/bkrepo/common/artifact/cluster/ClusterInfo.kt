@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,12 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.common.artifact.cluster
 
-@Suppress("ALL")
-abstract class IamBaseReq(
-    open var bk_app_code: String,
-    open var bk_app_secret: String,
-    open var bk_username: String,
-    open val bk_token: String = ""
+/**
+ * 集群信息
+ */
+data class ClusterInfo(
+    /**
+     * 集群名称
+     */
+    var name: String? = null,
+    /**
+     * 集群url
+     */
+    var url: String? = null,
+    /**
+     * 集群访问用户名
+     */
+    var username: String? = null,
+    /**
+     * 集群访问密码
+     */
+    var password: String? = null,
+    /**
+     * 集群访问证书
+     */
+    var certificate: String? = null
 )

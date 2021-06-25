@@ -65,11 +65,8 @@ class SpringExtensionRegistry : ExtensionRegistry, ApplicationContextAware {
     }
 
     override fun registerExtensionController(plugin: String, name: String, type: Class<*>) {
-        unregisterController(name, type)
-        unregisterBean(name)
         registerBean(name, type)
         registerHandlerMethods(name)
-
         pluginToExtensionControllerMap.getOrPut(plugin) { mutableListOf() }.add(type)
         logger.info("Register extension controller [$name]")
     }
@@ -137,7 +134,6 @@ class SpringExtensionRegistry : ExtensionRegistry, ApplicationContextAware {
     private fun registerBean(beanName: String, type: Class<*>) {
         val beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(type)
         beanFactory.registerBeanDefinition(beanName, beanDefinitionBuilder.beanDefinition)
-        logger.info("Register extension bean [$beanName]")
     }
 
     /**

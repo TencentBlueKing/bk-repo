@@ -29,8 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.pojo.iam
 
-data class ActionRes(
+data class AncestorsApiReq(
+    val system: String,
+    val type: String,
     val id: String
 )

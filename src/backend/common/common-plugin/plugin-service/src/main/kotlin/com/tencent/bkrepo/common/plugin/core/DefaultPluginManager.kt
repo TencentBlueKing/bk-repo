@@ -57,10 +57,45 @@ class DefaultPluginManager(
     @EventListener(ApplicationReadyEvent::class)
     @Synchronized
     override fun load() {
-        pluginScanner.scan().forEach {
-            val pluginLoader = PluginLoader(it)
+        try {
+            pluginScanner.scan().forEach {
+                val pluginLoader = PluginLoader(it)
+                val pluginInfo = pluginLoader.loadPlugin()
+                registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
+            }
+        } catch (ignored: Exception) {
+            logger.error("Failed to load plugin: ${ignored.message}", ignored)
+            throw ignored
+        }
+    }
+
+    @Synchronized
+    override fun load(id: String) {
+        try {
+            val path = pluginScanner.scan(id)
+            checkNotNull(path) { "Plugin[$id] jar file not found" }
+            val pluginLoader = PluginLoader(path)
             val pluginInfo = pluginLoader.loadPlugin()
             registerPluginIfNecessary(pluginInfo, pluginLoader.classLoader)
+        } catch (ignored: Exception) {
+            logger.error("Failed to load plugin[$id]: ${ignored.message}", ignored)
+            throw ignored
+        }
+    }
+
+    @Synchronized
+    override fun unload(id: String) {
+        try {
+            if (!pluginMap.containsKey(id)) {
+                return
+            }
+            extensionRegistry.unregisterExtensionPointsByPlugin(id)
+            extensionRegistry.unregisterExtensionControllerByPlugin(id)
+            pluginMap.remove(id)
+            logger.info("Success unregister plugin[$id]")
+        } catch (ignored: Exception) {
+            logger.error("Failed to unload plugin[$id]: ${ignored.message}", ignored)
+            throw ignored
         }
     }
 
@@ -78,34 +113,36 @@ class DefaultPluginManager(
      */
     private fun registerPluginIfNecessary(pluginInfo: PluginInfo, classLoader: ClassLoader) {
         if (!checkScope(pluginInfo)) {
-            logger.info("Plugin[${pluginInfo.id}]'s scope not contains $applicationName, skip register")
+            logger.info("Plugin[${pluginInfo.id}] scope does not contain $applicationName, skip register")
             return
         }
         if (checkExist(pluginInfo)) {
             logger.info("Plugin[${pluginInfo.id}] has been loaded, skip register")
             return
         }
-        logger.info("Registering plugin[${pluginInfo.id}]")
+        if (pluginMap.containsKey(pluginInfo.id)) {
+            // unregister loaded extension points
+            extensionRegistry.unregisterExtensionPointsByPlugin(pluginInfo.id)
+            // unregister loaded extension controller
+            extensionRegistry.unregisterExtensionControllerByPlugin(pluginInfo.id)
+            // remove
+            pluginMap.remove(pluginInfo.id)
+        }
 
-        // unregister loaded extension points
-        extensionRegistry.unregisterExtensionPointsByPlugin(pluginInfo.id)
         // register extension points
         pluginInfo.extensionPoints.forEach {
             val type = classLoader.loadClass(it)
             val name = type.interfaces[0].name
             extensionRegistry.registerExtensionPoint(pluginInfo.id, name, type)
         }
-
-        // unregister loaded extension controller
-        extensionRegistry.unregisterExtensionControllerByPlugin(pluginInfo.id)
         // register extension controller
         pluginInfo.extensionControllers.forEach {
             val type = classLoader.loadClass(it)
             extensionRegistry.registerExtensionController(pluginInfo.id, it, type)
         }
-
         // save
         pluginMap[pluginInfo.id] = pluginInfo
+        logger.info("Success register plugin[${pluginInfo.id}]")
     }
 
     /**

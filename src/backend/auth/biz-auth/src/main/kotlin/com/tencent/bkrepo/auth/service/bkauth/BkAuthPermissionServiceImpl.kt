@@ -34,9 +34,6 @@ package com.tencent.bkrepo.auth.service.bkauth
 import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.extension.PermissionRequestContext
 import com.tencent.bkrepo.auth.extension.PermissionRequestExtension
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -60,7 +57,7 @@ class BkAuthPermissionServiceImpl constructor(
     mongoTemplate: MongoTemplate,
     repositoryClient: RepositoryClient,
     private val bkAuthConfig: BkAuthConfig,
-    private val bkAuthService: BkAuthService,
+    private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
     private val pluginManager: PluginManager
 ) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
@@ -76,13 +73,6 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            // // 网关请求不允许匿名访问
-            // if (appId == bkAuthConfig.bkrepoAppId && request.uid == ANONYMOUS_USER) {
-            //     if (request.uid == ANONYMOUS_USER) {
-            //         logger.warn("no anonymous access")
-            //         return false
-            //     }
-            // }
             logger.debug("check devops permission request [$request]")
             // devops请求，根据配置允许匿名访问
             if (appId == bkAuthConfig.devopsAppId &&
@@ -93,7 +83,7 @@ class BkAuthPermissionServiceImpl constructor(
                 return true
             }
 
-            // 校验蓝盾平台账号项目权限
+            // project权限
             if (request.resourceType == ResourceType.PROJECT) {
                 // devops直接放过
                 if (request.appId == bkAuthConfig.devopsAppId) return true
@@ -101,7 +91,7 @@ class BkAuthPermissionServiceImpl constructor(
                 return checkProjectPermission(uid, projectId!!)
             }
 
-            // 其它请求根据仓库类型判断
+            // repo或者node权限
             val pass = when (repoName) {
                 CUSTOM, LOG -> {
                     checkProjectPermission(uid, projectId!!)
@@ -113,22 +103,18 @@ class BkAuthPermissionServiceImpl constructor(
                     action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
-                    checkProjectPermission(uid, projectId!!)
+                    // 校验本地权限
+                    super.checkPermission(request)
                 }
             }
 
-            // 校验不通过的权限只输出日志，暂时不拦截
-            if (!pass) {
-                return if (!bkAuthConfig.devopsAuthEnabled) {
-                    logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
-                    true
-                } else {
-                    logger.info("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
-                    false
-                }
+            // devops来源的账号，不做拦截
+            if (!pass && appId == bkAuthConfig.devopsAppId) {
+                logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                return !bkAuthConfig.devopsAuthEnabled
             }
 
-            logger.info("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+            logger.debug("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
             return pass
         }
     }
@@ -150,17 +136,9 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String): Boolean {
-        logger.info("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
+        logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
         return try {
-            return bkAuthService.validateUserResourcePermission(
-                user = uid,
-                serviceCode = BkAuthServiceCode.PIPELINE,
-                resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-                projectCode = projectId,
-                resourceCode = pipelineId,
-                permission = BkAuthPermission.DOWNLOAD,
-                retryIfTokenInvalid = true
-            )
+            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId)
         } catch (e: Exception) {
             // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
@@ -169,7 +147,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun checkProjectPermission(uid: String, projectId: String): Boolean {
-        logger.info("checkProjectPermission: uid: $uid, projectId: $projectId")
+        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId")
         return try {
             bkAuthProjectService.isProjectMember(uid, projectId, retryIfTokenInvalid = true)
         } catch (e: Exception) {
@@ -177,10 +155,6 @@ class BkAuthPermissionServiceImpl constructor(
             logger.warn("checkPipelinePermission error:  ${e.message}")
             true
         }
-    }
-
-    private fun isDevopsRepo(repoName: String): Boolean {
-        return repoName == CUSTOM || repoName == PIPELINE || repoName == REPORT || repoName == LOG
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
@@ -197,13 +171,6 @@ class BkAuthPermissionServiceImpl constructor(
             }
         }
 
-        // 校验蓝盾平台账号项目权限
-        // if (request.resourceType == ResourceType.PROJECT && request.appId == bkAuthConfig.devopsAppId) {
-        //     return true
-        // }
-
-        // 校验蓝盾/网关平台账号指定仓库(pipeline/custom/report/log)的仓库和节点权限
-        // val resourceCond = request.resourceType == ResourceType.REPO || request.resourceType == ResourceType.NODE
         // devops体系账号校验
         val appIdCond = request.appId == bkAuthConfig.devopsAppId ||
             request.appId == bkAuthConfig.bkrepoAppId ||

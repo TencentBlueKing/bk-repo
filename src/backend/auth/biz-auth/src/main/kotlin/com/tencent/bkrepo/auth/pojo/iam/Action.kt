@@ -29,14 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.cluster
+package com.tencent.bkrepo.auth.pojo.iam
 
-/**
- * 集群信息
- */
-data class CenterInfo(
-    var url: String? = null,
-    var username: String? = null,
-    var password: String? = null,
-    var certificate: String? = null
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class Action(
+    val id: String,
+    @JsonProperty("related_resource_types")
+    val relatedResourceTypes: List<RelatedResourceTypes>?
 )

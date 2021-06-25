@@ -33,9 +33,13 @@ package com.tencent.bkrepo.common.plugin.spring
 
 import com.tencent.bkrepo.common.plugin.api.PluginInfo
 import com.tencent.bkrepo.common.plugin.core.DefaultPluginManager
+import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation
+import org.springframework.boot.actuate.endpoint.annotation.Selector
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation
+import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse
+import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR
 
 @Endpoint(id = "plugin")
 class PluginEndpoint(
@@ -48,8 +52,32 @@ class PluginEndpoint(
     }
 
     @WriteOperation
-    fun reload(): String {
-        defaultPluginManager.load()
-        return "Reload plugin success!"
+    fun load(): WebEndpointResponse<String> {
+        return try {
+            defaultPluginManager.load()
+            WebEndpointResponse("ok")
+        } catch (ignored: Exception) {
+            WebEndpointResponse(ignored.message.orEmpty(), STATUS_INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @WriteOperation
+    fun load(@Selector id: String): WebEndpointResponse<String> {
+        return try {
+            defaultPluginManager.load(id)
+            WebEndpointResponse("ok")
+        } catch (ignored: Exception) {
+            WebEndpointResponse(ignored.message.orEmpty(), STATUS_INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @DeleteOperation
+    fun unload(@Selector id: String): WebEndpointResponse<String> {
+        return try {
+            defaultPluginManager.unload(id)
+            WebEndpointResponse("ok")
+        } catch (ignored: Exception) {
+            WebEndpointResponse(ignored.message.orEmpty(), STATUS_INTERNAL_SERVER_ERROR)
+        }
     }
 }

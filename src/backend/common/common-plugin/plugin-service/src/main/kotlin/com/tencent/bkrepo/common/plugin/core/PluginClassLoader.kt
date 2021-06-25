@@ -35,8 +35,8 @@ import java.net.URLClassLoader
 import java.nio.file.Path
 
 class PluginClassLoader(
-    private val pluginPath: Path,
-    private val parentLoader: ClassLoader
+    pluginPath: Path,
+    parentLoader: ClassLoader
 ) : URLClassLoader(arrayOf(pluginPath.toUri().toURL()), parentLoader) {
     override fun loadClass(name: String?): Class<*> {
         return super.loadClass(name)

@@ -29,21 +29,43 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.service
-
-import com.tencent.bkrepo.auth.pojo.cluster.AddClusterRequest
-import com.tencent.bkrepo.auth.pojo.cluster.Cluster
-import com.tencent.bkrepo.auth.pojo.cluster.UpdateClusterRequest
-
-interface ClusterService {
-
-    fun addCluster(request: AddClusterRequest): Boolean
-
-    fun ping(clusterId: String): Boolean
-
-    fun delete(clusterId: String): Boolean
-
-    fun updateCluster(clusterId: String, request: UpdateClusterRequest): Boolean
-
-    fun listCluster(): List<Cluster>
+listOf(
+    ":common:common-api",
+    ":common:common-artifact:artifact-api",
+    ":common:common-query:query-api",
+    ":common:common-storage:storage-api",
+    ":generic:api-generic",
+    ":repository:api-repository",
+    ":auth:api-auth",
+    ":replication:api-replication"
+).map { project(it) }.forEach {
+    it.apply(plugin = "com.tencent.devops.publish")
+    it.configure<PublishingExtension> {
+        publications.withType<MavenPublication> {
+            pom {
+                name.set(project.name)
+                description.set(project.description ?: project.name)
+                url.set("https://github.com/Tencent/bk-ci")
+                licenses {
+                    license {
+                        name.set("The MIT License (MIT)")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                developers {
+                    developer {
+                        name.set("bk-ci")
+                        email.set("devops@tencent.com")
+                        url.set("https://bk.tencent.com")
+                        roles.set(listOf("Manager"))
+                    }
+                }
+                scm {
+                    connection.set("scm:git:git://github.com/Tencent/bk-ci.get")
+                    developerConnection.set("scm:git:ssh://github.com/Tencent/bk-ci.git")
+                    url.set("https://github.com/Tencent/bk-ci")
+                }
+            }
+        }
+    }
 }

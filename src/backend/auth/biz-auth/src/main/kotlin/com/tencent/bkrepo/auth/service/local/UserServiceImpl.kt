@@ -381,7 +381,7 @@ class UserServiceImpl constructor(
             // 永久token，校验通过，临时token校验有效期
             if (it.id == pwd && it.expiredAt == null) {
                 return transferUser(result)
-            } else if (it.id == pwd && it.expiredAt != null && it!!.expiredAt!!.isAfter(LocalDateTime.now())) {
+            } else if (it.id == pwd && it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())) {
                 return transferUser(result)
             }
         }

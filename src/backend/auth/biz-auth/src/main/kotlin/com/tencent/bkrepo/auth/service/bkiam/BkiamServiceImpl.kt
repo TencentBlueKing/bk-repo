@@ -38,8 +38,8 @@ import com.tencent.bk.sdk.iam.dto.PathInfoDTO
 import com.tencent.bk.sdk.iam.dto.action.ActionDTO
 import com.tencent.bk.sdk.iam.helper.AuthHelper
 import com.tencent.bk.sdk.iam.service.PolicyService
-import com.tencent.bkrepo.auth.pojo.AncestorsApiReq
-import com.tencent.bkrepo.auth.pojo.IamCreateApiReq
+import com.tencent.bkrepo.auth.pojo.iam.AncestorsApiReq
+import com.tencent.bkrepo.auth.pojo.iam.IamCreateApiReq
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.SystemCode

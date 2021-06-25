@@ -56,6 +56,19 @@ class DefaultPluginScanner(
         return Files.walk(pluginDir).filter { it.toString().endsWith(".jar") }.toList()
     }
 
+    override fun scan(id: String): Path? {
+        val pluginDir = Paths.get(pluginProperties.path)
+        if (!Files.isDirectory(pluginDir)) {
+            logger.error("Failed to load plugin, Path[$pluginDir] is not a directory.")
+            return null
+        }
+        return Files.walk(pluginDir).filter {
+            val filename = it.toString()
+            val name = filename.substringAfter("-").substringBeforeLast("-")
+            name == id
+        }.toList().firstOrNull()
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(DefaultPluginScanner::class.java)
     }

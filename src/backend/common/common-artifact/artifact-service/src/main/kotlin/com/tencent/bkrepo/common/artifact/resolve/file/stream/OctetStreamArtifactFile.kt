@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile.Companion.generateRandomName
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
@@ -60,17 +59,14 @@ open class OctetStreamArtifactFile(
 
     private var hasInitialized: Boolean = false
     private var sha1: String? = null
-    private val listener: DigestCalculateListener
+    private val listener: DigestCalculateListener = DigestCalculateListener()
     private val receiver: SmartStreamReceiver
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        val fileSizeThreshold = storageProperties.fileSizeThreshold.toBytes()
         val enableTransfer = storageProperties.monitor.enableTransfer
-        val rateLimit = storageProperties.rateLimit
-        receiver = SmartStreamReceiver(fileSizeThreshold, generateRandomName(), path, enableTransfer, rateLimit)
-        listener = DigestCalculateListener()
-        if (!storageProperties.isResolveLazily) {
+        receiver = SmartStreamReceiver(storageProperties.receive, enableTransfer, path)
+        if (!storageProperties.receive.resolveLazily) {
             init()
         }
     }

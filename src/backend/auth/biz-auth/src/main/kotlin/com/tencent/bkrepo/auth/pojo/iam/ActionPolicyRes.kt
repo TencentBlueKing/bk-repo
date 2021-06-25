@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,17 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.cluster
+package com.tencent.bkrepo.auth.pojo.iam
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@ApiModel("更新集群请求")
-data class UpdateClusterRequest(
-    @ApiModelProperty("集群地址")
-    val clusterAddr: String = "",
-    @ApiModelProperty("集群证书")
-    val cert: String = "",
-    @ApiModelProperty("集群认证状态")
-    val credentialStatus: Boolean? = null
+data class ActionPolicyRes(
+    @JsonProperty("policy_id")
+    val policyId: Int,
+    val action: ActionRes
 )
