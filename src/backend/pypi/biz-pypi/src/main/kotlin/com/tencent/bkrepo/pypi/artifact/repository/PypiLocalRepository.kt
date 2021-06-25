@@ -101,6 +101,7 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import javax.servlet.http.HttpServletRequest
 
 @Component
 class PypiLocalRepository(
@@ -108,6 +109,9 @@ class PypiLocalRepository(
     private val migrateDataRepository: MigrateDataRepository,
     private val stageClient: StageClient
 ) : LocalRepository() {
+
+    @org.springframework.beans.factory.annotation.Value("\${pypi.domain:#{null}}")
+    private val domain: String? = null
 
     /**
      * 获取PYPI节点创建请求
@@ -297,14 +301,26 @@ class PypiLocalRepository(
     }
 
     /**
+     * 本地调试删除 pypi.domain 配置
+     */
+    fun getRedirectUrl(request: HttpServletRequest): String {
+        domain?.let {
+            val servletPath = request.servletPath
+            return "${domain.removeSuffix("/")}$servletPath/"
+        }
+        return "${request.requestURL}/"
+    }
+
+    /**
      *
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
         val request = HttpContextHolder.getRequest()
         if (!request.requestURI.endsWith("/")) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect("${request.requestURL}/")
+            response.sendRedirect(getRedirectUrl(request))
             response.writer.flush()
+            return null
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
