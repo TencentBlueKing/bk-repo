@@ -34,6 +34,7 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -192,7 +193,7 @@ class ChartInfoServiceImpl(
     }
 
     override fun getRegistryDomain(): HelmDomainInfo {
-        return HelmDomainInfo(helmProperties.domain)
+        return HelmDomainInfo(UrlFormatter.formatHost(helmProperties.domain))
     }
 
     companion object {
