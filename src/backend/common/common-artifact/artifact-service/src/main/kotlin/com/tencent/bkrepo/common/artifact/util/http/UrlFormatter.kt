@@ -57,11 +57,16 @@ object UrlFormatter {
     }
 
     /**
-     * 格式化[host]
+     * 格式化host
      * http://xxx.com/// -> http://xxx.com/
+     * xxx.com -> http://xxx.com/
      */
-    fun formatHost(host: String): String {
-        return host.trim().trimEnd(SLASH).plus(SLASH)
+    fun formatHost(value: String): String {
+        var host = value.trim().trimEnd(SLASH).plus(SLASH)
+        if (!host.startsWith(HTTP) && !host.startsWith(HTTPS)) {
+            host = HTTP + host
+        }
+        return host
     }
 
     /**
