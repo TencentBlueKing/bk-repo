@@ -34,6 +34,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -306,7 +307,7 @@ class PypiLocalRepository(
     fun getRedirectUrl(request: HttpServletRequest): String {
         val domain = pypiProperties.domain
         val path = request.servletPath
-        return "${UrlFormatter.format(domain, path)}/"
+        return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
     }
 
     /**
