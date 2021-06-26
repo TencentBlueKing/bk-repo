@@ -88,7 +88,8 @@ class BkAuthPermissionServiceImpl constructor(
                     checkProjectPermission(uid, projectId!!)
                 }
                 PIPELINE -> {
-                    checkPipelinePermission(uid, projectId!!, path, resourceType)
+                    checkPipelinePermission(uid, projectId!!, path, resourceType) ||
+                        checkProjectPermission(uid, projectId!!)
                 }
                 REPORT -> {
                     action == PermissionAction.READ || action == PermissionAction.WRITE
