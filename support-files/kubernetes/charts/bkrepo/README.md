@@ -172,7 +172,7 @@ $ helm uninstall bkrepo
 
 ### 网关配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -186,7 +186,7 @@ $ helm uninstall bkrepo
 
 ### repository服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -194,7 +194,7 @@ $ helm uninstall bkrepo
 
 ### auth服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -202,16 +202,16 @@ $ helm uninstall bkrepo
 
 ### generic服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
-| `generic.enabled` | 是否部署generic | `true` |
-| `generic.config ` | generic配置 | `{}` |
+| `generic.enabled`       | 是否部署generic     | `true`                      |
+| `generic.config.domain` | generic domain地址 | `${gateway.host}/generic`   |
 
 ### docker registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -220,25 +220,25 @@ $ helm uninstall bkrepo
 
 ### npm registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
 | `npm.enabled` | 是否部署npm | `false` |
-| `npm.config`  | npm配置 | `{}` |
+| `npm.config.domain` | npm domain地址 | `${gateway.host}/npm`   |
 
 ### pypi registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
 | `pypi.enabled` | 是否部署pypi | `false` |
-| `pypi.config`  | pypi配置 | `{}` |
+| `pypi.config.domain` | pypi domain地址 | `${gateway.host}/pypi`  |
 
 ### helm registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
