@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
+import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -47,7 +48,8 @@ import java.time.Duration
 @Component
 class FileSynchronizeJob(
     private val storageService: StorageService,
-    private val storageCredentialService: StorageCredentialService
+    private val storageCredentialService: StorageCredentialService,
+    private val clusterProperties: ClusterProperties
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 0 ? * 6")
@@ -59,7 +61,7 @@ class FileSynchronizeJob(
         // cleanup default storage
         syncStorage()
         // cleanup extended storage
-        storageCredentialService.list().forEach { syncStorage(it) }
+        storageCredentialService.list(clusterProperties.region).forEach { syncStorage(it) }
     }
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)

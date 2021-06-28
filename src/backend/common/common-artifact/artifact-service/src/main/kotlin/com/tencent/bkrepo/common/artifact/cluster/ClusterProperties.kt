@@ -44,6 +44,10 @@ data class ClusterProperties(
      */
     var role: RoleType = RoleType.CENTER,
     /**
+     * 部署区域
+     */
+    var region: String? = null,
+    /**
      * 中心节点信息
      */
     @NestedConfigurationProperty
