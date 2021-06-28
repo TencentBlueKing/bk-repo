@@ -2,4 +2,4 @@ service.name: helm
 server.port: 25806
 
 helm:
-  domain: ${cluster.self.url}/helm/
+  domain: ${cluster.self.url}/helm
