@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
+import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -47,7 +48,8 @@ import java.time.Duration
 @Component
 class ExpiredCacheFileCleanupJob(
     private val storageService: StorageService,
-    private val storageCredentialService: StorageCredentialService
+    private val storageCredentialService: StorageCredentialService,
+    private val clusterProperties: ClusterProperties
 ) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
@@ -59,7 +61,7 @@ class ExpiredCacheFileCleanupJob(
         // cleanup default storage
         cleanupStorage()
         // cleanup extended storage
-        storageCredentialService.list().forEach {
+        storageCredentialService.list(clusterProperties.region).forEach {
             cleanupStorage(it)
         }
     }

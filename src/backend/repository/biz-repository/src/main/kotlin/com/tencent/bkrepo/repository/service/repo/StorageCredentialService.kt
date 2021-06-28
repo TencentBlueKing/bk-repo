@@ -51,8 +51,9 @@ interface StorageCredentialService {
 
     /**
      * 查询存储凭证列表
+     * @param region 部署区域
      */
-    fun list(): List<StorageCredentials>
+    fun list(region: String? = null): List<StorageCredentials>
 
     /**
      * 根据[key]删除存储凭证
