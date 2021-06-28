@@ -34,6 +34,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -59,6 +61,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
 import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
@@ -101,12 +104,14 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import javax.servlet.http.HttpServletRequest
 
 @Component
 class PypiLocalRepository(
     private val mongoTemplate: MongoTemplate,
     private val migrateDataRepository: MigrateDataRepository,
-    private val stageClient: StageClient
+    private val stageClient: StageClient,
+    private val pypiProperties: PypiProperties
 ) : LocalRepository() {
 
     /**
@@ -297,14 +302,24 @@ class PypiLocalRepository(
     }
 
     /**
+     * 本地调试删除 pypi.domain 配置
+     */
+    fun getRedirectUrl(request: HttpServletRequest): String {
+        val domain = pypiProperties.domain
+        val path = request.servletPath
+        return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
+    }
+
+    /**
      *
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
         val request = HttpContextHolder.getRequest()
         if (!request.requestURI.endsWith("/")) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect("${request.requestURL}/")
+            response.sendRedirect(getRedirectUrl(request))
             response.writer.flush()
+            return null
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data

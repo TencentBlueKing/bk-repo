@@ -33,17 +33,17 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readYamlString
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
@@ -61,17 +61,15 @@ import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryService {
-
-    @Value("\${helm.registry.domain: ''}")
-    private lateinit var domain: String
+class ChartRepositoryServiceImpl(
+    private val helmProperties: HelmProperties
+) : AbstractChartService(), ChartRepositoryService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
@@ -151,8 +149,8 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
                     chartName = chartMetadata.name
                     chartVersion = chartMetadata.version
                     chartMetadata.urls = listOf(
-                        domain.trimEnd(CharPool.SLASH) + PathUtils.normalizeFullPath(
-                            "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
+                        UrlFormatter.format(
+                            helmProperties.domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                         )
                     )
                     chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)

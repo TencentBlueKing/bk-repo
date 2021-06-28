@@ -121,7 +121,7 @@ class UserNpmController(
 
     @ApiOperation("获取npm域名地址")
     @GetMapping("/address")
-    fun getAddress(): Response<NpmDomainInfo> {
-        return ResponseBuilder.success(npmWebService.getAddress())
+    fun getRegistryDomain(): Response<NpmDomainInfo> {
+        return ResponseBuilder.success(npmWebService.getRegistryDomain())
     }
 }

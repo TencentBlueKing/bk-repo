@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -150,8 +151,8 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         }
     }
 
-    override fun getAddress(): NpmDomainInfo {
-        return NpmDomainInfo(npmProperties.domain)
+    override fun getRegistryDomain(): NpmDomainInfo {
+        return NpmDomainInfo(UrlFormatter.formatHost(npmProperties.domain))
     }
 
     fun updatePackageWithDeleteVersion(
