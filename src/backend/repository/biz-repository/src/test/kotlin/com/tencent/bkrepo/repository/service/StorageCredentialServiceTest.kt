@@ -120,13 +120,21 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential1.cache.path = "cache-test2"
         credential1.cache.expireDays = 10
 
-        val createRequest2 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY + "2", credential2, UT_REGION)
+        val createRequest2 = StorageCredentialsCreateRequest(
+            key = UT_STORAGE_CREDENTIALS_KEY + "2",
+            credentials = credential2,
+            region = UT_REGION
+        )
         storageCredentialService.create(UT_USER, createRequest2)
 
         list = storageCredentialService.list()
         Assertions.assertEquals(2, list.size)
 
-        val createRequest3 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY + "3", credential2, UT_REGION + "2")
+        val createRequest3 = StorageCredentialsCreateRequest(
+            key = UT_STORAGE_CREDENTIALS_KEY + "3",
+            credentials = credential2,
+            region = UT_REGION + "2"
+        )
         storageCredentialService.create(UT_USER, createRequest3)
 
         list = storageCredentialService.list()
