@@ -40,6 +40,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import io.swagger.annotations.Api
@@ -107,6 +108,13 @@ class ReplicaTaskController(
     @PostMapping("/copy")
     fun copy(@RequestBody request: ReplicaTaskCopyRequest): Response<Void> {
         replicaTaskService.copy(request)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("任务复制")
+    @PostMapping("/update")
+    fun update(@RequestBody request: ReplicaTaskUpdateRequest): Response<Void> {
+        replicaTaskService.update(request)
         return ResponseBuilder.success()
     }
 }

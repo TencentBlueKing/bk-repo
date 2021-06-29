@@ -36,6 +36,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 
 /**
@@ -98,4 +99,9 @@ interface ReplicaTaskService {
      * 复制同步任务
      */
     fun copy(request: ReplicaTaskCopyRequest)
+
+    /**
+     * 更新同步任务
+     */
+    fun update(request: ReplicaTaskUpdateRequest)
 }

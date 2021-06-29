@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import org.springframework.data.mongodb.core.query.Query
@@ -17,5 +18,12 @@ class ReplicaObjectDao : SimpleMongoDao<TReplicaObject>() {
      */
     fun findByTaskKey(taskKey: String): List<TReplicaObject> {
         return this.find(Query(TReplicaObject::taskKey.isEqualTo(taskKey)))
+    }
+
+    /**
+     * 根据[taskKey]删除任务
+     */
+    fun remove(taskKey: String): DeleteResult {
+        return this.remove(Query(TReplicaObject::taskKey.isEqualTo(taskKey)))
     }
 }

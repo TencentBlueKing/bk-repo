@@ -46,7 +46,7 @@ enum class ReplicationMessageCode(private val businessCode: Int, private val key
     SCHEDULED_JOB_LOADING(7, "schedule.job.loading"),
     TASK_DISABLE_UPDATE(8, "task.disable.update"),
     CLUSTER_CENTER_NODE_EXISTS(9, "cluster.center.node.existed"),
-    REPLICA_TASK_NOT_FOUND(9, "replica.task.notfound"),
+    REPLICA_TASK_NOT_FOUND(10, "replica.task.notfound"),
     ;
 
     override fun getBusinessCode() = businessCode

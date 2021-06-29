@@ -22,6 +22,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
+import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.repository.TaskRepository
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -241,6 +242,7 @@ class ReplicaTaskServiceImpl(
                 executionTimes = 0L,
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now(),
+                enabled = false,
                 description = description
             )
             val replicaObjectList = replicaObjectDao.findByTaskKey(key)
@@ -250,6 +252,58 @@ class ReplicaTaskServiceImpl(
                 replicaTaskDao.insert(copiedReplicaTask)
             } catch (exception: DuplicateKeyException) {
                 logger.warn("copy task[$name] error: [${exception.message}]")
+            }
+        }
+    }
+
+    override fun update(request: ReplicaTaskUpdateRequest) {
+        with(request) {
+            // 获取任务
+            val tReplicaTask = replicaTaskDao.findByKey(key)
+                ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
+            // 检查任务状态，执行过的任务不让修改
+            if (tReplicaTask.status != ReplicationStatus.WAITING ||
+                tReplicaTask.lastExecutionStatus != null) {
+                throw ErrorCodeException(ReplicationMessageCode.TASK_DISABLE_UPDATE, key)
+            }
+            // 更新任务
+            val userId = SecurityUtils.getUserId()
+            // 查询集群节点信息
+            val clusterNodeSet = remoteClusterIds.map {
+                val clusterNodeName = clusterNodeService.getClusterNameById(it)
+                // 验证连接可用
+                clusterNodeService.tryConnect(clusterNodeName.name)
+                clusterNodeName
+            }.toSet()
+            val task = tReplicaTask.copy(
+                name = name,
+                replicaObjectType = replicaObjectType,
+                remoteClusters = clusterNodeSet,
+                status = ReplicationStatus.WAITING,
+                description = description,
+                lastModifiedBy = userId,
+                lastModifiedDate = LocalDateTime.now()
+            )
+            // 创建replicaObject
+            val replicaObjectList = replicaTaskObjects.map {
+                TReplicaObject(
+                    taskKey = key,
+                    localProjectId = localProjectId,
+                    remoteProjectId = it.remoteProjectId,
+                    localRepoName = it.localRepoName,
+                    remoteRepoName = it.remoteRepoName,
+                    repoType = it.repoType,
+                    packageConstraints = it.packageConstraints,
+                    pathConstraints = it.pathConstraints
+                )
+            }
+            try {
+                // 移除所有object对象，重新插入
+                replicaObjectDao.remove(key)
+                replicaObjectDao.insert(replicaObjectList)
+                replicaTaskDao.save(task)
+            } catch (exception: DuplicateKeyException) {
+                logger.warn("update task[$name] error: [${exception.message}]")
             }
         }
     }

@@ -156,7 +156,7 @@ class ClusterNodeServiceImpl(
             } catch (exception: RuntimeException) {
                 val message = exception.message ?: UNKNOWN
                 logger.error("ping cluster [$name] failed, reason: $message")
-                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name, message)
+                throw ErrorCodeException(ReplicationMessageCode.REMOTE_CLUSTER_CONNECT_ERROR, name)
             }
         }
     }
