@@ -247,9 +247,6 @@ class UserServiceImpl constructor(
             val pwd = DataDigestUtils.md5FromStr(request.pwd!!)
             update.set(TUser::pwd.name, pwd)
         }
-        request.admin?.let {
-            update.set(TUser::admin.name, request.admin)
-        }
         request.name?.let {
             update.set(TUser::name.name, request.name)
         }
@@ -384,7 +381,7 @@ class UserServiceImpl constructor(
             // 永久token，校验通过，临时token校验有效期
             if (it.id == pwd && it.expiredAt == null) {
                 return transferUser(result)
-            } else if (it.id == pwd && it.expiredAt != null && it!!.expiredAt!!.isAfter(LocalDateTime.now())) {
+            } else if (it.id == pwd && it.expiredAt != null && it.expiredAt!!.isAfter(LocalDateTime.now())) {
                 return transferUser(result)
             }
         }

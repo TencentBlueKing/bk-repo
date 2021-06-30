@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.io.IOException
 import java.nio.file.Paths
 
 /**
@@ -68,9 +67,9 @@ class CacheStorageService(
                 threadPoolTaskExecutor.execute {
                     try {
                         fileStorage.store(path, filename, cachedFile, credentials)
-                    } catch (exception: IOException) {
+                    } catch (ignored: Exception) {
                         // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
-                        logger.error("Failed to async store file [$filename] on [${credentials.key}]", exception)
+                        logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
                     }
                 }
             }
@@ -140,7 +139,7 @@ class CacheStorageService(
      * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
      */
     private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
-        val isExceedThreshold = range.total > storageProperties.fileSizeThreshold.toBytes()
+        val isExceedThreshold = range.total > storageProperties.receive.fileSizeThreshold.toBytes()
         val isHealth = if (credentials == storageProperties.defaultStorageCredentials()) {
             monitor.health.get()
         } else {

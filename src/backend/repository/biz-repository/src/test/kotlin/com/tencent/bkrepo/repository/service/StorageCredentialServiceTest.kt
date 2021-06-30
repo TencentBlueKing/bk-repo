@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.repository.UT_REGION
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
@@ -65,7 +66,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential.cache.path = "cache-test"
         credential.cache.expireDays = 10
 
-        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential)
+        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential, UT_REGION)
         storageCredentialService.create(UT_USER, createRequest)
 
         val dbCredentials = storageCredentialService.findByKey(UT_STORAGE_CREDENTIALS_KEY)
@@ -82,7 +83,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         }
 
         assertThrows<ErrorCodeException> {
-            val createRequest1 = StorageCredentialsCreateRequest("   ", credential)
+            val createRequest1 = StorageCredentialsCreateRequest("   ", credential, UT_REGION)
             storageCredentialService.create(UT_USER, createRequest1)
         }
     }
@@ -90,7 +91,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     @Test
     fun testCreateDifferentTypeCredential() {
         val credential = InnerCosCredentials()
-        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential)
+        val createRequest = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential, UT_REGION)
         assertThrows<ErrorCodeException> {
             storageCredentialService.create(UT_USER, createRequest)
         }
@@ -107,7 +108,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential1.cache.path = "cache-test"
         credential1.cache.expireDays = 10
 
-        val createRequest1 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential1)
+        val createRequest1 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, credential1, UT_REGION)
         storageCredentialService.create(UT_USER, createRequest1)
 
         list = storageCredentialService.list()
@@ -119,15 +120,35 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential1.cache.path = "cache-test2"
         credential1.cache.expireDays = 10
 
-        val createRequest2 = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY + "2", credential2)
+        val createRequest2 = StorageCredentialsCreateRequest(
+            key = UT_STORAGE_CREDENTIALS_KEY + "2",
+            credentials = credential2,
+            region = UT_REGION
+        )
         storageCredentialService.create(UT_USER, createRequest2)
 
         list = storageCredentialService.list()
         Assertions.assertEquals(2, list.size)
 
-        storageCredentialService.delete(UT_STORAGE_CREDENTIALS_KEY + "2")
+        val createRequest3 = StorageCredentialsCreateRequest(
+            key = UT_STORAGE_CREDENTIALS_KEY + "3",
+            credentials = credential2,
+            region = UT_REGION + "2"
+        )
+        storageCredentialService.create(UT_USER, createRequest3)
 
         list = storageCredentialService.list()
+        Assertions.assertEquals(3, list.size)
+
+        list = storageCredentialService.list(region = UT_REGION)
+        Assertions.assertEquals(2, list.size)
+
+        list = storageCredentialService.list(region = UT_REGION + "2")
+        Assertions.assertEquals(1, list.size)
+
+        storageCredentialService.delete(UT_STORAGE_CREDENTIALS_KEY + "2")
+
+        list = storageCredentialService.list(region = UT_REGION)
         Assertions.assertEquals(1, list.size)
     }
 }

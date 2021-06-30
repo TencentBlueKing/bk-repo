@@ -71,7 +71,8 @@ class StorageCredentialServiceImpl(
             createdDate = LocalDateTime.now(),
             lastModifiedBy = userId,
             lastModifiedDate = LocalDateTime.now(),
-            credentials = request.credentials.toJsonString()
+            credentials = request.credentials.toJsonString(),
+            region = request.region
         )
         storageCredentialsRepository.save(storageCredential)
     }
@@ -82,10 +83,10 @@ class StorageCredentialServiceImpl(
         return storageCredentials?.apply { this.key = tStorageCredentials.id }
     }
 
-    override fun list(): List<StorageCredentials> {
-        return storageCredentialsRepository.findAll().map {
-            it.credentials.readJsonString<StorageCredentials>()
-        }
+    override fun list(region: String?): List<StorageCredentials> {
+        return storageCredentialsRepository.findAll()
+            .filter { region == null || it.region == region }
+            .map { it.credentials.readJsonString<StorageCredentials>() }
     }
 
     @Transactional(rollbackFor = [Throwable::class])

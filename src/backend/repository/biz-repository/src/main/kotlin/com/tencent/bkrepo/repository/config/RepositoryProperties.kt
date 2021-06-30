@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.config
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.job.base.RepoJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
@@ -45,8 +44,6 @@ data class RepositoryProperties(
     var listCountLimit: Long = 100000L,
     @NestedConfigurationProperty
     var job: RepoJobProperties = RepoJobProperties(),
-    /**
-     * 新建仓库时，仓库类型和默认storage credentials key的映射关系
-     */
-    var repoStorageMapping: MutableMap<RepositoryType, String> = mutableMapOf()
+    @NestedConfigurationProperty
+    var repoStorageMapping: RepoStorageMapping = RepoStorageMapping()
 )

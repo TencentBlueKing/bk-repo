@@ -39,9 +39,22 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
  */
 @ConfigurationProperties("cluster")
 data class ClusterProperties(
+    /**
+     * 节点角色
+     */
     var role: RoleType = RoleType.CENTER,
+    /**
+     * 部署区域
+     */
+    var region: String? = null,
+    /**
+     * 中心节点信息
+     */
     @NestedConfigurationProperty
     var center: ClusterInfo = ClusterInfo(),
+    /**
+     * 自身节点信息
+     */
     @NestedConfigurationProperty
     var self: ClusterInfo = ClusterInfo()
 )

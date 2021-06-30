@@ -168,7 +168,7 @@ class RepositoryServiceImpl(
                 throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_EXISTED, name)
             }
             // 解析存储凭证
-            val credentialsKey = resolveStorageCredentialsKey(this)
+            val credentialsKey = determineStorageKey(this)
             // 确保存储凭证Key一定存在
             val storageCredential = credentialsKey?.takeIf { it.isNotBlank() }?.let {
                 storageCredentialService.findByKey(it) ?: throw ErrorCodeException(
@@ -414,22 +414,27 @@ class RepositoryServiceImpl(
      * 解析存储凭证key
      * 规则：
      * 1. 如果请求指定了storageCredentialsKey，则使用指定的
-     * 2. 如果没有指定，则使用根据仓库类型配置的默认storageCredentialsKey
-     * 3. 如果没有仓库类型配有配置默认storageCredentialsKey，则使用全局默认storageCredentialsKey
+     * 2. 如果没有指定，则根据仓库名称进行匹配storageCredentialsKey
+     * 3. 如果配有匹配到，则根据仓库类型进行匹配storageCredentialsKey
+     * 3. 如果以上都没匹配，则使用全局默认storageCredentialsKey
      */
-    private fun resolveStorageCredentialsKey(request: RepoCreateRequest): String? {
+    private fun determineStorageKey(request: RepoCreateRequest): String? {
         with(repositoryProperties) {
             return if (!request.storageCredentialsKey.isNullOrBlank()) {
                 request.storageCredentialsKey
+            } else if (repoStorageMapping.names.containsKey(request.name)) {
+                repoStorageMapping.names[request.name]
+            } else if (repoStorageMapping.types.containsKey(request.type)) {
+                repoStorageMapping.types[request.type]
             } else {
-                repoStorageMapping[request.type] ?: defaultStorageCredentialsKey
+                defaultStorageCredentialsKey
             }
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
-        private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,31}"
+        private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESCRIPTION_MAX_LENGTH = 200
 
         private fun convertToDetail(

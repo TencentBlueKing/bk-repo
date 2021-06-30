@@ -160,6 +160,15 @@ interface PackageClient {
         @RequestBody option: PackageListOption = PackageListOption()
     ): Response<Page<PackageSummary>>
 
+    @ApiOperation("列出包中已存在的版本")
+    @PostMapping("/exist/list/{projectId}/{repoName}")
+    fun listExistPackageVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestBody packageVersionList: List<String> = emptyList()
+    ): Response<List<String>>
+
     @ApiOperation("查询所有包名称")
     @PostMapping("/package/list/{projectId}/{repoName}")
     fun listAllPackageNames(

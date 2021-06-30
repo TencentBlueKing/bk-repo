@@ -32,25 +32,23 @@
 package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.ClusterRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.AccountService
-import com.tencent.bkrepo.auth.service.ClusterService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthPermissionServiceImpl
+import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
 import com.tencent.bkrepo.auth.service.bkauth.BkAuthProjectService
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthService
 import com.tencent.bkrepo.auth.service.bkiam.BkiamPermissionServiceImpl
 import com.tencent.bkrepo.auth.service.bkiam.BkiamService
 import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
-import com.tencent.bkrepo.auth.service.local.ClusterServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
+import com.tencent.bkrepo.common.plugin.api.PluginManager
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
@@ -71,13 +69,6 @@ class AuthServiceConfig {
         accountRepository: AccountRepository,
         mongoTemplate: MongoTemplate
     ) = AccountServiceImpl(accountRepository, mongoTemplate)
-
-    @Bean
-    @ConditionalOnMissingBean(ClusterService::class)
-    fun clusterService(
-        clusterRepository: ClusterRepository,
-        mongoTemplate: MongoTemplate
-    ) = ClusterServiceImpl(clusterRepository, mongoTemplate)
 
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local", matchIfMissing = true)
@@ -128,8 +119,9 @@ class AuthServiceConfig {
         mongoTemplate: MongoTemplate,
         repositoryClient: RepositoryClient,
         bkAuthConfig: BkAuthConfig,
-        bkAuthService: BkAuthService,
-        bkAuthProjectService: BkAuthProjectService
+        bkAuthPipelineService: BkAuthPipelineService,
+        bkAuthProjectService: BkAuthProjectService,
+        pluginManager: PluginManager
     ): PermissionService {
         logger.debug("init BkAuthPermissionServiceImpl")
         return BkAuthPermissionServiceImpl(
@@ -139,8 +131,9 @@ class AuthServiceConfig {
             mongoTemplate,
             repositoryClient,
             bkAuthConfig,
-            bkAuthService,
-            bkAuthProjectService
+            bkAuthPipelineService,
+            bkAuthProjectService,
+            pluginManager
         )
     }
 

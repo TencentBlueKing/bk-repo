@@ -62,7 +62,7 @@ class ShareRecordCleanupJob(
         logger.info("[${result.deletedCount}] expired share record has been clean up.")
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(1)
+    override fun getLockAtMostFor(): Duration = Duration.ofHours(6)
 
     companion object {
         private val logger = LoggerHolder.jobLogger

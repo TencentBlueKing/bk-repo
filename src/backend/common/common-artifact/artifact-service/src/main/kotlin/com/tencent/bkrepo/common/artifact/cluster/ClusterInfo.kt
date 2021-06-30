@@ -35,9 +35,24 @@ package com.tencent.bkrepo.common.artifact.cluster
  * 集群信息
  */
 data class ClusterInfo(
+    /**
+     * 集群名称
+     */
     var name: String? = null,
+    /**
+     * 集群url
+     */
     var url: String? = null,
+    /**
+     * 集群访问用户名
+     */
     var username: String? = null,
+    /**
+     * 集群访问密码
+     */
     var password: String? = null,
+    /**
+     * 集群访问证书
+     */
     var certificate: String? = null
 )

@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
 @ConfigurationProperties("git")
 data class GitProperties(
     var storageCredentialsKey: String ? = null,
+    var locationDir: String ? = null,
     @NestedConfigurationProperty
     var hub: Hub = Hub()
 ) {

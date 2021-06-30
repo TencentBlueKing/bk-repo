@@ -37,9 +37,21 @@ package com.tencent.bkrepo.common.plugin.api
 interface PluginManager {
 
     /**
-     * 加载插件
+     * 加载所有插件
      */
     fun load()
+
+    /**
+     * 加载插件
+     * @param id 插件id
+     */
+    fun load(id: String)
+
+    /**
+     * 卸载插件
+     * @param id 插件id
+     */
+    fun unload(id: String)
 
     /**
      * 查找扩展点列表

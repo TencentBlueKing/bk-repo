@@ -76,7 +76,7 @@ class DeletedNodeCleanupJob(
         }
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(6)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     private fun cleanupRepo(repo: TRepository, context: JobContext) {
         val criteria = where(TNode::projectId).isEqualTo(repo.projectId)

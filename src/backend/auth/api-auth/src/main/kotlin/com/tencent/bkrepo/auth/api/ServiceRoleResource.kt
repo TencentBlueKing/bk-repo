@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_ROLE_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
@@ -57,7 +56,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource")
-@RequestMapping(AUTH_SERVICE_ROLE_PREFIX, AUTH_API_ROLE_PREFIX, AUTH_ROLE_PREFIX)
+@RequestMapping(AUTH_SERVICE_ROLE_PREFIX, AUTH_API_ROLE_PREFIX)
 interface ServiceRoleResource {
     @ApiOperation("创建角色")
     @PostMapping("/create")

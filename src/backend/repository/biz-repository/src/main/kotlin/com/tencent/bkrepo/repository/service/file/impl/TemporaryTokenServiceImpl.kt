@@ -128,7 +128,8 @@ class TemporaryTokenServiceImpl(
                     authorizedIpList = it.authorizedIpList,
                     expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     type = it.type,
-                    permits = it.permits
+                    permits = it.permits,
+                    createdBy = it.createdBy
                 )
             }
         }

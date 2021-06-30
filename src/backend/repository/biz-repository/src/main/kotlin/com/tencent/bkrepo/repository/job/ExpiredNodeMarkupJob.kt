@@ -82,7 +82,7 @@ class ExpiredNodeMarkupJob(
         logger.info("[$markupCount] nodes were marked up with deleted status.")
     }
 
-    override fun getLockAtMostFor(): Duration = Duration.ofHours(6)
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     companion object {
         private val logger = LoggerHolder.jobLogger

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -44,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.plugin.api.PluginManager
 import com.tencent.bkrepo.common.plugin.api.applyExtension
+import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -201,7 +203,7 @@ class TemporaryAccessService(
      * 根据token生成url
      */
     private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
-        val urlHost = if (!host.isNullOrBlank()) host else genericProperties.host
+        val urlHost = if (!host.isNullOrBlank()) host else genericProperties.domain
         val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
         when (tokenType) {
             TokenType.DOWNLOAD -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT)
@@ -280,10 +282,18 @@ class TemporaryAccessService(
      */
     private fun checkAuthorization(tokenInfo: TemporaryTokenInfo) {
         // 检查用户授权
-        val userId = SecurityUtils.getUserId()
-        if (tokenInfo.authorizedUserList.isNotEmpty() && userId !in tokenInfo.authorizedUserList) {
+        // 获取经过认证的uid
+        val authenticatedUid = SecurityUtils.getUserId()
+        // 使用认证uid校验授权
+        if (tokenInfo.authorizedUserList.isNotEmpty() && authenticatedUid !in tokenInfo.authorizedUserList) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
         }
+        // 获取需要审计的uid
+        val auditedUid = if (SecurityUtils.isAnonymous()) {
+            HttpContextHolder.getRequest().getHeader(AUTH_HEADER_UID) ?: tokenInfo.createdBy
+        } else authenticatedUid
+        // 设置审计uid到session中
+        HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, auditedUid)
         // 校验ip授权
         val clientIp = HttpContextHolder.getClientAddress()
         if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
@@ -292,7 +302,7 @@ class TemporaryAccessService(
     }
 
     companion object {
-        private const val TEMPORARY_DOWNLOAD_ENDPOINT = "temporary/download"
-        private const val TEMPORARY_UPLOAD_ENDPOINT = "temporary/upload"
+        private const val TEMPORARY_DOWNLOAD_ENDPOINT = "/temporary/download"
+        private const val TEMPORARY_UPLOAD_ENDPOINT = "/temporary/upload"
     }
 }
