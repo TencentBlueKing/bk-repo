@@ -74,7 +74,8 @@ class BkciAuthService @Autowired constructor(
         logger.debug("validateProjectUsers, requestUrl: [$url]")
         return try {
             val request =
-                Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken()).get().build()
+                Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
+                    .header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateProjectUsers  result : [${apiResponse.content}]")
@@ -107,7 +108,7 @@ class BkciAuthService @Autowired constructor(
         logger.debug("validateUserResourcePermission, requestUrl: [$url]")
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
-                .header(DEVOPS_UID, user).get().build()
+                .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateUserResourcePermission, result : [${apiResponse.content}]")
@@ -132,7 +133,7 @@ class BkciAuthService @Autowired constructor(
                     "action=${action.value}&resourceType=${resourceType.value}"
             logger.debug("getUserResourceByPermission, requestUrl: [$url] ")
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
-                .header(DEVOPS_UID, user).get().build()
+                .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getUserResourceByPermission result : [${apiResponse.content}]")
@@ -147,5 +148,6 @@ class BkciAuthService @Autowired constructor(
         private val logger = LoggerFactory.getLogger(BkciAuthService::class.java)
         const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
         const val DEVOPS_UID = "X-DEVOPS-UID"
+        const val DEVOPS_PROJECT_ID = "X-DEVOPS-PROJECT-ID"
     }
 }

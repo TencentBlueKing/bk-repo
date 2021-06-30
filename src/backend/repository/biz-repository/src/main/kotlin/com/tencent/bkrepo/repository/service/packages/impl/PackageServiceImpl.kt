@@ -241,9 +241,11 @@ class PackageServiceImpl(
         if (tPackage.versions <= 0L) {
             packageDao.removeById(tPackage.id.orEmpty())
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
-        } else if (tPackage.latest == tPackageVersion.name) {
-            val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
-            tPackage.latest = latestVersion?.name.orEmpty()
+        } else {
+            if (tPackage.latest == tPackageVersion.name) {
+                val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
+                tPackage.latest = latestVersion?.name.orEmpty()
+            }
             packageDao.save(tPackage)
         }
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
@@ -291,7 +293,7 @@ class PackageServiceImpl(
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "artifactPath is null")
         }
         val artifactInfo = DefaultArtifactInfo(projectId, repoName, tPackageVersion.artifactPath!!)
-        val context = ArtifactDownloadContext(artifact = artifactInfo)
+        val context = ArtifactDownloadContext(artifact = artifactInfo, useDisposition = true)
         ArtifactContextHolder.getRepository().download(context)
     }
 
@@ -312,6 +314,17 @@ class PackageServiceImpl(
         val packageList = packageDao.find(query, MutableMap::class.java)
         val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
         return Page(pageNumber + 1, query.limit, totalRecords, packageList)
+    }
+
+    override fun listExistPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        packageVersionList: List<String>
+    ): List<String> {
+        val tPackage = packageDao.findByKey(projectId, repoName, packageKey) ?: return emptyList()
+        val versionQuery = PackageQueryHelper.versionQuery(tPackage.id!!, packageVersionList)
+        return packageVersionDao.find(versionQuery).map { it.name }
     }
 
     override fun populatePackage(request: PackagePopulateRequest) {

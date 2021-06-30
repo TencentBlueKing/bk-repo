@@ -24,3 +24,6 @@ data:
     service.prefix: {{ include "common.names.fullname" . }}-
     storage:
       {{- toYaml .Values.common.storage | nindent 6 }}
+    cluster:
+      self:
+        url: {{ .Values.gateway.host }}

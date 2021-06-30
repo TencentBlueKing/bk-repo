@@ -34,6 +34,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -59,6 +61,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
 import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
@@ -101,12 +104,14 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import javax.servlet.http.HttpServletRequest
 
 @Component
 class PypiLocalRepository(
     private val mongoTemplate: MongoTemplate,
     private val migrateDataRepository: MigrateDataRepository,
-    private val stageClient: StageClient
+    private val stageClient: StageClient,
+    private val pypiProperties: PypiProperties
 ) : LocalRepository() {
 
     /**
@@ -164,33 +169,47 @@ class PypiLocalRepository(
      */
     override fun search(context: ArtifactSearchContext): List<Value> {
         val pypiSearchPojo = XmlUtils.getPypiSearchPojo(context.request.reader.readXml())
-        val name = pypiSearchPojo.name
-        val summary = pypiSearchPojo.summary
-        if (name != null && summary != null) {
-            val projectId = Rule.QueryRule("projectId", context.projectId)
-            val repoName = Rule.QueryRule("repoName", context.repoName)
-            val packageQuery = Rule.QueryRule("metadata.name", "*$name*", OperationType.MATCH)
-            val summaryQuery = Rule.QueryRule("metadata.summary", "*$summary*", OperationType.MATCH)
-            val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-            val matchQuery = Rule.NestedRule(
-                mutableListOf(packageQuery, summaryQuery),
-                Rule.NestedRule.RelationType.OR
-            )
-            val rule = Rule.NestedRule(
-                mutableListOf(repoName, projectId, filetypeQuery, matchQuery),
-                Rule.NestedRule.RelationType.AND
-            )
-
-            val queryModel = QueryModel(
-                page = PageLimit(pageLimitCurrent, pageLimitSize),
-                sort = Sort(listOf("name"), Sort.Direction.ASC),
-                select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                rule = rule
-            )
-            val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
-            if (nodeList != null) {
-                return XmlUtil.nodeLis2Values(nodeList)
+        val projectId = Rule.QueryRule("projectId", context.projectId)
+        val repoName = Rule.QueryRule("repoName", context.repoName)
+        val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
+        val paramQueryList = mutableListOf<Rule>()
+        for (param in pypiSearchPojo.map) {
+            if (param.value.size == 1) {
+                paramQueryList.add(
+                    Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH)
+                )
+            } else if (param.value.size > 1) {
+                // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
+                // Within the spec, a field’s value can be a string or a list of strings
+                // (the values within the list are combined with an OR)
+                val sameParamQueryList = mutableListOf<Rule>()
+                for (value in param.value) {
+                    sameParamQueryList.add(
+                        Rule.QueryRule("metadata.${param.key}", "*$value*", OperationType.MATCH)
+                    )
+                }
+                paramQueryList.add(Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR))
             }
+        }
+        val relationType = when (pypiSearchPojo.operation) {
+            "or" -> Rule.NestedRule.RelationType.OR
+            "and" -> Rule.NestedRule.RelationType.AND
+            else -> Rule.NestedRule.RelationType.OR
+        }
+        val paramQuery = Rule.NestedRule(paramQueryList, relationType)
+        val rule = Rule.NestedRule(
+            mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
+        )
+
+        val queryModel = QueryModel(
+            page = PageLimit(pageLimitCurrent, pageLimitSize),
+            sort = Sort(listOf("name"), Sort.Direction.ASC),
+            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+            rule = rule
+        )
+        val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
+        if (nodeList != null) {
+            return XmlUtil.nodeLis2Values(nodeList)
         }
         return mutableListOf()
     }
@@ -283,14 +302,24 @@ class PypiLocalRepository(
     }
 
     /**
+     * 本地调试删除 pypi.domain 配置
+     */
+    fun getRedirectUrl(request: HttpServletRequest): String {
+        val domain = pypiProperties.domain
+        val path = request.servletPath
+        return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
+    }
+
+    /**
      *
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
         val request = HttpContextHolder.getRequest()
         if (!request.requestURI.endsWith("/")) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect("${request.requestURL}/")
+            response.sendRedirect(getRedirectUrl(request))
             response.writer.flush()
+            return null
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data

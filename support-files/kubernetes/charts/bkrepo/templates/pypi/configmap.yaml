@@ -13,6 +13,9 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    {{- toYaml .Values.pypi.config | nindent 4 }}
-
+    pypi:
+      domain: {{ .Values.gateway.host }}/pypi    
+      {{- if keys $.Values.pypi.config }}
+        {{- toYaml .Values.pypi.config | nindent 6 }}
+      {{- end}}
 {{- end }}

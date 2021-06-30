@@ -36,5 +36,6 @@ import com.tencent.bkrepo.repository.pojo.UserRequest
 
 data class StorageCredentialsCreateRequest(
     val key: String,
-    val credentials: StorageCredentials
+    val credentials: StorageCredentials,
+    val region: String
 ) : UserRequest

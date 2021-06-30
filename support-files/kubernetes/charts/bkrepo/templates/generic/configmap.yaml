@@ -13,7 +13,9 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    {{- toYaml .Values.generic.config | nindent 4 }}
     generic:
-      host: http://{{ .Values.gateway.host }}/generic
+      domain: {{ .Values.gateway.host }}/generic
+      {{- if keys $.Values.generic.config }}
+        {{- toYaml .Values.generic.config | nindent 6 }}
+      {{- end}}
 {{- end }}
