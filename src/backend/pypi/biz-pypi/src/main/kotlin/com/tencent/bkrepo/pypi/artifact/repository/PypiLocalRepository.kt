@@ -172,8 +172,9 @@ class PypiLocalRepository(
         val repoName = Rule.QueryRule("repoName", context.repoName)
         val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
         val paramQueryList = mutableListOf<Rule>()
-        val rule = if (pypiSearchPojo.map.isNotEmpty()) {
+        val paramQuery = if (pypiSearchPojo.map.isNotEmpty()) {
             for (param in pypiSearchPojo.map) {
+                if (param.value.isNullOrEmpty()) continue
                 if (param.value.size == 1) {
                     paramQueryList.add(
                         Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH)
@@ -196,7 +197,9 @@ class PypiLocalRepository(
                 "and" -> Rule.NestedRule.RelationType.AND
                 else -> Rule.NestedRule.RelationType.OR
             }
-            val paramQuery = Rule.NestedRule(paramQueryList, relationType)
+            Rule.NestedRule(paramQueryList, relationType)
+        } else Rule.NestedRule(paramQueryList)
+        val rule = if (paramQueryList.isNotEmpty()) {
             Rule.NestedRule(
                 mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
             )
