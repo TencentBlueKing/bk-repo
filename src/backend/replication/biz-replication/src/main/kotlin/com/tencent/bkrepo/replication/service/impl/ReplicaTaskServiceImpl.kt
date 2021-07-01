@@ -15,7 +15,6 @@ import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
@@ -30,7 +29,9 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.buildListQuery
-import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoTaskQuery
+import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskObjectQuery
+import com.tencent.bkrepo.replication.util.TaskQueryHelper.realTimeTaskQuery
+import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoScheduledTaskQuery
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -70,7 +71,14 @@ class ReplicaTaskServiceImpl(
     }
 
     override fun listUndoScheduledTasks(): List<ReplicaTaskInfo> {
-        val query = undoTaskQuery()
+        val query = undoScheduledTaskQuery()
+        return replicaTaskDao.find(query).map { convert(it)!! }
+    }
+
+    override fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskInfo> {
+        val objectQuery = taskObjectQuery(projectId, repoName)
+        val taskKeyList = replicaObjectDao.find(objectQuery).map { it.taskKey }
+        val query = realTimeTaskQuery(taskKeyList)
         return replicaTaskDao.find(query).map { convert(it)!! }
     }
 
@@ -144,8 +152,6 @@ class ReplicaTaskServiceImpl(
             if (name.length < TASK_NAME_LENGTH_MIN || name.length > TASK_NAME_LENGTH_MAX) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::name.name)
             }
-            // 暂时只支持SCHEDULED,实时同步暂不支持
-            Preconditions.checkArgument(replicaType == ReplicaType.SCHEDULED, this::replicaType.name)
             // 校验同步策略，按仓库同步可以选择多个仓库，按包或者节点同步只能在单个仓库下进行操作
             validateReplicaObject(this)
             // 执行计划验证

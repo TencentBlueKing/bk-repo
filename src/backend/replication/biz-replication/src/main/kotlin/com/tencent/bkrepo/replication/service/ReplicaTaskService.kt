@@ -77,6 +77,11 @@ interface ReplicaTaskService {
     fun listUndoScheduledTasks(): List<ReplicaTaskInfo>
 
     /**
+     * 根据项目id和仓库名称查询相关联的任务
+     */
+    fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskInfo>
+
+    /**
      * 创建同步任务
      * 目前只允许创建ReplicaType.SCHEDULED类型的任务
      *

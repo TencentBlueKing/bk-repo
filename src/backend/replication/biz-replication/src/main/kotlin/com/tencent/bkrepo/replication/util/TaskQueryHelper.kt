@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.util
 
+import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -9,6 +10,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 
@@ -34,10 +36,23 @@ object TaskQueryHelper {
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, sortType?.key))
     }
 
-    fun undoTaskQuery(): Query {
+    fun undoScheduledTaskQuery(): Query {
         val criteria = Criteria.where(TReplicaTask::replicaType.name).`is`(ReplicaType.SCHEDULED)
             .and(TReplicaTask::status.name).`in`(ReplicationStatus.UNDO_STATUS)
             .and(TReplicaTask::enabled.name).`is`(true)
+        return Query(criteria)
+    }
+
+    fun realTimeTaskQuery(taskKeyList: List<String>): Query {
+        val criteria = where(TReplicaTask::replicaType).isEqualTo(ReplicaType.REAL_TIME)
+            .and(TReplicaTask::key).inValues(taskKeyList)
+            .and(TReplicaTask::enabled).isEqualTo(true)
+        return Query(criteria)
+    }
+
+    fun taskObjectQuery(projectId: String, repoName: String): Query {
+        val criteria = where(TReplicaObject::localProjectId).isEqualTo(projectId)
+            .and(TReplicaObject::localRepoName).isEqualTo(repoName)
         return Query(criteria)
     }
 }
