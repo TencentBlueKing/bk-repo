@@ -23,7 +23,7 @@ data:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
     cluster:
-      {{-if .Values.common.region }}
+      {{- if .Values.common.region }}
       region: {{ .Values.common.region }}
       {{- end }}
       self:
