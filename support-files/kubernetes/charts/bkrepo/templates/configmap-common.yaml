@@ -23,7 +23,9 @@ data:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
     cluster:
+      {{-if .Values.common.region }}
       region: {{ .Values.common.region }}
+      {{- end }}
       self:
         url: {{ .Values.gateway.host }}
     {{- toYaml .Values.common.config | nindent 4 }}
