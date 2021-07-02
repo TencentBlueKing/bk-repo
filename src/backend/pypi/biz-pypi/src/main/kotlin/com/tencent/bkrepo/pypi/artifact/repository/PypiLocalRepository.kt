@@ -178,7 +178,7 @@ class PypiLocalRepository(
                 if (param.value.isNullOrEmpty()) continue
                 if (param.value.size == 1) {
                     paramQueryList.add(
-                        Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH)
+                        Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH_I)
                     )
                 } else if (param.value.size > 1) {
                     // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
@@ -187,7 +187,7 @@ class PypiLocalRepository(
                     val sameParamQueryList = mutableListOf<Rule>()
                     for (value in param.value) {
                         sameParamQueryList.add(
-                            Rule.QueryRule("metadata.${param.key}", "*$value*", OperationType.MATCH)
+                            Rule.QueryRule("metadata.${param.key}", "*$value*", OperationType.MATCH_I)
                         )
                     }
                     paramQueryList.add(Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR))
