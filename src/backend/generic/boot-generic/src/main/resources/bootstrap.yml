@@ -2,4 +2,4 @@ service.name: generic
 server.port: 25801
 
 generic:
-  domain: ${cluster.self.url}/generic/
+  domain: ${cluster.self.url}/generic

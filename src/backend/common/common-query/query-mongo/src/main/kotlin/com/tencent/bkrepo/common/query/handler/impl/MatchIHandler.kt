@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,31 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.token
+package com.tencent.bkrepo.common.query.handler.impl
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.handler.MongoQueryRuleHandler
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
+import org.springframework.data.mongodb.core.query.Criteria
 
-@ApiModel("临时token信息")
-data class TemporaryTokenInfo(
-    @ApiModelProperty("项目")
-    val projectId: String,
-    @ApiModelProperty("仓库")
-    val repoName: String,
-    @ApiModelProperty("授权路径")
-    val fullPath: String,
-    @ApiModelProperty("token")
-    val token: String,
-    @ApiModelProperty("授权用户")
-    val authorizedUserList: Set<String>,
-    @ApiModelProperty("授权IP")
-    val authorizedIpList: Set<String>,
-    @ApiModelProperty("过期时间")
-    val expireDate: String?,
-    @ApiModelProperty("允许下载次数")
-    val permits: Int?,
-    @ApiModelProperty("token类型")
-    val type: TokenType,
-    @ApiModelProperty("创建者")
-    val createdBy: String
-)
+/**
+ * 忽略大小写的匹配
+ */
+class MatchIHandler : MongoQueryRuleHandler {
+
+    override fun match(rule: Rule.QueryRule): Boolean {
+        return rule.operation == OperationType.MATCH_I
+    }
+
+    override fun handle(rule: Rule.QueryRule): Criteria {
+        val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(rule.value.toString())
+        val regexPattern = escapedValue.replace("*", ".*")
+        return Criteria.where(rule.field).regex("^$regexPattern$", "i")
+    }
+}

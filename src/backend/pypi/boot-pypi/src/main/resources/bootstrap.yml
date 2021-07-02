@@ -1,5 +1,4 @@
 service.name: pypi
 server.port: 25805
-#本地调试时删除下面配置
 pypi:
-  domain: ${cluster.self.url}/pypi/
+  domain: ${cluster.self.url}/pypi

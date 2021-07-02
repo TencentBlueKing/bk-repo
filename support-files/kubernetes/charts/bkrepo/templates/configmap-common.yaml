@@ -22,5 +22,8 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
-    storage:
-      {{- toYaml .Values.common.storage | nindent 6 }}
+    cluster:
+      region: {{ .Values.common.region }}
+      self:
+        url: {{ .Values.gateway.host }}
+    {{- toYaml .Values.common.config | nindent 4 }}

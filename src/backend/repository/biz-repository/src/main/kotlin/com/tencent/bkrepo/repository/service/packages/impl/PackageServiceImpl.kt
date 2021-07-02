@@ -241,9 +241,11 @@ class PackageServiceImpl(
         if (tPackage.versions <= 0L) {
             packageDao.removeById(tPackage.id.orEmpty())
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
-        } else if (tPackage.latest == tPackageVersion.name) {
-            val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
-            tPackage.latest = latestVersion?.name.orEmpty()
+        } else {
+            if (tPackage.latest == tPackageVersion.name) {
+                val latestVersion = packageVersionDao.findLatest(tPackage.id.orEmpty())
+                tPackage.latest = latestVersion?.name.orEmpty()
+            }
             packageDao.save(tPackage)
         }
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
