@@ -85,7 +85,7 @@ class StorageCredentialServiceImpl(
 
     override fun list(region: String?): List<StorageCredentials> {
         return storageCredentialsRepository.findAll()
-            .filter { region == null || it.region == region }
+            .filter { region.isNullOrBlank() || it.region == region }
             .map { it.credentials.readJsonString<StorageCredentials>() }
     }
 
