@@ -29,10 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.event.metadata
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.event.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.ResourceType
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 元数据抽象事件
+ */
+abstract class MetadataEvent : ArtifactEvent {
+    override val resourceType = ResourceType.METADATA
+    override val data: Map<String, Any> = mapOf()
+}

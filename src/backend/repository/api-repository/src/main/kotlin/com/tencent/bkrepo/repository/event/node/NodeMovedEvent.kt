@@ -29,10 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.event.node
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.event.AuditableEvent
+import com.tencent.bkrepo.common.artifact.event.EventType
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 节点移动事件
+ */
+class NodeMovedEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val resourceKey: String,
+    override val userId: String,
+    override val clientAddress: String,
+    val dstProjectId: String,
+    val dstRepoName: String,
+    val dstFullPath: String
+) : NodeEvent(), AuditableEvent {
+
+    override val eventType = EventType.MOVED
+
+    override val data: Map<String, Any> = mapOf(
+        "dstProjectId" to dstProjectId,
+        "dstRepoName" to dstRepoName,
+        "dstFullPath" to dstFullPath
+    )
+}

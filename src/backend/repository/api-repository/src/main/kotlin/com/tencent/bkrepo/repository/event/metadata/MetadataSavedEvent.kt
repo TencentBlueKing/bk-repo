@@ -29,10 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.event.metadata
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.event.AuditableEvent
+import com.tencent.bkrepo.common.artifact.event.EventType
+import com.tencent.bkrepo.repository.event.node.NodeEvent
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 元数据保存事件
+ */
+class MetadataSavedEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val resourceKey: String, // node fullPath
+    override val userId: String,
+    override val clientAddress: String,
+    val metadata: Map<String, Any>
+) : NodeEvent(), AuditableEvent {
+
+    override val eventType = EventType.CREATED
+
+    override val data: Map<String, Any> = mapOf("metadata" to metadata)
+}

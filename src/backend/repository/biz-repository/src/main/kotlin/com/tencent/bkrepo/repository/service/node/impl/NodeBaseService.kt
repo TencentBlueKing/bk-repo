@@ -43,8 +43,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.listener.event.node.NodeCreatedEvent
-import com.tencent.bkrepo.repository.listener.event.node.NodeUpdatedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -56,6 +54,7 @@ import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
@@ -148,7 +147,7 @@ abstract class NodeBaseService(
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now()
             )
             doCreate(node)
-            publishEvent(NodeCreatedEvent(this))
+            publishEvent(buildCreatedEvent(node))
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
 
             return convertToDetail(node)!!
@@ -164,7 +163,6 @@ abstract class NodeBaseService(
             val selfQuery = NodeQueryHelper.nodeQuery(projectId, repoName, node.fullPath)
             val selfUpdate = NodeQueryHelper.nodeExpireDateUpdate(parseExpireDate(expires), operator)
             nodeDao.updateFirst(selfQuery, selfUpdate)
-            publishEvent(NodeUpdatedEvent(this))
             logger.info("Update node [$this] success.")
         }
     }

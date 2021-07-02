@@ -29,10 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.event.project
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.event.AuditableEvent
+import com.tencent.bkrepo.common.artifact.event.EventType
+import com.tencent.bkrepo.repository.event.repo.RepoEvent
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 项目创建事件
+ */
+class ProjectCreatedEvent(
+    override val projectId: String,
+    override val userId: String,
+    override val clientAddress: String
+) : RepoEvent(), AuditableEvent {
+
+    override val eventType = EventType.CREATED
+
+    override val repoName = StringPool.EMPTY
+
+    override val resourceKey = projectId
+}

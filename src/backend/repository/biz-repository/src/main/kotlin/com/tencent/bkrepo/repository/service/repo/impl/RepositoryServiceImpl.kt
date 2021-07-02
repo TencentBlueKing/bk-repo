@@ -55,9 +55,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
-import com.tencent.bkrepo.repository.listener.event.repo.RepoDeletedEvent
-import com.tencent.bkrepo.repository.listener.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -70,6 +67,10 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.util.RepoEventFactory
+import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
+import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
+import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
@@ -198,7 +199,7 @@ class RepositoryServiceImpl(
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
                 repositoryDao.insert(repository)
-                publishEvent(RepoCreatedEvent(repoCreateRequest))
+                publishEvent(buildCreatedEvent(repoCreateRequest))
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository, storageCredential)!!
             } catch (exception: DuplicateKeyException) {
@@ -224,7 +225,7 @@ class RepositoryServiceImpl(
             }
             repositoryDao.save(repository)
         }
-        publishEvent(RepoUpdatedEvent(repoUpdateRequest))
+        publishEvent(buildUpdatedEvent(repoUpdateRequest))
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 
@@ -250,7 +251,7 @@ class RepositoryServiceImpl(
                 }
             }
         }
-        publishEvent(RepoDeletedEvent(repoDeleteRequest))
+        publishEvent(buildDeletedEvent(repoDeleteRequest))
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 

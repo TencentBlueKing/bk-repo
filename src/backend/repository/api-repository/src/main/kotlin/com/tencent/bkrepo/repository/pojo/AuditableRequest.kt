@@ -29,10 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.pojo
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import java.time.LocalDateTime
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 支持提供审计信息的请求
+ */
+interface AuditableRequest {
+    val createdBy: String?
+    val createdDate: LocalDateTime?
+    val lastModifiedBy: String?
+    val lastModifiedDate: LocalDateTime?
+}

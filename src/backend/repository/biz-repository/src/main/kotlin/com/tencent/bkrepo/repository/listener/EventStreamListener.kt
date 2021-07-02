@@ -29,10 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.listener
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.event.ArtifactEvent
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Component
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 用于将事件发送到消息流的监听器
+ */
+@Component
+class EventStreamListener(
+//    private val streamBridge: StreamBridge
+) {
+
+    /**
+     * 将事件发送到消息队列, 将需要依赖该事件的其余模块解耦开
+     */
+    @Async
+    @EventListener(ArtifactEvent::class)
+    fun handle(event: ArtifactEvent) {
+        // TODO
+//        streamBridge.send("artifact-event-in-0", event);
+    }
+}

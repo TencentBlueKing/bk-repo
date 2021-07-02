@@ -29,10 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.listener
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.event.AuditableEvent
+import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
+import com.tencent.bkrepo.repository.model.TOperateLog
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Component
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 事件审计记录监听器
+ */
+@Component
+class EventAuditListener(
+    private val operateLogRepository: OperateLogRepository
+) {
+
+    /**
+     * 将需要审计记录的事件持久化
+     */
+    @Async
+    @EventListener(AuditableEvent::class)
+    fun handle(event: AuditableEvent) {
+        val log = TOperateLog(
+            resourceType = event.resourceType,
+            resourceKey = event.resourceKey,
+            projectId = event.projectId,
+            repoName = event.repoName,
+            operateType = event.eventType,
+            description = event.data,
+            userId = event.userId,
+            clientAddress = event.clientAddress
+        )
+        operateLogRepository.save(log)
+    }
+}

@@ -29,10 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event
+package com.tencent.bkrepo.repository.event.repo
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.event.AuditableEvent
+import com.tencent.bkrepo.common.artifact.event.EventType
 
-data class ArtifactUpdatedEvent(
-    override val context: ArtifactUploadContext
-) : ArtifactContextEvent(context, ArtifactEventType.UPLOADED)
+/**
+ * 项目删除事件
+ */
+class RepoDeletedEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val userId: String,
+    override val clientAddress: String
+) : RepoEvent(), AuditableEvent {
+
+    override val eventType = EventType.DELETED
+
+    override val resourceKey = repoName
+}

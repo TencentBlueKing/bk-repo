@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.repository.pojo.log.OperateType
-import com.tencent.bkrepo.repository.pojo.log.ResourceType
+import com.tencent.bkrepo.common.artifact.event.EventType
+import com.tencent.bkrepo.common.artifact.event.ResourceType
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -41,8 +41,10 @@ data class TOperateLog(
     var id: String? = null,
     var createdDate: LocalDateTime = LocalDateTime.now(),
     var resourceType: ResourceType,
+    var projectId: String?,
+    var repoName: String?,
     var resourceKey: String,
-    var operateType: OperateType,
+    var operateType: EventType,
     var userId: String,
     var clientAddress: String,
     var description: Map<String, Any>
