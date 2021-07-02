@@ -173,33 +173,42 @@ class PypiLocalRepository(
         val repoName = Rule.QueryRule("repoName", context.repoName)
         val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
         val paramQueryList = mutableListOf<Rule>()
-        for (param in pypiSearchPojo.map) {
-            if (param.value.size == 1) {
-                paramQueryList.add(
-                    Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH)
-                )
-            } else if (param.value.size > 1) {
-                // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
-                // Within the spec, a field’s value can be a string or a list of strings
-                // (the values within the list are combined with an OR)
-                val sameParamQueryList = mutableListOf<Rule>()
-                for (value in param.value) {
-                    sameParamQueryList.add(
-                        Rule.QueryRule("metadata.${param.key}", "*$value*", OperationType.MATCH)
+        val paramQuery = if (pypiSearchPojo.map.isNotEmpty()) {
+            for (param in pypiSearchPojo.map) {
+                if (param.value.isNullOrEmpty()) continue
+                if (param.value.size == 1) {
+                    paramQueryList.add(
+                        Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH_I)
                     )
+                } else if (param.value.size > 1) {
+                    // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
+                    // Within the spec, a field’s value can be a string or a list of strings
+                    // (the values within the list are combined with an OR)
+                    val sameParamQueryList = mutableListOf<Rule>()
+                    for (value in param.value) {
+                        sameParamQueryList.add(
+                            Rule.QueryRule("metadata.${param.key}", "*$value*", OperationType.MATCH_I)
+                        )
+                    }
+                    paramQueryList.add(Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR))
                 }
-                paramQueryList.add(Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR))
             }
+            val relationType = when (pypiSearchPojo.operation) {
+                "or" -> Rule.NestedRule.RelationType.OR
+                "and" -> Rule.NestedRule.RelationType.AND
+                else -> Rule.NestedRule.RelationType.OR
+            }
+            Rule.NestedRule(paramQueryList, relationType)
+        } else Rule.NestedRule(paramQueryList)
+        val rule = if (paramQueryList.isNotEmpty()) {
+            Rule.NestedRule(
+                mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
+            )
+        } else {
+            Rule.NestedRule(
+                mutableListOf(projectId, repoName, filetypeQuery), Rule.NestedRule.RelationType.AND
+            )
         }
-        val relationType = when (pypiSearchPojo.operation) {
-            "or" -> Rule.NestedRule.RelationType.OR
-            "and" -> Rule.NestedRule.RelationType.AND
-            else -> Rule.NestedRule.RelationType.OR
-        }
-        val paramQuery = Rule.NestedRule(paramQueryList, relationType)
-        val rule = Rule.NestedRule(
-            mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
-        )
 
         val queryModel = QueryModel(
             page = PageLimit(pageLimitCurrent, pageLimitSize),
