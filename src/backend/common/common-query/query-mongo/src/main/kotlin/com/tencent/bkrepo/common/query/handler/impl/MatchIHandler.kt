@@ -37,15 +37,18 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import org.springframework.data.mongodb.core.query.Criteria
 
-class MatchHandler : MongoQueryRuleHandler {
+/**
+ * 忽略大小写的匹配
+ */
+class MatchIHandler : MongoQueryRuleHandler {
 
     override fun match(rule: Rule.QueryRule): Boolean {
-        return rule.operation == OperationType.MATCH
+        return rule.operation == OperationType.MATCH_I
     }
 
     override fun handle(rule: Rule.QueryRule): Criteria {
         val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(rule.value.toString())
         val regexPattern = escapedValue.replace("*", ".*")
-        return Criteria.where(rule.field).regex("^$regexPattern$")
+        return Criteria.where(rule.field).regex("^$regexPattern$", "i")
     }
 }
