@@ -25,12 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.message.metadata
+package com.tencent.bkrepo.common.stream.binder.memory
 
-import com.tencent.bkrepo.common.stream.message.IMessage
-import com.tencent.bkrepo.common.stream.message.MessageType
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.stream.binder.memory.queue.MemoryListenerContainer
+import org.springframework.cloud.stream.provisioning.ConsumerDestination
+import org.springframework.integration.endpoint.MessageProducerSupport
+import org.springframework.messaging.Message
+import java.util.*
+import java.util.function.Consumer
 
-data class MetadataSavedMessage(val request: MetadataSaveRequest) : IMessage {
-    override fun getMessageType() = MessageType.METADATA_SAVED
+/**
+ * Memory integration endpoint
+ */
+class MemoryIntegrationEndpoint(
+    private val destination: ConsumerDestination
+) : MessageProducerSupport(), Consumer<Message<*>> {
+
+    private val id = UUID.randomUUID()
+
+    override fun accept(t: Message<*>) {
+        this.sendMessage(t)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if(other == null || MemoryIntegrationEndpoint::class.java != other::class.java){
+            return false
+        }
+        return this.id == (other as MemoryIntegrationEndpoint).id
+    }
+
+    override fun doStart() {
+        MemoryListenerContainer.registerListener(destination.name, this)
+    }
+
+    override fun doStop() {
+        MemoryListenerContainer.unregisterListener(destination.name)
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
 }

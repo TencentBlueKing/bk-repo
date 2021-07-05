@@ -25,12 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.message.metadata
+package com.tencent.bkrepo.common.stream.binder.memory.config
 
-import com.tencent.bkrepo.common.stream.message.IMessage
-import com.tencent.bkrepo.common.stream.message.MessageType
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-data class MetadataSavedMessage(val request: MetadataSaveRequest) : IMessage {
-    override fun getMessageType() = MessageType.METADATA_SAVED
-}
+@ConfigurationProperties(prefix = "spring.cloud.stream.memory.default")
+data class MemoryBinderProperties(
+    /**
+     * 工作线程池大小，当小于 0 时使用 CPU 核心数 1 半
+     */
+    var workerPoolSize: Int = -1,
+    /**
+     * 阻塞队列大小，当队列满了以后将丢弃最早的消息
+     */
+    var queueSize: Int = 2048
+)

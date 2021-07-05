@@ -25,12 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.message.metadata
+package com.tencent.bkrepo.common.stream.binder.memory.config
 
-import com.tencent.bkrepo.common.stream.message.IMessage
-import com.tencent.bkrepo.common.stream.message.MessageType
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
+import com.tencent.bkrepo.common.stream.binder.memory.MemoryProvisioningProvider
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.cloud.stream.binder.Binder
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-data class MetadataSavedMessage(val request: MetadataSaveRequest) : IMessage {
-    override fun getMessageType() = MessageType.METADATA_SAVED
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnMissingBean(Binder::class)
+@EnableConfigurationProperties(MemoryBinderProperties::class)
+class MemoryBinderAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    fun memoryMessageChannelBinder(
+        configurationProperties: MemoryBinderProperties
+    ): MemoryMessageChannelBinder {
+        return MemoryMessageChannelBinder(configurationProperties, MemoryProvisioningProvider())
+    }
 }

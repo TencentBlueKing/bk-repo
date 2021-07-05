@@ -45,7 +45,7 @@ class ProjectCreatedEvent(
     override val clientAddress: String
 ) : RepoEvent(), AuditableEvent {
 
-    override val eventType = EventType.CREATED
+    override val type = EventType.CREATED
 
     override val repoName = StringPool.EMPTY
 

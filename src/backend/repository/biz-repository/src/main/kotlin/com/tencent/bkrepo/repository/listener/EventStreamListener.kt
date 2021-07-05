@@ -32,16 +32,19 @@
 package com.tencent.bkrepo.repository.listener
 
 import com.tencent.bkrepo.common.artifact.event.ArtifactEvent
+import org.springframework.cloud.stream.function.StreamBridge
+import org.springframework.context.annotation.Bean
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import java.util.function.Consumer
 
 /**
  * 用于将事件发送到消息流的监听器
  */
 @Component
 class EventStreamListener(
-//    private val streamBridge: StreamBridge
+    private val bridge: StreamBridge
 ) {
 
     /**
@@ -50,7 +53,17 @@ class EventStreamListener(
     @Async
     @EventListener(ArtifactEvent::class)
     fun handle(event: ArtifactEvent) {
-        // TODO
-//        streamBridge.send("artifact-event-in-0", event);
+        println("send event: $event")
+        bridge.send("artifactEvent-out-0", event)
     }
+
+    @Bean
+    fun artifactEvent(): Consumer<ArtifactEvent> {
+        return Consumer {
+            println("receive event: ${it.eventType}")
+            println("receive event: ${it.resourceType}")
+            println("receive event: ${it.resourceKey}")
+        }
+    }
+
 }
