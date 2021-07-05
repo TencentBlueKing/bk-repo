@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.stream.binder.file
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.RandomAccessFile
+import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 
 internal object StreamFileUtils {
@@ -38,11 +39,7 @@ internal object StreamFileUtils {
 
     fun getDestinationFile(folder: String, destination: String): String {
         val fileName = destination.toLowerCase() + ".stream"
-        val folderName = folder.trimEnd(File.pathSeparatorChar)
-        if (folderName.isNotBlank()) {
-            return "$folderName${File.pathSeparator}$fileName"
-        }
-        return fileName
+        return Paths.get(folder, fileName).toString()
     }
 
     fun truncateFile(file: String) {

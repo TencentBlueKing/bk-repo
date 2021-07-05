@@ -33,51 +33,18 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.integration.handler.AbstractMessageHandler
 import org.springframework.messaging.Message
 import org.springframework.util.Base64Utils
-import java.io.File
-import java.io.FileNotFoundException
-import java.io.RandomAccessFile
-import java.nio.channels.FileLock
-import java.time.Duration
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption.APPEND
+import java.nio.file.StandardOpenOption.CREATE
+
 
 class FileMessageHandler(
     fileBinderProperties: FileBinderProperties,
     destination: ProducerDestination
 ) : AbstractMessageHandler() {
 
-    private val tryLockTimeout = Duration.ofSeconds(10).toMillis()
     private val file = StreamFileUtils.getDestinationFile(fileBinderProperties.path, destination.name)
-    private val accessSync = Any()
-    private var access: RandomAccessFile? = null
-
-    private fun getAccessFile(): RandomAccessFile? {
-        if (access == null) {
-            synchronized(accessSync) {
-                if (File(file).exists()) {
-                    try {
-                        access = RandomAccessFile(file, "rw").apply {
-                            this.seek(this.length())
-                        }
-                    } catch (ignored: FileNotFoundException) {
-
-                    }
-                }
-            }
-        }
-        return access
-    }
-
-    private fun tryLockWithTimeout(file: RandomAccessFile): FileLock? {
-        val startTime = System.currentTimeMillis()
-        var lock: FileLock? = file.channel.tryLock()
-        while (lock == null && System.currentTimeMillis() - startTime < tryLockTimeout) {
-            Thread.sleep(1000)
-            lock = file.channel.tryLock(0L, Long.MAX_VALUE, true)
-        }
-        if (lock == null) {
-            log.warn("Wait stream file lock more than ${tryLockTimeout / 1000} seconds, message skipped")
-        }
-        return lock
-    }
 
     override fun handleMessageInternal(message: Message<*>) {
         if (message.payload !is ByteArray) {
@@ -85,16 +52,8 @@ class FileMessageHandler(
             return
         }
         val bytes = message.payload as ByteArray
-        getAccessFile()?.let {
-            writePayload(it, bytes)
-        }
-    }
-
-    private fun writePayload(file: RandomAccessFile, payload: ByteArray) {
-        tryLockWithTimeout(file)?.use {
-            val content = (Base64Utils.encodeToString(payload) + System.lineSeparator())
-            file.writeBytes(content)
-        }
+        val content = (Base64Utils.encodeToString(bytes) + System.lineSeparator()).toByteArray()
+        Files.write(Paths.get(file), content, CREATE, APPEND)
     }
 
     companion object {
