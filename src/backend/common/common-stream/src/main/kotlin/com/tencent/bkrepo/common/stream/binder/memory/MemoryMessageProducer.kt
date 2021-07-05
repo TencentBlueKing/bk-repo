@@ -25,25 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.binder.memory.config
+package com.tencent.bkrepo.common.stream.binder.memory
 
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageProvisioning
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.binder.Binder
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.stream.binder.memory.queue.MemoryListenerContainer
+import org.springframework.cloud.stream.provisioning.ConsumerDestination
+import org.springframework.integration.endpoint.MessageProducerSupport
+import org.springframework.messaging.Message
+import java.util.*
+import java.util.function.Consumer
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(MemoryBinderProperties::class)
-class MemoryBinderAutoConfiguration {
+/**
+ * Memory integration endpoint
+ */
+class MemoryMessageProducer(
+    private val destination: ConsumerDestination
+) : MessageProducerSupport(), Consumer<Message<*>> {
 
-    @Bean
-    @ConditionalOnMissingBean
-    fun memoryMessageChannelBinder(
-        configurationProperties: MemoryBinderProperties
-    ): MemoryMessageChannelBinder {
-        return MemoryMessageChannelBinder(configurationProperties, MemoryMessageProvisioning())
+    private val id = UUID.randomUUID()
+
+    override fun accept(t: Message<*>) {
+        this.sendMessage(t)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if(other == null || MemoryMessageProducer::class.java != other::class.java){
+            return false
+        }
+        return this.id == (other as MemoryMessageProducer).id
+    }
+
+    override fun doStart() {
+        MemoryListenerContainer.registerListener(destination.name, this)
+    }
+
+    override fun doStop() {
+        MemoryListenerContainer.unregisterListener(destination.name)
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
     }
 }

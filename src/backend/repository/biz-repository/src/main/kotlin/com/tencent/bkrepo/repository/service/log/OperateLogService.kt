@@ -25,25 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.binder.memory.config
+package com.tencent.bkrepo.repository.service.log
 
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageProvisioning
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.binder.Binder
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(MemoryBinderProperties::class)
-class MemoryBinderAutoConfiguration {
+interface OperateLogService {
 
-    @Bean
-    @ConditionalOnMissingBean
-    fun memoryMessageChannelBinder(
-        configurationProperties: MemoryBinderProperties
-    ): MemoryMessageChannelBinder {
-        return MemoryMessageChannelBinder(configurationProperties, MemoryMessageProvisioning())
-    }
+    /**
+     * 异步保存事件
+     * @param event 事件
+     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
+     */
+    fun saveEventAsync(event: ArtifactEvent, address: String)
 }

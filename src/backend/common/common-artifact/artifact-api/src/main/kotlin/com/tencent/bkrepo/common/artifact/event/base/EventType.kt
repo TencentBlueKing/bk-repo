@@ -29,21 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.artifact.event.base
 
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+/**
+ * 事件类型
+ */
+enum class EventType {
+    // PROJECT
+    PROJECT_CREATED,
 
-@Document("artifact_oplog")
-data class TOperateLog(
-    var id: String? = null,
-    var createdDate: LocalDateTime = LocalDateTime.now(),
-    var type: EventType,
-    var projectId: String?,
-    var repoName: String?,
-    var resourceKey: String,
-    var userId: String,
-    var clientAddress: String,
-    var description: Map<String, Any>
-)
+    // REPOSITORY
+    REPO_CREATED,
+    REPO_UPDATED,
+    REPO_DELETED,
+    
+    // NODE
+    NODE_CREATED,
+    NODE_RENAMED,
+    NODE_MOVED,
+    NODE_COPIED,
+    NODE_DELETED,
+
+    // METADATA
+    METADATA_DELETED,
+    METADATA_SAVED
+
+    // PACKAGE
+}

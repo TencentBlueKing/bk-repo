@@ -25,25 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.binder.memory.config
+package com.tencent.bkrepo.repository.service.log.impl
 
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageProvisioning
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.binder.Binder
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
+import com.tencent.bkrepo.repository.model.TOperateLog
+import com.tencent.bkrepo.repository.service.log.OperateLogService
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Service
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(MemoryBinderProperties::class)
-class MemoryBinderAutoConfiguration {
+/**
+ * OperateLogService 实现类
+ */
+@Service
+class OperateLogServiceImpl(
+    private val operateLogRepository: OperateLogRepository
+) : OperateLogService {
 
-    @Bean
-    @ConditionalOnMissingBean
-    fun memoryMessageChannelBinder(
-        configurationProperties: MemoryBinderProperties
-    ): MemoryMessageChannelBinder {
-        return MemoryMessageChannelBinder(configurationProperties, MemoryMessageProvisioning())
+    @Async
+    override fun saveEventAsync(event: ArtifactEvent, address: String) {
+        val log = TOperateLog(
+            type = event.type,
+            resourceKey = event.resourceKey,
+            projectId = event.projectId,
+            repoName = event.repoName,
+            description = event.data,
+            userId = event.userId,
+            clientAddress = address
+        )
+        operateLogRepository.save(log)
     }
 }

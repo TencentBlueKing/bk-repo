@@ -25,25 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.binder.memory.config
+package com.tencent.bkrepo.common.artifact.event.repo
 
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageProvisioning
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.binder.Binder
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(MemoryBinderProperties::class)
-class MemoryBinderAutoConfiguration {
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun memoryMessageChannelBinder(
-        configurationProperties: MemoryBinderProperties
-    ): MemoryMessageChannelBinder {
-        return MemoryMessageChannelBinder(configurationProperties, MemoryMessageProvisioning())
-    }
-}
+/**
+ * 项目更新事件
+ */
+data class RepoUpdatedEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val userId: String
+) : ArtifactEvent(
+    type = EventType.REPO_UPDATED,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = repoName,
+    userId = userId
+)

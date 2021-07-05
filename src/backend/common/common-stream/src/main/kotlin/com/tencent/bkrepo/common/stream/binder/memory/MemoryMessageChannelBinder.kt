@@ -39,19 +39,18 @@ import org.springframework.messaging.MessageHandler
 
 class MemoryMessageChannelBinder(
     private val configurationProperties: MemoryBinderProperties,
-    provisioningProvider: MemoryProvisioningProvider
-) : AbstractMessageChannelBinder<
-        ConsumerProperties,
-        ProducerProperties,
-        MemoryProvisioningProvider
-        >(arrayOf(), provisioningProvider) {
+    messageProvisioning: MemoryMessageProvisioning
+) : AbstractMessageChannelBinder<ConsumerProperties, ProducerProperties, MemoryMessageProvisioning>(
+    arrayOf(),
+    messageProvisioning
+) {
 
     override fun createConsumerEndpoint(
         destination: ConsumerDestination,
         group: String?,
         properties: ConsumerProperties?
     ): MessageProducer {
-        return MemoryIntegrationEndpoint(destination)
+        return MemoryMessageProducer(destination)
     }
 
     override fun createProducerMessageHandler(

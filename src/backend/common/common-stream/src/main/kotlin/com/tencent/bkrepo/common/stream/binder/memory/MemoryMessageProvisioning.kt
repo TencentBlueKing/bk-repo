@@ -25,25 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.stream.binder.memory.config
+package com.tencent.bkrepo.common.stream.binder.memory
 
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
-import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageProvisioning
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.binder.Binder
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
+import org.springframework.cloud.stream.binder.ConsumerProperties
+import org.springframework.cloud.stream.binder.ProducerProperties
+import org.springframework.cloud.stream.provisioning.ConsumerDestination
+import org.springframework.cloud.stream.provisioning.ProducerDestination
+import org.springframework.cloud.stream.provisioning.ProvisioningProvider
 
-@Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(MemoryBinderProperties::class)
-class MemoryBinderAutoConfiguration {
+class MemoryMessageProvisioning : ProvisioningProvider<ConsumerProperties, ProducerProperties> {
 
-    @Bean
-    @ConditionalOnMissingBean
-    fun memoryMessageChannelBinder(
-        configurationProperties: MemoryBinderProperties
-    ): MemoryMessageChannelBinder {
-        return MemoryMessageChannelBinder(configurationProperties, MemoryMessageProvisioning())
+    override fun provisionProducerDestination(
+        name: String,
+        properties: ProducerProperties
+    ): ProducerDestination = MemoryDestination(name)
+
+    override fun provisionConsumerDestination(
+        name: String,
+        group: String?,
+        properties: ConsumerProperties
+    ): ConsumerDestination = MemoryDestination(name)
+
+    private class MemoryDestination(
+        private val destination: String
+    ) : ProducerDestination, ConsumerDestination {
+
+        override fun getName() = destination.trim()
+
+        override fun getNameForPartition(partition: Int): String {
+            throw UnsupportedOperationException("Partitioning is not implemented for memory messaging.")
+        }
     }
 }

@@ -31,11 +31,12 @@
 
 package com.tencent.bkrepo.repository.listener
 
-import com.tencent.bkrepo.common.artifact.event.AuditableEvent
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
 import com.tencent.bkrepo.repository.model.TOperateLog
+import com.tencent.bkrepo.repository.service.log.OperateLogService
 import org.springframework.context.event.EventListener
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 /**
@@ -43,25 +44,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EventAuditListener(
-    private val operateLogRepository: OperateLogRepository
+    private val operateLogService: OperateLogService
 ) {
 
     /**
      * 将需要审计记录的事件持久化
      */
-    @Async
-    @EventListener(AuditableEvent::class)
-    fun handle(event: AuditableEvent) {
-        val log = TOperateLog(
-            resourceType = event.resourceType,
-            resourceKey = event.resourceKey,
-            projectId = event.projectId,
-            repoName = event.repoName,
-            operateType = event.eventType,
-            description = event.data,
-            userId = event.userId,
-            clientAddress = event.clientAddress
-        )
-        operateLogRepository.save(log)
+    @EventListener(ArtifactEvent::class)
+    fun handle(event: ArtifactEvent) {
+        operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
     }
 }

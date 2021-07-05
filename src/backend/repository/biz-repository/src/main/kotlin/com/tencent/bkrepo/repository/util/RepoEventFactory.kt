@@ -1,10 +1,8 @@
 package com.tencent.bkrepo.repository.util
 
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.event.repo.RepoCreatedEvent
-import com.tencent.bkrepo.repository.event.repo.RepoDeletedEvent
-import com.tencent.bkrepo.repository.event.repo.RepoUpdatedEvent
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent
+import com.tencent.bkrepo.common.artifact.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
@@ -22,8 +20,7 @@ object RepoEventFactory {
             return RepoCreatedEvent(
                 projectId = projectId,
                 repoName = name,
-                userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress()
+                userId = operator
             )
         }
     }
@@ -36,8 +33,7 @@ object RepoEventFactory {
             return RepoUpdatedEvent(
                 projectId = projectId,
                 repoName = name,
-                userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress()
+                userId = operator
             )
         }
     }
@@ -50,8 +46,7 @@ object RepoEventFactory {
             return RepoDeletedEvent(
                 projectId = projectId,
                 repoName = name,
-                userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress()
+                userId = operator
             )
         }
     }

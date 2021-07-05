@@ -28,6 +28,7 @@
 dependencies {
     api(project(":common:common-artifact:artifact-api"))
     api(project(":repository:api-repository"))
+    api("commons-io:commons-io")
     api("org.springframework.cloud:spring-cloud-stream")
     api("org.springframework.cloud:spring-cloud-stream-binder-kafka")
 }

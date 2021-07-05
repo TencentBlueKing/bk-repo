@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.repository.listener
 
-import com.tencent.bkrepo.common.artifact.event.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import org.springframework.cloud.stream.function.StreamBridge
 import org.springframework.context.annotation.Bean
 import org.springframework.context.event.EventListener
@@ -53,17 +53,18 @@ class EventStreamListener(
     @Async
     @EventListener(ArtifactEvent::class)
     fun handle(event: ArtifactEvent) {
-        println("send event: $event")
-        bridge.send("artifactEvent-out-0", event)
+        bridge.send(BINDING_OUT_NAME, event)
     }
 
     @Bean
     fun artifactEvent(): Consumer<ArtifactEvent> {
         return Consumer {
-            println("receive event: ${it.eventType}")
-            println("receive event: ${it.resourceType}")
-            println("receive event: ${it.resourceKey}")
+            println("Receive event: $it")
         }
+    }
+
+    companion object {
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
 
 }

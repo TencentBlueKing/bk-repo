@@ -1,13 +1,13 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.event.metadata.MetadataDeletedEvent
-import com.tencent.bkrepo.repository.event.metadata.MetadataSavedEvent
-import com.tencent.bkrepo.repository.event.node.NodeCopiedEvent
-import com.tencent.bkrepo.repository.event.node.NodeCreatedEvent
-import com.tencent.bkrepo.repository.event.node.NodeDeletedEvent
-import com.tencent.bkrepo.repository.event.node.NodeMovedEvent
-import com.tencent.bkrepo.repository.event.node.NodeRenamedEvent
+import com.tencent.bkrepo.common.artifact.event.metadata.MetadataDeletedEvent
+import com.tencent.bkrepo.common.artifact.event.metadata.MetadataSavedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeCopiedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeDeletedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeMovedEvent
+import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -28,8 +28,7 @@ object NodeEventFactory {
                 projectId = projectId,
                 repoName = repoName,
                 resourceKey = fullPath,
-                userId = node.createdBy,
-                clientAddress = HttpContextHolder.getClientAddress()
+                userId = node.createdBy
             )
         }
     }
@@ -47,8 +46,7 @@ object NodeEventFactory {
             projectId = projectId,
             repoName = repoName,
             resourceKey = fullPath,
-            userId = userId,
-            clientAddress = HttpContextHolder.getClientAddress()
+            userId = userId
         )
     }
 
@@ -62,7 +60,6 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress(),
                 newFullPath = newFullPath
             )
         }
@@ -78,7 +75,6 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress(),
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
                 dstFullPath = destFullPath
@@ -96,7 +92,6 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress(),
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
                 dstFullPath = destFullPath
@@ -114,7 +109,6 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress(),
                 metadata = metadata.orEmpty()
             )
         }
@@ -130,7 +124,6 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                clientAddress = HttpContextHolder.getClientAddress(),
                 keys = keyList
             )
         }
