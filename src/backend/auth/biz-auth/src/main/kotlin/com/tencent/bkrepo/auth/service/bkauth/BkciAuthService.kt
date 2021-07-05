@@ -58,7 +58,7 @@ class BkciAuthService @Autowired constructor(
 
     private val resourcePermissionCache = CacheBuilder.newBuilder()
         .maximumSize(20000)
-        .expireAfterWrite(40, TimeUnit.SECONDS)
+        .expireAfterWrite(60, TimeUnit.SECONDS)
         .build<String, Boolean>()
 
     fun isProjectMember(user: String, projectCode: String): Boolean {
@@ -82,7 +82,7 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.error("validateProjectUsers error: [$exception]")
+            logger.error("validateProjectUsers error:", exception)
             false
         }
     }
@@ -115,7 +115,7 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.error("validateUserResourcePermission error: [$exception]")
+            logger.error("validateUserResourcePermission error:", exception)
             false
         }
     }
@@ -139,7 +139,7 @@ class BkciAuthService @Autowired constructor(
             logger.debug("getUserResourceByPermission result : [${apiResponse.content}]")
             return responseObject.data
         } catch (exception: Exception) {
-            logger.error("getUserResourceByPermission error: [$exception]")
+            logger.error("getUserResourceByPermission error: ", exception)
             emptyList()
         }
     }
