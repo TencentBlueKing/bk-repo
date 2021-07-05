@@ -45,7 +45,7 @@ class ReplicaRecordServiceImpl(
         tReplicaTask.lastExecutionTime = LocalDateTime.now()
         if (isCronJob(tReplicaTask)) {
             tReplicaTask.nextExecutionTime =
-                CronUtils.getNextTriggerTime(key, tReplicaTask.setting.executionPlan.cronExpression!!)
+                CronUtils.getNextTriggerTime(tReplicaTask.setting.executionPlan.cronExpression.orEmpty())
         }
         tReplicaTask.lastExecutionStatus = ExecutionStatus.RUNNING
         replicaTaskDao.save(tReplicaTask)

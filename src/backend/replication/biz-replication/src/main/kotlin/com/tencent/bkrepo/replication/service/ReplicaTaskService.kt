@@ -109,4 +109,9 @@ interface ReplicaTaskService {
      * 更新同步任务
      */
     fun update(request: ReplicaTaskUpdateRequest)
+
+    /**
+     * 手动执行任务
+     */
+    fun execute(key: String)
 }

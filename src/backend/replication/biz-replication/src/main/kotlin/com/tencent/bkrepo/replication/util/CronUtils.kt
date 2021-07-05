@@ -31,18 +31,12 @@
 
 package com.tencent.bkrepo.replication.util
 
-import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import org.quartz.CronExpression
-import org.quartz.CronScheduleBuilder
-import org.quartz.TriggerBuilder
-import java.text.SimpleDateFormat
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
 
 object CronUtils {
-
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
 
     /**
      * 判断表达式是否有效
@@ -51,30 +45,13 @@ object CronUtils {
         return CronExpression.isValidExpression(cronExpression)
     }
 
-    // 上次执行时间
-    fun getLastTriggerTime(id: String, cron: String): String? {
-        if (!CronExpression.isValidExpression(cron)) {
-            return null
-        }
-        val trigger = TriggerBuilder.newTrigger().withIdentity(id, ReplicaTaskScheduler.REPLICA_JOB_GROUP)
-            .withSchedule(CronScheduleBuilder.cronSchedule(cron)).build()
-        val time0: Date = trigger.startTime
-        val time1: Date = trigger.getFireTimeAfter(time0)
-        val time2: Date = trigger.getFireTimeAfter(time1)
-        val time3: Date = trigger.getFireTimeAfter(time2)
-        val l = time1.time - (time3.time - time2.time)
-        return dateFormat.format(Date(l))
-    }
-
     // 获取下次执行时间
-    fun getNextTriggerTime(id: String, cron: String): LocalDateTime? {
-        if (!CronExpression.isValidExpression(cron)) {
+    fun getNextTriggerTime(cron: String): LocalDateTime? {
+        if (!isValid(cron)) {
             return null
         }
-        val trigger = TriggerBuilder.newTrigger().withIdentity(id, ReplicaTaskScheduler.REPLICA_JOB_GROUP)
-            .withSchedule(CronScheduleBuilder.cronSchedule(cron)).build()
-        val time0 = trigger.startTime
-        val time1 = trigger.getFireTimeAfter(time0)
-        return time1.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+        val expression = CronExpression(cron)
+        val nextDate = expression.getNextValidTimeAfter(Date())
+        return nextDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
     }
 }

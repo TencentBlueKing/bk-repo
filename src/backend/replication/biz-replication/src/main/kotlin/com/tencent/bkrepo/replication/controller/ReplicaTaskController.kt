@@ -111,10 +111,17 @@ class ReplicaTaskController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("任务复制")
+    @ApiOperation("任务更新")
     @PostMapping("/update")
     fun update(@RequestBody request: ReplicaTaskUpdateRequest): Response<Void> {
         replicaTaskService.update(request)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("执行计划")
+    @PostMapping("/execute/{key}")
+    fun execute(@PathVariable key: String): Response<Void> {
+        replicaTaskService.execute(key)
         return ResponseBuilder.success()
     }
 }

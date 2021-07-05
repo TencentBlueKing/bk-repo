@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.dao.ReplicaObjectDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
+import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.message.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
@@ -23,7 +24,11 @@ import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
+import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
 import com.tencent.bkrepo.replication.repository.TaskRepository
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
+import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -32,6 +37,9 @@ import com.tencent.bkrepo.replication.util.TaskQueryHelper.buildListQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskObjectQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.realTimeTaskQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoScheduledTaskQuery
+import org.quartz.JobBuilder
+import org.quartz.JobKey
+import org.quartz.TriggerBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -43,7 +51,8 @@ class ReplicaTaskServiceImpl(
     private val replicaObjectDao: ReplicaObjectDao,
     private val replicaRecordService: ReplicaRecordService,
     private val clusterNodeService: ClusterNodeService,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    private val replicaTaskScheduler: ReplicaTaskScheduler
 ) : ReplicaTaskService {
     override fun getByTaskId(taskId: String): ReplicaTaskInfo? {
         return replicaTaskDao.findById(taskId)?.let { convert(it) }
@@ -161,10 +170,18 @@ class ReplicaTaskServiceImpl(
 
     private fun validateExecutionPlan(request: ReplicaTaskCreateRequest) {
         with(request) {
-            if (!setting.executionPlan.executeImmediately) {
-                setting.executionPlan.executeTime?.let {
-                    Preconditions.checkArgument(it.isAfter(LocalDateTime.now()), "executeTime")
-                } ?: run {
+            when (setting.executionStrategy) {
+                ExecutionStrategy.IMMEDIATELY -> {
+                    Preconditions.checkArgument(setting.executionPlan.executeImmediately, "executeImmediately")
+                }
+                ExecutionStrategy.SPECIFIED_TIME -> {
+                    val executeTime = setting.executionPlan.executeTime
+                    Preconditions.checkNotBlank(executeTime, "executeTime")
+                    executeTime?.let {
+                        Preconditions.checkArgument(it.isAfter(LocalDateTime.now()), "executeTime")
+                    }
+                }
+                ExecutionStrategy.CRON_EXPRESSION -> {
                     val cronExpression = setting.executionPlan.cronExpression
                     Preconditions.checkNotBlank(cronExpression, "cronExpression")
                     Preconditions.checkArgument(CronUtils.isValid(cronExpression.orEmpty()), "cronExpression")
@@ -310,6 +327,43 @@ class ReplicaTaskServiceImpl(
                 replicaTaskDao.save(task)
             } catch (exception: DuplicateKeyException) {
                 logger.warn("update task[$name] error: [${exception.message}]")
+            }
+        }
+    }
+
+    override fun execute(key: String) {
+        // 获取任务
+        val tReplicaTask = replicaTaskDao.findByKey(key)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
+        if (!tReplicaTask.enabled) {
+            throw ErrorCodeException(ReplicationMessageCode.TASK_ENABLED_FALSE)
+        } else if (tReplicaTask.status == ReplicationStatus.REPLICATING) {
+            throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
+        } else {
+            // 如果是cronJob，则等待加载job后触发执行
+            if (ExecutionStrategy.CRON_EXPRESSION == tReplicaTask.setting.executionStrategy) {
+                if (!replicaTaskScheduler.exist(tReplicaTask.id!!)) {
+                    // 提示用户等待几秒, 这里如果创建任务加载进去可能会和后面扫描任务之后添加job产生冲突
+                    throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, key)
+                }
+                replicaTaskScheduler.triggerJob(JobKey.jobKey(tReplicaTask.id!!, REPLICA_JOB_GROUP))
+            } else {
+                // 如果任务不存在，并且状态不为waiting状态，则不会被reloadTask加载，将其添加进调度器
+                if (tReplicaTask.status != ReplicationStatus.WAITING) {
+                    val jobDetail = JobBuilder.newJob(ScheduledReplicaJob::class.java)
+                        .withIdentity(tReplicaTask.id, REPLICA_JOB_GROUP)
+                        .usingJobData(JOB_DATA_TASK_KEY, tReplicaTask.key)
+                        .requestRecovery()
+                        .build()
+                    val trigger = TriggerBuilder.newTrigger()
+                        .withIdentity(tReplicaTask.id, REPLICA_JOB_GROUP)
+                        .startNow()
+                        .build()
+                    replicaTaskScheduler.scheduleJob(jobDetail, trigger)
+                } else {
+                    // 提示用户该任务未执行
+                    throw ErrorCodeException(ReplicationMessageCode.SCHEDULED_JOB_LOADING, key)
+                }
             }
         }
     }

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.schedule
 
 import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -114,17 +115,17 @@ class TaskReloadManager(
      * 根据任务信息创建job trigger
      */
     private fun createTrigger(task: ReplicaTaskInfo): Trigger {
-        with(task.setting.executionPlan) {
+        with(task.setting) {
             val builder = TriggerBuilder.newTrigger().withIdentity(task.id, REPLICA_JOB_GROUP)
-            when {
-                executeImmediately -> {
+            when (executionStrategy) {
+                ExecutionStrategy.IMMEDIATELY -> {
                     builder.startNow()
                 }
-                executeTime != null -> {
-                    builder.startAt(Date.from(executeTime!!.atZone(ZoneId.systemDefault()).toInstant()))
+                ExecutionStrategy.SPECIFIED_TIME -> {
+                    builder.startAt(Date.from(executionPlan.executeTime!!.atZone(ZoneId.systemDefault()).toInstant()))
                 }
-                else -> {
-                    builder.withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
+                ExecutionStrategy.CRON_EXPRESSION -> {
+                    builder.withSchedule(CronScheduleBuilder.cronSchedule(executionPlan.cronExpression))
                 }
             }
             return builder.build()
