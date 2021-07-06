@@ -91,8 +91,8 @@
             <bk-table-column :label="$t('operation')" width="170">
                 <template #default="{ row }">
                     <div class="flex-align-center">
-                        <!-- <i title="执行" class="mr10 devops-icon icon-play3 hover-btn" :class="{ 'disabled': row.lastExecutionStatus === 'RUNNING' }" @click.stop="executePlanHandler(row)"></i> -->
-                        <!-- <i title="编辑" class="mr10 devops-icon icon-edit hover-btn" @click.stop="editPlanHandler(row)"></i> -->
+                        <i title="执行" class="mr10 devops-icon icon-play3 hover-btn" :class="{ 'disabled': row.lastExecutionStatus === 'RUNNING' }" @click.stop="executePlanHandler(row)"></i>
+                        <i title="编辑" class="mr10 devops-icon icon-edit hover-btn" :class="{ 'disabled': Boolean(row.lastExecutionStatus) }" @click.stop="editPlanHandler(row)"></i>
                         <i title="复制" class="mr10 devops-icon icon-clipboard hover-btn" @click.stop="copyPlanHandler(row)"></i>
                         <i title="删除" class="mr10 devops-icon icon-delete hover-btn" @click.stop="deletePlanHandler(row)"></i>
                         <i title="详情" class="mr10 devops-icon icon-calendar hover-btn" @click.stop="showPlanLogHandler(row)"></i>
@@ -169,7 +169,6 @@
                 'getPlanList',
                 'changeEnabled',
                 'executePlan',
-                'checkUpdatePlan',
                 'deletePlan'
             ]),
             renderHeader (h, { column }) {
@@ -232,21 +231,13 @@
                     }
                 })
             },
-            editPlanHandler ({ key }) {
-                this.checkUpdatePlan({ key }).then(res => {
-                    if (res) {
-                        this.$router.push({
-                            name: 'editPlan',
-                            params: {
-                                ...this.$route.params,
-                                planId: key
-                            }
-                        })
-                    } else {
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: '当前计划已执行或正在执行，无法编辑'
-                        })
+            editPlanHandler ({ key, lastExecutionStatus }) {
+                if (lastExecutionStatus) return
+                this.$router.push({
+                    name: 'editPlan',
+                    params: {
+                        ...this.$route.params,
+                        planId: key
                     }
                 })
             },

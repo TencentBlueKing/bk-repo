@@ -50,7 +50,7 @@
                     </div>
                 </bk-form-item>
                 <bk-form-item label="同步类型" :required="true" property="replicaObjectType">
-                    <bk-radio-group v-model="planForm.replicaObjectType" class="replica-type-radio-group" @change="clearError">
+                    <bk-radio-group v-model="planForm.replicaObjectType" class="replica-type-radio-group" @change="changeReplicaObjectType">
                         <bk-radio-button v-for="type in replicaObjectTypeList" :key="type.value" :value="type.value" :disabled="disabled">
                             <div class="replica-type-radio">
                                 <label class="replica-type-label">{{ type.label }}</label>
@@ -129,7 +129,6 @@
         data () {
             return {
                 isLoading: false,
-                edit: false,
                 replicaObjectTypeList: [
                     { label: '仓库', value: 'REPOSITORY', tip: '同步多个仓库' },
                     { label: '制品', value: 'PACKAGE', tip: '同步同一仓库下多个包' },
@@ -205,32 +204,20 @@
                 return this.$route.meta.title
             },
             disabled () {
-                return this.routeName === 'planDetail' || !this.edit
+                return this.routeName === 'planDetail'
             }
         },
         created () {
             this.getRepoListAll({
                 projectId: this.projectId
             })
-            if (this.routeName !== 'createPlan') {
-                this.handlePlanDetail()
-                if (this.routeName === 'editPlan') {
-                    this.checkUpdatePlan({
-                        key: this.$route.params.planId
-                    }).then(res => {
-                        this.edit = res
-                    })
-                }
-            } else {
-                this.edit = true
-            }
+            this.routeName !== 'createPlan' && this.handlePlanDetail()
         },
         methods: {
             ...mapActions([
                 'getRepoListAll',
                 'createPlan',
                 'getPlanDetail',
-                'checkUpdatePlan',
                 'updatePlan'
             ]),
             handlePlanDetail () {
@@ -270,6 +257,10 @@
                 }).finally(() => {
                     this.isLoading = false
                 })
+            },
+            changeReplicaObjectType () {
+                this.replicaTaskObjects = []
+                this.clearError()
             },
             clearError () {
                 this.$refs.planForm.clearError()
@@ -312,7 +303,7 @@
                 }
                 const request = this.routeName === 'createPlan'
                     ? this.createPlan({ body })
-                    : this.updatePlan({ body: { ...body, taskKey: this.$route.params.planId } })
+                    : this.updatePlan({ body: { ...body, key: this.$route.params.planId } })
                 request.then(() => {
                     this.$bkMessage({
                         theme: 'success',
