@@ -25,7 +25,6 @@ import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
-import com.tencent.bkrepo.replication.repository.TaskRepository
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
@@ -51,7 +50,6 @@ class ReplicaTaskServiceImpl(
     private val replicaObjectDao: ReplicaObjectDao,
     private val replicaRecordService: ReplicaRecordService,
     private val clusterNodeService: ClusterNodeService,
-    private val taskRepository: TaskRepository,
     private val replicaTaskScheduler: ReplicaTaskScheduler
 ) : ReplicaTaskService {
     override fun getByTaskId(taskId: String): ReplicaTaskInfo? {
@@ -150,7 +148,7 @@ class ReplicaTaskServiceImpl(
     private fun validateRequest(request: ReplicaTaskCreateRequest) {
         with(request) {
             // 验证任务是否存在
-            taskRepository.findByName(name)?.let {
+            replicaTaskDao.findByName(name)?.let {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
             }
             Preconditions.checkNotBlank(name, this::name.name)
@@ -234,18 +232,18 @@ class ReplicaTaskServiceImpl(
     }
 
     override fun toggleStatus(key: String) {
-        val task = taskRepository.findByKey(key)
+        val task = replicaTaskDao.findByKey(key)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
         task.enabled = !task.enabled
         task.lastModifiedBy = SecurityUtils.getUserId()
         task.lastModifiedDate = LocalDateTime.now()
-        taskRepository.save(task)
+        replicaTaskDao.save(task)
     }
 
     override fun copy(request: ReplicaTaskCopyRequest) {
         with(request) {
             // 校验同名任务冲突
-            taskRepository.findByName(name)?.let {
+            replicaTaskDao.findByName(name)?.let {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, name)
             }
             // 获取任务

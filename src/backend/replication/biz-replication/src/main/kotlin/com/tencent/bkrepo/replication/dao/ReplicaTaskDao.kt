@@ -51,6 +51,13 @@ class ReplicaTaskDao : SimpleMongoDao<TReplicaTask>() {
     }
 
     /**
+     * 根据[name]查找任务
+     */
+    fun findByName(name: String): TReplicaTask? {
+        return this.findOne(Query(TReplicaTask::name.isEqualTo(name)))
+    }
+
+    /**
      * 根据[key]删除任务
      */
     fun deleteByKey(key: String) {

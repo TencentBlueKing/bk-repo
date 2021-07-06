@@ -21,12 +21,10 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
-import com.tencent.bkrepo.replication.repository.ClusterNodeRepository
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.ClusterQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -34,12 +32,11 @@ import java.util.regex.Pattern
 
 @Service
 class ClusterNodeServiceImpl(
-    private val clusterNodeDao: ClusterNodeDao,
-    private val clusterNodeRepository: ClusterNodeRepository
+    private val clusterNodeDao: ClusterNodeDao
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
-        return convert(clusterNodeRepository.findByIdOrNull(id))
+        return convert(clusterNodeDao.findById(id))
     }
 
     override fun getClusterNameById(id: String): ClusterNodeName {
@@ -120,7 +117,7 @@ class ClusterNodeServiceImpl(
 
     override fun deleteById(id: String) {
         getByClusterId(id)?.let {
-            clusterNodeRepository.deleteById(id)
+            clusterNodeDao.removeById(id)
         } ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, id)
         logger.info("delete cluster node for id [$id] success.")
     }
