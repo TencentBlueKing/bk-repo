@@ -82,11 +82,17 @@ class ReplicaTaskServiceImpl(
         return replicaTaskDao.find(query).map { convert(it)!! }
     }
 
-    override fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskInfo> {
+    override fun listRealTimeTasks(projectId: String, repoName: String): List<ReplicaTaskDetail> {
         val objectQuery = taskObjectQuery(projectId, repoName)
-        val taskKeyList = replicaObjectDao.find(objectQuery).map { it.taskKey }
+        val replicaObjectList = replicaObjectDao.find(objectQuery)
+        if (replicaObjectList.isEmpty()) return emptyList()
+        val taskKeyList = replicaObjectList.map { it.taskKey }
         val query = realTimeTaskQuery(taskKeyList)
-        return replicaTaskDao.find(query).map { convert(it)!! }
+        val replicaTaskInfoList = replicaTaskDao.find(query).map { convert(it)!! }
+        return replicaTaskInfoList.map { info ->
+            val detailList = replicaObjectList.filter { it.taskKey == info.key }.map { convert(it)!! }
+            ReplicaTaskDetail(info, detailList)
+        }
     }
 
     override fun create(request: ReplicaTaskCreateRequest): ReplicaTaskInfo {
