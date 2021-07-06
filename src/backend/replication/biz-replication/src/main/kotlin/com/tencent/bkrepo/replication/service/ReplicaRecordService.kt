@@ -146,4 +146,11 @@ interface ReplicaRecordService {
      * @param option 列表选项
      */
     fun listRecordDetailPage(recordId: String, option: ReplicaRecordDetailListOption): Page<ReplicaRecordDetail>
+
+    /**
+     * 创建或查询日志记录
+     * 用于实时计划，只有一条日志记录
+     * @param key 任务key
+     */
+    fun findOrCreateLatestRecord(key: String): ReplicaRecordInfo
 }

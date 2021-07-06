@@ -204,6 +204,12 @@ class ReplicaRecordServiceImpl(
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
+    override fun findOrCreateLatestRecord(key: String): ReplicaRecordInfo {
+        val replicaRecordList = replicaRecordDao.listByTaskKey(key).map { convert(it) }
+        if (replicaRecordList.isNotEmpty()) return replicaRecordList.first()!!
+        return initialRecord(key)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaRecordServiceImpl::class.java)
 
