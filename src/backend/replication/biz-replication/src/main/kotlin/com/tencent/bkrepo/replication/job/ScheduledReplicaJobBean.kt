@@ -77,10 +77,7 @@ class ScheduledReplicaJobBean(
      */
     fun execute(taskId: String) {
         logger.info("Start to execute replication task[$taskId].")
-        val taskInfo = replicaTaskService.getByTaskId(taskId)
-//        Thread.sleep(13 * 1000)
-        logger.info("Replica task[$taskId], name [${taskInfo?.name}] finished")
-        /*val task = findAndCheckTask(taskId) ?: return
+        val task = findAndCheckTask(taskId) ?: return
         var status = ExecutionStatus.SUCCESS
         var errorReason: String? = null
         var recordId: String? = null
@@ -104,7 +101,7 @@ class ScheduledReplicaJobBean(
             // 保存结果
             replicaRecordService.completeRecord(recordId!!, status, errorReason)
             logger.info("Replica task[$taskId], record[$recordId] finished")
-        }*/
+        }
     }
 
     /**
