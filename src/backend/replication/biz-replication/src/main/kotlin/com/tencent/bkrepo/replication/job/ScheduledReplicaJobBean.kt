@@ -51,6 +51,7 @@ import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -68,7 +69,7 @@ class ScheduledReplicaJobBean(
     private val replicaTaskScheduler: ReplicaTaskScheduler,
     private val localDataManager: LocalDataManager
 ) {
-    private val threadPoolExecutor: ThreadPoolExecutor = buildThreadPoolExecutor()
+    private val threadPoolExecutor: ThreadPoolExecutor = ReplicaThreadPoolExecutor.instance
 
     /**
      * 执行同步任务
@@ -172,17 +173,6 @@ class ScheduledReplicaJobBean(
             return null
         }
         return task
-    }
-
-    /**
-     * 创建线程池
-     */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
-        return ThreadPoolExecutor(
-            100, 500, 30, TimeUnit.SECONDS,
-            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.AbortPolicy()
-        )
     }
 
     companion object {
