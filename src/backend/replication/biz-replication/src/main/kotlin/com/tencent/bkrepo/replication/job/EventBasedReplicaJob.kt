@@ -25,53 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.job
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.replication.job.consumer.ArtifactEventConsumer
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.context.annotation.Bean
+import org.springframework.stereotype.Component
+import java.util.function.Consumer
 
 /**
- * artifact抽象事件
+ * 基于事件消息的实时同步job
  */
-open class ArtifactEvent(
-    /**
-     * 事件类型
-     */
-    open val type: EventType,
-    /**
-     * 项目id
-     */
-    open val projectId: String,
-    /**
-     * 仓库名称
-     */
-    open val repoName: String,
-    /**
-     * 事件资源key，具有唯一性
-     * ex:
-     * 1. 节点类型对应fullPath
-     * 2. 仓库类型对应仓库名称
-     * 3. 包类型对应包名称
-     */
-    open val resourceKey: String,
-    /**
-     * 操作用户
-     */
-    open val userId: String,
-    /**
-     * 附属数据
-     */
-    open val data: Map<String, Any> = mapOf()
-) {
-    override fun toString(): String {
-        return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +
-                "resourceKey='$resourceKey', userId='$userId', data=$data)"
-    }
+@Component
+class EventBasedReplicaJob {
 
     /**
-     * 获取完整的资源key
+     * 消息事件消费者
+     * 对应binding name为artifactEvent-in-0
      */
-    @JsonIgnore
-    fun getFullResourceKey(): String {
-        return "$projectId/$repoName/$resourceKey"
+    @Bean
+    fun artifactEvent(
+        replicaTaskService: ReplicaTaskService,
+        eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
+    ): Consumer<ArtifactEvent> {
+        return ArtifactEventConsumer(replicaTaskService, eventBasedReplicaJobExecutor)
     }
 }

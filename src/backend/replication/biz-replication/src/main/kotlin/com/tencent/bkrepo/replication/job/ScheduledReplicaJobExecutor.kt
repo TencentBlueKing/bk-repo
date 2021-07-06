@@ -31,18 +31,8 @@
 
 package com.tencent.bkrepo.replication.job
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.job.replicator.ClusterReplicator
-import com.tencent.bkrepo.replication.job.replicator.EdgeNodeReplicator
-import com.tencent.bkrepo.replication.job.replicator.Replicator
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeType
-import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -50,11 +40,6 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.Callable
-import java.util.concurrent.Future
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 /**
  * 调度类型同步任务逻辑实现类
@@ -62,14 +47,13 @@ import java.util.concurrent.TimeUnit
  */
 @Suppress("TooGenericExceptionCaught")
 @Component
-class ScheduledReplicaJobBean(
-    private val clusterNodeService: ClusterNodeService,
+class ScheduledReplicaJobExecutor(
+    clusterNodeService: ClusterNodeService,
+    localDataManager: LocalDataManager,
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
-    private val replicaTaskScheduler: ReplicaTaskScheduler,
-    private val localDataManager: LocalDataManager
-) {
-    private val threadPoolExecutor: ThreadPoolExecutor = ReplicaThreadPoolExecutor.instance
+    private val replicaTaskScheduler: ReplicaTaskScheduler
+) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager) {
 
     /**
      * 执行同步任务
@@ -106,52 +90,6 @@ class ScheduledReplicaJobBean(
     }
 
     /**
-     * 提交任务到线程池执行
-     * @param taskDetail 任务详情
-     * @param taskRecord 执行记录
-     * @param clusterNodeName 远程集群
-     */
-    private fun submit(
-        taskDetail: ReplicaTaskDetail,
-        taskRecord: ReplicaRecordInfo,
-        clusterNodeName: ClusterNodeName
-    ): Future<ExecutionResult> {
-        return threadPoolExecutor.submit<ExecutionResult> {
-            try {
-                val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
-                require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
-                var status = ExecutionStatus.SUCCESS
-                taskDetail.objects.map { taskObject ->
-                    val localRepo = localDataManager.findRepoByName(
-                        taskDetail.task.projectId,
-                        taskObject.localRepoName,
-                        taskObject.repoType.toString()
-                    )
-                    val context = ReplicaContext(taskDetail, taskObject, taskRecord, localRepo, clusterNode)
-                    chooseReplicator(context).replica(context)
-                    if (context.status == ExecutionStatus.FAILED) {
-                        status = context.status
-                    }
-                }
-                ExecutionResult(status)
-            } catch (exception: Throwable) {
-                ExecutionResult.fail(exception.message)
-            }
-        }
-    }
-
-    /**
-     * 根据context选择合适的数据同步类
-     */
-    private fun chooseReplicator(context: ReplicaContext): Replicator {
-        return when (context.remoteCluster.type) {
-            ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
-            ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
-            else -> throw UnsupportedOperationException()
-        }
-    }
-
-    /**
      * 查找并检查任务状态
      * @return 如果任务不存在或不能被执行，返回null，否则返回任务信息
      */
@@ -169,13 +107,13 @@ class ScheduledReplicaJobBean(
         }
         // 任务正在执行，跳过
         if (task.lastExecutionStatus == ExecutionStatus.RUNNING) {
-            logger.info("Task[$taskId] status is running, ignore executing.")
+            logger.warn("Task[$taskId] status is running, ignore executing.")
             return null
         }
         return task
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ScheduledReplicaJobBean::class.java)
+        private val logger = LoggerFactory.getLogger(ScheduledReplicaJobExecutor::class.java)
     }
 }

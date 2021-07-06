@@ -25,53 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.job.consumer
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.job.EventBasedReplicaJobExecutor
+import com.tencent.bkrepo.replication.job.replicator.Replicator
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.stereotype.Component
+import java.util.function.Consumer
 
 /**
- * artifact抽象事件
+ * 构件事件消费者，用于实时同步
  */
-open class ArtifactEvent(
-    /**
-     * 事件类型
-     */
-    open val type: EventType,
-    /**
-     * 项目id
-     */
-    open val projectId: String,
-    /**
-     * 仓库名称
-     */
-    open val repoName: String,
-    /**
-     * 事件资源key，具有唯一性
-     * ex:
-     * 1. 节点类型对应fullPath
-     * 2. 仓库类型对应仓库名称
-     * 3. 包类型对应包名称
-     */
-    open val resourceKey: String,
-    /**
-     * 操作用户
-     */
-    open val userId: String,
-    /**
-     * 附属数据
-     */
-    open val data: Map<String, Any> = mapOf()
-) {
-    override fun toString(): String {
-        return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +
-                "resourceKey='$resourceKey', userId='$userId', data=$data)"
-    }
+class ArtifactEventConsumer(
+    private val replicaTaskService: ReplicaTaskService,
+    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
+) : Consumer<ArtifactEvent> {
 
     /**
-     * 获取完整的资源key
+     * 允许接收的事件类型
      */
-    @JsonIgnore
-    fun getFullResourceKey(): String {
-        return "$projectId/$repoName/$resourceKey"
+    private val acceptTypes = setOf(
+        EventType.NODE_CREATED
+    )
+
+    override fun accept(event: ArtifactEvent) {
+        if (!acceptTypes.contains(event.type)) {
+            return
+        }
+        // 1. 查询相关任务
+        val tasks = replicaTaskService.listRealTimeTasks(event.projectId, event.repoName)
+        tasks.forEach {
+            eventBasedReplicaJobExecutor.execute(it, event)
+        }
     }
+
 }

@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
-import com.tencent.bkrepo.replication.job.ScheduledReplicaJobBean
+import com.tencent.bkrepo.replication.job.ScheduledReplicaJobExecutor
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
@@ -82,11 +82,11 @@ private class TaskReloadManagerTest {
     private lateinit var taskRepository: TaskRepository
 
     @MockBean
-    private lateinit var scheduledReplicaJobBean: ScheduledReplicaJobBean
+    private lateinit var scheduledReplicaJobExecutor: ScheduledReplicaJobExecutor
 
     @BeforeAll
     fun setUp() {
-        `when`(scheduledReplicaJobBean.execute(ArgumentMatchers.anyString())).then {
+        `when`(scheduledReplicaJobExecutor.execute(ArgumentMatchers.anyString())).then {
             println("job execute")
         }
     }
@@ -103,9 +103,9 @@ private class TaskReloadManagerTest {
             ReplicationStatus.WAITING,
             replicaTaskService.getByTaskKey(task.key).lastExecutionStatus
         )
-        verify(scheduledReplicaJobBean, times(0)).execute(task.id)
+        verify(scheduledReplicaJobExecutor, times(0)).execute(task.id)
         Thread.sleep(10 * 1000)
-        verify(scheduledReplicaJobBean, times(1)).execute(task.id)
+        verify(scheduledReplicaJobExecutor, times(1)).execute(task.id)
     }
 
     @Test
@@ -114,9 +114,9 @@ private class TaskReloadManagerTest {
         val executionPlan = ExecutionPlan(executeImmediately = false, executeTime = executeTime)
         val task = createTask(ReplicaType.SCHEDULED, executionPlan)
         Thread.sleep(9 * 1000)
-        verify(scheduledReplicaJobBean, times(0)).execute(task.id)
+        verify(scheduledReplicaJobExecutor, times(0)).execute(task.id)
         Thread.sleep(1 * 1000)
-        verify(scheduledReplicaJobBean, times(1)).execute(task.id)
+        verify(scheduledReplicaJobExecutor, times(1)).execute(task.id)
     }
 
     @Test
@@ -127,7 +127,7 @@ private class TaskReloadManagerTest {
         Thread.sleep(11 * 1000)
         replicaTaskService.deleteByTaskKey(task.key)
         Thread.sleep(11 * 1000)
-        verify(scheduledReplicaJobBean, times(0)).execute(task.id)
+        verify(scheduledReplicaJobExecutor, times(0)).execute(task.id)
     }
 
     @Test
@@ -136,7 +136,7 @@ private class TaskReloadManagerTest {
         val executionPlan = ExecutionPlan(executeImmediately = false, cronExpression = cronExpression)
         val task = createTask(ReplicaType.SCHEDULED, executionPlan)
         Thread.sleep(16 * 1000)
-        verify(scheduledReplicaJobBean, atLeast(5)).execute(task.id)
+        verify(scheduledReplicaJobExecutor, atLeast(5)).execute(task.id)
     }
 
     private fun createTask(type: ReplicaType, executionPlan: ExecutionPlan = ExecutionPlan()): ReplicaTaskInfo {

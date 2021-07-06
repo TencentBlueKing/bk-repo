@@ -25,47 +25,43 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.consumer
+package com.tencent.bkrepo.replication.job
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.replication.job.replicator.Replicator
-import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.util.function.Consumer
 
 /**
- * 构件事件消费者，用于实时同步
+ * 基于事件消息的实时同步逻辑实现类
  */
-@Component("artifactEvent")
-class ArtifactEventConsumer(
-    private val replicaTaskService: ReplicaTaskService
-): Consumer<ArtifactEvent> {
-
-    /**
-     * 允许接收的事件类型
-     */
-    private val acceptTypes = setOf(
-        EventType.NODE_CREATED
-    )
-
-    override fun accept(event: ArtifactEvent) {
-        if (!acceptTypes.contains(event.type)) {
-            return
-        }
-        // 1. 查询相关任务
-        val tasks = replicaTaskService.listRealTimeTasks(event.projectId, event.repoName)
-        tasks.forEach {
-            replica(it, event)
-        }
-    }
+@Suppress("TooGenericExceptionCaught")
+@Component
+class EventBasedReplicaJobExecutor(
+    clusterNodeService: ClusterNodeService,
+    localDataManager: LocalDataManager,
+    private val replicaRecordService: ReplicaRecordService
+) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager) {
 
     /**
      * 执行同步
      */
-    private fun replica(task: ReplicaTaskInfo, event: ArtifactEvent) {
-        // TODO
+    fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent) {
+        val task = taskDetail.task
+        val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
+        try {
+            task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
+            logger.info("Replica ${event.projectId}/${event.repoName} completed.")
+        } catch (exception: Exception) {
+            logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
+        }
     }
 
+    companion object {
+        private val logger = LoggerFactory.getLogger(EventBasedReplicaJobExecutor::class.java)
+    }
 }
