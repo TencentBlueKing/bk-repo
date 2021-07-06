@@ -496,3 +496,99 @@
     "traceId": null
   }
   ```
+
+## 更新同步任务
+
+- API: POST  /replication/api/task/update
+- API 名称: update_replication_task
+- 功能说明：
+	- 中文：更新集群同步任务
+	- English：update replication task
+- 请求体:
+
+  ```json
+  {
+    "key": "计划唯一key",
+    "name": "更新后的名称",
+    "localProjectId": "bkrepo",
+    "replicaObjectType": "REPOSITORY",
+    "replicaTaskObjects": [
+      {
+        "localRepoName": "maven-local",
+        "remoteProjectId": "bkrepo",
+        "remoteRepoName": "maven-local",
+        "repoType": "MAVEN",
+        "packageConstraints": [
+          {
+            "packageKey": "gav://com.alibaba:fastjson",
+            "versions": ["1.2.47","1.2.48"]
+          }
+        ],
+        "pathConstraints": []
+      }
+    ],
+    "remoteClusterIds": ["651095dfe0524ce9b3ab53d13532361c","329fbcda45944fb9ae5c2573acd7bd2a"],
+    "description": "test replica task"
+  }
+  ```
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |key|string|是|否|唯一key|replication task key|
+  |name|string|是|无|计划名称|replication name|
+  |localProjectId|string|是|无|本地项目ID|the local project Id|
+  |replicaObjectType|enum|是|无|[REPOSITORY,PACKAGE,PATH]|replication object type|
+  |replicaTaskObjects|object|是|无|同步对象信息|replication object info|
+  |remoteClusterIds|list|是|无|远程集成节点id|the remote cluster node ids|
+  |description|sting|否|无|描述|description|
+  
+- replicaTaskObjects对象说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |localRepoName|string|是|无|本地仓库名称|the local repoName|
+  |remoteProjectId|string|是|无|远程项目id|the remote project Id|
+  |remoteRepoName|string|是|无|远程仓库名称|the remote repoName|
+  |repoType|enum|是|无|[DOCKER,MAVEN,NPM, ...]|repository type|
+  |packageConstraints|list|否|无|包限制|package constraints|
+  |pathConstraints|list|否|无|路径限制|path constraints|
+  
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```
+
+## 手动执行同步任务
+
+- API: POST  /replication/api/task/execute/{key}
+- API 名称: execute_replication_task
+- 功能说明：
+	- 中文：手动执行集群同步任务
+	- English：execute replication task
+- 请求体:
+  此接口无请求体
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |key|string|是|否|唯一key|replication task key|
+  
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```
