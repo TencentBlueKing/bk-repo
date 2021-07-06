@@ -50,6 +50,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * 集群间数据同步类
+ * 独立集群 同步到 独立集群 的同步实现类
  */
 @Component
 class ClusterReplicator : ScheduledReplicator() {

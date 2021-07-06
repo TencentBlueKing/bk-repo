@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component
 
 /**
  * 边缘节点数据同步实现类
+ * 中心节点 同步到 边缘节点 的同步实现类
  */
 @Component
 class EdgeNodeReplicator : ScheduledReplicator() {
