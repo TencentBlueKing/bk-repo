@@ -35,7 +35,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -81,7 +81,7 @@ data class TReplicaTask(
     /**
      * 任务状态
      */
-    var status: ReplicationStatus,
+    var status: ReplicaStatus,
     /**
      * 任务描述
      */

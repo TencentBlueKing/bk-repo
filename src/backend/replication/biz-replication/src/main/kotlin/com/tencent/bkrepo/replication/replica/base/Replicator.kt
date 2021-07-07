@@ -25,33 +25,56 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.replica.base
+
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
 /**
- * 事件类型
+ * 同步器
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+interface Replicator {
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-    
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
+    /**
+     * 检查版本
+     */
+    fun checkVersion(context: ReplicaContext)
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
+    /**
+     * 同步项目
+     */
+    fun replicaProject(context: ReplicaContext)
 
-    // PACKAGE
+    /**
+     * 同步仓库
+     */
+    fun replicaRepo(context: ReplicaContext)
 
-    // VERSION
-    VERSION_CREATED
+    /**
+     * 同步包
+     */
+    fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary)
+
+    /**
+     * 同步包版本具体逻辑
+     * @return 是否执行了同步，如果远程存在相同版本，则返回false
+     */
+    fun replicaPackageVersion(
+        context: ReplicaContext,
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion
+    ): Boolean
+
+    /**
+     * 同步文件
+     * @return 是否执行了同步，如果远程存在相同文件，则返回false
+     */
+    fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean
+
+    /**
+     * 同步目录节点
+     * @return 是否执行了同步，如果远程存在相同目录，则返回false
+     */
+    fun replicaDir(context: ReplicaContext, node: NodeInfo)
 }

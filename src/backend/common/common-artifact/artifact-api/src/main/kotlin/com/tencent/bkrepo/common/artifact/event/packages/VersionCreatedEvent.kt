@@ -25,33 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.common.artifact.event.packages
+
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 
 /**
- * 事件类型
+ * 包版本创建事件
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
-
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-    
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED
-}
+class VersionCreatedEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val userId: String,
+    val packageKey: String,
+    val packageVersion: String
+) : ArtifactEvent(
+    type = EventType.VERSION_CREATED,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = "$packageKey-$packageVersion",
+    userId = userId,
+    data = mapOf(
+        "packageKey" to packageKey,
+        "packageVersion" to packageVersion
+    )
+)

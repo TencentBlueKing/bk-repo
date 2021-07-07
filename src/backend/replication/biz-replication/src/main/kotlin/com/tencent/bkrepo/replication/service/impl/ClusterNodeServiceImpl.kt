@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.ClusterNodeDao
-import com.tencent.bkrepo.replication.message.ReplicationMessageCode
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TClusterNode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeCreateRequest

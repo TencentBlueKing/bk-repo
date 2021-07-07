@@ -25,33 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.replica.event
+
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.stereotype.Component
+import java.util.function.Consumer
 
 /**
- * 事件类型
+ * 构件事件消费者，用于实时同步
+ * 对应binding name为artifactEvent-in-0
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+@Component("artifactEvent")
+class ArtifactEventConsumer(
+    private val replicaTaskService: ReplicaTaskService,
+    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
+) : Consumer<ArtifactEvent> {
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-    
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
+    /**
+     * 允许接收的事件类型
+     */
+    private val acceptTypes = setOf(
+        EventType.NODE_CREATED,
+        EventType.VERSION_CREATED
+    )
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED
+    override fun accept(event: ArtifactEvent) {
+        if (!acceptTypes.contains(event.type)) {
+            return
+        }
+        replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
+            eventBasedReplicaJobExecutor.execute(it, event)
+        }
+    }
 }

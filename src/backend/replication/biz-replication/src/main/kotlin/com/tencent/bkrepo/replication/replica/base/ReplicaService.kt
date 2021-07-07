@@ -25,33 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.replica.base
 
 /**
- * 事件类型
+ * 同步服务接口
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+interface ReplicaService {
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-    
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED
+    /**
+     * 执行同步
+     * @param context 同步上下文
+     */
+    fun replica(context: ReplicaContext)
 }

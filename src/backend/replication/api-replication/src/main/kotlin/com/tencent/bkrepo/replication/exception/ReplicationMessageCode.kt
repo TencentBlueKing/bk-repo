@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,4 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.task.request
+package com.tencent.bkrepo.replication.exception
+
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+/**
+ * 通用文件错误码
+ */
+enum class ReplicationMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
+    REMOTE_CLUSTER_CONNECT_ERROR(1, "remote.cluster.connect.error"),
+    REMOTE_CLUSTER_SSL_ERROR(2, "remote.cluster.ssl.error"),
+    TASK_STATUS_INVALID(3, "task.status.invalid"),
+    TASK_ENABLED_FALSE(4, "task.enabled.false"),
+    CLUSTER_NODE_EXISTS(5, "cluster.node.existed"),
+    CLUSTER_NODE_NOT_FOUND(6, "cluster.node.notfound"),
+    SCHEDULED_JOB_LOADING(7, "schedule.job.loading"),
+    TASK_DISABLE_UPDATE(8, "task.disable.update"),
+    CLUSTER_CENTER_NODE_EXISTS(9, "cluster.center.node.existed"),
+    REPLICA_TASK_NOT_FOUND(10, "replica.task.notfound"),
+    ;
+
+    override fun getBusinessCode() = businessCode
+    override fun getKey() = key
+    override fun getModuleCode() = 3
+}

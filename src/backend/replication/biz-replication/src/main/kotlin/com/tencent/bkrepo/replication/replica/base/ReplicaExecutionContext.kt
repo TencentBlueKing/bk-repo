@@ -25,33 +25,48 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.replica.base
 
-/**
- * 事件类型
- */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordDetail
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-    
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
+class ReplicaExecutionContext(
+    val replicaContext: ReplicaContext,
+    val detail: ReplicaRecordDetail
+) {
+    /**
+     * 同步器
+     */
+    val replicator = replicaContext.replicator
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
+    /**
+     * 执行状态
+     */
+    var status = ExecutionStatus.SUCCESS
 
-    // PACKAGE
+    /**
+     * 同步进度
+     */
 
-    // VERSION
-    VERSION_CREATED
+    val progress = ReplicaProgress()
+
+    /**
+     * 错误原因
+     */
+    private var errorReason = StringBuilder()
+
+    /**
+     * 添加错误原因
+     */
+    fun appendErrorReason(reason: String) {
+        errorReason.appendln(reason)
+    }
+
+    /**
+     * 构造错误原因
+     */
+    fun buildErrorReason(): String {
+        return errorReason.toString()
+    }
 }

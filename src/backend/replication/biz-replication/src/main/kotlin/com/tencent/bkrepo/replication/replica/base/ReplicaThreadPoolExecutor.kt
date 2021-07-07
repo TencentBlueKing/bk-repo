@@ -25,33 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.replication.replica.base
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
- * 事件类型
+ * 用于同步任务的线程池
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+object ReplicaThreadPoolExecutor {
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-    
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
+    /**
+     * 线程池实例
+     */
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
+        return ThreadPoolExecutor(
+            100, 500, 30, TimeUnit.SECONDS,
+            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.AbortPolicy()
+        )
+    }
 }

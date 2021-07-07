@@ -11,23 +11,23 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.dao.ReplicaObjectDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
-import com.tencent.bkrepo.replication.job.ScheduledReplicaJob
-import com.tencent.bkrepo.replication.message.ReplicationMessageCode
+import com.tencent.bkrepo.replication.replica.schedule.ScheduledReplicaJob
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCopyRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionStrategy
-import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
-import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
-import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
+import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.JOB_DATA_TASK_KEY
+import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -115,7 +115,7 @@ class ReplicaTaskServiceImpl(
                 replicaType = replicaType,
                 setting = setting,
                 remoteClusters = clusterNodeSet,
-                status = ReplicationStatus.WAITING,
+                status = ReplicaStatus.WAITING,
                 description = description,
                 lastExecutionStatus = null,
                 lastExecutionTime = null,
@@ -262,7 +262,7 @@ class ReplicaTaskServiceImpl(
                 id = null,
                 key = copyKey,
                 name = name,
-                status = ReplicationStatus.WAITING,
+                status = ReplicaStatus.WAITING,
                 lastExecutionStatus = null,
                 lastExecutionTime = null,
                 nextExecutionTime = null,
@@ -289,8 +289,9 @@ class ReplicaTaskServiceImpl(
             val tReplicaTask = replicaTaskDao.findByKey(key)
                 ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
             // 检查任务状态，执行过的任务不让修改
-            if (tReplicaTask.status != ReplicationStatus.WAITING ||
-                tReplicaTask.lastExecutionStatus != null) {
+            if (tReplicaTask.status != ReplicaStatus.WAITING ||
+                tReplicaTask.lastExecutionStatus != null
+            ) {
                 throw ErrorCodeException(ReplicationMessageCode.TASK_DISABLE_UPDATE, key)
             }
             // 更新任务
@@ -306,7 +307,7 @@ class ReplicaTaskServiceImpl(
                 name = name,
                 replicaObjectType = replicaObjectType,
                 remoteClusters = clusterNodeSet,
-                status = ReplicationStatus.WAITING,
+                status = ReplicaStatus.WAITING,
                 description = description,
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now()
@@ -341,7 +342,7 @@ class ReplicaTaskServiceImpl(
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
         if (!tReplicaTask.enabled) {
             throw ErrorCodeException(ReplicationMessageCode.TASK_ENABLED_FALSE)
-        } else if (tReplicaTask.status == ReplicationStatus.REPLICATING) {
+        } else if (tReplicaTask.status == ReplicaStatus.REPLICATING) {
             throw ErrorCodeException(ReplicationMessageCode.TASK_STATUS_INVALID)
         } else {
             // 如果是cronJob，则等待加载job后触发执行
@@ -353,7 +354,7 @@ class ReplicaTaskServiceImpl(
                 replicaTaskScheduler.triggerJob(JobKey.jobKey(tReplicaTask.id!!, REPLICA_JOB_GROUP))
             } else {
                 // 如果任务不存在，并且状态不为waiting状态，则不会被reloadTask加载，将其添加进调度器
-                if (tReplicaTask.status != ReplicationStatus.WAITING) {
+                if (tReplicaTask.status != ReplicaStatus.WAITING) {
                     val jobDetail = JobBuilder.newJob(ScheduledReplicaJob::class.java)
                         .withIdentity(tReplicaTask.id, REPLICA_JOB_GROUP)
                         .usingJobData(JOB_DATA_TASK_KEY, tReplicaTask.key)

@@ -35,17 +35,17 @@ import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
-import com.tencent.bkrepo.replication.job.ScheduledReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.schedule.ScheduledReplicaJobExecutor
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ExecutionPlan
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.repository.TaskRepository
-import com.tencent.bkrepo.replication.schedule.ReplicaTaskScheduler
-import com.tencent.bkrepo.replication.schedule.TaskReloadManager
+import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.replica.schedule.TaskReloadManager
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -100,7 +100,7 @@ private class TaskReloadManagerTest {
     fun `should execute immediately`() {
         val task = createTask(ReplicaType.SCHEDULED, ExecutionPlan(executeImmediately = true))
         Assertions.assertEquals(
-            ReplicationStatus.WAITING,
+            ReplicaStatus.WAITING,
             replicaTaskService.getByTaskKey(task.key).lastExecutionStatus
         )
         verify(scheduledReplicaJobExecutor, times(0)).execute(task.id)

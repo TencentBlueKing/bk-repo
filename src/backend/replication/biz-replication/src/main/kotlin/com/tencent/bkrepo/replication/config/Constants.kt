@@ -32,6 +32,3 @@
 package com.tencent.bkrepo.replication.config
 
 const val DEFAULT_VERSION = "1.0.0"
-const val NODE_REQUEST = "request"
-const val DEFAULT_REPLICA_SOURCE = "stream"
-const val DEFAULT_REPLICA_LOG = "log"

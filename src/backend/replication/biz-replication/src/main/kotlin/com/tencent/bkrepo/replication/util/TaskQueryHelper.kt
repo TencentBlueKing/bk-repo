@@ -4,7 +4,7 @@ import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.TaskSortType
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -38,7 +38,7 @@ object TaskQueryHelper {
 
     fun undoScheduledTaskQuery(): Query {
         val criteria = Criteria.where(TReplicaTask::replicaType.name).`is`(ReplicaType.SCHEDULED)
-            .and(TReplicaTask::status.name).`in`(ReplicationStatus.UNDO_STATUS)
+            .and(TReplicaTask::status.name).`in`(ReplicaStatus.UNDO_STATUS)
             .and(TReplicaTask::enabled.name).`is`(true)
         return Query(criteria)
     }

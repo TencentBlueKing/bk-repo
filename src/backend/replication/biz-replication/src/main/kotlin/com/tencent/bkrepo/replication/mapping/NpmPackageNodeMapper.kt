@@ -38,7 +38,7 @@ class NpmPackageNodeMapper : PackageNodeMapper {
 
     override fun type() = RepositoryType.NPM
 
-    override fun map(key: String, version: String, ext: Map<String, Any>): List<String> {
+    override fun map(key: String, version: String, extension: Map<String, Any>): List<String> {
         val name = PackageKeys.resolveNpm(key)
         return listOf(
             NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
@@ -52,5 +52,4 @@ class NpmPackageNodeMapper : PackageNodeMapper {
         const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
         const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
     }
-
 }

@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDao
 import com.tencent.bkrepo.replication.dao.ReplicaRecordDetailDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
-import com.tencent.bkrepo.replication.message.ReplicationMessageCode
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaRecord
 import com.tencent.bkrepo.replication.model.TReplicaRecordDetail
 import com.tencent.bkrepo.replication.model.TReplicaTask
@@ -20,7 +20,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
-import com.tencent.bkrepo.replication.pojo.task.ReplicationStatus
+import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.CronUtils
 import com.tencent.bkrepo.replication.util.TaskRecordQueryHelper
@@ -41,7 +41,7 @@ class ReplicaRecordServiceImpl(
         val initialRecord = initialRecord(key)
         val tReplicaTask = replicaTaskDao.findByKey(key)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
-        tReplicaTask.status = ReplicationStatus.REPLICATING
+        tReplicaTask.status = ReplicaStatus.REPLICATING
         tReplicaTask.lastExecutionTime = LocalDateTime.now()
         if (isCronJob(tReplicaTask)) {
             tReplicaTask.nextExecutionTime =
@@ -82,7 +82,7 @@ class ReplicaRecordServiceImpl(
         val tReplicaTask = replicaTaskDao.findByKey(record.taskKey)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, record.taskKey)
         tReplicaTask.lastExecutionStatus = status
-        tReplicaTask.status = if (isCronJob(tReplicaTask)) ReplicationStatus.WAITING else ReplicationStatus.COMPLETED
+        tReplicaTask.status = if (isCronJob(tReplicaTask)) ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
         replicaRecordDao.save(record)
         replicaTaskDao.save(tReplicaTask)
         logger.info("complete record [$recordId], status from [${replicaRecordInfo.status}] to [$status].")
