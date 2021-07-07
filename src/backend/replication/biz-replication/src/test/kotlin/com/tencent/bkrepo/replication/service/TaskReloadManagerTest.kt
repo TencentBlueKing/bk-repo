@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.service.async.AsyncConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.config.ReplicationConfigurer
+import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
@@ -41,7 +42,6 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
 import com.tencent.bkrepo.replication.replica.schedule.ScheduledReplicaJobExecutor
 import com.tencent.bkrepo.replication.replica.schedule.TaskReloadManager
-import com.tencent.bkrepo.replication.repository.TaskRepository
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -56,6 +56,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
 
 @DataMongoTest(properties = ["logging.level.com.tencent=DEBUG"])
@@ -75,7 +76,7 @@ private class TaskReloadManagerTest {
     private lateinit var replicaTaskService: ReplicaTaskService
 
     @Autowired
-    private lateinit var taskRepository: TaskRepository
+    private lateinit var replicaTaskDao: ReplicaTaskDao
 
     @MockBean
     private lateinit var scheduledReplicaJobExecutor: ScheduledReplicaJobExecutor
@@ -89,7 +90,7 @@ private class TaskReloadManagerTest {
 
     @BeforeEach
     fun beforeEach() {
-        taskRepository.deleteAll()
+        replicaTaskDao.remove(Query())
     }
 
     @Test
