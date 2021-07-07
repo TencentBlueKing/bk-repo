@@ -57,7 +57,9 @@ class ClusterStatusManager(
                     updateClusterNodeStatus(it.name, ClusterNodeStatus.HEALTHY)
                 }
             } catch (exception: ErrorCodeException) {
-                updateClusterNodeStatus(it.name, ClusterNodeStatus.UNHEALTHY, exception.message)
+                if (it.status == ClusterNodeStatus.HEALTHY) {
+                    updateClusterNodeStatus(it.name, ClusterNodeStatus.UNHEALTHY, exception.message)
+                }
             }
         }
     }

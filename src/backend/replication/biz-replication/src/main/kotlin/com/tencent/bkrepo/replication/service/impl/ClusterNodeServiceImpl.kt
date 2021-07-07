@@ -159,13 +159,13 @@ class ClusterNodeServiceImpl(
         with(request) {
             val tClusterNode = clusterNodeDao.findByName(name)
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
-            tClusterNode.copy(
+            val clusterNode = tClusterNode.copy(
                 status = status,
                 errorReason = errorReason,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
-            clusterNodeDao.save(tClusterNode)
+            clusterNodeDao.save(clusterNode)
             logger.info("update cluster [$name] status from [${tClusterNode.status}] to [$status] success.")
         }
     }
