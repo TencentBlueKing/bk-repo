@@ -80,7 +80,12 @@ class BkAuthPipelineService(
                 retryIfTokenInvalid = true
             )
         }
-        return bkciAuthService.validateUserResourcePermission(
+        return bkciAuthService.isProjectSuperAdmin(
+            user = uid,
+            projectCode = projectId,
+            action = BkAuthPermission.DOWNLOAD.value,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT.value
+        ) || bkciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
