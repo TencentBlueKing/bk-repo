@@ -104,7 +104,8 @@ class BkciAuthService @Autowired constructor(
         logger.debug("validateProjectSuperAdmin, requestUrl: [$url]")
         return try {
             val request =
-                Request.Builder().url(url).header(DEVOPS_UID, user).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
+                Request.Builder().url(url).header(DEVOPS_UID, user)
+                    .header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
