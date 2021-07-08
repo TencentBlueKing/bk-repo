@@ -87,6 +87,36 @@ class BkciAuthService @Autowired constructor(
         }
     }
 
+    fun isProjectSuperAdmin(
+        user: String,
+        projectCode: String,
+        action: String,
+        resourceType: String
+    ): Boolean {
+        val cacheKey = "superAdmin::$user::$projectCode"
+        val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)
+        cacheResult?.let {
+            logger.debug("match in cache: $cacheKey|$cacheResult")
+            return cacheResult
+        }
+        val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/local/manager/" +
+            "projects/$projectCode?resourceType=$resourceType&action=$action"
+        logger.debug("validateProjectSuperAdmin, requestUrl: [$url]")
+        return try {
+            val request =
+                Request.Builder().url(url).header(DEVOPS_UID, user).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
+                    .header(DEVOPS_PROJECT_ID, projectCode).get().build()
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
+            logger.debug("validateProjectSuperAdmin  result : [${apiResponse.content}]")
+            resourcePermissionCache.put(cacheKey, responseObject.data)
+            responseObject.data
+        } catch (exception: Exception) {
+            logger.error("validateProjectSuperAdmin error: [$exception]")
+            false
+        }
+    }
+
     fun validateUserResourcePermission(
         user: String,
         projectCode: String,

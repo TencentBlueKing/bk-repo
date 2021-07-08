@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
+import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -46,6 +48,12 @@ class BkAuthProjectService @Autowired constructor(
         if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.isProjectMember(user, projectCode, retryIfTokenInvalid)
         }
-        return bkciAuthService.isProjectMember(user, projectCode)
+
+        return bkciAuthService.isProjectSuperAdmin(
+            user,
+            projectCode,
+            BkAuthPermission.DOWNLOAD.value,
+            BkAuthResourceType.PIPELINE_DEFAULT.value
+        ) || bkciAuthService.isProjectMember(user, projectCode)
     }
 }
