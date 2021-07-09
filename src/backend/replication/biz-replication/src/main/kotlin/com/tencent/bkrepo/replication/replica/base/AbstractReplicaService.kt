@@ -138,39 +138,25 @@ abstract class AbstractReplicaService(
      */
     private fun replicaByPath(context: ReplicaExecutionContext, node: NodeInfo) {
         with(context) {
-            if (!node.folder) {
-                val executed = replicaContext.replicator.replicaFile(replicaContext, node)
-                if (executed) {
-                    progress.success += 1
-                } else {
-                    progress.skip += 1
+            try {
+                if (!node.folder) {
+                    val executed = replicaContext.replicator.replicaFile(replicaContext, node)
+                    updateProgress(executed)
+                    return
                 }
-                return
-            }
-            replicaContext.replicator.replicaDir(replicaContext, node)
-            // 查询子节点
-            localDataManager.listNode(
-                projectId = replicaContext.localProjectId,
-                repoName = replicaContext.localRepoName,
-                fullPath = node.fullPath
-            ).forEach {
-                if (it.folder) {
+                // 查询子节点
+                localDataManager.listNode(
+                    projectId = replicaContext.localProjectId,
+                    repoName = replicaContext.localRepoName,
+                    fullPath = node.fullPath
+                ).forEach {
                     replicaByPath(this, it)
-                    return@forEach
                 }
-                try {
-                    val executed = replicaContext.replicator.replicaFile(replicaContext, it)
-                    if (executed) {
-                        progress.success += 1
-                    } else {
-                        progress.skip += 1
-                    }
-                } catch (throwable: Throwable) {
-                    progress.failed += 1
-                    setErrorStatus(this, throwable)
-                    if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
-                        throw throwable
-                    }
+            } catch (throwable: Throwable) {
+                progress.failed += 1
+                setErrorStatus(this, throwable)
+                if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                    throw throwable
                 }
             }
         }
@@ -185,34 +171,24 @@ abstract class AbstractReplicaService(
         versionNames: List<String>? = null
     ) {
         with(context) {
-            replicaContext.replicator.replicaPackage(replicaContext, packageSummary)
-            val versions = if (versionNames == null) {
-                // 查询所有版本
-                localDataManager.listAllVersion(
+            replicator.replicaPackage(replicaContext, packageSummary)
+            val versions = versionNames?.map {
+                localDataManager.findPackageVersion(
                     projectId = replicaContext.localProjectId,
                     repoName = replicaContext.localRepoName,
                     packageKey = packageSummary.key,
-                    option = VersionListOption()
+                    version = it
                 )
-            } else {
-                // 查询指定版本
-                versionNames.orEmpty().map {
-                    localDataManager.findPackageVersion(
-                        projectId = replicaContext.localProjectId,
-                        repoName = replicaContext.taskObject.localRepoName,
-                        packageKey = packageSummary.key,
-                        version = it
-                    )
-                }
-            }
+            } ?: localDataManager.listAllVersion(
+                projectId = replicaContext.localProjectId,
+                repoName = replicaContext.localRepoName,
+                packageKey = packageSummary.key,
+                option = VersionListOption()
+            )
             versions.forEach {
                 try {
-                    val executed = replicaContext.replicator.replicaPackageVersion(replicaContext, packageSummary, it)
-                    if (executed) {
-                        progress.success += 1
-                    } else {
-                        progress.skip += 1
-                    }
+                    val executed = replicator.replicaPackageVersion(replicaContext, packageSummary, it)
+                    updateProgress(executed)
                 } catch (throwable: Throwable) {
                     progress.failed += 1
                     setErrorStatus(this, throwable)

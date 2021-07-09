@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageChannelBinder
 import com.tencent.bkrepo.common.stream.binder.memory.MemoryMessageProvisioning
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.cloud.stream.binder.Binder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 

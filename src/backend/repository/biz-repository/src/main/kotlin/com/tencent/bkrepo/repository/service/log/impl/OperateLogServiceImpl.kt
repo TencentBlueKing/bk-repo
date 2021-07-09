@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.repository.service.log.impl
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
 import com.tencent.bkrepo.repository.model.TOperateLog
 import com.tencent.bkrepo.repository.service.log.OperateLogService

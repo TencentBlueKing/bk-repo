@@ -69,4 +69,16 @@ class ReplicaExecutionContext(
     fun buildErrorReason(): String {
         return errorReason.toString()
     }
+
+    /**
+     * 更新进度
+     * @param executed 是否执行了同步
+     */
+    fun updateProgress(executed: Boolean) {
+        if (executed) {
+            progress.success += 1
+        } else {
+            progress.skip += 1
+        }
+    }
 }

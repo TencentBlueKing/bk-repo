@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.stream.binder.file.config
 
 import com.tencent.bkrepo.common.stream.binder.file.FileMessageBinderProvisioner
 import com.tencent.bkrepo.common.stream.binder.file.FileMessageChannelBinder
-import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
