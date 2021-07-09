@@ -42,19 +42,22 @@ class MessageWorkHandler(private val queue: BlockingQueue<QueueItem>) : Runnable
     override fun run() {
         isRunning = true
         while (isRunning) {
-            queue.poll(5, TimeUnit.SECONDS)?.let { item ->
-                try {
-                    val consumers = MemoryListenerContainer.findListener(item.destination)
-                    consumers.forEach {
-                        it.accept(item.message)
-                    }
-                } catch (e: Throwable) {
-                    logger.error("Memory cloud stream handle fault.", e)
-                    if (e is VirtualMachineError) {
-                        this.stop()
-                    }
-                }
+            queue.poll(5, TimeUnit.SECONDS)?.let {
+                handle(it)
             } ?: Thread.sleep(100)
+        }
+    }
+
+    private fun handle(item: QueueItem) {
+        try {
+            MemoryListenerContainer.findListener(item.destination).forEach {
+                it.accept(item.message)
+            }
+        } catch (e: Throwable) {
+            logger.error("Memory cloud stream handle fault.", e)
+            if (e is VirtualMachineError) {
+                this.stop()
+            }
         }
     }
 

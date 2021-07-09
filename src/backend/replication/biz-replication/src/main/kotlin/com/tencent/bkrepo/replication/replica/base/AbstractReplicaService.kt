@@ -40,6 +40,7 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 
 /**
@@ -133,25 +134,35 @@ abstract class AbstractReplicaService(
     }
 
     /**
-     * 同步节点
+     * 同步路径
      * 采用广度优先遍历
      */
     private fun replicaByPath(context: ReplicaExecutionContext, node: NodeInfo) {
         with(context) {
+            if (!node.folder) {
+                replicaFile(context, node)
+                return
+            }
+            // 查询子节点
+            localDataManager.listNode(
+                projectId = replicaContext.localProjectId,
+                repoName = replicaContext.localRepoName,
+                fullPath = node.fullPath
+            ).forEach {
+                replicaByPath(this, it)
+            }
+        }
+    }
+
+    /**
+     * 同步节点
+     */
+    private fun replicaFile(context: ReplicaExecutionContext, node: NodeInfo) {
+        with(context) {
             try {
-                if (!node.folder) {
-                    val executed = replicaContext.replicator.replicaFile(replicaContext, node)
-                    updateProgress(executed)
-                    return
-                }
-                // 查询子节点
-                localDataManager.listNode(
-                    projectId = replicaContext.localProjectId,
-                    repoName = replicaContext.localRepoName,
-                    fullPath = node.fullPath
-                ).forEach {
-                    replicaByPath(this, it)
-                }
+                val executed = replicaContext.replicator.replicaFile(replicaContext, node)
+                updateProgress(executed)
+                return
             } catch (throwable: Throwable) {
                 progress.failed += 1
                 setErrorStatus(this, throwable)
@@ -161,6 +172,7 @@ abstract class AbstractReplicaService(
             }
         }
     }
+
 
     /**
      * 根据[packageSummary]和版本列表[versionNames]执行同步
@@ -186,15 +198,28 @@ abstract class AbstractReplicaService(
                 option = VersionListOption()
             )
             versions.forEach {
-                try {
-                    val executed = replicator.replicaPackageVersion(replicaContext, packageSummary, it)
-                    updateProgress(executed)
-                } catch (throwable: Throwable) {
-                    progress.failed += 1
-                    setErrorStatus(this, throwable)
-                    if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
-                        throw throwable
-                    }
+                replicaPackageVersion(this, packageSummary, it)
+            }
+        }
+    }
+
+    /**
+     * 同步版本
+     */
+    private fun replicaPackageVersion(
+        context: ReplicaExecutionContext,
+        packageSummary: PackageSummary,
+        version: PackageVersion
+    ) {
+        with(context) {
+            try {
+                val executed = replicator.replicaPackageVersion(replicaContext, packageSummary, version)
+                updateProgress(executed)
+            } catch (throwable: Throwable) {
+                progress.failed += 1
+                setErrorStatus(this, throwable)
+                if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                    throw throwable
                 }
             }
         }
