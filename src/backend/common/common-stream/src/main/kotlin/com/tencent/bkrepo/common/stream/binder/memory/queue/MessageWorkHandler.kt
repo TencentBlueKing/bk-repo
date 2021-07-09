@@ -42,8 +42,7 @@ class MessageWorkHandler(private val queue: BlockingQueue<QueueItem>) : Runnable
     override fun run() {
         isRunning = true
         while (isRunning) {
-            val item = queue.poll(5, TimeUnit.SECONDS)
-            if (item != null) {
+            queue.poll(5, TimeUnit.SECONDS)?.let { item ->
                 try {
                     val consumers = MemoryListenerContainer.findListener(item.destination)
                     consumers.forEach {
@@ -55,9 +54,7 @@ class MessageWorkHandler(private val queue: BlockingQueue<QueueItem>) : Runnable
                         this.stop()
                     }
                 }
-            } else {
-                Thread.sleep(100)
-            }
+            } ?: Thread.sleep(100)
         }
     }
 
