@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -67,8 +68,8 @@ class BkAuthPipelineService(
         )
     }
 
-    fun hasPermission(uid: String, projectId: String, pipelineId: String): Boolean {
-        logger.debug("hasPermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
+    fun hasPermission(uid: String, projectId: String, pipelineId: String, permissionAction: PermissionAction): Boolean {
+        logger.debug("hasPermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId, permissionAction: $permissionAction")
         if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.validateUserResourcePermission(
                 user = uid,
@@ -83,8 +84,9 @@ class BkAuthPipelineService(
         return bkciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,
-            action = BkAuthPermission.DOWNLOAD.value,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT.value
+            action = BkAuthPermission.DOWNLOAD,
+            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
+            permissionAction = permissionAction
         ) || bkciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,
