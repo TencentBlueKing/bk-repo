@@ -57,7 +57,7 @@ class EventBasedReplicaJobExecutor(
         val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
         try {
             task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
-            logger.info("Replica ${event.projectId}/${event.repoName} completed.")
+            logger.info("Replica ${event.getFullResourceKey()} completed.")
         } catch (exception: Exception) {
             logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
         }

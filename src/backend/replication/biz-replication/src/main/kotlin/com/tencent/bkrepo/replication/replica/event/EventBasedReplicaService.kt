@@ -46,19 +46,23 @@ class EventBasedReplicaService(
 ) : AbstractReplicaService(replicaRecordService, localDataManager) {
 
     override fun replica(context: ReplicaContext) {
-        val event = context.event
-        when (event.type) {
-            EventType.NODE_CREATED -> {
-                val pathConstraint = PathConstraint(event.resourceKey)
-                replicaByPathConstraint(context, pathConstraint)
+        with(context) {
+            // 同步仓库
+            replicator.replicaRepo(this)
+            when (event.type) {
+                EventType.NODE_CREATED -> {
+                    val pathConstraint = PathConstraint(event.resourceKey)
+                    replicaByPathConstraint(this, pathConstraint)
+                }
+                EventType.VERSION_CREATED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageVersion = event.data["packageVersion"].toString()
+                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+                    replicaByPackageConstraint(this, packageConstraint)
+                }
+                else -> throw UnsupportedOperationException()
             }
-            EventType.VERSION_CREATED -> {
-                val packageKey = event.data["packageKey"].toString()
-                val packageVersion = event.data["packageVersion"].toString()
-                val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
-                replicaByPackageConstraint(context, packageConstraint)
-            }
-            else -> throw UnsupportedOperationException()
         }
+
     }
 }
