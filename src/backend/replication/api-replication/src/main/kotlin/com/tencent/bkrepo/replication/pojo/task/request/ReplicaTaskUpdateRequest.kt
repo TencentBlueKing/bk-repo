@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.pojo.task.request
 
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -44,6 +45,8 @@ data class ReplicaTaskUpdateRequest(
     val replicaObjectType: ReplicaObjectType,
     @ApiModelProperty("任务对象信息", required = true)
     val replicaTaskObjects: List<ReplicaObjectInfo>,
+    @ApiModelProperty("任务设置", required = true)
+    val setting: ReplicaSetting,
     @ApiModelProperty("远程集群集合", required = true)
     val remoteClusterIds: Set<String>,
     @ApiModelProperty("任务描述", required = false)

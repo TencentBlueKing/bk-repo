@@ -333,6 +333,7 @@ class ReplicaTaskServiceImpl(
             val task = tReplicaTask.copy(
                 name = name,
                 replicaObjectType = replicaObjectType,
+                setting = setting,
                 remoteClusters = clusterNodeSet,
                 status = ReplicaStatus.WAITING,
                 description = description,
