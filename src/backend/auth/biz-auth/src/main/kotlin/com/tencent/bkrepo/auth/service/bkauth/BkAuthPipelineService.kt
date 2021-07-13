@@ -69,7 +69,8 @@ class BkAuthPipelineService(
     }
 
     fun hasPermission(uid: String, projectId: String, pipelineId: String, permissionAction: PermissionAction): Boolean {
-        logger.debug("hasPermission: uid: $uid, projectId: $projectId, pipelineId: $pipelineId, permissionAction: $permissionAction")
+        logger.debug("hasPermission: uid: $uid, projectId: $projectId, " +
+            "pipelineId: $pipelineId, permissionAction: $permissionAction")
         if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.validateUserResourcePermission(
                 user = uid,
