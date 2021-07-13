@@ -79,24 +79,24 @@ class BkAuthPermissionServiceImpl constructor(
                 // devops直接放过
                 if (request.appId == bkAuthConfig.devopsAppId) return true
                 // 其它请求校验项目权限
-                return checkProjectPermission(uid, projectId!!)
+                return checkProjectPermission(uid, projectId!!, action)
             }
 
             // repo或者node权限
             val pass = when (repoName) {
                 CUSTOM, LOG -> {
-                    checkProjectPermission(uid, projectId!!)
+                    checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    checkPipelinePermission(uid, projectId!!, path, resourceType)
-                        || checkProjectPermission(uid, projectId!!)
+                    checkPipelinePermission(uid, projectId!!, path, resourceType, action)
+                        || checkProjectPermission(uid, projectId!!, action)
                 }
                 REPORT -> {
                     action == PermissionAction.READ || action == PermissionAction.WRITE
                 }
                 else -> {
                     // 有本地权限，或者蓝盾项目权限，放过
-                    super.checkPermission(request) || checkProjectPermission(uid, projectId!!)
+                    super.checkPermission(request) || checkProjectPermission(uid, projectId!!, action)
                 }
             }
 
@@ -116,22 +116,24 @@ class BkAuthPermissionServiceImpl constructor(
         uid: String,
         projectId: String,
         path: String?,
-        resourceType: ResourceType
+        resourceType: ResourceType,
+        permissionAction: PermissionAction
     ): Boolean {
         return when (resourceType) {
-            ResourceType.REPO -> checkProjectPermission(uid, projectId)
+            ResourceType.REPO -> checkProjectPermission(uid, projectId, permissionAction)
             ResourceType.NODE -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
-                checkPipelinePermission(uid, projectId, pipelineId)
+                checkPipelinePermission(uid, projectId, pipelineId, permissionAction)
             }
             else -> throw RuntimeException("resource type not supported: $resourceType")
         }
     }
 
-    private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String): Boolean {
-        logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId")
+    private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String, permissionAction: PermissionAction): Boolean {
+        logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
+            "permissionAction: $permissionAction")
         return try {
-            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId)
+            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, permissionAction)
         } catch (e: Exception) {
             // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
@@ -139,10 +141,10 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkProjectPermission(uid: String, projectId: String): Boolean {
-        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId")
+    private fun checkProjectPermission(uid: String, projectId: String, permissionAction: PermissionAction): Boolean {
+        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, permissionAction: $permissionAction")
         return try {
-            bkAuthProjectService.isProjectMember(uid, projectId, retryIfTokenInvalid = true)
+            bkAuthProjectService.isProjectMember(uid, projectId, permissionAction, retryIfTokenInvalid = true)
         } catch (e: Exception) {
             // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
