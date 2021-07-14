@@ -93,7 +93,7 @@ class BkciAuthService @Autowired constructor(
         projectCode: String,
         action: BkAuthPermission,
         resourceType: BkAuthResourceType,
-        permissionAction: PermissionAction
+        permissionAction: PermissionAction?
     ): Boolean {
         if (permissionAction != PermissionAction.READ) {
             return false
@@ -115,7 +115,7 @@ class BkciAuthService @Autowired constructor(
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
-            logger.debug("validateProjectSuperAdmin  result : [${apiResponse.content}]")
+            logger.debug("validateProjectSuperAdmin  result : [${apiResponse.content.replace("\n","")}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {

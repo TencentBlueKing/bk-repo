@@ -47,6 +47,6 @@ class ServicePipelineResourceImpl @Autowired constructor(
     }
 
     override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId)))
+        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, null)))
     }
 }
