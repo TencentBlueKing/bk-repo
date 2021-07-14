@@ -63,6 +63,5 @@ class EventBasedReplicaService(
                 else -> throw UnsupportedOperationException()
             }
         }
-
     }
 }
