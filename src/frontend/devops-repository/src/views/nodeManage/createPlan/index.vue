@@ -21,6 +21,7 @@
                         <bk-radio class="mr20" value="IMMEDIATELY" :disabled="disabled">立即执行</bk-radio>
                         <bk-radio class="mr20" value="SPECIFIED_TIME" :disabled="disabled">指定时间</bk-radio>
                         <bk-radio class="mr20" value="CRON_EXPRESSION" :disabled="disabled">定时执行</bk-radio>
+                        <bk-radio class="mr20" value="REAL_TIME" :disabled="disabled">实时同步</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item v-if="planForm.executionStrategy === 'SPECIFIED_TIME'" label="时间" :required="true" property="time" error-display-type="normal">
@@ -51,7 +52,11 @@
                 </bk-form-item>
                 <bk-form-item label="同步类型" :required="true" property="replicaObjectType">
                     <bk-radio-group v-model="planForm.replicaObjectType" class="replica-type-radio-group" @change="changeReplicaObjectType">
-                        <bk-radio-button v-for="type in replicaObjectTypeList" :key="type.value" :value="type.value" :disabled="disabled">
+                        <bk-radio-button
+                            v-for="type in replicaObjectTypeList"
+                            :key="type.value"
+                            :value="type.value"
+                            :disabled="disabled">
                             <div class="replica-type-radio">
                                 <label class="replica-type-label">{{ type.label }}</label>
                                 <div class="mt5 replica-type-tip">{{ type.tip }}</div>
@@ -129,11 +134,6 @@
         data () {
             return {
                 isLoading: false,
-                replicaObjectTypeList: [
-                    { label: '仓库', value: 'REPOSITORY', tip: '同步多个仓库' },
-                    { label: '制品', value: 'PACKAGE', tip: '同步同一仓库下多个包' },
-                    { label: '文件', value: 'PATH', tip: '同步同一仓库下多个文件' }
-                ],
                 planForm: {
                     loading: false,
                     name: '',
@@ -205,6 +205,17 @@
             },
             disabled () {
                 return this.routeName === 'planDetail'
+            },
+            replicaObjectTypeList () {
+                // init
+                this.planForm.executionStrategy === 'REAL_TIME' && (this.planForm.replicaObjectType = 'REPOSITORY')
+                return [
+                    { label: '仓库', value: 'REPOSITORY', tip: '同步多个仓库' },
+                    ...(this.planForm.executionStrategy === 'REAL_TIME' ? [] : [
+                        { label: '制品', value: 'PACKAGE', tip: '同步同一仓库下多个包' },
+                        { label: '文件', value: 'PATH', tip: '同步同一仓库下多个文件' }
+                    ])
+                ]
             }
         },
         created () {
@@ -228,6 +239,7 @@
                     task: {
                         name,
                         replicaObjectType,
+                        replicaType,
                         remoteClusters,
                         description,
                         setting: {
@@ -241,7 +253,7 @@
                     this.planForm = {
                         ...this.planForm,
                         name,
-                        executionStrategy,
+                        executionStrategy: replicaType === 'REAL_TIME' ? 'REAL_TIME' : replicaObjectType,
                         replicaObjectType,
                         ...(executeTime ? {
                             time: new Date(executeTime)
@@ -278,24 +290,26 @@
                     localProjectId: this.projectId,
                     replicaObjectType: this.planForm.replicaObjectType,
                     replicaTaskObjects,
-                    replicaType: 'SCHEDULED',
+                    replicaType: this.planForm.executionStrategy === 'REAL_TIME' ? 'REAL_TIME' : 'SCHEDULED',
                     setting: {
                         rateLimit: 0, // <=0不限速
                         includeMetadata: true, // 同步元数据
                         conflictStrategy: this.planForm.conflictStrategy,
                         errorStrategy: 'FAST_FAIL',
-                        executionStrategy: this.planForm.executionStrategy,
-                        executionPlan: {
-                            executeImmediately: this.planForm.executionStrategy === 'IMMEDIATELY',
-                            ...(this.planForm.executionStrategy === 'SPECIFIED_TIME' ? {
-                                // executeTime: this.planForm.time.toISOString()
-                                // 后端需要,中国时区
-                                executeTime: new Date(this.planForm.time.getTime() + 8 * 3600 * 1000).toISOString().replace(/Z$/, '')
-                            } : {}),
-                            ...(this.planForm.executionStrategy === 'CRON_EXPRESSION' ? {
-                                cronExpression: this.planForm.cron
-                            } : {})
-                        }
+                        ...(this.planForm.executionStrategy !== 'REAL_TIME' ? {
+                            executionStrategy: this.planForm.executionStrategy,
+                            executionPlan: {
+                                executeImmediately: this.planForm.executionStrategy === 'IMMEDIATELY',
+                                ...(this.planForm.executionStrategy === 'SPECIFIED_TIME' ? {
+                                    // executeTime: this.planForm.time.toISOString()
+                                    // 后端需要,中国时区
+                                    executeTime: new Date(this.planForm.time.getTime() + 8 * 3600 * 1000).toISOString().replace(/Z$/, '')
+                                } : {}),
+                                ...(this.planForm.executionStrategy === 'CRON_EXPRESSION' ? {
+                                    cronExpression: this.planForm.cron
+                                } : {})
+                            }
+                        } : {})
                     },
                     remoteClusterIds: this.planForm.remoteClusterIds,
                     enabled: true,
