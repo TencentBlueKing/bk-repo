@@ -41,7 +41,9 @@ import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaObject
 import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
@@ -142,9 +144,15 @@ class ReplicaTaskServiceImpl(
                 replicaType = replicaType,
                 setting = setting,
                 remoteClusters = clusterNodeSet,
-                status = ReplicaStatus.WAITING,
+                status = when (replicaType) {
+                    ReplicaType.REAL_TIME -> ReplicaStatus.REPLICATING
+                    ReplicaType.SCHEDULED -> ReplicaStatus.WAITING
+                },
                 description = description,
-                lastExecutionStatus = null,
+                lastExecutionStatus = when (replicaType) {
+                    ReplicaType.REAL_TIME -> ExecutionStatus.RUNNING
+                    ReplicaType.SCHEDULED -> null
+                },
                 lastExecutionTime = null,
                 nextExecutionTime = null,
                 executionTimes = 0L,

@@ -196,7 +196,7 @@ class ReplicaRecordServiceImpl(
         val taskKey = replicaRecordInfo.taskKey
         val replicaTask = replicaTaskDao.findByKey(taskKey)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, taskKey)
-        return ReplicaTaskRecordInfo(replicaTask.replicaObjectType, replicaRecordInfo)
+        return ReplicaTaskRecordInfo(replicaTask.replicaObjectType, replicaTask.replicaType, replicaRecordInfo)
     }
 
     override fun getRecordById(id: String): ReplicaRecordInfo? {
