@@ -52,10 +52,13 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.util.*
 import javax.servlet.http.HttpServletRequest
@@ -116,32 +119,63 @@ class GenericLocalRepository : LocalRepository() {
         with(context) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             if (node?.folder == true) {
-                // 判断节点数量
-                val fileCount = nodeClient.countFileNode(
-                    projectId = projectId,
-                    repoName = repoName,
-                    path = node.fullPath
-                ).data ?: 0
-                if (fileCount > BATCH_DOWNLOAD_THRESHOLD) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
-                }
-                // 查询子节点
-                val map = nodeClient.listNode(
-                    projectId = projectId,
-                    repoName = repoName,
-                    path = node.fullPath,
-                    includeFolder = false,
-                    deep = true
-                ).data.orEmpty().associate {
-                    val name = PathUtils.combineFullPath(node.name, it.name)
-                    val inputStream = storageManager.loadArtifactInputStream(it, storageCredentials) ?: return null
-                    name to inputStream
-                }
-                return ArtifactResource(map, node, ArtifactChannel.LOCAL, true)
+                return downloadFolder(this, node)
             }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+        }
+    }
+
+    /**
+     * 下载目录
+     * @param context 构件下载context
+     * @param node 目录节点详情
+     */
+    private fun downloadFolder(context: ArtifactDownloadContext, node: NodeDetail): ArtifactResource? {
+        // 检查文件数量
+        checkFileCount(node)
+        // 查询子节点
+        val nodes = nodeClient.listNode(
+            projectId = node.projectId,
+            repoName = node.repoName,
+            path = node.fullPath,
+            includeFolder = false,
+            deep = true
+        ).data.orEmpty()
+        // 检查目录大小
+        checkFolderSize(nodes)
+        // 构造name-node map
+        val nodeMap = nodes.associate {
+            val name = PathUtils.combineFullPath(node.name, it.name)
+            val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
+            name to inputStream
+        }
+        return ArtifactResource(nodeMap, node, useDisposition = true)
+    }
+
+    /**
+     * 检查文件数量是否超过阈值
+     * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
+     */
+    @Throws(ErrorCodeException::class)
+    private fun checkFileCount(node: NodeDetail) {
+        // 判断节点数量
+        val fileCount = nodeClient.countFileNode(node.projectId, node.repoName, node.fullPath).data ?: 0
+        if (fileCount > BATCH_DOWNLOAD_COUNT_THRESHOLD) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
+        }
+    }
+
+    /**
+     * 检查目录数据大小是否超过阈值
+     * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
+     */
+    @Throws(ErrorCodeException::class)
+    private fun checkFolderSize(nodes: List<NodeInfo>) {
+        val totalSize = nodes.map { it.size }.sum()
+        if (totalSize > BATCH_DOWNLOAD_SIZE_THRESHOLD) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
     }
 
@@ -236,8 +270,13 @@ class GenericLocalRepository : LocalRepository() {
         private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
 
         /**
-         * 批量下载数量阈值
+         * 目录下载，子文件数量阈值
          */
-        private const val BATCH_DOWNLOAD_THRESHOLD = 1000
+        private const val BATCH_DOWNLOAD_COUNT_THRESHOLD = 1024
+
+        /**
+         * 目录下载，目录大小阈值
+         */
+        private val BATCH_DOWNLOAD_SIZE_THRESHOLD = DataSize.ofGigabytes(10).toBytes()
     }
 }
