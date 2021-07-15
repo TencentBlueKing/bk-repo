@@ -74,6 +74,7 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
             logger.debug("check devops permission request [$request]")
+
             // project权限
             if (request.resourceType == ResourceType.PROJECT) {
                 // devops直接放过
@@ -92,7 +93,7 @@ class BkAuthPermissionServiceImpl constructor(
                         || checkProjectPermission(uid, projectId!!, action)
                 }
                 REPORT -> {
-                    action == PermissionAction.READ || action == PermissionAction.WRITE
+                    checkReportPermission(action)
                 }
                 else -> {
                     // 有本地权限，或者蓝盾项目权限，放过
@@ -102,13 +103,17 @@ class BkAuthPermissionServiceImpl constructor(
 
             // devops来源的账号，不做拦截
             if (!pass && appId == bkAuthConfig.devopsAppId) {
-                logger.warn("devops forbidden[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+                logger.warn("devops forbidden [$request]")
                 return !bkAuthConfig.devopsAuthEnabled
             }
 
-            logger.debug("devops pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
+            logger.debug("devops pass [$request]")
             return pass
         }
+    }
+
+    private fun checkReportPermission(action: PermissionAction): Boolean {
+        return action == PermissionAction.READ || action == PermissionAction.WRITE || action == PermissionAction.VIEW
     }
 
 
@@ -117,13 +122,13 @@ class BkAuthPermissionServiceImpl constructor(
         projectId: String,
         path: String?,
         resourceType: ResourceType,
-        permissionAction: PermissionAction
+        action: PermissionAction
     ): Boolean {
         return when (resourceType) {
-            ResourceType.REPO -> checkProjectPermission(uid, projectId, permissionAction)
+            ResourceType.REPO -> checkProjectPermission(uid, projectId, action)
             ResourceType.NODE -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
-                checkPipelinePermission(uid, projectId, pipelineId, permissionAction)
+                checkPipelinePermission(uid, projectId, pipelineId, action)
             }
             else -> throw RuntimeException("resource type not supported: $resourceType")
         }
@@ -133,12 +138,13 @@ class BkAuthPermissionServiceImpl constructor(
         uid: String,
         projectId: String,
         pipelineId: String,
-        permissionAction: PermissionAction
+        action: PermissionAction
     ): Boolean {
         logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
-            "permissionAction: $permissionAction")
+            "permissionAction: $action"
+        )
         return try {
-            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, permissionAction)
+            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, action)
         } catch (e: Exception) {
             // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
@@ -146,54 +152,58 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkProjectPermission(uid: String, projectId: String, permissionAction: PermissionAction): Boolean {
-        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, permissionAction: $permissionAction")
+    private fun checkProjectPermission(uid: String, projectId: String, action: PermissionAction): Boolean {
+        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, permissionAction: $action")
         return try {
-            bkAuthProjectService.isProjectMember(uid, projectId, permissionAction, retryIfTokenInvalid = true)
+            bkAuthProjectService.isProjectMember(uid, projectId, action, retryIfTokenInvalid = true)
         } catch (e: Exception) {
             // TODO 调用auth稳定后改为抛异常
             logger.warn("checkPipelinePermission error:  ${e.message}")
             true
         }
+    }
+
+    private fun checkGitCiPermission(request: CheckPermissionRequest): Boolean {
+        val context = PermissionRequestContext(request.uid, request.projectId!!)
+        logger.debug("check git project permission [$context]")
+        pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
+            return it.check(context)
+        }
+        return true
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-
         // git ci项目校验单独权限
-        if (request.projectId!!.startsWith(GIT_PROJECT_PREFIX, true) &&
-            bkAuthConfig.choseBkAuth() && request.projectId != null
-        ) {
-            val context = PermissionRequestContext(
-                userId = request.uid,
-                projectId = request.projectId!!
-            )
-            logger.debug("check git project permission [$context]")
-            pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
-                return it.check(context)
-            }
+        if (matchGitCiCond(request.projectId)) {
+            return checkGitCiPermission(request)
         }
 
         // devops匿名访问请求处理
-        with(request) {
-            if (appId == bkAuthConfig.devopsAppId &&
-                request.uid == ANONYMOUS_USER &&
-                bkAuthConfig.devopsAllowAnonymous
-            ) {
-                logger.warn("devops anonymous pass[$appId|$uid|$resourceType|$projectId|$repoName|$path|$action]")
-                return true
-            }
+        if (matchAnonymousCond(request.appId, request.uid)) {
+            logger.warn("devops anonymous pass [$request] ")
+            return true
         }
 
         // devops实名访问请求处理
-        val appIdCond = request.appId == bkAuthConfig.devopsAppId ||
-            request.appId == bkAuthConfig.bkrepoAppId ||
-            request.appId == bkAuthConfig.bkcodeAppId
-        if (appIdCond) {
+        if (matchDevopsCond(request.appId)) {
             return checkDevopsPermission(request)
         }
 
         // 非devops体系
         return super.checkPermission(request)
+    }
+
+    private fun matchGitCiCond(projectId: String?): Boolean {
+        return projectId != null && bkAuthConfig.choseBkAuth() && projectId.startsWith(GIT_PROJECT_PREFIX, true)
+    }
+
+    private fun matchDevopsCond(appId: String?): Boolean {
+        val devopsAppIdList = listOf(bkAuthConfig.devopsAppId, bkAuthConfig.bkrepoAppId, bkAuthConfig.bkcodeAppId)
+        return devopsAppIdList.contains(appId)
+    }
+
+    private fun matchAnonymousCond(appId: String?, uid: String): Boolean {
+        return appId == bkAuthConfig.devopsAppId && uid == ANONYMOUS_USER && bkAuthConfig.devopsAllowAnonymous
     }
 
     companion object {
