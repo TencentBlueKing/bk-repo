@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.STREAM_BUFFER_SIZE
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils.isClientBroken
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -149,13 +150,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 解析content length
-     */
-    private fun resolveContentLength(range: Range): String {
-        return range.length.toString()
-    }
-
-    /**
      * 解析content range
      */
     private fun resolveContentRange(range: Range): String {
@@ -191,12 +185,14 @@ open class DefaultArtifactResourceWriter(
                     )
                 }
             }
-        } catch (ignored: IOException) {
-            // 不处理IOException会CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
-            // 由于在上面已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
+        } catch (exception: IOException) {
+            // 直接向上抛IOException经过CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
+            // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
-            // 又因为/error页面不存在，最终返回404，所以这里要对异常进行处理
-            throw ArtifactResponseException(ignored.message.orEmpty())
+            // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
+            val message = exception.message.orEmpty()
+            val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
+            throw ArtifactResponseException(message, status)
         }
     }
 
@@ -229,8 +225,10 @@ open class DefaultArtifactResourceWriter(
                 }
                 resource.getTotalSize()
             }
-        } catch (ignored: IOException) {
-            throw ArtifactResponseException(ignored.message.orEmpty())
+        } catch (exception: IOException) {
+            val message = exception.message.orEmpty()
+            val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
+            throw ArtifactResponseException(message, status)
         } finally {
             resource.artifactMap.values.forEach { it.closeQuietly() }
         }
