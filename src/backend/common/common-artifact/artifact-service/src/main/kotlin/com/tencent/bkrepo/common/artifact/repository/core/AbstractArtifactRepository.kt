@@ -122,7 +122,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val principal = SecurityUtils.getPrincipal()
             val artifactInfo = context.artifactInfo
             val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
-            logger.warn("User[$principal] download artifact[$artifactInfo] failed[${exception.messageCode.getCode()}]$message")
+            val code = exception.messageCode.getCode()
+            logger.warn("User[$principal] download artifact[$artifactInfo] failed[$code]$message")
         } catch (exception: Exception) {
             this.onDownloadFailed(context, exception)
         } finally {

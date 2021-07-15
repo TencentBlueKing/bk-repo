@@ -58,7 +58,6 @@ import java.util.zip.ZipOutputStream
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-
 /**
  * ArtifactResourceWriter默认实现
  */
