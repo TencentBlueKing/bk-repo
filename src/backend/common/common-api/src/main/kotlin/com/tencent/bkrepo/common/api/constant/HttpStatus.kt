@@ -174,7 +174,6 @@ enum class HttpStatus(
         return value >= INTERNAL_SERVER_ERROR.value
     }
 
-
     companion object {
 
         /**
