@@ -117,33 +117,9 @@ open class NodeMoveCopySupport(
             if (node.folder && existNode?.folder == true) return
             checkConflict(context, node, existNode)
             // copy目标节点
-            val dstNode = node.copy(
-                id = null,
-                projectId = dstProjectId,
-                repoName = dstRepoName,
-                path = dstPath,
-                name = dstName,
-                fullPath = dstFullPath,
-                lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
-            )
-            // move操作，create信息保留
-            if (move) {
-                dstNode.createdBy = operator
-                dstNode.createdDate = LocalDateTime.now()
-            }
-
-            if (!node.folder && existNode == null) {
-                // 同仓库的移动操作不需要检查仓库已使用容量
-                if (!(isSameRepo() && move)) {
-                    repositoryService.checkRepoQuota(dstProjectId, dstRepoName, node.size, 0)
-                }
-            }
-            // 文件 -> 文件 & 允许覆盖: 删除old
-            if (!node.folder && existNode?.folder == false && overwrite) {
-                repositoryService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size, existNode.size)
-                nodeBaseService.deleteByPath(existNode.projectId, existNode.repoName, existNode.fullPath, operator)
-            }
+            val dstNode = buildDstNode(this, node, dstPath, dstName, dstFullPath)
+            // 仓库配额检查
+            checkQuota(context, node, existNode)
 
             // 文件 & 跨存储node
             if (!node.folder && srcCredentials != dstCredentials) {
@@ -161,6 +137,55 @@ open class NodeMoveCopySupport(
                 }
                 nodeDao.updateFirst(query, update)
             }
+        }
+    }
+
+    private fun checkQuota(context: MoveCopyContext, node: TNode, existNode: TNode?) {
+        // 目录不占仓库容量，不需要检查
+        if (node.folder) return
+
+        with(context) {
+            // 文件 -> 文件，目标文件不存在
+            if (existNode == null) {
+                // 同仓库的移动操作不需要检查仓库已使用容量
+                if (!(isSameRepo() && move)) {
+                    repositoryService.checkRepoQuota(dstProjectId, dstRepoName, node.size, 0)
+                }
+            }
+
+            // 文件 -> 文件 & 允许覆盖: 删除old
+            if (existNode?.folder == false && overwrite) {
+                repositoryService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size, existNode.size)
+                nodeBaseService.deleteByPath(existNode.projectId, existNode.repoName, existNode.fullPath, operator)
+            }
+        }
+    }
+
+    private fun buildDstNode(
+        context: MoveCopyContext,
+        node: TNode,
+        dstPath: String,
+        dstName: String,
+        dstFullPath: String
+    ): TNode {
+        with(context) {
+            val dstNode = node.copy(
+                id = null,
+                projectId = dstProjectId,
+                repoName = dstRepoName,
+                path = dstPath,
+                name = dstName,
+                fullPath = dstFullPath,
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now()
+            )
+            // move操作，create信息保留
+            if (move) {
+                dstNode.createdBy = operator
+                dstNode.createdDate = LocalDateTime.now()
+            }
+
+            return dstNode
         }
     }
 

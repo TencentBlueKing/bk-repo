@@ -313,7 +313,7 @@ class RepositoryServiceImpl(
      * 构造单一仓库查询条件
      */
     private fun buildQuery(projectId: String, name: String): Query {
-        val criteria =  where(TRepository::projectId).isEqualTo(projectId)
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
             .and(TRepository::name).isEqualTo(name)
         return Query(criteria)
     }
