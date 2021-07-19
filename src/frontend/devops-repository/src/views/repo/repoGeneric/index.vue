@@ -92,16 +92,14 @@
                                 {{ $t('delete') }}
                             </bk-button>
                         </template>
-                        <template v-if="!selectedRow.folder">
-                            <bk-button @click.stop="handlerShare()" text theme="primary">
-                                <i class="mr5 devops-icon icon-none"></i>
-                                {{ $t('share') }}
-                            </bk-button>
-                            <bk-button @click.stop="handlerDownload()" text theme="primary">
-                                <i class="mr5 devops-icon icon-download"></i>
-                                {{ $t('download') }}
-                            </bk-button>
-                        </template>
+                        <bk-button v-if="!selectedRow.folder" @click.stop="handlerShare()" text theme="primary">
+                            <i class="mr5 devops-icon icon-none"></i>
+                            {{ $t('share') }}
+                        </bk-button>
+                        <bk-button @click.stop="handlerDownload()" text theme="primary">
+                            <i class="mr5 devops-icon icon-download"></i>
+                            {{ $t('download') }}
+                        </bk-button>
                     </template>
                     <template v-else>
                         <template v-if="repoName !== 'pipeline'">
