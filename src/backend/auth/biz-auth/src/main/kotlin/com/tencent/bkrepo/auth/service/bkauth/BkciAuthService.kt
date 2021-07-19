@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.BkciAuthCheckResponse
 import com.tencent.bkrepo.auth.pojo.BkciAuthListResponse
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import okhttp3.Request
@@ -58,7 +59,7 @@ class BkciAuthService @Autowired constructor(
 
     private val resourcePermissionCache = CacheBuilder.newBuilder()
         .maximumSize(20000)
-        .expireAfterWrite(40, TimeUnit.SECONDS)
+        .expireAfterWrite(60, TimeUnit.SECONDS)
         .build<String, Boolean>()
 
     fun isProjectMember(user: String, projectCode: String): Boolean {
@@ -82,7 +83,43 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.error("validateProjectUsers error: [$exception]")
+            logger.error("validateProjectUsers error:", exception)
+            false
+        }
+    }
+
+    fun isProjectSuperAdmin(
+        user: String,
+        projectCode: String,
+        action: BkAuthPermission,
+        resourceType: BkAuthResourceType,
+        permissionAction: PermissionAction?
+    ): Boolean {
+        if (permissionAction != PermissionAction.READ) {
+            return false
+        }
+
+        val cacheKey = "superAdmin::$user::$projectCode"
+        val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)
+        cacheResult?.let {
+            logger.debug("match in cache: $cacheKey|$cacheResult")
+            return cacheResult
+        }
+        val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/local/manager/" +
+            "projects/$projectCode?resourceType=${resourceType.value}&action=${action.value}"
+        logger.debug("validateProjectSuperAdmin, requestUrl: [$url]")
+        return try {
+            val request =
+                Request.Builder().url(url).header(DEVOPS_UID, user)
+                    .header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
+                    .header(DEVOPS_PROJECT_ID, projectCode).get().build()
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
+            logger.debug("validateProjectSuperAdmin  result : [${apiResponse.content.replace("\n","")}]")
+            resourcePermissionCache.put(cacheKey, responseObject.data)
+            responseObject.data
+        } catch (exception: Exception) {
+            logger.error("validateProjectSuperAdmin error: [$exception]")
             false
         }
     }
@@ -115,7 +152,7 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.error("validateUserResourcePermission error: [$exception]")
+            logger.error("validateUserResourcePermission error:", exception)
             false
         }
     }
@@ -139,7 +176,7 @@ class BkciAuthService @Autowired constructor(
             logger.debug("getUserResourceByPermission result : [${apiResponse.content}]")
             return responseObject.data
         } catch (exception: Exception) {
-            logger.error("getUserResourceByPermission error: [$exception]")
+            logger.error("getUserResourceByPermission error: ", exception)
             emptyList()
         }
     }
