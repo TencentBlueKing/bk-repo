@@ -62,6 +62,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -75,6 +76,7 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -191,7 +193,9 @@ class RepositoryServiceImpl(
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
+                quota = quato,
+                used = 0
             )
             return try {
                 if (repoConfiguration is CompositeConfiguration) {
@@ -221,6 +225,10 @@ class RepositoryServiceImpl(
             configuration?.let {
                 updateRepoConfiguration(it, oldConfiguration, repository, operator)
                 repository.configuration = it.toJsonString()
+            }
+            quota?.let {
+                Preconditions.checkArgument(it >= repository.used, this::quota.name)
+                repository.quota = it
             }
             repositoryDao.save(repository)
         }
@@ -254,12 +262,60 @@ class RepositoryServiceImpl(
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 
+    override fun getRepoQuotaInfo(projectId: String, name: String): RepoQuotaInfo {
+        val tRepository = checkRepository(projectId, name, null)
+        with(tRepository) {
+            return RepoQuotaInfo(quota, used)
+        }
+    }
+
+    override fun checkRepoQuota(projectId: String, name: String, inc: Long, dec: Long) {
+        val decVolume = if (dec > 0) -dec else dec
+        val tRepository = checkRepository(projectId, name, null)
+        with(tRepository) {
+            quota?.let {
+                logger.debug("quota: $it, used: $used, inc: $inc, dec: $decVolume")
+                if (used + decVolume < 0 || used + inc + decVolume > it) {
+                    throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_OVER_QUOTA, name)
+                }
+            }
+        }
+    }
+
+    override fun usedVolumeIncrement(projectId: String, name: String, inc: Long) {
+        incUpdateRepoUsedVolume(projectId, name, inc)
+    }
+
+    override fun usedVolumeDecrement(projectId: String, name: String, dec: Long) {
+        val decVolume = if (dec > 0) -dec else dec
+        incUpdateRepoUsedVolume(projectId, name, decVolume)
+    }
+
+    private fun incUpdateRepoUsedVolume(projectId: String, name: String, num: Long) {
+        val query = buildQuery(projectId, name)
+        val tRepository = repositoryDao.findOne(query)
+            ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
+        tRepository.quota?.let {
+            val update = Update().inc(TRepository::used.name, num)
+            repositoryDao.upsert(query, update)
+        }
+    }
+
     /**
      * 检查仓库是否存在，不存在则抛异常
      */
     private fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
+    }
+
+    /**
+     * 构造单一仓库查询条件
+     */
+    private fun buildQuery(projectId: String, name: String): Query {
+        val criteria =  where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::name).isEqualTo(name)
+        return Query(criteria)
     }
 
     /**
@@ -395,7 +451,9 @@ class RepositoryServiceImpl(
             createdBy = operator,
             createdDate = LocalDateTime.now(),
             lastModifiedBy = operator,
-            lastModifiedDate = LocalDateTime.now()
+            lastModifiedDate = LocalDateTime.now(),
+            quota = repository.quota,
+            used = repository.used
         )
         repositoryDao.insert(proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
@@ -454,7 +512,9 @@ class RepositoryServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    quota = it.quota,
+                    used = it.used
                 )
             }
         }
@@ -473,7 +533,9 @@ class RepositoryServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    quota = it.quota,
+                    used = it.used
                 )
             }
         }

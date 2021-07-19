@@ -29,46 +29,37 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.repo
+package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.job.base.CenterNodeJob
+import com.tencent.bkrepo.repository.model.TNode
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Component
 
 /**
- * 仓库详情
+ * 仓库已使用容量的同步任务
  */
-@ApiModel("仓库详情")
-data class RepositoryDetail(
-    @ApiModelProperty("所属项目id")
-    val projectId: String,
-    @ApiModelProperty("仓库名称")
-    val name: String,
-    @ApiModelProperty("仓库类型")
-    val type: RepositoryType,
-    @ApiModelProperty("仓库类别")
-    val category: RepositoryCategory,
-    @ApiModelProperty("是否公开")
-    val public: Boolean,
-    @ApiModelProperty("简要描述")
-    val description: String?,
-    @ApiModelProperty("仓库配置信息")
-    val configuration: RepositoryConfiguration,
-    @ApiModelProperty("存储身份信息")
-    val storageCredentials: StorageCredentials?,
-    @ApiModelProperty("创建者")
-    val createdBy: String,
-    @ApiModelProperty("创建日期")
-    val createdDate: String,
-    @ApiModelProperty("上次修改者")
-    val lastModifiedBy: String,
-    @ApiModelProperty("上次修改日期")
-    val lastModifiedDate: String,
-    @ApiModelProperty("仓库配额")
-    val quota: Long?,
-    @ApiModelProperty("仓库已使用容量")
-    val used: Long
-)
+@Component
+class RepoUsedVolumeSynJob(
+    val repositoryDao: RepositoryDao,
+    val nodeDao: NodeDao
+) : CenterNodeJob() {
+
+    override fun run() {
+        repositoryDao.findAll().forEach { repo ->
+            val query = Query(
+                where(TNode::projectId).isEqualTo(repo.projectId)
+                    .and(TNode::repoName).isEqualTo(repo.name)
+                    .and(TNode::folder).isEqualTo(false)
+                    .and(TNode::deleted).isEqualTo(null)
+            )
+            repo.used = nodeDao.find(query).map { it.size }.sum()
+            repositoryDao.save(repo)
+        }
+    }
+}

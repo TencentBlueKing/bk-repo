@@ -55,6 +55,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -73,6 +74,7 @@ abstract class NodeBaseService(
     open val fileReferenceService: FileReferenceService,
     open val storageCredentialService: StorageCredentialService,
     open val storageService: StorageService,
+    open val repositoryService: RepositoryService,
     open val repositoryProperties: RepositoryProperties
 ) : NodeService, NodeBaseOperation {
 
@@ -126,7 +128,7 @@ abstract class NodeBaseService(
             Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
             Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
             // 路径唯一性校验
-            checkConflict(createRequest, fullPath)
+            checkConflictAndQuota(createRequest, fullPath)
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
@@ -174,6 +176,7 @@ abstract class NodeBaseService(
             nodeDao.insert(node)
             if (!node.folder) {
                 fileReferenceService.increment(node, repository)
+                repositoryService.usedVolumeIncrement(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Insert node[$node] error: [${exception.message}]")
@@ -211,16 +214,20 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun checkConflict(createRequest: NodeCreateRequest, fullPath: String) {
+    private fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
-            nodeDao.findNode(projectId, repoName, fullPath)?.let {
+            val existNode = nodeDao.findNode(projectId, repoName, fullPath)
+            if (existNode != null) {
                 if (!overwrite) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-                } else if (it.folder || this.folder) {
+                } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
+                    repositoryService.checkRepoQuota(projectId, repoName, this.size ?: 0, existNode.size)
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
+            } else {
+                repositoryService.checkRepoQuota(projectId, repoName, this.size ?: 0, 0)
             }
         }
     }
