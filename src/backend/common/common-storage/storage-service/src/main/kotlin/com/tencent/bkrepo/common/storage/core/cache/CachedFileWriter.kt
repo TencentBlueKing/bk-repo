@@ -107,6 +107,7 @@ class CachedFileWriter(
             try {
                 it.flush()
                 it.closeQuietly()
+                Files.createDirectories(cachePath)
                 Files.move(tempFilePath!!, cachePath.resolve(filename), StandardCopyOption.REPLACE_EXISTING)
                 logger.info("Success cache file $filename")
             } catch (ignored: java.nio.file.NoSuchFileException) {
