@@ -46,7 +46,6 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
-import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
@@ -90,7 +89,7 @@ class ChartRepositoryServiceImpl(
         // 先查询index.yaml文件，如果不存在则创建，
         // 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
         with(artifactInfo) {
-            if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
+            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
                 val nodeList = queryNodeList(artifactInfo, false)
                 logger.info(
                     "query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +

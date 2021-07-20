@@ -142,6 +142,13 @@ open class AbstractChartService {
     }
 
     /**
+     * check package version exists
+     */
+    fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
+        return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
+    }
+
+    /**
      * 发布事件
      */
     fun publishEvent(any: Any) {
