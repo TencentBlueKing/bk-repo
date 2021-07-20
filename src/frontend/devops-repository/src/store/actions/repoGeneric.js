@@ -3,6 +3,45 @@ import Vue from 'vue'
 const prefix = 'repository/api'
 
 export default {
+    // 查询文件夹下的所有文件数量（递归）
+    getFileNumOfFolder ({ commit }, { projectId, repoName, fullPath = '/' }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/node/query`,
+            {
+                page: {
+                    pageNumber: 1,
+                    pageSize: 1
+                },
+                rule: {
+                    rules: [
+                        {
+                            field: 'projectId',
+                            value: projectId,
+                            operation: 'EQ'
+                        },
+                        {
+                            field: 'repoName',
+                            value: repoName,
+                            operation: 'EQ'
+                        },
+                        {
+                            field: 'fullPath',
+                            value: fullPath,
+                            operation: 'PREFIX'
+                        },
+                        {
+                            field: 'folder',
+                            value: false,
+                            operation: 'EQ'
+                        }
+                    ],
+                    relation: 'AND'
+                }
+            }
+        ).then(({ totalRecords }) => {
+            return totalRecords
+        })
+    },
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
         const path = `${fullPath === '/' ? '' : fullPath}/`
