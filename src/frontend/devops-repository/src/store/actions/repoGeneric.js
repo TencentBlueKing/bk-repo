@@ -68,14 +68,15 @@ export default {
         )
     },
     // 请求文件夹下的文件夹及制品
-    getArtifactoryList (_, { projectId, repoName, fullPath, current, limit, includeFolder = true, includeMetadata = true, deep = false, isPipeline = false }) {
-        if (isPipeline) {
-            const path = `${fullPath === '/' ? '' : fullPath}/`
+    getArtifactoryList (_, { projectId, repoName, fullPath, current, limit, isPipeline = false, sortType = 'lastModifiedDate' }) {
+        const path = `${fullPath === '/' ? '' : fullPath}/`
+        if (isPipeline && path === '/') {
             if (path === '/') {
                 return Vue.prototype.$ajax.get(
                     `${prefix}/pipeline/list/${projectId}`
                 ).then(records => ({ records, totalRecords: 0 }))
             }
+        } else {
             return Vue.prototype.$ajax.post(
                 `${prefix}/node/query`,
                 {
@@ -84,7 +85,7 @@ export default {
                         pageSize: limit
                     },
                     sort: {
-                        properties: ['lastModifiedDate'],
+                        properties: ['folder', sortType],
                         direction: 'DESC'
                     },
                     rule: {
@@ -106,20 +107,6 @@ export default {
                             }
                         ],
                         relation: 'AND'
-                    }
-                }
-            )
-        } else {
-            return Vue.prototype.$ajax.get(
-                `${prefix}/node/page/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
-                {
-                    params: {
-                        pageNumber: current,
-                        pageSize: limit,
-                        includeFolder,
-                        includeMetadata,
-                        deep,
-                        sort: true
                     }
                 }
             )

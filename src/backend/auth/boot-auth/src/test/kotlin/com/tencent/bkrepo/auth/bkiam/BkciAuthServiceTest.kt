@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.bkiam
 import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.service.bkauth.BkciAuthService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -61,6 +62,20 @@ class BkciAuthServiceTest {
         Assertions.assertEquals(result1, true)
         val result2 = bkciAuthService.isProjectMember("aa", "bkrepo2")
         Assertions.assertEquals(result2, false)
+    }
+
+    @Test
+    @DisplayName("超级管理员权限测试")
+    fun checkUserProjectSuperAdminTest() {
+        val bkciAuthService = BkciAuthService(bkAuthConfig)
+        val result1 = bkciAuthService.isProjectSuperAdmin(
+            "aa",
+            "bkrepo",
+            BkAuthPermission.DOWNLOAD,
+            BkAuthResourceType.PIPELINE_DEFAULT,
+            PermissionAction.READ
+        )
+        Assertions.assertEquals(result1, false)
     }
 
     @Test
