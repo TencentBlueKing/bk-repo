@@ -374,7 +374,8 @@
                 'moveNode',
                 'copyNode',
                 'shareArtifactory',
-                'getFolderSize'
+                'getFolderSize',
+                'getFileNumOfFolder'
             ]),
             async initPage () {
                 this.importantSearch = ''
@@ -653,16 +654,27 @@
                 })
             },
             async deleteRes () {
+                if (!this.selectedRow.fullPath) return
+                let totalRecords
+                if (this.selectedRow.folder) {
+                    totalRecords = await this.getFileNumOfFolder({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        fullPath: this.selectedRow.fullPath
+                    })
+                }
                 this.$bkInfo({
-                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')}？`,
+                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')} ${this.selectedRow.name} ？`,
+                    subTitle: `${this.selectedRow.folder && totalRecords ? `当前文件夹下存在${totalRecords}个文件` : ''}`,
                     closeIcon: false,
                     theme: 'danger',
+                    confirmLoading: true,
                     confirmFn: () => {
-                        this.deleteArtifactory({
+                        return this.deleteArtifactory({
                             projectId: this.projectId,
                             repoName: this.repoName,
                             fullPath: this.selectedRow.fullPath
-                        }).then(res => {
+                        }).then(() => {
                             this.selectRow(this.selectedTreeNode)
                             this.updateGenericTreeNode(this.selectedTreeNode)
                             this.getArtifactories()
@@ -681,7 +693,7 @@
                     type: 'move',
                     title: `${this.$t('move')} (${this.selectedRow.name})`,
                     openList: [],
-                    selectedNode: {}
+                    selectedNode: this.genericTree[0]
                 }
             },
             copyRes () {
@@ -691,7 +703,7 @@
                     type: 'copy',
                     title: `${this.$t('copy')} (${this.selectedRow.name})`,
                     openList: [],
-                    selectedNode: {}
+                    selectedNode: this.genericTree[0]
                 }
             },
             changeDialogTreeNode (item) {
@@ -707,7 +719,7 @@
                         srcFullPath: this.selectedRow.fullPath,
                         destProjectId: this.projectId,
                         destRepoName: this.repoName,
-                        destFullPath: `${this.treeDialog.selectedNode.fullPath}`,
+                        destFullPath: `${this.treeDialog.selectedNode.fullPath || '/'}`,
                         overwrite: false
                     }
                 }).then(res => {
@@ -855,5 +867,10 @@
 .dialog-tree-container {
     max-height: 500px;
     overflow: auto;
+}
+</style>
+<style lang="scss">
+.bk-dialog-header-inner {
+    white-space: inherit!important;
 }
 </style>
