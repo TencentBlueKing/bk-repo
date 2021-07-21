@@ -47,6 +47,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordListOption
 import com.tencent.bkrepo.replication.pojo.record.ReplicaTaskRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.CronUtils
@@ -241,7 +242,8 @@ class ReplicaRecordServiceImpl(
         private val logger = LoggerFactory.getLogger(ReplicaRecordServiceImpl::class.java)
 
         private fun isCronJob(tReplicaTask: TReplicaTask): Boolean {
-            return !tReplicaTask.setting.executionPlan.cronExpression.isNullOrBlank()
+            return !tReplicaTask.setting.executionPlan.cronExpression.isNullOrBlank() &&
+                tReplicaTask.replicaType == ReplicaType.SCHEDULED
         }
 
         private fun convert(tReplicaRecord: TReplicaRecord?): ReplicaRecordInfo? {
