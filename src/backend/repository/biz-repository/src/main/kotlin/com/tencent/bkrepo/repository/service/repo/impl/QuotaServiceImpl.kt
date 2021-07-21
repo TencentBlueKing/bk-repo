@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
@@ -52,14 +53,6 @@ class QuotaServiceImpl(
     private val repositoryDao: RepositoryDao
 ) : QuotaService {
 
-    companion object {
-        private const val KB = 1024.0
-        private const val MB = 1048576.0
-        private const val GB = 1073741824.0
-        private const val TB = 1099511627776.0
-        private const val PB = 1125899906842624.0
-    }
-
     override fun getRepoQuotaInfo(projectId: String, repoName: String): RepoQuotaInfo {
         val tRepository = checkRepository(projectId, repoName)
         with(tRepository) {
@@ -76,7 +69,7 @@ class QuotaServiceImpl(
                     throw ErrorCodeException(
                         ArtifactMessageCode.REPOSITORY_OVER_QUOTA,
                         name,
-                        byteCountToDisplaySize(quota!!)
+                        HumanReadable.size(quota!!)
                     )
                 }
             }
@@ -117,37 +110,5 @@ class QuotaServiceImpl(
         val query = buildQuery(projectId, repoName)
         return repositoryDao.findOne(query)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-    }
-
-    /**
-     * 仓库配额由字节单位转换成高可读性的
-     */
-    private fun byteCountToDisplaySize(quota: Long): String {
-        val kb = quota.div(KB)
-        val mb = quota.div(MB)
-        val gb = quota.div(GB)
-        val tb = quota.div(TB)
-        val pb = quota.div(PB)
-
-        return when {
-            pb > 1 -> {
-                String.format("%.2f PB", pb)
-            }
-            tb > 1 -> {
-                String.format("%.2f TB", tb)
-            }
-            gb > 1 -> {
-                String.format("%.2f GB", gb)
-            }
-            mb > 1 -> {
-                String.format("%.2f MB", mb)
-            }
-            kb > 1 -> {
-                String.format("%.2f KB", kb)
-            }
-            else -> {
-                String.format("%d Bytes", quota)
-            }
-        }
     }
 }
