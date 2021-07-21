@@ -113,7 +113,6 @@ open class NodeDeleteSupport(
         return aggregateResult.mappedResults.firstOrNull()?.get(NodeSizeInfo::size.name) as? Long ?: 0
     }
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)
     }

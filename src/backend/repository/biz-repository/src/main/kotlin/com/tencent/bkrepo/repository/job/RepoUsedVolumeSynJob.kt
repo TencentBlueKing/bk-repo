@@ -64,6 +64,5 @@ class RepoUsedVolumeSynJob(
             querySize = repoList.size
             pageNum ++
         } while (querySize == pageSize)
-
     }
 }
