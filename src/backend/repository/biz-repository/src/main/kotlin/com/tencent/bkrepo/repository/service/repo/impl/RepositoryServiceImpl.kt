@@ -215,7 +215,10 @@ class RepositoryServiceImpl(
         repoUpdateRequest.apply {
             Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             val repository = checkRepository(projectId, name)
-            Preconditions.checkArgument(quota ?: 0 >= repository.used ?: 0, this::quota.name)
+            quota?.let {
+                Preconditions.checkArgument(it >= repository.used ?: 0, this::quota.name)
+                repository.quota = it
+            }
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
             repository.public = public ?: repository.public
             repository.description = description ?: repository.description
@@ -224,9 +227,6 @@ class RepositoryServiceImpl(
             configuration?.let {
                 updateRepoConfiguration(it, oldConfiguration, repository, operator)
                 repository.configuration = it.toJsonString()
-            }
-            quota?.let {
-                repository.quota = it
             }
             repositoryDao.save(repository)
         }
