@@ -55,7 +55,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.node.NodeBaseOperation
 import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -74,7 +74,7 @@ abstract class NodeBaseService(
     open val fileReferenceService: FileReferenceService,
     open val storageCredentialService: StorageCredentialService,
     open val storageService: StorageService,
-    open val repositoryService: RepositoryService,
+    open val quotaService: QuotaService,
     open val repositoryProperties: RepositoryProperties
 ) : NodeService, NodeBaseOperation {
 
@@ -176,7 +176,7 @@ abstract class NodeBaseService(
             nodeDao.insert(node)
             if (!node.folder) {
                 fileReferenceService.increment(node, repository)
-                repositoryService.usedVolumeIncrement(node.projectId, node.repoName, node.size)
+                quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Insert node[$node] error: [${exception.message}]")
@@ -223,11 +223,11 @@ abstract class NodeBaseService(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    repositoryService.checkRepoQuota(projectId, repoName, this.size ?: 0, existNode.size)
+                    quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0, existNode.size)
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             } else {
-                repositoryService.checkRepoQuota(projectId, repoName, this.size ?: 0, 0)
+                quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0, 0)
             }
         }
     }

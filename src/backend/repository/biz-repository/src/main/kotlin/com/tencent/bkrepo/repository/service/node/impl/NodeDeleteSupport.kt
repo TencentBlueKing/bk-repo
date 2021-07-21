@@ -34,13 +34,18 @@ package com.tencent.bkrepo.repository.service.node.impl
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
@@ -54,7 +59,7 @@ open class NodeDeleteSupport(
 ) : NodeDeleteOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
-    private val repositoryService: RepositoryService = nodeBaseService.repositoryService
+    private val quotaService: QuotaService = nodeBaseService.quotaService
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest) {
         with(deleteRequest) {
@@ -66,17 +71,17 @@ open class NodeDeleteSupport(
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val normalizedPath = PathUtils.toPath(normalizedFullPath)
         val escapedPath = PathUtils.escapeRegex(normalizedPath)
-        val query = NodeQueryHelper.nodeQuery(projectId, repoName)
-        query.addCriteria(
-            Criteria().orOperator(
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(null)
+            .orOperator(
                 where(TNode::fullPath).regex("^$escapedPath"),
                 where(TNode::fullPath).isEqualTo(normalizedFullPath)
             )
-        )
-        val deleteNodes = nodeDao.find(query)
-        val deleteNodesSize = deleteNodes.map { it.size }.sum()
+        val query = Query(criteria)
+        val deleteNodesSize = computeNodeSize(criteria)
         try {
-            repositoryService.usedVolumeDecrement(projectId, repoName, deleteNodesSize)
+            quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
             nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName$fullPath] error: [${exception.message}]")
@@ -85,21 +90,30 @@ open class NodeDeleteSupport(
     }
 
     override fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String) {
-        val query = NodeQueryHelper.nodeQuery(projectId, repoName)
-        query.addCriteria(
-            Criteria().and(TNode::folder).isEqualTo(false)
-                .and(TNode::createdDate).lt(date)
-        )
-        val deleteNodes = nodeDao.find(query)
-        val deleteNodesSize = deleteNodes.map { it.size }.sum()
+        val option = NodeListOption(includeFolder = false, deep = true)
+        val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
+            .and(TNode::createdDate).lt(date)
+        val query = Query(criteria)
+        val deleteNodesSize = computeNodeSize(criteria)
         try {
-            repositoryService.usedVolumeDecrement(projectId, repoName, deleteNodesSize)
+            quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
             nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName] created before $date error: [${exception.message}]")
         }
         logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success.")
     }
+
+    private fun computeNodeSize(criteria: Criteria): Long {
+        val aggregation = Aggregation.newAggregation(
+            Aggregation.match(criteria),
+            Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
+        )
+
+        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
+        return aggregateResult.mappedResults.firstOrNull()?.get(NodeSizeInfo::size.name) as? Long ?: 0
+    }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(NodeDeleteSupport::class.java)

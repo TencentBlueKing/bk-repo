@@ -31,14 +31,12 @@
 
 package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.job.base.CenterNodeJob
-import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 
 /**
@@ -46,20 +44,26 @@ import org.springframework.stereotype.Component
  */
 @Component
 class RepoUsedVolumeSynJob(
-    val repositoryDao: RepositoryDao,
-    val nodeDao: NodeDao
+    private val nodeBaseService: NodeBaseService
 ) : CenterNodeJob() {
 
+    private val repositoryDao = nodeBaseService.repositoryDao
+
     override fun run() {
-        repositoryDao.findAll().forEach { repo ->
-            val query = Query(
-                where(TNode::projectId).isEqualTo(repo.projectId)
-                    .and(TNode::repoName).isEqualTo(repo.name)
-                    .and(TNode::folder).isEqualTo(false)
-                    .and(TNode::deleted).isEqualTo(null)
-            )
-            repo.used = nodeDao.find(query).map { it.size }.sum()
-            repositoryDao.save(repo)
-        }
+        var pageNum = 1
+        val pageSize = 1000
+        var querySize: Int
+        do {
+            val pageRequest = Pages.ofRequest(pageNum, pageSize)
+            val repoList = repositoryDao.find(Query().with(pageRequest))
+            repoList.forEach {
+                val usedVolume = nodeBaseService.computeSize(ArtifactInfo(it.projectId, it.name, PathUtils.ROOT)).size
+                it.used = usedVolume
+                repositoryDao.save(it)
+            }
+            querySize = repoList.size
+            pageNum ++
+        } while (querySize == pageSize)
+
     }
 }

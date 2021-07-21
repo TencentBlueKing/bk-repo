@@ -45,6 +45,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -64,7 +65,8 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/repo")
 class UserRepositoryController(
     private val permissionManager: PermissionManager,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+    private val quotaService: QuotaService
 ) {
 
     @ApiOperation("根据名称类型查询仓库")
@@ -110,7 +112,7 @@ class UserRepositoryController(
                 configuration = configuration,
                 storageCredentialsKey = storageCredentialsKey,
                 operator = userId,
-                quato = quota
+                quota = quota
             )
         }
         repositoryService.createRepo(createRequest)
@@ -159,7 +161,7 @@ class UserRepositoryController(
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<RepoQuotaInfo> {
-        return ResponseBuilder.success(repositoryService.getRepoQuotaInfo(projectId, repoName))
+        return ResponseBuilder.success(quotaService.getRepoQuotaInfo(projectId, repoName))
     }
 
     @ApiOperation("修改仓库配额")

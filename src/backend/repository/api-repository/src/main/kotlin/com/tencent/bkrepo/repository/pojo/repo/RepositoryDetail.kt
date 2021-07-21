@@ -70,5 +70,5 @@ data class RepositoryDetail(
     @ApiModelProperty("仓库配额")
     val quota: Long?,
     @ApiModelProperty("仓库已使用容量")
-    val used: Long
+    val used: Long?
 )

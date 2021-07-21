@@ -44,9 +44,8 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
-import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -61,7 +60,7 @@ class NodeServiceImpl(
     override val fileReferenceService: FileReferenceService,
     override val storageCredentialService: StorageCredentialService,
     override val storageService: StorageService,
-    @Lazy override val repositoryService: RepositoryService,
+    override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties
 ) : NodeBaseService(
     nodeDao,
@@ -69,7 +68,7 @@ class NodeServiceImpl(
     fileReferenceService,
     storageCredentialService,
     storageService,
-    repositoryService,
+    quotaService,
     repositoryProperties
 ) {
 

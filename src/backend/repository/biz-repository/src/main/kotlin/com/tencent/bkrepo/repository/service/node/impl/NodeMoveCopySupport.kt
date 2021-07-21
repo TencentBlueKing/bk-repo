@@ -52,6 +52,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.service.node.NodeMoveCopyOperation
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -69,7 +70,7 @@ open class NodeMoveCopySupport(
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
     private val repositoryDao: RepositoryDao = nodeBaseService.repositoryDao
     private val storageCredentialService: StorageCredentialService = nodeBaseService.storageCredentialService
-    private val repositoryService: RepositoryService = nodeBaseService.repositoryService
+    private val quotaService: QuotaService = nodeBaseService.quotaService
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
@@ -133,7 +134,7 @@ open class NodeMoveCopySupport(
                 val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
                 val update = NodeQueryHelper.nodeDeleteUpdate(operator)
                 if (!node.folder) {
-                    repositoryService.usedVolumeDecrement(node.projectId, node.repoName, node.size)
+                    quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
                 }
                 nodeDao.updateFirst(query, update)
             }
@@ -149,13 +150,13 @@ open class NodeMoveCopySupport(
             if (existNode == null) {
                 // 同仓库的移动操作不需要检查仓库已使用容量
                 if (!(isSameRepo() && move)) {
-                    repositoryService.checkRepoQuota(dstProjectId, dstRepoName, node.size, 0)
+                    quotaService.checkRepoQuota(dstProjectId, dstRepoName, node.size, 0)
                 }
             }
 
             // 文件 -> 文件 & 允许覆盖: 删除old
             if (existNode?.folder == false && overwrite) {
-                repositoryService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size, existNode.size)
+                quotaService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size, existNode.size)
                 nodeBaseService.deleteByPath(existNode.projectId, existNode.repoName, existNode.fullPath, operator)
             }
         }

@@ -131,40 +131,4 @@ interface RepositoryService {
      * 删除仓库前，需要保证仓库下的文件已经被删除
      */
     fun deleteRepo(repoDeleteRequest: RepoDeleteRequest)
-
-    /**
-     * 查询仓库配额信息
-     *
-     * @param projectId 项目id
-     * @param name 仓库名称
-     */
-    fun getRepoQuotaInfo(projectId: String, name: String): RepoQuotaInfo
-
-    /**
-     * 检查之后的文件操作是否会超过仓库配额
-     *
-     * @param projectId 项目id
-     * @param name 仓库名称
-     * @param inc 将要增加的使用容量
-     * @param dec 将要减少的使用容量
-     */
-    fun checkRepoQuota(projectId: String, name: String, inc: Long, dec: Long)
-
-    /**
-     * 增加仓库已使用的容量
-     *
-     * @param projectId 项目id
-     * @param name 仓库名称
-     * @param inc 新增使用容量
-     */
-    fun usedVolumeIncrement(projectId: String, name: String, inc: Long)
-
-    /**
-     * 释放仓库已使用的容量
-     *
-     * @param projectId 项目id
-     * @param name 仓库名称
-     * @param dec 释放使用容量
-     */
-    fun usedVolumeDecrement(projectId: String, name: String, dec: Long)
 }

@@ -194,7 +194,7 @@ class RepositoryServiceImpl(
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now(),
-                quota = quato,
+                quota = quota,
                 used = 0
             )
             return try {
@@ -217,6 +217,7 @@ class RepositoryServiceImpl(
         repoUpdateRequest.apply {
             Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             val repository = checkRepository(projectId, name)
+            Preconditions.checkArgument(quota ?: 0 >= repository.used ?: 0, this::quota.name)
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
             repository.public = public ?: repository.public
             repository.description = description ?: repository.description
@@ -227,7 +228,6 @@ class RepositoryServiceImpl(
                 repository.configuration = it.toJsonString()
             }
             quota?.let {
-                Preconditions.checkArgument(it >= repository.used, this::quota.name)
                 repository.quota = it
             }
             repositoryDao.save(repository)
@@ -262,60 +262,12 @@ class RepositoryServiceImpl(
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 
-    override fun getRepoQuotaInfo(projectId: String, name: String): RepoQuotaInfo {
-        val tRepository = checkRepository(projectId, name, null)
-        with(tRepository) {
-            return RepoQuotaInfo(quota, used)
-        }
-    }
-
-    override fun checkRepoQuota(projectId: String, name: String, inc: Long, dec: Long) {
-        val decVolume = if (dec > 0) -dec else dec
-        val tRepository = checkRepository(projectId, name, null)
-        with(tRepository) {
-            quota?.let {
-                logger.debug("quota: $it, used: $used, inc: $inc, dec: $decVolume")
-                if (used + decVolume < 0 || used + inc + decVolume > it) {
-                    throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_OVER_QUOTA, name)
-                }
-            }
-        }
-    }
-
-    override fun usedVolumeIncrement(projectId: String, name: String, inc: Long) {
-        incUpdateRepoUsedVolume(projectId, name, inc)
-    }
-
-    override fun usedVolumeDecrement(projectId: String, name: String, dec: Long) {
-        val decVolume = if (dec > 0) -dec else dec
-        incUpdateRepoUsedVolume(projectId, name, decVolume)
-    }
-
-    private fun incUpdateRepoUsedVolume(projectId: String, name: String, num: Long) {
-        val query = buildQuery(projectId, name)
-        val tRepository = repositoryDao.findOne(query)
-            ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, name)
-        tRepository.quota?.let {
-            val update = Update().inc(TRepository::used.name, num)
-            repositoryDao.upsert(query, update)
-        }
-    }
-
     /**
      * 检查仓库是否存在，不存在则抛异常
      */
     private fun checkRepository(projectId: String, repoName: String, repoType: String? = null): TRepository {
         return repositoryDao.findByNameAndType(projectId, repoName, repoType)
             ?: throw ErrorCodeException(REPOSITORY_NOT_FOUND, repoName)
-    }
-
-    /**
-     * 构造单一仓库查询条件
-     */
-    private fun buildQuery(projectId: String, name: String): Query {
-        val criteria = where(TRepository::projectId).isEqualTo(projectId)
-            .and(TRepository::name).isEqualTo(name)
-        return Query(criteria)
     }
 
     /**
