@@ -51,10 +51,9 @@ interface QuotaService {
      *
      * @param projectId 项目id
      * @param repoName 仓库名称
-     * @param inc 将要增加的使用容量
-     * @param dec 将要减少的使用容量
+     * @param change 将要改变的使用容量
      */
-    fun checkRepoQuota(projectId: String, repoName: String, inc: Long, dec: Long)
+    fun checkRepoQuota(projectId: String, repoName: String, change: Long)
 
     /**
      * 增加仓库已使用的容量

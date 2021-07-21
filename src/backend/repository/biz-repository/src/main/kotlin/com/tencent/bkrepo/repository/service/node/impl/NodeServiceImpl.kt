@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -74,6 +75,10 @@ class NodeServiceImpl(
 
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact)
+    }
+
+    override fun aggregateComputeSize(criteria: Criteria): Long {
+        return NodeStatsSupport(this).aggregateComputeSize(criteria)
     }
 
     override fun countFileNode(artifact: ArtifactInfo): Long {

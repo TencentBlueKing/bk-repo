@@ -149,13 +149,13 @@ open class NodeMoveCopySupport(
             if (existNode == null) {
                 // 同仓库的移动操作不需要检查仓库已使用容量
                 if (!(isSameRepo() && move)) {
-                    quotaService.checkRepoQuota(dstProjectId, dstRepoName, node.size, 0)
+                    quotaService.checkRepoQuota(dstProjectId, dstRepoName, node.size)
                 }
             }
 
             // 文件 -> 文件 & 允许覆盖: 删除old
             if (existNode?.folder == false && overwrite) {
-                quotaService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size, existNode.size)
+                quotaService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size-existNode.size)
                 nodeBaseService.deleteByPath(existNode.projectId, existNode.repoName, existNode.fullPath, operator)
             }
         }

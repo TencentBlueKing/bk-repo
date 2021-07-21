@@ -60,12 +60,11 @@ class QuotaServiceImpl(
         }
     }
 
-    override fun checkRepoQuota(projectId: String, repoName: String, inc: Long, dec: Long) {
-        val decVolume = if (dec > 0) -dec else dec
+    override fun checkRepoQuota(projectId: String, repoName: String, change: Long) {
         val tRepository = checkRepository(projectId, repoName)
         with(tRepository) {
             quota?.let {
-                if (used!! + decVolume < 0 || used!! + inc + decVolume > it) {
+                if (used!! + change < 0 || used!! + change > it) {
                     throw ErrorCodeException(
                         ArtifactMessageCode.REPOSITORY_OVER_QUOTA,
                         name,

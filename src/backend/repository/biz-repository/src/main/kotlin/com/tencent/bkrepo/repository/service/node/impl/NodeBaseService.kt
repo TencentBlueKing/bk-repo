@@ -223,11 +223,11 @@ abstract class NodeBaseService(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0, existNode.size)
+                    quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0 - existNode.size)
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             } else {
-                quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0, 0)
+                quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
             }
         }
     }

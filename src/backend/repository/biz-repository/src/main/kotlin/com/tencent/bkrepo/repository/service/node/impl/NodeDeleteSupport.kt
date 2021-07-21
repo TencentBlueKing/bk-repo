@@ -35,15 +35,12 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.data.mongodb.core.aggregation.Aggregation
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -54,7 +51,7 @@ import java.time.LocalDateTime
  * 节点统计接口实现
  */
 open class NodeDeleteSupport(
-    nodeBaseService: NodeBaseService
+    private val nodeBaseService: NodeBaseService
 ) : NodeDeleteOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
@@ -78,7 +75,7 @@ open class NodeDeleteSupport(
                 where(TNode::fullPath).isEqualTo(normalizedFullPath)
             )
         val query = Query(criteria)
-        val deleteNodesSize = computeNodeSize(criteria)
+        val deleteNodesSize = nodeBaseService.aggregateComputeSize(criteria)
         try {
             quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
             nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
@@ -93,7 +90,7 @@ open class NodeDeleteSupport(
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
             .and(TNode::createdDate).lt(date)
         val query = Query(criteria)
-        val deleteNodesSize = computeNodeSize(criteria)
+        val deleteNodesSize = nodeBaseService.aggregateComputeSize(criteria)
         try {
             quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
             nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
@@ -101,16 +98,6 @@ open class NodeDeleteSupport(
             logger.warn("Delete node[/$projectId/$repoName] created before $date error: [${exception.message}]")
         }
         logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success.")
-    }
-
-    private fun computeNodeSize(criteria: Criteria): Long {
-        val aggregation = Aggregation.newAggregation(
-            Aggregation.match(criteria),
-            Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
-        )
-
-        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
-        return aggregateResult.mappedResults.firstOrNull()?.get(NodeSizeInfo::size.name) as? Long ?: 0
     }
 
     companion object {
