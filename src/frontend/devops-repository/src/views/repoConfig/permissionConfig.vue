@@ -279,8 +279,8 @@
                 'getRepoDepartmentDetail'
             ]),
             filterSelectOptions (target, part) {
-                const list = Object.values({ users: this.userList.filter(user => user.id !== 'anonymous'), roles: this.roleList }[part])
-                return list.filter(v => !target.data.find(w => w === v.id))
+                const list = Object.values({ users: this.userList, roles: this.roleList }[part])
+                return list.filter(v => !target.data.find(w => w === v.id) && v.id !== 'anonymous')
             },
             handleShowAddArea (target) {
                 target.showAddArea = !target.showAddArea
