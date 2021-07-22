@@ -16,12 +16,30 @@
                 <bk-form-item label="计划名称" :required="true" property="name" error-display-type="normal">
                     <bk-input style="max-width:400px" v-model.trim="planForm.name" maxlength="32" :disabled="disabled"></bk-input>
                 </bk-form-item>
+                <bk-form-item label="同步类型" :required="true" property="replicaObjectType">
+                    <bk-radio-group v-model="planForm.replicaObjectType" class="replica-type-radio-group" @change="changeReplicaObjectType">
+                        <bk-radio-button
+                            class="mr20"
+                            v-for="type in replicaObjectTypeList"
+                            :key="type.value"
+                            :value="type.value"
+                            :disabled="disabled">
+                            <div class="replica-type-radio">
+                                <label class="replica-type-label">{{ type.label }}</label>
+                                <div class="mt5 replica-type-tip">{{ type.tip }}</div>
+                                <div v-show="type.value === planForm.replicaObjectType" class="top-right-selected">
+                                    <i class="devops-icon icon-check-1"></i>
+                                </div>
+                            </div>
+                        </bk-radio-button>
+                    </bk-radio-group>
+                </bk-form-item>
                 <bk-form-item label="同步策略" :required="true">
                     <bk-radio-group v-model="planForm.executionStrategy">
                         <bk-radio class="mr20" value="IMMEDIATELY" :disabled="disabled">立即执行</bk-radio>
                         <bk-radio class="mr20" value="SPECIFIED_TIME" :disabled="disabled">指定时间</bk-radio>
                         <bk-radio class="mr20" value="CRON_EXPRESSION" :disabled="disabled">定时执行</bk-radio>
-                        <bk-radio class="mr20" value="REAL_TIME" :disabled="disabled">实时同步</bk-radio>
+                        <bk-radio v-if="planForm.replicaObjectType === 'REPOSITORY'" class="mr20" value="REAL_TIME" :disabled="disabled">实时同步</bk-radio>
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item v-if="planForm.executionStrategy === 'SPECIFIED_TIME'" label="时间" :required="true" property="time" error-display-type="normal">
@@ -49,23 +67,6 @@
                         <span v-else-if="planForm.conflictStrategy === 'OVERWRITE'">当目标节点存在相同制品时，覆盖原制品并继续执行计划</span>
                         <span v-else-if="planForm.conflictStrategy === 'FAST_FAIL'">当目标节点存在相同制品时，终止执行计划</span>
                     </div>
-                </bk-form-item>
-                <bk-form-item label="同步类型" :required="true" property="replicaObjectType">
-                    <bk-radio-group v-model="planForm.replicaObjectType" class="replica-type-radio-group" @change="changeReplicaObjectType">
-                        <bk-radio-button
-                            v-for="type in replicaObjectTypeList"
-                            :key="type.value"
-                            :value="type.value"
-                            :disabled="disabled">
-                            <div class="replica-type-radio">
-                                <label class="replica-type-label">{{ type.label }}</label>
-                                <div class="mt5 replica-type-tip">{{ type.tip }}</div>
-                                <div v-show="type.value === planForm.replicaObjectType" class="top-right-selected">
-                                    <i class="devops-icon icon-check-1"></i>
-                                </div>
-                            </div>
-                        </bk-radio-button>
-                    </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item label="同步对象" :required="true" property="config" error-display-type="normal">
                     <template v-if="planForm.replicaObjectType === 'REPOSITORY'">
@@ -207,14 +208,10 @@
                 return this.routeName === 'planDetail'
             },
             replicaObjectTypeList () {
-                // init
-                this.planForm.executionStrategy === 'REAL_TIME' && (this.planForm.replicaObjectType = 'REPOSITORY')
                 return [
                     { label: '仓库', value: 'REPOSITORY', tip: '同步多个仓库' },
-                    ...(this.planForm.executionStrategy === 'REAL_TIME' ? [] : [
-                        { label: '制品', value: 'PACKAGE', tip: '同步同一仓库下多个包' },
-                        { label: '文件', value: 'PATH', tip: '同步同一仓库下多个文件' }
-                    ])
+                    { label: '制品', value: 'PACKAGE', tip: '同步同一仓库下多个包' },
+                    { label: '文件', value: 'PATH', tip: '同步同一仓库下多个文件' }
                 ]
             }
         },
@@ -272,6 +269,7 @@
             },
             changeReplicaObjectType () {
                 this.replicaTaskObjects = []
+                this.planForm.executionStrategy === 'REAL_TIME' && (this.planForm.executionStrategy = 'IMMEDIATELY')
                 this.clearError()
             },
             clearError () {
@@ -388,7 +386,6 @@
             }
             .replica-type-radio-group {
                 /deep/ .bk-form-radio-button {
-                    margin: 0 20px 20px 0;
                     .bk-radio-button-text {
                         height: auto;
                         line-height: initial;
