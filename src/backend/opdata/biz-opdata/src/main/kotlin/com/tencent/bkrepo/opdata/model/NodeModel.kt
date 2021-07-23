@@ -49,4 +49,8 @@ class NodeModel @Autowired constructor(
             return RepoMetrics(repoName, 0L, 0L)
         }
     }
+
+    fun getNodeSizeDistribution(projectId: String, range: List<String>): Map<String, Long> {
+        return nodeClient.computeSizeDistribution(projectId, range).data ?: hashMapOf()
+    }
 }

@@ -148,6 +148,15 @@ interface NodeClient {
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
+    @ApiOperation("查询节点大小分布")
+    @PostMapping("/distribution/{projectId}")
+    fun computeSizeDistribution(
+        @ApiParam(value = "所属项目", required = false)
+        @PathVariable projectId: String,
+        @ApiParam(value = "节点大小分布范围", required = true)
+        @RequestParam range: List<String>
+    ): Response<Map<String, Long>>
+
     @Deprecated("replace with listNodePage")
     @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")

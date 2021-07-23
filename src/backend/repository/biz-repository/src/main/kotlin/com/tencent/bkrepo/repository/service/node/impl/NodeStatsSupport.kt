@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -41,7 +42,11 @@ import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.service.node.NodeStatsOperation
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 
 /**
  * 节点统计接口
@@ -85,5 +90,22 @@ open class NodeStatsSupport(
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), listOption)
             return nodeDao.count(query)
         }
+    }
+
+    override fun computeSizeDistribution(projectId: String, range: List<Long>): Map<String, Long> {
+        val resultMap = HashMap<String, Long>()
+        for (i in range.indices) {
+            val lowerLimit = range[i]
+            val upperLimit = if (i+1 == range.size) null else range[i+1]
+            val query = Query(
+                where(TNode::projectId).isEqualTo(projectId)
+                    .and(TNode::deleted).isEqualTo(null)
+                    .and(TNode::folder).isEqualTo(false)
+                    .and(TNode::size).gte(lowerLimit)
+                    .apply { upperLimit?.run { lt(upperLimit) } }
+            )
+            resultMap[lowerLimit.toString()] = nodeDao.count(query)
+        }
+        return resultMap
     }
 }

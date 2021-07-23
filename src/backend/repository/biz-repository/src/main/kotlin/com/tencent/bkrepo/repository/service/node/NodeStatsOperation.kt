@@ -48,4 +48,9 @@ interface NodeStatsOperation {
      * 查询文件节点数量
      */
     fun countFileNode(artifact: ArtifactInfo): Long
+
+    /**
+     * 计算文件大小分布
+     */
+    fun computeSizeDistribution(projectId: String, range: List<Long>): Map<String, Long>
 }

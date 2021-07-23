@@ -32,6 +32,11 @@
 package com.tencent.bkrepo.opdata.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.opdata.constant.B_0
+import com.tencent.bkrepo.opdata.constant.GB_1
+import com.tencent.bkrepo.opdata.constant.GB_10
+import com.tencent.bkrepo.opdata.constant.MB_100
+import com.tencent.bkrepo.opdata.constant.MB_500
 import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.RepoModel
@@ -60,6 +65,7 @@ class ProjectStatJob(
             var repoCapSize = 0L
             var repoNodeNum = 0L
             val projectId = it.name
+            val sizeDistribution =  nodeModel.getNodeSizeDistribution(projectId, sizeRange)
             val repos = repoModel.getRepoListByProjectId(it.name)
             var repoMetrics = mutableListOf<RepoMetrics>()
             repos.forEach {
@@ -69,7 +75,7 @@ class ProjectStatJob(
                 repoNodeNum += nodeSize.num
                 repoMetrics.add(RepoMetrics(repoName, nodeSize.size / (1024 * 1024 * 1024), nodeSize.num))
             }
-            result.add(TProjectMetrics(projectId, repoNodeNum, repoCapSize / (1024 * 1024 * 1024), repoMetrics))
+            result.add(TProjectMetrics(projectId, repoNodeNum, repoCapSize / (1024 * 1024 * 1024), repoMetrics, sizeDistribution))
         }
         projectMetricsRepository.deleteAll()
         projectMetricsRepository.insert(result)
@@ -77,5 +83,6 @@ class ProjectStatJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private val sizeRange = listOf(B_0, MB_100, MB_500, GB_1, GB_10)
     }
 }

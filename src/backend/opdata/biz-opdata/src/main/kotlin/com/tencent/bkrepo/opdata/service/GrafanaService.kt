@@ -41,9 +41,13 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_SIZE
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
 import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
+import com.tencent.bkrepo.opdata.model.NodeModel
+import com.tencent.bkrepo.opdata.model.ProjectMetricsModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
@@ -59,7 +63,8 @@ import org.springframework.stereotype.Service
 @Service
 class GrafanaService @Autowired constructor(
     private val projectModel: ProjectModel,
-    private val projectMetricsRepository: ProjectMetricsRepository
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val projectMetricsModel: ProjectMetricsModel
 ) {
     fun search(): List<String> {
         val data = mutableListOf<String>()
@@ -94,12 +99,43 @@ class GrafanaService @Autowired constructor(
                 Metrics.NODENUM -> {
                     dealNodeNum(it, result)
                 }
+                Metrics.EFFECTIVEPROJECTNUM -> {
+                    dealEffectiveProjectNum(it, result)
+                }
+                Metrics.NODESIZEDISTRIBUTION -> {
+                    dealNodeSizeDistribution(it, result)
+                }
                 else -> {
                     dealNodeNum(it, result)
                 }
             }
         }
         return result
+    }
+
+    private fun dealNodeSizeDistribution(target: Target, result: MutableList<Any>) {
+        val resultMap = if (target.data.toString().isNullOrBlank()) {
+            projectMetricsModel.getSizeDistribution()
+        } else {
+            val data = target.data as Map<String, Any>
+            val projectId = data[OPDATA_PROJECT_ID] as String
+            projectMetricsModel.getSizeDistributionByProjectId(projectId)
+        }
+        for (r in resultMap.toList()) {
+            val size = r.first
+            val data = listOf(r.second, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(size, element))
+        }
+    }
+
+    private fun dealEffectiveProjectNum(target: Target, result: MutableList<Any>) {
+        val projects = projectMetricsRepository.findAll()
+        val count = projects.filter { it.capSize > 0 }.size.toLong()
+        val columns = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
+        val row = listOf(count)
+        val data = QueryResult(listOf(columns), listOf(row), target.type)
+        result.add(data)
     }
 
     private fun dealProjectNum(target: Target, result: MutableList<Any>) {

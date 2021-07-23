@@ -130,6 +130,14 @@ class NodeController(
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
+    override fun computeSizeDistribution(
+        projectId: String,
+        range: List<String>
+    ): Response<Map<String, Long>> {
+        val rangeList = range.map { it.toLong() }.toList()
+        return ResponseBuilder.success(nodeService.computeSizeDistribution(projectId, rangeList))
+    }
+
     override fun listNode(
         projectId: String,
         repoName: String,

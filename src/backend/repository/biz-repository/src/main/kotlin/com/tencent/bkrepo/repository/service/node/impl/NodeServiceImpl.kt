@@ -76,6 +76,10 @@ class NodeServiceImpl(
         return NodeStatsSupport(this).countFileNode(artifact)
     }
 
+    override fun computeSizeDistribution(projectId: String, range: List<Long>): Map<String, Long> {
+        return NodeStatsSupport(this).computeSizeDistribution(projectId, range)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteNode(deleteRequest: NodeDeleteRequest) {
         NodeDeleteSupport(this).deleteNode(deleteRequest)
