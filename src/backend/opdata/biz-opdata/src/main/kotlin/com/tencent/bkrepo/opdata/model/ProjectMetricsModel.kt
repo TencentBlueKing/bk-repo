@@ -55,24 +55,24 @@ class ProjectMetricsModel @Autowired constructor(
     fun getSizeDistribution(): Map<String, Long> {
         val projectMetricsList = mongoTemplate.findAll(TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
         var zeroNum = 0L
-        var mb_100_num = 0L
-        var mb_500_num = 0L
-        var gb_1_num = 0L
-        var gb_10_num = 0L
+        var mb100Num = 0L
+        var mb500Num = 0L
+        var gb1Num = 0L
+        var gb10Num = 0L
         projectMetricsList.forEach {
             zeroNum += it.sizeDistribution[B_0] ?: 0
-            mb_100_num += it.sizeDistribution[MB_100] ?: 0
-            mb_500_num += it.sizeDistribution[MB_500] ?: 0
-            gb_1_num += it.sizeDistribution[GB_1] ?: 0
-            gb_10_num += it.sizeDistribution[GB_10] ?: 0
+            mb100Num += it.sizeDistribution[MB_100] ?: 0
+            mb500Num += it.sizeDistribution[MB_500] ?: 0
+            gb1Num += it.sizeDistribution[GB_1] ?: 0
+            gb10Num += it.sizeDistribution[GB_10] ?: 0
         }
 
         return mapOf(
             B_0 to zeroNum,
-            MB_100 to mb_100_num,
-            MB_500 to mb_500_num,
-            GB_1 to gb_1_num,
-            GB_10 to gb_10_num
+            MB_100 to mb100Num,
+            MB_500 to mb500Num,
+            GB_1 to gb1Num,
+            GB_10 to gb10Num
         )
     }
 

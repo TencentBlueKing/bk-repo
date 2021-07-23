@@ -41,12 +41,10 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_SIZE
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
 import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
-import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectMetricsModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics

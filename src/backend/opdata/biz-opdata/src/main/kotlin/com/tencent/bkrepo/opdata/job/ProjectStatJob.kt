@@ -75,7 +75,15 @@ class ProjectStatJob(
                 repoNodeNum += nodeSize.num
                 repoMetrics.add(RepoMetrics(repoName, nodeSize.size / (1024 * 1024 * 1024), nodeSize.num))
             }
-            result.add(TProjectMetrics(projectId, repoNodeNum, repoCapSize / (1024 * 1024 * 1024), repoMetrics, sizeDistribution))
+            result.add(
+                TProjectMetrics(
+                    projectId,
+                    repoNodeNum,
+                    repoCapSize / (1024 * 1024 * 1024),
+                    repoMetrics,
+                    sizeDistribution
+                )
+            )
         }
         projectMetricsRepository.deleteAll()
         projectMetricsRepository.insert(result)
