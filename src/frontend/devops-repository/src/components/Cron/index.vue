@@ -12,7 +12,7 @@
             <div v-if="mode === 'manual'">
                 <bk-input v-model="manualVal" @blur="manualChange"></bk-input>
             </div>
-            <bk-tab v-else class="cron-tab" type="unborder-card">
+            <bk-tab v-else class="cron-tab" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel
                     v-for="tab in ['second', 'minute', 'hour', 'day', 'month', 'week', 'year']"
                     :key="tab"
@@ -131,6 +131,7 @@
         },
         data () {
             return {
+                tabName: 'second',
                 showMain: false,
                 mode: 'manual', // manual: 手动; ui: 界面
                 manualVal: '',
