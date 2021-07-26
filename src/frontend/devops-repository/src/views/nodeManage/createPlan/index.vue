@@ -250,7 +250,7 @@
                     this.planForm = {
                         ...this.planForm,
                         name,
-                        executionStrategy: replicaType === 'REAL_TIME' ? 'REAL_TIME' : replicaObjectType,
+                        executionStrategy: replicaType === 'REAL_TIME' ? 'REAL_TIME' : executionStrategy,
                         replicaObjectType,
                         ...(executeTime ? {
                             time: new Date(executeTime)
