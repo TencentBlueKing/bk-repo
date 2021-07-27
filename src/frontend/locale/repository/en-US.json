@@ -17,6 +17,7 @@
     "cancel": "取消",
     "folderNamePlacehodler": "支持英文字母、数字、中划线、下划线、点，最长支持50个字符",
     "repoNamePlacehodler": "英文字母开头，支持英文字母、数字、中划线、下划线，总长度2-32位",
+    "repoDockerNamePlacehodler": "英文字母开头，支持小写英文字母、数字、中划线、下划线，总长度2-32位",
     "repoDescriptionPlacehodler": "请输入仓库描述，最多200个字符",
     "repoConfig": "仓库配置",
     "save": "保存",
