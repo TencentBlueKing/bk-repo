@@ -73,23 +73,18 @@ class BkAuthConfig {
     @Value("\${auth.devops.artifactorySecret:}")
     var artifactorySecret: String = ""
 
+
+    /**
+     * 蓝盾平台用户 appId
+     */
+    @Value("\${auth.devops.appIdSet:}")
+    var devopsAppIdSet: String = ""
     /**
      * 蓝盾平台用户 appId
      */
     @Value("\${auth.devops.appId:}")
     var devopsAppId: String = ""
 
-    /**
-     * 制品库前端 appId
-     */
-    @Value("\${auth.bkrepo.appId:}")
-    var bkrepoAppId: String = ""
-
-    /**
-     * 代码检查平台 appId
-     */
-    @Value("\${auth.codecc.appId:}")
-    var bkcodeAppId: String = ""
 
     /**
      * 是否开启蓝盾用户权限认证开关

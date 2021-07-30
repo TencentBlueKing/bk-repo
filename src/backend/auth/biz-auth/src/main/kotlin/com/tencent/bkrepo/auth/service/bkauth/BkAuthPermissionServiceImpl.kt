@@ -198,7 +198,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun matchDevopsCond(appId: String?): Boolean {
-        val devopsAppIdList = listOf(bkAuthConfig.devopsAppId, bkAuthConfig.bkrepoAppId, bkAuthConfig.bkcodeAppId)
+        val devopsAppIdList = bkAuthConfig.devopsAppIdSet.split(",")
         return devopsAppIdList.contains(appId)
     }
 
