@@ -34,7 +34,14 @@ class NpmPackageNodeMapper : PackageNodeMapper {
 
     override fun type() = RepositoryType.NPM
 
-    override fun map(key: String, version: String, extension: Map<String, Any>): List<String> {
+    override fun map(
+        projectId: String,
+        repoName: String,
+        type: RepositoryType,
+        key: String,
+        version: String,
+        ext: Map<String, Any>
+    ): List<String> {
         val name = PackageKeys.resolveNpm(key)
         return listOf(
             NPM_PKG_TGZ_FULL_PATH.format(name, name, version),

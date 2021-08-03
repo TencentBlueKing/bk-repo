@@ -35,11 +35,18 @@ class MavenPackageNodeMapper : PackageNodeMapper {
 
     override fun type() = RepositoryType.MAVEN
 
-    override fun map(key: String, version: String, extension: Map<String, Any>): List<String> {
+    override fun map(
+        projectId: String,
+        repoName: String,
+        type: RepositoryType,
+        key: String,
+        version: String,
+        ext: Map<String, Any>
+    ): List<String> {
         val gavKey = PackageKeys.resolveGav(key)
         val groupId = gavKey.substringBefore(StringPool.COLON).replace(StringPool.DOT, StringPool.SLASH)
         val artifactId = gavKey.substringAfter(StringPool.COLON)
-        return when (val packageType = extension[PACKAGE_TYPE] as? String) {
+        return when (val packageType = ext[PACKAGE_TYPE] as? String) {
             "pom" -> {
                 listOf(
                     POM_FULL_PATH.format(groupId, artifactId, version, artifactId, version),

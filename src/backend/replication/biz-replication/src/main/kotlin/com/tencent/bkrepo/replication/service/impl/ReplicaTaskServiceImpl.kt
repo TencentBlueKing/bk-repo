@@ -275,6 +275,9 @@ class ReplicaTaskServiceImpl(
     override fun toggleStatus(key: String) {
         val task = replicaTaskDao.findByKey(key)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
+        if (task.replicaType == ReplicaType.REAL_TIME) {
+            task.status = if (task.enabled) ReplicaStatus.WAITING else ReplicaStatus.REPLICATING
+        }
         task.enabled = !task.enabled
         task.lastModifiedBy = SecurityUtils.getUserId()
         task.lastModifiedDate = LocalDateTime.now()
