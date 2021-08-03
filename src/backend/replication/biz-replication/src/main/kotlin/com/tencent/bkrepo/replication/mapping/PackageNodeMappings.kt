@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.mapping
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 
 /**
  * 包和节点的映射关系
@@ -39,6 +40,7 @@ object PackageNodeMappings {
     init {
         addMapper(MavenPackageNodeMapper())
         addMapper(NpmPackageNodeMapper())
+        addMapper(SpringContextUtils.getBean(DockerPackageNodeMapper::class.java))
     }
 
     private fun addMapper(mapper: PackageNodeMapper) {
@@ -53,9 +55,16 @@ object PackageNodeMappings {
      *
      * @return 返回
      */
-    fun map(type: RepositoryType, key: String, version: String, extension: Map<String, Any>): List<String> {
+    fun map(
+        projectId: String,
+        repoName: String,
+        type: RepositoryType,
+        key: String,
+        version: String,
+        extension: Map<String, Any>
+    ): List<String> {
         val mapper = mappers[type]
         check(mapper != null) { "mapper[$type] not found" }
-        return mapper.map(key, version, extension)
+        return mapper.map(projectId, repoName, type, key, version, extension)
     }
 }

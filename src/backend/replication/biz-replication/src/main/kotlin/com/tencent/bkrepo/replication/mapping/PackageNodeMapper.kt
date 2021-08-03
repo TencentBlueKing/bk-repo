@@ -38,5 +38,12 @@ interface PackageNodeMapper {
     /**
      * 匹配对应node节点的fullPath
      */
-    fun map(key: String, version: String, extension: Map<String, Any>): List<String>
+    fun map(
+        projectId: String,
+        repoName: String,
+        type: RepositoryType,
+        key: String,
+        version: String,
+        ext: Map<String, Any>
+    ): List<String>
 }
