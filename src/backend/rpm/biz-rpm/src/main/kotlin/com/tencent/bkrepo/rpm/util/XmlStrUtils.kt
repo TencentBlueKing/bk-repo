@@ -207,16 +207,17 @@ object XmlStrUtils {
         var len: Int
         var index: Long = 0
         // 保存上一次读取的内容
-        var tempStr = ""
+        var tempBuffer = byteArrayOf()
         randomAccessFile.seek(0L)
         loop@ while (randomAccessFile.read(buffer).also { len = it } > 0) {
-            val content = String(buffer, 0, len)
+            val mergeBuffer = tempBuffer + buffer
+            val mergeContent = String(mergeBuffer, 0, len + tempBuffer.size)
             if (locationIndex < 0) {
-                val prefix = (tempStr + content).searchContent(index, prefixIndex, prefixStr, buffer.size)
-                val location = (tempStr + content).searchContent(index, locationIndex, locationStr, buffer.size)
+                val prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
+                val location = mergeContent.searchContent(index, locationIndex, locationStr, buffer.size)
                 if (location.isFound) {
                     locationIndex = location.index
-                    val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
+                    val suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
                     if (suffix.index > locationIndex) {
                         suffixIndex = suffix.index
                         break@loop
@@ -230,14 +231,14 @@ object XmlStrUtils {
                 }
             }
             if (locationIndex > 0) {
-                val suffix = (tempStr + content).searchContent(index, suffixIndex, suffixStr, buffer.size)
+                val suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
                 if (suffix.index > locationIndex) {
                     suffixIndex = suffix.index
                     break@loop
                 }
             }
             index += buffer.size
-            tempStr = content
+            tempBuffer = buffer.copyOf(len)
         }
 
         return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
