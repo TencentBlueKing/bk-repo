@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.rpm.job
 
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -17,6 +18,7 @@ class PrimaryJob {
 
     @Scheduled(fixedDelay = 20 * 1000)
     @SchedulerLock(name = "PrimaryJob", lockAtMostFor = "PT30M")
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     fun updatePrimaryIndex() {
         logger.info("update primary index start")
         val startMillis = System.currentTimeMillis()
@@ -27,9 +29,25 @@ class PrimaryJob {
                 val rpmConfiguration = repo.configuration
                 val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
                 val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
+                var nodeList: List<NodeInfo>? = mutableListOf()
                 for (repoDataPath in targetSet) {
                     logger.info("update primary index [${repo.projectId}|${repo.name}|$repoDataPath] start")
-                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.PRIMARY, 20)
+                    try {
+                        jobService.batchUpdateIndex(repo, repoDataPath, IndexType.PRIMARY, 20)
+                    } catch (e: Exception) {
+                        try {
+                            nodeList = jobService.batchUpdateIndex(repo, repoDataPath, IndexType.PRIMARY, 1)
+                        } catch (e: Exception) {
+                            nodeList?.let {
+                                logger.warn(
+                                    "update primary index[${repo.projectId}|${repo.name}|$repoDataPath]" +
+                                            "with ${it.first()} failed"
+                                )
+                            }
+                        } finally {
+                            nodeList?.let { jobService.deleteNodes(it) }
+                        }
+                    }
                     logger.info("update primary index [${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
                 logger.info("update primary index [${repo.projectId}|${repo.name}] done")
