@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
-import java.util.*
+import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -125,7 +125,7 @@ class GenericLocalRepository : LocalRepository() {
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
-E
+
     /**
      * 下载目录
      * @param context 构件下载context

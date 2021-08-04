@@ -39,7 +39,7 @@ import org.quartz.TriggerBuilder
 import org.quartz.TriggerKey
 import org.quartz.impl.StdSchedulerFactory
 import org.quartz.impl.matchers.GroupMatcher
-import java.util.*
+import java.util.Date
 
 internal class QuartzTest {
 
