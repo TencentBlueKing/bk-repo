@@ -55,9 +55,11 @@ class MemoryMessageQueue {
 
                     queue = LinkedBlockingQueue(queueSize)
                     this.startHandlers(concurrentLevel)
-                    Runtime.getRuntime().addShutdownHook(Thread {
-                        this.shutdown()
-                    })
+                    Runtime.getRuntime().addShutdownHook(
+                        Thread {
+                            this.shutdown()
+                        }
+                    )
                     isRunning = true
                     logger.info("Cloud stream memory queue was started ( qs: $queueSize, ps: $concurrentLevel ).")
                 }

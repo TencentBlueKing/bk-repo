@@ -38,7 +38,7 @@ enum class EventType {
     REPO_CREATED,
     REPO_UPDATED,
     REPO_DELETED,
-    
+
     // NODE
     NODE_CREATED,
     NODE_RENAMED,

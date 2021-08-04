@@ -43,7 +43,7 @@ class MemoryMessageHandler(
     private var started = false
 
     override fun handleMessageInternal(message: Message<*>?) {
-        if(message != null) {
+        if (message != null) {
             MemoryMessageQueue.instance.produce(this.destination.name, message)
         }
     }
@@ -51,14 +51,14 @@ class MemoryMessageHandler(
     override fun isRunning(): Boolean = started
 
     override fun start() {
-        if(!started){
+        if (!started) {
             started = true
             MemoryMessageQueue.instance.start(configurationProperties.queueSize, configurationProperties.workerPoolSize)
         }
     }
 
     override fun stop() {
-        if(started){
+        if (started) {
             started = false
             MemoryMessageQueue.instance.shutdown()
         }

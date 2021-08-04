@@ -41,5 +41,4 @@ class TailReader(
         super.stop()
         stopCallback.invoke(this)
     }
-
 }

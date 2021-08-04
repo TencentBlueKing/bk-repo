@@ -48,7 +48,7 @@ class MemoryMessageProducer(
     }
 
     override fun equals(other: Any?): Boolean {
-        if(other == null || MemoryMessageProducer::class.java != other::class.java){
+        if (other == null || MemoryMessageProducer::class.java != other::class.java) {
             return false
         }
         return this.id == (other as MemoryMessageProducer).id

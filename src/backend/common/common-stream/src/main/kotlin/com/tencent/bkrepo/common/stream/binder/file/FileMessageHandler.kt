@@ -38,7 +38,6 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE
 
-
 class FileMessageHandler(
     fileBinderProperties: FileBinderProperties,
     destination: ProducerDestination

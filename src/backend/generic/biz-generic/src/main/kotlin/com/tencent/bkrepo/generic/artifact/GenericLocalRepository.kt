@@ -125,7 +125,7 @@ class GenericLocalRepository : LocalRepository() {
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
-
+E
     /**
      * 下载目录
      * @param context 构件下载context

@@ -45,6 +45,7 @@ class FileBinderAutoConfiguration {
 
         return FileMessageChannelBinder(
             fileBinderProperties,
-            provisioningProvider)
+            provisioningProvider
+        )
     }
 }
