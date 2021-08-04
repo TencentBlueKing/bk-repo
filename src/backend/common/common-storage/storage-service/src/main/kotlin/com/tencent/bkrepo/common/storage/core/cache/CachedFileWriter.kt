@@ -135,7 +135,6 @@ class CachedFileWriter(
                 outputStream = null
             }
         }
-
     }
 
     /**
