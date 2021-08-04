@@ -521,12 +521,17 @@ class JobService(
     /**
      * 更新索引
      */
-    fun batchUpdateIndex(repo: RepositoryDetail, repodataPath: String, indexType: IndexType, maxCount: Int) {
+    fun batchUpdateIndex(
+        repo: RepositoryDetail,
+        repodataPath: String,
+        indexType: IndexType,
+        maxCount: Int
+    ): List<NodeInfo>? {
         logger.info("batchUpdateIndex, [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
         val markNodePage = listMarkNodes(repo, repodataPath, indexType, maxCount)
         if (markNodePage.records.isEmpty()) {
             logger.info("no index file to process")
-            return
+            return null
         }
         logger.info(
             "${markNodePage.records.size} of " +
@@ -569,7 +574,8 @@ class JobService(
             deleteNodes(processedMarkNodes)
         } finally {
             unzipedIndexTempFile.delete()
-            logger.info("temp index file ${unzipedIndexTempFile.absolutePath} deleted")
+            logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
+            return markNodes
         }
     }
 
@@ -617,7 +623,7 @@ class JobService(
         logger.debug("checkValid, cost: ${System.currentTimeMillis() - start} ms")
     }
 
-    private fun deleteNodes(nodes: List<NodeInfo>) {
+    fun deleteNodes(nodes: List<NodeInfo>) {
         nodes.forEach { nodeInfo ->
             with(nodeInfo) {
                 try {

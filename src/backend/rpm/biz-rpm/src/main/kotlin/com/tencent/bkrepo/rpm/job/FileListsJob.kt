@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.rpm.job
 
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -17,6 +18,7 @@ class FileListsJob {
 
     @Scheduled(fixedDelay = 60 * 1000)
     @SchedulerLock(name = "FileListsJob", lockAtMostFor = "PT60M")
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     fun updateFilelistsIndex() {
         logger.info("update filelists index start")
         val startMillis = System.currentTimeMillis()
@@ -32,9 +34,28 @@ class FileListsJob {
                 logger.info("update filelists index[${repo.projectId}|${repo.name}] start")
                 val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
                 val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
+                var nodeList: List<NodeInfo>? = mutableListOf()
                 for (repoDataPath in targetSet) {
                     logger.info("update filelists index[${repo.projectId}|${repo.name}|$repoDataPath] start")
-                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.FILELISTS, 30)
+                    try {
+                        jobService.batchUpdateIndex(repo, repoDataPath, IndexType.FILELISTS, 30)
+                    } catch (e: Exception) {
+                        try {
+                            nodeList = jobService.batchUpdateIndex(
+                                repo, repoDataPath, IndexType.FILELISTS, 1
+                            )
+                        } catch (e: Exception) {
+                            nodeList?.let {
+                                logger.warn(
+                                    "update filelists index[${repo.projectId}|${repo.name}|$repoDataPath]" +
+                                            "with ${it.first()} failed"
+                                )
+                            }
+                        } finally {
+                            nodeList?.let { jobService.deleteNodes(it) }
+                        }
+                    }
+
                     logger.info("update filelists index[${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
                 logger.info("update filelists index[${repo.projectId}|${repo.name}] done")
