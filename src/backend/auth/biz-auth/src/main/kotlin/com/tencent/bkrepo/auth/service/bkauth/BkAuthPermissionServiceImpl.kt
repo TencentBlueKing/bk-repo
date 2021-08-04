@@ -186,6 +186,10 @@ class BkAuthPermissionServiceImpl constructor(
 
         // devops实名访问请求处理
         if (matchDevopsCond(request.appId)) {
+
+            // 优先校验本地权限
+            if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
+
             return checkDevopsPermission(request)
         }
 
@@ -195,6 +199,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun matchGitCiCond(projectId: String?): Boolean {
         return projectId != null && bkAuthConfig.choseBkAuth() && projectId.startsWith(GIT_PROJECT_PREFIX, true)
+    }
+
+    private fun matchBcsCond(projectId: String?): Boolean {
+        return projectId == bkAuthConfig.bcsAppId
     }
 
     private fun matchDevopsCond(appId: String?): Boolean {
