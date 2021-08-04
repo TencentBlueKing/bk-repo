@@ -31,30 +31,30 @@
                     size="small"
                     @row-click="selectRow"
                     @row-dblclick="openFolder">
-                    <bk-table-column :label="$t('fileName')">
-                        <template slot-scope="props">
+                    <bk-table-column :label="$t('fileName')" prop="name" :render-header="renderHeader">
+                        <template #default="{ row }">
                             <div class="flex-align-center fine-name">
-                                <icon size="24" :name="props.row.folder ? 'folder' : getIconName(props.row.name)" />
-                                <div class="ml10" :title="props.row.name">{{props.row.name}}</div>
+                                <icon size="24" :name="row.folder ? 'folder' : getIconName(row.name)" />
+                                <div class="ml10" :title="row.name">{{row.name}}</div>
                             </div>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200">
-                        <template slot-scope="props">{{ formatDate(props.row.lastModifiedDate) }}</template>
+                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200" :render-header="renderHeader">
+                        <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedBy')" width="120">
-                        <template slot-scope="props">
-                            {{ userList[props.row.lastModifiedBy] ? userList[props.row.lastModifiedBy].name : props.row.lastModifiedBy }}
+                        <template #default="{ row }">
+                            {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('size')" width="100">
-                        <template slot-scope="props">
+                        <template #default="{ row }">
                             <bk-button text
-                                v-show="props.row.folder && !props.row.hasOwnProperty('folderSize')"
-                                :disabled="props.row.sizeLoading"
-                                @click="calculateFolderSize(props.row)">{{ $t('calculate') }}</bk-button>
-                            <span v-show="!props.row.folder || props.row.hasOwnProperty('folderSize')">
-                                {{ convertFileSize(props.row.size || props.row.folderSize || 0) }}
+                                v-show="row.folder && !row.hasOwnProperty('folderSize')"
+                                :disabled="row.sizeLoading"
+                                @click="calculateFolderSize(row)">{{ $t('calculate') }}</bk-button>
+                            <span v-show="!row.folder || row.hasOwnProperty('folderSize')">
+                                {{ convertFileSize(row.size || row.folderSize || 0) }}
                             </span>
                         </template>
                     </bk-table-column>
@@ -92,16 +92,14 @@
                                 {{ $t('delete') }}
                             </bk-button>
                         </template>
-                        <template v-if="!selectedRow.folder">
-                            <bk-button @click.stop="handlerShare()" text theme="primary">
-                                <i class="mr5 devops-icon icon-none"></i>
-                                {{ $t('share') }}
-                            </bk-button>
-                            <bk-button @click.stop="handlerDownload()" text theme="primary">
-                                <i class="mr5 devops-icon icon-download"></i>
-                                {{ $t('download') }}
-                            </bk-button>
-                        </template>
+                        <bk-button v-if="!selectedRow.folder" @click.stop="handlerShare()" text theme="primary">
+                            <i class="mr5 devops-icon icon-none"></i>
+                            {{ $t('share') }}
+                        </bk-button>
+                        <bk-button @click.stop="handlerDownload()" text theme="primary">
+                            <i class="mr5 devops-icon icon-download"></i>
+                            {{ $t('download') }}
+                        </bk-button>
                     </template>
                     <template v-else>
                         <template v-if="repoName !== 'pipeline'">
@@ -224,6 +222,7 @@
                 importantSearch: '',
                 // 左侧树处于打开状态的目录
                 sideTreeOpenList: [],
+                sortType: 'lastModifiedDate',
                 // 中间展示的table数据
                 artifactoryList: [],
                 // 左侧树选中的节点
@@ -375,13 +374,33 @@
                 'moveNode',
                 'copyNode',
                 'shareArtifactory',
-                'getFolderSize'
+                'getFolderSize',
+                'getFileNumOfFolder'
             ]),
             async initPage () {
                 this.importantSearch = ''
                 this.INIT_TREE()
                 this.sideTreeOpenList = []
                 await this.itemClickHandler(this.genericTree[0])
+            },
+            renderHeader (h, { column }) {
+                return h('div', {
+                    class: 'flex-align-center hover-btn',
+                    on: {
+                        click: () => {
+                            this.sortType = column.property
+                            this.handlerPaginationChange()
+                        }
+                    }
+                }, [
+                    h('span', column.label),
+                    h('i', {
+                        class: {
+                            'ml5 devops-icon icon-down-shape': true,
+                            'selected': this.sortType === column.property
+                        }
+                    })
+                ])
             },
             // 获取中间列表数据
             getArtifactories () {
@@ -397,6 +416,7 @@
                     fullPath: this.selectedTreeNode.fullPath,
                     current: this.pagination.current,
                     limit: this.pagination.limit,
+                    sortType: this.sortType,
                     isPipeline: this.repoName === 'pipeline'
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
@@ -634,16 +654,27 @@
                 })
             },
             async deleteRes () {
+                if (!this.selectedRow.fullPath) return
+                let totalRecords
+                if (this.selectedRow.folder) {
+                    totalRecords = await this.getFileNumOfFolder({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        fullPath: this.selectedRow.fullPath
+                    })
+                }
                 this.$bkInfo({
-                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')}？`,
+                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')} ${this.selectedRow.name} ？`,
+                    subTitle: `${this.selectedRow.folder && totalRecords ? `当前文件夹下存在${totalRecords}个文件` : ''}`,
                     closeIcon: false,
                     theme: 'danger',
+                    confirmLoading: true,
                     confirmFn: () => {
-                        this.deleteArtifactory({
+                        return this.deleteArtifactory({
                             projectId: this.projectId,
                             repoName: this.repoName,
                             fullPath: this.selectedRow.fullPath
-                        }).then(res => {
+                        }).then(() => {
                             this.selectRow(this.selectedTreeNode)
                             this.updateGenericTreeNode(this.selectedTreeNode)
                             this.getArtifactories()
@@ -662,7 +693,7 @@
                     type: 'move',
                     title: `${this.$t('move')} (${this.selectedRow.name})`,
                     openList: [],
-                    selectedNode: {}
+                    selectedNode: this.genericTree[0]
                 }
             },
             copyRes () {
@@ -672,7 +703,7 @@
                     type: 'copy',
                     title: `${this.$t('copy')} (${this.selectedRow.name})`,
                     openList: [],
-                    selectedNode: {}
+                    selectedNode: this.genericTree[0]
                 }
             },
             changeDialogTreeNode (item) {
@@ -688,7 +719,7 @@
                         srcFullPath: this.selectedRow.fullPath,
                         destProjectId: this.projectId,
                         destRepoName: this.repoName,
-                        destFullPath: `${this.treeDialog.selectedNode.fullPath}`,
+                        destFullPath: `${this.treeDialog.selectedNode.fullPath || '/'}`,
                         overwrite: false
                     }
                 }).then(res => {
@@ -798,6 +829,19 @@
                     flex: none;
                 }
             }
+            /deep/ .devops-icon {
+                font-size: 16px;
+                &.disabled {
+                    color: $disabledColor;
+                    cursor: not-allowed;
+                }
+                &.icon-down-shape {
+                    color: $fontLigtherColor;
+                    &.selected {
+                        color: $fontWeightColor;
+                    }
+                }
+            }
         }
     }
     .repo-generic-actions {
@@ -823,5 +867,10 @@
 .dialog-tree-container {
     max-height: 500px;
     overflow: auto;
+}
+</style>
+<style lang="scss">
+.bk-dialog-header-inner {
+    white-space: inherit!important;
 }
 </style>

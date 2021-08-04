@@ -29,24 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.resource
+package com.tencent.bkrepo.common.query.handler.impl
 
-import com.tencent.bkrepo.auth.api.ServicePipelineResource
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.handler.MongoQueryRuleHandler
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
+import org.springframework.data.mongodb.core.query.Criteria
 
-@RestController
-class ServicePipelineResourceImpl @Autowired constructor(
-    private val bkAuthPipelineService: BkAuthPipelineService
-) : ServicePipelineResource {
-    override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return ResponseBuilder.success(bkAuthPipelineService.listPermissionedPipelines(uid, projectId))
+/**
+ * 忽略大小写的匹配
+ */
+class MatchIHandler : MongoQueryRuleHandler {
+
+    override fun match(rule: Rule.QueryRule): Boolean {
+        return rule.operation == OperationType.MATCH_I
     }
 
-    override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, null)))
+    override fun handle(rule: Rule.QueryRule): Criteria {
+        val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(rule.value.toString())
+        val regexPattern = escapedValue.replace("*", ".*")
+        return Criteria.where(rule.field).regex("^$regexPattern$", "i")
     }
 }

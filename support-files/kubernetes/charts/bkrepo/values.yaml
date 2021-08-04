@@ -96,6 +96,8 @@ init:
       pullSecrets: []
 ## bkrepo公共配置
 common:
+  ## 部署区域，可不填
+  region: 
   ## jvm启动选项, 如-Xms1024M -Xmx1024M
   jvmOption: ""
   ## SpringBoot active profile
@@ -104,19 +106,22 @@ common:
   username: admin
   ## 初始用户密码
   password: blueking
-  ## bkrepo存储配置
-  storage:
-    ## 指定存储类型，支持filesystem/cos/s3/hdfs
-    type: filesystem
-    ## filesystem配置，使用文件系统
-    filesystem:
-      path: /data/storage
-    ## 腾讯云cos存储配置
-    #cos:
-    ## 标准s3对象存储
-    #s3:
-    ## hdfs存储配置
-    #hdfs:
+  ## pod volume 挂载路径
+  mountPath: /data/storage
+  config:
+    ## bkrepo存储配置
+    storage:
+      ## 指定存储类型，支持filesystem/cos/s3/hdfs
+      type: filesystem
+      ## filesystem配置，使用文件系统
+      filesystem:
+        path: /data/storage/store
+      ## 腾讯云cos存储配置
+      #cos:
+      ## 标准s3对象存储
+      #s3:
+      ## hdfs存储配置
+      #hdfs:
 
 ## 网关配置
 gateway:

@@ -22,10 +22,20 @@
         const redirectUrl = location.href.split(/\?redirect=/)[1]
 
         window.getLoginUrl = function () {
-            const loginUrl = new URL(LOGIN_SERVICE_URL)
             const cUrl = location.origin + (redirectUrl ? (redirectUrl + '?preview=true') : '')
-            loginUrl.searchParams.append('c_url', cUrl)
-            return loginUrl.href
+            if (/\{+curl\}+/i.test(LOGIN_SERVICE_URL)) {
+                return LOGIN_SERVICE_URL.replace(/\{+curl\}+/i, encodeURIComponent(cUrl))
+            } else if (/=%s/.test(LOGIN_SERVICE_URL)) {
+                return LOGIN_SERVICE_URL.replace(/%s/, cUrl)
+            } else {
+                const loginUrl = new URL(LOGIN_SERVICE_URL)
+                if (/=$/.test(loginUrl.search)) {
+                    return LOGIN_SERVICE_URL + cUrl
+                    } else {
+                    loginUrl.searchParams.append('c_url', cUrl)
+                    return loginUrl.href
+                }
+            }
         }
 
         if (redirectUrl) {

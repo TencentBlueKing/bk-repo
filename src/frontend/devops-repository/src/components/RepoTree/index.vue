@@ -27,9 +27,7 @@
                 <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
                     :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
                 <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
-                <div class="node-text" :title="item.name">
-                    {{ item.name }}
-                </div>
+                <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
             </div>
             <CollapseTransition>
                 <template v-if="item.children && item.children.length">
@@ -117,6 +115,13 @@
              */
             itemClickHandler (item) {
                 this.$emit('item-click', item)
+            },
+            importantTransform (name) {
+                if (!this.importantSearch) return name
+                const normalText = name.split(this.importantSearch)
+                return normalText.reduce((a, b, index) => {
+                    return a + `<em>${this.importantSearch}</em>` + b
+                })
             }
         }
     }
@@ -168,10 +173,8 @@
             white-space: nowrap;
             em {
                 font-style: normal;
-                color:#e4393c;
-                &:hover {
-                    color: $primaryColor;
-                }
+                font-weight: bold;
+                background-color: #edf45d;
             }
         }
         &.selected {
