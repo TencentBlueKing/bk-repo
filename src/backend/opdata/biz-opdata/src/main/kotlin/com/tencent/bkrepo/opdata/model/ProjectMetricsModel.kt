@@ -79,10 +79,10 @@ class ProjectMetricsModel @Autowired constructor(
     /**
      * 获取一个项目的文件大小分布
      */
-    fun getSizeDistributionByProjectId(projectId: String): Map<String, Long> {
+    fun getProjSizeDistribution(projectId: String): Map<String, Long> {
         val query = Query(where(TProjectMetrics::projectId).isEqualTo(projectId))
         val projectMetrics = mongoTemplate.findOne(query, TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
-        return projectMetrics.sizeDistribution
+        return projectMetrics?.sizeDistribution ?: mapOf()
     }
 
 }

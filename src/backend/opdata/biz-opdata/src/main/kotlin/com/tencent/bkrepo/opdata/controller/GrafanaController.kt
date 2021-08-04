@@ -34,6 +34,7 @@ package com.tencent.bkrepo.opdata.controller
 import com.google.common.net.HttpHeaders.CONTENT_TYPE
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
+import com.tencent.bkrepo.opdata.pojo.SearchRequest
 import com.tencent.bkrepo.opdata.service.GrafanaService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
@@ -55,14 +56,15 @@ class GrafanaController @Autowired constructor(
     }
 
     @PostMapping("/search")
-    fun search(): ResponseEntity<Any> {
-        val result = grafanaService.search()
-        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(result)
+    fun search(@RequestBody request: SearchRequest): ResponseEntity<Any> {
+        val result = grafanaService.search(request)
+        val response = JsonUtils.objectMapper.writeValueAsString(result)
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
     }
 
     @PostMapping("/query")
     fun query(@RequestBody request: QueryRequest): ResponseEntity<Any> {
-        var result = grafanaService.query(request)
+        val result = grafanaService.query(request)
         val response = JsonUtils.objectMapper.writeValueAsString(result)
         return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
     }

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -149,13 +150,35 @@ interface NodeClient {
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
     @ApiOperation("查询节点大小分布")
-    @PostMapping("/distribution/{projectId}")
+    @GetMapping("/distribution/{projectId}")
     fun computeSizeDistribution(
-        @ApiParam(value = "所属项目", required = false)
+        @ApiParam(value = "所属项目", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "节点大小分布范围", required = true)
-        @RequestParam range: List<String>
+        @RequestParam range: List<String>,
+        @ApiParam(value = "仓库名称", required = false)
+        @RequestParam repoName: String?
     ): Response<Map<String, Long>>
+
+    @ApiOperation("查询仓库文件的扩展名列表")
+    @GetMapping("/extension/list/{projectId}")
+    fun getFileExtensions(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = false)
+        @RequestParam repoName: String?
+    ): Response<List<String>>
+
+    @ApiOperation("查询仓库文件扩展名的统计信息")
+    @GetMapping("/extension/stat/{projectId}")
+    fun statFileExtension(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "文件扩展名", required = true)
+        @RequestParam extension: String,
+        @ApiParam(value = "仓库名称", required = false)
+        @RequestParam repoName: String?
+    ): Response<FileExtensionStatInfo>
 
     @Deprecated("replace with listNodePage")
     @ApiOperation("列表查询指定目录下所有节点")

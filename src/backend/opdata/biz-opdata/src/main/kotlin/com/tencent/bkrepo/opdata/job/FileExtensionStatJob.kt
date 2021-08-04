@@ -34,57 +34,42 @@ package com.tencent.bkrepo.opdata.job
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
-import com.tencent.bkrepo.opdata.model.RepoModel
-import com.tencent.bkrepo.opdata.model.TProjectMetrics
-import com.tencent.bkrepo.opdata.pojo.RepoMetrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
+import com.tencent.bkrepo.opdata.repository.FileExtensionMetricsRepository
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class ProjectStatJob(
-    private val projectModel: ProjectModel,
-    private val repoModel: RepoModel,
-    private val nodeModel: NodeModel,
-    private val projectMetricsRepository: ProjectMetricsRepository
+class FileExtensionStatJob(
+    val projectModel: ProjectModel,
+    val nodeModel: NodeModel,
+    val fileExtensionMetricsRepository: FileExtensionMetricsRepository
 ) {
 
-    @Scheduled(cron = "00 15 */12 * * ?")
-    @SchedulerLock(name = "ProjectStatJob", lockAtMostFor = "PT1H")
-    fun statProjectRepoSize() {
-        logger.info("start to stat node table metrics")
+    @Scheduled(cron = "00 45 00 * * ?")
+    fun statFileExtension() {
+        logger.info("start to stat file extension")
+        val results = mutableListOf<TFileExtensionMetrics>()
         val projects = projectModel.getProjectList()
-        val result = mutableListOf<TProjectMetrics>()
-        projects.forEach {
-            var repoCapSize = 0L
-            var repoNodeNum = 0L
-            val projectId = it.name
-            val projSizeDistribution = nodeModel.getProjNodeSizeDistribution(projectId)
-            val repos = repoModel.getRepoListByProjectId(it.name)
-            val repoMetrics = mutableListOf<RepoMetrics>()
-            repos.forEach {
-                val repoName = it
-                val nodeSize = nodeModel.getNodeSize(projectId, repoName)
-                repoCapSize += nodeSize.size
-                repoNodeNum += nodeSize.num
-                repoMetrics.add(RepoMetrics(repoName, nodeSize.size / (1024 * 1024 * 1024), nodeSize.num))
+        projects.forEach { project ->
+            val fileExtensions = nodeModel.getFileExtensions(project.name, null)
+            if (fileExtensions.isNotEmpty()) {
+                fileExtensions.forEach {
+                    val fileExtensionStatInfo = nodeModel.getFileExtensionStat(project.name, it, null)
+                    val fileExtensionMetrics = with(fileExtensionStatInfo) {
+                        TFileExtensionMetrics(projectId, repoName, extension, num, size)
+                    }
+                    results.add(fileExtensionMetrics)
+                }
             }
-            result.add(
-                TProjectMetrics(
-                    projectId,
-                    repoNodeNum,
-                    repoCapSize / (1024 * 1024 * 1024),
-                    repoMetrics,
-                    projSizeDistribution
-                )
-            )
         }
-        projectMetricsRepository.deleteAll()
-        projectMetricsRepository.insert(result)
+        fileExtensionMetricsRepository.deleteAll()
+        fileExtensionMetricsRepository.insert(results)
+        logger.info("stat file extension done")
     }
 
-    companion object {
+    companion object{
         private val logger = LoggerHolder.jobLogger
     }
+
 }

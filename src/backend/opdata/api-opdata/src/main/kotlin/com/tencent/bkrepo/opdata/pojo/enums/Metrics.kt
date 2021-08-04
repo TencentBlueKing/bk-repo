@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.opdata.pojo.enums
 
 enum class Metrics {
+    DEFAULT,
     PROJECTNUM,
     CAPSIZE,
     NODENUM,
@@ -41,5 +42,8 @@ enum class Metrics {
     PROJECTNODESIZE,
     BKREPOSIZE,
     EFFECTIVEPROJECTNUM,
-    NODESIZEDISTRIBUTION
+    NODESIZEDISTRIBUTION,
+    PROJECTIDLIST,
+    REPONAMELIST,
+    FILEEXTENSION
 }

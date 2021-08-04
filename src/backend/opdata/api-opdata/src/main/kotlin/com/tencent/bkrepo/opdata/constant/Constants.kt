@@ -58,8 +58,10 @@ const val OPDATA_PROJECT = "project"
 const val OPDATA_PROJECT_ID = "projectId"
 const val OPDATA_PROJECT_NAME = "name"
 const val OPDATA_REPOSITORY = "repository"
+const val OPDATA_REPO_NAME = "repoName"
 
 const val OPDATA_PROJECT_METRICS = "project_metrics"
+const val OPDATA_FILE_EXTENSION_METRICS = "file_extension_metrics"
 
 const val B_0 = "0"
 const val MB_100 = (100 * BufferUtil.MB).toString()

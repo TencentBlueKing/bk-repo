@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,39 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.node
+package com.tencent.bkrepo.opdata.pojo.enums
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-
-/**
- * 节点重命名接口
- */
-interface NodeStatsOperation {
-
-    /**
-     * 计算文件或者文件夹大小
-     */
-    fun computeSize(artifact: ArtifactInfo): NodeSizeInfo
-
-    /**
-     * 查询文件节点数量
-     */
-    fun countFileNode(artifact: ArtifactInfo): Long
-
-    /**
-     * 计算文件大小分布
-     */
-    fun computeSizeDistribution(projectId: String, range: List<Long>, repoName: String?): Map<String, Long>
-
-    /**
-     * 查询文件的后缀名
-     */
-    fun getFileExtensions(projectId: String, repoName: String?): List<String>
-
-    /**
-     * 根据文件后缀名统计文件数量，大小
-     */
-    fun statFileExtension(projectId: String, extension: String, repoName: String?): FileExtensionStatInfo
+enum class FileExtensionMetrics {
+    NUM,
+    SIZE
 }

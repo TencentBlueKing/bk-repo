@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -132,10 +133,23 @@ class NodeController(
 
     override fun computeSizeDistribution(
         projectId: String,
-        range: List<String>
+        range: List<String>,
+        repoName: String?
     ): Response<Map<String, Long>> {
         val rangeList = range.map { it.toLong() }.toList()
-        return ResponseBuilder.success(nodeService.computeSizeDistribution(projectId, rangeList))
+        return ResponseBuilder.success(nodeService.computeSizeDistribution(projectId, rangeList, repoName))
+    }
+
+    override fun getFileExtensions(projectId: String, repoName: String?): Response<List<String>> {
+        return ResponseBuilder.success(nodeService.getFileExtensions(projectId, repoName))
+    }
+
+    override fun statFileExtension(
+        projectId: String,
+        extension: String,
+        repoName: String?
+    ): Response<FileExtensionStatInfo> {
+        return ResponseBuilder.success(nodeService.statFileExtension(projectId, extension, repoName))
     }
 
     override fun listNode(

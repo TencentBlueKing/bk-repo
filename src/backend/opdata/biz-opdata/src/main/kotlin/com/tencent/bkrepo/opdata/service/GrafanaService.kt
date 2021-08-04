@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.opdata.service
 
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.opdata.constant.OPDATA_CAP_SIZE
 import com.tencent.bkrepo.opdata.constant.OPDATA_CUSTOM
 import com.tencent.bkrepo.opdata.constant.OPDATA_CUSTOM_NUM
@@ -43,16 +44,23 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_PIPELINE_SIZE
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
+import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
 import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
+import com.tencent.bkrepo.opdata.model.FileExtensionMetricsModel
+import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectMetricsModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
+import com.tencent.bkrepo.opdata.model.RepoModel
+import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.QueryResult
+import com.tencent.bkrepo.opdata.pojo.SearchRequest
 import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.FileExtensionMetrics
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -60,20 +68,34 @@ import org.springframework.stereotype.Service
 
 @Service
 class GrafanaService @Autowired constructor(
+    private val repoModel: RepoModel,
+    private val nodeModel: NodeModel,
     private val projectModel: ProjectModel,
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val projectMetricsModel: ProjectMetricsModel
+    private val projectMetricsModel: ProjectMetricsModel,
+    private val fileExtensionMetricsModel: FileExtensionMetricsModel
 ) {
-    fun search(): List<String> {
+    fun search(request: SearchRequest): List<String> {
         val data = mutableListOf<String>()
-        for (metric in Metrics.values()) {
-            data.add(metric.name)
+        val target = if (request.target.isBlank()) Metrics.DEFAULT else Metrics.valueOf(request.target.split(":")[0])
+        when (target) {
+            Metrics.PROJECTIDLIST -> {
+                dealProjectIdList(data)
+            }
+            Metrics.REPONAMELIST -> {
+                dealRepoNameList(request.target, data)
+            }
+            else -> {
+                for (metric in Metrics.values()) {
+                    data.add(metric.name)
+                }
+            }
         }
         return data
     }
 
     fun query(request: QueryRequest): List<Any> {
-        var result = mutableListOf<Any>()
+        val result = mutableListOf<Any>()
         request.targets.forEach {
             when (it.target) {
                 Metrics.PROJECTNUM -> {
@@ -103,6 +125,9 @@ class GrafanaService @Autowired constructor(
                 Metrics.NODESIZEDISTRIBUTION -> {
                     dealNodeSizeDistribution(it, result)
                 }
+                Metrics.FILEEXTENSION -> {
+                    dealFileExtension(it, result)
+                }
                 else -> {
                     dealNodeNum(it, result)
                 }
@@ -111,17 +136,57 @@ class GrafanaService @Autowired constructor(
         return result
     }
 
+    private fun dealFileExtension(target: Target, result: MutableList<Any>) {
+        val reqData = target.data as Map<String, Any>
+        val projectId = reqData[OPDATA_PROJECT_ID] as String?
+        val repoName = reqData[OPDATA_REPO_NAME] as String?
+        val metric = FileExtensionMetrics.valueOf(reqData[METRICS] as? String ?: FileExtensionMetrics.NUM.name)
+        val resultList = if (projectId.isNullOrBlank()) {
+            fileExtensionMetricsModel.getFileExtensionMetrics(metric)
+        } else if (repoName.isNullOrBlank()) {
+            fileExtensionMetricsModel.getProjFileExtensionMetrics(projectId, metric)
+        } else {
+            fileExtensionMetricsModel.getRepoFileExtensionMetrics(projectId, repoName, metric)
+        }
+        resultList.forEach {
+            val data = listOf(it[metric.name.toLowerCase()] as Long, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(it[TFileExtensionMetrics::extension.name] as String, element))
+        }
+    }
+
+    private fun dealProjectIdList(result: MutableList<String>) {
+        result.addAll(projectModel.getProjectList().map { it.name })
+    }
+
+    private fun dealRepoNameList(target: String, result: MutableList<String>) {
+        val projectId = target.split(":")[1]
+        result.addAll(repoModel.getRepoListByProjectId(projectId))
+    }
+
     private fun dealNodeSizeDistribution(target: Target, result: MutableList<Any>) {
-        val resultMap = if (target.data.toString().isNullOrBlank()) {
+        val resultMap = if (target.data.toString().isBlank()) {
             projectMetricsModel.getSizeDistribution()
         } else {
             val data = target.data as Map<String, Any>
-            val projectId = data[OPDATA_PROJECT_ID] as String
-            projectMetricsModel.getSizeDistributionByProjectId(projectId)
+            val projectId = data[OPDATA_PROJECT_ID] as String?
+            val repoName = data[OPDATA_REPO_NAME] as String?
+            if (projectId.isNullOrBlank()) {
+                projectMetricsModel.getSizeDistribution()
+            } else if (repoName.isNullOrBlank()) {
+                projectMetricsModel.getProjSizeDistribution(projectId)
+            } else {
+                nodeModel.getRepoNodeSizeDistribution(projectId, repoName)
+            }
         }
-        for (r in resultMap.toList()) {
-            val size = r.first
-            val data = listOf(r.second, System.currentTimeMillis())
+        val results = resultMap.toList().map { Pair(it.first.toLong(), it.second) }.sortedBy { it.first }
+        for (i in results.indices){
+            val size = if (i+1 < results.size) {
+                "${HumanReadable.size(results[i].first)} - ${HumanReadable.size(results[i+1].first)}"
+            } else {
+                "> ${HumanReadable.size(results[i].first)}"
+            }
+            val data = listOf(results[i].second, System.currentTimeMillis())
             val element = listOf(data)
             result.add(NodeResult(size, element))
         }
@@ -169,8 +234,8 @@ class GrafanaService @Autowired constructor(
     }
 
     private fun dealProjectList(target: Target, result: MutableList<Any>) {
-        var rows = mutableListOf<List<Any>>()
-        var columns = mutableListOf<Columns>()
+        val rows = mutableListOf<List<Any>>()
+        val columns = mutableListOf<Columns>()
         val info = projectMetricsRepository.findAll()
         columns.add(Columns(TProjectMetrics::projectId.name, OPDATA_GRAFANA_STRING))
         columns.add(Columns(TProjectMetrics::nodeNum.name, OPDATA_GRAFANA_NUMBER))
@@ -218,7 +283,7 @@ class GrafanaService @Autowired constructor(
 
     private fun dealProjectNodeNum(result: MutableList<Any>): List<Any> {
         val projects = projectMetricsRepository.findAll()
-        var tmpMap = HashMap<String, Long>()
+        val tmpMap = HashMap<String, Long>()
         projects.forEach {
             val projectId = it.projectId
             if (it.nodeNum != 0L && projectId != PROJECT_NAME) {
@@ -238,5 +303,9 @@ class GrafanaService @Autowired constructor(
             }
         }
         return result
+    }
+
+    companion object {
+        private const val METRICS = "metric"
     }
 }

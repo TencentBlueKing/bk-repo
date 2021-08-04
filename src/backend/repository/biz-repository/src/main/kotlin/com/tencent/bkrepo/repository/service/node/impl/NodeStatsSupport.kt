@@ -34,13 +34,19 @@ package com.tencent.bkrepo.repository.service.node.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.service.node.NodeStatsOperation
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
+import org.apache.commons.lang.StringUtils
 import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.aggregation.Aggregation.group
+import org.springframework.data.mongodb.core.aggregation.Aggregation.match
+import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -68,9 +74,9 @@ open class NodeStatsSupport(
         val listOption = NodeListOption(includeFolder = true, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
         val count = nodeDao.count(Query(criteria))
-        val aggregation = Aggregation.newAggregation(
-            Aggregation.match(criteria),
-            Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
+        val aggregation = newAggregation(
+            match(criteria),
+            group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
         )
         val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
         val size = aggregateResult.mappedResults.firstOrNull()?.get(NodeSizeInfo::size.name) as? Long ?: 0
@@ -90,13 +96,14 @@ open class NodeStatsSupport(
         }
     }
 
-    override fun computeSizeDistribution(projectId: String, range: List<Long>): Map<String, Long> {
+    override fun computeSizeDistribution(projectId: String, range: List<Long>, repoName: String?): Map<String, Long> {
         val resultMap = HashMap<String, Long>()
         for (i in range.indices) {
             val lowerLimit = range[i]
             val upperLimit = if (i+1 == range.size) null else range[i+1]
             val query = Query(
                 where(TNode::projectId).isEqualTo(projectId)
+                    .apply { repoName?.run { and(TNode::repoName).isEqualTo(repoName) } }
                     .and(TNode::deleted).isEqualTo(null)
                     .and(TNode::folder).isEqualTo(false)
                     .and(TNode::size).gte(lowerLimit)
@@ -105,5 +112,38 @@ open class NodeStatsSupport(
             resultMap[lowerLimit.toString()] = nodeDao.count(query)
         }
         return resultMap
+    }
+
+    override fun getFileExtensions(projectId: String, repoName: String?): List<String> {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .apply { repoName?.run { and(TNode::repoName).isEqualTo(repoName) } }
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::folder).isEqualTo(false)
+        val aggregation = newAggregation(
+            match(criteria),
+            group().addToSet(TNode::name.name).`as`(TNode::name.name)
+        )
+        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
+        val fileNames = aggregateResult.mappedResults.firstOrNull()?.get(TNode::name.name) as? List<String> ?: listOf()
+        return fileNames.map { it.substringAfterLast(".", "") }
+            .distinct().filter { !StringUtils.isNumeric(it) }
+    }
+
+    override fun statFileExtension(projectId: String, extension: String, repoName: String?): FileExtensionStatInfo {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .apply { repoName?.run { and(TNode::repoName).isEqualTo(repoName) } }
+            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::folder).isEqualTo(false)
+            .and(TNode::name).regex(".*${PathUtils.escapeRegex(extension)}")
+        val aggregation = newAggregation(
+            match(criteria),
+            group().sum(TNode::size.name).`as`(FileExtensionStatInfo::size.name)
+        )
+        val query = Query(criteria)
+        val count = nodeDao.count(query)
+        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
+        val size = aggregateResult.mappedResults.firstOrNull()
+            ?.get(FileExtensionStatInfo::size.name) as? Long ?: 0
+        return FileExtensionStatInfo(projectId, repoName, extension, count, size)
     }
 }
