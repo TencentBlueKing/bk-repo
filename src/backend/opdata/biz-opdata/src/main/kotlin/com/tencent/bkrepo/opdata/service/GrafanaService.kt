@@ -180,9 +180,9 @@ class GrafanaService @Autowired constructor(
             }
         }
         val results = resultMap.toList().map { Pair(it.first.toLong(), it.second) }.sortedBy { it.first }
-        for (i in results.indices){
-            val size = if (i+1 < results.size) {
-                "${HumanReadable.size(results[i].first)} - ${HumanReadable.size(results[i+1].first)}"
+        for (i in results.indices) {
+            val size = if (i + 1 < results.size) {
+                "${HumanReadable.size(results[i].first)} - ${HumanReadable.size(results[i + 1].first)}"
             } else {
                 "> ${HumanReadable.size(results[i].first)}"
             }

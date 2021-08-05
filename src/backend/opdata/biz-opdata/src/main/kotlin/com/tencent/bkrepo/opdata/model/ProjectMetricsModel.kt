@@ -84,5 +84,4 @@ class ProjectMetricsModel @Autowired constructor(
         val projectMetrics = mongoTemplate.findOne(query, TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
         return projectMetrics?.sizeDistribution ?: mapOf()
     }
-
 }

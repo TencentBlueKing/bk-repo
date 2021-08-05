@@ -43,7 +43,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.service.node.NodeStatsOperation
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.apache.commons.lang.StringUtils
-import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
 import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
@@ -100,7 +99,7 @@ open class NodeStatsSupport(
         val resultMap = HashMap<String, Long>()
         for (i in range.indices) {
             val lowerLimit = range[i]
-            val upperLimit = if (i+1 == range.size) null else range[i+1]
+            val upperLimit = if (i + 1 == range.size) null else range[i + 1]
             val query = Query(
                 where(TNode::projectId).isEqualTo(projectId)
                     .apply { repoName?.run { and(TNode::repoName).isEqualTo(repoName) } }

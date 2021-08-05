@@ -53,14 +53,12 @@ class FileExtensionStatJob(
         val projects = projectModel.getProjectList()
         projects.forEach { project ->
             val fileExtensions = nodeModel.getFileExtensions(project.name, null)
-            if (fileExtensions.isNotEmpty()) {
-                fileExtensions.forEach {
-                    val fileExtensionStatInfo = nodeModel.getFileExtensionStat(project.name, it, null)
-                    val fileExtensionMetrics = with(fileExtensionStatInfo) {
-                        TFileExtensionMetrics(projectId, repoName, extension, num, size)
-                    }
-                    results.add(fileExtensionMetrics)
+            fileExtensions.forEach {
+                val fileExtensionStatInfo = nodeModel.getFileExtensionStat(project.name, it, null)
+                val fileExtensionMetrics = with(fileExtensionStatInfo) {
+                    TFileExtensionMetrics(projectId, repoName, extension, num, size)
                 }
+                results.add(fileExtensionMetrics)
             }
         }
         fileExtensionMetricsRepository.deleteAll()
@@ -68,8 +66,7 @@ class FileExtensionStatJob(
         logger.info("stat file extension done")
     }
 
-    companion object{
+    companion object {
         private val logger = LoggerHolder.jobLogger
     }
-
 }

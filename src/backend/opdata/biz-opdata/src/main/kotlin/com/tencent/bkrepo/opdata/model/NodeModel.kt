@@ -47,7 +47,7 @@ import org.springframework.stereotype.Service
 class NodeModel @Autowired constructor(
     private val nodeClient: NodeClient
 ) {
-    companion object{
+    companion object {
         private val sizeRange = listOf(B_0, MB_100, MB_500, GB_1, GB_10)
     }
 
@@ -76,6 +76,4 @@ class NodeModel @Autowired constructor(
         return nodeClient.statFileExtension(projectId, extension, repoName).data
             ?: FileExtensionStatInfo(projectId, repoName, extension, 0L, 0L)
     }
-
-
 }

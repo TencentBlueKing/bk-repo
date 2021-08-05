@@ -36,4 +36,4 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface FileExtensionMetricsRepository: MongoRepository<TFileExtensionMetrics, String>
+interface FileExtensionMetricsRepository : MongoRepository<TFileExtensionMetrics, String>

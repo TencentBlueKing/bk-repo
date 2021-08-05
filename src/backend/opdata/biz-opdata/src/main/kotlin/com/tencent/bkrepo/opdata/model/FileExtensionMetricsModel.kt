@@ -50,7 +50,7 @@ import org.springframework.stereotype.Service
 class FileExtensionMetricsModel @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val nodeModel: NodeModel
-){
+) {
     /**
      * 获取总体的文件后缀名的统计信息
      */
@@ -69,7 +69,11 @@ class FileExtensionMetricsModel @Autowired constructor(
     /**
      * 获取仓库的文件后缀名的统计信息
      */
-    fun getRepoFileExtensionMetrics(projectId: String, repoName: String, metrics: FileExtensionMetrics): List<HashMap<String, Any>> {
+    fun getRepoFileExtensionMetrics(
+        projectId: String,
+        repoName: String,
+        metrics: FileExtensionMetrics
+    ): List<HashMap<String, Any>> {
         val resultList = mutableListOf<HashMap<String, Any>>()
         val fileExtensions = nodeModel.getFileExtensions(projectId, repoName)
         if (fileExtensions.isNotEmpty()) {
@@ -78,7 +82,7 @@ class FileExtensionMetricsModel @Autowired constructor(
                 val resultMap = hashMapOf<String, Any>(
                     TFileExtensionMetrics::extension.name to fileExtensionStatInfo.extension
                 )
-                when(metrics) {
+                when (metrics) {
                     FileExtensionMetrics.NUM -> {
                         resultMap[TFileExtensionMetrics::num.name] = fileExtensionStatInfo.num
                     }
@@ -105,7 +109,7 @@ class FileExtensionMetricsModel @Autowired constructor(
         return aggregateResult.mappedResults as? List<HashMap<String, Any>> ?: listOf()
     }
 
-    companion object{
+    companion object {
         private const val ID = "_id"
     }
 }
