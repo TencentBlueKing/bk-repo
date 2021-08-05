@@ -1,5 +1,5 @@
 <template>
-    <bk-sideslider :is-show.sync="showSideslider" :quick-close="true" :width="850" :title="`${title} 执行日志`">
+    <bk-sideslider :is-show.sync="showSideslider" :quick-close="true" :width="850" :title="`${planData.name} 执行日志`">
         <template #content>
             <div class="plan-detail-container" v-bkloading="{ isLoading }">
                 <bk-select
@@ -29,7 +29,7 @@
                             {{formatDate(row.startTime)}}
                         </template>
                     </bk-table-column>
-                    <bk-table-column label="结束执行时间" width="150">
+                    <bk-table-column v-if="planData.replicaType !== 'REAL_TIME'" label="结束执行时间" width="150">
                         <template #default="{ row }">
                             {{formatDate(row.endTime)}}
                         </template>
@@ -72,8 +72,10 @@
         },
         props: {
             show: Boolean,
-            title: String,
-            planKey: String
+            planData: {
+                type: Object,
+                default: () => {}
+            }
         },
         data () {
             return {
@@ -115,7 +117,7 @@
             getPlanLogListHandler () {
                 this.isLoading = true
                 this.getPlanLogList({
-                    key: this.planKey,
+                    key: this.planData.key,
                     status: this.status || undefined,
                     current: this.pagination.current,
                     limit: this.pagination.limit
@@ -134,7 +136,7 @@
                         logId: id
                     },
                     query: {
-                        plan: this.title
+                        plan: this.planData.name
                     }
                 })
             }
