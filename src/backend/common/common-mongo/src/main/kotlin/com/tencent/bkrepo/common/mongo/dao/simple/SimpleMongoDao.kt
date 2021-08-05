@@ -38,7 +38,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 /**
  * mongodb simple类型数据访问层抽象类，其行为和mongoTemplate一致
  */
-// 抽象类使用构造器注入不方便
 abstract class SimpleMongoDao<E> : AbstractMongoDao<E>() {
 
     // 抽象类使用构造器注入不方便

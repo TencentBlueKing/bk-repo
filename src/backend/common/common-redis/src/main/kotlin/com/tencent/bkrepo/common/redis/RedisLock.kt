@@ -33,7 +33,7 @@ import io.lettuce.core.api.async.RedisAsyncCommands
 import io.lettuce.core.cluster.api.async.RedisAdvancedClusterAsyncCommands
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisCallback
-import java.util.*
+import java.util.UUID
 
 open class RedisLock(
     private val redisOperation: RedisOperation,
