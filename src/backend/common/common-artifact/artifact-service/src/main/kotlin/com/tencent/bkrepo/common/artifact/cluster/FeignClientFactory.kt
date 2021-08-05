@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.disableVa
 import com.tencent.bkrepo.common.artifact.util.okhttp.CertTrustManager.trustAllHostname
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import feign.Client
 import feign.Feign
 import feign.Logger
@@ -52,7 +52,7 @@ import java.util.concurrent.TimeUnit
 object FeignClientFactory {
 
     /**
-     * [remoteClusterInfo] 为远程集群信息
+     * [remoteClusterInfo]为远程集群信息
      */
     inline fun <reified T> create(remoteClusterInfo: RemoteClusterInfo): T {
         return create(T::class.java, remoteClusterInfo)
@@ -76,10 +76,10 @@ object FeignClientFactory {
         } as T
     }
 
-    private fun createInterceptor(remoteClusterInfo: RemoteClusterInfo): RequestInterceptor {
+    private fun createInterceptor(cluster: RemoteClusterInfo): RequestInterceptor {
         return RequestInterceptor {
-            if (remoteClusterInfo.username.isNotBlank()) {
-                it.header(AUTHORIZATION, BasicAuthUtils.encode(remoteClusterInfo.username, remoteClusterInfo.password))
+            if (!cluster.username.isNullOrBlank()) {
+                it.header(AUTHORIZATION, BasicAuthUtils.encode(cluster.username!!, cluster.password!!))
             }
         }
     }

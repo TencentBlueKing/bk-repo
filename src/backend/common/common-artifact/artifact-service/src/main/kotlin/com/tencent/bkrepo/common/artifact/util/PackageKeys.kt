@@ -45,13 +45,14 @@ object PackageKeys {
     private const val PYPI = "pypi"
     private const val COMPOSER = "composer"
     private const val NUGET = "nuget"
+    private const val MAVEN = "gav"
     private const val SEPARATOR = "://"
 
     /**
      * 生成gav格式key
      */
     fun ofGav(groupId: String, artifactId: String): String {
-        return StringBuilder("gav://").append(groupId)
+        return StringBuilder(MAVEN).append(SEPARATOR).append(groupId)
             .append(StringPool.COLON)
             .append(artifactId)
             .toString()
@@ -123,6 +124,13 @@ object PackageKeys {
      */
     fun ofNuget(name: String): String {
         return ofName(NUGET, name)
+    }
+
+    /**
+     * 生成gav格式key
+     */
+    fun resolveGav(gavKey: String): String {
+        return resolveName(MAVEN, gavKey)
     }
 
     /**

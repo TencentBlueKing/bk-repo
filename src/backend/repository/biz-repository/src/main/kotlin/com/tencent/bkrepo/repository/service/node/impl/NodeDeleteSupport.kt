@@ -30,10 +30,12 @@ package com.tencent.bkrepo.repository.service.node.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
+import com.tencent.bkrepo.repository.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -73,6 +75,7 @@ open class NodeDeleteSupport(
         )
         try {
             nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
+            publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName$fullPath] error: [${exception.message}]")
         }

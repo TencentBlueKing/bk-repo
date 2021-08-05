@@ -3,11 +3,8 @@
         <span>{{ userInfo.name || userInfo.username }}</span>
         <i class="ml5 bk-icon icon-angle-down"></i>
         <ul class="user-menu">
-            <li class="flex-align-center">
-                <router-link class="hover-btn" :to="{ name: 'userCenter' }">{{ $t('userCenter') }}</router-link>
-            </li>
-            <li v-if="userInfo.admin" class="flex-align-center">
-                <router-link class="hover-btn" :to="{ name: 'userManage' }">{{ $t('userManage') }}</router-link>
+            <li class="flex-align-center" v-for="name in menuList" :key="name">
+                <router-link class="hover-btn" :to="{ name }">{{ $t(name) }}</router-link>
             </li>
             <li class="flex-align-center">
                 <span class="hover-btn" @click="logout">{{ $t('logout') }}</span>
@@ -16,15 +13,30 @@
     </div>
 </template>
 <script>
-    import { mapState, mapMutations, mapActions } from 'vuex'
+    import { mapState, mapGetters, mapMutations, mapActions } from 'vuex'
     export default {
         name: 'bkrepoUser',
         computed: {
-            ...mapState(['userInfo'])
+            ...mapState(['userInfo']),
+            ...mapGetters(['masterNode']),
+            menuList () {
+                return [
+                    'userCenter',
+                    this.userInfo.admin && 'userManage',
+                    this.userInfo.admin && this.isMasterNode && 'nodeManage',
+                    this.isMasterNode && 'planManage'
+                ].filter(Boolean)
+            },
+            isMasterNode () {
+                return this.masterNode.url && this.masterNode.url.indexOf(location.origin) !== -1
+            }
+        },
+        created () {
+            this.getClusterList()
         },
         methods: {
             ...mapMutations(['SHOW_LOGIN_DIALOG']),
-            ...mapActions(['logout'])
+            ...mapActions(['getClusterList', 'logout'])
         }
     }
 </script>

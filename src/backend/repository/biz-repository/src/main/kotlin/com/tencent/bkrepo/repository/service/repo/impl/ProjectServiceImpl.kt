@@ -37,12 +37,12 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.listener.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -106,7 +106,7 @@ class ProjectServiceImpl(
             )
             return try {
                 projectDao.insert(project)
-                publishEvent(ProjectCreatedEvent(request))
+                publishEvent(buildCreatedEvent(request))
                 logger.info("Create project [$name] success.")
                 convert(project)!!
             } catch (exception: DuplicateKeyException) {

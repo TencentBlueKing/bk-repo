@@ -42,14 +42,10 @@
         <main class="repo-list-table" v-bkloading="{ isLoading }">
             <bk-table
                 :data="repoList"
-                height="100%"
+                height="calc(100% - 52px)"
                 :outer-border="false"
                 :row-border="false"
-                size="small"
-                :pagination="pagination"
-                @page-change="current => handlerPaginationChange({ current })"
-                @page-limit-change="limit => handlerPaginationChange({ limit })"
-            >
+                size="small">
                 <bk-table-column :label="$t('repoName')">
                     <template slot-scope="props">
                         <div class="repo-name" @click="toRepoDetail(props.row)">
@@ -75,6 +71,18 @@
                     </template>
                 </bk-table-column>
             </bk-table>
+            <bk-pagination
+                class="mt10"
+                size="small"
+                align="right"
+                show-total-count
+                @change="current => handlerPaginationChange({ current })"
+                @limit-change="limit => handlerPaginationChange({ limit })"
+                :current.sync="pagination.current"
+                :limit="pagination.limit"
+                :count="pagination.count"
+                :limit-list="pagination.limitList">
+            </bk-pagination>
         </main>
     </div>
 </template>
@@ -205,7 +213,7 @@
             flex-basis: 400px;
             .form-label {
                 font-size: 14px;
-                flex-basis: 80px;
+                flex-basis: 65px;
             }
             .form-input {
                 flex-basis: 300px;

@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateR
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -222,6 +224,7 @@ class PackageServiceImpl(
             tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
             packageDao.save(tPackage)
 
+            publishEvent(buildCreatedEvent(request))
             logger.info("Create package version[$newVersion] success")
         }
     }
