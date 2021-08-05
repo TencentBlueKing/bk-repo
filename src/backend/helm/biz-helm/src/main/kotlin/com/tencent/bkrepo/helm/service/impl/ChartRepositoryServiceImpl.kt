@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
@@ -56,7 +55,6 @@ import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
-import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -235,7 +233,6 @@ class ChartRepositoryServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
-        val artifactResourceList = mutableListOf<ArtifactResource>()
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
         if (nodeList.isEmpty()) {
             throw HelmFileNotFoundException(
@@ -244,19 +241,13 @@ class ChartRepositoryServiceImpl(
         }
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        val nodeMap = mutableMapOf<String, ArtifactInputStream>()
         nodeList.forEach {
             context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
             val artifactInputStream = repository.query(context) as ArtifactInputStream
-            artifactResourceList.add(
-                ArtifactResource(
-                    artifactInputStream,
-                    it[NODE_NAME] as String,
-                    null,
-                    ArtifactChannel.LOCAL
-                )
-            )
+            nodeMap[it[NODE_NAME] as String] = artifactInputStream
         }
-        HelmZipResponseWriter.write(artifactResourceList)
+        artifactResourceWriter.write(ArtifactResource(nodeMap, useDisposition = true))
     }
 
     companion object {

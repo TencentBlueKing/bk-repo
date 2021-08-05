@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
@@ -78,6 +79,9 @@ open class AbstractChartService {
 
     @Autowired
     lateinit var eventPublisher: ApplicationEventPublisher
+
+    @Autowired
+    lateinit var artifactResourceWriter: ArtifactResourceWriter
 
     fun queryOriginalIndexYaml(): HelmIndexYamlMetadata {
         val context = ArtifactQueryContext()
