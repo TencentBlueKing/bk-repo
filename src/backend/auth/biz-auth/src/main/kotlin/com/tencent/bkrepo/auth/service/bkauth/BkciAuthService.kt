@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
@@ -61,6 +62,9 @@ class BkciAuthService @Autowired constructor(
         .maximumSize(20000)
         .expireAfterWrite(60, TimeUnit.SECONDS)
         .build<String, Boolean>()
+
+    @Value("\${auth.devops.enableSuperAdmin: false}")
+    var enableSuperAdmin: Boolean = false
 
     fun isProjectMember(user: String, projectCode: String): Boolean {
         val cacheKey = "$user::$projectCode"
@@ -95,9 +99,10 @@ class BkciAuthService @Autowired constructor(
         resourceType: BkAuthResourceType,
         permissionAction: PermissionAction?
     ): Boolean {
-        if (permissionAction != PermissionAction.READ) {
-            return false
-        }
+
+        if (!enableSuperAdmin) return false
+
+        if (permissionAction != PermissionAction.READ) return false
 
         val cacheKey = "superAdmin::$user::$projectCode"
         val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)

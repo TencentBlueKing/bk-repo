@@ -89,8 +89,8 @@ class BkAuthPermissionServiceImpl constructor(
                     checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    checkPipelinePermission(uid, projectId!!, path, resourceType, action)
-                        || checkProjectPermission(uid, projectId!!, action)
+                    checkPipelinePermission(uid, projectId!!, path, resourceType, action) ||
+                        checkProjectPermission(uid, projectId!!, action)
                 }
                 REPORT -> {
                     checkReportPermission(action)
@@ -116,7 +116,6 @@ class BkAuthPermissionServiceImpl constructor(
         return action == PermissionAction.READ || action == PermissionAction.WRITE || action == PermissionAction.VIEW
     }
 
-
     private fun checkPipelinePermission(
         uid: String,
         projectId: String,
@@ -140,8 +139,9 @@ class BkAuthPermissionServiceImpl constructor(
         pipelineId: String,
         action: PermissionAction
     ): Boolean {
-        logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
-            "permissionAction: $action"
+        logger.debug(
+            "checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
+                "permissionAction: $action"
         )
         return try {
             return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, action)
@@ -186,6 +186,10 @@ class BkAuthPermissionServiceImpl constructor(
 
         // devops实名访问请求处理
         if (matchDevopsCond(request.appId)) {
+
+            // 优先校验本地权限
+            if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
+
             return checkDevopsPermission(request)
         }
 
@@ -197,8 +201,12 @@ class BkAuthPermissionServiceImpl constructor(
         return projectId != null && bkAuthConfig.choseBkAuth() && projectId.startsWith(GIT_PROJECT_PREFIX, true)
     }
 
+    private fun matchBcsCond(projectId: String?): Boolean {
+        return projectId == bkAuthConfig.bcsAppId
+    }
+
     private fun matchDevopsCond(appId: String?): Boolean {
-        val devopsAppIdList = listOf(bkAuthConfig.devopsAppId, bkAuthConfig.bkrepoAppId, bkAuthConfig.bkcodeAppId)
+        val devopsAppIdList = bkAuthConfig.devopsAppIdSet.split(",")
         return devopsAppIdList.contains(appId)
     }
 

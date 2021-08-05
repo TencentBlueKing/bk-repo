@@ -148,7 +148,7 @@ export default {
         ).then(({ domain }) => {
             commit('SET_DOMAIN', {
                 type: 'npm',
-                domain: domain || `${location.origin}/npm`
+                domain
             })
         })
     },

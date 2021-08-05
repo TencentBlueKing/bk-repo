@@ -543,8 +543,8 @@ style:
     active: false
     methods: [ 'kotlin.io.println', 'kotlin.io.print' ]
   ForbiddenPublicDataClass:
-    active: true
-    ignorePackages: [ '*.internal', '*.internal.*' ]
+    active: false
+    ignorePackages: ['*.internal', '*.internal.*']
   ForbiddenVoid:
     active: false
     ignoreOverridden: false

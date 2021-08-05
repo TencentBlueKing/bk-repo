@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -60,7 +59,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
-import java.util.*
+import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -146,8 +145,9 @@ class GenericLocalRepository : LocalRepository() {
         // 检查目录大小
         checkFolderSize(nodes)
         // 构造name-node map
+        val prefix = "${node.fullPath}/"
         val nodeMap = nodes.associate {
-            val name = PathUtils.combineFullPath(node.name, it.name)
+            val name = it.fullPath.removePrefix(prefix)
             val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
             name to inputStream
         }
