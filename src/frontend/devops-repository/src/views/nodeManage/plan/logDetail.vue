@@ -54,7 +54,17 @@
                         <span class="repo-tag" :class="row.status">{{statusMap[row.status] || '未执行'}}</span>
                     </template>
                 </bk-table-column>
-                <template v-if="logDetail.replicaObjectType === 'PACKAGE'">
+                <template v-if="logDetail.replicaType === 'REAL_TIME'">
+                    <bk-table-column label="制品名称 / 文件路径" show-overflow-tooltip width="200">
+                        <template #default="{ row }">
+                            {{ row.packageKey || row.path || '--' }}
+                        </template>
+                    </bk-table-column>
+                    <bk-table-column label="版本" prop="versions" show-overflow-tooltip width="120"
+                        :formatter="(row, column, cellValue) => (cellValue || ['--']).join('、')">
+                    </bk-table-column>
+                </template>
+                <template v-else-if="logDetail.replicaObjectType === 'PACKAGE'">
                     <bk-table-column label="制品名称" prop="packageKey" show-overflow-tooltip width="150"
                         :formatter="(row, column, cellValue) => cellValue || '--'">
                     </bk-table-column>
@@ -62,15 +72,25 @@
                         :formatter="(row, column, cellValue) => (cellValue || ['--']).join('、')">
                     </bk-table-column>
                 </template>
-                <template v-if="logDetail.replicaObjectType === 'PATH'">
+                <template v-else-if="logDetail.replicaObjectType === 'PATH'">
                     <bk-table-column label="文件路径" prop="path" show-overflow-tooltip width="200"
                         :formatter="(row, column, cellValue) => cellValue || '--'">
                     </bk-table-column>
                 </template>
+                <bk-table-column label="开始时间" width="150">
+                    <template #default="{ row }">
+                        {{formatDate(row.startTime)}}
+                    </template>
+                </bk-table-column>
+                <bk-table-column label="结束时间" width="150">
+                    <template #default="{ row }">
+                        {{formatDate(row.endTime)}}
+                    </template>
+                </bk-table-column>
                 <bk-table-column label="成功数量" prop="success" width="80"></bk-table-column>
                 <bk-table-column label="跳过数量" prop="skip" width="80"></bk-table-column>
                 <bk-table-column label="失败数量" prop="failed" width="80"></bk-table-column>
-                <bk-table-column label="备注" show-overflow-tooltip>
+                <bk-table-column label="备注">
                     <template #default="{ row }">
                         <span :title="row.errorReason">{{row.errorReason || '--'}}</span>
                     </template>
@@ -144,8 +164,8 @@
             }).then(res => {
                 if (res) {
                     this.logDetail = {
-                        ...res.record,
-                        replicaObjectType: res.replicaObjectType
+                        ...res,
+                        ...res.record
                     }
                 } else {
                     this.$router.replace({

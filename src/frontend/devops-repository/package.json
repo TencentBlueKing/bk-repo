@@ -15,7 +15,7 @@
   "dependencies": {
     "@icon-cool/bk-icon-devops": "0.0.6",
     "axios": "^0.18.1",
-    "bk-magic-vue": "2.2.8",
+    "bk-magic-vue": "2.3.0",
     "clipboard": "^2.0.6",
     "js-cookie": "^2.2.1",
     "uuid": "^8.1.0",
