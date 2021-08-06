@@ -288,7 +288,7 @@ open class PermissionServiceImpl constructor(
 
         var noAdminRole = mutableListOf<String>()
 
-        // 用户管理员角色管理权限
+        // 管理员角色关联权限
         val roleList = roleRepository.findByIdIn(user.roles)
         roleList.forEach {
             if (it.admin) {
