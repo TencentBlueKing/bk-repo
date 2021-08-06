@@ -385,7 +385,7 @@
                 background-color: $bgLightColor;
             }
             .replica-type-radio-group {
-                /deep/ .bk-form-radio-button {
+                ::v-deep .bk-form-radio-button {
                     .bk-radio-button-text {
                         height: auto;
                         line-height: initial;

@@ -1,35 +1,35 @@
 <template>
-    <ul class="repo-tree-list">
-        <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
-            <div v-if="deepCount" class="line-dashed" :class="{ 'more': sortable && list.length > 20 }" :style="{
-                'border-width': '0 1px 0 0',
-                'margin-left': (20 * deepCount + 5) + 'px',
-                'height': '100%',
-                'margin-top': '-15px'
-            }"></div>
-            <div class="repo-tree-title hover-btn"
-                :title="item.name"
-                :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
-                :style="{ 'padding-left': 20 * (deepCount + 1) + 'px' }"
-                @click.stop="itemClickHandler(item)">
-                <div class="line-dashed" :style="{
-                    'border-width': openList.includes(item.roadMap) ? '0 1px 0 0' : '0',
-                    'margin-left': (20 * deepCount + 25) + 'px',
-                    'height': 'calc(100% - 45px)',
-                    'margin-top': '25px'
+    <bk-transition name="collapse">
+        <ul class="repo-tree-list">
+            <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
+                <div v-if="deepCount" class="line-dashed" :class="{ 'more': sortable && list.length > 20 }" :style="{
+                    'border-width': '0 1px 0 0',
+                    'margin-left': (20 * deepCount + 5) + 'px',
+                    'height': '100%',
+                    'margin-top': '-15px'
                 }"></div>
-                <div v-if="deepCount" class="line-dashed" :style="{
-                    'border-width': '1px 0 0',
-                    'margin-left': '-13px',
-                    'width': '15px'
-                }"></div>
-                <i v-if="item.loading" class="mr5 loading"></i>
-                <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
-                    :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
-                <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
-                <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
-            </div>
-            <CollapseTransition>
+                <div class="repo-tree-title hover-btn"
+                    :title="item.name"
+                    :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
+                    :style="{ 'padding-left': 20 * (deepCount + 1) + 'px' }"
+                    @click.stop="itemClickHandler(item)">
+                    <div class="line-dashed" :style="{
+                        'border-width': openList.includes(item.roadMap) ? '0 1px 0 0' : '0',
+                        'margin-left': (20 * deepCount + 25) + 'px',
+                        'height': 'calc(100% - 45px)',
+                        'margin-top': '25px'
+                    }"></div>
+                    <div v-if="deepCount" class="line-dashed" :style="{
+                        'border-width': '1px 0 0',
+                        'margin-left': '-13px',
+                        'width': '15px'
+                    }"></div>
+                    <i v-if="item.loading" class="mr5 loading"></i>
+                    <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
+                        :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
+                    <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
+                    <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
+                </div>
                 <template v-if="item.children && item.children.length">
                     <repo-tree
                         v-show="openList.includes(item.roadMap)"
@@ -43,18 +43,14 @@
                         @item-click="itemClickHandler">
                     </repo-tree>
                 </template>
-            </CollapseTransition>
-        </li>
-    </ul>
+            </li>
+        </ul>
+    </bk-transition>
 </template>
 
 <script>
-    import CollapseTransition from './collapse-transition.js'
     export default {
         name: 'repo-tree',
-        components: {
-            CollapseTransition
-        },
         props: {
             list: {
                 type: Array,
@@ -119,7 +115,7 @@
             importantTransform (name) {
                 if (!this.importantSearch) return name
                 const normalText = name.split(this.importantSearch)
-                return normalText.reduce((a, b, index) => {
+                return normalText.reduce((a, b) => {
                     return a + `<em>${this.importantSearch}</em>` + b
                 })
             }

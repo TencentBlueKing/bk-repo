@@ -1,19 +1,16 @@
 <template>
     <bk-dialog
-        v-model="show"
+        :value="show"
         :title="title"
         :quick-close="false"
         :mask-close="false"
         :close-icon="false"
         width="620"
         header-position="left">
-        <artifactory-upload
-            ref="artifactoryUpload"
-            @upload-failed="uploadFailed">
-        </artifactory-upload>
+        <artifactory-upload ref="artifactoryUpload" :upload-status="uploadStatus"></artifactory-upload>
         <div slot="footer">
             <bk-button :loading="loading" theme="primary" @click="submitUpload">{{ $t('upload') }}</bk-button>
-            <bk-button @click="loading ? abortUpload() : cancelUpload()">{{ $t(loading ? 'abort' : 'cancel') }}</bk-button>
+            <bk-button ext-cls="ml5" @click="loading ? abortUpload() : $emit('cancel')">{{ $t(loading ? 'abort' : 'cancel') }}</bk-button>
         </div>
     </bk-dialog>
 </template>
@@ -31,12 +28,16 @@
         data () {
             return {
                 loading: false,
-                uploadXHR: null
+                uploadXHR: null,
+                uploadStatus: 'primary'
             }
         },
         watch: {
             show (val) {
-                if (val) this.$refs.artifactoryUpload.reset()
+                if (val) {
+                    this.$refs.artifactoryUpload.reset()
+                    this.uploadStatus = 'primary'
+                }
             }
         },
         methods: {
@@ -45,8 +46,8 @@
             ]),
             uploadFile (file, progressHandler) {
                 this.loading = true
-                this.uploadXHR && this.uploadXHR.abort()
                 this.uploadXHR = new XMLHttpRequest()
+                this.uploadStatus = 'primary'
                 this.uploadArtifactory({
                     xhr: this.uploadXHR,
                     projectId: this.$route.params.projectId,
@@ -60,13 +61,14 @@
                         'X-BKREPO-EXPIRES': file.expires
                     }
                 }).then(() => {
-                    this.cancelUpload()
+                    this.$emit('update')
+                    this.$emit('cancel')
                     this.$bkMessage({
                         theme: 'success',
                         message: `${this.$t('upload')} ${file.name} ${this.$t('success')}`
                     })
                 }).catch(e => {
-                    this.$refs.artifactoryUpload.uploadFailed()
+                    this.uploadStatus = 'danger'
                     e && this.$bkMessage({
                         theme: 'error',
                         message: e.message || e
@@ -105,17 +107,6 @@
                 this.loading = false
                 this.uploadXHR && this.uploadXHR.abort()
                 this.uploadXHR = null
-            },
-            cancelUpload () {
-                this.$emit('cancel')
-                this.abortUpload()
-            },
-            uploadFailed (file) {
-                this.abortUpload()
-                this.$bkMessage({
-                    theme: 'error',
-                    message: `${this.$t('upload')} ${file.name} ${this.$t('fail')}`
-                })
             }
         }
     }
