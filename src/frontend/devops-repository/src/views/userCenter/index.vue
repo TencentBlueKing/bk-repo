@@ -50,7 +50,7 @@
         border: 1px solid $borderWeightColor;
         .user-manage-tab {
             height: 100%;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 40px);
                 .bk-tab-content {
                     height: 100%;

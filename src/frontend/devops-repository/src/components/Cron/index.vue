@@ -248,7 +248,7 @@
     position: relative;
     .cron-display {
         cursor: pointer;
-        /deep/ .bk-form-input[readonly] {
+        ::v-deep .bk-form-input[readonly] {
             cursor: inherit;
         }
     }
@@ -268,10 +268,10 @@
         box-shadow: 0 3px 6px rgba(51, 60, 72, 0.12);
         background-color: white;
         .cron-tab {
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 padding: 0 20px;
             }
-            /deep/ .bk-tab-label-item {
+            ::v-deep .bk-tab-label-item {
                 min-width: 60px;
             }
             .cron-radio-item {
@@ -280,7 +280,7 @@
                 margin-top: 20px;
                 height: 32px;
                 line-height: inherit;
-                /deep/ .bk-radio-text {
+                ::v-deep .bk-radio-text {
                     display: flex;
                     align-items: center;
                     height: 32px;

@@ -239,7 +239,7 @@
         overflow-y: auto;
         .repo-config-tab {
             flex: 1;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 42px);
                 overflow-y: auto;
             }
