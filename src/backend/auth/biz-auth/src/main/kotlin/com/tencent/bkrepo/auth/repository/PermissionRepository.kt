@@ -61,4 +61,8 @@ interface PermissionRepository : MongoRepository<TPermission, String> {
         permName: String,
         resourceType: ResourceType
     ): TPermission?
+
+    fun findByUsers(userId: String): List<TPermission>
+
+    fun findByRolesIn(roleId: List<String>): List<TPermission>
 }

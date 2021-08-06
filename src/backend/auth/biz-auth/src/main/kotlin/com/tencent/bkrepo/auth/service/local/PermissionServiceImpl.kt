@@ -57,6 +57,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -70,7 +71,8 @@ open class PermissionServiceImpl constructor(
     private val roleRepository: RoleRepository,
     private val permissionRepository: PermissionRepository,
     private val mongoTemplate: MongoTemplate,
-    private val repositoryClient: RepositoryClient
+    private val repositoryClient: RepositoryClient,
+    private val projectClient: ProjectClient
 ) : PermissionService, AbstractServiceImpl(mongoTemplate, userRepository, roleRepository) {
 
     override fun deletePermission(id: String): Boolean {
@@ -258,6 +260,59 @@ open class PermissionServiceImpl constructor(
             }
             return false
         }
+    }
+
+    override fun listPermissionProject(userId: String): List<String> {
+        logger.debug("list permission project request : $userId ")
+        if (userId.isNullOrEmpty()) return emptyList()
+        val user = userRepository.findFirstByUserId(userId) ?: run {
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
+        }
+        // 用户为管理员
+        if (user.admin) {
+            return projectClient.listProject().data?.map { it.name } ?: emptyList()
+        }
+
+        var projectList = mutableListOf<String>()
+
+        // 用户关联权限
+        permissionRepository.findByUsers(userId).forEach {
+            if (it.actions.isNotEmpty() && it.projectId != null) {
+                projectList.add(it.projectId!!)
+            }
+        }
+
+        if (user.roles.isEmpty()) {
+            return projectList.distinct()
+        }
+
+        var noAdminRole = mutableListOf<String>()
+
+        // 管理员角色关联权限
+        val roleList = roleRepository.findByIdIn(user.roles)
+        roleList.forEach {
+            if (it.admin) {
+                projectList.add(it.projectId)
+            } else {
+                noAdminRole.add(it.id!!)
+            }
+        }
+
+        // 非管理员角色关联权限
+        projectList = getNoAdminRoleProject(noAdminRole, projectList)
+
+        return projectList.distinct()
+    }
+
+    private fun getNoAdminRoleProject(role: MutableList<String>, project: MutableList<String>): MutableList<String> {
+        if (role.isNotEmpty()) {
+            permissionRepository.findByRolesIn(role).forEach {
+                if (it.actions.isNotEmpty() && it.projectId != null) {
+                    project.add(it.projectId!!)
+                }
+            }
+        }
+        return project
     }
 
     override fun listRepoPermission(request: ListRepoPermissionRequest): List<String> {
