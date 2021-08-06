@@ -62,7 +62,14 @@ class BkAuthPermissionServiceImpl constructor(
     private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
     private val pluginManager: PluginManager
-) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient, projectClient) {
+) : PermissionServiceImpl(
+    userRepository,
+    roleRepository,
+    permissionRepository,
+    mongoTemplate,
+    repositoryClient,
+    projectClient
+) {
     private fun parsePipelineId(path: String): String? {
         val roads = path.split("/")
         return if (roads.size < 2 || roads[1].isBlank()) {
