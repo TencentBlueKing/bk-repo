@@ -299,15 +299,20 @@ open class PermissionServiceImpl constructor(
         }
 
         // 非管理员角色关联权限
-        if (noAdminRole.isNotEmpty()) {
-            permissionRepository.findByRolesIn(noAdminRole).forEach {
+        projectList = getNoAdminRoleProject(noAdminRole, projectList)
+
+        return projectList.distinct()
+    }
+
+    private fun getNoAdminRoleProject(role: MutableList<String>, project: MutableList<String>): MutableList<String> {
+        if (role.isNotEmpty()) {
+            permissionRepository.findByRolesIn(role).forEach {
                 if (it.actions.isNotEmpty() && it.projectId != null) {
-                    projectList.add(it.projectId!!)
+                    project.add(it.projectId!!)
                 }
             }
         }
-
-        return projectList.distinct()
+        return project
     }
 
     override fun listRepoPermission(request: ListRepoPermissionRequest): List<String> {
