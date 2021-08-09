@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
@@ -42,7 +41,6 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
-import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
@@ -53,7 +51,6 @@ import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
-import com.tencent.bkrepo.helm.utils.HelmZipResponseWriter
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -86,7 +83,7 @@ class ChartRepositoryServiceImpl(
         // 先查询index.yaml文件，如果不存在则创建，
         // 存在则根据最后一次更新时间与node节点创建时间对比进行增量更新
         with(artifactInfo) {
-            if (!exist(projectId, repoName, INDEX_CACHE_YAML)) {
+            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
                 val nodeList = queryNodeList(artifactInfo, false)
                 logger.info(
                     "query node list success, size [${nodeList.size}] in repo [$projectId/$repoName]," +
@@ -232,7 +229,6 @@ class ChartRepositoryServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
-        val artifactResourceList = mutableListOf<ArtifactResource>()
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
         if (nodeList.isEmpty()) {
             throw HelmFileNotFoundException(
@@ -241,19 +237,13 @@ class ChartRepositoryServiceImpl(
         }
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        val nodeMap = mutableMapOf<String, ArtifactInputStream>()
         nodeList.forEach {
             context.putAttribute(FULL_PATH, it[NODE_FULL_PATH] as String)
             val artifactInputStream = repository.query(context) as ArtifactInputStream
-            artifactResourceList.add(
-                ArtifactResource(
-                    artifactInputStream,
-                    it[NODE_NAME] as String,
-                    null,
-                    ArtifactChannel.LOCAL
-                )
-            )
+            nodeMap[it[NODE_NAME] as String] = artifactInputStream
         }
-        HelmZipResponseWriter.write(artifactResourceList)
+        artifactResourceWriter.write(ArtifactResource(nodeMap, useDisposition = true))
     }
 
     companion object {
