@@ -105,7 +105,7 @@ spec:
             successThreshold: 1
           volumeMounts:
             - name: storage
-              mountPath: {{ .Values.common.storage.filesystem.path }}
+              mountPath: {{ .Values.common.mountPath }}
       volumes:
         - name: storage
           {{- if .Values.persistence.enabled }}

@@ -1,5 +1,5 @@
 <template>
-    <bk-tab class="common-version-container" type="unborder-card" v-bkloading="{ isLoading }">
+    <bk-tab class="common-version-container" type="unborder-card" :active.sync="tabName" v-bkloading="{ isLoading }">
         <bk-tab-panel v-if="detail.basic" name="versionBaseInfo" :label="$t('baseInfo')">
             <div class="version-base-info">
                 <div class="base-info-left">
@@ -149,6 +149,7 @@
         mixins: [repoGuideMixin, commonMixin],
         data () {
             return {
+                tabName: '',
                 isLoading: false,
                 detail: {
                 },
@@ -223,6 +224,7 @@
                     if (this.repoType === 'docker') {
                         this.selectedHistory = res.history[0] || {}
                     }
+                    this.tabName = 'versionBaseInfo'
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -262,10 +264,12 @@
         display: flex;
         .base-info-left {
             flex: 3;
+            overflow-y: auto;
             padding-top: 20px;
             padding-right: 20px;
             border-right: 1px solid $borderWeightColor;
             .base-info-guide {
+                position: relative;
                 border-top: 1px solid $borderWeightColor;
                 .section-main {
                     margin-top: 20px;
@@ -280,12 +284,14 @@
                 }
             }
             .base-info-checksums {
+                position: relative;
                 margin-top: 20px;
                 border-top: 1px solid $borderWeightColor;
             }
         }
         .base-info {
             flex: 2;
+            overflow-y: auto;
             margin-top: 20px;
             margin-left: 20px;
             border-top: 1px solid $borderWeightColor;

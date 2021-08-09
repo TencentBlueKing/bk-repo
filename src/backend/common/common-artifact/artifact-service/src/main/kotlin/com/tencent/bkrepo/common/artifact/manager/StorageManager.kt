@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.common.artifact.manager
@@ -39,19 +35,18 @@ import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.replication.api.StorageReplicationClient
+import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 
@@ -88,8 +83,8 @@ class StorageManager(
     /**
      * 存储同步client
      */
-    private val storageReplicationClient: StorageReplicationClient by lazy {
-        FeignClientFactory.create<StorageReplicationClient>(centerClusterInfo)
+    private val blobReplicaClient: BlobReplicaClient by lazy {
+        FeignClientFactory.create<BlobReplicaClient>(centerClusterInfo)
     }
 
     /**
@@ -121,16 +116,16 @@ class StorageManager(
      * 如果node为null，则返回null
      * 如果为head请求则返回empty input stream
      */
+    @Deprecated("NodeInfo移除后此方法也会移除")
     fun loadArtifactInputStream(
-        node: NodeDetail?,
+        node: NodeInfo?,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
         if (node == null || node.folder) {
             return null
         }
-        val request = getRequestOrNull()
         val range = try {
-            request?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
+            getRequestOrNull()?.let { resolveRange(it, node.size) } ?: Range.full(node.size)
         } catch (exception: IllegalArgumentException) {
             logger.warn("Failed to resolve http range: ${exception.message}")
             throw ErrorCodeException(
@@ -138,12 +133,22 @@ class StorageManager(
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
-        if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
-            return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        }
+
         val sha256 = node.sha256.orEmpty()
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
+    }
+
+    /**
+     * 加载ArtifactInputStream
+     * 如果node为null，则返回null
+     * 如果为head请求则返回empty input stream
+     */
+    fun loadArtifactInputStream(
+        node: NodeDetail?,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        return loadArtifactInputStream(node?.nodeInfo, storageCredentials)
     }
 
     /**
@@ -166,7 +171,7 @@ class StorageManager(
      */
     private fun existInCenter(sha256: String, storageKey: String?): Boolean {
         return try {
-            storageReplicationClient.check(sha256, storageKey).data ?: false
+            blobReplicaClient.check(sha256, storageKey).data ?: false
         } catch (exception: Exception) {
             logger.error("Failed to check blob data[$sha256] in center node.", exception)
             false
@@ -183,7 +188,7 @@ class StorageManager(
     ): ArtifactInputStream? {
         try {
             val request = BlobPullRequest(sha256, range, storageKey)
-            val response = storageReplicationClient.pull(request)
+            val response = blobReplicaClient.pull(request)
             check(response.status() == HttpStatus.OK.value) {
                 "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
             }

@@ -45,8 +45,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.listener.event.node.NodeCopiedEvent
-import com.tencent.bkrepo.repository.listener.event.node.NodeMovedEvent
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -54,6 +52,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.service.node.NodeMoveCopyOperation
 import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.util.NodeEventFactory
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
@@ -73,13 +72,13 @@ open class NodeMoveCopySupport(
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
-        publishEvent(NodeMovedEvent(moveRequest))
+        publishEvent(NodeEventFactory.buildMovedEvent(moveRequest))
         logger.info("Move node success: [$this]")
     }
 
     override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         moveCopy(copyRequest, false)
-        publishEvent(NodeCopiedEvent(copyRequest))
+        publishEvent(NodeEventFactory.buildCopiedEvent(copyRequest))
         logger.info("Copy node success: [$this]")
     }
 

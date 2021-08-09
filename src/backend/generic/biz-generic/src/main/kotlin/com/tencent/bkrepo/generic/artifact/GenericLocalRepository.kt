@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.generic.artifact
@@ -38,9 +34,12 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.constant.BKREPO_META
@@ -52,10 +51,13 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.util.Base64
 import javax.servlet.http.HttpServletRequest
@@ -105,6 +107,75 @@ class GenericLocalRepository : LocalRepository() {
             )
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
+        }
+    }
+
+    /**
+     * 支持目录下载
+     * 目录下载会以zip包形式将目录下的文件打包下载
+     */
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        with(context) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            if (node?.folder == true) {
+                return downloadFolder(this, node)
+            }
+            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            val responseName = artifactInfo.getResponseName()
+            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+        }
+    }
+
+    /**
+     * 下载目录
+     * @param context 构件下载context
+     * @param node 目录节点详情
+     */
+    private fun downloadFolder(context: ArtifactDownloadContext, node: NodeDetail): ArtifactResource? {
+        // 检查文件数量
+        checkFileCount(node)
+        // 查询子节点
+        val nodes = nodeClient.listNode(
+            projectId = node.projectId,
+            repoName = node.repoName,
+            path = node.fullPath,
+            includeFolder = false,
+            deep = true
+        ).data.orEmpty()
+        // 检查目录大小
+        checkFolderSize(nodes)
+        // 构造name-node map
+        val prefix = "${node.fullPath}/"
+        val nodeMap = nodes.associate {
+            val name = it.fullPath.removePrefix(prefix)
+            val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials) ?: return null
+            name to inputStream
+        }
+        return ArtifactResource(nodeMap, node, useDisposition = true)
+    }
+
+    /**
+     * 检查文件数量是否超过阈值
+     * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
+     */
+    @Throws(ErrorCodeException::class)
+    private fun checkFileCount(node: NodeDetail) {
+        // 判断节点数量
+        val fileCount = nodeClient.countFileNode(node.projectId, node.repoName, node.fullPath).data ?: 0
+        if (fileCount > BATCH_DOWNLOAD_COUNT_THRESHOLD) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
+        }
+    }
+
+    /**
+     * 检查目录数据大小是否超过阈值
+     * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
+     */
+    @Throws(ErrorCodeException::class)
+    private fun checkFolderSize(nodes: List<NodeInfo>) {
+        val totalSize = nodes.map { it.size }.sum()
+        if (totalSize > BATCH_DOWNLOAD_SIZE_THRESHOLD) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_LIST_TOO_LARGE)
         }
     }
 
@@ -197,5 +268,15 @@ class GenericLocalRepository : LocalRepository() {
 
     companion object {
         private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
+
+        /**
+         * 目录下载，子文件数量阈值
+         */
+        private const val BATCH_DOWNLOAD_COUNT_THRESHOLD = 1024
+
+        /**
+         * 目录下载，目录大小阈值
+         */
+        private val BATCH_DOWNLOAD_SIZE_THRESHOLD = DataSize.ofGigabytes(10).toBytes()
     }
 }

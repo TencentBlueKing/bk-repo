@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.pypi.artifact.repository
@@ -164,6 +160,42 @@ class PypiLocalRepository(
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
     }
 
+    private fun combineSameParamQuery(entry: Map.Entry<String, List<String>>): Rule.NestedRule {
+        val sameParamQueryList = mutableListOf<Rule>()
+        for (value in entry.value) {
+            sameParamQueryList.add(
+                Rule.QueryRule("metadata.${entry.key}", "*$value*", OperationType.MATCH_I)
+            )
+        }
+        return Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR)
+    }
+
+    private fun combineParamQuery(
+        map: Map<String, List<String>>,
+        paramQueryList: MutableList<Rule>,
+        operation: String
+    ): Rule.NestedRule {
+        for (param in map) {
+            if (param.value.isNullOrEmpty()) continue
+            if (param.value.size == 1) {
+                paramQueryList.add(
+                    Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH_I)
+                )
+            } else if (param.value.size > 1) {
+                // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
+                // Within the spec, a field’s value can be a string or a list of strings
+                // (the values within the list are combined with an OR)
+                paramQueryList.add(combineSameParamQuery(param))
+            }
+        }
+        val relationType = when (operation) {
+            "or" -> Rule.NestedRule.RelationType.OR
+            "and" -> Rule.NestedRule.RelationType.AND
+            else -> Rule.NestedRule.RelationType.OR
+        }
+        return Rule.NestedRule(paramQueryList, relationType)
+    }
+
     /**
      * pypi search
      */
@@ -173,34 +205,18 @@ class PypiLocalRepository(
         val repoName = Rule.QueryRule("repoName", context.repoName)
         val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
         val paramQueryList = mutableListOf<Rule>()
-        for (param in pypiSearchPojo.map) {
-            if (param.value.size == 1) {
-                paramQueryList.add(
-                    Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH)
-                )
-            } else if (param.value.size > 1) {
-                // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
-                // Within the spec, a field’s value can be a string or a list of strings
-                // (the values within the list are combined with an OR)
-                val sameParamQueryList = mutableListOf<Rule>()
-                for (value in param.value) {
-                    sameParamQueryList.add(
-                        Rule.QueryRule("metadata.${param.key}", "*$value*", OperationType.MATCH)
-                    )
-                }
-                paramQueryList.add(Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR))
-            }
+        val paramQuery = if (pypiSearchPojo.map.isNotEmpty()) {
+            combineParamQuery(pypiSearchPojo.map, paramQueryList, pypiSearchPojo.operation)
+        } else Rule.NestedRule(paramQueryList)
+        val rule = if (paramQueryList.isNotEmpty()) {
+            Rule.NestedRule(
+                mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
+            )
+        } else {
+            Rule.NestedRule(
+                mutableListOf(projectId, repoName, filetypeQuery), Rule.NestedRule.RelationType.AND
+            )
         }
-        val relationType = when (pypiSearchPojo.operation) {
-            "or" -> Rule.NestedRule.RelationType.OR
-            "and" -> Rule.NestedRule.RelationType.AND
-            else -> Rule.NestedRule.RelationType.OR
-        }
-        val paramQuery = Rule.NestedRule(paramQueryList, relationType)
-        val rule = Rule.NestedRule(
-            mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
-        )
-
         val queryModel = QueryModel(
             page = PageLimit(pageLimitCurrent, pageLimitSize),
             sort = Sort(listOf("name"), Sort.Direction.ASC),
