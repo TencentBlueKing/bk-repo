@@ -237,7 +237,8 @@ abstract class NodeBaseService(
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
                 } else {
-                    quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0 - existNode.size)
+                    val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
+                    quotaService.checkRepoQuota(projectId, repoName, changeSize)
                     deleteByPath(projectId, repoName, fullPath, operator)
                 }
             } else {
