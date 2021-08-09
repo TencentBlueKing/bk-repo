@@ -29,40 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.repository.job
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.repository.job.base.CenterNodeJob
+import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.stereotype.Component
 
 /**
- * 仓库模型
+ * 仓库已使用容量的同步任务
  */
-@Document("repository")
-@CompoundIndexes(
-    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
-)
-data class TRepository(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
+@Component
+class RepoUsedVolumeSynJob(
+    private val nodeBaseService: NodeBaseService
+) : CenterNodeJob() {
 
-    var name: String,
-    var type: RepositoryType,
-    var category: RepositoryCategory,
-    var public: Boolean,
-    var description: String? = null,
-    var configuration: String,
-    var credentialsKey: String? = null,
-    var display: Boolean = true,
+    private val repositoryDao = nodeBaseService.repositoryDao
 
-    var projectId: String,
-
-    var quota: Long? = null,
-    var used: Long? = null
-)
+    override fun run() {
+        var pageNum = 1
+        val pageSize = 1000
+        var querySize: Int
+        do {
+            val pageRequest = Pages.ofRequest(pageNum, pageSize)
+            val repoList = repositoryDao.find(Query().with(pageRequest))
+            repoList.forEach {
+                val usedVolume = nodeBaseService.computeSize(ArtifactInfo(it.projectId, it.name, PathUtils.ROOT)).size
+                it.used = usedVolume
+                repositoryDao.save(it)
+            }
+            querySize = repoList.size
+            pageNum ++
+        } while (querySize == pageSize)
+    }
+}

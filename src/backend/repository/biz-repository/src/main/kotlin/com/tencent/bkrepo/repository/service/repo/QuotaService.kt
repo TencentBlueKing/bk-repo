@@ -29,40 +29,47 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.repository.service.repo
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 
 /**
- * 仓库模型
+ * 仓库配额服务接口
  */
-@Document("repository")
-@CompoundIndexes(
-    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
-)
-data class TRepository(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
+interface QuotaService {
 
-    var name: String,
-    var type: RepositoryType,
-    var category: RepositoryCategory,
-    var public: Boolean,
-    var description: String? = null,
-    var configuration: String,
-    var credentialsKey: String? = null,
-    var display: Boolean = true,
+    /**
+     * 查询仓库配额信息
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     */
+    fun getRepoQuotaInfo(projectId: String, repoName: String): RepoQuotaInfo
 
-    var projectId: String,
+    /**
+     * 检查之后的文件操作是否会超过仓库配额
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param change 将要改变的使用容量
+     */
+    fun checkRepoQuota(projectId: String, repoName: String, change: Long)
 
-    var quota: Long? = null,
-    var used: Long? = null
-)
+    /**
+     * 增加仓库已使用的容量
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param inc 新增使用容量
+     */
+    fun increaseUsedVolume(projectId: String, repoName: String, inc: Long)
+
+    /**
+     * 释放仓库已使用的容量
+     *
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     * @param dec 释放使用容量
+     */
+    fun decreaseUsedVolume(projectId: String, repoName: String, dec: Long)
+}

@@ -29,40 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.repository.pojo.repo
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 仓库模型
- */
-@Document("repository")
-@CompoundIndexes(
-    CompoundIndex(name = "projectId_name_idx", def = "{'projectId': 1, 'name': 1}", unique = true)
-)
-data class TRepository(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-
-    var name: String,
-    var type: RepositoryType,
-    var category: RepositoryCategory,
-    var public: Boolean,
-    var description: String? = null,
-    var configuration: String,
-    var credentialsKey: String? = null,
-    var display: Boolean = true,
-
-    var projectId: String,
-
-    var quota: Long? = null,
-    var used: Long? = null
+@ApiModel("仓库配额信息")
+data class RepoQuotaInfo(
+    @ApiModelProperty("仓库配额")
+    val quota: Long?,
+    @ApiModelProperty("已使用容量")
+    val used: Long?
 )

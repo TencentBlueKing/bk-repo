@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service.node
 
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import java.time.LocalDateTime
 
 /**
  * 节点删除接口
@@ -47,4 +48,9 @@ interface NodeDeleteOperation {
      * 根据全路径删除文件或者目录
      */
     fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String)
+
+    /**
+     * 根据创建时间删除[date]之前的历史数据
+     */
+    fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String)
 }

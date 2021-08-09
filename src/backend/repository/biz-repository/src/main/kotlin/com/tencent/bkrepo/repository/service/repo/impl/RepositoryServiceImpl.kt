@@ -187,7 +187,9 @@ class RepositoryServiceImpl(
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
+                quota = quota,
+                used = 0
             )
             return try {
                 if (repoConfiguration is CompositeConfiguration) {
@@ -209,6 +211,10 @@ class RepositoryServiceImpl(
         repoUpdateRequest.apply {
             Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             val repository = checkRepository(projectId, name)
+            quota?.let {
+                Preconditions.checkArgument(it >= repository.used ?: 0, this::quota.name)
+                repository.quota = it
+            }
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
             repository.public = public ?: repository.public
             repository.description = description ?: repository.description
@@ -391,7 +397,9 @@ class RepositoryServiceImpl(
             createdBy = operator,
             createdDate = LocalDateTime.now(),
             lastModifiedBy = operator,
-            lastModifiedDate = LocalDateTime.now()
+            lastModifiedDate = LocalDateTime.now(),
+            quota = repository.quota,
+            used = repository.used
         )
         repositoryDao.insert(proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
@@ -450,7 +458,9 @@ class RepositoryServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    quota = it.quota,
+                    used = it.used
                 )
             }
         }
@@ -469,7 +479,9 @@ class RepositoryServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    quota = it.quota,
+                    used = it.used
                 )
             }
         }

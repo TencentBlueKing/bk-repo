@@ -66,5 +66,9 @@ data class RepositoryDetail(
     @ApiModelProperty("上次修改者")
     val lastModifiedBy: String,
     @ApiModelProperty("上次修改日期")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @ApiModelProperty("仓库配额")
+    val quota: Long?,
+    @ApiModelProperty("仓库已使用容量")
+    val used: Long?
 )

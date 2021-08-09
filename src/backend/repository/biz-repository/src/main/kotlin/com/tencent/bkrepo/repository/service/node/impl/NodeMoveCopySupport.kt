@@ -50,6 +50,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.service.node.NodeMoveCopyOperation
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.NodeEventFactory
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
@@ -67,6 +68,7 @@ open class NodeMoveCopySupport(
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
     private val repositoryDao: RepositoryDao = nodeBaseService.repositoryDao
     private val storageCredentialService: StorageCredentialService = nodeBaseService.storageCredentialService
+    private val quotaService: QuotaService = nodeBaseService.quotaService
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
@@ -114,6 +116,58 @@ open class NodeMoveCopySupport(
             if (node.folder && existNode?.folder == true) return
             checkConflict(context, node, existNode)
             // copy目标节点
+            val dstNode = buildDstNode(this, node, dstPath, dstName, dstFullPath)
+            // 仓库配额检查
+            checkQuota(context, node, existNode)
+
+            // 文件 & 跨存储node
+            if (!node.folder && srcCredentials != dstCredentials) {
+                storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
+            }
+            // 创建dst节点
+            nodeBaseService.doCreate(dstNode, dstRepo)
+            // move操作，创建dst节点后，还需要删除src节点
+            // 因为分表所以不能直接更新src节点，必须创建新的并删除旧的
+            if (move) {
+                val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
+                val update = NodeQueryHelper.nodeDeleteUpdate(operator)
+                if (!node.folder) {
+                    quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
+                }
+                nodeDao.updateFirst(query, update)
+            }
+        }
+    }
+
+    private fun checkQuota(context: MoveCopyContext, node: TNode, existNode: TNode?) {
+        // 目录不占仓库容量，不需要检查
+        if (node.folder) return
+
+        with(context) {
+            // 文件 -> 文件，目标文件不存在
+            if (existNode == null) {
+                // 同仓库的移动操作不需要检查仓库已使用容量
+                if (!(isSameRepo() && move)) {
+                    quotaService.checkRepoQuota(dstProjectId, dstRepoName, node.size)
+                }
+            }
+
+            // 文件 -> 文件 & 允许覆盖: 删除old
+            if (existNode?.folder == false && overwrite) {
+                quotaService.checkRepoQuota(existNode.projectId, existNode.repoName, node.size - existNode.size)
+                nodeBaseService.deleteByPath(existNode.projectId, existNode.repoName, existNode.fullPath, operator)
+            }
+        }
+    }
+
+    private fun buildDstNode(
+        context: MoveCopyContext,
+        node: TNode,
+        dstPath: String,
+        dstName: String,
+        dstFullPath: String
+    ): TNode {
+        with(context) {
             val dstNode = node.copy(
                 id = null,
                 projectId = dstProjectId,
@@ -129,25 +183,8 @@ open class NodeMoveCopySupport(
                 dstNode.createdBy = operator
                 dstNode.createdDate = LocalDateTime.now()
             }
-            // 文件 -> 文件 & 允许覆盖: 删除old
-            if (!node.folder && existNode?.folder == false && overwrite) {
-                val query = NodeQueryHelper.nodeQuery(existNode.projectId, existNode.repoName, existNode.fullPath)
-                val update = NodeQueryHelper.nodeDeleteUpdate(operator)
-                nodeDao.updateFirst(query, update)
-            }
-            // 文件 & 跨存储node
-            if (!node.folder && srcCredentials != dstCredentials) {
-                storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
-            }
-            // 创建dst节点
-            nodeBaseService.doCreate(dstNode, dstRepo)
-            // move操作，创建dst节点后，还需要删除src节点
-            // 因为分表所以不能直接更新src节点，必须创建新的并删除旧的
-            if (move) {
-                val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
-                val update = NodeQueryHelper.nodeDeleteUpdate(operator)
-                nodeDao.updateFirst(query, update)
-            }
+
+            return dstNode
         }
     }
 
