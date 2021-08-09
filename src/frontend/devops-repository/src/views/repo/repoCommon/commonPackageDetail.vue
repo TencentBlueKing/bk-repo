@@ -17,7 +17,7 @@
             </div>
         </div>
         <div class="common-package-tab">
-            <bk-tab class="common-package-tab-main" type="unborder-card">
+            <bk-tab class="common-package-tab-main" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel name="commonVersion" :label="$t('version')" v-bkloading="{ isLoading }">
                     <div class="common-package-version">
                         <div class="mb20 flex-align-center">
@@ -127,6 +127,7 @@
         mixins: [commonMixin],
         data () {
             return {
+                tabName: 'commonVersion',
                 isLoading: false,
                 infoLoading: false,
                 formDialog: {

@@ -52,7 +52,7 @@ object XmlUtils {
         val action = methodCall.methodName
         val paramMap = mutableMapOf<String, List<String>>()
         var operation = XML_RPC_OPERATION_OR
-        methodCall.params.paramList.map { param ->
+        methodCall.params?.paramList?.map { param ->
             if (param.value.string != null && param.value.struct == null) operation = param.value.string
             param.value.struct?.memberList?.map { member ->
                 val valueList = mutableListOf<String>()

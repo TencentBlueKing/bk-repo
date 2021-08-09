@@ -12,7 +12,7 @@
                         <icon size="24" name="generic" />
                         <span class="ml10">generic</span>
                     </div>
-                    <bk-radio-group v-else v-model="repoBaseInfo.type" class="repo-type-radio-group">
+                    <bk-radio-group v-else v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
                         <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                             <div class="flex-center repo-type-radio">
                                 <icon size="60" :name="repo" />
@@ -25,7 +25,9 @@
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('repoName')" :required="true" property="name">
-                    <bk-input v-model.trim="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                    <bk-input v-model.trim="repoBaseInfo.name"
+                        :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
+                    </bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
                     <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
@@ -86,8 +88,15 @@
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: ''
-                },
-                rules: {
+                }
+            }
+        },
+        computed: {
+            projectId () {
+                return this.$route.params.projectId
+            },
+            rules () {
+                return {
                     type: [
                         {
                             required: true,
@@ -102,8 +111,8 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t('repoName') + this.$t('include') + this.$t('repoNamePlacehodler'),
+                            regex: this.repoBaseInfo.type === 'docker' ? /^[a-z][a-z0-9\-_]{1,31}$/ : /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
+                            message: this.$t('repoName') + this.$t('include') + this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler'),
                             trigger: 'blur'
                         },
                         {
@@ -133,11 +142,6 @@
                 }
             }
         },
-        computed: {
-            projectId () {
-                return this.$route.params.projectId
-            }
-        },
         methods: {
             ...mapActions(['createRepo', 'checkRepoName']),
             toRepoList () {
@@ -150,6 +154,10 @@
                     projectId: this.projectId,
                     name: this.repoBaseInfo.name
                 }).then(res => !res)
+            },
+            changeRepoType () {
+                if (this.repoBaseInfo.type === 'docker') this.repoBaseInfo.name = ''
+                this.$refs.repoBaseInfo.clearError()
             },
             async submitRepo () {
                 await this.$refs.repoBaseInfo.validate()

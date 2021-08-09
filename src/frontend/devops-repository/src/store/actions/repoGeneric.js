@@ -3,6 +3,45 @@ import Vue from 'vue'
 const prefix = 'repository/api'
 
 export default {
+    // 查询文件夹下的所有文件数量（递归）
+    getFileNumOfFolder ({ commit }, { projectId, repoName, fullPath = '/' }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/node/query`,
+            {
+                page: {
+                    pageNumber: 1,
+                    pageSize: 1
+                },
+                rule: {
+                    rules: [
+                        {
+                            field: 'projectId',
+                            value: projectId,
+                            operation: 'EQ'
+                        },
+                        {
+                            field: 'repoName',
+                            value: repoName,
+                            operation: 'EQ'
+                        },
+                        {
+                            field: 'fullPath',
+                            value: fullPath,
+                            operation: 'PREFIX'
+                        },
+                        {
+                            field: 'folder',
+                            value: false,
+                            operation: 'EQ'
+                        }
+                    ],
+                    relation: 'AND'
+                }
+            }
+        ).then(({ totalRecords }) => {
+            return totalRecords
+        })
+    },
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
         const path = `${fullPath === '/' ? '' : fullPath}/`
@@ -68,14 +107,15 @@ export default {
         )
     },
     // 请求文件夹下的文件夹及制品
-    getArtifactoryList (_, { projectId, repoName, fullPath, current, limit, includeFolder = true, includeMetadata = true, deep = false, isPipeline = false }) {
-        if (isPipeline) {
-            const path = `${fullPath === '/' ? '' : fullPath}/`
+    getArtifactoryList (_, { projectId, repoName, fullPath, current, limit, isPipeline = false, sortType = 'lastModifiedDate' }) {
+        const path = `${fullPath === '/' ? '' : fullPath}/`
+        if (isPipeline && path === '/') {
             if (path === '/') {
                 return Vue.prototype.$ajax.get(
                     `${prefix}/pipeline/list/${projectId}`
                 ).then(records => ({ records, totalRecords: 0 }))
             }
+        } else {
             return Vue.prototype.$ajax.post(
                 `${prefix}/node/query`,
                 {
@@ -84,7 +124,7 @@ export default {
                         pageSize: limit
                     },
                     sort: {
-                        properties: ['lastModifiedDate'],
+                        properties: ['folder', sortType],
                         direction: 'DESC'
                     },
                     rule: {
@@ -106,20 +146,6 @@ export default {
                             }
                         ],
                         relation: 'AND'
-                    }
-                }
-            )
-        } else {
-            return Vue.prototype.$ajax.get(
-                `${prefix}/node/page/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
-                {
-                    params: {
-                        pageNumber: current,
-                        pageSize: limit,
-                        includeFolder,
-                        includeMetadata,
-                        deep,
-                        sort: true
                     }
                 }
             )

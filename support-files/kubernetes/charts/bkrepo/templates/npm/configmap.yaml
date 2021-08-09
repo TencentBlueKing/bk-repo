@@ -14,7 +14,7 @@ metadata:
 data:
   application.yml: |-
     npm:
-      domain: {{ .Values.gateway.host }}/npm    
+      domain: {{ .Values.gateway.host }}/npm
       {{- if keys $.Values.npm.config }}
         {{- toYaml .Values.npm.config | nindent 6 }}
       {{- end}}

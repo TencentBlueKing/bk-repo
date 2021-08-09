@@ -39,7 +39,7 @@ import org.quartz.Trigger
 import org.quartz.TriggerBuilder
 import org.quartz.impl.StdSchedulerFactory
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.thread
 

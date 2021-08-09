@@ -29,15 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.repository
+package com.tencent.bkrepo.repository.pojo.repo
 
-import com.tencent.bkrepo.auth.model.TCluster
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.stereotype.Repository
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Repository
-interface ClusterRepository : MongoRepository<TCluster, String> {
-    fun findOneByClusterId(clusterId: String): TCluster?
-    fun deleteByClusterId(clusterId: String): Long
-    fun findAllBy(): List<TCluster>
-}
+@ApiModel("仓库配额信息")
+data class RepoQuotaInfo(
+    @ApiModelProperty("仓库配额")
+    val quota: Long?,
+    @ApiModelProperty("已使用容量")
+    val used: Long?
+)

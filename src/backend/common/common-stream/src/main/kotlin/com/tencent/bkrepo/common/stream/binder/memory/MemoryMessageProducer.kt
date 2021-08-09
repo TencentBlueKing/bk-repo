@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.stream.binder.memory.queue.MemoryListenerContai
 import org.springframework.cloud.stream.provisioning.ConsumerDestination
 import org.springframework.integration.endpoint.MessageProducerSupport
 import org.springframework.messaging.Message
-import java.util.*
+import java.util.UUID
 import java.util.function.Consumer
 
 /**
@@ -48,7 +48,7 @@ class MemoryMessageProducer(
     }
 
     override fun equals(other: Any?): Boolean {
-        if(other == null || MemoryMessageProducer::class.java != other::class.java){
+        if (other == null || MemoryMessageProducer::class.java != other::class.java) {
             return false
         }
         return this.id == (other as MemoryMessageProducer).id

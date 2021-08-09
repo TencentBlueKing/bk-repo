@@ -30,7 +30,7 @@ package com.tencent.bkrepo.replication.util
 import org.quartz.CronExpression
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
+import java.util.Date
 
 object CronUtils {
 

@@ -66,11 +66,18 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX, AUTH_API_PERMISSION_PREFIX)
 interface ServicePermissionResource {
 
-    @ApiOperation("校验仓库权限")
+    @ApiOperation("list仓库权限")
     @PostMapping("/repo/list")
     fun listRepoPermission(
         @ApiParam(value = "校验权限信息")
         @RequestBody request: ListRepoPermissionRequest
+    ): Response<List<String>>
+
+    @ApiOperation("list有权限项目")
+    @GetMapping("/project/list")
+    fun listPermissionProject(
+        @ApiParam(value = "用户ID")
+        @RequestParam userId: String
     ): Response<List<String>>
 
     @ApiOperation("权限列表")

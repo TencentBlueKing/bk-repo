@@ -79,5 +79,4 @@ class FileMessageProducer(
     companion object {
         private val log = LoggerFactory.getLogger(FileMessageProducer::class.java)
     }
-
 }
