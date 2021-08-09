@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.replication.mapping
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
 interface PackageNodeMapper {
     /**
@@ -39,11 +41,8 @@ interface PackageNodeMapper {
      * 匹配对应node节点的fullPath
      */
     fun map(
-        projectId: String,
-        repoName: String,
-        type: RepositoryType,
-        key: String,
-        version: String,
-        ext: Map<String, Any>
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
     ): List<String>
 }

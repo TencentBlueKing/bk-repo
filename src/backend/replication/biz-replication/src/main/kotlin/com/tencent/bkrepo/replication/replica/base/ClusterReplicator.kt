@@ -129,12 +129,9 @@ class ClusterReplicator(
             }
             // 文件数据
             PackageNodeMappings.map(
-                projectId = packageSummary.projectId,
-                repoName = packageSummary.repoName,
-                type = localRepoType,
-                key = packageSummary.key,
-                version = packageVersion.name,
-                extension = packageVersion.metadata
+                packageSummary = packageSummary,
+                packageVersion = packageVersion,
+                type = localRepoType
             ).forEach {
                 val node = localDataManager.findNodeDetail(
                     projectId = localProjectId,
