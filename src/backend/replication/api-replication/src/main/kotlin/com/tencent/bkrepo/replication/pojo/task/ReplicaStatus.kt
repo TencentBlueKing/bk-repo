@@ -33,6 +33,6 @@ enum class ReplicaStatus {
     COMPLETED;
 
     companion object {
-        val UNDO_STATUS = setOf(WAITING)
+        val UNDO_STATUS = setOf(WAITING, REPLICATING)
     }
 }
