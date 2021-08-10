@@ -52,6 +52,7 @@ import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectMetricsModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.RepoModel
+import com.tencent.bkrepo.opdata.model.StorageCredentialsModel
 import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.Columns
@@ -60,8 +61,9 @@ import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.SearchRequest
 import com.tencent.bkrepo.opdata.pojo.Target
-import com.tencent.bkrepo.opdata.pojo.enums.FileExtensionMetrics
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -73,7 +75,8 @@ class GrafanaService @Autowired constructor(
     private val projectModel: ProjectModel,
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val projectMetricsModel: ProjectMetricsModel,
-    private val fileExtensionMetricsModel: FileExtensionMetricsModel
+    private val fileExtensionMetricsModel: FileExtensionMetricsModel,
+    private val storageCredentialsModel: StorageCredentialsModel
 ) {
     fun search(request: SearchRequest): List<String> {
         val data = mutableListOf<String>()
@@ -128,6 +131,9 @@ class GrafanaService @Autowired constructor(
                 Metrics.FILEEXTENSION -> {
                     dealFileExtension(it, result)
                 }
+                Metrics.STORAGECREDENTIAL -> {
+                    dealStorageCredential(it, result)
+                }
                 else -> {
                     dealNodeNum(it, result)
                 }
@@ -136,11 +142,28 @@ class GrafanaService @Autowired constructor(
         return result
     }
 
+    private fun dealStorageCredential(target: Target, result: MutableList<Any>) {
+        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val storageCredentialId = reqData?.get("id") as String?
+        val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)
+        val resultList = if (storageCredentialId.isNullOrBlank()) {
+            storageCredentialsModel.getStorageCredentialsStat()
+        } else {
+            listOf(storageCredentialsModel.getStorageCredentialStatById(storageCredentialId))
+        }
+        resultList.forEach {
+            val data = if (metric == StatMetrics.NUM) listOf(it.second, System.currentTimeMillis())
+                else listOf(it.third, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(it.first, element))
+        }
+    }
+
     private fun dealFileExtension(target: Target, result: MutableList<Any>) {
-        val reqData = target.data as Map<String, Any>
-        val projectId = reqData[OPDATA_PROJECT_ID] as String?
-        val repoName = reqData[OPDATA_REPO_NAME] as String?
-        val metric = FileExtensionMetrics.valueOf(reqData[METRICS] as? String ?: FileExtensionMetrics.NUM.name)
+        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val projectId = reqData?.get(OPDATA_PROJECT_ID) as String?
+        val repoName = reqData?.get(OPDATA_REPO_NAME) as String?
+        val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)
         val resultList = if (projectId.isNullOrBlank()) {
             fileExtensionMetricsModel.getFileExtensionMetrics(metric)
         } else if (repoName.isNullOrBlank()) {
@@ -202,7 +225,9 @@ class GrafanaService @Autowired constructor(
     }
 
     private fun dealProjectNum(target: Target, result: MutableList<Any>) {
-        val count = projectModel.getProjectNum()
+        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val projectType = ProjectType.valueOf(reqData?.get(PROJECT_TYPE) as? String ?: ProjectType.ALL.name)
+        val count = projectModel.getProjectNum(projectType)
         val column = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(count)
         val data = QueryResult(listOf(column), listOf(row), target.type)
@@ -306,6 +331,7 @@ class GrafanaService @Autowired constructor(
     }
 
     companion object {
-        private const val METRICS = "metric"
+        private const val STAT_METRICS = "metric"
+        private const val PROJECT_TYPE = "projectType"
     }
 }

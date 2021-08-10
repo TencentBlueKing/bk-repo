@@ -31,36 +31,39 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT
-import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.opdata.constant.OPDATA_STORAGE_CREDENTIALS
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsInfo
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 
 @Service
-class ProjectModel @Autowired constructor(
-    private var mongoTemplate: MongoTemplate
+class StorageCredentialsModel @Autowired constructor(
+    private val mongoTemplate: MongoTemplate,
+    private val repoModel: RepoModel,
+    private val projectMetricsModel: ProjectMetricsModel
 ) {
 
-    fun getProjectNum(projectType: ProjectType): Long {
-        val query = when (projectType) {
-            ProjectType.ALL -> Query()
-            ProjectType.BLUEKING -> Query(Criteria().andOperator(
-                where(ProjectInfo::name).not().regex(ProjectType.CODECC.prefix),
-                where(ProjectInfo::name).not().regex(ProjectType.GIT.prefix)
-            ))
-            ProjectType.CODECC -> Query(where(ProjectInfo::name).regex(ProjectType.CODECC.prefix))
-            ProjectType.GIT -> Query(where(ProjectInfo::name).regex(ProjectType.GIT.prefix))
+    fun getStorageCredentialsStat(): List<Triple<String, Long, Long>> {
+        val result = mutableListOf<Triple<String, Long, Long>>()
+        val credentialsInfoList = mongoTemplate.findAll(StorageCredentialsInfo::class.java, OPDATA_STORAGE_CREDENTIALS)
+        credentialsInfoList.forEach {
+            result.add(getStorageCredentialStatById(it.id))
         }
-        return mongoTemplate.count(query, OPDATA_PROJECT)
+        return result
     }
 
-    fun getProjectList(): List<ProjectInfo> {
-        return mongoTemplate.findAll(ProjectInfo::class.java, OPDATA_PROJECT)
+    fun getStorageCredentialStatById(storageCredentialId: String): Triple<String, Long, Long> {
+        var totalNum = 0L
+        var totalSize = 0L
+        val projectAndRepoList = repoModel.getProjectAndRepoListByStorageCredentialId(storageCredentialId)
+        projectAndRepoList.toList().forEach {
+            val stat = projectMetricsModel.getRepoMetricsStat(it.first, it.second)
+            totalNum += stat.first
+            totalSize += stat.second
+        }
+        return Triple(storageCredentialId, totalNum, totalSize)
     }
+
+
 }

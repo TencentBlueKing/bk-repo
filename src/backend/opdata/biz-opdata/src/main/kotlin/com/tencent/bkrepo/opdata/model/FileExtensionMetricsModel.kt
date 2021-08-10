@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.opdata.constant.OPDATA_FILE_EXTENSION_METRICS
-import com.tencent.bkrepo.opdata.pojo.enums.FileExtensionMetrics
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -54,14 +54,14 @@ class FileExtensionMetricsModel @Autowired constructor(
     /**
      * 获取总体的文件后缀名的统计信息
      */
-    fun getFileExtensionMetrics(metrics: FileExtensionMetrics): List<HashMap<String, Any>> {
+    fun getFileExtensionMetrics(metrics: StatMetrics): List<HashMap<String, Any>> {
         return aggregateQuery(Criteria(), metrics)
     }
 
     /**
      * 获取项目的文件后缀名的统计信息
      */
-    fun getProjFileExtensionMetrics(projectId: String, metrics: FileExtensionMetrics): List<HashMap<String, Any>> {
+    fun getProjFileExtensionMetrics(projectId: String, metrics: StatMetrics): List<HashMap<String, Any>> {
         val criteria = where(TFileExtensionMetrics::projectId).isEqualTo(projectId)
         return aggregateQuery(criteria, metrics)
     }
@@ -72,7 +72,7 @@ class FileExtensionMetricsModel @Autowired constructor(
     fun getRepoFileExtensionMetrics(
         projectId: String,
         repoName: String,
-        metrics: FileExtensionMetrics
+        metrics: StatMetrics
     ): List<HashMap<String, Any>> {
         val resultList = mutableListOf<HashMap<String, Any>>()
         val fileExtensions = nodeModel.getFileExtensions(projectId, repoName)
@@ -83,10 +83,10 @@ class FileExtensionMetricsModel @Autowired constructor(
                     TFileExtensionMetrics::extension.name to fileExtensionStatInfo.extension
                 )
                 when (metrics) {
-                    FileExtensionMetrics.NUM -> {
+                    StatMetrics.NUM -> {
                         resultMap[TFileExtensionMetrics::num.name] = fileExtensionStatInfo.num
                     }
-                    FileExtensionMetrics.SIZE -> {
+                    StatMetrics.SIZE -> {
                         resultMap[TFileExtensionMetrics::size.name] = fileExtensionStatInfo.size
                     }
                 }
@@ -96,7 +96,7 @@ class FileExtensionMetricsModel @Autowired constructor(
         return resultList
     }
 
-    private fun aggregateQuery(criteria: Criteria, metrics: FileExtensionMetrics): List<HashMap<String, Any>> {
+    private fun aggregateQuery(criteria: Criteria, metrics: StatMetrics): List<HashMap<String, Any>> {
         val field = metrics.name.toLowerCase()
         val aggregate = newAggregation(
             match(criteria),

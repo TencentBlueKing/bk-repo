@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.opdata.pojo.enums
 
-enum class FileExtensionMetrics {
+enum class StatMetrics {
     NUM,
     SIZE
 }
