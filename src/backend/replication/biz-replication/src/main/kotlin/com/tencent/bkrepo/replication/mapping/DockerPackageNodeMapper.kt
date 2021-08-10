@@ -8,6 +8,8 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Component
 
 /**
@@ -23,30 +25,30 @@ class DockerPackageNodeMapper(
     override fun type() = RepositoryType.DOCKER
 
     override fun map(
-        projectId: String,
-        repoName: String,
-        type: RepositoryType,
-        key: String,
-        version: String,
-        ext: Map<String, Any>
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
     ): List<String> {
-        val result = mutableListOf<String>()
-        val name = PackageKeys.resolveDocker(key)
-        val manifestFullPath = DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version)
-        val repository = repositoryClient.getRepoDetail(projectId, repoName, type.name).data!!
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data!!
-        val inputStream = storageService.load(
-            nodeDetail.sha256.orEmpty(),
-            Range.full(nodeDetail.size),
-            repository.storageCredentials
-        )!!
-        val layersList = parseManifest(inputStream)
-        layersList.forEach {
-            val replace = it.replace(":", "__")
-            result.add(DOCKER_LAYER_FULL_PATH.format(name, version, replace))
+        with(packageSummary) {
+            val result = mutableListOf<String>()
+            val name = PackageKeys.resolveDocker(key)
+            val version = packageVersion.name
+            val manifestFullPath = DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version)
+            val repository = repositoryClient.getRepoDetail(projectId, repoName, type.name).data!!
+            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data!!
+            val inputStream = storageService.load(
+                nodeDetail.sha256.orEmpty(),
+                Range.full(nodeDetail.size),
+                repository.storageCredentials
+            )!!
+            val layersList = parseManifest(inputStream)
+            layersList.forEach {
+                val replace = it.replace(":", "__")
+                result.add(DOCKER_LAYER_FULL_PATH.format(name, version, replace))
+            }
+            result.add(DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version))
+            return result
         }
-        result.add(DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version))
-        return result
     }
 
     private fun parseManifest(inputStream: ArtifactInputStream): List<String> {

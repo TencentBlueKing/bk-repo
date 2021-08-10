@@ -27,53 +27,41 @@
 
 package com.tencent.bkrepo.replication.mapping
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
-class MavenPackageNodeMapper : PackageNodeMapper {
+@Component
+class MavenPackageNodeMapper(
+    private val nodeClient: NodeClient
+) : PackageNodeMapper {
 
     override fun type() = RepositoryType.MAVEN
 
     override fun map(
-        projectId: String,
-        repoName: String,
-        type: RepositoryType,
-        key: String,
-        version: String,
-        ext: Map<String, Any>
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
     ): List<String> {
-        val gavKey = PackageKeys.resolveGav(key)
-        val groupId = gavKey.substringBefore(StringPool.COLON).replace(StringPool.DOT, StringPool.SLASH)
-        val artifactId = gavKey.substringAfter(StringPool.COLON)
-        return when (val packageType = ext[PACKAGE_TYPE] as? String) {
-            "pom" -> {
-                listOf(
-                    POM_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
-                    POM_MD5_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
-                    POM_SHA1_FULL_PATH.format(groupId, artifactId, version, artifactId, version)
+        with(packageSummary) {
+            val artifactPath = packageVersion.contentPath
+            require(artifactPath != null) { "artifactPath for $key is null in [$projectId/$repoName]" }
+            val path = artifactPath.substringBeforeLast('/')
+            val listNodePage = nodeClient.listNode(projectId, repoName, path).data!!
+            val fullPathList = listNodePage.map { it.fullPath }
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "artifact key [$key] corresponding to node fullPath $fullPathList, size: [${fullPathList.size}]."
                 )
             }
-            else -> listOf(
-                JAR_FULL_PATH.format(groupId, artifactId, version, artifactId, version, packageType),
-                JAR_MD5_FULL_PATH.format(groupId, artifactId, version, artifactId, version, packageType),
-                JAR_SHA1_FULL_PATH.format(groupId, artifactId, version, artifactId, version, packageType),
-                POM_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
-                POM_MD5_FULL_PATH.format(groupId, artifactId, version, artifactId, version),
-                POM_SHA1_FULL_PATH.format(groupId, artifactId, version, artifactId, version)
-            )
+            return fullPathList
         }
     }
 
     companion object {
-        const val PACKAGE_TYPE = "packaging"
-
-        // groupId/artifactId/version/artifactId-version.xxx
-        const val JAR_FULL_PATH = "%s/%s/%s/%s-%s.%s"
-        const val JAR_MD5_FULL_PATH = "%s/%s/%s/%s-%s.%s.md5"
-        const val JAR_SHA1_FULL_PATH = "%s/%s/%s/%s-%s.%s.sha1"
-        const val POM_FULL_PATH = "%s/%s/%s/%s-%s.pom"
-        const val POM_MD5_FULL_PATH = "%s/%s/%s/%s-%s.pom.md5"
-        const val POM_SHA1_FULL_PATH = "%s/%s/%s/%s-%s.pom.sha1"
+        private val logger = LoggerFactory.getLogger(MavenPackageNodeMapper::class.java)
     }
 }

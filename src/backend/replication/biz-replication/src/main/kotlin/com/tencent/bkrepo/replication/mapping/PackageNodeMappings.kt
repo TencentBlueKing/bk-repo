@@ -29,6 +29,8 @@ package com.tencent.bkrepo.replication.mapping
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
 /**
  * 包和节点的映射关系
@@ -38,7 +40,7 @@ object PackageNodeMappings {
     private val mappers = mutableMapOf<RepositoryType, PackageNodeMapper>()
 
     init {
-        addMapper(MavenPackageNodeMapper())
+        addMapper(SpringContextUtils.getBean(MavenPackageNodeMapper::class.java))
         addMapper(NpmPackageNodeMapper())
         addMapper(SpringContextUtils.getBean(DockerPackageNodeMapper::class.java))
     }
@@ -48,23 +50,19 @@ object PackageNodeMappings {
     }
 
     /**
+     * @param packageSummary 包信息总览
+     * @param packageVersion 版本信息
      * @param type 仓库类型
-     * @param key 包名
-     * @param version 版本名称
-     * @param extension 扩展属性
      *
      * @return 返回
      */
     fun map(
-        projectId: String,
-        repoName: String,
-        type: RepositoryType,
-        key: String,
-        version: String,
-        extension: Map<String, Any>
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
     ): List<String> {
         val mapper = mappers[type]
         check(mapper != null) { "mapper[$type] not found" }
-        return mapper.map(projectId, repoName, type, key, version, extension)
+        return mapper.map(packageSummary, packageVersion, type)
     }
 }

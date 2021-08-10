@@ -29,20 +29,20 @@ package com.tencent.bkrepo.replication.mapping
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
 class NpmPackageNodeMapper : PackageNodeMapper {
 
     override fun type() = RepositoryType.NPM
 
     override fun map(
-        projectId: String,
-        repoName: String,
-        type: RepositoryType,
-        key: String,
-        version: String,
-        ext: Map<String, Any>
+        packageSummary: PackageSummary,
+        packageVersion: PackageVersion,
+        type: RepositoryType
     ): List<String> {
-        val name = PackageKeys.resolveNpm(key)
+        val name = PackageKeys.resolveNpm(packageSummary.key)
+        val version = packageVersion.name
         return listOf(
             NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
             NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version),
