@@ -32,7 +32,6 @@ import com.tencent.bkrepo.replication.config.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.mapping.PackageNodeMappings
-import com.tencent.bkrepo.replication.pojo.blob.InputStreamMultipartFile
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -168,13 +167,19 @@ class ClusterReplicator(
             return buildNodeCreateRequest(this, node)?.let {
                 val artifactInputStream = localDataManager.getBlobData(it.sha256!!, it.size!!, localRepo)
                 val rateLimitInputStream = artifactInputStream.rateLimit(replicationProperties.rateLimit.toBytes())
-                val file = InputStreamMultipartFile(rateLimitInputStream, it.size!!)
                 // 1. 同步文件数据
-                blobReplicaClient.push(
-                    file = file,
+                pushBlob(
+                    inputStream = rateLimitInputStream,
+                    size = it.size!!,
                     sha256 = it.sha256.orEmpty(),
                     storageKey = remoteRepo.storageCredentials?.key
                 )
+//                val file = InputStreamMultipartFile(rateLimitInputStream, it.size!!)
+//                blobReplicaClient.push(
+//                    file = file,
+//                    sha256 = it.sha256.orEmpty(),
+//                    storageKey = remoteRepo.storageCredentials?.key
+//                )
                 // 2. 同步节点信息
                 artifactReplicaClient.replicaNodeCreateRequest(it)
                 true

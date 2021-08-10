@@ -25,52 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.blob
+package com.tencent.bkrepo.replication.util
 
-import org.springframework.util.FileCopyUtils
-import org.springframework.web.multipart.MultipartFile
-import java.io.File
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import okhttp3.MediaType
+import okhttp3.RequestBody
+import okio.BufferedSink
+import okio.Okio
 import java.io.InputStream
-import java.nio.file.Files
 
 /**
- * 基于InputStream的multipart file实现
+ * 数据流请求体
  */
-class InputStreamMultipartFile(
+class StreamRequestBody(
     private val inputStream: InputStream,
-    private val size: Long,
-    private val name: String = "file",
-    private val originalFilename: String = ""
-) : MultipartFile {
-    override fun getInputStream(): InputStream {
-        return inputStream
+    private val length: Long
+) : RequestBody() {
+
+    override fun contentLength(): Long {
+        return length
     }
 
-    override fun getName(): String {
-        return name
+    override fun contentType(): MediaType? {
+        return MEDIA_TYPE_STREAM
     }
 
-    override fun getOriginalFilename(): String {
-        return originalFilename
+    override fun writeTo(sink: BufferedSink) {
+        Okio.source(inputStream).use {
+            sink.writeAll(it)
+        }
     }
 
-    override fun getContentType(): String? {
-        return null
-    }
-
-    override fun isEmpty(): Boolean {
-        return size == 0L
-    }
-
-    override fun getSize(): Long {
-        return size
-    }
-
-    override fun getBytes(): ByteArray {
-        return inputStream.readBytes()
-    }
-
-    override fun transferTo(dest: File) {
-        FileCopyUtils.copy(inputStream, Files.newOutputStream(dest.toPath()))
+    companion object {
+        private val MEDIA_TYPE_STREAM = MediaType.parse(MediaTypes.APPLICATION_OCTET_STREAM)
     }
 }

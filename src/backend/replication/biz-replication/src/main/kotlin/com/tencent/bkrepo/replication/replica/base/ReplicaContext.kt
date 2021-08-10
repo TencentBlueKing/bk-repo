@@ -30,6 +30,8 @@ package com.tencent.bkrepo.replication.replica.base
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.okhttp.BasicAuthInterceptor
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
@@ -40,7 +42,12 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.util.StreamRequestBody
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.InputStream
 
 class ReplicaContext(
     taskDetail: ReplicaTaskDetail,
@@ -70,8 +77,11 @@ class ReplicaContext(
     var status = ExecutionStatus.RUNNING
     val artifactReplicaClient: ArtifactReplicaClient
     val blobReplicaClient: BlobReplicaClient
-
     val replicator: Replicator
+
+    // TODO: Feign暂时不支持Stream上传，11+之后支持，升级后可以移除HttpClient上传
+    private val pushBlobUrl = "${remoteCluster.url}/replica/blob/push"
+    private val httpClient: OkHttpClient
 
     init {
         val cluster = RemoteClusterInfo(
@@ -87,6 +97,28 @@ class ReplicaContext(
             ClusterNodeType.STANDALONE -> SpringContextUtils.getBean<ClusterReplicator>()
             ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
             else -> throw UnsupportedOperationException()
+        }
+        httpClient = HttpClientBuilderFactory.create(cluster.certificate).addInterceptor(
+            BasicAuthInterceptor(cluster.username.orEmpty(), cluster.password.orEmpty())
+        ).build()
+    }
+
+    /**
+     * 推送blob文件数据到远程集群
+     */
+    fun pushBlob(inputStream: InputStream, size: Long, sha256: String, storageKey: String? = null) {
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("file", sha256, StreamRequestBody(inputStream, size))
+            .addFormDataPart("sha256", sha256).apply {
+                storageKey?.let { addFormDataPart("storageKey", it) }
+            }.build()
+        val httpRequest = Request.Builder()
+            .url(pushBlobUrl)
+            .post(requestBody)
+            .build()
+        httpClient.newCall(httpRequest).execute().use {
+            check(it.isSuccessful) { "Failed to replica file: ${it.body()?.string()}" }
         }
     }
 }
