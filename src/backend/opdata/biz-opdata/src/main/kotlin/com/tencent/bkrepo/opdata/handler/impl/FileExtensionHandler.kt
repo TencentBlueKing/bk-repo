@@ -73,6 +73,6 @@ class FileExtensionHandler(
     }
 
     companion object {
-        private val STAT_METRICS = "metrics"
+        private const val STAT_METRICS = "metrics"
     }
 }

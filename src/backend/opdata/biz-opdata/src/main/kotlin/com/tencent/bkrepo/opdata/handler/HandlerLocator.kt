@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component
 @Component
 class HandlerLocator(
     private var handlerList: List<QueryHandler>
-): ApplicationContextAware {
+) : ApplicationContextAware {
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
         handlerList = applicationContext.getBeansOfType(QueryHandler::class.java).map { it.value }
@@ -47,5 +47,4 @@ class HandlerLocator(
     fun getHandlerList(): List<QueryHandler> {
         return handlerList
     }
-
 }

@@ -37,7 +37,6 @@ import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
-import com.tencent.bkrepo.opdata.service.GrafanaService
 import org.springframework.stereotype.Component
 
 /**
@@ -69,7 +68,7 @@ class StorageCredentialHandler(
     }
 
     companion object {
-        private val STAT_METRICS = "metrics"
-        private val STORAGE_CREDENTIAL_ID = "id"
+        private const val STAT_METRICS = "metrics"
+        private const val STORAGE_CREDENTIAL_ID = "id"
     }
 }
