@@ -29,57 +29,42 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.service
+package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.opdata.handler.HandlerLocator
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.ProjectModel
-import com.tencent.bkrepo.opdata.model.RepoModel
-import com.tencent.bkrepo.opdata.pojo.QueryRequest
-import com.tencent.bkrepo.opdata.pojo.SearchRequest
+import com.tencent.bkrepo.opdata.pojo.Columns
+import com.tencent.bkrepo.opdata.pojo.QueryResult
+import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 
-@Service
-class GrafanaService @Autowired constructor(
-    handlerLocator: HandlerLocator,
-    private val projectModel: ProjectModel,
-    private val repoModel: RepoModel
-) {
-    private val handlerMap = mutableMapOf<Metrics, QueryHandler>()
+/**
+ * 项目数量统计
+ */
+@Component
+class ProjectNumHandler @Autowired constructor(
+    private val projectModel: ProjectModel
+) : QueryHandler {
 
-    init {
-        handlerLocator.getHandlerList().forEach {
-            handlerMap[it.metric] = it
-        }
+    override val metric: Metrics get() = Metrics.PROJECTNUM
+
+    @Suppress("UNCHECKED_CAST")
+    override fun handle(target: Target, result: MutableList<Any>) {
+        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val projectType = ProjectType.valueOf(reqData?.get(PROJECT_TYPE) as? String ?: ProjectType.ALL.name)
+        val count = projectModel.getProjectNum(projectType)
+        val column = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
+        val row = listOf(count)
+        val data = QueryResult(listOf(column), listOf(row), target.type)
+        result.add(data)
     }
 
-    fun search(request: SearchRequest): List<String> {
-        val data = mutableListOf<String>()
-        val target = if (request.target.isBlank()) Metrics.DEFAULT else Metrics.valueOf(request.target.split(":")[0])
-        when (target) {
-            Metrics.PROJECTIDLIST -> {
-                data.addAll(projectModel.getProjectList().map { it.name })
-            }
-            Metrics.REPONAMELIST -> {
-                val projectId = request.target.split(":")[1]
-                data.addAll(repoModel.getRepoListByProjectId(projectId))
-            }
-            else -> {
-                for (metric in Metrics.values()) {
-                    data.add(metric.name)
-                }
-            }
-        }
-        return data
-    }
-
-    fun query(request: QueryRequest): List<Any> {
-        val result = mutableListOf<Any>()
-        request.targets.forEach {
-            handlerMap[it.target]?.handle(it, result)
-        }
-        return result
+    companion object {
+        private const val PROJECT_TYPE = "projectType"
     }
 }

@@ -29,23 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.enums
+package com.tencent.bkrepo.opdata.handler.impl
 
-enum class Metrics {
-    DEFAULT,
-    PROJECTNUM,
-    CAPSIZE,
-    NODENUM,
-    PROJECTLIST,
-    REPOLIST,
-    PROJECTNODENUM,
-    PROJECTNODESIZE,
-    BKREPOSIZE,
-    EFFECTIVEPROJECTNUM,
-    NODESIZEDISTRIBUTION,
-    PROJECTIDLIST,
-    REPONAMELIST,
-    FILEEXTENSION,
-    STORAGECREDENTIAL,
-    NODECOLLECTION
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NUM
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.pojo.Columns
+import com.tencent.bkrepo.opdata.pojo.QueryResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.stereotype.Component
+
+/**
+ * 有效项目数（有归档）统计
+ */
+@Component
+class EffectiveProjectNumHandler(
+    private val projectMetricsRepository: ProjectMetricsRepository
+) : QueryHandler {
+
+    override val metric: Metrics get() = Metrics.EFFECTIVEPROJECTNUM
+
+    override fun handle(target: Target, result: MutableList<Any>) {
+        val projects = projectMetricsRepository.findAll()
+        val count = projects.filter { it.capSize > 0 }.size.toLong()
+        val columns = Columns(OPDATA_PROJECT_NUM, OPDATA_GRAFANA_NUMBER)
+        val row = listOf(count)
+        val data = QueryResult(listOf(columns), listOf(row), target.type)
+        result.add(data)
+    }
 }

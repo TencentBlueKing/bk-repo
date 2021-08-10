@@ -29,23 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.enums
+package com.tencent.bkrepo.opdata.handler
 
-enum class Metrics {
-    DEFAULT,
-    PROJECTNUM,
-    CAPSIZE,
-    NODENUM,
-    PROJECTLIST,
-    REPOLIST,
-    PROJECTNODENUM,
-    PROJECTNODESIZE,
-    BKREPOSIZE,
-    EFFECTIVEPROJECTNUM,
-    NODESIZEDISTRIBUTION,
-    PROJECTIDLIST,
-    REPONAMELIST,
-    FILEEXTENSION,
-    STORAGECREDENTIAL,
-    NODECOLLECTION
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextAware
+import org.springframework.stereotype.Component
+
+@Component
+class HandlerLocator(
+    private var handlerList: List<QueryHandler>
+): ApplicationContextAware {
+
+    override fun setApplicationContext(applicationContext: ApplicationContext) {
+        handlerList = applicationContext.getBeansOfType(QueryHandler::class.java).map { it.value }
+    }
+
+    fun getHandlerList(): List<QueryHandler> {
+        return handlerList
+    }
+
 }

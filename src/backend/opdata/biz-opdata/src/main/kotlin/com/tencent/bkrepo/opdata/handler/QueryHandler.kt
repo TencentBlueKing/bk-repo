@@ -29,23 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.enums
+package com.tencent.bkrepo.opdata.handler
 
-enum class Metrics {
-    DEFAULT,
-    PROJECTNUM,
-    CAPSIZE,
-    NODENUM,
-    PROJECTLIST,
-    REPOLIST,
-    PROJECTNODENUM,
-    PROJECTNODESIZE,
-    BKREPOSIZE,
-    EFFECTIVEPROJECTNUM,
-    NODESIZEDISTRIBUTION,
-    PROJECTIDLIST,
-    REPONAMELIST,
-    FILEEXTENSION,
-    STORAGECREDENTIAL,
-    NODECOLLECTION
+import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
+import com.tencent.bkrepo.opdata.pojo.NodeResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+
+interface QueryHandler {
+
+    val metric: Metrics
+
+    fun handle(target: Target, result: MutableList<Any>): Any
+
+    fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>): List<Any> {
+        mapData.toList().sortedByDescending { it.second }.subList(0, OPDATA_STAT_LIMIT).forEach {
+            val projectId = it.first
+            val data = listOf(it.second, System.currentTimeMillis())
+            val element = listOf(data)
+            if (it.second != 0L) {
+                result.add(NodeResult(projectId, element))
+            }
+        }
+        return result
+    }
 }

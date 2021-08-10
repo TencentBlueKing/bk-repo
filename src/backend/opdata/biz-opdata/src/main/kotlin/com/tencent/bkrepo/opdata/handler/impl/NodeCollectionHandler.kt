@@ -29,23 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.enums
+package com.tencent.bkrepo.opdata.handler.impl
 
-enum class Metrics {
-    DEFAULT,
-    PROJECTNUM,
-    CAPSIZE,
-    NODENUM,
-    PROJECTLIST,
-    REPOLIST,
-    PROJECTNODENUM,
-    PROJECTNODESIZE,
-    BKREPOSIZE,
-    EFFECTIVEPROJECTNUM,
-    NODESIZEDISTRIBUTION,
-    PROJECTIDLIST,
-    REPONAMELIST,
-    FILEEXTENSION,
-    STORAGECREDENTIAL,
-    NODECOLLECTION
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.NodeCollectionModel
+import com.tencent.bkrepo.opdata.pojo.NodeResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import org.springframework.stereotype.Component
+
+/**
+ * Node分表数据量统计
+ */
+@Component
+class NodeCollectionHandler(
+    private val nodeCollectionModel: NodeCollectionModel
+) : QueryHandler {
+
+    override val metric: Metrics get() = Metrics.NODECOLLECTION
+
+    override fun handle(target: Target, result: MutableList<Any>) {
+        val resultMap = nodeCollectionModel.statNodeNum()
+        resultMap.toList().forEach {
+            val data = listOf(it.second, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(it.first, element))
+        }
+    }
 }
