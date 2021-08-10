@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service
 @Service
 class NodeCollectionModel @Autowired constructor(
     private val mongoTemplate: MongoTemplate
-){
+) {
     companion object {
         private const val COLLECTION_NAME = "node"
         private const val SHARDING_COUNT = 256

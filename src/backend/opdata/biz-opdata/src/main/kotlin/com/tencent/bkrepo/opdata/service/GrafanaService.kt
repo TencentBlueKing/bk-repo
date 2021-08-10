@@ -103,45 +103,19 @@ class GrafanaService @Autowired constructor(
         val result = mutableListOf<Any>()
         request.targets.forEach {
             when (it.target) {
-                Metrics.PROJECTNUM -> {
-                    dealProjectNum(it, result)
-                }
-                Metrics.PROJECLIST -> {
-                    dealProjectList(it, result)
-                }
-                Metrics.REPOLIST -> {
-                    dealProjectList(it, result)
-                }
-                Metrics.PROJECTNODENUM -> {
-                    dealProjectNodeNum(result)
-                }
-                Metrics.PROJECTNODESIZE -> {
-                    dealProjectNodeSize(result)
-                }
-                Metrics.CAPSIZE -> {
-                    dealCapSize(it, result)
-                }
-                Metrics.NODENUM -> {
-                    dealNodeNum(it, result)
-                }
-                Metrics.EFFECTIVEPROJECTNUM -> {
-                    dealEffectiveProjectNum(it, result)
-                }
-                Metrics.NODESIZEDISTRIBUTION -> {
-                    dealNodeSizeDistribution(it, result)
-                }
-                Metrics.FILEEXTENSION -> {
-                    dealFileExtension(it, result)
-                }
-                Metrics.STORAGECREDENTIAL -> {
-                    dealStorageCredential(it, result)
-                }
-                Metrics.NODECOLLECTION -> {
-                    dealNodeCollection(result)
-                }
-                else -> {
-                    dealNodeNum(it, result)
-                }
+                Metrics.PROJECTNUM -> dealProjectNum(it, result)
+                Metrics.PROJECLIST -> dealProjectList(it, result)
+                Metrics.REPOLIST -> dealProjectList(it, result)
+                Metrics.PROJECTNODENUM -> dealProjectNodeNum(result)
+                Metrics.PROJECTNODESIZE -> dealProjectNodeSize(result)
+                Metrics.CAPSIZE -> dealCapSize(it, result)
+                Metrics.NODENUM -> dealNodeNum(it, result)
+                Metrics.EFFECTIVEPROJECTNUM -> dealEffectiveProjectNum(it, result)
+                Metrics.NODESIZEDISTRIBUTION -> dealNodeSizeDistribution(it, result)
+                Metrics.FILEEXTENSION -> dealFileExtension(it, result)
+                Metrics.STORAGECREDENTIAL -> dealStorageCredential(it, result)
+                Metrics.NODECOLLECTION -> dealNodeCollection(result)
+                else -> dealNodeNum(it, result)
             }
         }
         return result
