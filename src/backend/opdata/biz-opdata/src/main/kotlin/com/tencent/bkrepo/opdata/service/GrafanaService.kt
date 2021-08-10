@@ -48,6 +48,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
 import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
 import com.tencent.bkrepo.opdata.model.FileExtensionMetricsModel
+import com.tencent.bkrepo.opdata.model.NodeCollectionModel
 import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectMetricsModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
@@ -76,7 +77,8 @@ class GrafanaService @Autowired constructor(
     private val projectMetricsRepository: ProjectMetricsRepository,
     private val projectMetricsModel: ProjectMetricsModel,
     private val fileExtensionMetricsModel: FileExtensionMetricsModel,
-    private val storageCredentialsModel: StorageCredentialsModel
+    private val storageCredentialsModel: StorageCredentialsModel,
+    private val nodeCollectionModel: NodeCollectionModel
 ) {
     fun search(request: SearchRequest): List<String> {
         val data = mutableListOf<String>()
@@ -134,12 +136,24 @@ class GrafanaService @Autowired constructor(
                 Metrics.STORAGECREDENTIAL -> {
                     dealStorageCredential(it, result)
                 }
+                Metrics.NODECOLLECTION -> {
+                    dealNodeCollection(result)
+                }
                 else -> {
                     dealNodeNum(it, result)
                 }
             }
         }
         return result
+    }
+
+    private fun dealNodeCollection(result: MutableList<Any>) {
+        val resultMap = nodeCollectionModel.statNodeNum()
+        resultMap.toList().forEach {
+            val data = listOf(it.second, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(it.first, element))
+        }
     }
 
     private fun dealStorageCredential(target: Target, result: MutableList<Any>) {

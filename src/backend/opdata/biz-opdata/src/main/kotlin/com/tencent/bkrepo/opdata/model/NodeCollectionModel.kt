@@ -31,51 +31,27 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NAME
-import com.tencent.bkrepo.opdata.constant.OPDATA_REPOSITORY
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 
 @Service
-class RepoModel @Autowired constructor(
-    private var mongoTemplate: MongoTemplate
-) {
-
-    fun getRepoListByProjectId(projectId: String): List<String> {
-        val query = Query(
-            Criteria.where(OPDATA_PROJECT_ID).`is`(projectId)
-        )
-        val data = mutableListOf<String>()
-        val results = mongoTemplate.find(query, MutableMap::class.java, OPDATA_REPOSITORY)
-        results.forEach {
-            val repoName = it[OPDATA_PROJECT_NAME] as String
-            data.add(repoName)
-        }
-        return data
+class NodeCollectionModel @Autowired constructor(
+    private val mongoTemplate: MongoTemplate
+){
+    companion object {
+        private const val COLLECTION_NAME = "node"
+        private const val SHARDING_COUNT = 256
     }
 
-    fun getProjectAndRepoListByStorageCredentialId(
-        storageCredentialId: String
-    ): MutableMap<String, MutableList<String>> {
-        val query = Query(
-            Criteria.where("credentialsKey").isEqualTo(storageCredentialId)
-        )
-        val data = mutableMapOf<String, MutableList<String>>()
-        val results = mongoTemplate.find(query, MutableMap::class.java, OPDATA_REPOSITORY)
-        results.forEach {
-            val projectId = it[OPDATA_PROJECT_ID] as String
-            val repoName = it["name"] as String
-            if (data.containsKey(projectId)) {
-                data[projectId]!!.add(repoName)
-            } else {
-                data[projectId] = mutableListOf(repoName)
-            }
+    fun statNodeNum(): MutableMap<String, Long> {
+        val result = mutableMapOf<String, Long>()
+        for (i in 0..SHARDING_COUNT) {
+            val collection = "${COLLECTION_NAME}_$i"
+            val count = mongoTemplate.count(Query(), collection)
+            result[collection] = count
         }
-        return data
+        return result
     }
 }

@@ -64,6 +64,4 @@ class StorageCredentialsModel @Autowired constructor(
         }
         return Triple(storageCredentialId, totalNum, totalSize)
     }
-
-
 }
