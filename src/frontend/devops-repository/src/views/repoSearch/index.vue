@@ -191,7 +191,7 @@
             padding-top: 15px;
             border-top: 1px solid $borderWeightColor;
             .repo-type-radio-group {
-                /deep/ .bk-form-radio-button {
+                ::v-deep .bk-form-radio-button {
                     margin: 0 20px 20px 0;
                     .bk-radio-button-text {
                         height: auto;

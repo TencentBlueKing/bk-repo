@@ -330,7 +330,7 @@
         flex: 1;
         .common-package-tab-main {
             height: 100%;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 40px);
                 .bk-tab-content {
                     height: 100%;
