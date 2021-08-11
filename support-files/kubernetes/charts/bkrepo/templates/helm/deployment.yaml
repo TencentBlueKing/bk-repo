@@ -75,18 +75,18 @@ spec:
               path: /actuator/health/livenessState
               port: http
             initialDelaySeconds: 120
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
             successThreshold: 1
           readinessProbe:
             httpGet:
               path: /actuator/health/readinessState
               port: http
             initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 6
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
             successThreshold: 1
           volumeMounts:
             - name: storage

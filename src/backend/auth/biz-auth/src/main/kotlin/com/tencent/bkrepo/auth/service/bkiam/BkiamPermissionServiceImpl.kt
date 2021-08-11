@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -54,9 +55,16 @@ class BkiamPermissionServiceImpl constructor(
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
     repositoryClient: RepositoryClient,
+    projectClient: ProjectClient,
     private val bkiamService: BkiamService
-) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
-
+) : PermissionServiceImpl(
+    userRepository,
+    roleRepository,
+    permissionRepository,
+    mongoTemplate,
+    repositoryClient,
+    projectClient
+) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.info("checkPermission, request: $request")
         if (request.resourceType != ResourceType.SYSTEM && checkBkiamPermission(request)) {

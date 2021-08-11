@@ -1,6 +1,6 @@
 <template>
     <div class="repo-generic-container" @click="() => selectRow(selectedTreeNode)">
-        <div v-show="!query" class="repo-generic-side" v-bkloading="{ isLoading: treeLoading }">
+        <div v-show="!query" class="mr20 repo-generic-side" v-bkloading="{ isLoading: treeLoading }">
             <div class="important-search">
                 <bk-input
                     v-model.trim="importantSearch"
@@ -73,148 +73,31 @@
             <aside v-show="!query || selectedRow.fullPath" class="repo-generic-actions">
                 <bk-button class="detail-btn" theme="primary" @click.stop="showDetail()">{{ $t('showDetail') }}</bk-button>
                 <div class="actions-btn flex-column">
-                    <template v-if="selectedRow.fullPath !== selectedTreeNode.fullPath || query">
-                        <template v-if="repoName !== 'pipeline'">
-                            <bk-button @click.stop="renameRes()" text theme="primary">
-                                <i class="mr5 devops-icon icon-edit"></i>
-                                {{ $t('rename') }}
-                            </bk-button>
-                            <bk-button @click.stop="moveRes()" text theme="primary">
-                                <i class="mr5 devops-icon icon-move"></i>
-                                {{ $t('move') }}
-                            </bk-button>
-                            <bk-button @click.stop="copyRes()" text theme="primary">
-                                <i class="mr5 devops-icon icon-save"></i>
-                                {{ $t('copy') }}
-                            </bk-button>
-                            <bk-button @click.stop="deleteRes()" text theme="primary">
-                                <i class="mr5 devops-icon icon-delete"></i>
-                                {{ $t('delete') }}
-                            </bk-button>
-                        </template>
-                        <bk-button v-if="!selectedRow.folder" @click.stop="handlerShare()" text theme="primary">
-                            <i class="mr5 devops-icon icon-none"></i>
-                            {{ $t('share') }}
-                        </bk-button>
-                        <bk-button @click.stop="handlerDownload()" text theme="primary">
-                            <i class="mr5 devops-icon icon-download"></i>
-                            {{ $t('download') }}
-                        </bk-button>
-                    </template>
-                    <template v-else>
-                        <template v-if="repoName !== 'pipeline'">
-                            <bk-button @click.stop="addFolder()" text theme="primary">
-                                <i class="mr5 devops-icon icon-folder-plus"></i>
-                                {{$t('create') + $t('folder')}}
-                            </bk-button>
-                            <bk-button @click.stop="handlerUpload()" text theme="primary">
-                                <i class="mr5 devops-icon icon-upload"></i>
-                                {{ $t('upload') }}
-                            </bk-button>
-                        </template>
-                        <bk-button
-                            @click.stop="getArtifactories()" text theme="primary">
-                            <i class="mr5 devops-icon icon-refresh"></i>
-                            {{ $t('refresh') }}
-                        </bk-button>
-                    </template>
+                    <bk-button v-for="btn in operationBtns" :key="btn.label" @click.stop="btn.clickEvent()" text theme="primary">
+                        <i :class="`mr5 devops-icon icon-${btn.icon}`"></i>
+                        {{ btn.label }}
+                    </bk-button>
                 </div>
             </aside>
         </div>
-
         <genericDetail :detail-slider="detailSlider"></genericDetail>
-        <bk-dialog
-            v-model="formDialog.show"
-            :title="formDialog.title"
-            :close-icon="false"
-            :quick-close="false"
-            width="600"
-            header-position="left">
-            <bk-form class="repo-generic-form" :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
-                <template v-if="formDialog.type === 'add'">
-                    <bk-form-item :label="$t('folder') + $t('path')">
-                        <span class="break-all">{{ selectedRow.fullPath + '/' + formDialog.path }}</span>
-                    </bk-form-item>
-                    <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path">
-                        <bk-input v-model.trim="formDialog.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
-                    </bk-form-item>
-                </template>
-                <template v-else-if="formDialog.type === 'rename'">
-                    <bk-form-item :label="$t('name')" :required="true" property="name">
-                        <bk-input v-model.trim="formDialog.name" :placeholder="$t('folderNamePlacehodler')"></bk-input>
-                    </bk-form-item>
-                </template>
-                <template v-else-if="formDialog.type === 'share'">
-                    <bk-form-item label="授权用户" property="user">
-                        <bk-tag-input
-                            v-model="formDialog.user"
-                            :list="Object.values(userList).filter(user => user.id !== 'anonymous')"
-                            placeholder="授权访问用户，为空则任意用户可访问，按Enter键确认"
-                            trigger="focus"
-                            allow-create
-                            has-delete-icon>
-                        </bk-tag-input>
-                    </bk-form-item>
-                    <bk-form-item label="授权IP" property="ip">
-                        <bk-tag-input
-                            v-model="formDialog.ip"
-                            placeholder="授权访问IP，为空则任意IP可访问，按Enter键确认"
-                            trigger="focus"
-                            allow-create
-                            has-delete-icon>
-                        </bk-tag-input>
-                    </bk-form-item>
-                    <bk-form-item label="访问次数" property="permits">
-                        <bk-input v-model.trim="formDialog.permits" placeholder="请输入数字，小于等于0则永久有效"></bk-input>
-                    </bk-form-item>
-                    <bk-form-item :label="`${$t('validity')}(${$t('day')})`" property="time">
-                        <bk-input v-model.trim="formDialog.time" placeholder="请输入数字，小于等于0则永久有效"></bk-input>
-                    </bk-form-item>
-                </template>
-            </bk-form>
-            <div slot="footer">
-                <bk-button ext-cls="mr5" :loading="formDialog.loading" theme="primary" @click="submitFormDialog">{{$t('submit')}}</bk-button>
-                <bk-button ext-cls="mr5" theme="default" @click="cancelFormDialog">{{$t('cancel')}}</bk-button>
-            </div>
-        </bk-dialog>
-
-        <bk-dialog
-            v-model="treeDialog.show"
-            :title="treeDialog.title"
-            :close-icon="false"
-            :quick-close="false"
-            width="600"
-            height="600"
-            header-position="left">
-            <div class="dialog-tree-container">
-                <repo-tree
-                    ref="dialogTree"
-                    :list="genericTree"
-                    :open-list="treeDialog.openList"
-                    :selected-node="treeDialog.selectedNode"
-                    @icon-click="item => iconClickHandler(item, false, treeDialog.openList)"
-                    @item-click="changeDialogTreeNode">
-                </repo-tree>
-            </div>
-            <div slot="footer">
-                <bk-button :loading="treeDialog.loading" theme="primary" @click="treeConfirmHandler">{{ $t('confirm') }}</bk-button>
-                <bk-button @click="treeDialog.show = false">{{ $t('cancel') }}</bk-button>
-            </div>
-        </bk-dialog>
-
-        <generic-upload v-bind="uploadDialog" @cancel="cancelUpload"></generic-upload>
+        <generic-form-dialog ref="genericFormDialog" @submit="submitGenericForm"></generic-form-dialog>
+        <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @submit="submitGenericTree"></generic-tree-dialog>
+        <generic-upload-dialog v-bind="uploadDialog" @update="getArtifactories" @cancel="uploadDialog.show = false"></generic-upload-dialog>
     </div>
 </template>
 <script>
     import RepoTree from '@/components/RepoTree'
     import genericDetail from './genericDetail'
-    import genericUpload from './genericUpload'
+    import genericUploadDialog from './genericUploadDialog'
+    import genericFormDialog from './genericFormDialog'
+    import genericTreeDialog from './genericTreeDialog'
     import { convertFileSize, formatDate } from '@/utils'
     import { getIconName } from '@/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
     export default {
         name: 'repoGeneric',
-        components: { RepoTree, genericDetail, genericUpload },
+        components: { RepoTree, genericDetail, genericUploadDialog, genericFormDialog, genericTreeDialog },
         data () {
             return {
                 isLoading: false,
@@ -238,59 +121,6 @@
                 rowClickCallback: null,
                 // table选中的行
                 selectedRow: {},
-                // 新建文件夹、重命名、分享、制品晋级
-                formDialog: {
-                    show: false,
-                    loading: false,
-                    type: '',
-                    name: '',
-                    title: '',
-                    user: [],
-                    ip: [],
-                    permits: 1,
-                    time: 1
-                },
-                // formDialog Rules
-                rules: {
-                    path: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseInput') + this.$t('folder') + this.$t('path'),
-                            trigger: 'blur'
-                        },
-                        {
-                            regex: /^((\w|-|\.){1,50}\/)*((\w|-|\.){1,50})$/,
-                            message: this.$t('folder') + this.$t('path') + this.$t('include') + this.$t('folderNamePlacehodler'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    name: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseInput') + this.$t('fileName'),
-                            trigger: 'blur'
-                        },
-                        {
-                            regex: /^(\w|-|\.){1,50}$/,
-                            message: this.$t('fileName') + this.$t('include') + this.$t('folderNamePlacehodler'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    permits: [
-                        {
-                            regex: /^[0-9]*$/,
-                            message: '请输入数字',
-                            trigger: 'blur'
-                        }
-                    ],
-                    time: [
-                        {
-                            regex: /^[0-9]*$/,
-                            message: '请输入数字',
-                            trigger: 'blur'
-                        }
-                    ]
-                },
                 // 查看详情
                 detailSlider: {
                     show: false,
@@ -298,23 +128,13 @@
                     folder: false,
                     data: {}
                 },
-                // 移动，复制
-                treeDialog: {
-                    show: false,
-                    loading: false,
-                    type: 'move',
-                    title: '',
-                    openList: [],
-                    selectedNode: {}
-                },
                 // 上传制品
                 uploadDialog: {
                     show: false,
                     title: '',
                     fullPath: ''
                 },
-                query: null,
-                uploadXHR: null
+                query: null
             }
         },
         computed: {
@@ -324,6 +144,25 @@
             },
             repoName () {
                 return this.$route.query.name
+            },
+            operationBtns () {
+                // 是否选中了行
+                const isSelectedRow = this.selectedRow.fullPath !== this.selectedTreeNode.fullPath
+                // 是否是限制操作仓库，report/log已被过滤
+                const isLimit = this.repoName === 'pipeline'
+                // 是否选中的是文件夹
+                const isFolder = this.selectedRow.folder
+                return [
+                    isSelectedRow && !isLimit && { clickEvent: this.renameRes, icon: 'edit', label: this.$t('rename') },
+                    isSelectedRow && !isLimit && { clickEvent: this.moveRes, icon: 'move', label: this.$t('move') },
+                    isSelectedRow && !isLimit && { clickEvent: this.copyRes, icon: 'save', label: this.$t('copy') },
+                    isSelectedRow && !isLimit && { clickEvent: this.deleteRes, icon: 'delete', label: this.$t('delete') },
+                    isSelectedRow && !isFolder && { clickEvent: this.handlerShare, icon: 'none', label: this.$t('share') },
+                    isSelectedRow && { clickEvent: this.handlerDownload, icon: 'download', label: this.$t('download') },
+                    !isSelectedRow && !isLimit && { clickEvent: this.addFolder, icon: 'folder-plus', label: this.$t('create') + this.$t('folder') },
+                    !isSelectedRow && !isLimit && { clickEvent: this.handlerUpload, icon: 'upload', label: this.$t('upload') },
+                    !isSelectedRow && { clickEvent: this.getArtifactories, icon: 'refresh', label: this.$t('refresh') }
+                ].filter(Boolean)
             }
         },
         beforeRouteEnter (to, from, next) {
@@ -340,19 +179,10 @@
         watch: {
             '$route.query.name' () {
                 this.initPage()
-                this.handlerPaginationChange()
-            },
-            'selectedTreeNode.fullPath' () {
-                // 重置选中行
-                this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
-                this.selectedRow = this.selectedTreeNode
-                this.handlerPaginationChange()
-                this.setBreadcrumb()
             }
         },
         created () {
             this.initPage()
-            this.setBreadcrumb()
         },
         beforeDestroy () {
             this.SET_BREADCRUMB([])
@@ -368,19 +198,19 @@
                 'getArtifactoryList',
                 'createFolder',
                 'getArtifactoryListByQuery',
-                'uploadArtifactory',
                 'deleteArtifactory',
                 'renameNode',
                 'moveNode',
                 'copyNode',
                 'shareArtifactory',
-                'getFolderSize'
+                'getFolderSize',
+                'getFileNumOfFolder'
             ]),
-            async initPage () {
+            initPage () {
                 this.importantSearch = ''
                 this.INIT_TREE()
                 this.sideTreeOpenList = []
-                await this.itemClickHandler(this.genericTree[0])
+                this.itemClickHandler(this.genericTree[0])
             },
             renderHeader (h, { column }) {
                 return h('div', {
@@ -462,115 +292,125 @@
                 this.pagination.limit = limit
                 this.getArtifactories()
             },
-            // 选中文件夹
-            async itemClickHandler (item) {
-                // 初始化选中行
-                this.selectedTreeNode = item
-                await this.iconClickHandler(item, true)
+            // 树组件选中文件夹
+            itemClickHandler (node) {
+                this.selectedTreeNode = node
+                // 取消table行选中样式
+                this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
+                // 初始化table选中行、数据
+                this.selectedRow = node
+                this.handlerPaginationChange()
+                // 更新面包屑
+                this.setBreadcrumb()
+                // 更新已展开文件夹数据
+                const reg = new RegExp(`^${node.roadMap}`)
+                const openList = this.sideTreeOpenList
+                openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
+                // 打开选中节点的左侧树的所有祖先节点
+                node.roadMap.split(',').forEach((v, i, arr) => {
+                    const roadMap = arr.slice(0, i + 1).join(',')
+                    !openList.includes(roadMap) && openList.push(roadMap)
+                })
+                // 更新子文件夹
+                if (node.loading) return
+                this.updateGenericTreeNode(node)
             },
-            async iconClickHandler (item, justOpen = false, target = this.sideTreeOpenList) {
-                const reg = new RegExp(`^${item.roadMap}`)
-                if (!justOpen && target.includes(item.roadMap)) {
-                    target.splice(0, target.length, ...target.filter(v => !reg.test(v)))
+            iconClickHandler (node) {
+                // 更新已展开文件夹数据
+                const reg = new RegExp(`^${node.roadMap}`)
+                const openList = this.sideTreeOpenList
+                if (openList.includes(node.roadMap)) {
+                    openList.splice(0, openList.length, ...openList.filter(v => !reg.test(v)))
                 } else {
-                    target.push(item.roadMap)
-                    if (item.loading) return
-                    if (item.children && item.children.length && reg.test(this.selectedTreeNode.roadMap)) return
-                    await this.updateGenericTreeNode(item)
+                    openList.push(node.roadMap)
+                    // 更新子文件夹
+                    if (node.loading) return
+                    // 当前选中文件夹为当前操作文件夹的后代文件夹，则锁定文件夹保证选中文件夹路径完整
+                    if (node.roadMap !== openList.roadMap && reg.test(openList.roadMap)) return
+                    this.updateGenericTreeNode(node)
                 }
             },
-            async updateGenericTreeNode (item) {
+            updateGenericTreeNode (item) {
                 if (this.query) return
                 this.$set(item, 'loading', true)
-                await this.getFolderList({
+                this.getFolderList({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: item.fullPath,
                     roadMap: item.roadMap,
                     isPipeline: this.repoName === 'pipeline'
+                }).finally(() => {
+                    this.$set(item, 'loading', false)
                 })
-                this.$set(item, 'loading', false)
             },
             // 双击table打开文件夹
-            async openFolder (row, $event) {
+            openFolder (row, $event) {
                 if (!row.folder) return
                 $event.stopPropagation()
                 this.rowClickCallback && clearTimeout(this.rowClickCallback)
                 const node = this.selectedTreeNode.children.find(v => v.fullPath === row.fullPath)
                 this.itemClickHandler(node)
-                // 打开选中节点的左侧树的父节点
-                node.roadMap.split(',').forEach((v, i, arr) => {
-                    const roadMap = arr.slice(0, i + 1).join(',')
-                    this.sideTreeOpenList.push(roadMap)
-                })
-            },
-            // 控制选中的行，手动添加样式
-            getParentElement (element) {
-                let parent = element.parentElement
-                while (!parent.className.includes('bk-table-row') && !parent.className.includes('repo-generic-container')) {
-                    parent = parent.parentElement
-                }
-                parent.classList.add('selected-row')
-                return parent
             },
             // 控制选中的行
             selectRow (row, $event) {
                 $event && $event.stopPropagation()
+                const element = $event ? $event.currentTarget : null
                 this.rowClickCallback && clearTimeout(this.rowClickCallback)
                 this.rowClickCallback = window.setTimeout(() => {
                     this.selectedRow.element && this.selectedRow.element.classList.remove('selected-row')
+                    element && element.classList.add('selected-row')
                     this.selectedRow = {
                         ...row,
-                        element: $event ? this.getParentElement($event.target) : null
+                        element
                     }
                 }, 300)
             },
-            async showDetail () {
+            showDetail () {
                 this.detailSlider = {
                     show: true,
                     loading: true,
                     folder: this.selectedRow.folder,
                     data: {}
                 }
-                const data = await this.getNodeDetail({
+                this.getNodeDetail({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: this.selectedRow.fullPath
+                }).then(data => {
+                    this.detailSlider.data = {
+                        ...data,
+                        name: data.name || this.repoName,
+                        size: convertFileSize(data.size),
+                        createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
+                        createdDate: formatDate(data.createdDate),
+                        lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
+                        lastModifiedDate: formatDate(data.lastModifiedDate)
+                    }
+                }).finally(() => {
+                    this.detailSlider.loading = false
                 })
-                this.detailSlider.data = {
-                    ...data,
-                    name: data.name || this.repoName,
-                    size: convertFileSize(data.size),
-                    createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
-                    createdDate: formatDate(data.createdDate),
-                    lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
-                    lastModifiedDate: formatDate(data.lastModifiedDate)
-                }
-                this.detailSlider.loading = false
             },
             renameRes () {
-                this.formDialog = {
-                    ...this.formDialog,
+                this.$refs.genericFormDialog.setFormData({
                     show: true,
                     loading: false,
                     type: 'rename',
                     name: this.selectedRow.name,
                     title: `${this.$t('rename')} (${this.selectedRow.name})`
-                }
+                })
             },
             addFolder () {
-                this.formDialog = {
-                    ...this.formDialog,
+                this.$refs.genericFormDialog.setFormData({
                     show: true,
                     loading: false,
                     type: 'add',
+                    folderPath: this.selectedRow.fullPath,
                     path: '',
                     title: `${this.$t('create') + this.$t('folder')} (${this.selectedTreeNode.fullPath || '/'})`
-                }
+                })
             },
             handlerShare () {
-                this.formDialog = {
-                    ...this.formDialog,
+                this.$refs.genericFormDialog.setFormData({
                     show: true,
                     loading: false,
                     type: 'share',
@@ -579,66 +419,58 @@
                     ip: [],
                     permits: 1,
                     time: 1
-                }
+                })
             },
-            async submitFormDialog () {
-                await this.$refs.formDialog.validate()
-                this.formDialog.loading = true
+            submitGenericForm (data) {
+                this.$refs.genericFormDialog.setFormData({ loading: true })
                 let message = ''
                 let fn = null
-                switch (this.formDialog.type) {
+                switch (data.type) {
                     case 'add':
-                        fn = this.submitAddFolder().then(() => {
+                        fn = this.submitAddFolder(data).then(() => {
                             this.updateGenericTreeNode(this.selectedTreeNode)
                         })
                         message = this.$t('create') + this.$t('folder')
                         break
                     case 'rename':
-                        fn = this.submitRenameNode().then(() => {
+                        fn = this.submitRenameNode(data).then(() => {
                             this.updateGenericTreeNode(this.selectedTreeNode)
                         })
                         message = this.$t('rename')
                         break
                     case 'share':
-                        fn = this.submitShareArtifactory()
+                        fn = this.submitShareArtifactory(data)
                         message = this.$t('share')
                         break
-                    case 'tag':
-                        fn = this.submitTag()
-                        message = this.$t('upgrade')
-                        break
                 }
-                await fn.finally(() => {
-                    this.formDialog.loading = false
+                fn.then(() => {
+                    this.selectRow(this.selectedTreeNode)
+                    this.getArtifactories()
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: message + this.$t('success')
+                    })
+                    this.$refs.genericFormDialog.setFormData({ show: false })
+                }).finally(() => {
+                    this.$refs.genericFormDialog.setFormData({ loading: false })
                 })
-                this.selectRow(this.selectedTreeNode)
-                this.getArtifactories()
-                this.$bkMessage({
-                    theme: 'success',
-                    message: message + this.$t('success')
-                })
-                this.cancelFormDialog()
             },
-            cancelFormDialog () {
-                this.formDialog.show = false
-                this.$refs.formDialog.clearError()
-            },
-            submitAddFolder () {
+            submitAddFolder (data) {
                 return this.createFolder({
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    fullPath: `${this.selectedTreeNode.fullPath}/${this.formDialog.path}`
+                    fullPath: `${this.selectedTreeNode.fullPath}/${data.path}`
                 })
             },
-            submitRenameNode () {
+            submitRenameNode (data) {
                 return this.renameNode({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: this.selectedRow.fullPath,
-                    newFullPath: this.selectedRow.fullPath.replace(/[^/]*$/, this.formDialog.name)
+                    newFullPath: this.selectedRow.fullPath.replace(/[^/]*$/, data.name)
                 })
             },
-            submitShareArtifactory () {
+            submitShareArtifactory (data) {
                 return this.shareArtifactory({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -646,23 +478,34 @@
                     type: 'DOWNLOAD',
                     host: `${location.origin}/web/generic`,
                     needsNotify: true,
-                    ...(this.formDialog.ip.length ? { authorizedIpSet: this.formDialog.ip } : {}),
-                    ...(this.formDialog.user.length ? { authorizedUserSet: this.formDialog.user } : {}),
-                    ...(Number(this.formDialog.time) > 0 ? { expireSeconds: Number(this.formDialog.time) * 86400 } : {}),
-                    ...(Number(this.formDialog.permits) > 0 ? { permits: Number(this.formDialog.permits) } : {})
+                    ...(data.ip.length ? { authorizedIpSet: data.ip } : {}),
+                    ...(data.user.length ? { authorizedUserSet: data.user } : {}),
+                    ...(Number(data.time) > 0 ? { expireSeconds: Number(data.time) * 86400 } : {}),
+                    ...(Number(data.permits) > 0 ? { permits: Number(data.permits) } : {})
                 })
             },
             async deleteRes () {
+                if (!this.selectedRow.fullPath) return
+                let totalRecords
+                if (this.selectedRow.folder) {
+                    totalRecords = await this.getFileNumOfFolder({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        fullPath: this.selectedRow.fullPath
+                    })
+                }
                 this.$bkInfo({
-                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')}？`,
+                    title: `${this.$t('confirm') + this.$t('delete')}${this.selectedRow.folder ? this.$t('folder') : this.$t('file')} ${this.selectedRow.name} ？`,
+                    subTitle: `${this.selectedRow.folder && totalRecords ? `当前文件夹下存在${totalRecords}个文件` : ''}`,
                     closeIcon: false,
                     theme: 'danger',
+                    confirmLoading: true,
                     confirmFn: () => {
-                        this.deleteArtifactory({
+                        return this.deleteArtifactory({
                             projectId: this.projectId,
                             repoName: this.repoName,
                             fullPath: this.selectedRow.fullPath
-                        }).then(res => {
+                        }).then(() => {
                             this.selectRow(this.selectedTreeNode)
                             this.updateGenericTreeNode(this.selectedTreeNode)
                             this.getArtifactories()
@@ -675,54 +518,48 @@
                 })
             },
             moveRes () {
-                this.treeDialog = {
-                    ...this.treeDialog,
+                this.$refs.genericTreeDialog.setTreeData({
                     show: true,
                     type: 'move',
                     title: `${this.$t('move')} (${this.selectedRow.name})`,
                     openList: [],
-                    selectedNode: {}
-                }
+                    selectedNode: this.genericTree[0]
+                })
             },
             copyRes () {
-                this.treeDialog = {
-                    ...this.treeDialog,
+                this.$refs.genericTreeDialog.setTreeData({
                     show: true,
                     type: 'copy',
                     title: `${this.$t('copy')} (${this.selectedRow.name})`,
                     openList: [],
-                    selectedNode: {}
-                }
+                    selectedNode: this.genericTree[0]
+                })
             },
-            changeDialogTreeNode (item) {
-                this.treeDialog.selectedNode = item
-                this.iconClickHandler(item, true, this.treeDialog.openList)
-            },
-            treeConfirmHandler () {
-                this.treeDialog.loading = true
-                this[this.treeDialog.type + 'Node']({
+            submitGenericTree (data) {
+                this.$refs.genericTreeDialog.setTreeData({ loading: true })
+                this[data.type + 'Node']({
                     body: {
                         srcProjectId: this.projectId,
                         srcRepoName: this.repoName,
                         srcFullPath: this.selectedRow.fullPath,
                         destProjectId: this.projectId,
                         destRepoName: this.repoName,
-                        destFullPath: `${this.treeDialog.selectedNode.fullPath}`,
+                        destFullPath: `${data.selectedNode.fullPath || '/'}`,
                         overwrite: false
                     }
-                }).then(res => {
-                    this.treeDialog.show = false
+                }).then(() => {
+                    this.$refs.genericTreeDialog.setTreeData({ show: false })
                     this.selectRow(this.selectedTreeNode)
                     // 更新源和目的的节点信息
                     this.updateGenericTreeNode(this.selectedTreeNode)
-                    this.updateGenericTreeNode(this.treeDialog.selectedNode)
-                    this.handlerPaginationChange()
+                    this.updateGenericTreeNode(data.selectedNode)
+                    this.getArtifactories()
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.treeDialog.type + this.$t('success')
+                        message: data.type + this.$t('success')
                     })
                 }).finally(() => {
-                    this.treeDialog.loading = false
+                    this.$refs.genericTreeDialog.setTreeData({ loading: false })
                 })
             },
             handlerUpload () {
@@ -731,10 +568,6 @@
                     title: `${this.$t('upload')} (${this.selectedTreeNode.fullPath || '/'})`,
                     fullPath: this.selectedTreeNode.fullPath
                 }
-            },
-            cancelUpload () {
-                this.uploadDialog.show = false
-                this.getArtifactories()
             },
             handlerDownload () {
                 const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`
@@ -765,14 +598,13 @@
             setBreadcrumb () {
                 const breadcrumb = []
                 let node = this.genericTree[0].children
-                const road = this.selectedTreeNode.roadMap.split(',')
-                road.shift()
+                const road = this.selectedTreeNode.roadMap.split(',').slice(1)
                 road.forEach(index => {
                     breadcrumb.push({
                         name: node[index].name,
                         value: node[index],
                         cilckHandler: item => {
-                            this.selectedTreeNode = item.value
+                            this.itemClickHandler(item.value)
                         }
                     })
                     node = node[index].children
@@ -786,7 +618,6 @@
 @import '@/scss/conf';
 .repo-generic-container {
     display: flex;
-    
     .repo-generic-side {
         width: 300px;
         border: 1px solid $borderWeightColor;
@@ -803,7 +634,6 @@
     .repo-generic-main {
         flex: 1;
         display: flex;
-        padding-left: 20px;
         .repo-generic-table {
             flex: 1;
             font-size: 0;
@@ -817,7 +647,7 @@
                     flex: none;
                 }
             }
-            /deep/ .devops-icon {
+            ::v-deep .devops-icon {
                 font-size: 16px;
                 &.disabled {
                     color: $disabledColor;
@@ -849,11 +679,7 @@
     }
 }
 
-/deep/ .bk-table-row.selected-row {
+::v-deep .bk-table-row.selected-row {
     background-color: $primaryLightColor;
-}
-.dialog-tree-container {
-    max-height: 500px;
-    overflow: auto;
 }
 </style>

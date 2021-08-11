@@ -166,8 +166,8 @@ class UserServiceImpl constructor(
         logger.debug("list user rids : [$rids]")
         return if (rids.isEmpty()) {
             // 排除被锁定的用户
-            val query = Query(Criteria(TUser::locked.name).`is`(false))
-            mongoTemplate.find(query, TUser::class.java).map { transferUser(it) }
+            val filter = Query(Criteria(TUser::locked.name).`is`(false))
+            mongoTemplate.find(filter, TUser::class.java).map { transferUser(it) }
         } else {
             userRepository.findAllByRolesIn(rids).map { transferUser(it) }
         }

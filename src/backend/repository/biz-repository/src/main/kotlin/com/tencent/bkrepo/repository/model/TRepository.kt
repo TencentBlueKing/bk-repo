@@ -61,5 +61,8 @@ data class TRepository(
     var credentialsKey: String? = null,
     var display: Boolean = true,
 
-    var projectId: String
+    var projectId: String,
+
+    var quota: Long? = null,
+    var used: Long? = null
 )

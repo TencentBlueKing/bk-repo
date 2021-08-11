@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateR
 import com.tencent.bkrepo.repository.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.packages.PackageService
 import com.tencent.bkrepo.repository.util.MetadataUtils
+import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -170,7 +172,7 @@ class PackageServiceImpl(
         with(request) {
             Preconditions.checkNotBlank(packageKey, this::packageKey.name)
             Preconditions.checkNotBlank(packageName, this::packageName.name)
-            Preconditions.checkNotBlank(versionName, this::packageName.name)
+            Preconditions.checkNotBlank(versionName, this::versionName.name)
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(request)
             // 检查版本是否存在
@@ -220,8 +222,10 @@ class PackageServiceImpl(
             tPackage.latest = versionName
             tPackage.extension = extension?.let { extension }
             tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
+            tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
             packageDao.save(tPackage)
 
+            publishEvent(buildCreatedEvent(request))
             logger.info("Create package version[$newVersion] success")
         }
     }
@@ -433,7 +437,8 @@ class PackageServiceImpl(
                     versions = 0,
                     versionTag = versionTag.orEmpty(),
                     extension = packageExtension.orEmpty(),
-                    description = packageDescription
+                    description = packageDescription,
+                    historyVersion = mutableSetOf(versionName)
                 )
                 try {
                     packageDao.save(tPackage)
@@ -506,7 +511,8 @@ class PackageServiceImpl(
                     versions = it.versions,
                     description = it.description,
                     versionTag = it.versionTag.orEmpty(),
-                    extension = it.extension.orEmpty()
+                    extension = it.extension.orEmpty(),
+                    historyVersion = it.historyVersion
                 )
             }
         }

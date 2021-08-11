@@ -104,7 +104,6 @@ class BkciAuthService @Autowired constructor(
 
         if (permissionAction != PermissionAction.READ) return false
 
-
         val cacheKey = "superAdmin::$user::$projectCode"
         val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)
         cacheResult?.let {

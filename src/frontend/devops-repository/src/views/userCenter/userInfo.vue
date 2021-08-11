@@ -330,7 +330,7 @@
         .icon-check-1 {
             font-size: 14px;
         }
-        /deep/ .bk-form {
+        ::v-deep .bk-form {
             font-size: 16px;
             .bk-label-text {
                 font-size: 16px;

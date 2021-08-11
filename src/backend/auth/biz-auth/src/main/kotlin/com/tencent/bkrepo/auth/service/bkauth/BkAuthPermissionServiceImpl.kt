@@ -43,6 +43,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.plugin.api.PluginManager
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -56,11 +57,19 @@ class BkAuthPermissionServiceImpl constructor(
     permissionRepository: PermissionRepository,
     mongoTemplate: MongoTemplate,
     repositoryClient: RepositoryClient,
+    projectClient: ProjectClient,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPipelineService: BkAuthPipelineService,
     private val bkAuthProjectService: BkAuthProjectService,
     private val pluginManager: PluginManager
-) : PermissionServiceImpl(userRepository, roleRepository, permissionRepository, mongoTemplate, repositoryClient) {
+) : PermissionServiceImpl(
+    userRepository,
+    roleRepository,
+    permissionRepository,
+    mongoTemplate,
+    repositoryClient,
+    projectClient
+) {
     private fun parsePipelineId(path: String): String? {
         val roads = path.split("/")
         return if (roads.size < 2 || roads[1].isBlank()) {
@@ -89,8 +98,8 @@ class BkAuthPermissionServiceImpl constructor(
                     checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    checkPipelinePermission(uid, projectId!!, path, resourceType, action)
-                        || checkProjectPermission(uid, projectId!!, action)
+                    checkPipelinePermission(uid, projectId!!, path, resourceType, action) ||
+                        checkProjectPermission(uid, projectId!!, action)
                 }
                 REPORT -> {
                     checkReportPermission(action)
@@ -116,7 +125,6 @@ class BkAuthPermissionServiceImpl constructor(
         return action == PermissionAction.READ || action == PermissionAction.WRITE || action == PermissionAction.VIEW
     }
 
-
     private fun checkPipelinePermission(
         uid: String,
         projectId: String,
@@ -140,8 +148,9 @@ class BkAuthPermissionServiceImpl constructor(
         pipelineId: String,
         action: PermissionAction
     ): Boolean {
-        logger.debug("checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
-            "permissionAction: $action"
+        logger.debug(
+            "checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
+                "permissionAction: $action"
         )
         return try {
             return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, action)
@@ -186,6 +195,10 @@ class BkAuthPermissionServiceImpl constructor(
 
         // devops实名访问请求处理
         if (matchDevopsCond(request.appId)) {
+
+            // 优先校验本地权限
+            if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
+
             return checkDevopsPermission(request)
         }
 
@@ -197,8 +210,12 @@ class BkAuthPermissionServiceImpl constructor(
         return projectId != null && bkAuthConfig.choseBkAuth() && projectId.startsWith(GIT_PROJECT_PREFIX, true)
     }
 
+    private fun matchBcsCond(projectId: String?): Boolean {
+        return projectId == bkAuthConfig.bcsAppId
+    }
+
     private fun matchDevopsCond(appId: String?): Boolean {
-        val devopsAppIdList = listOf(bkAuthConfig.devopsAppId, bkAuthConfig.bkrepoAppId, bkAuthConfig.bkcodeAppId)
+        val devopsAppIdList = bkAuthConfig.devopsAppIdSet.split(",")
         return devopsAppIdList.contains(appId)
     }
 

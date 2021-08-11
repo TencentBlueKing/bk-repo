@@ -66,6 +66,7 @@ function prezero (num) {
 }
 
 export function formatDate (ms) {
+    if (!ms) return '--'
     const time = new Date(ms)
     return `${time.getFullYear()}-${
         prezero(time.getMonth() + 1)}-${

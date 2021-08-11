@@ -20,7 +20,8 @@
     "public": false,
     "description": "repo description",
     "configuration": null,
-    "storageCredentialsKey": null
+    "storageCredentialsKey": null,
+    "quota": 1024
   }
   ```
 
@@ -36,6 +37,7 @@
   |description|string|否|无|仓库描述|repo description|
   |configuration|object|否|无|仓库配置，参考后文|repo configuration|
   |storageCredentialsKey|string|否|无|存储凭证key|storage credentials key|
+  |quota|long|否|无|仓库配额|repo quota|
 
 - 响应体
 
@@ -156,7 +158,9 @@
       "createdBy" : "system",
       "createdDate" : "2020-03-16T12:13:03.371",
       "lastModifiedBy" : "system",
-      "lastModifiedDate" : "2020-03-16T12:13:03.371"
+      "lastModifiedDate" : "2020-03-16T12:13:03.371",
+      "quota": 1024,
+      "used": 100
     },
     "traceId": null
   }
@@ -177,6 +181,8 @@
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
+  |quota|long|仓库配额，单位字节，值为nul时表示未设置仓库配额|repo quota|
+  |used|long|仓库已使用容量，单位字节|repo used volume|
 
 ## 校验仓库是否存在
 
@@ -252,7 +258,9 @@
           "createdBy" : "system",
           "createdDate" : "2020-03-16T12:13:03.371",
           "lastModifiedBy" : "system",
-          "lastModifiedDate" : "2020-03-16T12:13:03.371"
+          "lastModifiedDate" : "2020-03-16T12:13:03.371",
+          "quota": 1024,
+          "used": 100
         }
       ]
     },
@@ -274,6 +282,8 @@
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
+  |quota|long|仓库配额，单位字节，值为nul时表示未设置仓库配额|repo quota|
+  |used|long|仓库已使用容量，单位字节|repo used volume|
 
 ## 列表查询仓库
 
@@ -309,7 +319,9 @@
         "createdBy" : "system",
         "createdDate" : "2020-03-16T12:13:03.371",
         "lastModifiedBy" : "system",
-        "lastModifiedDate" : "2020-03-16T12:13:03.371"
+        "lastModifiedDate" : "2020-03-16T12:13:03.371",
+        "quota": 1024,
+        "used": 100
       }
     ],
     "traceId": null
@@ -330,6 +342,88 @@
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
+  |quota|long|仓库配额，单位字节，值为nul时表示未设置仓库配额|repo quota|
+  |used|long|仓库已使用容量，单位字节|repo used volume|
+
+## 查询仓库配额
+
+- API： GET /repository/api/repo/quota/{projectId}/{repoName}
+
+- API 名称：get_repo_quota
+
+- 功能说明：
+
+  - 中文：查询仓库配额
+  - English：get repo quota
+
+- 请求体
+
+  - 此接口无请求体
+
+  - 请求字段说明
+
+    | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+    | --------- | ------ | -------- | ------ | -------- | ------------ |
+    | projectId | string | 是       | 无     | 项目名称 | project name |
+    | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+
+- 响应体
+
+  ```json
+  {
+      "code": 0,
+      "message": null,
+      "data": {
+          "quota": 1024,
+          "used": 100
+      },
+      "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  | 字段  | 类型 | 说明                                            | Description      |
+  | ----- | ---- | ----------------------------------------------- | ---------------- |
+  | quota | long | 仓库配额，单位字节，值为nul时表示未设置仓库配额 | repo quota       |
+  | used  | long | 仓库已使用容量，单位字节                        | repo used volume |
+
+## 修改仓库配额
+
+- API： POST /repository/api/repo/quota/{projectId}/{repoName}/{quota}
+
+- API 名称：update_repo_quota
+
+- 功能说明：
+
+  - 中文：修改仓库配额
+  - English：update repo quota
+
+- 请求体
+
+  - 此接口无请求体
+
+  - 请求字段说明
+
+    | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+    | --------- | ------ | -------- | ------ | -------- | ------------ |
+    | projectId | string | 是       | 无     | 项目名称 | project name |
+    | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+
+- 响应体
+
+  ```json
+  {
+      "code": 0,
+      "message": null,
+      "data": null,
+      "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  - 此接口无返回data
 
 ## 仓库公共枚举值说明
 ### 仓库类型RepositoryType
