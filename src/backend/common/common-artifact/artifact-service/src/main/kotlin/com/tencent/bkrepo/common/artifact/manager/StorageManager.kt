@@ -136,11 +136,9 @@ class StorageManager(
                 messageCode = CommonMessageCode.REQUEST_RANGE_INVALID
             )
         }
-
         if (range.isEmpty() || request?.method == HttpMethod.HEAD.name) {
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
-
         val sha256 = node.sha256.orEmpty()
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
