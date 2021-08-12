@@ -96,6 +96,7 @@ open class DefaultArtifactResourceWriter(
         if (resource.useDisposition) {
             response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(name))
         }
+
         resource.node?.let {
             response.setHeader(HttpHeaders.ETAG, resolveETag(it))
             response.setHeader(X_CHECKSUM_MD5, it.md5)
