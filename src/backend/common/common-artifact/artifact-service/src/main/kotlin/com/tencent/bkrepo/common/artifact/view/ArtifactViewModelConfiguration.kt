@@ -29,84 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.constant
+package com.tencent.bkrepo.common.artifact.view
 
-/**
- * 查询仓库后将仓库写入request attributes的key
- */
-const val REPO_KEY = "repository"
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-/**
- * 解析构件信息后写入request attributes的key
- */
-const val ARTIFACT_INFO_KEY = "artifact"
+@Configuration
+class ArtifactViewModelConfiguration {
 
-/**
- * 查询构件配置写入request attributes的key
- */
-const val ARTIFACT_CONFIGURER = "artifact-configurer"
-
-/**
- * 项目id字段
- */
-const val PROJECT_ID = "projectId"
-
-/**
- * 仓库名称字段
- */
-const val REPO_NAME = "repoName"
-
-/**
- * 构件传输相关
- */
-const val OCTET_STREAM = "octet-stream"
-
-/**
- * Http Content Disposition模板
- */
-const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=UTF-8''%s"
-
-/**
- * 虚拟仓库相关
- */
-const val TRAVERSED_LIST = "traversed"
-
-/**
- * 公共源代理项目名称
- */
-const val PUBLIC_PROXY_PROJECT = "public-proxy"
-
-/**
- * 公共源代理仓库名称, <RepoType>-<ChannelName>
- */
-const val PUBLIC_PROXY_REPO_NAME = "%s-%s"
-
-/**
- * 私有源代理仓库名称, <RepoName>-<ChannelName>
- */
-const val PRIVATE_PROXY_REPO_NAME = "%s-%s"
-
-/**
- * 默认storage key
- */
-const val DEFAULT_STORAGE_KEY = "default"
-
-/**
- * 响应header check sum
- */
-const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
-
-/**
- * 流水线仓库
- */
-const val PIPELINE = "pipeline"
-
-/**
- * 文件访问请求是否为直接下载
- */
-const val PARAM_DOWNLOAD = "download"
-
-/**
- * 文件访问请求是否为展示
- */
-const val PARAM_PREVIEW = "preview"
+    @Bean
+    @ConditionalOnMissingBean(ViewModelService::class)
+    fun viewModelService(): ViewModelService {
+        return ViewModelService()
+    }
+}
