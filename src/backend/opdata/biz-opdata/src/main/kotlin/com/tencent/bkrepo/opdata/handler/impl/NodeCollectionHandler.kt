@@ -31,9 +31,13 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
+import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.NodeCollectionModel
-import com.tencent.bkrepo.opdata.pojo.NodeResult
+import com.tencent.bkrepo.opdata.pojo.Columns
+import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import org.springframework.stereotype.Component
@@ -49,11 +53,16 @@ class NodeCollectionHandler(
     override val metric: Metrics get() = Metrics.NODECOLLECTION
 
     override fun handle(target: Target, result: MutableList<Any>) {
+        val rows = mutableListOf<List<Any>>()
+        val columns = mutableListOf<Columns>()
         val resultMap = nodeCollectionModel.statNodeNum()
+
+        columns.add(Columns("collectionName", OPDATA_GRAFANA_STRING))
+        columns.add(Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER))
         resultMap.toList().forEach {
-            val data = listOf(it.second, System.currentTimeMillis())
-            val element = listOf(data)
-            result.add(NodeResult(it.first, element))
+            rows.add(listOf(it.first, it.second))
         }
+        val data = QueryResult(columns, rows, target.type)
+        result.add(data)
     }
 }

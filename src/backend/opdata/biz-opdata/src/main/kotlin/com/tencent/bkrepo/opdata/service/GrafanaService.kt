@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.opdata.handler.HandlerLocator
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.RepoModel
@@ -39,18 +38,20 @@ import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.SearchRequest
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Service
 
 @Service
 class GrafanaService @Autowired constructor(
-    handlerLocator: HandlerLocator,
+    applicationContext: ApplicationContext,
     private val projectModel: ProjectModel,
     private val repoModel: RepoModel
 ) {
     private val handlerMap = mutableMapOf<Metrics, QueryHandler>()
 
     init {
-        handlerLocator.getHandlerList().forEach {
+        val handlers = applicationContext.getBeansOfType(QueryHandler::class.java).map { it.value }
+        handlers.forEach {
             handlerMap[it.metric] = it
         }
     }
