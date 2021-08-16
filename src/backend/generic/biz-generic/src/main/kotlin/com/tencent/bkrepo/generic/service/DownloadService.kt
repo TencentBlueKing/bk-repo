@@ -42,6 +42,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import org.springframework.stereotype.Service
 
@@ -55,35 +56,40 @@ class DownloadService(
 ) : ArtifactService() {
 
     fun download(artifactInfo: GenericArtifactInfo) {
-        val node = with(artifactInfo) {
-            nodeClient.getNodeDetail(projectId, repoName, this.getArtifactFullPath()).data
-        } ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
-        val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
-        if (node.folder && !download) {
-            viewModelService.trailingSlash()
-            val nodeList = nodeClient.listNode(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                path = artifactInfo.getArtifactFullPath(),
-                includeFolder = true,
-                deep = false
-            ).data
-            val currentPath = viewModelService.computeCurrentPath(node)
-            val headerList = listOf(
-                HeaderItem("Name"),
-                HeaderItem("Created by"),
-                HeaderItem("Last modified"),
-                HeaderItem("Size"),
-                HeaderItem("Sha256")
-            )
-            val itemList = nodeList?.map { NodeListViewItem.from(it) }?.sorted()
-            val rowList = itemList?.map {
-                RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256))
-            } ?: listOf()
-            viewModelService.render(currentPath, headerList, rowList)
-        } else {
-            val context = ArtifactDownloadContext()
-            repository.download(context)
+        with(artifactInfo) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, getArtifactFullPath())
+            val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
+            if (node.folder && !download) {
+                renderListView(node, this)
+            } else {
+                val context = ArtifactDownloadContext()
+                repository.download(context)
+            }
         }
+    }
+
+    private fun renderListView(node: NodeDetail, artifactInfo: GenericArtifactInfo) {
+        viewModelService.trailingSlash()
+        val nodeList = nodeClient.listNode(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            path = artifactInfo.getArtifactFullPath(),
+            includeFolder = true,
+            deep = false
+        ).data
+        val currentPath = viewModelService.computeCurrentPath(node)
+        val headerList = listOf(
+            HeaderItem("Name"),
+            HeaderItem("Created by"),
+            HeaderItem("Last modified"),
+            HeaderItem("Size"),
+            HeaderItem("Sha256")
+        )
+        val itemList = nodeList?.map { NodeListViewItem.from(it) }?.sorted()
+        val rowList = itemList?.map {
+            RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256))
+        } ?: listOf()
+        viewModelService.render(currentPath, headerList, rowList)
     }
 }
