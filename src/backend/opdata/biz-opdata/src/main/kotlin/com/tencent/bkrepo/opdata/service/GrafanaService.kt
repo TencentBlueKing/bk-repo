@@ -64,7 +64,7 @@ class GrafanaService @Autowired constructor(
             }
             Metrics.REPONAMELIST -> {
                 val projectId = request.target.split(":")[1]
-                data.addAll(repoModel.getRepoListByProjectId(projectId))
+                data.addAll(repoModel.getRepoListByProjectId(projectId).map { it.name })
             }
             else -> {
                 for (metric in Metrics.values()) {

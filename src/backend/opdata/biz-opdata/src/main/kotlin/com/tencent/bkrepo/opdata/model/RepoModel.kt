@@ -32,13 +32,11 @@
 package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_NAME
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPOSITORY
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 
 @Service
@@ -46,36 +44,10 @@ class RepoModel @Autowired constructor(
     private var mongoTemplate: MongoTemplate
 ) {
 
-    fun getRepoListByProjectId(projectId: String): List<String> {
+    fun getRepoListByProjectId(projectId: String): List<RepoInfo> {
         val query = Query(
             Criteria.where(OPDATA_PROJECT_ID).`is`(projectId)
         )
-        val data = mutableListOf<String>()
-        val results = mongoTemplate.find(query, MutableMap::class.java, OPDATA_REPOSITORY)
-        results.forEach {
-            val repoName = it[OPDATA_PROJECT_NAME] as String
-            data.add(repoName)
-        }
-        return data
-    }
-
-    fun getProjectAndRepoListByStorageCredentialId(
-        storageCredentialId: String
-    ): MutableMap<String, MutableList<String>> {
-        val query = Query(
-            Criteria.where("credentialsKey").isEqualTo(storageCredentialId)
-        )
-        val data = mutableMapOf<String, MutableList<String>>()
-        val results = mongoTemplate.find(query, MutableMap::class.java, OPDATA_REPOSITORY)
-        results.forEach {
-            val projectId = it[OPDATA_PROJECT_ID] as String
-            val repoName = it["name"] as String
-            if (data.containsKey(projectId)) {
-                data[projectId]!!.add(repoName)
-            } else {
-                data[projectId] = mutableListOf(repoName)
-            }
-        }
-        return data
+        return mongoTemplate.find(query, RepoInfo::class.java, OPDATA_REPOSITORY)
     }
 }

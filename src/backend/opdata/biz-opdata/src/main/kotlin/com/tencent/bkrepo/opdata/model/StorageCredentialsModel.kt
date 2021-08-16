@@ -31,37 +31,30 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_STORAGE_CREDENTIALS
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsInfo
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_METRICS
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 
 @Service
 class StorageCredentialsModel @Autowired constructor(
-    private val mongoTemplate: MongoTemplate,
-    private val repoModel: RepoModel,
-    private val projectMetricsModel: ProjectMetricsModel
+    private val mongoTemplate: MongoTemplate
 ) {
 
-    fun getStorageCredentialsStat(): List<Triple<String, Long, Long>> {
-        val result = mutableListOf<Triple<String, Long, Long>>()
-        val credentialsInfoList = mongoTemplate.findAll(StorageCredentialsInfo::class.java, OPDATA_STORAGE_CREDENTIALS)
-        credentialsInfoList.forEach {
-            result.add(getStorageCredentialStatById(it.id))
+    fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
+        val result = mutableMapOf<String, Long>()
+        val projectMetricsList = mongoTemplate.findAll(TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
+        projectMetricsList.forEach { projectMetrics ->
+            projectMetrics.repoMetrics.forEach {
+                val value = if (metrics == StatMetrics.NUM) it.num else it.size
+                if (result.containsKey(it.credentialsKey)) {
+                    result[it.credentialsKey!!] = result[it.credentialsKey!!]!! + value
+                } else {
+                    result[it.credentialsKey!!] = value
+                }
+            }
         }
         return result
-    }
-
-    fun getStorageCredentialStatById(storageCredentialId: String): Triple<String, Long, Long> {
-        var totalNum = 0L
-        var totalSize = 0L
-        val projectAndRepoList = repoModel.getProjectAndRepoListByStorageCredentialId(storageCredentialId)
-        projectAndRepoList.toList().forEach {
-            val stat = projectMetricsModel.getRepoMetricsStat(it.first, it.second)
-            totalNum += stat.first
-            totalSize += stat.second
-        }
-        return Triple(storageCredentialId, totalNum, totalSize)
     }
 }

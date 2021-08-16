@@ -84,19 +84,4 @@ class ProjectMetricsModel @Autowired constructor(
         val projectMetrics = mongoTemplate.findOne(query, TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
         return projectMetrics?.sizeDistribution ?: mapOf()
     }
-
-    /**
-     * 获取一个项目中多个仓库的统计信息
-     */
-    fun getRepoMetricsStat(projectId: String, repoList: List<String>): Pair<Long, Long> {
-        val query = Query(where(TProjectMetrics::projectId).isEqualTo(projectId))
-        val projectMetrics = mongoTemplate.findOne(query, TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
-        var totalNum = 0L
-        var totalSize = 0L
-        projectMetrics.repoMetrics.filter { it.repoName in repoList }.forEach {
-            totalNum += it.num
-            totalSize += it.size
-        }
-        return Pair(totalNum, totalSize)
-    }
 }

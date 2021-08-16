@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
+import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StorageCredentialsModel
 import com.tencent.bkrepo.opdata.pojo.NodeResult
@@ -52,23 +54,16 @@ class StorageCredentialHandler(
     @Suppress("UNCHECKED_CAST")
     override fun handle(target: Target, result: MutableList<Any>) {
         val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
-        val storageCredentialId = reqData?.get(STORAGE_CREDENTIAL_ID) as String?
         val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)
-        val resultList = if (storageCredentialId.isNullOrBlank()) {
-            storageCredentialsModel.getStorageCredentialsStat()
-        } else {
-            listOf(storageCredentialsModel.getStorageCredentialStatById(storageCredentialId))
-        }
-        resultList.forEach {
-            val data = if (metric == StatMetrics.NUM) listOf(it.second, System.currentTimeMillis())
-            else listOf(it.third, System.currentTimeMillis())
+        val resultMap = storageCredentialsModel.getStorageCredentialsStat(metric)
+        resultMap.forEach {
+            val data = listOf(it.value, System.currentTimeMillis())
             val element = listOf(data)
-            result.add(NodeResult(it.first, element))
+            result.add(NodeResult(it.key, element))
         }
     }
 
     companion object {
         private const val STAT_METRICS = "metrics"
-        private const val STORAGE_CREDENTIAL_ID = "id"
     }
 }

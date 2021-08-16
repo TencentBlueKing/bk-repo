@@ -64,11 +64,13 @@ class ProjectStatJob(
             val repos = repoModel.getRepoListByProjectId(it.name)
             val repoMetrics = mutableListOf<RepoMetrics>()
             repos.forEach {
-                val repoName = it
+                val repoName = it.name
                 val nodeSize = nodeModel.getNodeSize(projectId, repoName)
                 repoCapSize += nodeSize.size
                 repoNodeNum += nodeSize.num
-                repoMetrics.add(RepoMetrics(repoName, nodeSize.size / (1024 * 1024 * 1024), nodeSize.num))
+                repoMetrics.add(
+                    RepoMetrics(repoName, it.credentialsKey,nodeSize.size / (1024 * 1024 * 1024), nodeSize.num)
+                )
             }
             result.add(
                 TProjectMetrics(

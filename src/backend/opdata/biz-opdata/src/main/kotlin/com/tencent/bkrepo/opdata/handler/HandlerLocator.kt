@@ -36,12 +36,12 @@ import org.springframework.context.ApplicationContextAware
 import org.springframework.stereotype.Component
 
 @Component
-class HandlerLocator(
-    private var handlerList: List<QueryHandler>
-) : ApplicationContextAware {
+class HandlerLocator : ApplicationContextAware {
+
+    private val handlerList = mutableListOf<QueryHandler>()
 
     override fun setApplicationContext(applicationContext: ApplicationContext) {
-        handlerList = applicationContext.getBeansOfType(QueryHandler::class.java).map { it.value }
+        handlerList.addAll(applicationContext.getBeansOfType(QueryHandler::class.java).map { it.value })
     }
 
     fun getHandlerList(): List<QueryHandler> {
