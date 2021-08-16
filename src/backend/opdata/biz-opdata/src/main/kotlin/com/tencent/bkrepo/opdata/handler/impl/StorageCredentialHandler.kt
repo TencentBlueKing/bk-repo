@@ -31,8 +31,6 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
-import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.model.StorageCredentialsModel
 import com.tencent.bkrepo.opdata.pojo.NodeResult

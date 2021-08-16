@@ -69,7 +69,7 @@ class ProjectStatJob(
                 repoCapSize += nodeSize.size
                 repoNodeNum += nodeSize.num
                 repoMetrics.add(
-                    RepoMetrics(repoName, it.credentialsKey,nodeSize.size / (1024 * 1024 * 1024), nodeSize.num)
+                    RepoMetrics(repoName, it.credentialsKey, nodeSize.size / (1024 * 1024 * 1024), nodeSize.num)
                 )
             }
             result.add(
