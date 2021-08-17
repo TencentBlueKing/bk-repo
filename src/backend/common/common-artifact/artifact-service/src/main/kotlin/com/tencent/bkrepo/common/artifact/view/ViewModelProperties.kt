@@ -32,9 +32,7 @@
 package com.tencent.bkrepo.common.artifact.view
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.stereotype.Component
 
-@Component
 @ConfigurationProperties(prefix = "view")
 data class ViewModelProperties(
     /**

@@ -40,7 +40,7 @@ class ArtifactViewModelConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ViewModelService::class)
-    fun viewModelService(): ViewModelService {
-        return ViewModelService(ViewModelProperties())
+    fun viewModelService(viewModelProperties: ViewModelProperties): ViewModelService {
+        return ViewModelService(viewModelProperties)
     }
 }
