@@ -266,14 +266,10 @@ open class PermissionServiceImpl constructor(
             return projectClient.listProject().data?.map { it.name } ?: emptyList()
         }
 
-        var projectList = mutableListOf<String>()
+        val projectList = mutableListOf<String>()
 
-        // 用户关联权限
-        permissionRepository.findByUsers(userId).forEach {
-            if (it.actions.isNotEmpty() && it.projectId != null) {
-                projectList.add(it.projectId!!)
-            }
-        }
+        // 非管理员用户关联权限
+        projectList.addAll(getNoAdminUserProject(userId))
 
         if (user.roles.isEmpty()) {
             return projectList.distinct()
@@ -292,21 +288,11 @@ open class PermissionServiceImpl constructor(
         }
 
         // 非管理员角色关联权限
-        projectList = getNoAdminRoleProject(noAdminRole, projectList)
+        projectList.addAll(getNoAdminRoleProject(noAdminRole))
 
         return projectList.distinct()
     }
 
-    private fun getNoAdminRoleProject(role: MutableList<String>, project: MutableList<String>): MutableList<String> {
-        if (role.isNotEmpty()) {
-            permissionRepository.findByRolesIn(role).forEach {
-                if (it.actions.isNotEmpty() && it.projectId != null) {
-                    project.add(it.projectId!!)
-                }
-            }
-        }
-        return project
-    }
 
     override fun listPermissionRepo(projectId: String, userId: String): List<String> {
         logger.debug("list repo permission  request : [$projectId, $userId] ")
@@ -333,14 +319,10 @@ open class PermissionServiceImpl constructor(
             return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
         }
 
-        var repoList = mutableListOf<String>()
+        val repoList = mutableListOf<String>()
 
-        // 用户关联权限
-        permissionRepository.findByProjectIdAndUsers(projectId, userId).forEach {
-            if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
-                repoList.addAll(it.repos)
-            }
-        }
+        // 非管理员用户关联权限
+        repoList.addAll(getNoAdminUserRepo(projectId, userId))
 
         if (user.roles.isEmpty()) {
             return repoList.distinct()
@@ -359,24 +341,54 @@ open class PermissionServiceImpl constructor(
         }
 
         // 非仓库管理员角色关联权限
-        repoList = getNoAdminRoleRepo(projectId, noAdminRole, repoList)
+        repoList.addAll(getNoAdminRoleRepo(projectId, noAdminRole))
 
         return repoList.distinct()
     }
 
-    private fun getNoAdminRoleRepo(
-        project: String,
-        role: MutableList<String>,
-        repo: MutableList<String>
-    ): MutableList<String> {
-        if (role.isNotEmpty()) {
-            permissionRepository.findByProjectIdAndRolesIn(project, role).forEach {
-                if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
-                    repo.addAll(it.repos)
+    private fun getNoAdminUserProject(userId: String): List<String> {
+        val projectList = mutableListOf<String>()
+        permissionRepository.findByUsers(userId).forEach {
+            if (it.actions.isNotEmpty() && it.projectId != null) {
+                projectList.add(it.projectId!!)
+            }
+        }
+        return projectList
+    }
+
+    private fun getNoAdminRoleProject(roles: List<String>): List<String> {
+        val project = mutableListOf<String>()
+        if (roles.isNotEmpty()) {
+            permissionRepository.findByRolesIn(roles).forEach {
+                if (it.actions.isNotEmpty() && it.projectId != null) {
+                    project.add(it.projectId!!)
                 }
             }
         }
-        return repo
+        return project
+    }
+
+
+    private fun getNoAdminUserRepo(projectId: String, userId: String): List<String> {
+        val repoList = mutableListOf<String>()
+        permissionRepository.findByProjectIdAndUsers(projectId, userId).forEach {
+            if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                repoList.addAll(it.repos)
+            }
+        }
+        return repoList
+    }
+
+    private fun getNoAdminRoleRepo(project: String, role: List<String>): List<String> {
+        val repoList = mutableListOf<String>()
+        if (role.isNotEmpty()) {
+            permissionRepository.findByProjectIdAndRolesIn(project, role).forEach {
+                if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                    repoList.addAll(it.repos)
+                }
+            }
+        }
+        return repoList
     }
 
     override fun registerResource(request: RegisterResourceRequest) {
