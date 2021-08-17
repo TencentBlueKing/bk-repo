@@ -126,7 +126,7 @@ class UserServiceImpl constructor(
         }
         // user not exist, create user
         try {
-            val userResult = createUser(convCreateRepoUserRequest(request))
+            val userResult = createUser(transferCreateRepoUserRequest(request))
             if (!userResult) {
                 logger.warn("create user fail [$userResult]")
                 return false
@@ -148,7 +148,7 @@ class UserServiceImpl constructor(
         }
         // user not exist, create user
         try {
-            val userResult = createUser(convCreateProjectUserRequest(request))
+            val userResult = createUser(transferCreateProjectUserRequest(request))
             if (!userResult) {
                 logger.warn("create user fail [$userResult]")
                 return false
@@ -330,13 +330,7 @@ class UserServiceImpl constructor(
         val tokens = userInfo!!.tokens
         val result = mutableListOf<TokenResult>()
         tokens.forEach {
-            result.add(
-                TokenResult(
-                    it.name,
-                    it.createdAt,
-                    it.expiredAt
-                )
-            )
+            result.add(TokenResult(it.name, it.createdAt, it.expiredAt))
         }
         return result
     }

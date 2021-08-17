@@ -54,14 +54,13 @@ import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.PermissionService
+import com.tencent.bkrepo.auth.util.query.PermissionQueryHelper
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
 
 open class PermissionServiceImpl constructor(
@@ -221,7 +220,7 @@ open class PermissionServiceImpl constructor(
 
     private fun checkProjectAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         if (roles.isNotEmpty() && request.projectId != null) {
-            roles.filter { !it.isNullOrBlank() }.forEach {
+            roles.filter { !it.isBlank() }.forEach {
                 val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
                 if (role != null && role.admin) return true
             }
@@ -232,7 +231,7 @@ open class PermissionServiceImpl constructor(
     private fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         // check role repo admin
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
-            roles.filter { !it.isNullOrBlank() }.forEach {
+            roles.filter { !it.isBlank() }.forEach {
                 val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
                     it,
                     request.projectId!!,
@@ -247,26 +246,22 @@ open class PermissionServiceImpl constructor(
 
     private fun checkRepoAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
-            projectId?.let {
-                var celeriac = buildCheckActionQuery(projectId!!, uid, action, resourceType, roles)
-                if (request.resourceType == ResourceType.REPO) {
-                    celeriac = celeriac.and(TPermission::repos.name).`is`(request.repoName)
-                }
-                val query = Query.query(celeriac)
-                val result = mongoTemplate.count(query, TPermission::class.java)
-                if (result != 0L) return true
-            }
-            return false
+            val query = PermissionQueryHelper.buildPermissionCheck(
+                projectId!!, repoName!!, uid, action, resourceType, roles
+            )
+            val result = mongoTemplate.count(query, TPermission::class.java)
+            if (result != 0L) return true
         }
+        return false
     }
 
     override fun listPermissionProject(userId: String): List<String> {
         logger.debug("list permission project request : $userId ")
-        if (userId.isNullOrEmpty()) return emptyList()
+        if (userId.isEmpty()) return emptyList()
         val user = userRepository.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
-        // 用户为管理员
+        // 用户为系统管理员
         if (user.admin) {
             return projectClient.listProject().data?.map { it.name } ?: emptyList()
         }
@@ -318,17 +313,32 @@ open class PermissionServiceImpl constructor(
         val user = userRepository.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
+
+        // 用户为系统管理员
         if (user.admin) {
-            // 查询该项目下的所有仓库并过滤返回
+            return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+        }
+
+        val roles = user.roles
+
+        // 用户为项目管理员
+        if (roles.isNotEmpty() &&
+            roleRepository.findByProjectIdAndTypeAndAdminAndIdIn(
+                projectId,
+                RoleType.PROJECT,
+                true,
+                roles
+            ).isNotEmpty()
+        ) {
             return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
         }
 
         var repoList = mutableListOf<String>()
 
         // 用户关联权限
-        permissionRepository.findByUsers(userId).forEach {
-            if (it.actions.isNotEmpty() && it.projectId == projectId) {
-                repoList.add(it.projectId!!)
+        permissionRepository.findByProjectIdAndUsers(projectId, userId).forEach {
+            if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                repoList.addAll(it.repos)
             }
         }
 
@@ -338,17 +348,17 @@ open class PermissionServiceImpl constructor(
 
         val noAdminRole = mutableListOf<String>()
 
-        // 管理员角色关联权限
-        val roleList = roleRepository.findByProjectIdAndIdIn(projectId, user.roles)
+        // 仓库管理员角色关联权限
+        val roleList = roleRepository.findByProjectIdAndTypeAndAdminAndIdIn(projectId, RoleType.REPO, true, roles)
         roleList.forEach {
-            if (it.admin) {
-                repoList.add(it.projectId)
+            if (it.admin && it.repoName != null) {
+                repoList.add(it.repoName)
             } else {
                 noAdminRole.add(it.id!!)
             }
         }
 
-        // 非管理员角色关联权限
+        // 非仓库管理员角色关联权限
         repoList = getNoAdminRoleRepo(projectId, noAdminRole, repoList)
 
         return repoList.distinct()
@@ -361,8 +371,8 @@ open class PermissionServiceImpl constructor(
     ): MutableList<String> {
         if (role.isNotEmpty()) {
             permissionRepository.findByProjectIdAndRolesIn(project, role).forEach {
-                if (it.actions.isNotEmpty() && it.projectId == project) {
-                    repo.add(it.projectId!!)
+                if (it.actions.isNotEmpty() && it.repos.isNotEmpty()) {
+                    repo.addAll(it.repos)
                 }
             }
         }
@@ -392,18 +402,17 @@ open class PermissionServiceImpl constructor(
             permName,
             ResourceType.REPO
         ) ?: run {
-            val request =
-                TPermission(
-                    projectId = projectId,
-                    repos = listOf(repoName),
-                    permName = permName,
-                    actions = actions,
-                    resourceType = ResourceType.REPO,
-                    createAt = LocalDateTime.now(),
-                    updateAt = LocalDateTime.now(),
-                    createBy = AUTH_ADMIN,
-                    updatedBy = AUTH_ADMIN
-                )
+            val request = TPermission(
+                projectId = projectId,
+                repos = listOf(repoName),
+                permName = permName,
+                actions = actions,
+                resourceType = ResourceType.REPO,
+                createAt = LocalDateTime.now(),
+                updateAt = LocalDateTime.now(),
+                createBy = AUTH_ADMIN,
+                updatedBy = AUTH_ADMIN
+            )
             logger.info("permission not exist, create [$request]")
             permissionRepository.insert(request)
         }
@@ -413,25 +422,6 @@ open class PermissionServiceImpl constructor(
             permName,
             ResourceType.REPO
         )!!
-    }
-
-    private fun buildCheckActionQuery(
-        projectId: String,
-        uid: String,
-        action: PermissionAction,
-        resourceType: ResourceType,
-        roles: List<String>
-    ): Criteria {
-        val criteria = Criteria()
-        var celeriac = criteria.orOperator(
-            Criteria.where(TPermission::users.name).`in`(uid),
-            Criteria.where(TPermission::roles.name).`in`(roles)
-        ).and(TPermission::resourceType.name).`is`(resourceType.toString()).and(TPermission::actions.name)
-            .`in`(action.toString())
-        if (resourceType != ResourceType.SYSTEM) {
-            celeriac = celeriac.and(TPermission::projectId.name).`is`(projectId)
-        }
-        return celeriac
     }
 
     companion object {

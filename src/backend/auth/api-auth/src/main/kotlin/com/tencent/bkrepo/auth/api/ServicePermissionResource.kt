@@ -66,7 +66,7 @@ import org.springframework.web.bind.annotation.RequestParam
 interface ServicePermissionResource {
 
     @ApiOperation("list有权限仓库仓库")
-    @PostMapping("/repo/list")
+    @GetMapping("/repo/list")
     fun listPermissionRepo(
         @ApiParam(value = "项目ID")
         @RequestParam projectId: String,
