@@ -293,8 +293,7 @@ open class PermissionServiceImpl constructor(
         return projectList.distinct()
     }
 
-
-    override fun listPermissionRepo(projectId: String, userId: String): List<String> {
+    override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         logger.debug("list repo permission  request : [$projectId, $userId] ")
         val user = userRepository.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
@@ -302,7 +301,7 @@ open class PermissionServiceImpl constructor(
 
         // 用户为系统管理员
         if (user.admin) {
-            return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+            return getAllRepoByProjectId(projectId)
         }
 
         val roles = user.roles
@@ -316,7 +315,7 @@ open class PermissionServiceImpl constructor(
                 roles
             ).isNotEmpty()
         ) {
-            return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+            return getAllRepoByProjectId(projectId)
         }
 
         val repoList = mutableListOf<String>()
@@ -346,6 +345,10 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
+    fun getAllRepoByProjectId(projectId: String): List<String> {
+        return repositoryClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+    }
+
     private fun getNoAdminUserProject(userId: String): List<String> {
         val projectList = mutableListOf<String>()
         permissionRepository.findByUsers(userId).forEach {
@@ -367,7 +370,6 @@ open class PermissionServiceImpl constructor(
         }
         return project
     }
-
 
     private fun getNoAdminUserRepo(projectId: String, userId: String): List<String> {
         val repoList = mutableListOf<String>()

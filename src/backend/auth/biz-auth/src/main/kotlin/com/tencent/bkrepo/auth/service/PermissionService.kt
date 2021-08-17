@@ -46,7 +46,7 @@ interface PermissionService {
 
     fun checkPermission(request: CheckPermissionRequest): Boolean
 
-    fun listPermissionRepo(projectId: String, userId: String): List<String>
+    fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String>
 
     fun listPermissionProject(userId: String): List<String>
 

@@ -71,7 +71,9 @@ interface ServicePermissionResource {
         @ApiParam(value = "项目ID")
         @RequestParam projectId: String,
         @ApiParam(value = "用户ID")
-        @RequestParam userId: String
+        @RequestParam userId: String,
+        @ApiParam(value = "应用ID")
+        @RequestParam appId: String?
     ): Response<List<String>>
 
     @ApiOperation("list有权限项目")
