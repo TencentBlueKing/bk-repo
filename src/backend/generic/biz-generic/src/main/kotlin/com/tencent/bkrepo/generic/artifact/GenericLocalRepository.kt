@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -126,6 +127,11 @@ class GenericLocalRepository : LocalRepository() {
             }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
+
+            // 文件默认下载，设置Content-Dispostition响应头
+            // preview == true时不设置Content-Dispostition响应头
+            val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
+            useDisposition = preview == null || preview == false
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
