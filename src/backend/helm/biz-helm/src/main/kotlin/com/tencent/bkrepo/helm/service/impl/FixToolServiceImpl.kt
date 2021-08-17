@@ -15,7 +15,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
@@ -36,6 +35,7 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.SortedSet
 
 @Service
 class FixToolServiceImpl(
@@ -53,7 +53,10 @@ class FixToolServiceImpl(
             emptyList<RepositoryDetail>()
         }
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${helmLocalRepositoryList.map { it.projectId to it.name }}")
+        logger.info(
+            "find [${helmLocalRepositoryList.size}] HELM local " +
+                "repository ${helmLocalRepositoryList.map { it.projectId to it.name }}"
+        )
         helmLocalRepositoryList.forEach {
             try {
                 doRepairCreatedDate(it.projectId, it.name)
@@ -71,16 +74,7 @@ class FixToolServiceImpl(
         request.setAttribute(ARTIFACT_INFO_KEY, ArtifactInfo(projectId, repoName, ""))
         try {
             // 查询索引文件
-            val nodeDetail =
-                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
-                    logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException("the file index-cache.yaml not found in repo [$projectId/$repoName]")
-                }
-            val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
-                logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
-                return
-            }
-            val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
+            val helmIndexYamlMetadata = helmIndexYamlMetadata(projectId, repoName)
             if (helmIndexYamlMetadata.entries.isEmpty()) {
                 logger.error("not found entries in index-cache.yaml")
                 return
@@ -104,16 +98,7 @@ class FixToolServiceImpl(
                 }
                 try {
                     // 修改时间
-                    entries[name]?.forEach { it ->
-                        val digest = it.digest
-                        val nodeInfo = helmNodeList.first { it.sha256 == digest }
-                        it.created = TimeFormatUtil.convertToUtcTime(
-                            LocalDateTime.parse(
-                                nodeInfo.createdDate,
-                                DateTimeFormatter.ISO_DATE_TIME
-                            )
-                        )
-                    }
+                    repairCreatedDate(entries, name, helmNodeList)
                 } catch (exception: RuntimeException) {
                     logger.error(
                         "Failed to to repair created date for [$name] in repo [$projectId/$repoName].",
@@ -129,6 +114,40 @@ class FixToolServiceImpl(
         }
     }
 
+    private fun repairCreatedDate(
+        entries: MutableMap<String, SortedSet<HelmChartMetadata>>,
+        name: String,
+        helmNodeList: MutableList<NodeInfo>
+    ) {
+        entries[name]?.forEach { it ->
+            val digest = it.digest
+            val nodeInfo = helmNodeList.first { it.sha256 == digest }
+            it.created = TimeFormatUtil.convertToUtcTime(
+                LocalDateTime.parse(
+                    nodeInfo.createdDate,
+                    DateTimeFormatter.ISO_DATE_TIME
+                )
+            )
+        }
+    }
+
+    private fun helmIndexYamlMetadata(projectId: String, repoName: String): HelmIndexYamlMetadata {
+        val nodeDetail =
+            nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
+                logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
+                throw HelmFileNotFoundException(
+                    "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                )
+            }
+        val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+            logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+            throw HelmFileNotFoundException(
+                "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+            )
+        }
+        return inputStream.use { it.readYamlString() }
+    }
+
     override fun fixPackageVersion(): List<PackageManagerResponse> {
         val packageManagerList = mutableListOf<PackageManagerResponse>()
         // 查找所有仓库
@@ -138,7 +157,10 @@ class FixToolServiceImpl(
             return emptyList()
         }
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
-        logger.info("find [${helmLocalRepositoryList.size}] HELM local repository ${repositoryList.map { it.projectId to it.name }}")
+        logger.info(
+            "find [${helmLocalRepositoryList.size}] HELM local " +
+                "repository ${repositoryList.map { it.projectId to it.name }}"
+        )
         helmLocalRepositoryList.forEach {
             val packageManagerResponse = addPackageManager(it.projectId, it.name)
             packageManagerList.add(packageManagerResponse)
@@ -159,13 +181,17 @@ class FixToolServiceImpl(
             val nodeDetail =
                 nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexYamlFullPath()).data ?: run {
                     logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException("the file index-cache.yaml not found in repo [$projectId/$repoName]")
+                    throw HelmFileNotFoundException(
+                        "the file index-cache.yaml not found in repo [$projectId/$repoName]"
+                    )
                 }
             // sleep 0.1s
             Thread.sleep(100)
             val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
-                throw HelmFileNotFoundException("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
+                throw HelmFileNotFoundException(
+                    "load index-cache.yaml file stream is null in repo [$projectId/$repoName]"
+                )
             }
             val helmIndexYamlMetadata = inputStream.use { it.readYamlString<HelmIndexYamlMetadata>() }
             if (helmIndexYamlMetadata.entries.isEmpty()) {
@@ -192,7 +218,8 @@ class FixToolServiceImpl(
                 try {
                     logger.info(
                         "Retrieved $packageSize packages to add package manager in repo [$projectId/$repoName], " +
-                            "process: $totalCount/$packageSize, current package: [$name] with [${helmNodeList.size}] versions."
+                            "process: $totalCount/$packageSize, " +
+                            "current package: [$name] with [${helmNodeList.size}] versions."
                     )
                     // 添加包管理
                     doAddPackageManager(projectId, repoName, helmNodeList, name)
@@ -212,7 +239,8 @@ class FixToolServiceImpl(
             val durationSeconds = Duration.between(startTime, LocalDateTime.now()).seconds
             logger.info(
                 "Repair helm package populate in repo [$projectId/$repoName], " +
-                    "total: $totalCount, success: $successCount, failed: $failedCount, duration $durationSeconds s totally."
+                    "total: $totalCount, success: $successCount, failed: $failedCount, " +
+                    "duration $durationSeconds s totally."
             )
             return PackageManagerResponse(
                 projectId = projectId,

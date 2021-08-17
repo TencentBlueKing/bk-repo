@@ -50,10 +50,10 @@ data class PackageVersionUpdateRequest(
     var artifactPath: String? = null,
     @ApiModelProperty("版本构件阶段")
     val stageTag: List<String>? = null,
-    @ApiModelProperty("版本元数据")
-    val metadata: Map<String, Any>? = null,
     @ApiModelProperty("标签")
     val tags: List<String>? = null,
+    @ApiModelProperty("版本元数据")
+    val metadata: Map<String, Any>? = null,
     @ApiModelProperty("版本扩展字段")
     val extension: Map<String, Any>? = null
 )

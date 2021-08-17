@@ -41,6 +41,7 @@ import org.influxdb.impl.InfluxDBImpl
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxProperties
+import java.util.Queue
 
 class InfluxMetricsExporter(
     private val influxProperties: InfluxProperties,
@@ -51,7 +52,7 @@ class InfluxMetricsExporter(
     private val influxDB: InfluxDB
 
     init {
-        logger.info("Initializing InfluxMetricsExporter.")
+        logger.info("Initializing InfluxMetricsExporter")
         with(influxProperties) {
             val builder = HttpClientBuilderFactory.create()
             influxDB = InfluxDBImpl(uri, userName.orEmpty(), password.orEmpty(), builder)
@@ -62,21 +63,22 @@ class InfluxMetricsExporter(
         commonTags = commonTagProvider.ifAvailable?.provide().orEmpty()
     }
 
-    fun export(queue: List<ArtifactTransferRecord>) {
+    fun export(queue: Queue<ArtifactTransferRecord>) {
         with(influxProperties) {
             if (!isEnabled) {
                 return
             }
             val clazz = ArtifactTransferRecord::class.java
             val points = ArrayList<Point>()
-            for (index in queue.indices) {
-                val record = queue[index]
+            var record = queue.poll()
+            while (record != null) {
                 val point = Point.measurementByPOJO(clazz).addFieldsFromPOJO(record).tag(commonTags).build()
                 points.add(point)
+                record = queue.poll()
             }
             val batchPoints = BatchPoints.database(db).points(points).retentionPolicy(retentionPolicy).build()
             influxDB.write(batchPoints)
-            logger.debug("Export [${points.size}] artifact transfer points to influxdb successfully.")
+            logger.debug("Export [${points.size}] artifact transfer points to influxdb successfully")
         }
     }
 

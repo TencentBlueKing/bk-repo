@@ -31,7 +31,10 @@
 
 package com.tencent.bkrepo.docker.model
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class DockerHistory(
     var created: String,
-    var created_by: String? = null
+    @JsonProperty("created_by")
+    var createdBy: String? = null
 )

@@ -31,15 +31,14 @@
 
 package com.tencent.bkrepo.common.artifact.api
 
+import com.tencent.bkrepo.common.artifact.file.FileHashAccessor
 import java.io.File
 import java.io.InputStream
-import java.security.SecureRandom
-import kotlin.math.abs
 
 /**
  * 构件文件接口
  */
-interface ArtifactFile {
+interface ArtifactFile : FileHashAccessor {
 
     /**
      * 获取文件流，使用完记得关闭
@@ -67,21 +66,6 @@ interface ArtifactFile {
     fun flushToFile(): File
 
     /**
-     * 获取文件数据的md5校验值
-     */
-    fun getFileMd5(): String
-
-    /**
-     * 获取文件数据的sha1校验值
-     */
-    fun getFileSha1(): String
-
-    /**
-     * 获取文件数据的sha256校验值
-     */
-    fun getFileSha256(): String
-
-    /**
      * 删除文件
      */
     fun delete()
@@ -95,15 +79,4 @@ interface ArtifactFile {
      * 判断数据存储过程是否降级到本地磁盘
      */
     fun isFallback(): Boolean
-
-    companion object {
-        protected const val ARTIFACT_PREFIX = "artifact_"
-        protected const val ARTIFACT_SUFFIX = ".temp"
-        protected val random = SecureRandom()
-        fun generateRandomName(): String {
-            var randomLong = random.nextLong()
-            randomLong = if (randomLong == Long.MIN_VALUE) 0 else abs(randomLong)
-            return ARTIFACT_PREFIX + randomLong.toString() + ARTIFACT_SUFFIX
-        }
-    }
 }

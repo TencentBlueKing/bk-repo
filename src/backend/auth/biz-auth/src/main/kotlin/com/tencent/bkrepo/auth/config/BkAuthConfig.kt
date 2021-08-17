@@ -50,6 +50,18 @@ class BkAuthConfig {
     private var authServer: String = ""
 
     /**
+     * auth 服务器地址
+     */
+    @Value("\${auth.devops.ciAuthServer:}")
+    private var ciAuthServer: String = ""
+
+    /**
+     * auth 服务器地址
+     */
+    @Value("\${auth.devops.ciAuthToken:}")
+    private var ciAuthToken: String = ""
+
+    /**
      * 流水线资源 appSecret
      */
     @Value("\${auth.devops.pipelineSecret:}")
@@ -62,16 +74,22 @@ class BkAuthConfig {
     var artifactorySecret: String = ""
 
     /**
-     * 蓝盾平台用户 appId
+     * 蓝盾平台appId集合
+     */
+    @Value("\${auth.devops.appIdSet:}")
+    var devopsAppIdSet: String = ""
+
+    /**
+     * 蓝盾CI平台appId
      */
     @Value("\${auth.devops.appId:}")
     var devopsAppId: String = ""
 
     /**
-     * 蓝盾平台用户 appId
+     * 蓝盾BCS平台appId
      */
-    @Value("\${auth.bkrepo.appId:}")
-    var bkrepoAppId: String = ""
+    @Value("\${auth.devops.bcsAppId:}")
+    var bcsAppId: String = ""
 
     /**
      * 是否开启蓝盾用户权限认证开关
@@ -98,5 +116,29 @@ class BkAuthConfig {
         } else {
             "http://$authServer"
         }
+    }
+
+    fun getBkciAuthServer(): String {
+        return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {
+            ciAuthServer.removeSuffix("/")
+        } else {
+            "http://$ciAuthServer"
+        }
+    }
+
+    fun choseBkAuth(): Boolean {
+        return ciAuthServer.isNullOrBlank()
+    }
+
+    fun setBkciAuthServer(authServer: String) {
+        ciAuthServer = authServer
+    }
+
+    fun setBkciAuthToken(authToken: String) {
+        ciAuthToken = authToken
+    }
+
+    fun getBkciAuthToken(): String {
+        return ciAuthToken
     }
 }

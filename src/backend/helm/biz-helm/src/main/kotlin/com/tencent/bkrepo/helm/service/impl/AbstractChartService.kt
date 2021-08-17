@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
@@ -66,7 +67,7 @@ import java.time.LocalDateTime
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
-abstract class AbstractChartService {
+open class AbstractChartService {
     @Autowired
     lateinit var nodeClient: NodeClient
 
@@ -78,6 +79,9 @@ abstract class AbstractChartService {
 
     @Autowired
     lateinit var eventPublisher: ApplicationEventPublisher
+
+    @Autowired
+    lateinit var artifactResourceWriter: ArtifactResourceWriter
 
     fun queryOriginalIndexYaml(): HelmIndexYamlMetadata {
         val context = ArtifactQueryContext()
@@ -139,6 +143,13 @@ abstract class AbstractChartService {
      */
     fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
         return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
+    }
+
+    /**
+     * check package version exists
+     */
+    fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
+        return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
     }
 
     /**

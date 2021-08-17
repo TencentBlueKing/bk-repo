@@ -36,7 +36,7 @@ import io.swagger.annotations.ApiModelProperty
 import java.time.Duration
 
 @ApiModel("创建临时token请求")
-data class TemporaryTokenCreateRequest (
+data class TemporaryTokenCreateRequest(
     @ApiModelProperty("项目id")
     val projectId: String,
     @ApiModelProperty("仓库名称")

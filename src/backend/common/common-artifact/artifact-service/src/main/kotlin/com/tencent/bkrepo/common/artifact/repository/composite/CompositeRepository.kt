@@ -141,8 +141,8 @@ class CompositeRepository(
         for (setting in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, setting))?.let { return it }
-            } catch (exception: RuntimeException) {
-                logger.warn("Failed to execute map with channel ${setting.name}", exception)
+            } catch (ignored: Exception) {
+                logger.warn("Failed to execute map with channel ${setting.name}", ignored)
             }
         }
         return null
@@ -157,8 +157,8 @@ class CompositeRepository(
         for (proxyChannel in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, proxyChannel))?.let { mapResult.add(it) }
-            } catch (exception: RuntimeException) {
-                logger.warn("Failed to execute map with channel ${proxyChannel.name}", exception)
+            } catch (ignored: Exception) {
+                logger.warn("Failed to execute map with channel ${proxyChannel.name}", ignored)
             }
         }
         return mapResult
@@ -172,8 +172,8 @@ class CompositeRepository(
         for (proxyChannel in proxyChannelList) {
             try {
                 action(getContextFromProxyChannel(context, proxyChannel))
-            } catch (exception: RuntimeException) {
-                logger.warn("Failed to execute action with channel ${proxyChannel.name}", exception)
+            } catch (ignored: Exception) {
+                logger.warn("Failed to execute action with channel ${proxyChannel.name}", ignored)
             }
         }
     }
@@ -211,7 +211,6 @@ class CompositeRepository(
         val repoName = PUBLIC_PROXY_REPO_NAME.format(repoType, proxyChannel.name)
         val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
         // 构造proxyConfiguration
-
         val remoteConfiguration = remoteRepoDetail.configuration
         require(remoteConfiguration is RemoteConfiguration)
         remoteConfiguration.url = proxyChannel.url

@@ -51,7 +51,12 @@ internal class DigestCalculateListenerTest {
         Assertions.assertEquals(sha256, listener.getSha256())
     }
 
-    private fun copyTo(input: InputStream, out: OutputStream, listener: StreamReceiveListener, bufferSize: Int = DEFAULT_BUFFER_SIZE): Long {
+    private fun copyTo(
+        input: InputStream,
+        out: OutputStream,
+        listener: StreamReceiveListener,
+        bufferSize: Int = DEFAULT_BUFFER_SIZE
+    ): Long {
         var bytesCopied: Long = 0
         val buffer = ByteArray(bufferSize)
         var bytes = input.read(buffer)

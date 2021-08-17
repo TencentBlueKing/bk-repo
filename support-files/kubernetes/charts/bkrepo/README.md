@@ -24,7 +24,7 @@ $ helm install bkrepo bkee/bkrepo
 $ helm uninstall bkrepo
 ```
 
-上述命令经移除所有和bkrepo相关的Kubernetes组件，并删除release。
+上述命令将移除所有和bkrepo相关的Kubernetes组件，并删除release。
 
 ## Chart依赖
 - [bitnami/nginx-ingress-controller](https://github.com/bitnami/charts/tree/master/bitnami/nginx-ingress-controller)
@@ -156,11 +156,12 @@ $ helm uninstall bkrepo
 | `common.springProfile` | SpringBoot active profile | `dev` |
 | `common.username` | bkrepo初始用户名 | `admin` |
 | `common.password` | bkrepo初始密码 | `blueking` |
-| `common.storage.type` | 存储类型，支持filesystem/cos/s3/hdfs | `filesystem` |
-| `common.storage.filesystem.path` | filesystem存储方式配置，存储路径 | `/data/storage` |
-| `common.storage.cos` | cos存储方式配置 | `nil` |
-| `common.storage.s3` | s3存储方式配置 | `nil` |
-| `common.storage.hdfs` | hdfs存储方式配置 | `nil` |
+| `common.mountPath` | pod volume挂载路径 | `/data/storage` |
+| `common.config.storage.type` | 存储类型，支持filesystem/cos/s3/hdfs | `filesystem` |
+| `common.config.storage.filesystem.path` | filesystem存储方式配置，存储路径 | `/data/storage` |
+| `common.config.storage.cos` | cos存储方式配置 | `nil` |
+| `common.config.storage.s3` | s3存储方式配置 | `nil` |
+| `common.config.storage.hdfs` | hdfs存储方式配置 | `nil` |
 
 ### 数据初始化job配置
 
@@ -172,7 +173,7 @@ $ helm uninstall bkrepo
 
 ### 网关配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -186,7 +187,7 @@ $ helm uninstall bkrepo
 
 ### repository服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -194,7 +195,7 @@ $ helm uninstall bkrepo
 
 ### auth服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -202,16 +203,16 @@ $ helm uninstall bkrepo
 
 ### generic服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
-| `generic.enabled` | 是否部署generic | `true` |
-| `generic.config ` | generic配置 | `{}` |
+| `generic.enabled`       | 是否部署generic     | `true`                      |
+| `generic.config.domain` | generic domain地址 | `${gateway.host}/generic`   |
 
 ### docker registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -220,25 +221,25 @@ $ helm uninstall bkrepo
 
 ### npm registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
 | `npm.enabled` | 是否部署npm | `false` |
-| `npm.config`  | npm配置 | `{}` |
+| `npm.config.domain` | npm domain地址 | `${gateway.host}/npm`   |
 
 ### pypi registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
 | `pypi.enabled` | 是否部署pypi | `false` |
-| `pypi.config`  | pypi配置 | `{}` |
+| `pypi.config.domain` | pypi domain地址 | `${gateway.host}/pypi`  |
 
 ### helm registry服务配置
 
-**以下为除去Kubernetes组件通用配置之外的配置列表**
+**以下为除Kubernetes组件通用配置之外的配置列表**
 
 |参数|描述|默认值 |
 |---|---|---|
@@ -386,7 +387,7 @@ ingress.enabled=false
 nginx-ingress-controller.enabled=false
 gateway.service.type=ClusterIP
 ```
-
+
 部署成功后，通过`kubectl port-forward`将`bkrepo-gateway`服务暴露出去，即可通过 bkrepo.com:\<port\> 访问（您仍需要配置dns解析）
 ```shell
 kubectl port-forward service/bkrepo-gateway <port>:80
@@ -394,11 +395,11 @@ kubectl port-forward service/bkrepo-gateway <port>:80
 
 ## 常见问题
 
-**1. 首次启动失败，是bkrepo Chart有问题吗**
+**1. 首次启动失败，是bkrepo Chart有问题吗**
 
 答: bkrepo的Chart依赖了`mongodb`和`nignx-ingress-controller`, 这两个依赖的Chart默认从docker.io拉镜像，如果网络不通或被docker hub限制，将导致镜像拉取失败，可以参考配置列表修改镜像地址。
 
-**2. 首次启动时间过长，且READY状态为`0/1`？**
+**2. 首次启动时间过长，且READY状态为`0/1`？**
 
 答: 如果选择了部署`mongodb Chart`，需要等待`mongodb`部署完成后，`bkrepo`相关容器才会启动；启动过程涉及到数据表以及索引创建，这个期间容器状态为`Not Ready`。
 

@@ -50,12 +50,14 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -83,6 +85,21 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     override fun createUserToProject(request: CreateUserToProjectRequest): Response<Boolean> {
+        val userId = SecurityUtils.getUserId()
+        // check 用户权限,非匿名用户
+        if (ANONYMOUS_USER != userId) {
+            val checkRequest =
+                CheckPermissionRequest(
+                    uid = userId,
+                    resourceType = ResourceType.SYSTEM,
+                    action = PermissionAction.WRITE
+                )
+            if (!permissionService.checkPermission(checkRequest)) {
+                logger.warn("check user permission error [$checkRequest]")
+                throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
+            }
+        }
+
         userService.createUserToProject(request)
         val createRoleRequest =
             CreateRoleRequest(
@@ -214,6 +231,11 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
+    override fun checkToken(uid: String, token: String): Response<Boolean> {
+        userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
+        return ResponseBuilder.success(true)
+    }
+
     override fun loginUser(uid: String, token: String): Response<Boolean> {
         userService.findUserByUserToken(uid, token) ?: run {
             logger.info("user not match [$uid]")
@@ -253,6 +275,33 @@ class ServiceUserResourceImpl @Autowired constructor(
             logger.warn("validate user token false [$bkrepoToken]")
             throw ErrorCodeException(AuthMessageCode.AUTH_LOGIN_TOKEN_CHECK_FAILED)
         }
+    }
+
+    override fun userPage(
+        pageNumber: Int,
+        pageSize: Int,
+        user: String?,
+        admin: Boolean?,
+        locked: Boolean?
+    ): Response<Page<UserInfo>> {
+        val result = userService.userPage(pageNumber, pageSize, user, admin, locked)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun userInfoById(uid: String): Response<UserInfo?> {
+        return ResponseBuilder.success(userService.getUserInfoById(uid))
+    }
+
+    override fun updatePassword(uid: String, oldPwd: String, newPwd: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.updatePassword(uid, oldPwd, newPwd))
+    }
+
+    override fun resetPassword(uid: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.resetPassword(uid))
+    }
+
+    override fun repeatUid(uid: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.repeatUid(uid))
     }
 
     companion object {

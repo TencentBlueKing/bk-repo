@@ -43,11 +43,14 @@ import java.util.concurrent.TimeUnit
 
 object CosHttpClient {
     private val logger = LoggerFactory.getLogger(CosHttpClient::class.java)
+    private const val CONNECT_TIMEOUT = 30L
+    private const val WRITE_TIMEOUT = 30L
+    private const val READ_TIMEOUT = 30L
 
     private val client = OkHttpClient().newBuilder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+        .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+        .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
         .build()
 
     fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
@@ -57,21 +60,22 @@ object CosHttpClient {
             val message = buildMessage(request)
             throw InnerCosException("Failed to execute http request: $message", exception)
         }
+        return resolveResponse(request, response, handler)
+    }
 
+    private fun <T> resolveResponse(request: Request, response: Response, handler: HttpResponseHandler<T>): T {
         response.useOnCondition(!handler.keepConnection()) {
             try {
                 if (it.isSuccessful) {
                     return handler.handle(it)
-                } else {
-                    if (it.code() == HTTP_NOT_FOUND) {
-                        val handle404Result = handler.handle404()
-                        if (handle404Result != null) {
-                            return handle404Result
-                        }
+                } else if (it.code() == HTTP_NOT_FOUND) {
+                    val handle404Result = handler.handle404()
+                    if (handle404Result != null) {
+                        return handle404Result
                     }
-                    throw IllegalStateException("Response status error")
                 }
-            } catch (exception: RuntimeException) {
+                throw IOException("Response status error")
+            } catch (exception: IOException) {
                 val message = buildMessage(request, it)
                 throw InnerCosException("Failed to execute http request: $message", exception)
             }
@@ -82,7 +86,7 @@ object CosHttpClient {
         val requestTitle = "${request.method()} ${request.url()} ${response?.protocol()}"
 
         val builder = StringBuilder()
-            .append(">>>> ")
+            .append("\n>>>> ")
             .appendln(requestTitle)
             .appendln(request.headers())
 

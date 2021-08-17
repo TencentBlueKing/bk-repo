@@ -13,9 +13,11 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    {{- toYaml .Values.docker.config | nindent 4 }}
     docker:
       domain: docker.{{ .Values.gateway.host }}
       auth:
         url: http://docker.{{ .Values.gateway.host }}/v2/auth
+      {{- if keys $.Values.docker.config }}
+        {{- toYaml .Values.docker.config | nindent 6 }}
+      {{- end}}
 {{- end }}

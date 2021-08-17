@@ -35,27 +35,31 @@ import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
+import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import org.slf4j.LoggerFactory
-import org.springframework.util.unit.DataSize
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.security.SecureRandom
+import kotlin.math.abs
 import kotlin.system.measureNanoTime
 
 class SmartStreamReceiver(
-    private val fileSizeThreshold: Long,
-    private val filename: String,
-    private var path: Path,
+    private val receive: ReceiveProperties,
     private val enableTransfer: Boolean,
-    private val rateLimit: DataSize? = null
+    private var path: Path,
+    private val filename: String = generateRandomName()
 ) : StorageHealthMonitor.Observer {
-    private val contentBytes = ByteArrayOutputStream(DEFAULT_BUFFER_SIZE)
+    private val bufferSize = receive.bufferSize.toBytes().toInt()
+    private val fileSizeThreshold = receive.fileSizeThreshold.toBytes()
+    private val contentBytes = ByteArrayOutputStream(bufferSize)
     private var outputStream: OutputStream = contentBytes
     private var hasTransferred: Boolean = false
     private var fallBackPath: Path? = null
@@ -66,9 +70,9 @@ class SmartStreamReceiver(
 
     fun receive(source: InputStream, listener: StreamReceiveListener): Throughput {
         try {
-            val input = source.rateLimit(rateLimit?.toBytes() ?: -1)
+            val input = source.rateLimit(receive.rateLimit.toBytes())
             var bytesCopied: Long = 0
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            val buffer = ByteArray(bufferSize)
             val nanoTime = measureNanoTime {
                 input.use {
                     var bytes = input.read(buffer)
@@ -86,11 +90,11 @@ class SmartStreamReceiver(
             checkSize()
             listener.finished()
             return Throughput(bytesCopied, nanoTime)
-        } catch (exception: IOException) {
+        } catch (ignored: IOException) {
             cleanTempFile()
-            if (IOExceptionUtils.isClientBroken(exception)) {
-                throw ArtifactReceiveException(exception.message.orEmpty())
-            } else throw exception
+            if (IOExceptionUtils.isClientBroken(ignored)) {
+                throw ArtifactReceiveException(ignored.message.orEmpty())
+            } else throw ignored
         } finally {
             cleanOriginalOutputStream()
         }
@@ -149,7 +153,7 @@ class SmartStreamReceiver(
                 val filePath = path.resolve(filename).apply { this.createFile() }
                 originalFile.toFile().inputStream().use {
                     outputStream = filePath.toFile().outputStream()
-                    it.copyTo(outputStream)
+                    it.copyTo(outputStream, bufferSize)
                 }
                 Files.deleteIfExists(originalFile)
                 logger.info("Success to transfer data from [$originalPath] to [$path]")
@@ -177,9 +181,11 @@ class SmartStreamReceiver(
                 "$totalSize bytes received, but $actualSize bytes saved in memory."
             }
         } else {
-            val actualSize = Files.size(path.resolve(filename))
-            require(totalSize == actualSize) {
-                "$totalSize bytes received, but $actualSize bytes saved in file."
+            retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
+                val actualSize = Files.size(path.resolve(filename))
+                require(totalSize == actualSize) {
+                    "$totalSize bytes received, but $actualSize bytes saved in file."
+                }
             }
         }
     }
@@ -204,5 +210,18 @@ class SmartStreamReceiver(
 
     companion object {
         private val logger = LoggerFactory.getLogger(SmartStreamReceiver::class.java)
+        private val random = SecureRandom()
+        private const val RETRY_CHECK_TIMES = 3
+        private const val ARTIFACT_PREFIX = "artifact_"
+        private const val ARTIFACT_SUFFIX = ".temp"
+
+        /**
+         * 生成随机文件名
+         */
+        private fun generateRandomName(): String {
+            var randomLong = random.nextLong()
+            randomLong = if (randomLong == Long.MIN_VALUE) 0 else abs(randomLong)
+            return ARTIFACT_PREFIX + randomLong.toString() + ARTIFACT_SUFFIX
+        }
     }
 }

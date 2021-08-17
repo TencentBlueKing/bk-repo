@@ -19,7 +19,7 @@
                 <div class="empty-guide-item-main">
                     <div class="empty-guide-item-subtitle">
                         {{ $t('tokenSubTitle') }}
-                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                        <router-link class="router-link" :to="{ name: 'userCenter' }">{{ $t('token') }}</router-link>
                     </div>
                     <bk-button class="mt15" theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                 </div>
@@ -46,7 +46,7 @@
         props: {
             article: {
                 type: Array,
-                default: []
+                default: () => []
             }
         },
         computed: {

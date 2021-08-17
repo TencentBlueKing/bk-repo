@@ -13,7 +13,7 @@
             <div>
                 <bk-input
                     class="mr20 file-name-search"
-                    v-model="packageNameInput"
+                    v-model.trim="packageNameInput"
                     :placeholder="$t('pleaseInput') + $t('packageName')"
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
@@ -37,7 +37,7 @@
         </div>
         <main class="repo-search-result flex-column" v-bkloading="{ isLoading }"
             :style="{
-                height: `calc(100% - ${showRepoSearch ? 300 : 80}px)`
+                height: `calc(100% - ${showRepoSearch ? 290 : 70}px)`
             }">
             <template v-if="resultList.length">
                 <main class="mb10 result-list">
@@ -94,8 +94,8 @@
                 repoType: this.$route.query.type,
                 pagination: {
                     current: 1,
-                    limit: 10,
-                    count: 20,
+                    limit: 20,
+                    count: 0,
                     limitList: [10, 20, 40]
                 },
                 resultList: []
@@ -191,7 +191,7 @@
             padding-top: 15px;
             border-top: 1px solid $borderWeightColor;
             .repo-type-radio-group {
-                /deep/ .bk-form-radio-button {
+                ::v-deep .bk-form-radio-button {
                     margin: 0 20px 20px 0;
                     .bk-radio-button-text {
                         height: auto;

@@ -35,5 +35,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "generic")
 data class GenericProperties(
-    var host: String = "localhost"
+    /**
+     * generic服务domain地址，用于生成临时url
+     */
+    var domain: String = "localhost"
 )

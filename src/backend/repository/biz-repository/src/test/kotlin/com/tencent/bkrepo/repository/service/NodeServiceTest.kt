@@ -35,23 +35,19 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
-import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.repository.service.repo.ProjectService
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -88,29 +84,11 @@ class NodeServiceTest @Autowired constructor(
     @BeforeAll
     fun beforeAll() {
         initMock()
-
-        if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_USER)
-            projectService.createProject(projectCreateRequest)
-        }
-        if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
-            val repoCreateRequest = RepoCreateRequest(
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                description = UT_REPO_DESC,
-                configuration = LocalConfiguration(),
-                operator = UT_USER
-            )
-            repositoryService.createRepo(repoCreateRequest)
-        }
+        initRepoForUnitTest(projectService, repositoryService)
     }
 
     @BeforeEach
     fun beforeEach() {
-        initMock()
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
@@ -450,7 +428,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/b/c/d/e/2.txt", false))
         nodeService.createNode(createRequest("/a/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/b",
@@ -486,7 +464,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/1.txt", false))
         nodeService.createNode(createRequest("/ab", true))
 
-        var moveRequest = NodeMoveRequest(
+        var moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/b",
@@ -514,7 +492,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/data/mkdir/aa.txt", false))
         nodeService.createNode(createRequest("/data/dir3", true))
 
-        moveRequest = NodeMoveRequest(
+        moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/data/mkdir/aa.txt",
@@ -531,7 +509,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/1.txt", false))
         nodeService.createNode(createRequest("/ab", true))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/1.txt",
@@ -552,7 +530,7 @@ class NodeServiceTest @Autowired constructor(
     fun testMoveFileToNotExistPath() {
         nodeService.createNode(createRequest("/a/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/1.txt",
@@ -577,7 +555,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/abc/a/1.txt", false, size = 2))
 
         // path -> path
-        var moveRequest = NodeMoveRequest(
+        var moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a",
@@ -591,7 +569,7 @@ class NodeServiceTest @Autowired constructor(
         var node = nodeService.getNodeDetail(node("/ab/a/1.txt"))!!
         assertEquals(1, node.size)
 
-        moveRequest = NodeMoveRequest(
+        moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/ab/a/1.txt",
@@ -611,7 +589,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/1.txt", false))
         nodeService.createNode(createRequest("/ab/a/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a",
@@ -627,7 +605,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/1.txt", false))
         nodeService.createNode(createRequest("/a/b/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a",
@@ -642,7 +620,7 @@ class NodeServiceTest @Autowired constructor(
     fun testMovePathToParentPath() {
         nodeService.createNode(createRequest("/a/b/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/b",
@@ -660,7 +638,7 @@ class NodeServiceTest @Autowired constructor(
     fun testMoveToRootPath() {
         nodeService.createNode(createRequest("/a/b/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/b",
@@ -678,7 +656,7 @@ class NodeServiceTest @Autowired constructor(
     fun testMoveFileToRootPath() {
         nodeService.createNode(createRequest("/a/b/1.txt", false))
 
-        val moveRequest = NodeMoveRequest(
+        val moveRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/b/1.txt",
@@ -699,7 +677,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/b/c/d/e/2.txt", false))
         nodeService.createNode(createRequest("/a/1.txt", false))
 
-        val copyRequest = NodeCopyRequest(
+        val copyRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/b",
@@ -731,7 +709,7 @@ class NodeServiceTest @Autowired constructor(
         nodeService.createNode(createRequest("/a/1.txt", false))
         nodeService.createNode(createRequest("/b", true))
 
-        val copyRequest = NodeCopyRequest(
+        val copyRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a/1.txt",
@@ -750,7 +728,7 @@ class NodeServiceTest @Autowired constructor(
     fun testCopyWithMetadata() {
         nodeService.createNode(createRequest("/a", false, metadata = mapOf("key" to "value")))
 
-        val copyRequest = NodeCopyRequest(
+        val copyRequest = NodeMoveCopyRequest(
             srcProjectId = UT_PROJECT_ID,
             srcRepoName = UT_REPO_NAME,
             srcFullPath = "/a",
@@ -761,7 +739,12 @@ class NodeServiceTest @Autowired constructor(
         assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
     }
 
-    private fun createRequest(fullPath: String = "/a/b/c", folder: Boolean = true, size: Long = 1, metadata: Map<String, String>? = null): NodeCreateRequest {
+    private fun createRequest(
+        fullPath: String = "/a/b/c",
+        folder: Boolean = true,
+        size: Long = 1,
+        metadata: Map<String, String>? = null
+    ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,

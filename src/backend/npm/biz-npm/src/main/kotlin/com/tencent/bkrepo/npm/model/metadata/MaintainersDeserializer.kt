@@ -39,7 +39,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.tencent.bkrepo.common.api.util.JsonUtils
 
-class MaintainersDeserializer() : JsonDeserializer<JsonNode>() {
+class MaintainersDeserializer : JsonDeserializer<JsonNode>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): JsonNode {
         val node = JsonUtils.objectMapper.readValue(parser, JsonNode::class.java)
         return if (node !is ArrayNode) {

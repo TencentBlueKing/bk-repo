@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.npm.artifact.repository
@@ -116,15 +112,9 @@ class NpmLocalRepository(
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
             operator = context.userId,
-            // metadata = parseMetaData(name, context.getAttributes()),
             overwrite = name != NPM_PACKAGE_TGZ_FILE
         )
     }
-
-    // @Suppress("UNCHECKED_CAST")
-    // fun parseMetaData(name: String, contextAttributes: Map<String, Any>): Map<String, String> {
-    //     return if (name == NPM_PACKAGE_TGZ_FILE) contextAttributes[NPM_METADATA] as Map<String, String> else emptyMap()
-    // }
 
     override fun query(context: ArtifactQueryContext): InputStream? {
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)
@@ -218,7 +208,6 @@ class NpmLocalRepository(
     }
 
     /**
-     *  todo
      *  迁移成功之后需要创建包
      *  迁移tgz包时需要创建node元数据
      */
@@ -289,7 +278,7 @@ class NpmLocalRepository(
                 }.apply {
                     logger.info(
                         "migrate npm package [$name] for version [$version] success, elapse $this ms. " +
-                            "process rate: [${++count}/$totalSize]"
+                                "process rate: [${++count}/$totalSize]"
                     )
                 }
                 packageMigrateDetail.addSuccessVersion(version)
@@ -318,11 +307,7 @@ class NpmLocalRepository(
         val fullPath = NpmUtils.getPackageMetadataPath(name)
         try {
             with(context) {
-                val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-                val originalPackageMetadata = node?.let {
-                    val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
-                    JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
-                }
+                val originalPackageMetadata = npmPackageMetaData(fullPath)
                 val newPackageMetaData = if (originalPackageMetadata != null) {
                     // 比对合并package.json，将失败的版本去除
                     comparePackageVersion(originalPackageMetadata, packageMetaData, failVersionList, versionSizeMap)
@@ -331,14 +316,7 @@ class NpmLocalRepository(
                     migratePackageVersion(packageMetaData, failVersionList, versionSizeMap)
                 } ?: return
                 // 调整tarball地址
-                val versionMetaData = newPackageMetaData.versions.map.values.iterator().next()
-                with(versionMetaData) {
-                    if (!NpmUtils.isDashSeparateInTarball(name, version!!, dist?.tarball!!)) {
-                        packageMetaData.versions.map.values.forEach {
-                            adjustTarball(it)
-                        }
-                    }
-                }
+                adjustTarball(newPackageMetaData, name, packageMetaData)
                 // 存储package.json文件
                 context.putAttribute(NPM_FILE_FULL_PATH, NpmUtils.getPackageMetadataPath(name))
                 val artifactFile = JsonUtils.objectMapper.writeValueAsBytes(newPackageMetaData).inputStream()
@@ -356,6 +334,29 @@ class NpmLocalRepository(
         }
     }
 
+    private fun adjustTarball(
+        newPackageMetaData: NpmPackageMetaData,
+        name: String,
+        packageMetaData: NpmPackageMetaData
+    ) {
+        val versionMetaData = newPackageMetaData.versions.map.values.iterator().next()
+        with(versionMetaData) {
+            if (!NpmUtils.isDashSeparateInTarball(name, version!!, dist?.tarball!!)) {
+                packageMetaData.versions.map.values.forEach {
+                    adjustTarball(it)
+                }
+            }
+        }
+    }
+
+    private fun ArtifactMigrateContext.npmPackageMetaData(fullPath: String): NpmPackageMetaData? {
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return node?.let {
+            val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
+            JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
+        }
+    }
+
     private fun comparePackageVersion(
         originalPackageMetadata: NpmPackageMetaData,
         packageMetaData: NpmPackageMetaData,
@@ -363,7 +364,7 @@ class NpmLocalRepository(
         versionSizeMap: Map<String, Long>
     ): NpmPackageMetaData {
         addPackageSizeField(originalPackageMetadata, versionSizeMap)
-        val name = originalPackageMetadata.name
+        val name = originalPackageMetadata.name.orEmpty()
         val originalVersionSet = originalPackageMetadata.versions.map.keys
         val remoteVersionList = packageMetaData.versions.map.keys
         remoteVersionList.removeAll(originalVersionSet)
@@ -373,40 +374,62 @@ class NpmLocalRepository(
         val distTags = packageMetaData.distTags
         val timeMap = packageMetaData.time
         // 迁移dist_tags
+        migrateDistTags(distTags, originalDistTags)
+        // 迁移latest版本
+        migrateLatest(distTags, originalDistTags, timeMap, originalTimeMap)
+        logger.info(
+            "the different versions of the  package [$name] is [$remoteVersionList], " +
+                    "size : ${remoteVersionList.size}"
+        )
+        if (remoteVersionList.isEmpty()) return originalPackageMetadata
+        // 说明有版本更新，将新增的版本迁移过来
+        remoteVersionList.forEach { it ->
+            val versionMetadata = packageMetaData.versions.map[it]!!
+            val versionTime = timeMap.get(it)
+            // 比较两边都存在相同的版本，则比较上传时间, 如果remote版本在后面上传，则进行迁移
+            if (originalVersionSet.contains(it)) {
+                if (TimeUtil.compareTime(versionTime, originalTimeMap.get(it))) {
+                    originalPackageMetadata.versions.map[it] = versionMetadata
+                    originalTimeMap.add(it, versionTime)
+                    migrateDistTagsToOriginal(distTags, originalDistTags)
+                }
+            } else {
+                originalPackageMetadata.versions.map[it] = versionMetadata
+                originalTimeMap.add(it, versionTime)
+            }
+        }
+        return originalPackageMetadata
+    }
+
+    private fun migrateDistTagsToOriginal(
+        distTags: NpmPackageMetaData.DistTags,
+        originalDistTags: NpmPackageMetaData.DistTags
+    ) {
+        distTags.getMap().entries.forEach {
+            originalDistTags.set(it.key, it.value)
+        }
+    }
+
+    private fun migrateDistTags(distTags: NpmPackageMetaData.DistTags, originalDistTags: NpmPackageMetaData.DistTags) {
         distTags.getMap().entries.forEach {
             if (!originalDistTags.getMap().keys.contains(it.key)) {
                 originalDistTags.set(it.key, it.value)
             }
         }
-        // 迁移latest版本
+    }
+
+    private fun migrateLatest(
+        distTags: NpmPackageMetaData.DistTags,
+        originalDistTags: NpmPackageMetaData.DistTags,
+        timeMap: NpmPackageMetaData.Time,
+        originalTimeMap: NpmPackageMetaData.Time
+    ) {
         val remoteLatest = NpmUtils.getLatestVersionFormDistTags(distTags)
         val originalLatest = NpmUtils.getLatestVersionFormDistTags(originalDistTags)
         if (TimeUtil.compareTime(timeMap.get(remoteLatest), originalTimeMap.get(originalLatest))) {
             originalDistTags.set("latest", remoteLatest)
             originalTimeMap.add("modified", timeMap.get("modified"))
         }
-        logger.info("the different versions of the  package [$name] is [$remoteVersionList], size : ${remoteVersionList.size}")
-        if (remoteVersionList.isNotEmpty()) {
-            // 说明有版本更新，将新增的版本迁移过来
-            remoteVersionList.forEach { it ->
-                val versionMetadata = packageMetaData.versions.map[it]!!
-                val versionTime = timeMap.get(it)
-                // 比较两边都存在相同的版本，则比较上传时间, 如果remote版本在后面上传，则进行迁移
-                if (originalVersionSet.contains(it)) {
-                    if (TimeUtil.compareTime(timeMap.get(it), originalTimeMap.get(it))) {
-                        originalPackageMetadata.versions.map[it] = versionMetadata
-                        originalTimeMap.add(it, versionTime)
-                        distTags.getMap().entries.forEach {
-                            originalDistTags.set(it.key, it.value)
-                        }
-                    }
-                } else {
-                    originalPackageMetadata.versions.map[it] = versionMetadata
-                    originalTimeMap.add(it, versionTime)
-                }
-            }
-        }
-        return originalPackageMetadata
     }
 
     /**
@@ -479,7 +502,7 @@ class NpmLocalRepository(
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with version metadata [$name-$version.json] " +
-                        "is already exists in repository [$projectId/$repoName], skip migration."
+                            "is already exists in repository [$projectId/$repoName], skip migration."
                 )
                 return
             }
@@ -498,7 +521,7 @@ class NpmLocalRepository(
     ): Long {
         // 包的大小信息
         with(context) {
-            var size: Long = 0L
+            var size = 0L
             var response: Response? = null
             val fullPath = NpmUtils.getTgzPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
@@ -506,7 +529,7 @@ class NpmLocalRepository(
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
                     "package [$name] with tgz file [$fullPath] is " +
-                        "already exists in repository [$projectId/$repoName], skip migration."
+                            "already exists in repository [$projectId/$repoName], skip migration."
                 )
                 return 0L
             }
@@ -563,7 +586,7 @@ class NpmLocalRepository(
                 nodeClient.deleteNode(nodeDeleteRequest)
                 logger.info(
                     "migrate package [$name] with version [$version] failed, " +
-                        "delete package version metadata [$fullPath] success."
+                            "delete package version metadata [$fullPath] success."
                 )
             }
         }

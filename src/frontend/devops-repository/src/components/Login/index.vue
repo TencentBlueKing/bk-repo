@@ -23,7 +23,7 @@
             <bk-form-item>
                 <bk-input
                     class="login-input"
-                    v-model="loginForm.username"
+                    v-model.trim="loginForm.username"
                     size="large"
                     :placeholder="$t('username')"
                     left-icon="bk-icon icon-user">
@@ -32,7 +32,7 @@
             <bk-form-item>
                 <bk-input
                     class="login-input"
-                    v-model="loginForm.password"
+                    v-model.trim="loginForm.password"
                     type="password"
                     size="large"
                     :native-attributes="{
@@ -72,11 +72,24 @@
         computed: {
             ...mapState(['showLoginDialog'])
         },
+        watch: {
+            showLoginDialog (val) {
+                if (val) {
+                    document.addEventListener('keydown', this.enterEvent)
+                } else {
+                    document.removeEventListener('keydown', this.enterEvent)
+                }
+            }
+        },
         methods: {
             ...mapMutations(['SHOW_LOGIN_DIALOG']),
             ...mapActions(['bkrepoLogin']),
             submitLogin () {
                 this.loginFailed = false
+                if (!this.loginForm.username || !this.loginForm.password) {
+                    this.loginFailed = true
+                    return
+                }
                 const formData = new FormData()
                 formData.append('uid', this.loginForm.username)
                 formData.append('token', this.loginForm.password)
@@ -92,6 +105,9 @@
                         this.loginFailed = true
                     }
                 })
+            },
+            enterEvent (e) {
+                if (e.keyCode === 13) this.submitLogin()
             }
         }
     }

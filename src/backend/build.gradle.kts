@@ -47,6 +47,8 @@ allprojects {
             dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
             dependency("com.google.code.gson:gson:2.8.6")
+            dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:5.11.0.202103091610-r")
+            dependency("org.eclipse.jgit:org.eclipse.jgit:5.11.0.202103091610-r")
         }
     }
     configurations.all {
@@ -54,6 +56,13 @@ allprojects {
         exclude(group = "org.slf4j", module = "slf4j-log4j12")
         exclude(group = "commons-logging", module = "commons-logging")
     }
+
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions {
+            freeCompilerArgs = listOf("-java-parameters")
+        }
+    }
 }
 
-apply(from = rootProject.file("gradle/publish.gradle.kts"))
+apply(from = rootProject.file("gradle/publish-api.gradle.kts"))
+apply(from = rootProject.file("gradle/publish-all.gradle.kts"))

@@ -65,6 +65,11 @@ class BkAuthService @Autowired constructor(
         .expireAfterWrite(40, TimeUnit.SECONDS)
         .build<String, Boolean>()
 
+    private val projectPermissionCache = CacheBuilder.newBuilder()
+        .maximumSize(20000)
+        .expireAfterWrite(40, TimeUnit.SECONDS)
+        .build<String, Boolean>()
+
     fun validateUserResourcePermission(
         user: String,
         serviceCode: BkAuthServiceCode,
@@ -82,7 +87,9 @@ class BkAuthService @Autowired constructor(
         }
 
         val accessToken = bkAuthTokenService.getAccessToken(serviceCode)
-        val url = "${bkAuthConfig.getBkAuthServer()}/permission/project/service/policy/resource/user/verfiy?access_token=$accessToken"
+        val url = "${bkAuthConfig.getBkAuthServer()}/permission/project/service/policy/resource/user/verfiy?" +
+            "access_token=$accessToken"
+        logger.debug("validateUserResourcePermission, requestUrl: $url")
         val bkAuthPermissionRequest = BkAuthPermissionRequest(
             projectCode = projectCode,
             serviceCode = serviceCode.value,
@@ -154,6 +161,38 @@ class BkAuthService @Autowired constructor(
             throw RuntimeException("get user resource permission failed")
         }
         return responseObject.data ?: listOf()
+    }
+
+    fun isProjectMember(user: String, projectCode: String, retryIfTokenInvalid: Boolean = false): Boolean {
+        val cacheKey = "$user::$projectCode"
+        val cacheResult = projectPermissionCache.getIfPresent(cacheKey)
+        if (cacheResult != null) {
+            logger.debug("match in cache: $cacheKey|$cacheResult")
+            return cacheResult
+        }
+
+        val accessToken = bkAuthTokenService.getAccessToken(BkAuthServiceCode.ARTIFACTORY)
+        val url = "${bkAuthConfig.getBkAuthServer()}/projects/$projectCode/users/$user/verfiy?access_token=$accessToken"
+        logger.debug("isProjectMember, requestUrl: $url")
+        val body = RequestBody.create(MediaType.parse("application/json; charset=utf-8"), "")
+        val request = Request.Builder().url(url).post(body).build()
+        val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+        val responseObject = objectMapper.readValue<BkAuthResponse<Any>>(apiResponse.content)
+        if (responseObject.code != 0) {
+            if (responseObject.code == 403 && retryIfTokenInvalid) {
+                bkAuthTokenService.getAccessToken(BkAuthServiceCode.ARTIFACTORY, accessToken)
+                return isProjectMember(user, projectCode, false)
+            }
+            if (responseObject.code == 400) {
+                logger.info("user[$user] not member of project $projectCode")
+                projectPermissionCache.put(cacheKey, false)
+                return false
+            }
+            logger.error("verify project member failed. ${apiResponse.content}")
+            throw RuntimeException("verify project member failed")
+        }
+        projectPermissionCache.put(cacheKey, true)
+        return true
     }
 
     companion object {

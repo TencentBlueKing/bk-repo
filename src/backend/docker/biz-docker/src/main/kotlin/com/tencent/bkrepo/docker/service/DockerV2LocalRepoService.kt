@@ -188,13 +188,15 @@ class DockerV2LocalRepoService @Autowired constructor(
         RepoUtil.loadContext(artifactRepo, context)
         logger.info("get manifest params [$context,$reference]")
         // packageRepo.addDownloadStatic(context, reference)
-        return try {
+
+        // get manifest by sha256
+        if (DockerDigest.isValid(reference)) {
             val digest = DockerDigest(reference)
-            manifestProcess.getManifestByDigest(context, digest, httpHeaders)
-        } catch (exception: IllegalArgumentException) {
-            logger.warn("unable to parse digest, get manifest by tag [$context,$reference]")
-            manifestProcess.getManifestByTag(context, reference, httpHeaders)
+            return manifestProcess.getManifestByDigest(context, digest, httpHeaders)
         }
+        // get manifest by tag
+        logger.info("unable to parse digest, get manifest by tag [$context,$reference]")
+        return manifestProcess.getManifestByTag(context, reference, httpHeaders)
     }
 
     override fun getRepoList(
@@ -246,7 +248,10 @@ class DockerV2LocalRepoService @Autowired constructor(
     override fun buildLayerResponse(context: RequestContext, layerId: String): DockerResponse {
         RepoUtil.loadContext(artifactRepo, context)
         val digest = DockerDigest(layerId)
-        val artifact = artifactRepo.getBlobListByDigest(context.projectId, context.repoName, digest.fileName()) ?: run {
+        val artifact = artifactRepo.getBlobListByDigest(
+            context.projectId, context.repoName,
+            digest.fileName()
+        ) ?: run {
             logger.warn("user [$context]  get artifact  [$this] fail: [$layerId] not found")
             throw DockerRepoNotFoundException(layerId)
         }
@@ -263,7 +268,8 @@ class DockerV2LocalRepoService @Autowired constructor(
             }.apply {
                 set(CONTENT_TYPE, contentType)
             }
-            return ResponseEntity.ok().headers(httpHeaders).contentLength(downloadContext.length).body(inputStreamResource)
+            return ResponseEntity.ok().headers(httpHeaders).contentLength(downloadContext.length)
+                .body(inputStreamResource)
         }
     }
 
@@ -418,7 +424,12 @@ class DockerV2LocalRepoService @Autowired constructor(
     }
 
     // upload a blob file
-    override fun uploadBlob(context: RequestContext, digest: DockerDigest, uuid: String, file: ArtifactFile): DockerResponse {
+    override fun uploadBlob(
+        context: RequestContext,
+        digest: DockerDigest,
+        uuid: String,
+        file: ArtifactFile
+    ): DockerResponse {
         logger.info("upload blob [$context,$digest ,$uuid]")
         RepoUtil.loadContext(artifactRepo, context)
         return if (ResponseUtil.putHasStream(httpHeaders)) {
@@ -530,13 +541,12 @@ class DockerV2LocalRepoService @Autowired constructor(
             if (!artifactRepo.canWrite(context)) {
                 return DockerV2Errors.manifestUnknown(digest.toString())
             }
-            with(context) {
-                val manifestDigest = artifactRepo.getAttribute(projectId, repoName, fullPath, digest.getDigestAlg())
-                manifestDigest.let {
-                    if (StringUtils.equals(manifestDigest, digest.getDigestHex())) {
-                        // repo.delete(fullPath)
-                    }
-                }
+            val manifestDigest = artifactRepo.getAttribute(
+                context.projectId, context.repoName,
+                fullPath, digest.getDigestAlg()
+            )
+            if (manifestDigest != null && StringUtils.equals(manifestDigest, digest.getDigestHex())) {
+                // repo.delete(fullPath)
             }
         }
         return ResponseEntity.status(HttpStatus.ACCEPTED).header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION).build()
@@ -550,7 +560,8 @@ class DockerV2LocalRepoService @Autowired constructor(
             return ResponseUtil.consumeStreamAndReturnError(file.getInputStream())
         }
         logger.info("deploy docker blob [$blobPath] into [$context]")
-        val uploadContext = UploadContext(context.projectId, context.repoName, blobPath).sha256(digest.getDigestHex()).artifactFile(file)
+        val uploadContext = UploadContext(context.projectId, context.repoName, blobPath)
+            .sha256(digest.getDigestHex()).artifactFile(file)
         if (!artifactRepo.upload(uploadContext)) {
             logger.warn("error upload blob [$blobPath]")
             return DockerV2Errors.blobUploadInvalid(context.artifactName)

@@ -160,6 +160,15 @@ interface PackageClient {
         @RequestBody option: PackageListOption = PackageListOption()
     ): Response<Page<PackageSummary>>
 
+    @ApiOperation("列出包中已存在的版本")
+    @PostMapping("/exist/list/{projectId}/{repoName}")
+    fun listExistPackageVersion(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestBody packageVersionList: List<String> = emptyList()
+    ): Response<List<String>>
+
     @ApiOperation("查询所有包名称")
     @PostMapping("/package/list/{projectId}/{repoName}")
     fun listAllPackageNames(
@@ -176,10 +185,8 @@ interface PackageClient {
 
     /**
      * 包版本数据填充，该过程会自动累加downloads和version数量到包信息中
-     *
      * 1. 如果包已经存在则不会更新包，跳到步骤2，否则创建新包
      * 2. 遍历versionList进行版本创建，如果版本已经存在则跳过。
-     *
      */
     @ApiOperation("包版本数据填充")
     @PostMapping("/package/populate")

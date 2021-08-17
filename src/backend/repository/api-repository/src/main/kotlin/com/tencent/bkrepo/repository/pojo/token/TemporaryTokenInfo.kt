@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("临时token信息")
-data class TemporaryTokenInfo (
+data class TemporaryTokenInfo(
     @ApiModelProperty("项目")
     val projectId: String,
     @ApiModelProperty("仓库")
@@ -51,7 +51,9 @@ data class TemporaryTokenInfo (
     @ApiModelProperty("过期时间")
     val expireDate: String?,
     @ApiModelProperty("允许下载次数")
-    var permits: Int?,
+    val permits: Int?,
     @ApiModelProperty("token类型")
-    val type: TokenType
+    val type: TokenType,
+    @ApiModelProperty("创建者")
+    val createdBy: String
 )

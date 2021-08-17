@@ -77,9 +77,14 @@ object LoggerHolder {
         val method = request?.method
         val exceptionMessage = message ?: exception.message.orEmpty()
         val exceptionName = exception.javaClass.simpleName
+        val cause = if (exception is ErrorCodeException && exception.cause != null) {
+            exception.cause
+        } else {
+            exception
+        }
         val fullMessage = "User[$principal] $method [$uri] from [$channel] failed[$exceptionName]: $exceptionMessage"
         if (systemError) {
-            exceptionLogger.error(fullMessage, exception)
+            exceptionLogger.error(fullMessage, cause)
         } else {
             exceptionLogger.warn(fullMessage)
         }
@@ -88,7 +93,7 @@ object LoggerHolder {
     private fun determineAccessChannel(request: HttpServletRequest?): String {
         return when {
             request == null -> "None"
-            request.getAttribute(MS_REQUEST_KEY) as? Boolean == true -> "MicroService"
+            request.getAttribute(MS_REQUEST_KEY) != null -> "MicroService"
             else -> "Api"
         }
     }

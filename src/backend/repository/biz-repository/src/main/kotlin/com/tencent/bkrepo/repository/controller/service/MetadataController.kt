@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.service.MetadataService
+import com.tencent.bkrepo.repository.service.metadata.MetadataService
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -59,13 +59,5 @@ class MetadataController(
     override fun deleteMetadata(request: MetadataDeleteRequest): Response<Void> {
         metadataService.deleteMetadata(request)
         return ResponseBuilder.success()
-    }
-
-    override fun save(request: MetadataSaveRequest): Response<Void> {
-        return saveMetadata(request)
-    }
-
-    override fun delete(request: MetadataDeleteRequest): Response<Void> {
-        return deleteMetadata(request)
     }
 }

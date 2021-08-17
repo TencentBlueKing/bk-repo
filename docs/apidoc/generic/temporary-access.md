@@ -92,7 +92,9 @@
     "authorizedIpSet": ["127.0.0.1", "192.168.191.1"],
     "expireSeconds": 3600,
     "permits": 1,
-    "type": "DOWNLOAD"
+    "type": "DOWNLOAD",
+    "host": "http://custom-host.com/",
+    "needsNotify": false
   }
   ```
 
@@ -108,6 +110,8 @@
   |expireSeconds|long|否|3600*24|token有效时间，单位秒，小于等于0则永久有效|expire seconds|
   |permits|int|否|null|允许访问次数，null表示无限制|access permits|
   |type|string|是|无|token类型。UPLOAD:允许上传, DOWNLOAD: 允许下载, ALL: 同时允许上传和下载|token type|
+  |host|string|否|无|自定义分享链接host，不指定则使用系统默认host|custom url host|
+  |needsNotify|boolean|否|false|是否通知授权访问用户|notify authorized users|
 
 - 响应体
 

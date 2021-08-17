@@ -9,7 +9,7 @@
                 <div class="flex-column">
                     <span class="sub-title">
                         {{ $t('tokenSubTitle') }}
-                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                        <router-link class="router-link" :to="{ name: 'userCenter' }">{{ $t('token') }}</router-link>
                     </span>
                     <div class="token-main">
                         <bk-button class="mt15" theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
@@ -41,7 +41,7 @@
         props: {
             article: {
                 type: Array,
-                default: []
+                default: () => []
             }
         },
         data () {
@@ -59,7 +59,7 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .repo-guide-container {
-    /deep/ .bk-collapse-item {
+    ::v-deep .bk-collapse-item {
         margin-bottom: 20px;
         .bk-collapse-item-detail {
             color: inherit;

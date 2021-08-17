@@ -68,7 +68,11 @@ class RpmService(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun install(rpmArtifactInfo: RpmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        repository.downloadRetry(context)
+        if (rpmArtifactInfo.getArtifactFullPath().endsWith(REPOMD_XML)) {
+            repository.downloadRetry(context)
+        } else {
+            repository.download(context)
+        }
     }
 
     private fun ArtifactRepository.downloadRetry(context: ArtifactDownloadContext) {
@@ -78,7 +82,7 @@ class RpmService(
                 break
             } catch (e: ArtifactNotFoundException) {
                 if (i == 4) throw e
-                Thread.sleep(i * 2 * 1000L)
+                Thread.sleep(i * 1000L)
             }
         }
     }
@@ -94,8 +98,10 @@ class RpmService(
         val context = ArtifactSearchContext()
         groups.removeAll(rpmIndexSet)
         val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
-        val oldGroups = (rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-            ?: mutableListOf()).toMutableSet()
+        val oldGroups = (
+                rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
+                    ?: mutableListOf()
+                ).toMutableSet()
         oldGroups.addAll(groups)
         rpmConfiguration.settings["groupXmlSet"] = oldGroups
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
@@ -108,8 +114,10 @@ class RpmService(
     fun deleteGroups(rpmArtifactInfo: RpmArtifactInfo, groups: MutableSet<String>) {
         val context = ArtifactSearchContext()
         val rpmConfiguration = getRpmRepoConf(context.projectId, context.repoName)
-        val oldGroups = (rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
-            ?: mutableListOf()).toMutableSet()
+        val oldGroups = (
+                rpmConfiguration.getSetting<MutableList<String>>("groupXmlSet")
+                    ?: mutableListOf()
+                ).toMutableSet()
         oldGroups.removeAll(groups)
         rpmConfiguration.settings["groupXmlSet"] = oldGroups
         val repoUpdateRequest = createRepoUpdateRequest(context, rpmConfiguration)
@@ -123,12 +131,12 @@ class RpmService(
         rpmConfiguration: RepositoryConfiguration
     ): RepoUpdateRequest {
         return RepoUpdateRequest(
-            context.artifactInfo.projectId,
-            context.artifactInfo.repoName,
-            context.repositoryDetail.public,
-            context.repositoryDetail.description,
-            rpmConfiguration,
-            context.userId
+            projectId = context.artifactInfo.projectId,
+            name = context.artifactInfo.repoName,
+            public = context.repositoryDetail.public,
+            description = context.repositoryDetail.description,
+            configuration = rpmConfiguration,
+            operator = context.userId
         )
     }
 
@@ -143,5 +151,4 @@ class RpmService(
             ?: throw RpmConfNotFoundException("can not found $project | $repoName conf")
         return repositoryInfo.configuration
     }
-
 }

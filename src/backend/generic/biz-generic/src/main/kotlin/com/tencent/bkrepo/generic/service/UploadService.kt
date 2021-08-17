@@ -31,8 +31,6 @@
 
 package com.tencent.bkrepo.generic.service
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -41,7 +39,6 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader

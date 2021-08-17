@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
-import com.tencent.bkrepo.repository.service.TemporaryTokenService
+import com.tencent.bkrepo.repository.service.file.TemporaryTokenService
 import org.springframework.web.bind.annotation.RestController
 
 /**

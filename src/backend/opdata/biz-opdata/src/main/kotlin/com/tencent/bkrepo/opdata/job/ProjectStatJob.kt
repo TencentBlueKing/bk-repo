@@ -50,7 +50,7 @@ class ProjectStatJob(
     private val projectMetricsRepository: ProjectMetricsRepository
 ) {
 
-    @Scheduled(cron = "00 15 * * * ?")
+    @Scheduled(cron = "00 15 */12 * * ?")
     @SchedulerLock(name = "ProjectStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat node table metrics")

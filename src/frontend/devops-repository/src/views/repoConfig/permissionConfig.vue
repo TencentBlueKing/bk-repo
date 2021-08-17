@@ -10,7 +10,8 @@
                 </div>
             </header>
             <div slot="content" class="section-main">
-                <template v-for="part in ['users', 'roles', ...(section !== admin ? ['departments'] : [])]">
+                <!-- <template v-for="part in ['users', 'roles', ...(section !== admin ? ['departments'] : [])]"> -->
+                <template v-for="part in ['users', 'roles']">
                     <header :key="part + 'header'" class="section-sub-title flex-align-center">
                         <span>{{section[part].title}}</span>
                         <i class="ml10 devops-icon hover-btn"
@@ -116,28 +117,28 @@
                 admin: {
                     name: 'admin',
                     loading: false,
-                    title: '管理者',
+                    title: this.$t('admin'),
                     icon: 'perm-controller',
                     id: '',
                     actions: {
                         data: []
                     },
                     users: {
-                        title: '用户',
+                        title: this.$t('user'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     roles: {
-                        title: '用户组',
+                        title: this.$t('userGroup'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     departments: {
-                        title: '组织',
+                        title: this.$t('department'),
                         showAddArea: false,
                         data: [],
                         addList: [],
@@ -147,28 +148,28 @@
                 user: {
                     name: 'user',
                     loading: false,
-                    title: '使用者',
+                    title: this.$t('users'),
                     icon: 'perm-user',
                     id: '',
                     actions: {
                         data: []
                     },
                     users: {
-                        title: '用户',
+                        title: this.$t('user'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     roles: {
-                        title: '用户组',
+                        title: this.$t('userGroup'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     departments: {
-                        title: '组织',
+                        title: this.$t('department'),
                         showAddArea: false,
                         data: [],
                         addList: [],
@@ -178,35 +179,34 @@
                 viewer: {
                     name: 'viewer',
                     loading: false,
-                    title: '查看者',
+                    title: this.$t('viewer'),
                     icon: 'perm-viewer',
                     id: '',
                     actions: {
                         data: []
                     },
                     users: {
-                        title: '用户',
+                        title: this.$t('user'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     roles: {
-                        title: '用户组',
+                        title: this.$t('userGroup'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     departments: {
-                        title: '组织',
+                        title: this.$t('department'),
                         showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     }
                 },
-                userList: {},
                 roleList: {},
                 flatDepartment: {},
                 departmentTree: [],
@@ -220,7 +220,7 @@
             }
         },
         computed: {
-            ...mapState(['userInfo']),
+            ...mapState(['userInfo', 'userList']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -246,24 +246,9 @@
                 return (target) => {
                     return target.data.filter(v => !target.deleteList.find(w => w === v))
                 }
-            },
-            filterSelectOptions () {
-                return (target, part) => {
-                    const list = Object.values({ users: this.userList, roles: this.roleList }[part])
-                    return list.filter(v => !target.data.find(w => w === v.id))
-                }
             }
         },
         created () {
-            this.getRepoUserList().then(res => {
-                this.userList = res.reduce((target, item) => {
-                    target[item.userId] = {
-                        id: item.userId,
-                        name: item.name
-                    }
-                    return target
-                }, {})
-            })
             this.getRepoRoleList({
                 projectId: this.projectId,
                 repoName: this.repoName
@@ -285,7 +270,6 @@
         methods: {
             ...mapActions([
                 'getPermissionDetail',
-                'getRepoUserList',
                 'getRepoRoleList',
                 'getRepoDepartmentList',
                 'setUserPermission',
@@ -294,6 +278,10 @@
                 'setActionPermission',
                 'getRepoDepartmentDetail'
             ]),
+            filterSelectOptions (target, part) {
+                const list = Object.values({ users: this.userList, roles: this.roleList }[part])
+                return list.filter(v => !target.data.find(w => w === v.id) && v.id !== 'anonymous')
+            },
             handleShowAddArea (target) {
                 target.showAddArea = !target.showAddArea
             },
@@ -443,7 +431,7 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .permission-config-container {
-    /deep/ .bk-collapse-item {
+    ::v-deep .bk-collapse-item {
         margin-bottom: 20px;
         .bk-collapse-item-detail {
             color: inherit;
@@ -476,7 +464,7 @@
         padding: 10px;
         border: solid #d5d5d5;
         border-width: 0 1px 1px;
-        /deep/ .bk-select-empty {
+        ::v-deep .bk-select-empty {
             display: none;
         }
         .section-sub-title {

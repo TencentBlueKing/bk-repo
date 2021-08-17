@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.auth.service.bkiam
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.tencent.bkrepo.auth.pojo.IamBaseReq
-import com.tencent.bkrepo.auth.pojo.IamCreateApiReq
-import com.tencent.bkrepo.auth.pojo.IamPermissionUrlReq
+import com.tencent.bkrepo.auth.pojo.iam.IamBaseReq
+import com.tencent.bkrepo.auth.pojo.iam.IamCreateApiReq
+import com.tencent.bkrepo.auth.pojo.iam.IamPermissionUrlReq
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import okhttp3.MediaType
@@ -99,10 +99,12 @@ class IamEsbClient {
     private val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
         @Throws(CertificateException::class)
         override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+            // no-op
         }
 
         @Throws(CertificateException::class)
         override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {
+            // no-op
         }
 
         override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> {

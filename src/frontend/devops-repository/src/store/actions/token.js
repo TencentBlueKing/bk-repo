@@ -28,16 +28,6 @@ export default {
             `${prefix}/user/token/${username}/${name}`
         )
     },
-    // 查询用户信息
-    ajaxUserInfo ({ commit }) {
-        return Vue.prototype.$ajax.get(
-            `${prefix}/user/info`
-        ).then(res => {
-            res && commit('SET_USER_INFO', {
-                username: res.userId
-            })
-        })
-    },
     // 登录
     bkrepoLogin (_, formData) {
         return Vue.prototype.$ajax.post(

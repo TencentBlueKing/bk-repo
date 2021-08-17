@@ -33,7 +33,6 @@ package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -41,8 +40,10 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.pojo.user.UserResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -63,7 +64,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceUserResource")
-@RequestMapping(AUTH_USER_PREFIX, AUTH_API_USER_PREFIX, AUTH_SERVICE_USER_PREFIX)
+@RequestMapping(AUTH_SERVICE_USER_PREFIX, AUTH_API_USER_PREFIX)
 interface ServiceUserResource {
 
     @ApiOperation("创建项目用户")
@@ -193,6 +194,7 @@ interface ServiceUserResource {
 
     @ApiOperation("校验用户token")
     @GetMapping("/token/{uid}/{token}")
+    @Deprecated("接口改为post方式")
     fun checkUserToken(
         @ApiParam(value = "用户id")
         @PathVariable uid: String,
@@ -201,6 +203,15 @@ interface ServiceUserResource {
     ): Response<Boolean>
 
     @ApiOperation("校验用户token")
+    @PostMapping("/token")
+    fun checkToken(
+        @ApiParam(value = "用户id")
+        @RequestParam uid: String,
+        @ApiParam(value = "用户token")
+        @RequestParam token: String
+    ): Response<Boolean>
+
+    @ApiOperation("校验用户会话token")
     @PostMapping("/login")
     fun loginUser(
         @ApiParam(value = "用户id")
@@ -222,4 +233,34 @@ interface ServiceUserResource {
         @ApiParam(value = "用户id")
         @RequestParam(value = "bkrepo_ticket") bkrepoToken: String?
     ): Response<Map<String, Any>>
+
+    @ApiOperation("用户分页列表")
+    @GetMapping("page/{pageNumber}/{pageSize}")
+    fun userPage(
+        @PathVariable pageNumber: Int,
+        @PathVariable pageSize: Int,
+        @RequestParam user: String? = null,
+        @RequestParam admin: Boolean?,
+        @RequestParam locked: Boolean?
+    ): Response<Page<UserInfo>>
+
+    @ApiOperation("修改用户密码")
+    @PutMapping("/update/password/{uid}")
+    fun updatePassword(
+        @PathVariable uid: String,
+        @RequestParam oldPwd: String,
+        @RequestParam newPwd: String
+    ): Response<Boolean>
+
+    @ApiOperation("用户info ")
+    @GetMapping("/userinfo/{uid}")
+    fun userInfoById(@PathVariable uid: String): Response<UserInfo?>
+
+    @ApiOperation("用户info ")
+    @GetMapping("/reset/{uid}")
+    fun resetPassword(@PathVariable uid: String): Response<Boolean>
+
+    @ApiOperation("检验系统中是否存在同名userId ")
+    @GetMapping("/repeat/{uid}")
+    fun repeatUid(@PathVariable uid: String): Response<Boolean>
 }

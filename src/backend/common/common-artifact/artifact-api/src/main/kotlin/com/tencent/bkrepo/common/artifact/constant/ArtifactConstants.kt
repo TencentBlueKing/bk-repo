@@ -35,18 +35,22 @@ package com.tencent.bkrepo.common.artifact.constant
  * 查询仓库后将仓库写入request attributes的key
  */
 const val REPO_KEY = "repository"
+
 /**
  * 解析构件信息后写入request attributes的key
  */
 const val ARTIFACT_INFO_KEY = "artifact"
+
 /**
  * 查询构件配置写入request attributes的key
  */
 const val ARTIFACT_CONFIGURER = "artifact-configurer"
+
 /**
  * 项目id字段
  */
 const val PROJECT_ID = "projectId"
+
 /**
  * 仓库名称字段
  */
@@ -56,6 +60,10 @@ const val REPO_NAME = "repoName"
  * 构件传输相关
  */
 const val OCTET_STREAM = "octet-stream"
+
+/**
+ * Http Content Disposition模板
+ */
 const val CONTENT_DISPOSITION_TEMPLATE = "attachment;filename=\"%s\";filename*=UTF-8''%s"
 
 /**
@@ -67,10 +75,12 @@ const val TRAVERSED_LIST = "traversed"
  * 公共源代理项目名称
  */
 const val PUBLIC_PROXY_PROJECT = "public-proxy"
+
 /**
  * 公共源代理仓库名称, <RepoType>-<ChannelName>
  */
 const val PUBLIC_PROXY_REPO_NAME = "%s-%s"
+
 /**
  * 私有源代理仓库名称, <RepoName>-<ChannelName>
  */
@@ -85,9 +95,19 @@ const val DEFAULT_STORAGE_KEY = "default"
  * 响应header check sum
  */
 const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
+const val X_CHECKSUM_SHA256 = "X-Checksum-Sha256"
 
 /**
  * 流水线仓库
  */
 const val PIPELINE = "pipeline"
 
+/**
+ * 文件访问请求是否为直接下载
+ */
+const val PARAM_DOWNLOAD = "download"
+
+/**
+ * 文件访问请求是否为展示
+ */
+const val PARAM_PREVIEW = "preview"

@@ -117,7 +117,10 @@ class BkAuthClient(
                 refreshAccessToken()
                 return checkProjectPermission(user, projectId, true)
             }
-            logger.error("check project permission failed, code: ${projectResponse.code}, message: ${projectResponse.message}")
+            logger.error(
+                "check project permission failed, code: ${projectResponse.code}," +
+                    " message: ${projectResponse.message}"
+            )
             throw RuntimeException("check project permission failed")
         }
         return projectResponse.data!!.projectView.allowed

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.helm.service
 
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import org.springframework.http.ResponseEntity
 import java.time.LocalDateTime
@@ -50,5 +51,15 @@ interface ChartInfoService {
     /**
      * 查询版本详情
      */
-    fun detailVersion(userId: String, artifactInfo: HelmArtifactInfo, packageKey: String, version: String): PackageVersionInfo
+    fun detailVersion(
+        userId: String,
+        artifactInfo: HelmArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo
+
+    /**
+     * 获取helm域名信息
+     */
+    fun getRegistryDomain(): HelmDomainInfo
 }

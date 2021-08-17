@@ -31,13 +31,11 @@
 
 package com.tencent.bkrepo.common.query
 
-import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import org.bson.Document
 import org.junit.jupiter.api.Test
 
 class MongoQueryInterpreterTest {
@@ -61,19 +59,5 @@ class MongoQueryInterpreterTest {
         val builder = MongoQueryInterpreter()
         val query = builder.interpret(queryModel).mongoQuery
         println(query.queryObject)
-
-        println(findProjectId(query.queryObject))
-    }
-
-    private fun findProjectId(document: Document): Any? {
-        for ((key, value) in document) {
-            if (key == "projectId") return value
-            if (key == "\$and") {
-                for (element in value as BasicDBList) {
-                    findProjectId(element as Document)?.let { return it }
-                }
-            }
-        }
-        return null
     }
 }

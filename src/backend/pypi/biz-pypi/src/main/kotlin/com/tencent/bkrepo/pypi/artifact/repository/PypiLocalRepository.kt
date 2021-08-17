@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.pypi.artifact.repository
@@ -34,6 +30,7 @@ package com.tencent.bkrepo.pypi.artifact.repository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -52,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -59,6 +57,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.pypi.artifact.PypiProperties
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataCreateNode
 import com.tencent.bkrepo.pypi.artifact.model.MigrateDataInfo
 import com.tencent.bkrepo.pypi.artifact.model.TMigrateData
@@ -101,12 +100,14 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import javax.servlet.http.HttpServletRequest
 
 @Component
 class PypiLocalRepository(
     private val mongoTemplate: MongoTemplate,
     private val migrateDataRepository: MigrateDataRepository,
-    private val stageClient: StageClient
+    private val stageClient: StageClient,
+    private val pypiProperties: PypiProperties
 ) : LocalRepository() {
 
     /**
@@ -149,11 +150,8 @@ class PypiLocalRepository(
                 packageName = name,
                 packageKey = PackageKeys.ofPypi(name),
                 packageType = PackageType.PYPI,
-                packageDescription = null,
-                packageExtension = null,
                 versionName = version,
                 size = context.getArtifactFile("content").getSize(),
-                manifestPath = null,
                 artifactPath = nodeCreateRequest.fullPath,
                 overwrite = true,
                 createdBy = context.userId
@@ -162,38 +160,72 @@ class PypiLocalRepository(
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
     }
 
+    private fun combineSameParamQuery(entry: Map.Entry<String, List<String>>): Rule.NestedRule {
+        val sameParamQueryList = mutableListOf<Rule>()
+        for (value in entry.value) {
+            sameParamQueryList.add(
+                Rule.QueryRule("metadata.${entry.key}", "*$value*", OperationType.MATCH_I)
+            )
+        }
+        return Rule.NestedRule(sameParamQueryList, Rule.NestedRule.RelationType.OR)
+    }
+
+    private fun combineParamQuery(
+        map: Map<String, List<String>>,
+        paramQueryList: MutableList<Rule>,
+        operation: String
+    ): Rule.NestedRule {
+        for (param in map) {
+            if (param.value.isNullOrEmpty()) continue
+            if (param.value.size == 1) {
+                paramQueryList.add(
+                    Rule.QueryRule("metadata.${param.key}", "*${param.value[0]}*", OperationType.MATCH_I)
+                )
+            } else if (param.value.size > 1) {
+                // 同属性值固定为`or` 参考：https://warehouse.readthedocs.io/api-reference/xml-rpc.html#
+                // Within the spec, a field’s value can be a string or a list of strings
+                // (the values within the list are combined with an OR)
+                paramQueryList.add(combineSameParamQuery(param))
+            }
+        }
+        val relationType = when (operation) {
+            "or" -> Rule.NestedRule.RelationType.OR
+            "and" -> Rule.NestedRule.RelationType.AND
+            else -> Rule.NestedRule.RelationType.OR
+        }
+        return Rule.NestedRule(paramQueryList, relationType)
+    }
+
     /**
      * pypi search
      */
     override fun search(context: ArtifactSearchContext): List<Value> {
         val pypiSearchPojo = XmlUtils.getPypiSearchPojo(context.request.reader.readXml())
-        val name = pypiSearchPojo.name
-        val summary = pypiSearchPojo.summary
-        if (name != null && summary != null) {
-            val projectId = Rule.QueryRule("projectId", context.projectId)
-            val repoName = Rule.QueryRule("repoName", context.repoName)
-            val packageQuery = Rule.QueryRule("metadata.name", "*$name*", OperationType.MATCH)
-            val summaryQuery = Rule.QueryRule("metadata.summary", "*$summary*", OperationType.MATCH)
-            val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
-            val matchQuery = Rule.NestedRule(
-                mutableListOf(packageQuery, summaryQuery),
-                Rule.NestedRule.RelationType.OR
+        val projectId = Rule.QueryRule("projectId", context.projectId)
+        val repoName = Rule.QueryRule("repoName", context.repoName)
+        val filetypeQuery = Rule.QueryRule("metadata.filetype", "bdist_wheel")
+        val paramQueryList = mutableListOf<Rule>()
+        val paramQuery = if (pypiSearchPojo.map.isNotEmpty()) {
+            combineParamQuery(pypiSearchPojo.map, paramQueryList, pypiSearchPojo.operation)
+        } else Rule.NestedRule(paramQueryList)
+        val rule = if (paramQueryList.isNotEmpty()) {
+            Rule.NestedRule(
+                mutableListOf(projectId, repoName, filetypeQuery, paramQuery), Rule.NestedRule.RelationType.AND
             )
-            val rule = Rule.NestedRule(
-                mutableListOf(repoName, projectId, filetypeQuery, matchQuery),
-                Rule.NestedRule.RelationType.AND
+        } else {
+            Rule.NestedRule(
+                mutableListOf(projectId, repoName, filetypeQuery), Rule.NestedRule.RelationType.AND
             )
-
-            val queryModel = QueryModel(
-                page = PageLimit(pageLimitCurrent, pageLimitSize),
-                sort = Sort(listOf("name"), Sort.Direction.ASC),
-                select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-                rule = rule
-            )
-            val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
-            if (nodeList != null) {
-                return XmlUtil.nodeLis2Values(nodeList)
-            }
+        }
+        val queryModel = QueryModel(
+            page = PageLimit(pageLimitCurrent, pageLimitSize),
+            sort = Sort(listOf("name"), Sort.Direction.ASC),
+            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
+            rule = rule
+        )
+        val nodeList: List<Map<String, Any?>>? = nodeClient.search(queryModel).data?.records
+        if (nodeList != null) {
+            return XmlUtil.nodeLis2Values(nodeList)
         }
         return mutableListOf()
     }
@@ -286,14 +318,24 @@ class PypiLocalRepository(
     }
 
     /**
+     * 本地调试删除 pypi.domain 配置
+     */
+    fun getRedirectUrl(request: HttpServletRequest): String {
+        val domain = pypiProperties.domain
+        val path = request.servletPath
+        return UrlFormatter.format(domain, path).ensureSuffix(StringPool.SLASH)
+    }
+
+    /**
      *
      */
     fun getSimpleHtml(artifactInfo: ArtifactInfo): Any? {
         val request = HttpContextHolder.getRequest()
         if (!request.requestURI.endsWith("/")) {
             val response = HttpContextHolder.getResponse()
-            response.sendRedirect("${request.requestURL}/")
+            response.sendRedirect(getRedirectUrl(request))
             response.writer.flush()
+            return null
         }
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
@@ -361,8 +403,10 @@ class PypiLocalRepository(
             // 查询的对应的文件节点的metadata
             val metadata = filenodeMetadata(node)
             builder.append(
-                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${node
-                    .fullPath}#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
+                "<a data-requires-python=\">=$metadata[\"requires_python\"]\" href=\"../../packages${
+                    node
+                        .fullPath
+                }#md5=$md5\" rel=\"internal\" >${node.name}</a><br/>"
             )
         }
         return builder.toString()
@@ -478,25 +522,13 @@ class PypiLocalRepository(
             totalCount = migrateUrl.sumTasks(simpleHrefs)
             for (e in simpleHrefs) {
                 // 每一个包所包含的文件列表
-                e.text()?.let { packageName ->
-                    val packageMigrateDetail = PackageMigrateDetail(
-                        packageName,
-                        mutableSetOf(),
-                        mutableSetOf()
-                    )
-                    "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
-                        for (fileNode in fileNodes) {
-                            threadPool.submit {
-                                migrateUpload(context, fileNode, verifiedUrl, packageName, packageMigrateDetail)
-                            }
-                        }
-                    }
-                    packageMigrateDetailList.add(packageMigrateDetail)
-                }
+                migratePackage(e, verifiedUrl, threadPool, context)
             }
         }
         threadPool.shutdown()
-        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {}
+        while (!threadPool.awaitTermination(2, TimeUnit.SECONDS)) {
+            logger.info("migrate thread pool running!")
+        }
         val end = Instant.now()
         val elapseTimeSeconds = Duration.between(start, end)
         insertMigrateData(
@@ -513,6 +545,31 @@ class PypiLocalRepository(
             elapseTimeSeconds,
             null
         )
+    }
+
+    private fun migratePackage(
+        element: Element,
+        verifiedUrl: String,
+        threadPool: ThreadPoolExecutor,
+        context: ArtifactMigrateContext
+    ): PackageMigrateDetail? {
+        // 每一个包所包含的文件列表
+        element.text()?.let { packageName ->
+            val packageMigrateDetail = PackageMigrateDetail(
+                packageName,
+                mutableSetOf(),
+                mutableSetOf()
+            )
+            "$verifiedUrl/$packageName".htmlHrefs().let { fileNodes ->
+                for (fileNode in fileNodes) {
+                    threadPool.submit {
+                        migrateUpload(context, fileNode, verifiedUrl, packageName, packageMigrateDetail)
+                    }
+                }
+            }
+            return packageMigrateDetail
+        }
+        return null
     }
 
     private fun insertMigrateData(
@@ -587,6 +644,7 @@ class PypiLocalRepository(
                 } else {
                     val nodeCreateRequest = createMigrateNode(context, artifactFile, packageName, filename, pypiInfo)
                     store(nodeCreateRequest, artifactFile, context.storageCredentials)
+                    packageMigrateDetail.successVersionList.add(pypiInfo.version)
                 }
             }
         } catch (unknownServiceException: UnknownServiceException) {
@@ -689,6 +747,7 @@ class PypiLocalRepository(
                 )
             }
         }
+
         const val pageLimitCurrent = 0
         const val pageLimitSize = 10
         const val threadAliveTime = 15L

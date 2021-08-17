@@ -40,5 +40,10 @@ import com.tencent.bkrepo.common.api.message.MessageCode
  */
 class StorageErrorException(
     messageCode: MessageCode,
-    vararg params: String
-) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params)
+    vararg params: String,
+    cause: Throwable? = null
+) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, params) {
+    init {
+        initCause(cause)
+    }
+}

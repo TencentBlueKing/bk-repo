@@ -31,47 +31,68 @@
 
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
+import com.tencent.bkrepo.repository.service.ServiceBaseTest
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.boot.test.mock.mockito.MockBean
 
-class NodeQueryInterpreterTest {
+@DisplayName("节点自定义查询解释器测试")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DataMongoTest
+class NodeQueryInterpreterTest : ServiceBaseTest() {
+
+    @MockBean
+    lateinit var repositoryService: RepositoryService
+
+    @MockBean
+    private lateinit var repoNameRuleInterceptor: RepoNameRuleInterceptor
+
+    @MockBean
+    private lateinit var repoTypeRuleInterceptor: RepoTypeRuleInterceptor
+
+    @BeforeAll
+    fun beforeAll() {
+        initMock()
+    }
 
     @Test
     fun testQueryWithMetadata() {
-        val projectId = Rule.QueryRule("projectId", "1")
-        val repoName = Rule.QueryRule("repoName", "repoName")
-        val metadata = Rule.QueryRule("metadata.key", "value")
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata), Rule.NestedRule.RelationType.AND)
-        val queryModel = QueryModel(
-            page = PageLimit(1, 10),
-            sort = Sort(listOf("name"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
-        val interpreter = NodeQueryInterpreter()
+        val queryModel = NodeQueryBuilder()
+            .projectId("1")
+            .repoName("repoName")
+            .metadata("key", "value")
+            .page(1, 10)
+            .sort(Sort.Direction.ASC, "name")
+            .select("projectId", "repoName", "fullPath", "metadata")
+            .build()
+        val interpreter = NodeQueryInterpreter(repoNameRuleInterceptor, repoTypeRuleInterceptor)
         val query = interpreter.interpret(queryModel)
-        println(query)
+        println(query.queryModel)
     }
 
     @Test
     fun testQueryWithStageTag() {
-        val projectId = Rule.QueryRule("projectId", "1")
-        val repoName = Rule.QueryRule("repoName", "repoName")
-        val metadata = Rule.QueryRule("metadata.key", "value")
-        val stageTag = Rule.QueryRule("stageTag", "@release")
-        val rule = Rule.NestedRule(mutableListOf(projectId, repoName, metadata, stageTag), Rule.NestedRule.RelationType.AND)
-        val queryModel = QueryModel(
-            page = PageLimit(1, 10),
-            sort = Sort(listOf("name"), Sort.Direction.ASC),
-            select = mutableListOf("projectId", "repoName", "fullPath", "metadata"),
-            rule = rule
-        )
-        val interpreter = NodeQueryInterpreter()
+        val queryModel = NodeQueryBuilder()
+            .projectId("1")
+            .repoName("repoName")
+            .metadata("key", "value")
+            .stage(ArtifactStageEnum.RELEASE)
+            .page(1, 10)
+            .sort(Sort.Direction.ASC, "name")
+            .select("projectId", "repoName", "fullPath", "metadata")
+            .build()
+        val interpreter = NodeQueryInterpreter(repoNameRuleInterceptor, repoTypeRuleInterceptor)
         val query = interpreter.interpret(queryModel)
-        println(query)
+        println(query.queryModel)
     }
 }

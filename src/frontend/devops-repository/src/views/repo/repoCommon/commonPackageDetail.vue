@@ -6,6 +6,9 @@
                 <span class="mb10 title" :title="pkg.name">{{ pkg.name }}
                     <span class="ml10 subtitle repo-tag" v-if="pkg.type === 'MAVEN'">{{ pkg.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
                 </span>
+                <span class="mb10 description" :title="pkg.description">
+                    {{ pkg.description }}
+                </span>
                 <div class="flex-align-center">
                     <div class="mr50">{{ `${$t('downloads')}: ${pkg.downloads}` }}</div>
                     <div class="mr50">{{ `${$t('lastModifiedDate')}: ${formatDate(pkg.lastModifiedDate)}` }}</div>
@@ -14,13 +17,13 @@
             </div>
         </div>
         <div class="common-package-tab">
-            <bk-tab class="common-package-tab-main" type="unborder-card">
+            <bk-tab class="common-package-tab-main" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel name="commonVersion" :label="$t('version')" v-bkloading="{ isLoading }">
                     <div class="common-package-version">
                         <div class="mb20 flex-align-center">
                             <bk-input
                                 class="common-version-search"
-                                v-model="versionInput"
+                                v-model.trim="versionInput"
                                 clearable
                                 :placeholder="$t('versionPlacehodler')"
                                 @enter="handlerPaginationChange()"
@@ -34,6 +37,7 @@
                             :data="versionList"
                             :outer-border="false"
                             :row-border="false"
+                            :row-style="{ cursor: 'pointer' }"
                             size="small"
                             @row-click="toCommonVersionDetail"
                         >
@@ -123,6 +127,7 @@
         mixins: [commonMixin],
         data () {
             return {
+                tabName: 'commonVersion',
                 isLoading: false,
                 infoLoading: false,
                 formDialog: {
@@ -155,7 +160,7 @@
                 pagination: {
                     count: 0,
                     current: 1,
-                    limit: 10,
+                    limit: 20,
                     'limit-list': [10, 20, 40]
                 }
             }
@@ -256,7 +261,7 @@
                 const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + '&download=true',
                         '_self'
                     )
                 }).catch(e => {
@@ -297,7 +302,6 @@
 .common-package-detail {
     height: 100%;
     .common-package-base-info {
-        height: 100px;
         .common-package-title {
             .title {
                 max-width: 500px;
@@ -313,13 +317,20 @@
                     cursor: pointer;
                 }
             }
+            .description {
+                max-width: 800px;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
         }
     }
     .common-package-tab {
         flex: 1;
         .common-package-tab-main {
             height: 100%;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 40px);
                 .bk-tab-content {
                     height: 100%;

@@ -32,13 +32,15 @@
 package com.tencent.bkrepo.repository.job
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
+import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.service.StorageCredentialService
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import com.tencent.bkrepo.repository.job.base.CenterNodeJob
+import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.Duration
 
 /**
  * 清理缓存文件定时任务
@@ -46,23 +48,27 @@ import org.springframework.stereotype.Component
 @Component
 class ExpiredCacheFileCleanupJob(
     private val storageService: StorageService,
-    private val storageCredentialService: StorageCredentialService
-) {
+    private val storageCredentialService: StorageCredentialService,
+    private val clusterProperties: ClusterProperties
+) : CenterNodeJob() {
 
     @Scheduled(cron = "0 0 4 * * ?") // 每天凌晨4点执行
-    @SchedulerLock(name = "ExpiredCacheFileCleanupJob", lockAtMostFor = "P7D")
-    fun cleanup() {
-        logger.info("Starting to clean up temp and expired cache files.")
-        // cleanup default storage
-        cleanUpOnStorage()
-        // cleanup extended storage
-        storageCredentialService.list().forEach {
-            cleanUpOnStorage(it)
-        }
-        logger.info("Clean up completed.")
+    override fun start() {
+        super.start()
     }
 
-    private fun cleanUpOnStorage(storage: StorageCredentials? = null) {
+    override fun run() {
+        // cleanup default storage
+        cleanupStorage()
+        // cleanup extended storage
+        storageCredentialService.list(clusterProperties.region).forEach {
+            cleanupStorage(it)
+        }
+    }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
+
+    private fun cleanupStorage(storage: StorageCredentials? = null) {
         val key = storage?.key ?: "default"
         logger.info("Starting to clean up on storage [$key].")
         executeAndMeasureTime {

@@ -2,14 +2,14 @@
     <div class="repo-select-container" v-bk-clickoutside="handleClickOutSide">
         <div class="repo-select-title hover-btn flex-align-center" @click="handleClick">
             <icon size="24" :name="selectedItem.type"></icon>
-            <span class="ml10">{{selectedItem.name}}</span>
+            <span class="ml10">{{replaceRepoName(selectedItem.name)}}</span>
             <i class="ml10 devops-icon icon-angle-right" :class="{ 'angle-down': showList }"></i>
         </div>
         <div class="repo-select-main" :style="`height: ${ showList ? '370px' : '0' }`">
             <div class="repo-select-search">
                 <bk-input
                     class="docker-tag-search"
-                    v-model="repoNameInput"
+                    v-model.trim="repoNameInput"
                     :placeholder="$t('pleaseInput') + $t('repository') + $t('name')"
                     clearable>
                 </bk-input>
@@ -19,7 +19,7 @@
                     <div class="repo-item flex-align-center" :class="repo.name === selectedItem.name ? 'selected' : ''"
                         @click="handlerRepoClick(repo)">
                         <icon size="24" :name="repo.type"></icon>
-                        <div class="ml10 repo-item-title" :title="repo.name">{{repo.name}}</div>
+                        <div class="ml10 repo-item-title" :title="replaceRepoName(repo.name)">{{replaceRepoName(repo.name)}}</div>
                     </div>
                 </li>
             </ul>
@@ -46,7 +46,7 @@
             },
             repoList: {
                 type: Array,
-                default: []
+                default: () => []
             },
             hasClick: {
                 type: Boolean,

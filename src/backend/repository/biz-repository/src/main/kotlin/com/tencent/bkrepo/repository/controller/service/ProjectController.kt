@@ -38,7 +38,7 @@ import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
-import com.tencent.bkrepo.repository.service.ProjectService
+import com.tencent.bkrepo.repository.service.repo.ProjectService
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -63,13 +63,5 @@ class ProjectController(
 
     override fun createProject(request: ProjectCreateRequest): Response<ProjectInfo> {
         return ResponseBuilder.success(projectService.createProject(request))
-    }
-
-    override fun query(name: String): Response<ProjectInfo?> {
-        return getProjectInfo(name)
-    }
-
-    override fun create(request: ProjectCreateRequest): Response<ProjectInfo> {
-        return createProject(request)
     }
 }

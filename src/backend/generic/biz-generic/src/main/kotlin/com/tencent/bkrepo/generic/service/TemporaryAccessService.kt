@@ -31,8 +31,9 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -42,13 +43,18 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.plugin.api.PluginManager
+import com.tencent.bkrepo.common.plugin.api.applyExtension
+import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyContext
+import com.tencent.bkrepo.generic.extension.TemporaryUrlNotifyExtension
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
+import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.api.TemporaryTokenClient
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
@@ -65,7 +71,8 @@ import java.time.format.DateTimeFormatter
 class TemporaryAccessService(
     private val temporaryTokenClient: TemporaryTokenClient,
     private val repositoryClient: RepositoryClient,
-    private val genericProperties: GenericProperties
+    private val genericProperties: GenericProperties,
+    private val pluginManager: PluginManager
 ) {
 
     /**
@@ -94,45 +101,67 @@ class TemporaryAccessService(
 
     /**
      * 根据[request]创建临时访问url
+     * type必须指定具体的类型否则无法确定url
+     * 创建出的url格式为$host/generic/temporary/$type/$project/$repo/$path?token=$token
      */
-    fun createUrl(request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessUrl>> {
-        Preconditions.checkArgument(request.type == TokenType.DOWNLOAD, "type")
-        Preconditions.checkArgument(request.permits == null || request.permits!! > 0, "permits")
-        val urlList = temporaryTokenClient.createToken(request).data.orEmpty().map {
-            TemporaryAccessUrl(
-                projectId = it.projectId,
-                repoName = it.repoName,
-                fullPath = it.fullPath,
-                url = generateAccessUrl(it.projectId, it.repoName, it.fullPath, it.token),
-                authorizedUserList = it.authorizedUserList,
-                authorizedIpList = it.authorizedIpList,
-                expireDate = it.expireDate,
-                permits = it.permits,
-                type = it.type.name
+    fun createUrl(request: TemporaryUrlCreateRequest): List<TemporaryAccessUrl> {
+        with(request) {
+            Preconditions.checkArgument(type == TokenType.UPLOAD || type == TokenType.DOWNLOAD, "type")
+            Preconditions.checkArgument(permits ?: Int.MAX_VALUE > 0, "permits")
+            val temporaryTokenRequest = TemporaryTokenCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPathSet = fullPathSet,
+                authorizedUserSet = authorizedUserSet,
+                authorizedIpSet = authorizedIpSet,
+                expireSeconds = expireSeconds,
+                permits = permits,
+                type = type
             )
+            val urlList = temporaryTokenClient.createToken(temporaryTokenRequest).data.orEmpty().map {
+                TemporaryAccessUrl(
+                    projectId = it.projectId,
+                    repoName = it.repoName,
+                    fullPath = it.fullPath,
+                    url = generateAccessUrl(it, type, host),
+                    authorizedUserList = it.authorizedUserList,
+                    authorizedIpList = it.authorizedIpList,
+                    expireDate = it.expireDate,
+                    permits = it.permits,
+                    type = it.type.name
+                )
+            }
+            if (needsNotify) {
+                val context = TemporaryUrlNotifyContext(
+                    userId = SecurityUtils.getUserId(),
+                    urlList = urlList
+                )
+                pluginManager.applyExtension<TemporaryUrlNotifyExtension> { notify(context) }
+            }
+            return urlList
         }
-        return ResponseBuilder.success(urlList)
     }
 
     /**
-     * 根据[request]创建临时访问token, type只能为DOWNLOAD
+     * 根据[request]创建临时访问token
      */
-    fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
-        Preconditions.checkArgument(request.permits == null || request.permits!! > 0, "permits")
-        val tokenList = temporaryTokenClient.createToken(request).data.orEmpty().map {
-            TemporaryAccessToken(
-                projectId = it.projectId,
-                repoName = it.repoName,
-                fullPath = it.fullPath,
-                token = it.token,
-                authorizedUserList = it.authorizedUserList,
-                authorizedIpList = it.authorizedIpList,
-                expireDate = it.expireDate,
-                permits = it.permits,
-                type = it.type.name
-            )
+    fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryAccessToken> {
+        with(request) {
+            Preconditions.checkArgument(permits ?: Int.MAX_VALUE > 0, "permits")
+            return temporaryTokenClient.createToken(this).data.orEmpty().map {
+                TemporaryAccessToken(
+                    projectId = it.projectId,
+                    repoName = it.repoName,
+                    fullPath = it.fullPath,
+                    token = it.token,
+                    authorizedUserList = it.authorizedUserList,
+                    authorizedIpList = it.authorizedIpList,
+                    expireDate = it.expireDate,
+                    permits = it.permits,
+                    type = it.type.name
+                )
+            }
         }
-        return ResponseBuilder.success(tokenList)
     }
 
     /**
@@ -161,64 +190,119 @@ class TemporaryAccessService(
         artifactInfo: ArtifactInfo,
         type: TokenType
     ): TemporaryTokenInfo {
+        val temporaryToken = checkToken(token)
+        checkExpireTime(temporaryToken.expireDate)
+        checkAccessType(temporaryToken.type, type)
+        checkAccessResource(temporaryToken, artifactInfo)
+        checkAuthorization(temporaryToken)
+        checkAccessPermits(temporaryToken.permits)
+        return temporaryToken
+    }
+
+    /**
+     * 根据token生成url
+     */
+    private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
+        val urlHost = if (!host.isNullOrBlank()) host else genericProperties.domain
+        val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
+        when (tokenType) {
+            TokenType.DOWNLOAD -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT)
+            TokenType.UPLOAD -> builder.append(TEMPORARY_UPLOAD_ENDPOINT)
+            else -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT) // default use download
+        }
+        return builder.append(StringPool.SLASH)
+            .append(tokenInfo.projectId)
+            .append(StringPool.SLASH)
+            .append(tokenInfo.repoName)
+            .append(tokenInfo.fullPath)
+            .append("?token=")
+            .append(tokenInfo.token)
+            .toString()
+    }
+
+    /**
+     * 检查token并返回token信息
+     */
+    private fun checkToken(token: String): TemporaryTokenInfo {
         if (token.isBlank()) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
         }
-        // 查询token
-        val temporaryToken = temporaryTokenClient.getTokenInfo(token).data
+        return temporaryTokenClient.getTokenInfo(token).data
             ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        // 校验过期时间
-        temporaryToken.expireDate?.let {
+    }
+
+    /**
+     * 检查token是否过期
+     */
+    private fun checkExpireTime(expireDateString: String?) {
+        expireDateString?.let {
             val expireDate = LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME)
             if (expireDate.isBefore(LocalDateTime.now())) {
                 throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
             }
         }
-        // 校验访问次数
-        temporaryToken.permits?.let {
+    }
+
+    /**
+     * 检查访问次数
+     */
+    private fun checkAccessPermits(permits: Int?) {
+        permits?.let {
             if (it <= 0) {
                 throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_EXPIRED)
             }
         }
-        // 校验类型
-        if (temporaryToken.type != TokenType.ALL && temporaryToken.type != type) {
+    }
+
+    /**
+     * 检查访问类型
+     */
+    private fun checkAccessType(grantedType: TokenType, accessType: TokenType) {
+        if (grantedType != TokenType.ALL && grantedType != accessType) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
         }
-        // 校验项目
-        if (temporaryToken.projectId != artifactInfo.projectId) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验仓库
-        if (temporaryToken.repoName != artifactInfo.repoName) {
+    }
+
+    /**
+     * 检查访问资源
+     */
+    private fun checkAccessResource(tokenInfo: TemporaryTokenInfo, artifactInfo: ArtifactInfo) {
+        // 校验项目/仓库
+        if (tokenInfo.projectId != artifactInfo.projectId || tokenInfo.repoName != artifactInfo.repoName) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
         }
         // 校验路径
-        if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), temporaryToken.fullPath)) {
+        if (!PathUtils.isSubPath(artifactInfo.getArtifactFullPath(), tokenInfo.fullPath)) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
         }
-        // 校验用户
-        val userId = SecurityUtils.getUserId()
-        if (temporaryToken.authorizedUserList.isNotEmpty() && userId !in temporaryToken.authorizedUserList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        // 校验ip
-        val clientIp = HttpContextHolder.getClientAddress()
-        if (temporaryToken.authorizedIpList.isNotEmpty() && clientIp !in temporaryToken.authorizedIpList) {
-            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
-        }
-        return temporaryToken
     }
 
-    private fun generateAccessUrl(projectId: String, repoName: String, fullPath: String, token: String): String {
-        return StringBuilder(UrlFormatter.formatHost(genericProperties.host))
-            .append(TEMPORARY_DOWNLOAD_ENDPOINT)
-            .append("/$projectId/$repoName$fullPath")
-            .append("?token=")
-            .append(token)
-            .toString()
+    /**
+     * 检查授权用户和ip
+     */
+    private fun checkAuthorization(tokenInfo: TemporaryTokenInfo) {
+        // 检查用户授权
+        // 获取经过认证的uid
+        val authenticatedUid = SecurityUtils.getUserId()
+        // 使用认证uid校验授权
+        if (tokenInfo.authorizedUserList.isNotEmpty() && authenticatedUid !in tokenInfo.authorizedUserList) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
+        // 获取需要审计的uid
+        val auditedUid = if (SecurityUtils.isAnonymous()) {
+            HttpContextHolder.getRequest().getHeader(AUTH_HEADER_UID) ?: tokenInfo.createdBy
+        } else authenticatedUid
+        // 设置审计uid到session中
+        HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, auditedUid)
+        // 校验ip授权
+        val clientIp = HttpContextHolder.getClientAddress()
+        if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
+            throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+        }
     }
 
     companion object {
-        private const val TEMPORARY_DOWNLOAD_ENDPOINT = "temporary/download"
+        private const val TEMPORARY_DOWNLOAD_ENDPOINT = "/temporary/download"
+        private const val TEMPORARY_UPLOAD_ENDPOINT = "/temporary/upload"
     }
 }

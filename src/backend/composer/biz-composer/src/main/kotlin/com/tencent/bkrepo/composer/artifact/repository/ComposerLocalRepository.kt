@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.composer.artifact.repository
@@ -245,18 +241,16 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         // 保存版本信息
         packageClient.createVersion(
             PackageVersionCreateRequest(
-                context.projectId,
-                context.repoName,
-                composerArtifact.name,
-                PackageKeys.ofComposer(composerArtifact.name),
-                PackageType.COMPOSER,
-                null,
-                composerArtifact.version,
-                context.getArtifactFile().getSize(),
-                null,
-                context.artifactInfo.getArtifactFullPath(),
-                null,
-                metadata,
+                projectId = context.projectId,
+                repoName = context.repoName,
+                packageName = composerArtifact.name,
+                packageKey = PackageKeys.ofComposer(composerArtifact.name),
+                packageType = PackageType.COMPOSER,
+                packageDescription = null,
+                versionName = composerArtifact.version,
+                size = context.getArtifactFile().getSize(),
+                manifestPath = null,
+                artifactPath = context.artifactInfo.getArtifactFullPath(),
                 overwrite = true,
                 createdBy = context.userId
             )
@@ -308,7 +302,12 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
             }
         } else {
             with(context.artifactInfo) {
-                val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: return
+                val packageVersion = packageClient.findVersionByName(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey,
+                    version = version
+                ).data ?: return
                 val node = nodeClient.getNodeDetail(projectId, repoName, packageVersion.contentPath!!).data ?: return
                 removeComposerArtifact(node, packageKey, version, context)
             }

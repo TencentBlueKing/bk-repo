@@ -42,9 +42,9 @@ const val DOCKER_API_PREFIX = "/v2"
 const val DOCKER_API_SUFFIX = "/auth"
 
 // path pattern prefix
-const val DOCKER_BLOB_SUFFIX = "{projectId}/{repoName}/**/blobs/uploads"
-const val DOCKER_BLOB_UUID_SUFFIX = "{projectId}/{repoName}/**/blobs/uploads/{uuid}"
-const val DOCKER_BLOB_DIGEST_SUFFIX = "{projectId}/{repoName}/**/blobs/{digest}"
+const val DOCKER_BLOB_SUFFIX = "/{projectId}/{repoName}/**/blobs/uploads/"
+const val DOCKER_BLOB_UUID_SUFFIX = "/{projectId}/{repoName}/**/blobs/uploads/{uuid}"
+const val DOCKER_BLOB_DIGEST_SUFFIX = "/{projectId}/{repoName}/**/blobs/{digest}"
 const val DOCKER_MANIFEST_TAG_SUFFIX = "/{projectId}/{repoName}/**/manifests/{tag}"
 const val DOCKER_MANIFEST_REFERENCE_SUFFIX = "/{projectId}/{repoName}/**/manifests/{reference}"
 const val DOCKER_USER_MANIFEST_SUFFIX = "/manifest/{projectId}/{repoName}/**/{tag}"
@@ -72,7 +72,10 @@ const val AUTH_CHALLENGE_SERVICE_SCOPE = "Bearer realm=\"%s\",service=\"%s\",sco
 const val AUTH_CHALLENGE_SCOPE = ",scope=\"%s:%s:%s\""
 const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}"
 const val DOCKER_UNAUTHED_BODY =
-    "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"access to the requested resource is not authorized\",\"detail\":[{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"pull\"},{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"push\"}]}]}"
+    "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"access to the " +
+        "requested resource is not authorized\",\"detail\"" +
+        ":[{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"pull\"}," +
+        "{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"push\"}]}]}"
 
 const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
 const val DOCKER_API_VERSION = "registry/2.0"

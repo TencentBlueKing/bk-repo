@@ -68,7 +68,7 @@ class DockerPackageRepo @Autowired constructor(
 
     /**
      * delete package
-     * @param context  the request context
+     * @param context the request context
      * @return Boolean is the package version delete success
      */
     fun deletePackage(context: RequestContext): Boolean {
@@ -79,7 +79,7 @@ class DockerPackageRepo @Autowired constructor(
 
     /**
      * delete package version
-     * @param context  the request context
+     * @param context the request context
      * @param version package version
      * @return Boolean is the package version exist
      */
@@ -91,19 +91,20 @@ class DockerPackageRepo @Autowired constructor(
 
     /**
      * get package version
-     * @param context  the request context
+     * @param context the request context
      * @param version package version
      * @return PackageVersion the package version detail
      */
     fun getPackageVersion(context: RequestContext, version: String): PackageVersion? {
         with(context) {
-            return packageClient.findVersionByName(projectId, repoName, PackageKeys.ofDocker(artifactName), version).data
+            return packageClient.findVersionByName(projectId, repoName, PackageKeys.ofDocker(artifactName), version)
+                .data
         }
     }
 
     /**
      * add download statics
-     * @param context  the request context
+     * @param context the request context
      * @param version package version
      * @return Boolean is add download static success
      */

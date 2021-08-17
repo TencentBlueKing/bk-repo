@@ -44,7 +44,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
-import com.tencent.bkrepo.repository.service.PackageService
+import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -128,6 +128,22 @@ class PackageController(
     ): Response<Page<PackageVersion>> {
         val pageResult = packageService.listVersionPage(projectId, repoName, packageKey, option)
         return ResponseBuilder.success(pageResult)
+    }
+
+    override fun listExistPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        packageVersionList: List<String>
+    ): Response<List<String>> {
+        return ResponseBuilder.success(
+            packageService.listExistPackageVersion(
+                projectId,
+                repoName,
+                packageKey,
+                packageVersionList
+            )
+        )
     }
 
     override fun listAllVersion(

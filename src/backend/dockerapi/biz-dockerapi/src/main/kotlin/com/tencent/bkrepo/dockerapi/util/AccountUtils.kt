@@ -34,7 +34,7 @@ package com.tencent.bkrepo.dockerapi.util
 import java.util.Random
 
 object AccountUtils {
-    private val BASE = "abcdefghijklmnopqrstuvwxyz"
+    private const val BASE = "abcdefghijklmnopqrstuvwxyz"
 
     fun generateRandomPassword(length: Int): String {
         val random = Random()

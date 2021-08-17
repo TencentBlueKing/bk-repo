@@ -44,26 +44,27 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.node.CrossRepoNodeRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeCopyRequest
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
-import com.tencent.bkrepo.repository.service.NodeSearchService
-import com.tencent.bkrepo.repository.service.NodeService
+import com.tencent.bkrepo.repository.service.node.NodeSearchService
+import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -72,6 +73,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
 @Api("节点用户接口")
 @RestController
@@ -132,6 +134,18 @@ class UserNodeController(
             nodeService.deleteNode(deleteRequest)
             return ResponseBuilder.success()
         }
+    }
+
+    @ApiOperation("清理创建时间早于{date}的文件节点")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
+    @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
+    fun deleteNodeCreatedBeforeDate(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
+    ): Response<Void> {
+        nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("更新节点")
@@ -203,11 +217,11 @@ class UserNodeController(
     @PostMapping("/move")
     fun moveNode(
         @RequestAttribute userId: String,
-        @RequestBody request: UserNodeMoveRequest
+        @RequestBody request: UserNodeMoveCopyRequest
     ): Response<Void> {
         with(request) {
             checkCrossRepoPermission(request)
-            val moveRequest = NodeMoveRequest(
+            val moveRequest = NodeMoveCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
                 srcFullPath = srcFullPath,
@@ -226,11 +240,11 @@ class UserNodeController(
     @PostMapping("/copy")
     fun copyNode(
         @RequestAttribute userId: String,
-        @RequestBody request: UserNodeCopyRequest
+        @RequestBody request: UserNodeMoveCopyRequest
     ): Response<Void> {
         with(request) {
             checkCrossRepoPermission(request)
-            val copyRequest = NodeCopyRequest(
+            val copyRequest = NodeMoveCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
                 srcFullPath = srcFullPath,
@@ -248,10 +262,7 @@ class UserNodeController(
     @ApiOperation("查询节点大小信息")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/size/$DEFAULT_MAPPING_URI")
-    fun computeSize(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: ArtifactInfo
-    ): Response<NodeSizeInfo> {
+    fun computeSize(artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
         val nodeSizeInfo = nodeService.computeSize(artifactInfo)
         return ResponseBuilder.success(nodeSizeInfo)
     }
@@ -260,14 +271,30 @@ class UserNodeController(
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        artifactInfo: ArtifactInfo,
         nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
         // 禁止查询pipeline仓库
         PipelineRepoUtils.checkPipeline(artifactInfo.repoName)
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)
+    }
+
+    @ApiOperation("查询节点删除点")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @GetMapping("/list-deleted/$DEFAULT_MAPPING_URI")
+    fun listDeletedPoint(artifactInfo: ArtifactInfo): Response<List<NodeDeletedPoint>> {
+        return ResponseBuilder.success(nodeService.listDeletedPoint(artifactInfo))
+    }
+
+    @ApiOperation("恢复被删除节点")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
+    @PostMapping("/restore/$DEFAULT_MAPPING_URI")
+    fun restoreNode(
+        artifactInfo: ArtifactInfo,
+        nodeRestoreOption: NodeRestoreOption
+    ): Response<NodeRestoreResult> {
+        return ResponseBuilder.success(nodeService.restoreNode(artifactInfo, nodeRestoreOption))
     }
 
     @ApiOperation("自定义查询节点")
@@ -279,16 +306,14 @@ class UserNodeController(
     @Deprecated("replace with search")
     @ApiOperation("自定义查询节点")
     @PostMapping("/query")
-    fun query(
-        @RequestBody queryModel: QueryModel
-    ): Response<Page<Map<String, Any?>>> {
+    fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
     /**
      * 校验跨仓库操作权限
      */
-    private fun checkCrossRepoPermission(request: CrossRepoNodeRequest) {
+    private fun checkCrossRepoPermission(request: UserNodeMoveCopyRequest) {
         with(request) {
             permissionManager.checkNodePermission(PermissionAction.WRITE, srcProjectId, srcRepoName, srcFullPath)
             val toProjectId = request.destProjectId ?: srcProjectId

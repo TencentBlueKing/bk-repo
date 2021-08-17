@@ -73,7 +73,8 @@ class UserImageController @Autowired constructor(
         @RequestHeader("X-BKAPI-JWT") jwkToken: String?,
         @RequestBody request: QueryProjectImageRequest
     ): Response<Page<DockerRepo>> {
-//        val jwkData = jwtUtils.parseJwtToken(jwkToken!!) ?: throw StatusCodeException(HttpStatus.UNAUTHORIZED, "invalid jwt token")
+//        val jwkData = jwtUtils.parseJwtToken(jwkToken!!) ?: throw StatusCodeException(HttpStatus.UNAUTHORIZED,
+//        "invalid jwt token")
 //        val hashPermission = bkAuthClient.checkProjectPermission(jwkData!!.userName, request.projectId)
 //        if (!hashPermission) throw StatusCodeException(HttpStatus.UNAUTHORIZED, "permission denied")
         return ResponseBuilder.success(imageService.queryProjectImage(request))

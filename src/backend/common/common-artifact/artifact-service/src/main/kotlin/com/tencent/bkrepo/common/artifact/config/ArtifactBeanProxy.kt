@@ -58,9 +58,9 @@ class ArtifactBeanProxy<T>(
             else -> throw IllegalArgumentException("Unsupported proxy object[$classType]")
         }
         try {
-            return method.invoke(target, *(args ?: emptyArray()))
-        } catch (exception: InvocationTargetException) {
-            throw exception.targetException
+            return method.invoke(target, *(args.orEmpty()))
+        } catch (ignored: InvocationTargetException) {
+            throw ignored.targetException
         }
     }
 }

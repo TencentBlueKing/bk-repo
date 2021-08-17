@@ -30,9 +30,9 @@ spec:
             - "/bin/sh"
             - "-c"
             - |
-              until getent hosts {{ include "common.names.fullname" . }}-mongodb
+              until getent hosts {{ include "bkrepo.mongodb.fullname" . }}
               do 
-                echo waiting for {{ include "common.names.fullname" . }}-mongodb;
+                echo waiting for {{ include "bkrepo.mongodb.fullname" . }};
                 sleep 2;
               done
               echo "Mongodb is available";

@@ -38,4 +38,5 @@ dependencies {
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     api("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     api("com.fasterxml.jackson.module:jackson-module-parameter-names")
+    api("org.apache.commons:commons-compress")
 }

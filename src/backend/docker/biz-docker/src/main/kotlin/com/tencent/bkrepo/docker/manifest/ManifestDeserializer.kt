@@ -51,7 +51,14 @@ object ManifestDeserializer {
      * @param digest the digest object
      * @return ManifestMetadata
      */
-    fun deserialize(repo: DockerArtifactRepo, context: RequestContext, tag: String, manifestType: ManifestType, bytes: ByteArray, digest: DockerDigest): ManifestMetadata {
+    fun deserialize(
+        repo: DockerArtifactRepo,
+        context: RequestContext,
+        tag: String,
+        manifestType: ManifestType,
+        bytes: ByteArray,
+        digest: DockerDigest
+    ): ManifestMetadata {
         var manifestBytes = bytes
         val manifestProcess = ManifestProcess(repo)
         return when (manifestType) {

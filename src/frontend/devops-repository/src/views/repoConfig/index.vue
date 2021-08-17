@@ -4,7 +4,7 @@
             <div class="flex-center">
                 <div class="mr5 hover-btn flex-center" @click="toRepoDetail">
                     <icon size="24" :name="repoType" />
-                    <span class="ml10">{{repoName}}</span>
+                    <span class="ml10">{{replaceRepoName(repoName)}}</span>
                 </div>
                 <i class="devops-icon icon-angle-right"></i>
                 <span class="ml5">{{$t('repoConfig')}}</span>
@@ -16,25 +16,28 @@
             </div>
         </header>
         <main class="repo-config-main" v-bkloading="{ isLoading }">
-            <bk-tab class="repo-config-tab" type="unborder-card">
+            <bk-tab class="repo-config-tab" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
                     <div class="repo-base-info">
                         <bk-form ref="repoBaseInfo" :label-width="150" :model="repoBaseInfo" :rules="rules">
                             <bk-form-item :label="$t('repoName')">
                                 <div class="flex-align-center">
                                     <icon size="24" :name="repoBaseInfo.repoType || repoType" />
-                                    <span class="ml10">{{repoBaseInfo.name || repoName}}</span>
+                                    <span class="ml10">{{replaceRepoName(repoBaseInfo.name || repoName)}}</span>
                                 </div>
                             </bk-form-item>
                             <bk-form-item :label="$t('repoAddress')">
                                 <span>{{repoAddress}}</span>
                             </bk-form-item>
+                            <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
+                                <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
+                            </bk-form-item>
                             <template v-if="repoType === 'rpm'">
-                                <bk-form-item :label="$t('enableFileLists')">
-                                    <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                                <bk-form-item :label="$t('enabledFileLists')">
+                                    <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
-                                    <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
+                                    <bk-input v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
                                     <bk-tag-input
@@ -55,7 +58,7 @@
                             <bk-form-item :label="$t('description')">
                                 <bk-input type="textarea"
                                     maxlength="200"
-                                    v-model="repoBaseInfo.description"
+                                    v-model.trim="repoBaseInfo.description"
                                     :placeholder="$t('repoDescriptionPlacehodler')">
                                 </bk-input>
                             </bk-form-item>
@@ -85,12 +88,14 @@
         data () {
             return {
                 MODE_CONFIG,
+                tabName: 'baseInfo',
                 isLoading: false,
                 repoBaseInfo: {
                     loading: false,
                     repoName: '',
+                    public: false,
                     repoType: '',
-                    enableFileLists: false,
+                    enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: ''
@@ -176,6 +181,7 @@
             },
             async saveBaseInfo () {
                 const body = {
+                    public: this.repoBaseInfo.public,
                     description: this.repoBaseInfo.description
                 }
                 if (this.repoType === 'rpm') {
@@ -183,7 +189,7 @@
                     body.configuration = {
                         ...this.repoBaseInfo.configuration,
                         settings: {
-                            enableFileLists: this.repoBaseInfo.enableFileLists,
+                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
                             repodataDepth: this.repoBaseInfo.repodataDepth,
                             groupXmlSet: this.repoBaseInfo.groupXmlSet
                         }
@@ -225,7 +231,7 @@
         }
     }
     .repo-config-main {
-        height: calc(100% - 80px);
+        height: calc(100% - 70px);
         margin-top: 20px;
         padding: 20px;
         display: flex;
@@ -233,7 +239,7 @@
         overflow-y: auto;
         .repo-config-tab {
             flex: 1;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 42px);
                 overflow-y: auto;
             }

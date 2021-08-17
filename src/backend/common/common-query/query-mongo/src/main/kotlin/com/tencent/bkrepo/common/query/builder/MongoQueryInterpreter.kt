@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.query.handler.impl.InHandler
 import com.tencent.bkrepo.common.query.handler.impl.LessThanHandler
 import com.tencent.bkrepo.common.query.handler.impl.LessThanOrEqualHandler
 import com.tencent.bkrepo.common.query.handler.impl.MatchHandler
+import com.tencent.bkrepo.common.query.handler.impl.MatchIHandler
 import com.tencent.bkrepo.common.query.handler.impl.NotEqualHandler
 import com.tencent.bkrepo.common.query.handler.impl.NotNullHandler
 import com.tencent.bkrepo.common.query.handler.impl.NullHandler
@@ -83,6 +84,7 @@ open class MongoQueryInterpreter {
         defaultQueryRuleHandlerMap[OperationType.PREFIX] = PrefixHandler()
         defaultQueryRuleHandlerMap[OperationType.SUFFIX] = SuffixHandler()
         defaultQueryRuleHandlerMap[OperationType.MATCH] = MatchHandler()
+        defaultQueryRuleHandlerMap[OperationType.MATCH_I] = MatchIHandler()
         defaultQueryRuleHandlerMap[OperationType.NULL] = NullHandler()
         defaultQueryRuleHandlerMap[OperationType.NOT_NULL] = NotNullHandler()
     }
@@ -98,13 +100,17 @@ open class MongoQueryInterpreter {
         val pageNumber = newModel.page.getNormalizedPageNumber()
         val pageSize = newModel.page.getNormalizedPageSize()
         newModel.page.let {
-            mongoQuery.with(PageRequest.of(pageNumber - 1, pageSize))
+            val pageRequest = PageRequest.of(pageNumber - 1, pageSize)
+            mongoQuery.with(pageRequest)
         }
         newModel.sort?.let {
-            mongoQuery.with(Sort.by(Sort.Direction.fromString(it.direction.name), *it.properties.toTypedArray()))
+            val direction = Sort.Direction.fromString(it.direction.name)
+            val sort = Sort.by(it.properties.map { property -> Sort.Order(direction, property) })
+            mongoQuery.with(sort)
         }
-        newModel.select?.forEach { mongoQuery.fields().include(it) }
-
+        newModel.select?.forEach {
+            mongoQuery.fields().include(it)
+        }
         mongoQuery.addCriteria(resolveRule(queryModel.rule, queryContext))
         return queryContext
     }

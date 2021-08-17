@@ -12,7 +12,7 @@
                         <icon size="24" name="generic" />
                         <span class="ml10">generic</span>
                     </div>
-                    <bk-radio-group v-else v-model="repoBaseInfo.type" class="repo-type-radio-group">
+                    <bk-radio-group v-else v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
                         <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
                             <div class="flex-center repo-type-radio">
                                 <icon size="60" :name="repo" />
@@ -25,14 +25,19 @@
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('repoName')" :required="true" property="name">
-                    <bk-input v-model="repoBaseInfo.name" :placeholder="$t('repoNamePlacehodler')"></bk-input>
+                    <bk-input v-model.trim="repoBaseInfo.name"
+                        :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
+                    </bk-input>
+                </bk-form-item>
+                <bk-form-item :label="$t('publicRepo')" :required="true" property="public">
+                    <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
                 </bk-form-item>
                 <template v-if="repoBaseInfo.type === 'rpm'">
-                    <bk-form-item :label="$t('enableFileLists')">
-                        <bk-checkbox v-model="repoBaseInfo.enableFileLists"></bk-checkbox>
+                    <bk-form-item :label="$t('enabledFileLists')">
+                        <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                     </bk-form-item>
                     <bk-form-item :label="$t('repodataDepth')" property="repodataDepth">
-                        <bk-input v-model="repoBaseInfo.repodataDepth"></bk-input>
+                        <bk-input v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet">
                         <bk-tag-input
@@ -53,7 +58,7 @@
                 <bk-form-item :label="$t('description')">
                     <bk-input type="textarea"
                         maxlength="200"
-                        v-model="repoBaseInfo.description"
+                        v-model.trim="repoBaseInfo.description"
                         :placeholder="$t('repoDescriptionPlacehodler')">
                     </bk-input>
                 </bk-form-item>
@@ -78,12 +83,20 @@
                 repoBaseInfo: {
                     type: 'generic',
                     name: '',
-                    enableFileLists: false,
+                    public: false,
+                    enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: ''
-                },
-                rules: {
+                }
+            }
+        },
+        computed: {
+            projectId () {
+                return this.$route.params.projectId
+            },
+            rules () {
+                return {
                     type: [
                         {
                             required: true,
@@ -98,13 +111,13 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
-                            message: this.$t('repoName') + this.$t('include') + this.$t('repoNamePlacehodler'),
+                            regex: this.repoBaseInfo.type === 'docker' ? /^[a-z][a-z0-9\-_]{1,31}$/ : /^[a-zA-Z][a-zA-Z0-9\-_]{1,31}$/,
+                            message: this.$t('repoName') + this.$t('include') + this.$t(this.repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler'),
                             trigger: 'blur'
                         },
                         {
                             validator: this.asynCheckRepoName,
-                            message: this.$t('repoName') + this.$t('repeat'),
+                            message: this.$t('repoName') + '已存在',
                             trigger: 'blur'
                         }
                     ],
@@ -129,11 +142,6 @@
                 }
             }
         },
-        computed: {
-            projectId () {
-                return this.$route.params.projectId
-            }
-        },
         methods: {
             ...mapActions(['createRepo', 'checkRepoName']),
             toRepoList () {
@@ -147,6 +155,10 @@
                     name: this.repoBaseInfo.name
                 }).then(res => !res)
             },
+            changeRepoType () {
+                if (this.repoBaseInfo.type === 'docker') this.repoBaseInfo.name = ''
+                this.$refs.repoBaseInfo.clearError()
+            },
             async submitRepo () {
                 await this.$refs.repoBaseInfo.validate()
                 this.isLoading = true
@@ -155,13 +167,14 @@
                         projectId: this.projectId,
                         type: this.repoBaseInfo.type.toUpperCase(),
                         name: this.repoBaseInfo.name,
+                        public: this.repoBaseInfo.public,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
                         ...(this.repoBaseInfo.type === 'rpm' ? {
                             configuration: {
                                 type: 'composite',
                                 settings: {
-                                    enableFileLists: this.repoBaseInfo.enableFileLists,
+                                    enabledFileLists: this.repoBaseInfo.enabledFileLists,
                                     repodataDepth: this.repoBaseInfo.repodataDepth,
                                     groupXmlSet: this.repoBaseInfo.groupXmlSet
                                 }
@@ -193,7 +206,7 @@
         background-color: white;
     }
     .create-repo-main {
-        height: calc(100% - 80px);
+        height: calc(100% - 70px);
         margin-top: 20px;
         padding-top: 20px;
         display: flex;
@@ -203,7 +216,7 @@
             max-width: 1080px;
             min-width: 720px;
             .repo-type-radio-group {
-                /deep/ .bk-form-radio-button {
+                ::v-deep .bk-form-radio-button {
                     margin: 0 20px 20px 0;
                     .bk-radio-button-text {
                         height: auto;

@@ -81,21 +81,27 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
-          # livenessProbe:
-          #   httpGet:
-          #     path: /ui
-          #     port: http
-          #   initialDelaySeconds: 30
-          #   periodSeconds: 10
-          #   timeoutSeconds: 5
-          #   failureThreshold: 3
-          #   successThreshold: 1
-          # readinessProbe:
-          #   httpGet:
-          #     path: /ui
-          #     port: http
-          #   initialDelaySeconds: 30
-          #   periodSeconds: 10
-          #   timeoutSeconds: 5
-          #   failureThreshold: 3
-          #   successThreshold: 1
+          livenessProbe:
+            httpGet:
+              path: /ui/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.gateway.host }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /ui/
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: {{ .Values.gateway.host }}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+            successThreshold: 1

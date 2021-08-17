@@ -30,19 +30,19 @@
             <bk-tab-panel name="privateProxy" :label="$t('privateProxy')">
                 <bk-form ref="privateProxy" :label-width="100" :model="editProxyData" :rules="rules">
                     <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name">
-                        <bk-input v-model="editProxyData.name"></bk-input>
+                        <bk-input v-model.trim="editProxyData.name"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url">
-                        <bk-input v-model="editProxyData.url"></bk-input>
+                        <bk-input v-model.trim="editProxyData.url"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('ticket')" property="ticket">
-                        <bk-checkbox v-model="editProxyData.ticket"></bk-checkbox>
+                        <bk-checkbox v-model.trim="editProxyData.ticket"></bk-checkbox>
                     </bk-form-item>
                     <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username">
-                        <bk-input v-model="editProxyData.username"></bk-input>
+                        <bk-input v-model.trim="editProxyData.username"></bk-input>
                     </bk-form-item>
                     <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password">
-                        <bk-input type="password" v-model="editProxyData.password"></bk-input>
+                        <bk-input type="password" v-model.trim="editProxyData.password"></bk-input>
                     </bk-form-item>
                     <!-- <bk-form-item>
                         <bk-button text theme="primary" @click="testPrivateProxy">{{$t('test') + $t('privateProxy')}}</bk-button>

@@ -160,7 +160,10 @@ class GrafanaService @Autowired constructor(
                     pipelineSize = it.size
                 }
             }
-            val row = listOf(repo.projectId, repo.nodeNum, repo.capSize, customNum, customSize, pipelineNum, pipelineSize)
+            val row = listOf(
+                repo.projectId, repo.nodeNum, repo.capSize,
+                customNum, customSize, pipelineNum, pipelineSize
+            )
             rows.add(row)
         }
         val data = QueryResult(columns, rows, target.type)

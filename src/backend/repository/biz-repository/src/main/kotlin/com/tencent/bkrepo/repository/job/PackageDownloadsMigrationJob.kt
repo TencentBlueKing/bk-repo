@@ -41,8 +41,8 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.repository.service.PackageDownloadsService
-import com.tencent.bkrepo.repository.service.PackageService
+import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -70,42 +70,47 @@ class PackageDownloadsMigrationJob(
             var packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
             var packagePage = packageService.listPackagePage(repo.projectId, repo.name, option = packageOption)
             while (packagePage.records.isNotEmpty()) {
-                val packageList = packagePage.records
-                packageList.forEach { pkg ->
-                    logger.info("Migrate package[${pkg.projectId}/${pkg.repoName}/${pkg.name}]")
-                    // 查询版本
-                    val versionOption = VersionListOption(pageNumber = 1, pageSize = DEFAULT_PAGE_SIZE)
-                    val versionPage = packageService.listVersionPage(repo.projectId, repo.name, pkg.key, versionOption)
-                    val versionList = versionPage.records
-                    // 遍历版本
-                    versionList.forEach { version ->
-                        val displayVersion = "${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}"
-                        logger.info("Migrate version[$displayVersion]")
-                        // 查询下载统计
-                        val request = buildLegacyQueryRequest(pkg, version)
-                        val legacyDownloads = queryLegacyDownloads(request)
-                        logger.info("Find [${legacyDownloads.size}] legacy download stats.")
-                        legacyDownloads.forEach { downloads ->
-                            val migrationRequest = DownloadsMigrationRequest(
-                                projectId = pkg.projectId,
-                                repoName = pkg.repoName,
-                                packageName = pkg.name,
-                                packageKey = pkg.key,
-                                packageVersion = version.name,
-                                date = downloads.date,
-                                count = downloads.count
-                            )
-                            logger.info("Migrate [${downloads.count}] downloads on [${downloads.date}] " +
-                                "for version[$displayVersion]")
-                            packageDownloadsService.migrate(migrationRequest)
-                        }
-                    }
-                }
-
+                packagePage.records.forEach { pkg -> migratePackage(repo, pkg) }
                 pageNumber += 1
                 packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
                 packagePage = packageService.listPackagePage(repo.projectId, repo.name, option = packageOption)
             }
+        }
+    }
+
+    private fun migratePackage(repo: TRepository, pkg: PackageSummary) {
+        logger.info("Migrate package[${pkg.projectId}/${pkg.repoName}/${pkg.name}]")
+        // 查询版本
+        val versionOption = VersionListOption(pageNumber = 1, pageSize = DEFAULT_PAGE_SIZE)
+        val versionPage = packageService.listVersionPage(repo.projectId, repo.name, pkg.key, versionOption)
+        val versionList = versionPage.records
+        // 遍历版本
+        versionList.forEach { version ->
+            migrateVersion(pkg, version)
+        }
+    }
+
+    private fun migrateVersion(pkg: PackageSummary, version: PackageVersion) {
+        val displayVersion = "${pkg.projectId}/${pkg.repoName}/${pkg.name}-${version.name}"
+        logger.info("Migrate version[$displayVersion]")
+        // 查询下载统计
+        val request = buildLegacyQueryRequest(pkg, version)
+        val legacyDownloads = queryLegacyDownloads(request)
+        logger.info("Find [${legacyDownloads.size}] legacy download stats.")
+        legacyDownloads.forEach { downloads ->
+            val migrationRequest = DownloadsMigrationRequest(
+                projectId = pkg.projectId,
+                repoName = pkg.repoName,
+                packageName = pkg.name,
+                packageKey = pkg.key,
+                packageVersion = version.name,
+                date = downloads.date,
+                count = downloads.count
+            )
+            logger.info(
+                "Migrate [${downloads.count}] downloads on [${downloads.date}] for version[$displayVersion]"
+            )
+            packageDownloadsService.migrate(migrationRequest)
         }
     }
 
@@ -149,7 +154,6 @@ class PackageDownloadsMigrationJob(
             )
         }
     }
-
 
     private fun queryLegacyDownloads(request: LegacyQueryRequest): List<LegacyDownloads> {
         if (request.artifact.isBlank()) return emptyList()

@@ -35,12 +35,12 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
-import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 
 /**
@@ -64,14 +64,16 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
     override fun delete(path: String, name: String, client: CosClient) {
         return try {
             client.deleteObject(DeleteObjectRequest(name))
-        } catch (ignored: InnerCosException) {
+        } catch (ignored: IOException) {
+            // ignored
         }
     }
 
     override fun exist(path: String, name: String, client: CosClient): Boolean {
         return try {
             return client.checkObjectExist(CheckObjectExistRequest(name))
-        } catch (ignored: InnerCosException) {
+        } catch (ignored: IOException) {
+            // return false if error
             false
         }
     }
@@ -81,7 +83,7 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
             require(fromClient.credentials.region == toClient.credentials.region)
             require(fromClient.credentials.secretId == toClient.credentials.secretId)
             require(fromClient.credentials.secretKey == toClient.credentials.secretKey)
-        } catch (exception: IllegalArgumentException) {
+        } catch (ignored: IllegalArgumentException) {
             throw IllegalArgumentException("Unsupported to copy object between different cos app id")
         }
         toClient.copyObject(CopyObjectRequest(fromClient.credentials.bucket, name, name))

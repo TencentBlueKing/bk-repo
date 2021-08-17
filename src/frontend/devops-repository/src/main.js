@@ -26,8 +26,23 @@ Vue.use(bkMagic)
 Vue.prototype.$setLocale = setLocale
 Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
 
+Vue.mixin({
+    methods: {
+        // 特殊仓库名称替换
+        replaceRepoName (name) {
+            switch (name) {
+                case 'custom':
+                    return '自定义仓库'
+                case 'pipeline':
+                    return '流水线仓库'
+                default:
+                    return name
+            }
+        }
+    }
+})
+
 window.repositoryVue = new Vue({
-    el: '#app',
     router: createRouter(store),
     i18n,
     store,
@@ -36,3 +51,5 @@ window.repositoryVue = new Vue({
     },
     template: '<App/>'
 })
+
+if (document.querySelector('#app')) window.repositoryVue.$mount('#app')

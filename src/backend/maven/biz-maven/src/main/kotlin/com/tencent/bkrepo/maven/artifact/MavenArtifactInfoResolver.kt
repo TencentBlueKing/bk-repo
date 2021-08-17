@@ -41,7 +41,12 @@ import javax.servlet.http.HttpServletRequest
 @Component
 @Resolver(MavenArtifactInfo::class)
 class MavenArtifactInfoResolver : ArtifactInfoResolver {
-    override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): MavenArtifactInfo {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): MavenArtifactInfo {
         val mavenArtifactInfo =
             MavenArtifactInfo(projectId, repoName, artifactUri)
         // 仅当上传jar包时校验地址格式

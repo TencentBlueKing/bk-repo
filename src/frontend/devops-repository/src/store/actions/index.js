@@ -1,9 +1,11 @@
 import Vue from 'vue'
+import cookie from 'js-cookie'
 
 import repoGeneric from './repoGeneric'
 import repoCommon from './repoCommon'
 import token from './token'
 import permission from './permission'
+import nodeManage from './nodeManage'
 
 const prefix = 'repository/api'
 
@@ -12,6 +14,7 @@ export default {
     ...repoCommon,
     ...token,
     ...permission,
+    ...nodeManage,
     /*
         创建仓库
         body: {
@@ -47,13 +50,19 @@ export default {
                     type
                 }
             }
-        )
+        ).then(res => ({
+            ...res,
+            records: res.records.filter(v => v.name !== 'report' && v.name !== 'log')
+        })) // 前端隐藏report仓库/log仓库
     },
     // 查询仓库列表
-    getRepoListAll (_, { projectId }) {
+    getRepoListAll ({ commit }, { projectId }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/repo/list/${projectId}`
-        )
+        ).then(res => {
+            // 前端隐藏report仓库/log仓库
+            commit('SET_REPO_LIST_ALL', res.filter(v => v.name !== 'report' && v.name !== 'log'))
+        })
     },
     // 查询仓库信息
     getRepoInfo (_, { projectId, repoName, repoType }) {
@@ -92,5 +101,16 @@ export default {
                 }
             }))
         })
+    },
+    logout () {
+        if (MODE_CONFIG === 'standalone') {
+            cookie.remove('bkrepo_ticket')
+            location.reload()
+        } else {
+            window.postMessage({
+                action: 'toggleLoginDialog'
+            }, '*')
+            location.href = window.getLoginUrl()
+        }
     }
 }

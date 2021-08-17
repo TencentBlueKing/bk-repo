@@ -78,8 +78,9 @@ class NpmPackageHandler {
                 val next = iterator.next()
                 val version = next.key
                 // tgz包不存在，补全包版本数据失败
-                if (!tgzNodeInfoMap.containsKey(version)){
-                    val message = "the version [$version] for package [$name] with tgz file not found in repo [${nodeInfo.projectId}/${nodeInfo.repoName}]."
+                if (!tgzNodeInfoMap.containsKey(version)) {
+                    val message = "the version [$version] for package [$name] with tgz file not found " +
+                        "in repo [${nodeInfo.projectId}/${nodeInfo.repoName}]."
                     logger.warn(message)
                     val failVersionDetail = FailVersionDetail(version, message)
                     failPackageDetail.failedVersionSet.add(failVersionDetail)
@@ -195,7 +196,10 @@ class NpmPackageHandler {
         val packageKey = PackageKeys.ofNpm(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
-                logger.info("user: [$userId] delete package [$name] with version [$version] in repo [$projectId/$repoName] success!")
+                logger.info(
+                    "user: [$userId] delete package [$name] with version [$version] " +
+                        "in repo [$projectId/$repoName] success!"
+                )
             }
         }
     }

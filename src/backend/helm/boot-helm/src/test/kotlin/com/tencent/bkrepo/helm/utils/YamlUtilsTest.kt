@@ -47,7 +47,7 @@ class YamlUtilsTest {
     }
 
     companion object {
-        val yamlStr = "apiVersion: v1\n" +
+        const val yamlStr = "apiVersion: v1\n" +
             "entries:\n" +
             "  bk-redis:\n" +
             "  - apiVersion: v1\n" +

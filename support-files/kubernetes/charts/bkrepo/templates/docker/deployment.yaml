@@ -22,7 +22,7 @@ spec:
         app.kubernetes.io/component: docker
         {{- if .Values.docker.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .Values.docker.podLabels "context" $) | nindent 8 }}
-        {{- end }}        
+        {{- end }}
     spec:
       serviceAccountName: {{ template "bkrepo.serviceAccountName" . }}
       {{- include "bkrepo.imagePullSecrets" . | nindent 6 }}
@@ -74,27 +74,23 @@ spec:
             httpGet:
               path: /actuator/health/livenessState
               port: http
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
             successThreshold: 1
           readinessProbe:
             httpGet:
               path: /actuator/health/readinessState
               port: http
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
             successThreshold: 1
-          startupProbe:
-            httpGet:
-              path: /actuator/health
-              port: http
-            failureThreshold: 20
-            periodSeconds: 5
           volumeMounts:
             - name: storage
-              mountPath: {{ .Values.common.storage.filesystem.path }}
+              mountPath: {{ .Values.common.mountPath }}
       volumes:
         - name: storage
           {{- if .Values.persistence.enabled }}

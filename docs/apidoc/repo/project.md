@@ -2,6 +2,42 @@
 
 [toc]
 
+## 创建仓库
+
+- API: POST /repository/api/project/create
+- API 名称: create_project
+- 功能说明：
+  - 中文：创建项目
+  - English：create project
+- 请求体
+
+  ```json
+  {
+    "name": "test",
+    "displayName": "test",
+    "description": "project description"
+  }
+  ```
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |name|string|是|无|项目名称，要求以字母或者下划线开头，长度不超过32位|proejct name|
+  |displayName|string|是|无|显示名称，要求以字母或者下划线开头，长度不超过32位。此字段保留作用，和name设置为相同值即可|project display name|
+  |description|string|是|无|项目描述|project description|
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```
+
 ## 查询项目列表
 
 - API: GET /repository/api/project/list

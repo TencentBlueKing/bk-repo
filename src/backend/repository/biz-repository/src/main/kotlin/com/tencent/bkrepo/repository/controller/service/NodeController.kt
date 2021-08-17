@@ -41,14 +41,13 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.repository.service.NodeSearchService
-import com.tencent.bkrepo.repository.service.NodeService
+import com.tencent.bkrepo.repository.service.node.NodeSearchService
+import com.tencent.bkrepo.repository.service.node.NodeService
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -102,12 +101,12 @@ class NodeController(
         return ResponseBuilder.success()
     }
 
-    override fun moveNode(nodeMoveRequest: NodeMoveRequest): Response<Void> {
+    override fun moveNode(nodeMoveRequest: NodeMoveCopyRequest): Response<Void> {
         nodeService.moveNode(nodeMoveRequest)
         return ResponseBuilder.success()
     }
 
-    override fun copyNode(nodeCopyRequest: NodeCopyRequest): Response<Void> {
+    override fun copyNode(nodeCopyRequest: NodeMoveCopyRequest): Response<Void> {
         nodeService.copyNode(nodeCopyRequest)
         return ResponseBuilder.success()
     }
@@ -131,16 +130,6 @@ class NodeController(
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
-    override fun getNodeDetail(
-        projectId: String,
-        repoName: String,
-        repoType: String,
-        fullPath: String
-    ): Response<NodeDetail?> {
-        val artifactInfo = DefaultArtifactInfo(projectId, repoName, fullPath)
-        return ResponseBuilder.success(nodeService.getNodeDetail(artifactInfo, repoType))
-    }
-
     override fun listNode(
         projectId: String,
         repoName: String,
@@ -155,43 +144,5 @@ class NodeController(
             deep = deep
         )
         return ResponseBuilder.success(nodeService.listNode(artifactInfo, nodeListOption))
-    }
-
-    override fun page(
-        projectId: String,
-        repoName: String,
-        pageNumber: Int,
-        pageSize: Int,
-        path: String,
-        includeFolder: Boolean,
-        includeMetadata: Boolean,
-        deep: Boolean
-    ): Response<Page<NodeInfo>> {
-        val nodeListOption = NodeListOption(pageNumber, pageSize, includeFolder, includeMetadata, deep)
-        return listNodePage(projectId, repoName, path, nodeListOption)
-    }
-
-    override fun create(nodeCreateRequest: NodeCreateRequest): Response<NodeDetail> {
-        return this.createNode(nodeCreateRequest)
-    }
-
-    override fun rename(nodeRenameRequest: NodeRenameRequest): Response<Void> {
-        return this.renameNode(nodeRenameRequest)
-    }
-
-    override fun update(nodeUpdateRequest: NodeUpdateRequest): Response<Void> {
-        return this.updateNode(nodeUpdateRequest)
-    }
-
-    override fun move(nodeMoveRequest: NodeMoveRequest): Response<Void> {
-        return this.moveNode(nodeMoveRequest)
-    }
-
-    override fun copy(nodeCopyRequest: NodeCopyRequest): Response<Void> {
-        return this.copyNode(nodeCopyRequest)
-    }
-
-    override fun query(queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
-        return this.search(queryModel)
     }
 }

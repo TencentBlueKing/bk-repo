@@ -8,7 +8,7 @@
             <div class="ml20 mr20 upload-file-info">
                 <bk-form :label-width="80" :model="file" :rules="rules" ref="fileName">
                     <bk-form-item :label="$t('fileName')" :required="true" :property="'name'">
-                        <bk-input :disabled="Boolean(progress)" v-model="file.name"></bk-input>
+                        <bk-input :disabled="Boolean(progress)" v-model.trim="file.name"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('overwrite')" :required="true" :property="'overwrite'">
                         <bk-radio-group v-model="file.overwrite">
@@ -20,11 +20,7 @@
                         <bk-input :disabled="Boolean(progress)" :placeholder="$t('uploadExpiresPlaceholder')" v-model="file.expires"></bk-input>
                     </bk-form-item> -->
                 </bk-form>
-                <bk-progress v-if="progress"
-                    :show-text="false"
-                    :theme="progressTheme" class="mt20"
-                    :percent="progress">
-                </bk-progress>
+                <bk-progress v-if="progress" class="mt20" :show-text="false" :theme="uploadStatus" :percent="progress"></bk-progress>
             </div>
             <i v-if="!progress" class="devops-icon icon-close hover-btn" @click="reset"></i>
         </template>
@@ -40,6 +36,10 @@
     export default {
         name: 'artifactoryUpload',
         props: {
+            uploadStatus: {
+                type: String,
+                default: 'primary'
+            },
             multiple: {
                 type: Boolean,
                 default: false
@@ -56,7 +56,6 @@
                     expires: 0
                 },
                 progress: 0,
-                progressTheme: 'primary',
                 rules: {
                     name: [
                         {
@@ -90,7 +89,6 @@
             },
             reset () {
                 this.progress = 0
-                this.progressTheme = 'primary'
                 this.file = {
                     name: '',
                     blob: null,
@@ -115,9 +113,6 @@
                     size: convertFileSize(file.size),
                     type: file.type
                 }
-            },
-            uploadFailed () {
-                this.progressTheme = 'danger'
             },
             progressHandler ($event) {
                 console.log('upload', $event.loaded + '/' + $event.total)
