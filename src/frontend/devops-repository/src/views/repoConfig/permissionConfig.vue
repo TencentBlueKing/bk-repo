@@ -279,8 +279,8 @@
                 'getRepoDepartmentDetail'
             ]),
             filterSelectOptions (target, part) {
-                const list = Object.values({ users: this.userList.filter(user => user.id !== 'anonymous'), roles: this.roleList }[part])
-                return list.filter(v => !target.data.find(w => w === v.id))
+                const list = Object.values({ users: this.userList, roles: this.roleList }[part])
+                return list.filter(v => !target.data.find(w => w === v.id) && v.id !== 'anonymous')
             },
             handleShowAddArea (target) {
                 target.showAddArea = !target.showAddArea
@@ -431,7 +431,7 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .permission-config-container {
-    /deep/ .bk-collapse-item {
+    ::v-deep .bk-collapse-item {
         margin-bottom: 20px;
         .bk-collapse-item-detail {
             color: inherit;
@@ -464,7 +464,7 @@
         padding: 10px;
         border: solid #d5d5d5;
         border-width: 0 1px 1px;
-        /deep/ .bk-select-empty {
+        ::v-deep .bk-select-empty {
             display: none;
         }
         .section-sub-title {

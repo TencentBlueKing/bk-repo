@@ -17,7 +17,7 @@
             </div>
         </div>
         <div class="common-package-tab">
-            <bk-tab class="common-package-tab-main" type="unborder-card">
+            <bk-tab class="common-package-tab-main" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel name="commonVersion" :label="$t('version')" v-bkloading="{ isLoading }">
                     <div class="common-package-version">
                         <div class="mb20 flex-align-center">
@@ -127,6 +127,7 @@
         mixins: [commonMixin],
         data () {
             return {
+                tabName: 'commonVersion',
                 isLoading: false,
                 infoLoading: false,
                 formDialog: {
@@ -329,7 +330,7 @@
         flex: 1;
         .common-package-tab-main {
             height: 100%;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 40px);
                 .bk-tab-content {
                     height: 100%;

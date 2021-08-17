@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.service.repo.impl
@@ -55,9 +51,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.listener.event.repo.RepoCreatedEvent
-import com.tencent.bkrepo.repository.listener.event.repo.RepoDeletedEvent
-import com.tencent.bkrepo.repository.listener.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -70,6 +63,9 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
+import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
+import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
@@ -191,14 +187,16 @@ class RepositoryServiceImpl(
                 createdBy = operator,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = operator,
-                lastModifiedDate = LocalDateTime.now()
+                lastModifiedDate = LocalDateTime.now(),
+                quota = quota,
+                used = 0
             )
             return try {
                 if (repoConfiguration is CompositeConfiguration) {
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
                 repositoryDao.insert(repository)
-                publishEvent(RepoCreatedEvent(repoCreateRequest))
+                publishEvent(buildCreatedEvent(repoCreateRequest))
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository, storageCredential)!!
             } catch (exception: DuplicateKeyException) {
@@ -213,6 +211,10 @@ class RepositoryServiceImpl(
         repoUpdateRequest.apply {
             Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
             val repository = checkRepository(projectId, name)
+            quota?.let {
+                Preconditions.checkArgument(it >= repository.used ?: 0, this::quota.name)
+                repository.quota = it
+            }
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
             repository.public = public ?: repository.public
             repository.description = description ?: repository.description
@@ -224,7 +226,7 @@ class RepositoryServiceImpl(
             }
             repositoryDao.save(repository)
         }
-        publishEvent(RepoUpdatedEvent(repoUpdateRequest))
+        publishEvent(buildUpdatedEvent(repoUpdateRequest))
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 
@@ -250,7 +252,7 @@ class RepositoryServiceImpl(
                 }
             }
         }
-        publishEvent(RepoDeletedEvent(repoDeleteRequest))
+        publishEvent(buildDeletedEvent(repoDeleteRequest))
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 
@@ -395,7 +397,9 @@ class RepositoryServiceImpl(
             createdBy = operator,
             createdDate = LocalDateTime.now(),
             lastModifiedBy = operator,
-            lastModifiedDate = LocalDateTime.now()
+            lastModifiedDate = LocalDateTime.now(),
+            quota = repository.quota,
+            used = repository.used
         )
         repositoryDao.insert(proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
@@ -454,7 +458,9 @@ class RepositoryServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    quota = it.quota,
+                    used = it.used
                 )
             }
         }
@@ -473,7 +479,9 @@ class RepositoryServiceImpl(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    quota = it.quota,
+                    used = it.used
                 )
             }
         }

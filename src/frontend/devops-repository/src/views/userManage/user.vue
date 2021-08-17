@@ -1,6 +1,14 @@
 <template>
     <div class="user-container" v-bkloading="{ isLoading }">
         <div class="mb20 flex-align-center">
+            <bk-select
+                class="mr20 w250"
+                v-model="showAdmin"
+                placeholder="账号权限"
+                @change="handlerPaginationChange()">
+                <bk-option id="true" name="管理员"></bk-option>
+                <bk-option id="false" name="普通用户"></bk-option>
+            </bk-select>
             <bk-input
                 class="user-search"
                 v-model.trim="userInput"
@@ -11,11 +19,6 @@
             </bk-input>
             <i class="user-search-btn devops-icon icon-search" @click="handlerPaginationChange()"></i>
             <div class="create-user flex-align-center">
-                <bk-checkbox
-                    v-model="showAdmin"
-                    :true-value="true"
-                    :false-value="''"
-                    @change="handlerPaginationChange()">仅查看管理员</bk-checkbox>
                 <bk-button v-if="mode === 'standalone'" class="ml20" theme="primary" @click.stop="showCreateUser">{{ $t('create') + $t('user') }}</bk-button>
             </div>
         </div>
@@ -194,8 +197,8 @@
             getUserListHandler () {
                 this.isLoading = true
                 return this.getUserList({
-                    user: this.userInput,
-                    admin: this.showAdmin,
+                    user: this.userInput || undefined,
+                    admin: this.showAdmin || undefined,
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {

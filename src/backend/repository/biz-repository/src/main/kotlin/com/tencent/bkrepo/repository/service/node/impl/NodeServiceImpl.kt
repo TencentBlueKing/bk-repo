@@ -45,9 +45,12 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.service.file.FileReferenceService
+import com.tencent.bkrepo.repository.service.repo.QuotaService
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 /**
  * 节点服务实现类
@@ -59,6 +62,7 @@ class NodeServiceImpl(
     override val fileReferenceService: FileReferenceService,
     override val storageCredentialService: StorageCredentialService,
     override val storageService: StorageService,
+    override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties
 ) : NodeBaseService(
     nodeDao,
@@ -66,11 +70,16 @@ class NodeServiceImpl(
     fileReferenceService,
     storageCredentialService,
     storageService,
+    quotaService,
     repositoryProperties
 ) {
 
     override fun computeSize(artifact: ArtifactInfo): NodeSizeInfo {
         return NodeStatsSupport(this).computeSize(artifact)
+    }
+
+    override fun aggregateComputeSize(criteria: Criteria): Long {
+        return NodeStatsSupport(this).aggregateComputeSize(criteria)
     }
 
     override fun countFileNode(artifact: ArtifactInfo): Long {
@@ -97,6 +106,10 @@ class NodeServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String) {
         NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+    }
+
+    override fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String) {
+        NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

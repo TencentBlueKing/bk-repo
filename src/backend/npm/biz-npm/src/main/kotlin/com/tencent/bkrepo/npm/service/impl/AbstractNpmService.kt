@@ -93,6 +93,14 @@ open class AbstractNpmService {
     }
 
     /**
+     * check package version exists
+     */
+    fun packageHistoryVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
+        val packageSummary = packageClient.findPackageByKey(projectId, repoName, key).data ?: return false
+        return packageSummary.historyVersion.contains(version)
+    }
+
+    /**
      * query package metadata
      */
     fun queryPackageInfo(

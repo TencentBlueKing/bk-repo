@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
@@ -143,8 +144,8 @@ class ChartManipulationServiceImpl(
             val provFullPath = getProvFileFullPath(name, version)
             val context = ArtifactRemoveContext()
             checkRepositoryExist(context.artifactInfo)
-            if (!exist(projectId, repoName, chartFullPath)) {
-                throw HelmFileNotFoundException("remove $chartFullPath failed: no such file or directory")
+            if (!packageVersionExist(projectId, repoName, PackageKeys.ofHelm(name), version)) {
+                throw HelmFileNotFoundException("remove package $chartFullPath failed: no such file or directory")
             }
             context.putAttribute(FULL_PATH, mutableListOf(chartFullPath, provFullPath))
             ArtifactContextHolder.getRepository().remove(context)

@@ -41,7 +41,7 @@
         props: {
             article: {
                 type: Array,
-                default: []
+                default: () => []
             }
         },
         data () {
@@ -59,7 +59,7 @@
 <style lang="scss" scoped>
 @import '@/scss/conf';
 .repo-guide-container {
-    /deep/ .bk-collapse-item {
+    ::v-deep .bk-collapse-item {
         margin-bottom: 20px;
         .bk-collapse-item-detail {
             color: inherit;

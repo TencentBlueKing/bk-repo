@@ -131,12 +131,12 @@ class RpmService(
         rpmConfiguration: RepositoryConfiguration
     ): RepoUpdateRequest {
         return RepoUpdateRequest(
-            context.artifactInfo.projectId,
-            context.artifactInfo.repoName,
-            context.repositoryDetail.public,
-            context.repositoryDetail.description,
-            rpmConfiguration,
-            context.userId
+            projectId = context.artifactInfo.projectId,
+            name = context.artifactInfo.repoName,
+            public = context.repositoryDetail.public,
+            description = context.repositoryDetail.description,
+            configuration = rpmConfiguration,
+            operator = context.userId
         )
     }
 

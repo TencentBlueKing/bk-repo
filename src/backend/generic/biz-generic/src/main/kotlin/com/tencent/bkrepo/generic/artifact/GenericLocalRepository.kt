@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -106,6 +108,8 @@ class GenericLocalRepository : LocalRepository() {
                 context.storageCredentials
             )
             context.response.contentType = MediaTypes.APPLICATION_JSON
+            context.response.addHeader(X_CHECKSUM_MD5, context.getArtifactMd5())
+            context.response.addHeader(X_CHECKSUM_SHA256, context.getArtifactSha256())
             context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
         }
     }

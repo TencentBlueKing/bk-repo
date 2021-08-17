@@ -89,8 +89,8 @@ spec:
                 - name: Host
                   value: {{ .Values.gateway.host }}
             initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 10
             failureThreshold: 5
             successThreshold: 1
           readinessProbe:
@@ -101,7 +101,7 @@ spec:
                 - name: Host
                   value: {{ .Values.gateway.host }}
             initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 10
             failureThreshold: 5
             successThreshold: 1

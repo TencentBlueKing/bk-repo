@@ -117,7 +117,7 @@
                         },
                         {
                             validator: this.asynCheckRepoName,
-                            message: this.$t('repoName') + this.$t('repeat'),
+                            message: this.$t('repoName') + '已存在',
                             trigger: 'blur'
                         }
                     ],
@@ -216,7 +216,7 @@
             max-width: 1080px;
             min-width: 720px;
             .repo-type-radio-group {
-                /deep/ .bk-form-radio-button {
+                ::v-deep .bk-form-radio-button {
                     margin: 0 20px 20px 0;
                     .bk-radio-button-text {
                         height: auto;

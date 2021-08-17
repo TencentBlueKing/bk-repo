@@ -64,6 +64,7 @@ import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -72,6 +73,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
 @Api("节点用户接口")
 @RestController
@@ -132,6 +134,18 @@ class UserNodeController(
             nodeService.deleteNode(deleteRequest)
             return ResponseBuilder.success()
         }
+    }
+
+    @ApiOperation("清理创建时间早于{date}的文件节点")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
+    @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
+    fun deleteNodeCreatedBeforeDate(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
+    ): Response<Void> {
+        nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("更新节点")

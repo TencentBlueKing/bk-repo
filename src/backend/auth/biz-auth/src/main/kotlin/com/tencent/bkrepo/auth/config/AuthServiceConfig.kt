@@ -49,6 +49,7 @@ import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import com.tencent.bkrepo.common.plugin.api.PluginManager
+import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
@@ -77,7 +78,8 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
-        repositoryClient: RepositoryClient
+        repositoryClient: RepositoryClient,
+        projectClient: ProjectClient
     ): PermissionService {
         logger.debug("init PermissionServiceImpl")
         return PermissionServiceImpl(
@@ -85,7 +87,8 @@ class AuthServiceConfig {
             roleRepository,
             permissionRepository,
             mongoTemplate,
-            repositoryClient
+            repositoryClient,
+            projectClient
         )
     }
 
@@ -97,6 +100,7 @@ class AuthServiceConfig {
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
         repositoryClient: RepositoryClient,
+        projectClient: ProjectClient,
         bkiamService: BkiamService
     ): PermissionService {
         logger.debug("init BkiamPermissionServiceImpl")
@@ -106,6 +110,7 @@ class AuthServiceConfig {
             permissionRepository,
             mongoTemplate,
             repositoryClient,
+            projectClient,
             bkiamService
         )
     }
@@ -118,6 +123,7 @@ class AuthServiceConfig {
         permissionRepository: PermissionRepository,
         mongoTemplate: MongoTemplate,
         repositoryClient: RepositoryClient,
+        projectClient: ProjectClient,
         bkAuthConfig: BkAuthConfig,
         bkAuthPipelineService: BkAuthPipelineService,
         bkAuthProjectService: BkAuthProjectService,
@@ -130,6 +136,7 @@ class AuthServiceConfig {
             permissionRepository,
             mongoTemplate,
             repositoryClient,
+            projectClient,
             bkAuthConfig,
             bkAuthPipelineService,
             bkAuthProjectService,

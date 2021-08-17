@@ -26,8 +26,7 @@ module.exports = (env = {}, argv) => {
             'vue',
             'vuex',
             'vue-router',
-            'axios',
-            'moment'
+            'axios'
         ],
         output: {
             filename: '[name].dll.js',
@@ -71,7 +70,6 @@ module.exports = (env = {}, argv) => {
             ]
         },
         plugins: [
-            new webpack.ContextReplacementPlugin(/moment\/locale$/, /zh-cn/),
             new webpack.DllPlugin({
                 context: __dirname,
                 name: 'lib',

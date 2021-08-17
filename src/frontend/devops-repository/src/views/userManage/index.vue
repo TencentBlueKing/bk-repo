@@ -7,7 +7,7 @@
             </bk-button>
         </header>
         <main class="user-manage-main">
-            <bk-tab class="user-manage-tab" type="unborder-card">
+            <bk-tab class="user-manage-tab" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel name="user" :label="$t('user')">
                     <User />
                 </bk-tab-panel>
@@ -23,7 +23,10 @@
     import Role from './role'
     export default {
         name: 'userManage',
-        components: { User, Role }
+        components: { User, Role },
+        data () {
+            return { tabName: 'user' }
+        }
     }
 </script>
 <style lang="scss" scoped>
@@ -47,7 +50,7 @@
         border: 1px solid $borderWeightColor;
         .user-manage-tab {
             height: 100%;
-            /deep/ .bk-tab-section {
+            ::v-deep .bk-tab-section {
                 height: calc(100% - 40px);
                 .bk-tab-content {
                     height: 100%;

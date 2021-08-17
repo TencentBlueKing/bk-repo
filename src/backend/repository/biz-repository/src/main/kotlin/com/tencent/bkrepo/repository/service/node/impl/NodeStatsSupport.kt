@@ -46,6 +46,8 @@ import org.apache.commons.lang.StringUtils
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
 import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
+import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -73,12 +75,7 @@ open class NodeStatsSupport(
         val listOption = NodeListOption(includeFolder = true, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, node.fullPath, listOption)
         val count = nodeDao.count(Query(criteria))
-        val aggregation = newAggregation(
-            match(criteria),
-            group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
-        )
-        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
-        val size = aggregateResult.mappedResults.firstOrNull()?.get(NodeSizeInfo::size.name) as? Long ?: 0
+        val size = aggregateComputeSize(criteria)
         return NodeSizeInfo(subNodeCount = count, size = size)
     }
 
@@ -93,6 +90,15 @@ open class NodeStatsSupport(
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), listOption)
             return nodeDao.count(query)
         }
+    }
+
+    override fun aggregateComputeSize(criteria: Criteria): Long {
+        val aggregation = Aggregation.newAggregation(
+            Aggregation.match(criteria),
+            Aggregation.group().sum(TNode::size.name).`as`(NodeSizeInfo::size.name)
+        )
+        val aggregateResult = nodeDao.aggregate(aggregation, HashMap::class.java)
+        return aggregateResult.mappedResults.firstOrNull()?.get(NodeSizeInfo::size.name) as? Long ?: 0
     }
 
     override fun computeSizeDistribution(projectId: String, range: List<Long>, repoName: String?): Map<String, Long> {

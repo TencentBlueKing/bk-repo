@@ -46,7 +46,7 @@
             },
             repoList: {
                 type: Array,
-                default: []
+                default: () => []
             },
             hasClick: {
                 type: Boolean,

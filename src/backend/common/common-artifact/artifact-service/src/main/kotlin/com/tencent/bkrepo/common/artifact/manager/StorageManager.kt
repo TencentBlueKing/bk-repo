@@ -43,9 +43,9 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.replication.api.StorageReplicationClient
+import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
-import com.tencent.bkrepo.replication.pojo.setting.RemoteClusterInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -85,8 +85,8 @@ class StorageManager(
     /**
      * 存储同步client
      */
-    private val storageReplicationClient: StorageReplicationClient by lazy {
-        FeignClientFactory.create<StorageReplicationClient>(centerClusterInfo)
+    private val blobReplicaClient: BlobReplicaClient by lazy {
+        FeignClientFactory.create<BlobReplicaClient>(centerClusterInfo)
     }
 
     /**
@@ -176,7 +176,7 @@ class StorageManager(
      */
     private fun existInCenter(sha256: String, storageKey: String?): Boolean {
         return try {
-            storageReplicationClient.check(sha256, storageKey).data ?: false
+            blobReplicaClient.check(sha256, storageKey).data ?: false
         } catch (exception: Exception) {
             logger.error("Failed to check blob data[$sha256] in center node.", exception)
             false
@@ -193,7 +193,7 @@ class StorageManager(
     ): ArtifactInputStream? {
         try {
             val request = BlobPullRequest(sha256, range, storageKey)
-            val response = storageReplicationClient.pull(request)
+            val response = blobReplicaClient.pull(request)
             check(response.status() == HttpStatus.OK.value) {
                 "Failed to pull blob[$sha256] from center node, status: ${response.status()}"
             }
