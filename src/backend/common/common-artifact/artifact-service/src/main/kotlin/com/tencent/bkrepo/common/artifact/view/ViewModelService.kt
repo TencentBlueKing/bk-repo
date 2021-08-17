@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.view
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.ListViewObject
@@ -40,10 +41,14 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.apache.commons.lang.StringEscapeUtils
 import java.io.PrintWriter
 
-class ViewModelService {
+class ViewModelService(
+    private val viewModelProperties: ViewModelProperties
+) {
 
     fun trailingSlash() {
-        val url = HttpContextHolder.getRequest().requestURL.toString()
+        val host = viewModelProperties.domain
+        val builder = StringBuilder(UrlFormatter.formatHost(host))
+        val url = builder.append(HttpContextHolder.getRequest().requestURI).toString()
         if (!url.endsWith(PathUtils.UNIX_SEPARATOR)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
