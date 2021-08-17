@@ -229,36 +229,8 @@ object XmlStrUtils {
         var tempBuffer = byteArrayOf()
         randomAccessFile.seek(0L)
         loop@ while (randomAccessFile.read(buffer).also { len = it } > 0) {
-<<<<<<< HEAD
             val mergeBuffer = tempBuffer + buffer
             val mergeContent = String(mergeBuffer, 0, len + tempBuffer.size)
-            if (locationIndex < 0) {
-                val prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
-                val location = mergeContent.searchContent(index, locationIndex, locationStr, buffer.size)
-                if (location.isFound) {
-                    locationIndex = location.index
-                    val suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
-                    if (suffix.index > locationIndex) {
-                        suffixIndex = suffix.index
-                        break@loop
-                    }
-                }
-                if (!location.isFound && prefix.isFound) {
-                    prefixIndex = prefix.index
-                }
-                if (location.isFound && prefix.isFound && prefix.index < location.index) {
-                    prefixIndex = prefix.index
-                }
-            }
-            if (locationIndex > 0) {
-                val suffix = mergeContent.searchContent(index, suffixIndex, suffixStr, buffer.size)
-                if (suffix.index > locationIndex) {
-                    suffixIndex = suffix.index
-                    break@loop
-                }
-=======
-            val content = String(buffer, 0, len)
-            val mergeContent = tempStr + content
             // 只有未定位到location时 ，才查找 prefix 和 location
             if (!location.isFound) {
                 prefix = mergeContent.searchContent(index, prefixIndex, prefixStr, buffer.size)
@@ -280,7 +252,6 @@ object XmlStrUtils {
             if (suffix.isFound && suffix.index > locationIndex) {
                 suffixIndex = suffix.index
                 break@loop
->>>>>>> ceabd6e3a12404e17982bb15f8586bff5e4acdb5
             }
             index += buffer.size
             tempBuffer = buffer.copyOf(len)
