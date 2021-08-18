@@ -48,6 +48,7 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -356,12 +357,7 @@ class UserServiceImpl constructor(
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
-        val criteria = Criteria()
-        criteria.orOperator(
-            Criteria.where(TUser::pwd.name).`is`(hashPwd),
-            Criteria.where("tokens.id").`is`(pwd)
-        ).and(TUser::userId.name).`is`(userId)
-        val query = Query.query(criteria)
+        val query = UserQueryHelper.buildPermissionCheck(userId, pwd, hashPwd)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
             return null
         }
