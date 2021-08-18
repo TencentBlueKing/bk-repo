@@ -10,23 +10,19 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.repository.controller.user
@@ -40,6 +36,7 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -119,37 +116,31 @@ class UserRepositoryController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("列表查询项目所有仓库")
+    @ApiOperation("查询有权限的仓库列表")
     @GetMapping("/list/{projectId}")
-    fun listRepo(
+    fun listUserRepo(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
-        @ApiParam("仓库名称", required = false)
-        @RequestParam name: String? = null,
-        @ApiParam("仓库类型", required = false)
-        @RequestParam type: String? = null
+        repoListOption: RepoListOption
     ): Response<List<RepositoryInfo>> {
-        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.listRepo(projectId, name, type))
+        return ResponseBuilder.success(repositoryService.listPermissionRepo(userId, projectId, repoListOption))
     }
 
-    @ApiOperation("分页查询仓库列表")
+    @ApiOperation("分页查询有权限的仓库列表")
     @GetMapping("/page/{projectId}/{pageNumber}/{pageSize}")
-    fun listRepoPage(
+    fun listUserRepoPage(
+        @RequestAttribute userId: String,
         @ApiParam(value = "项目id", required = true)
         @PathVariable projectId: String,
         @ApiParam(value = "当前页", required = true, example = "0")
         @PathVariable pageNumber: Int,
         @ApiParam(value = "分页大小", required = true, example = "20")
         @PathVariable pageSize: Int,
-        @ApiParam("仓库名称", required = false)
-        @RequestParam name: String? = null,
-        @ApiParam("仓库类型", required = false)
-        @RequestParam type: String? = null
+        repoListOption: RepoListOption
     ): Response<Page<RepositoryInfo>> {
-        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
-        return ResponseBuilder.success(repositoryService.listRepoPage(projectId, pageNumber, pageSize, name, type))
+        val page = repositoryService.listPermissionRepoPage(userId, projectId, pageNumber, pageSize, repoListOption)
+        return ResponseBuilder.success(page)
     }
 
     @ApiOperation("查询仓库配额")
