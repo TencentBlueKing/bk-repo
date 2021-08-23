@@ -40,6 +40,7 @@ import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_INSTALL_
 import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo.Companion.HELM_PROV_INSTALL_URL
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
@@ -75,7 +76,7 @@ class ChartRepositoryController(
     /**
      * regenerate index.yaml
      */
-    @GetMapping("/{projectId}/{repoName}/regenerate")
+    @PostMapping("/{projectId}/{repoName}/regenerate")
     fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
         chartRepositoryService.regenerateIndexYaml(artifactInfo)
         return ResponseBuilder.success()
