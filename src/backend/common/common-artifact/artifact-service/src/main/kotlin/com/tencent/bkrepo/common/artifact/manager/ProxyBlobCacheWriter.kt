@@ -73,9 +73,9 @@ class ProxyBlobCacheWriter(
         }
     }
 
-    override fun data(buffer: ByteArray, length: Int) {
+    override fun data(buffer: ByteArray, off: Int, length: Int) {
         if (lock != null) {
-            outputStream?.write(buffer, 0, length)
+            outputStream?.write(buffer, off, length)
         }
     }
 
