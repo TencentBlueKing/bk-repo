@@ -106,3 +106,8 @@ const val PIPELINE = "pipeline"
  * 文件访问请求是否为直接下载
  */
 const val PARAM_DOWNLOAD = "download"
+
+/**
+ * 文件访问请求是否为展示
+ */
+const val PARAM_PREVIEW = "preview"
