@@ -46,6 +46,7 @@ import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
+import io.micrometer.core.annotation.Timed
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -54,6 +55,7 @@ import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
+@Timed
 @RestController
 class GenericController(
     private val uploadService: UploadService,
