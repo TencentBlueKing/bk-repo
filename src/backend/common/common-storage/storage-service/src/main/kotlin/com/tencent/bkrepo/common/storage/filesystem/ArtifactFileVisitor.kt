@@ -25,22 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core
+package com.tencent.bkrepo.common.storage.filesystem
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
 
-/**
- * 文件清理操作实现类
- */
-abstract class CleanupSupport : HealthCheckSupport() {
+abstract class ArtifactFileVisitor : SimpleFileVisitor<Path>() {
 
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
-        val credentials = getCredentialsOrDefault(storageCredentials)
-        val tempPath = getTempPath(credentials)
-        val visitor = CleanupFileVisitor(tempPath, tempPath, fileStorage, fileLocator, credentials)
-        getTempClient(credentials).walk(visitor)
-        return visitor.result
-    }
+    /**
+     * 判断是否需要遍历
+     */
+    abstract fun needWalk(): Boolean
 }
