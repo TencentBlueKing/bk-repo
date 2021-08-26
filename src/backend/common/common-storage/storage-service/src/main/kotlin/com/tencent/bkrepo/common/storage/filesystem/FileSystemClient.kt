@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,29 +10,23 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.common.storage.filesystem
 
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.util.createFile
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
@@ -41,7 +35,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.channels.FileChannel
 import java.nio.channels.ReadableByteChannel
-import java.nio.file.FileVisitor
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -52,14 +45,27 @@ import java.nio.file.StandardCopyOption
  */
 class FileSystemClient(private val root: String) {
 
-    constructor(path: Path): this(path.toString())
+    constructor(path: Path) : this(path.toString())
 
+    /**
+     * 创建新文件
+     * @param dir 目录
+     * @param filename 文件名
+     */
     fun touch(dir: String, filename: String): File {
         val filePath = Paths.get(this.root, dir, filename)
         filePath.createFile()
         return filePath.toFile()
     }
 
+    /**
+     * 存储文件
+     * @param dir 目录
+     * @param filename 文件名
+     * @param inputStream 文件数据流
+     * @param size 文件大小
+     * @param overwrite 存在同名文件时是否覆盖
+     */
     fun store(dir: String, filename: String, inputStream: InputStream, size: Long, overwrite: Boolean = false): File {
         val filePath = Paths.get(this.root, dir, filename)
         if (overwrite) {
@@ -76,6 +82,15 @@ class FileSystemClient(private val root: String) {
         return filePath.toFile()
     }
 
+    /**
+     * 移动文件
+     * @param dir 目录
+     * @param filename 文件名
+     * @param file 源文件
+     * @param overwrite 存在同名文件时是否覆盖
+     *
+     * @return 返回移动后的文件
+     */
     fun move(dir: String, filename: String, file: File, overwrite: Boolean = false): File {
         val source = file.toPath()
         val target = Paths.get(this.root, dir, filename)
@@ -101,6 +116,11 @@ class FileSystemClient(private val root: String) {
         return target.toFile()
     }
 
+    /**
+     * 删除文件
+     * @param dir 目录
+     * @param filename 文件名
+     */
     fun delete(dir: String, filename: String) {
         val filePath = Paths.get(this.root, dir, filename)
         if (Files.exists(filePath)) {
@@ -114,16 +134,39 @@ class FileSystemClient(private val root: String) {
         }
     }
 
+    /**
+     * 加载文件
+     * @param dir 目录
+     * @param filename 文件名
+     *
+     * @return 文件对象
+     */
     fun load(dir: String, filename: String): File? {
         val filePath = Paths.get(this.root, dir, filename)
         return if (Files.isRegularFile(filePath)) filePath.toFile() else null
     }
 
+    /**
+     * 判断文件是否存在
+     * @param dir 目录
+     * @param filename 文件名
+     *
+     * @return 是否存在
+     */
     fun exist(dir: String, filename: String): Boolean {
         val filePath = Paths.get(this.root, dir, filename)
         return Files.isRegularFile(filePath)
     }
 
+    /**
+     * 追加文件内容
+     * @param dir 目录
+     * @param filename 文件名
+     * @param inputStream 输入流
+     * @param size 输入流数据大小
+     *
+     * @return 当前文件总大小
+     */
     fun append(dir: String, filename: String, inputStream: InputStream, size: Long): Long {
         val filePath = Paths.get(this.root, dir, filename)
         if (!Files.isRegularFile(filePath)) {
@@ -138,6 +181,11 @@ class FileSystemClient(private val root: String) {
         return Files.size(filePath)
     }
 
+    /**
+     * 创建目录
+     * @param dir 父目录
+     * @param name 要创建的目录名称
+     */
     fun createDirectory(dir: String, name: String) {
         val dirPath = Paths.get(this.root, dir, name)
         if (!Files.exists(dirPath)) {
@@ -145,6 +193,11 @@ class FileSystemClient(private val root: String) {
         }
     }
 
+    /**
+     * 删除目录，包括子文件
+     * @param dir 父目录
+     * @param name 要删除的目录名称
+     */
     fun deleteDirectory(dir: String, name: String) {
         val filePath = Paths.get(this.root, dir, name)
         if (Files.isDirectory(filePath)) {
@@ -154,14 +207,30 @@ class FileSystemClient(private val root: String) {
         }
     }
 
+    /**
+     * 检查文件是否存在且为目录
+     * @param dir 目录名称
+     */
     fun checkDirectory(dir: String): Boolean {
         return Files.isDirectory(Paths.get(this.root, dir))
     }
 
+    /**
+     * 列出目录下所有文件并根据扩展名过滤
+     * @param path 目录名称
+     * @param extension 扩展名
+     */
     fun listFiles(path: String, extension: String): Collection<File> {
         return FileUtils.listFiles(File(this.root, path), arrayOf(extension.trim('.')), false)
     }
 
+    /**
+     * 将多个文件合并为一个文件
+     * @param fileList 待合并的文件列表
+     * @param outputFile 合并后的文件
+     *
+     * @return 合并后的文件
+     */
     fun mergeFiles(fileList: List<File>, outputFile: File): File {
         if (!outputFile.exists()) {
             if (!outputFile.createNewFile()) {
@@ -181,23 +250,12 @@ class FileSystemClient(private val root: String) {
 
     /**
      * 遍历文件
+     * @param visitor ArtifactFileVisitor实现类
      */
-    fun walk(visitor: FileVisitor<in Path>) {
-        val rootPath = Paths.get(root)
-        Files.walkFileTree(rootPath, visitor)
-    }
-
-    /**
-     * 清理文件
-     */
-    fun cleanUp(expireDays: Int): CleanupResult {
-        return if (expireDays <= 0) {
-            CleanupResult()
-        } else {
+    fun walk(visitor: ArtifactFileVisitor) {
+        if (visitor.needWalk()) {
             val rootPath = Paths.get(root)
-            val visitor = CleanupFileVisitor(rootPath, expireDays)
             Files.walkFileTree(rootPath, visitor)
-            visitor.result
         }
     }
 

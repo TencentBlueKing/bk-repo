@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -111,7 +112,11 @@ class CacheStorageService(
      */
     override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        return getCacheClient(credentials).cleanUp(credentials.cache.expireDays)
+        val rootPath = Paths.get(credentials.cache.path)
+        val tempPath = getTempPath(credentials)
+        val visitor = CleanupFileVisitor(rootPath, tempPath, fileStorage, fileLocator, credentials)
+        getCacheClient(credentials).walk(visitor)
+        return visitor.result
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
@@ -119,7 +124,7 @@ class CacheStorageService(
         val tempPath = Paths.get(credentials.cache.path, TEMP)
         val visitor = FileSynchronizeVisitor(tempPath, fileLocator, fileStorage, credentials)
         getCacheClient(credentials).walk(visitor)
-        return visitor.checkResult
+        return visitor.result
     }
 
     override fun doCheckHealth(credentials: StorageCredentials) {
