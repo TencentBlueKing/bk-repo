@@ -29,7 +29,6 @@ package com.tencent.bkrepo.nuget.service.impl
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -73,8 +72,8 @@ class NugetClientServiceImpl : NugetClientService, ArtifactService() {
             "user [$userId] publish nuget package [${publishInfo.nuspecPackage.metadata.id}] with version " +
                 "[${publishInfo.nuspecPackage.metadata.version}] success to repo [${publishInfo.getRepoIdentify()}]"
         )
-        context.response.status = HttpStatus.CREATED.value
-        context.response.writer.write("Successfully published NuPkg to: ${publishInfo.getArtifactFullPath()}")
+//        context.response.status = HttpStatus.CREATED.value
+//        context.response.writer.write("Successfully published NuPkg to: ${publishInfo.getArtifactFullPath()}")
     }
 
     override fun download(userId: String, artifactInfo: NugetDownloadArtifactInfo) {
@@ -91,11 +90,13 @@ class NugetClientServiceImpl : NugetClientService, ArtifactService() {
                 "handling delete package version request for package [$packageName] and version [$version] " +
                         "in repo [${artifactInfo.getRepoIdentify()}]"
             )
-            ArtifactContextHolder.getRepository().remove(ArtifactRemoveContext())
+            val context = ArtifactRemoveContext()
+            repository.remove(context)
             logger.info(
                 "userId [$userId] delete version [$version] for package [$packageName] " +
                         "in repo [${this.getRepoIdentify()}] success."
             )
+            context.response.status = HttpStatus.NO_CONTENT.value
         }
     }
 
