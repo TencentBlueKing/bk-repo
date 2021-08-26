@@ -25,53 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.common.storage.filesystem
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import java.nio.file.Path
+import java.nio.file.SimpleFileVisitor
 
-/**
- * artifact抽象事件
- */
-open class ArtifactEvent(
-    /**
-     * 事件类型
-     */
-    open val type: EventType,
-    /**
-     * 项目id
-     */
-    open val projectId: String,
-    /**
-     * 仓库名称
-     */
-    open val repoName: String,
-    /**
-     * 事件资源key，具有唯一性
-     * ex:
-     * 1. 节点类型对应fullPath
-     * 2. 仓库类型对应仓库名称
-     * 3. 包类型对应包名称
-     */
-    open val resourceKey: String,
-    /**
-     * 操作用户
-     */
-    open val userId: String,
-    /**
-     * 附属数据
-     */
-    open val data: Map<String, Any> = mapOf()
-) {
-    override fun toString(): String {
-        return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +
-            "resourceKey='$resourceKey', userId='$userId', data=$data)"
-    }
+abstract class ArtifactFileVisitor : SimpleFileVisitor<Path>() {
 
     /**
-     * 获取完整的资源key
+     * 判断是否需要遍历
      */
-    @JsonIgnore
-    fun getFullResourceKey(): String {
-        return "$projectId/$repoName/$resourceKey"
-    }
+    abstract fun needWalk(): Boolean
 }
