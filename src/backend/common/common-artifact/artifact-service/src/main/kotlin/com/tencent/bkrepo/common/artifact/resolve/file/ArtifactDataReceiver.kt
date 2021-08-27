@@ -161,24 +161,22 @@ class ArtifactDataReceiver(
      * @param length 数据长度
      */
     fun receiveChunk(chunk: ByteArray, offset: Int, length: Int) {
+        receiveStream(chunk.inputStream(offset, length))
+
         require(!finished) { "Receiver is close" }
         if (startTime == 0L) {
             startTime = System.nanoTime()
         }
         try {
-            checkFallback()
-            outputStream.write(chunk, offset, length)
-            listener.data(chunk, 0, length)
-            received += length
-            checkThreshold()
-        } catch (ignored: IOException) {
+            writeByteArray(chunk, offset, length)
+        } catch (exception: IOException) {
             finished = true
             endTime = System.nanoTime()
             cleanTempFile()
             cleanOriginalOutputStream()
-            if (IOExceptionUtils.isClientBroken(ignored)) {
-                throw ArtifactReceiveException(ignored.message.orEmpty())
-            } else throw ignored
+            if (IOExceptionUtils.isClientBroken(exception)) {
+                throw ArtifactReceiveException(exception.message.orEmpty())
+            } else throw exception
         }
     }
 
@@ -197,21 +195,17 @@ class ArtifactDataReceiver(
             input.use {
                 var bytes = input.read(buffer)
                 while (bytes >= 0) {
-                    checkFallback()
-                    outputStream.write(buffer, 0, bytes)
-                    listener.data(buffer, 0, bytes)
-                    received += bytes
-                    checkThreshold()
+                    writeByteArray(buffer, 0, bytes)
                     bytes = input.read(buffer)
                 }
             }
-        } catch (ignored: IOException) {
+        } catch (exception: IOException) {
             finished = true
             cleanTempFile()
             cleanOriginalOutputStream()
-            if (IOExceptionUtils.isClientBroken(ignored)) {
-                throw ArtifactReceiveException(ignored.message.orEmpty())
-            } else throw ignored
+            if (IOExceptionUtils.isClientBroken(exception)) {
+                throw ArtifactReceiveException(exception.message.orEmpty())
+            } else throw exception
         }
     }
 
@@ -257,6 +251,20 @@ class ArtifactDataReceiver(
         } else {
             ByteArrayInputStream(contentBytes.toByteArray())
         }
+    }
+
+    /**
+     * 写入数据
+     * @param buffer 字节数组
+     * @param offset 偏移量
+     * @param length 数据长度
+     */
+    private fun writeByteArray(buffer: ByteArray, offset: Int, length: Int) {
+        checkFallback()
+        outputStream.write(buffer, offset, length)
+        listener.data(buffer, offset, length)
+        received += length
+        checkThreshold()
     }
 
     /**
