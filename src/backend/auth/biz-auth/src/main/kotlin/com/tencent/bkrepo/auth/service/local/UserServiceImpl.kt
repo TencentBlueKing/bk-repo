@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
@@ -348,20 +347,11 @@ class UserServiceImpl constructor(
     override fun userPage(
         pageNumber: Int,
         pageSize: Int,
-        user: String?,
+        userName: String?,
         admin: Boolean?,
         locked: Boolean?
     ): Page<UserInfo> {
-        val criteria = Criteria()
-        user?.let {
-            criteria.orOperator(
-                Criteria.where(TUser::userId.name).regex("^$user"),
-                Criteria.where(TUser::name.name).regex("^$user")
-            )
-        }
-        admin?.let { criteria.and(TUser::admin.name).`is`(admin) }
-        locked?.let { criteria.and(TUser::locked.name).`is`(locked) }
-        val query = Query.query(criteria)
+        val query = UserQueryHelper.getUserByName(userName, admin, locked)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = mongoTemplate.count(query, TUser::class.java)
         val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map { transferUserInfo(it) }
@@ -374,16 +364,11 @@ class UserServiceImpl constructor(
     }
 
     override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {
-        val query = Query.query(
-            Criteria().andOperator(
-                Criteria.where(TUser::userId.name).`is`(userId),
-                Criteria.where(TUser::pwd.name).`is`(DataDigestUtils.md5FromStr(oldPwd))
-            )
-        )
+        val query = UserQueryHelper.getUserByIdAndPwd(userId, newPwd)
         val user = mongoTemplate.find(query, TUser::class.java)
         if (user.isNotEmpty()) {
-            val updateQuery = Query(Criteria(TUser::userId.name).`is`(userId))
-            val update = Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(newPwd))
+            val updateQuery = UserQueryHelper.getUserById(userId)
+            val update = UserUpdateHelper.buildPwdUpdate(newPwd)
             val record = mongoTemplate.updateFirst(updateQuery, update, TUser::class.java)
             if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
         }

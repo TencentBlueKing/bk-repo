@@ -46,4 +46,8 @@ object UserUpdateHelper {
         val update = Update()
         return update.addToSet(TUser::roles.name, roleId)
     }
+
+    fun buildPwdUpdate(newPwd: String): Update {
+        return Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(newPwd))
+    }
 }
