@@ -91,10 +91,10 @@ class CachedFileWriter(
         }
     }
 
-    override fun data(buffer: ByteArray, length: Int) {
+    override fun data(buffer: ByteArray, off: Int, length: Int) {
         outputStream?.let {
             try {
-                it.write(buffer, 0, length)
+                it.write(buffer, off, length)
             } catch (ignored: Exception) {
                 // ignored
                 close()

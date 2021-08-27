@@ -72,7 +72,7 @@ class ProjectRepoStatJob(
             val repos = repoModel.getRepoListByProjectId(it.name)
             val table = TABLE_PREFIX + (projectId.hashCode() and 255).toString()
             repos.forEach {
-                val repoName = it
+                val repoName = it.name
                 val result = nodeModel.getNodeSize(projectId, repoName)
                 if (result.size != 0L && result.num != 0L) {
                     logger.info("project : [$projectId],repo: [$repoName],size:[$result]")

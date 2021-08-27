@@ -29,30 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.handler.impl
+
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StorageCredentialsModel
+import com.tencent.bkrepo.opdata.pojo.NodeResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
+import org.springframework.stereotype.Component
 
 /**
- * 输入流数据读取监听器
+ * 依据存储实例的文件数量、大小统计
  */
-interface StreamReadListener {
+@Component
+class StorageCredentialHandler(
+    private val storageCredentialsModel: StorageCredentialsModel
+) : QueryHandler {
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+    override val metric: Metrics get() = Metrics.STORAGECREDENTIAL
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
+    @Suppress("UNCHECKED_CAST")
+    override fun handle(target: Target, result: MutableList<Any>) {
+        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)
+        val resultMap = storageCredentialsModel.getStorageCredentialsStat(metric)
+        resultMap.forEach {
+            val data = listOf(it.value, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(it.key, element))
+        }
+    }
 
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
+    companion object {
+        private const val STAT_METRICS = "metrics"
+    }
 }

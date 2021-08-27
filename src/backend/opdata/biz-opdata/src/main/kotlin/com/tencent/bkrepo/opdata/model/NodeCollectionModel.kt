@@ -29,30 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.model
 
-/**
- * 输入流数据读取监听器
- */
-interface StreamReadListener {
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.stereotype.Service
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+@Service
+class NodeCollectionModel @Autowired constructor(
+    private val mongoTemplate: MongoTemplate
+) {
+    companion object {
+        private const val COLLECTION_NAME = "node"
+        private const val SHARDING_COUNT = 256
+    }
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
-
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
+    fun statNodeNum(): MutableMap<String, Long> {
+        val result = mutableMapOf<String, Long>()
+        for (i in 0..SHARDING_COUNT) {
+            val collection = "${COLLECTION_NAME}_$i"
+            val count = mongoTemplate.count(Query(), collection)
+            result[collection] = count
+        }
+        return result
+    }
 }

@@ -29,30 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.handler.impl
+
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
+import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.NodeCollectionModel
+import com.tencent.bkrepo.opdata.pojo.Columns
+import com.tencent.bkrepo.opdata.pojo.QueryResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import org.springframework.stereotype.Component
 
 /**
- * 输入流数据读取监听器
+ * Node分表数据量统计
  */
-interface StreamReadListener {
+@Component
+class NodeCollectionHandler(
+    private val nodeCollectionModel: NodeCollectionModel
+) : QueryHandler {
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+    override val metric: Metrics get() = Metrics.NODECOLLECTION
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
+    override fun handle(target: Target, result: MutableList<Any>) {
+        val rows = mutableListOf<List<Any>>()
+        val columns = mutableListOf<Columns>()
+        val resultMap = nodeCollectionModel.statNodeNum()
 
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
+        columns.add(Columns("collectionName", OPDATA_GRAFANA_STRING))
+        columns.add(Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER))
+        resultMap.toList().forEach {
+            rows.add(listOf(it.first, it.second))
+        }
+        val data = QueryResult(columns, rows, target.type)
+        result.add(data)
+    }
 }

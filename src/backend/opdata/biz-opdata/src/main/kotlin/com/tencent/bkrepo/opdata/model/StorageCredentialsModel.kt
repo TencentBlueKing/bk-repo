@@ -29,30 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.model
 
-/**
- * 输入流数据读取监听器
- */
-interface StreamReadListener {
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_METRICS
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.stereotype.Service
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+@Service
+class StorageCredentialsModel @Autowired constructor(
+    private val mongoTemplate: MongoTemplate
+) {
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
-
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
+    fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
+        val result = mutableMapOf<String, Long>()
+        val projectMetricsList = mongoTemplate.findAll(TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
+        projectMetricsList.forEach { projectMetrics ->
+            projectMetrics.repoMetrics.forEach {
+                val value = if (metrics == StatMetrics.NUM) it.num else it.size
+                if (result.containsKey(it.credentialsKey)) {
+                    result[it.credentialsKey!!] = result[it.credentialsKey!!]!! + value
+                } else {
+                    result[it.credentialsKey!!] = value
+                }
+            }
+        }
+        return result
+    }
 }

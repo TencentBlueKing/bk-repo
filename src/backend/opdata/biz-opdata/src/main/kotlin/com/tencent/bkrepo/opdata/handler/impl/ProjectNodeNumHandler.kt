@@ -29,30 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.handler.impl
+
+import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.stereotype.Component
 
 /**
- * 输入流数据读取监听器
+ * 项目节点数量统计
  */
-interface StreamReadListener {
+@Component
+class ProjectNodeNumHandler(
+    private val projectMetricsRepository: ProjectMetricsRepository
+) : QueryHandler {
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+    override val metric: Metrics get() = Metrics.PROJECTNODENUM
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
-
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
+    override fun handle(target: Target, result: MutableList<Any>): List<Any> {
+        val projects = projectMetricsRepository.findAll()
+        val tmpMap = HashMap<String, Long>()
+        projects.forEach {
+            val projectId = it.projectId
+            if (it.nodeNum != 0L && projectId != PROJECT_NAME) {
+                tmpMap[projectId] = it.nodeNum
+            }
+        }
+        return convToDisplayData(tmpMap, result)
+    }
 }

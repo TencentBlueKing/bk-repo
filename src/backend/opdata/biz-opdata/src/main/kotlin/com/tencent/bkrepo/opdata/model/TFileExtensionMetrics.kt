@@ -29,30 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.model
 
-/**
- * 输入流数据读取监听器
- */
-interface StreamReadListener {
+import org.springframework.data.mongodb.core.mapping.Document
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
-
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
-
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
-}
+@Document("file_extension_metrics")
+data class TFileExtensionMetrics(
+    val projectId: String,
+    val repoName: String?,
+    val extension: String,
+    val num: Long,
+    val size: Long
+)

@@ -29,30 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.repository.pojo.node
+
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 输入流数据读取监听器
+ * 文件后缀名统计信息类
  */
-interface StreamReadListener {
-
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
-
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
-
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
-}
+@ApiModel("文件后缀名统计信息类")
+data class FileExtensionStatInfo(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库名")
+    val repoName: String?,
+    @ApiModelProperty("文件后缀名")
+    val extension: String,
+    @ApiModelProperty("文件数量")
+    val num: Long,
+    @ApiModelProperty("文件大小")
+    val size: Long
+)

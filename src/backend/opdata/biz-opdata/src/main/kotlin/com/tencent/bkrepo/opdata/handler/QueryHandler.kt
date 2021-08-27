@@ -29,30 +29,28 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.handler
 
-/**
- * 输入流数据读取监听器
- */
-interface StreamReadListener {
+import com.tencent.bkrepo.opdata.constant.OPDATA_STAT_LIMIT
+import com.tencent.bkrepo.opdata.pojo.NodeResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+interface QueryHandler {
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
+    val metric: Metrics
 
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
+    fun handle(target: Target, result: MutableList<Any>): Any
 
-    /**
-     * 流关闭通知
-     */
-    fun close()
+    fun convToDisplayData(mapData: HashMap<String, Long>, result: MutableList<Any>): List<Any> {
+        mapData.toList().sortedByDescending { it.second }.subList(0, OPDATA_STAT_LIMIT).forEach {
+            val projectId = it.first
+            val data = listOf(it.second, System.currentTimeMillis())
+            val element = listOf(data)
+            if (it.second != 0L) {
+                result.add(NodeResult(projectId, element))
+            }
+        }
+        return result
+    }
 }

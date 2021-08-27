@@ -29,30 +29,37 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.stream
+package com.tencent.bkrepo.opdata.handler.impl
+
+import com.tencent.bkrepo.opdata.constant.OPDATA_CAP_SIZE
+import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.pojo.Columns
+import com.tencent.bkrepo.opdata.pojo.QueryResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.stereotype.Component
 
 /**
- * 输入流数据读取监听器
+ * 项目容量统计
  */
-interface StreamReadListener {
+@Component
+class CapSizeHandler(
+    private val projectMetricsRepository: ProjectMetricsRepository
+) : QueryHandler {
 
-    /**
-     * 数据读取回调方法，[i]表示接受的字节数据
-     */
-    fun data(i: Int)
+    override val metric: Metrics get() = Metrics.CAPSIZE
 
-    /**
-     * 数据读取回调方法，从偏移量[off]开始，共接收了[length]长度的数据，数据缓存在[buffer]中
-     */
-    fun data(buffer: ByteArray, off: Int, length: Int)
-
-    /**
-     * 数据接收完成通知
-     */
-    fun finish()
-
-    /**
-     * 流关闭通知
-     */
-    fun close()
+    override fun handle(target: Target, result: MutableList<Any>) {
+        var size = 0L
+        val projects = projectMetricsRepository.findAll()
+        projects.forEach {
+            size += it.capSize
+        }
+        val column = Columns(OPDATA_CAP_SIZE, OPDATA_GRAFANA_NUMBER)
+        val row = listOf(size)
+        val data = QueryResult(listOf(column), listOf(row), target.type)
+        result.add(data)
+    }
 }
