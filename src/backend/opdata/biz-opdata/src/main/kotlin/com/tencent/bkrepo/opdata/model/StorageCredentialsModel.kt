@@ -29,37 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.opdata.model
 
-import org.influxdb.annotation.Column
-import org.influxdb.annotation.Measurement
-import org.influxdb.annotation.TimeColumn
-import java.time.Instant
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_METRICS
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.stereotype.Service
 
-@Measurement(name = "artifact_transfer_record")
-data class ArtifactTransferRecord(
-    @TimeColumn
-    @Column(name = "time")
-    val time: Instant,
-    @Column(name = "type", tag = true)
-    val type: String,
-    @Column(name = "storage", tag = true)
-    val storage: String,
-    @Column(name = "elapsed")
-    val elapsed: Long,
-    @Column(name = "bytes")
-    val bytes: Long,
-    @Column(name = "average")
-    val average: Long,
-    @Column(name = "sha256")
-    val sha256: String,
-    @Column(name = "projectId", tag = true)
-    val projectId: String,
-    @Column(name = "repoName", tag = true)
-    val repoName: String
+@Service
+class StorageCredentialsModel @Autowired constructor(
+    private val mongoTemplate: MongoTemplate
 ) {
-    companion object {
-        const val RECEIVE = "RECEIVE"
-        const val RESPONSE = "RESPONSE"
+
+    fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
+        val result = mutableMapOf<String, Long>()
+        val projectMetricsList = mongoTemplate.findAll(TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
+        projectMetricsList.forEach { projectMetrics ->
+            projectMetrics.repoMetrics.forEach {
+                val value = if (metrics == StatMetrics.NUM) it.num else it.size
+                if (result.containsKey(it.credentialsKey)) {
+                    result[it.credentialsKey!!] = result[it.credentialsKey!!]!! + value
+                } else {
+                    result[it.credentialsKey!!] = value
+                }
+            }
+        }
+        return result
     }
 }
