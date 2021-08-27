@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -10,31 +10,27 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.api.constant.StringPool.randomString
-import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -47,7 +43,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.concurrent.thread
 
-internal class SmartStreamReceiverTest {
+internal class ArtifactDataReceiverTest {
 
     private val primaryPath = "temp".toPath()
     private val fallbackPath = "fallback".toPath()
@@ -79,13 +75,15 @@ internal class SmartStreamReceiverTest {
             DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()).toBytes()
         )
         val source = shortContent.byteInputStream()
-        receiver.receive(source, DigestCalculateListener())
+        receiver.receiveStream(source)
 
-        Assertions.assertTrue(receiver.isInMemory)
+
+        Assertions.assertTrue(receiver.inMemory)
         Assertions.assertFalse(Files.exists(primaryPath.resolve(filename)))
         Assertions.assertFalse(Files.exists(fallbackPath.resolve(filename)))
         Assertions.assertFalse(receiver.fallback)
-        val memoryContent = receiver.getCachedByteArray().toString(Charset.defaultCharset())
+
+        val memoryContent = receiver.cachedByteArray.toString(Charset.defaultCharset())
         Assertions.assertEquals(shortContent, memoryContent)
     }
 
@@ -99,9 +97,9 @@ internal class SmartStreamReceiverTest {
             DataSize.ofBytes(DEFAULT_BUFFER_SIZE - 1L).toBytes()
         )
         val source = shortContent.byteInputStream()
-        receiver.receive(source, DigestCalculateListener())
+        receiver.receiveStream(source)
 
-        Assertions.assertFalse(receiver.isInMemory)
+        Assertions.assertFalse(receiver.inMemory)
         Assertions.assertTrue(Files.exists(primaryPath.resolve(filename)))
         Assertions.assertFalse(Files.exists(fallbackPath.resolve(filename)))
         Assertions.assertFalse(receiver.fallback)
@@ -156,6 +154,23 @@ internal class SmartStreamReceiverTest {
         assertFallbackResult(receiver, false)
     }
 
+    @Test
+    fun testChunkWrite() {
+        val receiver = createReceiver(false)
+        val source = shortContent.byteInputStream()
+        receiver.receiveStream(source)
+        val byteArray = shortContent.toByteArray()
+        receiver.receiveChunk(shortContent.toByteArray(), 0, byteArray.size)
+
+        Assertions.assertTrue(receiver.inMemory)
+        Assertions.assertFalse(Files.exists(primaryPath.resolve(filename)))
+        Assertions.assertFalse(Files.exists(fallbackPath.resolve(filename)))
+        Assertions.assertFalse(receiver.fallback)
+
+        val memoryContent = receiver.cachedByteArray.toString(Charset.defaultCharset())
+        Assertions.assertEquals(shortContent + shortContent, memoryContent)
+    }
+
     private fun createRateLimitInputStream(content: String): InputStream {
         return RateLimitInputStream(content.byteInputStream(), DEFAULT_BUFFER_SIZE.toLong())
     }
@@ -164,22 +179,22 @@ internal class SmartStreamReceiverTest {
         return path.toFile().readText()
     }
 
-    private fun simulateIODelay(receiver: SmartStreamReceiver, inputStream: InputStream, millis: Long) {
+    private fun simulateIODelay(receiver: ArtifactDataReceiver, inputStream: InputStream, millis: Long) {
         thread {
             // 确保已经超过内存阈值
             Thread.sleep(millis)
             receiver.unhealthy(fallbackPath, "Simulated IO Delay")
         }
-        receiver.receive(inputStream, DigestCalculateListener())
+        receiver.receiveStream(inputStream)
     }
 
     /**
      * 对fallback结果进行断言
      * @param transferred 文件数据是否发生转移
      */
-    private fun assertFallbackResult(receiver: SmartStreamReceiver, transferred: Boolean) {
-        // 文件数据应该落入文件中，isInMemory=false
-        Assertions.assertFalse(receiver.isInMemory)
+    private fun assertFallbackResult(receiver: ArtifactDataReceiver, transferred: Boolean) {
+        // 文件数据应该落入文件中，inMemory=false
+        Assertions.assertFalse(receiver.inMemory)
         // 是否发生fallback，fallback=true
         Assertions.assertTrue(receiver.fallback)
         // 数据发生转移
@@ -203,11 +218,14 @@ internal class SmartStreamReceiverTest {
     private fun createReceiver(
         enableTransfer: Boolean,
         fileSizeThreshold: Long = DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes()
-    ): SmartStreamReceiver {
+    ): ArtifactDataReceiver {
         val receive = ReceiveProperties(
             fileSizeThreshold = DataSize.ofBytes(fileSizeThreshold),
             rateLimit = DataSize.ofBytes(-1)
         )
-        return SmartStreamReceiver(receive, enableTransfer, primaryPath, filename)
+        val monitor = MonitorProperties(
+            enableTransfer = enableTransfer
+        )
+        return ArtifactDataReceiver(receive, monitor, primaryPath, filename)
     }
 }
