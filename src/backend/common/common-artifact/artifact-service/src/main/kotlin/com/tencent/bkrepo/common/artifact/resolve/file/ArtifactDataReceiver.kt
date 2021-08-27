@@ -161,22 +161,14 @@ class ArtifactDataReceiver(
      * @param length 数据长度
      */
     fun receiveChunk(chunk: ByteArray, offset: Int, length: Int) {
-        receiveStream(chunk.inputStream(offset, length))
-
         require(!finished) { "Receiver is close" }
         if (startTime == 0L) {
             startTime = System.nanoTime()
         }
         try {
-            writeByteArray(chunk, offset, length)
+            writeData(chunk, offset, length)
         } catch (exception: IOException) {
-            finished = true
-            endTime = System.nanoTime()
-            cleanTempFile()
-            cleanOriginalOutputStream()
-            if (IOExceptionUtils.isClientBroken(exception)) {
-                throw ArtifactReceiveException(exception.message.orEmpty())
-            } else throw exception
+            handleIOException(exception)
         }
     }
 
@@ -195,17 +187,12 @@ class ArtifactDataReceiver(
             input.use {
                 var bytes = input.read(buffer)
                 while (bytes >= 0) {
-                    writeByteArray(buffer, 0, bytes)
+                    writeData(buffer, 0, bytes)
                     bytes = input.read(buffer)
                 }
             }
         } catch (exception: IOException) {
-            finished = true
-            cleanTempFile()
-            cleanOriginalOutputStream()
-            if (IOExceptionUtils.isClientBroken(exception)) {
-                throw ArtifactReceiveException(exception.message.orEmpty())
-            } else throw exception
+            handleIOException(exception)
         }
     }
 
@@ -259,12 +246,25 @@ class ArtifactDataReceiver(
      * @param offset 偏移量
      * @param length 数据长度
      */
-    private fun writeByteArray(buffer: ByteArray, offset: Int, length: Int) {
+    private fun writeData(buffer: ByteArray, offset: Int, length: Int) {
         checkFallback()
         outputStream.write(buffer, offset, length)
         listener.data(buffer, offset, length)
         received += length
         checkThreshold()
+    }
+
+    /**
+     * 处理IO异常
+     */
+    private fun handleIOException(exception: IOException) {
+        finished = true
+        endTime = System.nanoTime()
+        cleanTempFile()
+        cleanOriginalOutputStream()
+        if (IOExceptionUtils.isClientBroken(exception)) {
+            throw ArtifactReceiveException(exception.message.orEmpty())
+        } else throw exception
     }
 
     /**
