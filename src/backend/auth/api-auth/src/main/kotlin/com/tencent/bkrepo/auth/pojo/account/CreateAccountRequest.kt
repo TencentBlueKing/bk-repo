@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo.account
 
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -39,5 +40,17 @@ data class CreateAccountRequest(
     @ApiModelProperty("系统Id")
     val appId: String,
     @ApiModelProperty("是否锁定")
-    val locked: Boolean = false
+    val locked: Boolean = false,
+    @ApiModelProperty("授权方式")
+    val authorizationGrantTypes: Set<AuthorizationGrantType>,
+    @ApiModelProperty("应用主页")
+    val homepageUrl: String?,
+    @ApiModelProperty("应用回调地址")
+    val redirectUri: String?,
+    @ApiModelProperty("应用图标地址")
+    val avatarUrl: String?,
+    @ApiModelProperty("权限范围")
+    val scope: Set<String>?,
+    @ApiModelProperty("简要描述")
+    val description: String?
 )

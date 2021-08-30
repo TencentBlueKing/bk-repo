@@ -35,7 +35,9 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
+import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -62,19 +64,24 @@ interface ServiceAccountResource {
     @GetMapping("/list")
     fun listAccount(): Response<List<Account>>
 
+    @ApiOperation("查询拥有的账号")
+    @GetMapping("/own/list")
+    fun listOwnAccount(): Response<List<Account>>
+
+    @ApiOperation("查询已授权账号")
+    @GetMapping("/authorized/list")
+    fun listAuthorizedAccount(): Response<List<Account>>
+
     @ApiOperation("创建账号")
     @PostMapping("/create")
     fun createAccount(
         @RequestBody request: CreateAccountRequest
-    ): Response<Account?>
+    ): Response<Account>
 
-    @ApiOperation("更新账号状态账号")
-    @PutMapping("/{appId}/{locked}")
+    @ApiOperation("更新账号")
+    @PutMapping("/update")
     fun updateAccount(
-        @ApiParam(value = "账户id")
-        @PathVariable appId: String,
-        @ApiParam(value = "账户id")
-        @PathVariable locked: Boolean
+        @RequestBody request: UpdateAccountRequest
     ): Response<Boolean>
 
     @ApiOperation("删除账号")
@@ -92,10 +99,12 @@ interface ServiceAccountResource {
     ): Response<List<CredentialSet>>
 
     @ApiOperation("创建ak/sk对")
-    @PostMapping("/credential/{appId}")
+    @PostMapping("/credential/{appId}/{type}")
     fun createCredential(
         @ApiParam(value = "账户id")
-        @PathVariable appId: String
+        @PathVariable appId: String,
+        @ApiParam(value = "认证授权类型")
+        @PathVariable type: AuthorizationGrantType
     ): Response<List<CredentialSet>>
 
     @ApiOperation("删除ak/sk对")
@@ -103,7 +112,7 @@ interface ServiceAccountResource {
     fun deleteCredential(
         @ApiParam(value = "账户id")
         @PathVariable appId: String,
-        @ApiParam(value = "账户id")
+        @ApiParam(value = "accessKey")
         @PathVariable accesskey: String
     ): Response<List<CredentialSet>>
 

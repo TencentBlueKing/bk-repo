@@ -180,6 +180,12 @@ open class PermissionManager(
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 
+        // 校验Oauth token对应权限
+        val authorities = SecurityUtils.getAuthorities()
+        if (authorities.isNotEmpty() && !authorities.contains(type.id())) {
+            throw PermissionException()
+        }
+
         // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(
             uid = userId,

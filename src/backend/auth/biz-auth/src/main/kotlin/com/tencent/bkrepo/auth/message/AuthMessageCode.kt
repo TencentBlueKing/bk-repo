@@ -57,7 +57,16 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_LOGIN_TOKEN_CHECK_FAILED(20, "auth.login.token.checkfail"),
     AUTH_REPO_NOT_EXIST(21, "auth.repo.notexist"),
     AUTH_ROLE_USER_NOT_EMPTY(22, "auth.role.user.notempty"),
-    AUTH_USER_TOKEN_TIME_ERROR(23, "auth.user.token.time.error");
+    AUTH_USER_TOKEN_TIME_ERROR(23, "auth.user.token.time.error"),
+    AUTH_DUP_CLIENT_NAME(24, "auth.dup.client.name"),
+    AUTH_CLIENT_NOT_EXIST(25, "auth.client.notexist"),
+    AUTH_CODE_NOT_EXIST(26, "auth.code.notexist"),
+    AUTH_CODE_CHECK_FAILED(27, "auth.code.checkfail"),
+    AUTH_SECRET_CHECK_FAILED(28, "auth.secret.checkfail"),
+    AUTH_OAUTH_TOKEN_CHECK_FAILED(29, "auth.oauth.token.checkfail"),
+    AUTH_CREDENTIAL_AT_LEAST_ONE(30, "auth.credential.atleastone"),
+    AUTH_OWNER_CHECK_FAILED(31, "auth.owner.checkfail"),
+    AUTH_INVALID_TYPE(32, "auth.invalid.type");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

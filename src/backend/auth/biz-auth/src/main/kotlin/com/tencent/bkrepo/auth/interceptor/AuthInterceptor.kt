@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
@@ -46,7 +47,7 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
-import java.util.Base64
+import java.util.*
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -64,7 +65,10 @@ class AuthInterceptor : HandlerInterceptor {
         try {
             // 项目内操作，优先使用项目管理员权限
             if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX) &&
-                (request.requestURI.contains(AUTH_REPO_SUFFIX) || request.requestURI.contains(AUTH_PROJECT_SUFFIX))
+                (request.requestURI.contains(AUTH_REPO_SUFFIX) ||
+                    request.requestURI.contains(AUTH_PROJECT_SUFFIX) ||
+                    request.requestURI.contains(AUTH_API_ACCOUNT_PREFIX) ||
+                    request.requestURI.contains("/api/oauth"))
             ) {
                 val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))

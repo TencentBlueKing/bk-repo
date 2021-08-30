@@ -33,20 +33,26 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.token.CredentialSet
+import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
+import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 
 interface AccountService {
 
     fun listAccount(): List<Account>
 
-    fun createAccount(request: CreateAccountRequest): Account?
+    fun listOwnAccount(): List<Account>
+
+    fun listAuthorizedAccount(): List<Account>
+
+    fun createAccount(request: CreateAccountRequest): Account
 
     fun deleteAccount(appId: String): Boolean
 
-    fun updateAccountStatus(appId: String, locked: Boolean): Boolean
+    fun updateAccount(request: UpdateAccountRequest): Boolean
 
-    fun createCredential(appId: String): List<CredentialSet>
+    fun createCredential(appId: String, type: AuthorizationGrantType): List<CredentialSet>
 
     fun listCredentials(appId: String): List<CredentialSet>
 
