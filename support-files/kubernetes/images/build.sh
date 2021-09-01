@@ -14,7 +14,7 @@ BACKEND=0
 INIT=0
 VERSION=latest
 PUSH=0
-REGISTRY=docker.io
+REGISTRY=docker.io/bkrepo
 USERNAME=
 PASSWORD=
 BACKENDS=(repository auth generic docker helm npm pypi)
@@ -135,9 +135,9 @@ if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
     cp -rf gateway/startup.sh tmp/
     cp -rf $ROOT_DIR/scripts/render_tpl tmp/
     cp -rf $ROOT_DIR/support-files/templates tmp/
-    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo/bkrepo-gateway:$VERSION tmp --network=host
+    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo-gateway:$VERSION tmp --network=host
     if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo/bkrepo-gateway:$VERSION
+        docker push $REGISTRY/bkrepo-gateway:$VERSION
     fi
 fi
 
@@ -150,9 +150,9 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
         rm -rf tmp/*
         cp backend/startup.sh tmp/
         cp $BACKEND_DIR/release/boot-$SERVICE-*.jar tmp/app.jar
-        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo/bkrepo-$SERVICE:$VERSION tmp --network=host
+        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION tmp --network=host
         if [[ $PUSH -eq 1 ]] ; then
-            docker push $REGISTRY/bkrepo/bkrepo-$SERVICE:$VERSION
+            docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
         fi
     done
 fi
@@ -163,9 +163,9 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     rm -rf tmp/*
     cp -rf init/init-mongodb.sh tmp/
     cp -rf $ROOT_DIR/support-files/sql/init-data.js tmp/
-    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo/bkrepo-init:$VERSION tmp --no-cache --network=host
+    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo-init:$VERSION tmp --no-cache --network=host
     if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo/bkrepo-init:$VERSION
+        docker push $REGISTRY/bkrepo-init:$VERSION
     fi
 fi
 echo "BUILD SUCCESSFUL!"
