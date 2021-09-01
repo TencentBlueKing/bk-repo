@@ -29,37 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.opdata.repository
 
-import org.influxdb.annotation.Column
-import org.influxdb.annotation.Measurement
-import org.influxdb.annotation.TimeColumn
-import java.time.Instant
+import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-@Measurement(name = "artifact_transfer_record")
-data class ArtifactTransferRecord(
-    @TimeColumn
-    @Column(name = "time")
-    val time: Instant,
-    @Column(name = "type", tag = true)
-    val type: String,
-    @Column(name = "storage", tag = true)
-    val storage: String,
-    @Column(name = "elapsed")
-    val elapsed: Long,
-    @Column(name = "bytes")
-    val bytes: Long,
-    @Column(name = "average")
-    val average: Long,
-    @Column(name = "sha256")
-    val sha256: String,
-    @Column(name = "projectId", tag = true)
-    val projectId: String,
-    @Column(name = "repoName", tag = true)
-    val repoName: String
-) {
-    companion object {
-        const val RECEIVE = "RECEIVE"
-        const val RESPONSE = "RESPONSE"
-    }
-}
+@Repository
+interface FileExtensionMetricsRepository : MongoRepository<TFileExtensionMetrics, String>

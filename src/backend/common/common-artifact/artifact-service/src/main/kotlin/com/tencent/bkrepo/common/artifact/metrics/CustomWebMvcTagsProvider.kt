@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.core
+package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
-import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Tags
+import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
-/**
- * 文件清理操作实现类
- */
-abstract class CleanupSupport : HealthCheckSupport() {
+class CustomWebMvcTagsProvider : DefaultWebMvcTagsProvider() {
 
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
-        val credentials = getCredentialsOrDefault(storageCredentials)
-        val tempPath = getTempPath(credentials)
-        val visitor = CleanupFileVisitor(tempPath, tempPath, fileStorage, fileLocator, credentials)
-        getTempClient(credentials).walk(visitor)
-        return visitor.result
+    override fun getTags(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        handler: Any?,
+        exception: Throwable?
+    ): MutableIterable<Tag> {
+        return Tags.of(super.getTags(request, response, handler, exception))
+            .and(getPathParamAsTag(request))
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun getPathParamAsTag(request: HttpServletRequest): List<Tag> {
+        val tagsMap = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<String, String>
+        return tagsMap.map { Tag.of(it.key, it.value) }
     }
 }

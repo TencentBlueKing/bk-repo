@@ -29,37 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.repository.pojo.node
 
-import org.influxdb.annotation.Column
-import org.influxdb.annotation.Measurement
-import org.influxdb.annotation.TimeColumn
-import java.time.Instant
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Measurement(name = "artifact_transfer_record")
-data class ArtifactTransferRecord(
-    @TimeColumn
-    @Column(name = "time")
-    val time: Instant,
-    @Column(name = "type", tag = true)
-    val type: String,
-    @Column(name = "storage", tag = true)
-    val storage: String,
-    @Column(name = "elapsed")
-    val elapsed: Long,
-    @Column(name = "bytes")
-    val bytes: Long,
-    @Column(name = "average")
-    val average: Long,
-    @Column(name = "sha256")
-    val sha256: String,
-    @Column(name = "projectId", tag = true)
+/**
+ * 文件后缀名统计信息类
+ */
+@ApiModel("文件后缀名统计信息类")
+data class FileExtensionStatInfo(
+    @ApiModelProperty("项目id")
     val projectId: String,
-    @Column(name = "repoName", tag = true)
-    val repoName: String
-) {
-    companion object {
-        const val RECEIVE = "RECEIVE"
-        const val RESPONSE = "RESPONSE"
-    }
-}
+    @ApiModelProperty("仓库名")
+    val repoName: String?,
+    @ApiModelProperty("文件后缀名")
+    val extension: String,
+    @ApiModelProperty("文件数量")
+    val num: Long,
+    @ApiModelProperty("文件大小")
+    val size: Long
+)

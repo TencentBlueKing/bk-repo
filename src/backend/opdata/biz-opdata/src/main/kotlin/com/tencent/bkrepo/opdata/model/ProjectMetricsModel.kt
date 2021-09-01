@@ -31,23 +31,57 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
-import com.tencent.bkrepo.opdata.constant.OPDATA_REPOSITORY
+import com.tencent.bkrepo.opdata.constant.B_0
+import com.tencent.bkrepo.opdata.constant.GB_1
+import com.tencent.bkrepo.opdata.constant.GB_10
+import com.tencent.bkrepo.opdata.constant.MB_100
+import com.tencent.bkrepo.opdata.constant.MB_500
+import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_METRICS
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 
 @Service
-class RepoModel @Autowired constructor(
+class ProjectMetricsModel @Autowired constructor(
     private var mongoTemplate: MongoTemplate
 ) {
 
-    fun getRepoListByProjectId(projectId: String): List<RepoInfo> {
-        val query = Query(
-            Criteria.where(OPDATA_PROJECT_ID).`is`(projectId)
+    /**
+     * 获取总体的文件大小分布
+     */
+    fun getSizeDistribution(): Map<String, Long> {
+        val projectMetricsList = mongoTemplate.findAll(TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
+        var zeroNum = 0L
+        var mb100Num = 0L
+        var mb500Num = 0L
+        var gb1Num = 0L
+        var gb10Num = 0L
+        projectMetricsList.forEach {
+            zeroNum += it.sizeDistribution[B_0] ?: 0
+            mb100Num += it.sizeDistribution[MB_100] ?: 0
+            mb500Num += it.sizeDistribution[MB_500] ?: 0
+            gb1Num += it.sizeDistribution[GB_1] ?: 0
+            gb10Num += it.sizeDistribution[GB_10] ?: 0
+        }
+
+        return mapOf(
+            B_0 to zeroNum,
+            MB_100 to mb100Num,
+            MB_500 to mb500Num,
+            GB_1 to gb1Num,
+            GB_10 to gb10Num
         )
-        return mongoTemplate.find(query, RepoInfo::class.java, OPDATA_REPOSITORY)
+    }
+
+    /**
+     * 获取一个项目的文件大小分布
+     */
+    fun getProjSizeDistribution(projectId: String): Map<String, Long> {
+        val query = Query(where(TProjectMetrics::projectId).isEqualTo(projectId))
+        val projectMetrics = mongoTemplate.findOne(query, TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
+        return projectMetrics?.sizeDistribution ?: mapOf()
     }
 }

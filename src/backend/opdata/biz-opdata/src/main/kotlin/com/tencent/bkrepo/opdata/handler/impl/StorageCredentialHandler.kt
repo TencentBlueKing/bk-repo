@@ -29,37 +29,39 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.opdata.handler.impl
 
-import org.influxdb.annotation.Column
-import org.influxdb.annotation.Measurement
-import org.influxdb.annotation.TimeColumn
-import java.time.Instant
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.model.StorageCredentialsModel
+import com.tencent.bkrepo.opdata.pojo.NodeResult
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
+import org.springframework.stereotype.Component
 
-@Measurement(name = "artifact_transfer_record")
-data class ArtifactTransferRecord(
-    @TimeColumn
-    @Column(name = "time")
-    val time: Instant,
-    @Column(name = "type", tag = true)
-    val type: String,
-    @Column(name = "storage", tag = true)
-    val storage: String,
-    @Column(name = "elapsed")
-    val elapsed: Long,
-    @Column(name = "bytes")
-    val bytes: Long,
-    @Column(name = "average")
-    val average: Long,
-    @Column(name = "sha256")
-    val sha256: String,
-    @Column(name = "projectId", tag = true)
-    val projectId: String,
-    @Column(name = "repoName", tag = true)
-    val repoName: String
-) {
+/**
+ * 依据存储实例的文件数量、大小统计
+ */
+@Component
+class StorageCredentialHandler(
+    private val storageCredentialsModel: StorageCredentialsModel
+) : QueryHandler {
+
+    override val metric: Metrics get() = Metrics.STORAGECREDENTIAL
+
+    @Suppress("UNCHECKED_CAST")
+    override fun handle(target: Target, result: MutableList<Any>) {
+        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)
+        val resultMap = storageCredentialsModel.getStorageCredentialsStat(metric)
+        resultMap.forEach {
+            val data = listOf(it.value, System.currentTimeMillis())
+            val element = listOf(data)
+            result.add(NodeResult(it.key, element))
+        }
+    }
+
     companion object {
-        const val RECEIVE = "RECEIVE"
-        const val RESPONSE = "RESPONSE"
+        private const val STAT_METRICS = "metrics"
     }
 }
