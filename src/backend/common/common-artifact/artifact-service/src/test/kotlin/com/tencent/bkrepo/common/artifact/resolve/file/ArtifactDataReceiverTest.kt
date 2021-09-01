@@ -77,7 +77,6 @@ internal class ArtifactDataReceiverTest {
         val source = shortContent.byteInputStream()
         receiver.receiveStream(source)
 
-
         Assertions.assertTrue(receiver.inMemory)
         Assertions.assertFalse(Files.exists(primaryPath.resolve(filename)))
         Assertions.assertFalse(Files.exists(fallbackPath.resolve(filename)))
