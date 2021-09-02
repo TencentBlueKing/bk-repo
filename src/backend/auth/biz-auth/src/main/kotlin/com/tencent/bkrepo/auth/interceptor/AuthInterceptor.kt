@@ -48,7 +48,7 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
-import java.util.*
+import java.util.Base64
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 

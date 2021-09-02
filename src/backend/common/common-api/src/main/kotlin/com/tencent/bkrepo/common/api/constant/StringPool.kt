@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.api.constant
 
-import java.util.*
+import java.util.UUID
 
 object StringPool {
     const val EMPTY = ""
