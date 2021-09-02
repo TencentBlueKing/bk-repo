@@ -226,7 +226,7 @@ class RpmLocalRepository(
         )
         stopWatch.start("storeOthers")
         storeIndexMarkFile(
-            context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHERS, othersIndexData, artifactSha256
+            context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHER, othersIndexData, artifactSha256
         )
         stopWatch.stop()
         if (rpmRepoConf.enabledFileLists) {
@@ -599,7 +599,7 @@ class RpmLocalRepository(
             null, artifactSha256
         )
         storeIndexMarkFile(
-            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS,
+            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHER,
             null, artifactSha256
         )
         if (rpmRepoConf.enabledFileLists) {

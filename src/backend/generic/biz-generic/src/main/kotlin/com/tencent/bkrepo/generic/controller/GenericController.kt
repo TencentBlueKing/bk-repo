@@ -55,13 +55,13 @@ import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
-@Timed
 @RestController
 class GenericController(
     private val uploadService: UploadService,
     private val downloadService: DownloadService
 ) {
 
+    @Timed
     @PutMapping(GENERIC_MAPPING_URI)
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
@@ -78,6 +78,7 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
+    @Timed
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {
