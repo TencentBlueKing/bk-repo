@@ -31,9 +31,7 @@ import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 
 interface OauthAuthorizationService {
 
-    fun renderConsentHtml(clientId: String, state: String)
-
-    fun authorized(clientId: String, state: String, scope: String)
+    fun authorized(clientId: String, state: String)
 
     fun createToken(clientId: String, clientSecret: String, code: String)
 

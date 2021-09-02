@@ -60,7 +60,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping(AUTH_SERVICE_ACCOUNT_PREFIX, AUTH_API_ACCOUNT_PREFIX)
 interface ServiceAccountResource {
 
-    @ApiOperation("查询所有账号账号")
+    @ApiOperation("查询所有账号")
     @GetMapping("/list")
     fun listAccount(): Response<List<Account>>
 
@@ -71,6 +71,12 @@ interface ServiceAccountResource {
     @ApiOperation("查询已授权账号")
     @GetMapping("/authorized/list")
     fun listAuthorizedAccount(): Response<List<Account>>
+
+    @ApiOperation("根据appId查询账号")
+    @GetMapping("/detail/{appId}")
+    fun getAccountDetail(
+        @PathVariable appId: String
+    ): Response<Account>
 
     @ApiOperation("创建账号")
     @PostMapping("/create")
@@ -91,6 +97,13 @@ interface ServiceAccountResource {
         @PathVariable appId: String
     ): Response<Boolean>
 
+    @ApiOperation("卸载账号")
+    @DeleteMapping("/uninstall/{appId}")
+    fun uninstallAccount(
+        @ApiParam(value = "账户id")
+        @PathVariable appId: String
+    ): Response<Boolean>
+
     @ApiOperation("获取账户下的ak/sk对")
     @GetMapping("/credential/list/{appId}")
     fun getCredential(
@@ -105,7 +118,7 @@ interface ServiceAccountResource {
         @PathVariable appId: String,
         @ApiParam(value = "认证授权类型")
         @PathVariable type: AuthorizationGrantType
-    ): Response<List<CredentialSet>>
+    ): Response<CredentialSet?>
 
     @ApiOperation("删除ak/sk对")
     @DeleteMapping("/credential/{appId}/{accesskey}")
@@ -114,7 +127,7 @@ interface ServiceAccountResource {
         @PathVariable appId: String,
         @ApiParam(value = "accessKey")
         @PathVariable accesskey: String
-    ): Response<List<CredentialSet>>
+    ): Response<Boolean>
 
     @ApiOperation("更新ak/sk对状态")
     @PutMapping("/credential/{appId}/{accesskey}/{status}")

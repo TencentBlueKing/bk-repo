@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -54,7 +55,7 @@ data class TAccount(
     var homepageUrl: String?,
     var redirectUri: String?,
     var avatarUrl: String?,
-    var scope: Set<String>?,
+    var scope: Set<ResourceType>?,
     var description: String?,
     var createdDate: LocalDateTime?,
     var lastModifiedDate: LocalDateTime?

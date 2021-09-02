@@ -28,10 +28,15 @@
 package com.tencent.bkrepo.auth.pojo.oauth
 
 enum class AuthorizationGrantType {
+    // 授权码模式
     AUTHORIZATION_CODE,
-    IMPLICIT,
-    CLIENT_CREDENTIALS,
-    PASSWORD,
+    // 简化模式，尚未支持
+//    IMPLICIT,
+    // 客户端模式，尚未支持
+//    CLIENT_CREDENTIALS,
+    // 密码模式，尚未支持
+//    PASSWORD,
+    // 平台账号验证
     PLATFORM;
 
     fun value(): String {

@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.account.Account
@@ -44,13 +43,11 @@ import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.OauthUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import org.apache.commons.lang.RandomStringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -112,7 +109,12 @@ class AccountServiceImpl constructor(
     }
 
     override fun listAccount(): List<Account> {
-        logger.debug("list  account ")
+        logger.debug("list account")
+        val userId = SecurityUtils.getUserId()
+        val admin = userService.getUserInfoById(userId)?.admin ?: false
+        if (!admin) {
+            return emptyList()
+        }
         return accountRepository.findAllBy().map { transferAccount(it) }
     }
 
@@ -123,33 +125,46 @@ class AccountServiceImpl constructor(
 
     override fun listAuthorizedAccount(): List<Account> {
         val userId = SecurityUtils.getUserId()
-        val accountIds = oauthTokenRepository.findByUserId(userId).map { it.id!! }
+        val accountIds = oauthTokenRepository.findByUserId(userId).map { it.accountId }
         return accountRepository.findByIdIn(accountIds).map { transferAccount(it) }
+    }
+
+    override fun findAccountByAppId(appId: String): Account {
+        val userId = SecurityUtils.getUserId()
+        val account = findAccountAndCheckOwner(appId, userId)
+
+        return transferAccount(account)
     }
 
     override fun deleteAccount(appId: String): Boolean {
         logger.info("delete account appId : {}", appId)
         val userId = SecurityUtils.getUserId()
-        val account = accountRepository.findOneByAppId(appId)
-            ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        if (!account.owner.isNullOrBlank() && userId != account.owner) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
-        }
+        val account = findAccountAndCheckOwner(appId, userId)
 
-        userService.removeUserAccount(userId, account.id!!)
-        oauthTokenRepository.deleteByClientId(account.id)
+        oauthTokenRepository.deleteByAccountId(account.id!!)
         accountRepository.delete(account)
         return true
     }
 
+    override fun uninstallAccount(appId: String) {
+        val userId = SecurityUtils.getUserId()
+        logger.info("uninstall account, user: $userId, appId: $appId")
+        val account = accountRepository.findOneByAppId(appId)
+            ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
+        userService.removeUserAccount(userId, account.id!!)
+        oauthTokenRepository.deleteByAccountIdAndUserId(account.id, userId)
+    }
+
     override fun updateAccount(request: UpdateAccountRequest): Boolean {
         logger.info("upload account request : [$request]")
+        val userId = SecurityUtils.getUserId()
         with(request) {
-            val account = accountRepository.findOneByAppId(appId) ?: run {
-                logger.warn("update account [$request.appId]  not exist.")
-                throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-            }
+            Preconditions.checkArgument(authorizationGrantTypes.isNotEmpty(),
+                UpdateAccountRequest::authorizationGrantTypes.name)
 
+            val account = findAccountAndCheckOwner(appId, userId)
+            setCredentials(account, this)
+            account.authorizationGrantTypes = authorizationGrantTypes
             account.locked = locked
             account.avatarUrl = avatarUrl ?: account.avatarUrl
             account.homepageUrl = homepageUrl ?: account.homepageUrl
@@ -163,51 +178,41 @@ class AccountServiceImpl constructor(
         }
     }
 
-    override fun createCredential(appId: String, type: AuthorizationGrantType): List<CredentialSet> {
+    override fun createCredential(appId: String, type: AuthorizationGrantType): CredentialSet {
         logger.info("create credential appId : $appId , type: $type")
-        val account = accountRepository.findOneByAppId(appId) ?: run {
-            logger.warn("account [$appId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        }
+        val userId = SecurityUtils.getUserId()
+        val account = findAccountAndCheckOwner(appId, userId)
         if (account.authorizationGrantTypes?.contains(type) == false) {
-            throw  ErrorCodeException(AuthMessageCode.AUTH_INVALID_TYPE)
+            throw ErrorCodeException(AuthMessageCode.AUTH_INVALID_TYPE)
         }
 
         val query = Query.query(Criteria.where(TAccount::appId.name).`is`(appId))
         val update = Update()
-        val accessKey = IDUtil.genRandomId()
-        val secretKey = RandomStringUtils.randomAlphanumeric(RANDOM_KEY_LENGTH)
         val credentials = CredentialSet(
-            accessKey = accessKey,
-            secretKey = secretKey,
+            accessKey = StringPool.uniqueId(),
+            secretKey = OauthUtils.generateSecretKey(),
             createdAt = LocalDateTime.now(),
             status = CredentialStatus.ENABLE,
             authorizationGrantType = type
         )
-        update.addToSet("credentials", credentials)
+        update.addToSet(TAccount::credentials.name, credentials)
         mongoTemplate.upsert(query, update, TAccount::class.java)
-        val result = accountRepository.findOneByAppId(appId) ?: return emptyList()
-        return result.credentials
+        return credentials
     }
 
     override fun listCredentials(appId: String): List<CredentialSet> {
         logger.debug("list  credential appId : {} ", appId)
-        val account = accountRepository.findOneByAppId(appId) ?: run {
-            logger.warn("update account [$appId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        }
-        return account.credentials
+        val userId = SecurityUtils.getUserId()
+        val account = findAccountAndCheckOwner(appId, userId)
+        return transferCredentials(account.credentials)
     }
 
-    override fun deleteCredential(appId: String, accessKey: String): List<CredentialSet> {
+    override fun deleteCredential(appId: String, accessKey: String): Boolean {
         logger.info("delete  credential appId : [$appId] , accessKey: [$accessKey]")
-        val account = accountRepository.findOneByAppId(appId) ?: run {
-            logger.warn("appId [$appId]  not exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-        }
+        val userId = SecurityUtils.getUserId()
+        val account = findAccountAndCheckOwner(appId, userId)
         // 每种认证授权类型至少存在一个credential
-        val deleteCredential = account.credentials.find { it.accessKey == accessKey }
-            ?: return transferAccount(account).credentials
+        val deleteCredential = account.credentials.find { it.accessKey == accessKey } ?: return false
         val credentialNum = account.credentials.filter {
             it.authorizationGrantType == deleteCredential.authorizationGrantType
         }.size
@@ -218,7 +223,7 @@ class AccountServiceImpl constructor(
         account.credentials = account.credentials.filter { it.accessKey != accessKey }
         account.lastModifiedDate = LocalDateTime.now()
         accountRepository.save(account)
-        return transferCredentials(account.credentials)
+        return true
     }
 
     override fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean {
@@ -256,7 +261,7 @@ class AccountServiceImpl constructor(
     }
 
     private fun transferAccount(tAccount: TAccount, displaySecretKey: Boolean = false): Account {
-        if (displaySecretKey) {
+        if (!displaySecretKey) {
             tAccount.credentials = transferCredentials(tAccount.credentials)
         }
         return Account(
@@ -278,9 +283,48 @@ class AccountServiceImpl constructor(
 
     private fun transferCredentials(credentials: List<CredentialSet>): List<CredentialSet> {
         credentials.forEach {
-            it.secretKey.replaceRange(6, it.secretKey.length - 1, StringPool.POUND)
+            it.secretKey = it.secretKey.replaceRange(8, it.secretKey.length, "*****")
         }
         return credentials
+    }
+
+    private fun findAccountAndCheckOwner(appId: String, userId: String): TAccount {
+        val account = accountRepository.findOneByAppId(appId)
+            ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
+        val admin = userService.getUserInfoById(userId)?.admin ?: false
+        if (!account.owner.isNullOrBlank() && userId != account.owner && !admin) {
+            throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
+        }
+        return account
+    }
+
+    private fun setCredentials(account: TAccount, request: UpdateAccountRequest) {
+        with(request) {
+            val typeChange = authorizationGrantTypes.size - (account.authorizationGrantTypes?.size ?: 1)
+            when {
+                typeChange > 0 -> {
+                    val oldTypes = account.authorizationGrantTypes ?: setOf(AuthorizationGrantType.PLATFORM)
+                    val newTypes = authorizationGrantTypes.filterNot { oldTypes.contains(it) }
+                    val newCredentials = account.credentials.toMutableList()
+                    newCredentials.addAll(newTypes.map {
+                        CredentialSet(
+                            accessKey = StringPool.uniqueId(),
+                            secretKey = OauthUtils.generateSecretKey(),
+                            createdAt = LocalDateTime.now(),
+                            status = CredentialStatus.ENABLE,
+                            authorizationGrantType = it
+                        )
+                    })
+                    account.credentials = newCredentials
+                }
+                typeChange < 0 -> {
+                    val oldTypes = account.authorizationGrantTypes ?: setOf(AuthorizationGrantType.PLATFORM)
+                    val deletedTypes = oldTypes.filterNot { authorizationGrantTypes.contains(it) }
+                    account.credentials = account.credentials
+                        .filterNot { deletedTypes.contains(it.authorizationGrantType) }
+                }
+            }
+        }
     }
 
     companion object {

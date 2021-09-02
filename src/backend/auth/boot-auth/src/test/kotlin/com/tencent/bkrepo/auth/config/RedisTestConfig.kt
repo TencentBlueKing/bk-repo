@@ -25,27 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo.account
+package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
-import io.swagger.annotations.ApiModelProperty
+import org.springframework.boot.test.context.TestConfiguration
+import redis.embedded.RedisServer
+import javax.annotation.PostConstruct
+import javax.annotation.PreDestroy
 
-data class UpdateAccountRequest(
-    @ApiModelProperty("系统Id")
-    val appId: String,
-    @ApiModelProperty("是否锁定")
-    val locked: Boolean = false,
-    @ApiModelProperty("授权方式")
-    val authorizationGrantTypes: Set<AuthorizationGrantType>,
-    @ApiModelProperty("应用主页")
-    val homepageUrl: String? = null,
-    @ApiModelProperty("应用回调地址")
-    val redirectUri: String? = null,
-    @ApiModelProperty("应用图标地址")
-    val avatarUrl: String? = null,
-    @ApiModelProperty("权限范围")
-    val scope: Set<ResourceType>? = null,
-    @ApiModelProperty("简要描述")
-    val description: String? = null
-)
+@TestConfiguration
+class RedisTestConfig {
+
+    private val redisServer = RedisServer(6379)
+
+    @PostConstruct
+    fun postConstruct() {
+        redisServer.start()
+    }
+
+    @PreDestroy
+    fun preDestroy() {
+        redisServer.stop()
+    }
+}

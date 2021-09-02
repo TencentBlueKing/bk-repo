@@ -40,12 +40,8 @@ class ServiceOauthAuthorizationResourceImpl @Autowired constructor(
     private val oauthAuthorizationService: OauthAuthorizationService
 ) : ServiceOauthAuthorizationResource {
 
-    override fun authorizeForm(clientId: String, state: String) {
-        oauthAuthorizationService.renderConsentHtml(clientId, state)
-    }
-
-    override fun authorize(clientId: String, state: String, scope: String) {
-        oauthAuthorizationService.authorized(clientId, state, scope)
+    override fun authorize(clientId: String, state: String) {
+        oauthAuthorizationService.authorized(clientId, state)
     }
 
     override fun getToken(accessToken: String): Response<OauthToken?> {

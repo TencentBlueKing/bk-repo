@@ -60,56 +60,7 @@ class OauthAuthorizationServiceImpl(
     private val redisOperation: RedisOperation
 ) : OauthAuthorizationService {
 
-    override fun renderConsentHtml(clientId: String, state: String) {
-        val client = accountRepository.findById(clientId)
-            .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
-        val writer = HttpContextHolder.getResponse().writer
-
-        val head = """
-            <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" 
-            content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" 
-            href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" 
-            integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" 
-            crossorigin="anonymous"><title>Consent required</title><style>body { background-color: aliceblue;
-            }</style></head><body><div class="container"><div class="py-5"><h1 class="text-center text-primary">App 
-            permissions</h1></div><div class="row"><div class="col text-center"><p> The application<span 
-            class="font-weight-bold text-primary"> ${client.appId}</span>  wants to access your 
-            account</p></div></div><div class="row pb-3"><div class="col text-center"><p>The following permissions 
-            are requested by the above app.<br/>Please review these and consent if you approve.</p></div></div><div 
-            class="row"><div class="col text-center"><form method="post" action="/api/oauth/authorize"><input 
-            type="hidden" name="client_id" value="${client.id}"><input type="hidden" name="state" value="${state}">
-        """
-        var scopeList = ""
-        client.scope?.forEach{
-            scopeList += """    
-            <div class="form-group form-check py-1">
-            <input class="form-check-input"
-            type="checkbox"
-            checked="checked"
-            name="scope"
-            value="$it"
-            id="$it "
-            >
-            <label class="form-check-label font-weight-bold">$it</label>
-            </div>
-            """
-        }
-
-        val footer = """                     
-            <div class="form-group pt-3">
-            <button class="btn btn-primary btn-lg" type="submit">Submit Consent</button>
-            </div>
-            <div class="form-group"><button class="btn btn-link regular" type="reset">Cancel</button>
-            </div></form></div></div><div class="row pt-4"><div class="col text-center">
-            <p><small> Your consent to provide access is required.<br/>If you do not approve, click Cancel, in which 
-            case no information will be shared with the app.</small></p></div></div></div></body></html>
-        """
-        writer.println(head)
-        writer.println(scopeList)
-        writer.println(footer)
-    }
-
-    override fun authorized(clientId: String, state: String, scope: String) {
+    override fun authorized(clientId: String, state: String) {
         val client = accountRepository.findById(clientId)
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
         val code = OauthUtils.generateCode()
@@ -117,9 +68,8 @@ class OauthAuthorizationServiceImpl(
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY).toString()
         val userIdKey = "$clientId:$code:userId"
         redisOperation.set(userIdKey, userId, TimeUnit.MINUTES.toSeconds(10L))
-        userService.addUserAccount(userId, client.id!!)
 
-        val redirectUrl = "${client.redirectUri}?code=$code&state=$state"
+        val redirectUrl = "${client.redirectUri!!.removeSuffix(StringPool.SLASH)}?code=$code&state=$state"
         HttpContextHolder.getResponse().sendRedirect(redirectUrl)
     }
 
@@ -128,12 +78,12 @@ class OauthAuthorizationServiceImpl(
         val userId = redisOperation.get(userIdKey) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CODE_CHECK_FAILED)
 
         val client = checkClientSecret(clientId, clientSecret)
-        var tOauthToken = oauthTokenRepository.findFirstByClientIdAndUserId(clientId, userId)
+        var tOauthToken = oauthTokenRepository.findFirstByAccountIdAndUserId(clientId, userId)
         if (tOauthToken == null) {
             tOauthToken = TOauthToken(
                 accessToken = OauthUtils.generateAccessToken(),
                 type = "Bearer",
-                clientId = clientId,
+                accountId = clientId,
                 userId = userId,
                 scope = client.scope!!,
                 issuedAt = Instant.now()
@@ -143,6 +93,8 @@ class OauthAuthorizationServiceImpl(
             tOauthToken.scope = client.scope!!
             oauthTokenRepository.save(tOauthToken)
         }
+        userService.addUserAccount(userId, client.id!!)
+
         val token = transfer(tOauthToken)
         val accept = HeaderUtils.getHeader(HttpHeaders.ACCEPT).orEmpty()
         val response = HttpContextHolder.getResponse()

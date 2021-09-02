@@ -46,17 +46,21 @@ interface AccountService {
 
     fun listAuthorizedAccount(): List<Account>
 
+    fun findAccountByAppId(appId: String): Account
+
     fun createAccount(request: CreateAccountRequest): Account
 
     fun deleteAccount(appId: String): Boolean
 
+    fun uninstallAccount(appId: String)
+
     fun updateAccount(request: UpdateAccountRequest): Boolean
 
-    fun createCredential(appId: String, type: AuthorizationGrantType): List<CredentialSet>
+    fun createCredential(appId: String, type: AuthorizationGrantType): CredentialSet
 
     fun listCredentials(appId: String): List<CredentialSet>
 
-    fun deleteCredential(appId: String, accessKey: String): List<CredentialSet>
+    fun deleteCredential(appId: String, accessKey: String): Boolean
 
     fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean
 

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.security.http.oauth
 
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.security.constant.OAUTH_AUTH_PREFIX
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
@@ -40,9 +41,9 @@ import javax.servlet.http.HttpServletResponse
 open class OauthAuthHandler(val authenticationManager: AuthenticationManager) : HttpAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
-        return if (authorizationHeader.startsWith("Oauth")) {
+        return if (authorizationHeader.startsWith(OAUTH_AUTH_PREFIX)) {
             try {
-                val accessToken = authorizationHeader.removePrefix("Oauth").trim()
+                val accessToken = authorizationHeader.removePrefix(OAUTH_AUTH_PREFIX).trim()
                 OauthAuthCredentials(accessToken)
             } catch (ignored: IllegalArgumentException) {
                 throw AuthenticationException("Invalid authorization value")
@@ -57,7 +58,7 @@ open class OauthAuthHandler(val authenticationManager: AuthenticationManager) : 
 
     override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
-        val accessToken = authorizationHeader.removePrefix("Oauth").trim()
+        val accessToken = authorizationHeader.removePrefix(OAUTH_AUTH_PREFIX).trim()
         val oauthToken = authenticationManager.findOauthToken(accessToken)
             ?: throw AuthenticationException("Invalid access token")
         request.setAttribute(AUTHORITIES_KEY,  oauthToken.scope)

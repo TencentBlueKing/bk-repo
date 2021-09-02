@@ -182,7 +182,7 @@ open class PermissionManager(
 
         // 校验Oauth token对应权限
         val authorities = SecurityUtils.getAuthorities()
-        if (authorities.isNotEmpty() && !authorities.contains(type.id())) {
+        if (authorities.isNotEmpty() && !authorities.contains(type.toString())) {
             throw PermissionException()
         }
 

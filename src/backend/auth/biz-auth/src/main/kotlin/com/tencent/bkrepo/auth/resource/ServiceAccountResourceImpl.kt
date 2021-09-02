@@ -62,6 +62,10 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return ResponseBuilder.success(accountService.listAuthorizedAccount())
     }
 
+    override fun getAccountDetail(appId: String): Response<Account> {
+        return ResponseBuilder.success(accountService.findAccountByAppId(appId))
+    }
+
     override fun createAccount(request: CreateAccountRequest): Response<Account> {
         return ResponseBuilder.success(accountService.createAccount(request))
     }
@@ -76,17 +80,22 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
+    override fun uninstallAccount(appId: String): Response<Boolean> {
+        accountService.uninstallAccount(appId)
+        return ResponseBuilder.success(true)
+    }
+
     override fun getCredential(appId: String): Response<List<CredentialSet>> {
         val credential = accountService.listCredentials(appId)
         return ResponseBuilder.success(credential)
     }
 
-    override fun createCredential(appId: String, type: AuthorizationGrantType): Response<List<CredentialSet>> {
+    override fun createCredential(appId: String, type: AuthorizationGrantType): Response<CredentialSet> {
         val result = accountService.createCredential(appId, type)
         return ResponseBuilder.success(result)
     }
 
-    override fun deleteCredential(appId: String, accesskey: String): Response<List<CredentialSet>> {
+    override fun deleteCredential(appId: String, accesskey: String): Response<Boolean> {
         val result = accountService.deleteCredential(appId, accesskey)
         return ResponseBuilder.success(result)
     }

@@ -33,9 +33,10 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface OauthTokenRepository : MongoRepository<TOauthToken, String>{
-    fun findFirstByClientIdAndUserId(clientId: String, userId: String): TOauthToken?
+    fun findFirstByAccountIdAndUserId(accountId: String, userId: String): TOauthToken?
     fun findFirstByAccessToken(accessToken: String): TOauthToken?
     fun findByUserId(userId: String): List<TOauthToken>
     fun deleteByAccessToken(accessToken: String)
-    fun deleteByClientId(clientId: String)
+    fun deleteByAccountId(accountId: String)
+    fun deleteByAccountIdAndUserId(accountId: String, userId: String)
 }

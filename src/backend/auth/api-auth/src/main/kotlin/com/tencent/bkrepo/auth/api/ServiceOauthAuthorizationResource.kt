@@ -48,19 +48,11 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping(AUTH_SERVICE_OAUTH_PREFIX, AUTH_API_OAUTH_PREFIX)
 interface ServiceOauthAuthorizationResource {
 
-    @ApiOperation("Oauth授权表单页面显示")
-    @GetMapping("/authorize")
-    fun authorizeForm(
-        @RequestParam("client_id") clientId: String,
-        @RequestParam state: String
-    )
-
     @ApiOperation("用户确认Oauth授权")
     @PostMapping("/authorize")
     fun authorize(
         @RequestParam("client_id") clientId: String,
-        @RequestParam state: String,
-        @RequestParam scope: String
+        @RequestParam state: String
     )
 
     @ApiOperation("获取oauth token信息")

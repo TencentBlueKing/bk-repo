@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo.account
 
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -50,7 +51,7 @@ data class CreateAccountRequest(
     @ApiModelProperty("应用图标地址")
     val avatarUrl: String?,
     @ApiModelProperty("权限范围")
-    val scope: Set<String>?,
+    val scope: Set<ResourceType>?,
     @ApiModelProperty("简要描述")
     val description: String?
 )
