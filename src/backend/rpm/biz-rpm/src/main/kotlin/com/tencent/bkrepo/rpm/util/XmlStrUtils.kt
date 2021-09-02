@@ -336,7 +336,7 @@ object XmlStrUtils {
             IndexType.FILELISTS ->
                 """<?xml version="1.0" encoding="UTF-8" ?>
 <metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="""".length
-            IndexType.OTHERS ->
+            IndexType.OTHER ->
                 """<?xml version="1.0" encoding="UTF-8" ?>
 <metadata xmlns="http://linux.duke.edu/metadata/other" packages="""".length
         }
@@ -438,7 +438,7 @@ object XmlStrUtils {
 
     private fun getPackagePrefix(indexType: IndexType): String {
         return when (indexType) {
-            IndexType.OTHERS, IndexType.FILELISTS -> {
+            IndexType.OTHER, IndexType.FILELISTS -> {
                 "  <package pkgid"
             }
             IndexType.PRIMARY -> {
@@ -457,7 +457,7 @@ object XmlStrUtils {
     private fun calculatePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType): Int {
         val markStr = when (indexType) {
             IndexType.PRIMARY -> """<package type="rpm">"""
-            IndexType.FILELISTS, IndexType.OTHERS -> "<package pkgid="
+            IndexType.FILELISTS, IndexType.OTHER -> "<package pkgid="
         }
         randomAccessFile.seek(0L)
         var line: String?
@@ -478,7 +478,7 @@ object XmlStrUtils {
             IndexType.PRIMARY -> ("""^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
                     """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$""").trimMargin()
             IndexType.FILELISTS -> """^<metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="(\d+)">$"""
-            IndexType.OTHERS -> """^<metadata xmlns="http://linux.duke.edu/metadata/other" packages="(\d+)">$"""
+            IndexType.OTHER -> """^<metadata xmlns="http://linux.duke.edu/metadata/other" packages="(\d+)">$"""
         }
 
         randomAccessFile.seek(0L)
@@ -502,7 +502,7 @@ object XmlStrUtils {
      */
     fun toMarkFileXml(rpmXmlMetadata: RpmXmlMetadata, indexType: IndexType): String {
         val prefix = when (indexType) {
-            IndexType.OTHERS -> "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"1\">\n"
+            IndexType.OTHER -> "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"1\">\n"
             IndexType.PRIMARY ->
                 "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" " +
                         "xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n"
