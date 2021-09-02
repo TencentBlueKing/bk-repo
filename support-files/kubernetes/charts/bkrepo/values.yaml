@@ -91,7 +91,7 @@ init:
     image:
       registry: mirrors.tencent.com/bkrepo
       repository: bkrepo-init
-      tag: 1.0.13-beta1
+      tag: 1.0.13
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
@@ -144,7 +144,7 @@ gateway:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-gateway
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -181,7 +181,7 @@ repository:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-repository
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -218,7 +218,7 @@ auth:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-auth
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -254,7 +254,7 @@ generic:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-generic
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -290,7 +290,7 @@ docker:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-docker
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -326,7 +326,7 @@ npm:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-npm
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -362,7 +362,7 @@ pypi:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-pypi
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -398,7 +398,7 @@ helm:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-helm
-    tag: 1.0.13-beta1
+    tag: 1.0.13
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
