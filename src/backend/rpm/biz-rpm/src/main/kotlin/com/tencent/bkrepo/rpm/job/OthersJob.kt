@@ -30,7 +30,7 @@ class OthersJob {
                 val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
                 for (repoDataPath in targetSet) {
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] start")
-                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHERS, 20)
+                    jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHER, 20)
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
                 logger.info("update others index [${repo.projectId}|${repo.name}] done")
