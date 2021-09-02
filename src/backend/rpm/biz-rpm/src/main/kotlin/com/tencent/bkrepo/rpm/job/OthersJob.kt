@@ -34,15 +34,15 @@ class OthersJob {
                 for (repoDataPath in targetSet) {
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] start")
                     try {
-                        jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHERS, 20)
+                        jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHER, 20)
                     } catch (e: Exception) {
                         try {
-                            nodeList = jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHERS, 1)
+                            nodeList = jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHER, 1)
                         } catch (e: Exception) {
                             nodeList?.let {
                                 logger.warn(
                                     "update others index[${repo.projectId}|${repo.name}|$repoDataPath]" +
-                                            "with ${it.first()} failed"
+                                        "with ${it.first()} failed"
                                 )
                             }
                         } finally {
