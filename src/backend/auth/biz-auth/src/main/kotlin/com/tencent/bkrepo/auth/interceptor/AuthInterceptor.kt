@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
 import com.tencent.bkrepo.auth.constant.AUTH_REPO_SUFFIX
@@ -64,12 +65,17 @@ class AuthInterceptor : HandlerInterceptor {
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, basicAuthHeader)
         try {
             // 项目内操作，优先使用项目管理员权限
-            if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX) &&
-                (request.requestURI.contains(AUTH_REPO_SUFFIX) ||
-                    request.requestURI.contains(AUTH_PROJECT_SUFFIX) ||
-                    request.requestURI.contains(AUTH_API_ACCOUNT_PREFIX) ||
-                    request.requestURI.contains("/api/oauth"))
-            ) {
+            val basicAuthApiList = listOf(
+                AUTH_REPO_SUFFIX,
+                AUTH_PROJECT_SUFFIX,
+                AUTH_API_ACCOUNT_PREFIX,
+                AUTH_API_OAUTH_PREFIX
+            )
+            var isBasicAuthUri = false
+            basicAuthApiList.forEach {
+                isBasicAuthUri = isBasicAuthUri || request.requestURI.contains(it)
+            }
+            if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX) && isBasicAuthUri) {
                 val encodedCredentials = basicAuthHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(COLON)

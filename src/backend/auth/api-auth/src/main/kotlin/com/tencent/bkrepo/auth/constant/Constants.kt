@@ -81,8 +81,6 @@ const val AUTH_API_ACCOUNT_PREFIX = "/api/account"
 const val AUTH_API_OAUTH_PREFIX = "/api/oauth"
 const val AUTH_SERVICE_OAUTH_PREFIX = "/service/oauth"
 
-const val AUTH_API_OAUTH_CLIENT_PREFIX = "/api/client"
-
 const val AUTH_ADMIN = "admin"
 const val AUTH_BUILTIN_ADMIN = "repo_admin"
 const val AUTH_BUILTIN_USER = "repo_user"

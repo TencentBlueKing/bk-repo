@@ -29,15 +29,33 @@ package com.tencent.bkrepo.auth.service
 
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 
+/**
+ * Oauth授权服务
+ */
 interface OauthAuthorizationService {
 
+    /**
+     * 确认授权
+     */
     fun authorized(clientId: String, state: String)
 
+    /**
+     * 创建token
+     */
     fun createToken(clientId: String, clientSecret: String, code: String)
 
+    /**
+     * 获取token信息
+     */
     fun getToken(accessToken: String): OauthToken?
 
+    /**
+     * 验证token，验证通过返回userId
+     */
     fun validateToken(accessToken: String): String?
 
+    /**
+     * 删除token
+     */
     fun deleteToken(clientId: String, clientSecret: String, accessToken: String)
 }

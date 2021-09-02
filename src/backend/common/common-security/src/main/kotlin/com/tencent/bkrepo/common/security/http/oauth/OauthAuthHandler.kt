@@ -61,6 +61,6 @@ open class OauthAuthHandler(val authenticationManager: AuthenticationManager) : 
         val accessToken = authorizationHeader.removePrefix(OAUTH_AUTH_PREFIX).trim()
         val oauthToken = authenticationManager.findOauthToken(accessToken)
             ?: throw AuthenticationException("Invalid access token")
-        request.setAttribute(AUTHORITIES_KEY,  oauthToken.scope)
+        request.setAttribute(AUTHORITIES_KEY, oauthToken.scope)
     }
 }

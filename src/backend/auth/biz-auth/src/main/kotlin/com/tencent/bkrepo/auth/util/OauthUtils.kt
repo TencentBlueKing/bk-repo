@@ -31,9 +31,9 @@ import java.security.SecureRandom
 
 object OauthUtils {
 
-    const val CODE_LENGTH = 10
-    const val SECRET_KEY_LENGTH = 30
-    const val ACCESS_TOKEN_LENGTH = 64
+    private const val CODE_LENGTH = 10
+    private const val SECRET_KEY_LENGTH = 30
+    private const val ACCESS_TOKEN_LENGTH = 64
 
     fun generateCode(): String {
         return generateRandomString(CODE_LENGTH)
@@ -48,11 +48,10 @@ object OauthUtils {
     }
 
     private fun generateRandomString(length: Int): String {
-        val buffer = ByteArray(length/2)
+        val buffer = ByteArray(length / 2)
         SecureRandom().nextBytes(buffer)
         return buffer.toHexString()
     }
 
     private fun ByteArray.toHexString() = joinToString("") { String.format("%02x", it) }
-
 }

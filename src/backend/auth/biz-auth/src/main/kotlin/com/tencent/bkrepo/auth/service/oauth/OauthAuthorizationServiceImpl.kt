@@ -115,7 +115,6 @@ class OauthAuthorizationServiceImpl(
         }
     }
 
-
     override fun getToken(accessToken: String): OauthToken? {
         val tOauthToken = oauthTokenRepository.findFirstByAccessToken(accessToken) ?: return null
         return transfer(tOauthToken)

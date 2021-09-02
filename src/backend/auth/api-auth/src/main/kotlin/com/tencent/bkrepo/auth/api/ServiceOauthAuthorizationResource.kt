@@ -82,5 +82,4 @@ interface ServiceOauthAuthorizationResource {
     fun validateToken(
         @RequestParam accessToken: String
     ): Response<String?>
-
 }

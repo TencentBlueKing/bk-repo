@@ -69,7 +69,7 @@ object SecurityUtils {
      * 获取authorities
      */
     fun getAuthorities(): Set<String> {
-        val authorities =  HttpContextHolder.getRequestOrNull()?.getAttribute(AUTHORITIES_KEY).toString()
+        val authorities = HttpContextHolder.getRequestOrNull()?.getAttribute(AUTHORITIES_KEY).toString()
         return if (authorities == "null") {
             emptySet()
         } else {

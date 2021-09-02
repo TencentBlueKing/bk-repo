@@ -47,7 +47,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.util.concurrent.TimeUnit
 
-
 @SpringBootTest(classes = [RedisTestConfig::class])
 @DisplayName("Oauth授权服务相关接口")
 class OauthAuthorizationServiceTest {
@@ -114,5 +113,4 @@ class OauthAuthorizationServiceTest {
             description = null
         )
     }
-
 }
