@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.mongodb.BasicDBObject
 import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
@@ -48,6 +47,8 @@ import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.auth.util.query.UserQueryHelper
+import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -59,8 +60,6 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -94,15 +93,15 @@ class UserServiceImpl constructor(
         if (request.group && request.asstUsers.isEmpty()) {
             throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
-        var pwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
+        var hashPwd: String = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
         request.pwd?.let {
-            pwd = DataDigestUtils.md5FromStr(request.pwd!!)
+            hashPwd = DataDigestUtils.md5FromStr(request.pwd!!)
         }
         userRepository.insert(
             TUser(
                 userId = request.userId,
                 name = request.name,
-                pwd = pwd,
+                pwd = hashPwd,
                 admin = request.admin,
                 locked = false,
                 tokens = emptyList(),
@@ -166,7 +165,7 @@ class UserServiceImpl constructor(
         logger.debug("list user rids : [$rids]")
         return if (rids.isEmpty()) {
             // 排除被锁定的用户
-            val filter = Query(Criteria(TUser::locked.name).`is`(false))
+            val filter = UserQueryHelper.filterNotLockedUser()
             mongoTemplate.find(filter, TUser::class.java).map { transferUser(it) }
         } else {
             userRepository.findAllByRolesIn(rids).map { transferUser(it) }
@@ -187,10 +186,9 @@ class UserServiceImpl constructor(
         // check role
         checkRoleExist(roleId)
         // check is role bind to role
-        val query = Query()
-        val update = Update()
         if (!checkUserRoleBind(userId, roleId)) {
-            query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
+            val query = UserQueryHelper.getUserById(userId)
+            val update = Update()
             update.addToSet(TUser::roles.name, roleId)
             mongoTemplate.upsert(query, update, TUser::class.java)
         }
@@ -201,10 +199,8 @@ class UserServiceImpl constructor(
         logger.info("add user to role batch userId : [$idList], roleId : [$roleId]")
         checkUserExistBatch(idList)
         checkRoleExist(roleId)
-        val query = Query()
-        val update = Update()
-        query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList))
-        update.addToSet(TUser::roles.name, roleId)
+        val query = UserQueryHelper.getUserByIdList(idList)
+        val update = UserUpdateHelper.buildAddRole(roleId)
         mongoTemplate.updateMulti(query, update, TUser::class.java)
         return true
     }
@@ -215,10 +211,8 @@ class UserServiceImpl constructor(
         checkUserExist(userId)
         // check role
         checkRoleExist(roleId)
-        val query = Query()
-        val update = Update()
-        query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId).and(TUser::roles.name).`is`(roleId))
-        update.unset("roles.$")
+        val query = UserQueryHelper.getUserByIdAndRoleId(userId, roleId)
+        val update = UserUpdateHelper.buildUnsetRoles()
         mongoTemplate.upsert(query, update, TUser::class.java)
         return getUserById(userId)
     }
@@ -227,10 +221,8 @@ class UserServiceImpl constructor(
         logger.info("remove user from role  batch userId : [$idList], roleId : [$roleId]")
         checkUserExistBatch(idList)
         checkRoleExist(roleId)
-        val query = Query()
-        val update = Update()
-        query.addCriteria(Criteria.where(TUser::userId.name).`in`(idList).and(TUser::roles.name).`is`(roleId))
-        update.unset("roles.$")
+        val query = UserQueryHelper.getUserByIdListAndRoleId(idList, roleId)
+        val update = UserUpdateHelper.buildUnsetRoles()
         val result = mongoTemplate.updateMulti(query, update, TUser::class.java)
         if (result.modifiedCount == 1L) return true
         return false
@@ -240,26 +232,8 @@ class UserServiceImpl constructor(
         logger.info("update user userId : [$userId], request : [$request]")
         checkUserExist(userId)
 
-        val query = Query()
-        query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
-        val update = Update()
-        request.pwd?.let {
-            val pwd = DataDigestUtils.md5FromStr(request.pwd!!)
-            update.set(TUser::pwd.name, pwd)
-        }
-        request.name?.let {
-            update.set(TUser::name.name, request.name)
-        }
-        request.email?.let {
-            update.set(TUser::email.name, request.email)
-        }
-        request.locked?.let {
-            update.set(TUser::locked.name, request.locked)
-        }
-        request.phone?.let {
-            update.set(TUser::phone.name, request.phone)
-        }
-        update.set(TUser::lastModifiedDate.name, LocalDateTime.now())
+        val query = UserQueryHelper.getUserById(userId)
+        val update = UserUpdateHelper.buildUpdateUser(request)
         val result = mongoTemplate.updateFirst(query, update, TUser::class.java)
         if (result.modifiedCount == 1L) return true
         return false
@@ -293,7 +267,7 @@ class UserServiceImpl constructor(
                 }
             }
             // 创建token
-            val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
+            val query = UserQueryHelper.getUserById(userId)
             val update = Update()
             var expiredTime: LocalDateTime? = null
             if (expiredAt != null && expiredAt.isNotEmpty()) {
@@ -302,20 +276,13 @@ class UserServiceImpl constructor(
                 // conv time
                 expiredTime = expiredTime!!.plusHours(8)
             }
-            val userToken = Token(
-                name = name,
-                id = id,
-                createdAt = createdTime,
-                expiredAt = expiredTime
-            )
+            val userToken = Token(name = name, id = id, createdAt = createdTime, expiredAt = expiredTime)
             update.addToSet(TUser::tokens.name, userToken)
             mongoTemplate.upsert(query, update, TUser::class.java)
             val userInfo = getUserById(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
-                if (it.name == name) {
-                    return it
-                }
+                if (it.name == name) return it
             }
             return null
         } catch (ignored: DateTimeParseException) {
@@ -338,11 +305,8 @@ class UserServiceImpl constructor(
     override fun removeToken(userId: String, name: String): Boolean {
         logger.info("remove token userId : [$userId] ,name : [$name]")
         checkUserExist(userId)
-        val query = Query.query(Criteria.where(TUser::userId.name).`is`(userId))
-        val s = BasicDBObject()
-        s["name"] = name
-        val update = Update()
-        update.pull(TUser::tokens.name, s)
+        val query = UserQueryHelper.getUserById(userId)
+        val update = UserUpdateHelper.buildUnsetTokenName(name)
         mongoTemplate.updateFirst(query, update, TUser::class.java)
         return true
     }
@@ -356,12 +320,7 @@ class UserServiceImpl constructor(
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         logger.debug("find user userId : [$userId]")
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
-        val criteria = Criteria()
-        criteria.orOperator(
-            Criteria.where(TUser::pwd.name).`is`(hashPwd),
-            Criteria.where("tokens.id").`is`(pwd)
-        ).and(TUser::userId.name).`is`(userId)
-        val query = Query.query(criteria)
+        val query = UserQueryHelper.buildPermissionCheck(userId, pwd, hashPwd)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
             return null
         }
@@ -386,59 +345,45 @@ class UserServiceImpl constructor(
     override fun userPage(
         pageNumber: Int,
         pageSize: Int,
-        user: String?,
+        userName: String?,
         admin: Boolean?,
         locked: Boolean?
     ): Page<UserInfo> {
-        val criteria = Criteria()
-        user?.let {
-            criteria.orOperator(
-                Criteria.where(TUser::userId.name).regex("^$user"),
-                Criteria.where(TUser::name.name).regex("^$user")
-            )
-        }
-        admin?.let { criteria.and(TUser::admin.name).`is`(admin) }
-        locked?.let { criteria.and(TUser::locked.name).`is`(locked) }
-        val query = Query.query(criteria)
+        val query = UserQueryHelper.getUserByName(userName, admin, locked)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = mongoTemplate.count(query, TUser::class.java)
         val records = mongoTemplate.find(query.with(pageRequest), TUser::class.java).map { transferUserInfo(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
-    override fun getUserInfoById(uid: String): UserInfo? {
-        val tUser = userRepository.findFirstByUserId(uid) ?: return null
+    override fun getUserInfoById(userId: String): UserInfo? {
+        val tUser = userRepository.findFirstByUserId(userId) ?: return null
         return transferUserInfo(tUser)
     }
 
-    override fun updatePassword(uid: String, oldPwd: String, newPwd: String): Boolean {
-        val query = Query.query(
-            Criteria().andOperator(
-                Criteria.where(TUser::userId.name).`is`(uid),
-                Criteria.where(TUser::pwd.name).`is`(DataDigestUtils.md5FromStr(oldPwd))
-            )
-        )
+    override fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean {
+        val query = UserQueryHelper.getUserByIdAndPwd(userId, newPwd)
         val user = mongoTemplate.find(query, TUser::class.java)
         if (user.isNotEmpty()) {
-            val updateQuery = Query(Criteria(TUser::userId.name).`is`(uid))
-            val update = Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(newPwd))
+            val updateQuery = UserQueryHelper.getUserById(userId)
+            val update = UserUpdateHelper.buildPwdUpdate(newPwd)
             val record = mongoTemplate.updateFirst(updateQuery, update, TUser::class.java)
             if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
         }
         throw ErrorCodeException(CommonMessageCode.MODIFY_PASSWORD_FAILED, "modify password failed!")
     }
 
-    override fun resetPassword(uid: String): Boolean {
+    override fun resetPassword(userId: String): Boolean {
         // todo 鉴权
-        val updateQuery = Query(Criteria(TUser::userId.name).`is`(uid))
+        val query = UserQueryHelper.getUserById(userId)
         val update = Update().set(TUser::pwd.name, DataDigestUtils.md5FromStr(DEFAULT_PASSWORD))
-        val record = mongoTemplate.updateFirst(updateQuery, update, TUser::class.java)
+        val record = mongoTemplate.updateFirst(query, update, TUser::class.java)
         if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
         return false
     }
 
-    override fun repeatUid(uid: String): Boolean {
-        val query = Query(Criteria(TUser::userId.name).`is`(uid))
+    override fun repeatUid(userId: String): Boolean {
+        val query = UserQueryHelper.getUserById(userId)
         val record = mongoTemplate.find(query, TUser::class.java)
         return record.isNotEmpty()
     }

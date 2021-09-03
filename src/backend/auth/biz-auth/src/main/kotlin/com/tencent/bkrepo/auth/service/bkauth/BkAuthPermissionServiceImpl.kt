@@ -194,7 +194,7 @@ class BkAuthPermissionServiceImpl constructor(
             }
 
             // devops 体系
-            if (matchAnonymousCond(appId, userId)) {
+            if (matchDevopsCond(appId)) {
                 if (checkDevopsPermission(request)) {
                     return getAllRepoByProjectId(projectId)
                 }

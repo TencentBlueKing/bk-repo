@@ -294,7 +294,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        logger.debug("list repo permission  request : [$projectId, $userId] ")
+        logger.debug("list repo permission request : [$projectId, $userId] ")
         val user = userRepository.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
