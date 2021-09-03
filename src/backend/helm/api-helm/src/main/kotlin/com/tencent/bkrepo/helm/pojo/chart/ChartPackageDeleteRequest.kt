@@ -29,24 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.model
+package com.tencent.bkrepo.helm.pojo.chart
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Document("mongo_lock")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "mongo_distributed_lock_inx",
-        def = "{'key': 1, 'requestId': 1}",
-        background = true
-    )
-)
-data class TMongoLock(
-    val key: String,
-    val value: Int,
-    val expire: LocalDateTime,
-    val requestId: String
-)
+@ApiModel("chart包删除请求")
+data class ChartPackageDeleteRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    override val projectId: String,
+    @ApiModelProperty("所属仓库id", required = true)
+    override val repoName: String,
+    @ApiModelProperty("chart名称", required = true)
+    val name: String,
+    @ApiModelProperty("操作用户id", required = true)
+    override val operator: String
+) : ChartDeleteRequest

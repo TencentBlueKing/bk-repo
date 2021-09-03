@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.model.metadata
+package com.tencent.bkrepo.helm.pojo.metadata
 
 import java.util.SortedSet
 
