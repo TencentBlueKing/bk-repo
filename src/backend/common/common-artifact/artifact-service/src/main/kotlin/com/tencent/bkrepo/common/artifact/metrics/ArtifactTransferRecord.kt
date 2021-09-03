@@ -52,11 +52,7 @@ data class ArtifactTransferRecord(
     @Column(name = "average")
     val average: Long,
     @Column(name = "sha256")
-    val sha256: String,
-    @Column(name = "projectId", tag = true)
-    val projectId: String,
-    @Column(name = "repoName", tag = true)
-    val repoName: String
+    val sha256: String
 ) {
     companion object {
         const val RECEIVE = "RECEIVE"
