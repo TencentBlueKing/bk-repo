@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class ServiceKeyResourceImpl(
     private val keyService: KeyService
-): ServiceKeyResource {
+) : ServiceKeyResource {
     override fun createKey(name: String, key: String): Response<Void> {
         keyService.createKey(name, key)
         return ResponseBuilder.success()

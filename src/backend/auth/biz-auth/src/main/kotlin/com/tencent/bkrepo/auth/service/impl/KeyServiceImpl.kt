@@ -69,7 +69,7 @@ class KeyServiceImpl(
 
     override fun deleteKey(id: String) {
         val userId = SecurityUtils.getUserId()
-        val key = keyRepository.findById(id).orElseThrow{ ErrorCodeException(AuthMessageCode.AUTH_DELETE_KEY_FAILED) }
+        val key = keyRepository.findById(id).orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_DELETE_KEY_FAILED) }
         if (key.userId != userId) {
             throw ErrorCodeException(AuthMessageCode.AUTH_DELETE_KEY_FAILED)
         }
