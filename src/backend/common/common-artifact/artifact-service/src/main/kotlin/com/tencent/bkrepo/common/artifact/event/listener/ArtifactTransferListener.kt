@@ -37,12 +37,10 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.web.servlet.HandlerMapping
 import java.time.Instant
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -63,7 +61,6 @@ class ArtifactTransferListener(
             artifactMetrics.uploadedConsumeTimer.record(throughput.duration)
             logger.info("Receive artifact file, $throughput.")
 
-            val (projectId, repoName) = getPathParam()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
@@ -71,9 +68,7 @@ class ArtifactTransferListener(
                 bytes = throughput.bytes,
                 average = throughput.average(),
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
-                sha256 = artifactFile.getFileSha256(),
-                projectId = projectId,
-                repoName = repoName
+                sha256 = artifactFile.getFileSha256()
             )
             queue.offer(record)
         }
@@ -86,7 +81,6 @@ class ArtifactTransferListener(
             artifactMetrics.downloadedConsumeTimer.record(throughput.duration)
             logger.info("Response artifact file, $throughput.")
 
-            val (projectId, repoName) = getPathParam()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
@@ -94,9 +88,7 @@ class ArtifactTransferListener(
                 bytes = throughput.bytes,
                 average = throughput.average(),
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
-                sha256 = artifactResource.node?.sha256.orEmpty(),
-                projectId = projectId,
-                repoName = repoName
+                sha256 = artifactResource.node?.sha256.orEmpty()
             )
             queue.offer(record)
         }
@@ -107,16 +99,6 @@ class ArtifactTransferListener(
         val current = queue
         queue = LinkedBlockingQueue(QUEUE_LIMIT)
         influxMetricsExporter.ifAvailable?.export(current)
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun getPathParam(): Pair<String, String> {
-        val pathParamMap = HttpContextHolder.getRequest()
-            .getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<String, String>
-        val pathParameters = pathParamMap.values.toList()
-        val projectId = pathParameters[0]
-        val repoName = pathParameters[1]
-        return Pair(projectId, repoName)
     }
 
     companion object {
