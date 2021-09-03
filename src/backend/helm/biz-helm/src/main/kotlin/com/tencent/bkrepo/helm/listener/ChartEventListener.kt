@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY
+import com.tencent.bkrepo.helm.constants.buildRedisKey
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
@@ -52,11 +52,10 @@ import java.util.concurrent.ThreadPoolExecutor
 
 @Component
 class ChartEventListener(
-    redisOperation: RedisOperation
+    private val redisOperation: RedisOperation
 ) : AbstractEventListener() {
 
     private val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
-    val lock = RedisLock(redisOperation, REDIS_LOCK_KEY, expiredTimeInSeconds)
 
     /**
      * 删除chart版本，更新index.yaml文件
@@ -70,6 +69,7 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
+            val lock = RedisLock(redisOperation, buildRedisKey(projectId, repoName), expiredTimeInSeconds)
             val task = {
                 if (lock.tryLock()) {
                     lock.use {
@@ -155,6 +155,7 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
+            val lock = RedisLock(redisOperation, buildRedisKey(projectId, repoName), expiredTimeInSeconds)
             val task = {
                 if (lock.tryLock()) {
                     lock.use {
