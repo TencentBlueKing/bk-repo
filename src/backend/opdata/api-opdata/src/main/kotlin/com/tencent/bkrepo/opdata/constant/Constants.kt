@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.opdata.constant
 
-import com.sun.deploy.util.BufferUtil
+import org.apache.commons.io.FileUtils
 
 const val PROJECT_NAME = "bkrepo"
 
@@ -64,7 +64,7 @@ const val OPDATA_PROJECT_METRICS = "project_metrics"
 const val OPDATA_FILE_EXTENSION_METRICS = "file_extension_metrics"
 
 const val B_0 = "0"
-const val MB_100 = (100 * BufferUtil.MB).toString()
-const val MB_500 = (500 * BufferUtil.MB).toString()
-const val GB_1 = BufferUtil.GB.toString()
-const val GB_10 = (10 * BufferUtil.GB).toString()
+const val MB_100 = (100 * FileUtils.ONE_MB).toString()
+const val MB_500 = (500 * FileUtils.ONE_MB).toString()
+const val GB_1 = FileUtils.ONE_GB.toString()
+const val GB_10 = (10 * FileUtils.ONE_GB).toString()

@@ -146,7 +146,7 @@ class JobService(
         val groupAndIndex = mutableListOf<String>()
         if (enabledFileLists) groupAndIndex.add("${IndexType.FILELISTS.value}.xml.gz")
         groupAndIndex.add("${IndexType.PRIMARY.value}.xml.gz")
-        groupAndIndex.add("${IndexType.OTHERS.value}.xml.gz")
+        groupAndIndex.add("${IndexType.OTHER.value}.xml.gz")
         groupAndIndex.addAll(doubleSet)
         return groupAndIndex
     }
@@ -167,7 +167,7 @@ class JobService(
     fun flushRepoMdXML(repo: RepositoryDetail, repoDataPath: String) {
         val targetIndexList = findIndexXml(repo, repoDataPath)
         val repoDataList = mutableListOf<RepoIndex>()
-        val regex = Regex("-filelists\\.xml\\.gz|-others\\.xml\\.gz|-primary\\.xml\\.gz")
+        val regex = Regex("-filelists\\.xml\\.gz|-other\\.xml\\.gz|-primary\\.xml\\.gz")
         for (index in targetIndexList) {
             repoDataList.add(
                 if ((index.name).contains(regex)) {
@@ -296,12 +296,19 @@ class JobService(
      */
     fun getLatestIndexNode(repo: RepositoryDetail, repodataPath: String, nameSuffix: String): NodeInfo? {
         logger.debug("getLatestIndexNode: [${repo.projectId}|${repo.name}|$repodataPath|$nameSuffix]")
+        val nameList = mutableListOf<Rule>(
+            Rule.QueryRule("name", "*-$nameSuffix", OperationType.MATCH)
+        )
+        if (nameSuffix == "${IndexType.OTHER.value}.xml.gz") {
+            nameList.add(Rule.QueryRule("name", "*-others.xml.gz", OperationType.MATCH))
+        }
+        val nameRule = Rule.NestedRule(nameList, Rule.NestedRule.RelationType.OR)
         val ruleList = mutableListOf<Rule>(
             Rule.QueryRule("projectId", repo.projectId),
             Rule.QueryRule("repoName", repo.name),
             Rule.QueryRule("path", "${repodataPath.removeSuffix("/")}/"),
             Rule.QueryRule("folder", false, OperationType.EQ),
-            Rule.QueryRule("name", "*-$nameSuffix", OperationType.MATCH)
+            nameRule
         )
         val queryModel = QueryModel(
             page = PageLimit(1, 1),
@@ -318,8 +325,8 @@ class JobService(
         var nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
         val regex = Regex(
             "${IndexType.PRIMARY.value}.xml.gz" +
-                "|${IndexType.OTHERS.value}.xml.gz" +
-                "|${IndexType.FILELISTS.value}.xml.gz"
+                    "|${IndexType.OTHER.value}.xml.gz" +
+                    "|${IndexType.FILELISTS.value}.xml.gz"
         )
         // 如果是索引文件则执行
         if (nameSuffix.matches(regex)) {
@@ -354,16 +361,16 @@ class JobService(
             }
             IndexType.FILELISTS -> {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
-                    "</metadata>"
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
+                        "</metadata>"
             }
-            IndexType.OTHERS -> {
+            IndexType.OTHER -> {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                    "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"0\">\n" +
-                    "</metadata>"
+                        "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"0\">\n" +
+                        "</metadata>"
             }
         }
-        val initIndexFile = File.createTempFile("initIndex", IndexType.OTHERS.value)
+        val initIndexFile = File.createTempFile("initIndex", IndexType.OTHER.value)
         FileOutputStream(initIndexFile).use { fos ->
             fos.write(initStr.toByteArray())
             fos.flush()
@@ -428,7 +435,7 @@ class JobService(
         location: String?
     ): String {
         return when (indexType) {
-            IndexType.OTHERS, IndexType.FILELISTS -> {
+            IndexType.OTHER, IndexType.FILELISTS -> {
                 with(rpmVersion) {
                     """name="$name">
     <version epoch="$epoch" ver="$ver" rel="$rel"/>"""
