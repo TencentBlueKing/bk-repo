@@ -165,6 +165,7 @@ class JobService(
     }
 
     fun flushRepoMdXML(repo: RepositoryDetail, repoDataPath: String) {
+        logger.debug("Flush repomd: [${repo.projectId}|${repo.name}|$repoDataPath]")
         val targetIndexList = findIndexXml(repo, repoDataPath)
         val repoDataList = mutableListOf<RepoIndex>()
         val regex = Regex("-filelists\\.xml\\.gz|-other\\.xml\\.gz|-primary\\.xml\\.gz")
@@ -220,6 +221,7 @@ class JobService(
         repodataPath: String,
         indexType: IndexType
     ) {
+        logger.debug("Store gzIndex: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
         val xmlGZFile = xmlFile.gZip()
         try {
             val xmlFileSha1 = xmlFile.sha1()
@@ -227,6 +229,7 @@ class JobService(
             val xmlGZArtifact = ArtifactFileFactory.build(FileInputStream(xmlGZFile))
             val fullPath = "$repodataPath/$xmlGZFileSha1-${indexType.value}.xml.gz"
             // 保存节点同时保存节点信息到元数据方便repomd更新。
+            logger.debug("Create gzIndex metadata: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
             val metadata = mutableMapOf(
                 "indexType" to indexType.value,
                 "checksum" to xmlGZFileSha1,
@@ -249,6 +252,7 @@ class JobService(
                 metadata
             )
             store(xmlGZNode, xmlGZArtifact)
+            logger.debug("Store gzIndex success: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
             GlobalScope.launch {
                 val indexTypeList = getIndexTypeList(repo, repodataPath, indexType)
                 deleteSurplusNode(indexTypeList)
@@ -319,19 +323,20 @@ class JobService(
             ),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        if (logger.isDebugEnabled) {
-            logger.debug("queryModel: $queryModel")
-        }
         var nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
         val regex = Regex(
             "${IndexType.PRIMARY.value}.xml.gz" +
                     "|${IndexType.OTHER.value}.xml.gz" +
                     "|${IndexType.FILELISTS.value}.xml.gz"
         )
+        if (nodeList.isNotEmpty()) {
+            logger.debug("LatestIndexNodeList: [${repo.projectId}|${repo.name}|${nodeList.first().fullPath}]")
+        }
         // 如果是索引文件则执行
         if (nameSuffix.matches(regex)) {
             val indexType = IndexType.valueOf(nameSuffix.removeSuffix(".xml.gz").toUpperCase())
             if (nodeList.isEmpty()) {
+                logger.debug("Init [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value} index] ")
                 initIndex(repo, repodataPath, indexType)
                 nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
             }
@@ -345,6 +350,7 @@ class JobService(
                 return null
             }
         }
+        logger.debug("getLatestIndexNode : [${repo.projectId}|${repo.name}|${nodeList.first().fullPath}]")
         return nodeList.first()
     }
 
@@ -370,13 +376,17 @@ class JobService(
                         "</metadata>"
             }
         }
-        val initIndexFile = File.createTempFile("initIndex", IndexType.OTHER.value)
+        logger.debug(" Create temp file of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
+        val initIndexFile = File.createTempFile("initIndex", indexType.value)
         FileOutputStream(initIndexFile).use { fos ->
             fos.write(initStr.toByteArray())
             fos.flush()
         }
+        logger.debug("Write temp file finish of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
         try {
+            logger.debug("Upload index of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
             storeXmlGZNode(repo, initIndexFile, repodataPath, indexType)
+            logger.debug("Upload index finish of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
         } finally {
             initIndexFile.delete()
         }
@@ -495,12 +505,17 @@ class JobService(
     ): Page<NodeInfo> {
         logger.debug("listMarkNodes: [$repo|$repodataPath|$indexType|$limit])")
         val indexMarkFolder = "$repodataPath/${indexType.value}/"
+        val pathList = mutableListOf<Rule>(Rule.QueryRule("path", indexMarkFolder, OperationType.EQ))
+        if (indexType == IndexType.OTHER) {
+            pathList.add(Rule.QueryRule("path", "$repodataPath/${indexType.value}s/", OperationType.EQ))
+        }
+        val pathRule = Rule.NestedRule(pathList, Rule.NestedRule.RelationType.OR)
         val ruleList = mutableListOf<Rule>(
             Rule.QueryRule("projectId", repo.projectId, OperationType.EQ),
             Rule.QueryRule("repoName", repo.name, OperationType.EQ),
-            Rule.QueryRule("path", indexMarkFolder, OperationType.EQ),
             Rule.QueryRule("folder", false, OperationType.EQ),
-            Rule.QueryRule("name", "*.rpm", OperationType.MATCH)
+            Rule.QueryRule("name", "*.rpm", OperationType.MATCH),
+            pathRule
         )
         val queryModel = QueryModel(
             page = PageLimit(1, limit),
@@ -544,6 +559,7 @@ class JobService(
             latestIndexNode.sha256!!,
             Range.full(latestIndexNode.size), null
         )!!.use { it.unGzipInputStream() }
+        logger.debug("temp index file: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
         logger.info(
             "temp index file " +
                     "${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created"
@@ -568,6 +584,7 @@ class JobService(
                     )
                 }
             }
+            logger.debug("Check valid :[${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
             checkValid(unzipedIndexTempFile)
             storeXmlGZNode(repo, unzipedIndexTempFile, repodataPath, indexType)
             flushRepoMdXML(repo, repodataPath)
@@ -575,8 +592,8 @@ class JobService(
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
-            return markNodes
         }
+        return markNodes
     }
 
     private fun updateIndexFile(
@@ -587,6 +604,7 @@ class JobService(
         repodataPath: String
     ): Int {
         // rpm构件位置
+        logger.debug("Execute index node: [${markNode.projectId}|${markNode.repoName}|${markNode.fullPath}]")
         val locationStr = markNode.fullPath.replace("/repodata/${indexType.value}", "")
         val repodataDepth = getRpmRepoConf(repo.projectId, repo.name).repodataDepth
         // 保存在索引中的相对路径
