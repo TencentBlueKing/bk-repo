@@ -277,8 +277,10 @@ class RpmLocalRepository(
         sha256: String?
     ) {
         val repodataUri = repoData.repoDataPath
-        logger.info("storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType," +
-            " metadata: $metadata")
+        logger.info(
+            "storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType," +
+                " metadata: $metadata"
+        )
         val artifactFile = when (repeat) {
             FULLPATH_SHA256 -> {
                 logger.warn("artifact repeat is $FULLPATH_SHA256, skip")
@@ -730,7 +732,7 @@ class RpmLocalRepository(
             if (nodeInfoPage.records.isEmpty()) break@loop
             logger.info(
                 "populatePackage: found ${nodeInfoPage.records.size}," +
-                        " totalRecords: ${nodeInfoPage.totalRecords}"
+                    " totalRecords: ${nodeInfoPage.totalRecords}"
             )
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {
