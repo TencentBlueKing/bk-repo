@@ -52,6 +52,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.exception.RpmConfNotFoundException
@@ -533,10 +534,36 @@ class JobService(
         with(resultPage) { return Page(pageNumber, pageSize, totalRecords, records.map { resolveNode(it) }) }
     }
 
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
+    fun updateIndex(
+        repo: RepositoryDetail,
+        repodataPath: String,
+        indexType: IndexType,
+        maxCount: Int
+    ) {
+        var nodeList: List<NodeInfo>? = mutableListOf()
+        try {
+            batchUpdateIndex(repo, repodataPath, indexType, maxCount)
+        } catch (e: Exception) {
+            try {
+                nodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
+            } catch (e: Exception) {
+                nodeList?.let {
+                    logger.warn(
+                        "update primary index[${repo.projectId}|${repo.name}|$repodataPath]" +
+                                "with ${it.first()} failed"
+                    )
+                }
+            } finally {
+                nodeList?.let { updateNodes(it) }
+            }
+        }
+    }
+
     /**
      * 更新索引
      */
-    fun batchUpdateIndex(
+    private fun batchUpdateIndex(
         repo: RepositoryDetail,
         repodataPath: String,
         indexType: IndexType,
@@ -592,8 +619,8 @@ class JobService(
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
+            return markNodes
         }
-        return markNodes
     }
 
     private fun updateIndexFile(
@@ -641,6 +668,7 @@ class JobService(
         logger.debug("checkValid, cost: ${System.currentTimeMillis() - start} ms")
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun deleteNodes(nodes: List<NodeInfo>) {
         nodes.forEach { nodeInfo ->
             with(nodeInfo) {
@@ -649,6 +677,22 @@ class JobService(
                     logger.info("node[$projectId|$repoName|$fullPath] deleted")
                 } catch (e: Exception) {
                     logger.info("node[$projectId|$repoName|$fullPath] delete exception, ${e.message}")
+                }
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun updateNodes(nodes: List<NodeInfo>) {
+        nodes.forEach { nodeInfo ->
+            with(nodeInfo) {
+                try {
+                    nodeClient.updateNode(
+                        NodeUpdateRequest(projectId, repoName, fullPath, 0L, "system")
+                    )
+                    logger.info("node[$projectId|$repoName|$fullPath] update")
+                } catch (e: Exception) {
+                    logger.info("node[$projectId|$repoName|$fullPath] update exception, ${e.message}")
                 }
             }
         }

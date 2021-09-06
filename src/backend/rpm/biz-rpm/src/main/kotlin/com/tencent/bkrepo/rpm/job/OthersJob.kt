@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.rpm.job
 
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.util.RpmCollectionUtils
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
@@ -30,25 +29,9 @@ class OthersJob {
                 val rpmConfiguration = repo.configuration
                 val repodataDepth = rpmConfiguration.getIntegerSetting("repodataDepth") ?: 0
                 val targetSet = RpmCollectionUtils.filterByDepth(jobService.findRepodataDirs(repo), repodataDepth)
-                var nodeList: List<NodeInfo>? = mutableListOf()
                 for (repoDataPath in targetSet) {
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] start")
-                    try {
-                        jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHER, 20)
-                    } catch (e: Exception) {
-                        try {
-                            nodeList = jobService.batchUpdateIndex(repo, repoDataPath, IndexType.OTHER, 1)
-                        } catch (e: Exception) {
-                            nodeList?.let {
-                                logger.warn(
-                                    "update others index[${repo.projectId}|${repo.name}|$repoDataPath]" +
-                                        "with ${it.first()} failed"
-                                )
-                            }
-                        } finally {
-                            nodeList?.let { jobService.deleteNodes(it) }
-                        }
-                    }
+                    jobService.updateIndex(repo, repoDataPath, IndexType.OTHER, 20)
                     logger.info("update others index [${repo.projectId}|${repo.name}|$repoDataPath] done")
                 }
                 logger.info("update others index [${repo.projectId}|${repo.name}] done")
