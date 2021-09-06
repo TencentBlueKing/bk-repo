@@ -126,14 +126,13 @@ class NugetLocalRepository(
             if (version.isNotBlank()) {
                 packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
                     removeVersion(this, it, context.userId)
-                } ?: throw VersionNotFoundException("No package with the provided ID and VERSION exists")
+                } ?: throw VersionNotFoundException(version)
             } else {
                 packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
                     removeVersion(this, it, context.userId)
                 }
             }
         }
-        context.response.status = HttpStatus.NO_CONTENT.value
     }
 
     /**
