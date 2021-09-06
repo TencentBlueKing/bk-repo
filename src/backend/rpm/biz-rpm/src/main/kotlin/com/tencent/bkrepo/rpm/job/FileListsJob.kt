@@ -48,7 +48,7 @@ class FileListsJob {
                             nodeList?.let {
                                 logger.warn(
                                     "update filelists index[${repo.projectId}|${repo.name}|$repoDataPath]" +
-                                            "with ${it.first()} failed"
+                                        "with ${it.first()} failed"
                                 )
                             }
                         } finally {

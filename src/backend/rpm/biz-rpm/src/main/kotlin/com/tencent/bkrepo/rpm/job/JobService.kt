@@ -326,8 +326,8 @@ class JobService(
         var nodeList = nodeClient.search(queryModel).data!!.records.map { resolveNode(it) }
         val regex = Regex(
             "${IndexType.PRIMARY.value}.xml.gz" +
-                    "|${IndexType.OTHER.value}.xml.gz" +
-                    "|${IndexType.FILELISTS.value}.xml.gz"
+                "|${IndexType.OTHER.value}.xml.gz" +
+                "|${IndexType.FILELISTS.value}.xml.gz"
         )
         if (nodeList.isNotEmpty()) {
             logger.debug("LatestIndexNodeList: [${repo.projectId}|${repo.name}|${nodeList.first().fullPath}]")
@@ -367,26 +367,26 @@ class JobService(
             }
             IndexType.FILELISTS -> {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                        "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
-                        "</metadata>"
+                    "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
+                    "</metadata>"
             }
             IndexType.OTHER -> {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-                        "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"0\">\n" +
-                        "</metadata>"
+                    "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"0\">\n" +
+                    "</metadata>"
             }
         }
-        logger.debug(" Create temp file of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
+        logger.debug(" Create temp file of [${repo.projectId}|${repo.name}|$repodataPath|$indexType] ")
         val initIndexFile = File.createTempFile("initIndex", indexType.value)
         FileOutputStream(initIndexFile).use { fos ->
             fos.write(initStr.toByteArray())
             fos.flush()
         }
-        logger.debug("Write temp file finish of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
+        logger.debug("Write temp file finish of [${repo.projectId}|${repo.name}|$repodataPath|$indexType] ")
         try {
-            logger.debug("Upload index of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
+            logger.debug("Upload index of [${repo.projectId}|${repo.name}|$repodataPath|$indexType] ")
             storeXmlGZNode(repo, initIndexFile, repodataPath, indexType)
-            logger.debug("Upload index finish of [${repo.projectId}|${repo.name}|$repodataPath|${indexType}] ")
+            logger.debug("Upload index finish of [${repo.projectId}|${repo.name}|$repodataPath|$indexType] ")
         } finally {
             initIndexFile.delete()
         }
@@ -562,7 +562,7 @@ class JobService(
         logger.debug("temp index file: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
         logger.info(
             "temp index file " +
-                    "${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created"
+                "${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created"
         )
         try {
             val processedMarkNodes = mutableListOf<NodeInfo>()
@@ -579,8 +579,8 @@ class JobService(
                     XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
                     logger.debug(
                         "updatePackageCount indexType: $indexType," +
-                                " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
-                                "cost: ${System.currentTimeMillis() - start} ms"
+                            " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
+                            "cost: ${System.currentTimeMillis() - start} ms"
                     )
                 }
             }

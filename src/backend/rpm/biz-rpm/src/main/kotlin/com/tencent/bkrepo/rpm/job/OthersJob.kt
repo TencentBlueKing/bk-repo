@@ -42,7 +42,7 @@ class OthersJob {
                             nodeList?.let {
                                 logger.warn(
                                     "update others index[${repo.projectId}|${repo.name}|$repoDataPath]" +
-                                            "with ${it.first()} failed"
+                                        "with ${it.first()} failed"
                                 )
                             }
                         } finally {

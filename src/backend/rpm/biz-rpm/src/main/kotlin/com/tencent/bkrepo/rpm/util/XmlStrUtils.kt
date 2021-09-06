@@ -475,8 +475,10 @@ object XmlStrUtils {
      */
     fun resolvePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType): Int {
         val regex = when (indexType) {
-            IndexType.PRIMARY -> ("""^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
-                """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$""").trimMargin()
+            IndexType.PRIMARY -> (
+                """^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
+                    """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$"""
+                ).trimMargin()
             IndexType.FILELISTS -> """^<metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="(\d+)">$"""
             IndexType.OTHER -> """^<metadata xmlns="http://linux.duke.edu/metadata/other" packages="(\d+)">$"""
         }

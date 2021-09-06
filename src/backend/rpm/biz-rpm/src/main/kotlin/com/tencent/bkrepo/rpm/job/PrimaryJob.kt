@@ -41,7 +41,7 @@ class PrimaryJob {
                             nodeList?.let {
                                 logger.warn(
                                     "update primary index[${repo.projectId}|${repo.name}|$repoDataPath]" +
-                                            "with ${it.first()} failed"
+                                        "with ${it.first()} failed"
                                 )
                             }
                         } finally {
