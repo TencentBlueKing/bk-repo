@@ -157,7 +157,7 @@ class UserRepositoryController(
 
     @ApiOperation("修改仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
-    @PostMapping("/quota/{projectId}/{repoName}/{quota}")
+    @PostMapping("/quota/{projectId}/{repoName}")
     fun updateRepoQuota(
         @RequestAttribute userId: String,
         @ApiParam(value = "所属项目", required = true)
@@ -165,7 +165,7 @@ class UserRepositoryController(
         @ApiParam(value = "仓库名称", required = true)
         @PathVariable repoName: String,
         @ApiParam(value = "仓库配额", required = true)
-        @PathVariable quota: Long
+        @RequestParam quota: Long
     ): Response<Void> {
         val repoUpdateRequest = RepoUpdateRequest(
             projectId = projectId,

@@ -220,7 +220,7 @@ open class PermissionServiceImpl constructor(
 
     private fun checkProjectAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         if (roles.isNotEmpty() && request.projectId != null) {
-            roles.filter { !it.isBlank() }.forEach {
+            roles.filter { !it.isNullOrEmpty() }.forEach {
                 val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
                 if (role != null && role.admin) return true
             }
@@ -231,7 +231,7 @@ open class PermissionServiceImpl constructor(
     private fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         // check role repo admin
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
-            roles.filter { !it.isBlank() }.forEach {
+            roles.filter { !it.isNullOrEmpty() }.forEach {
                 val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
                     it,
                     request.projectId!!,
@@ -294,7 +294,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
-        logger.debug("list repo permission  request : [$projectId, $userId] ")
+        logger.debug("list repo permission request : [$projectId, $userId] ")
         val user = userRepository.findFirstByUserId(userId) ?: run {
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }

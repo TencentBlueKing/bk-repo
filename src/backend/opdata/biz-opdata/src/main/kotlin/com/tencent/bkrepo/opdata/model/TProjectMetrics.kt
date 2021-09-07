@@ -39,5 +39,6 @@ data class TProjectMetrics(
     var projectId: String,
     var nodeNum: Long,
     var capSize: Long,
-    val repoMetrics: List<RepoMetrics>
+    val repoMetrics: List<RepoMetrics>,
+    val sizeDistribution: Map<String, Long>
 )
