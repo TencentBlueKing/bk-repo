@@ -36,7 +36,6 @@ import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
@@ -66,11 +65,15 @@ import org.springframework.web.bind.annotation.RequestParam
 @RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX, AUTH_API_PERMISSION_PREFIX)
 interface ServicePermissionResource {
 
-    @ApiOperation("list仓库权限")
-    @PostMapping("/repo/list")
-    fun listRepoPermission(
-        @ApiParam(value = "校验权限信息")
-        @RequestBody request: ListRepoPermissionRequest
+    @ApiOperation("list有权限仓库仓库")
+    @GetMapping("/repo/list")
+    fun listPermissionRepo(
+        @ApiParam(value = "项目ID")
+        @RequestParam projectId: String,
+        @ApiParam(value = "用户ID")
+        @RequestParam userId: String,
+        @ApiParam(value = "应用ID")
+        @RequestParam appId: String?
     ): Response<List<String>>
 
     @ApiOperation("list有权限项目")

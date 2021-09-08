@@ -35,7 +35,6 @@ import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
@@ -75,9 +74,8 @@ class ServicePermissionResourceImpl @Autowired constructor(
         return ResponseBuilder.success(permissionService.checkPermission(request))
     }
 
-    override fun listRepoPermission(request: ListRepoPermissionRequest): Response<List<String>> {
-        checkRequest(request)
-        return ResponseBuilder.success(permissionService.listRepoPermission(request))
+    override fun listPermissionRepo(projectId: String, userId: String, appId: String?): Response<List<String>> {
+        return ResponseBuilder.success(permissionService.listPermissionRepo(projectId, userId, appId))
     }
 
     override fun listPermissionProject(userId: String): Response<List<String>> {

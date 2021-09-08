@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
+import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -55,6 +56,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -90,7 +92,8 @@ class RepositoryServiceImpl(
     private val projectService: ProjectService,
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
-    private val repositoryProperties: RepositoryProperties
+    private val repositoryProperties: RepositoryProperties,
+    private val servicePermissionResource: ServicePermissionResource
 ) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
@@ -130,6 +133,34 @@ class RepositoryServiceImpl(
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
+    override fun listPermissionRepo(
+        userId: String,
+        projectId: String,
+        option: RepoListOption
+    ): List<RepositoryInfo> {
+        var names = servicePermissionResource.listPermissionRepo(projectId, userId, null).data.orEmpty()
+        if (!option.name.isNullOrBlank()) {
+            names = names.filter { it.startsWith(option.name.orEmpty(), true) }
+        }
+        val criteria = where(TRepository::projectId).isEqualTo(projectId)
+            .and(TRepository::display).ne(false)
+            .and(TRepository::name).inValues(names)
+        option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.toUpperCase()) }
+        val query = Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
+        return repositoryDao.find(query).map { convertToInfo(it)!! }
+    }
+
+    override fun listPermissionRepoPage(
+        userId: String,
+        projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
+        option: RepoListOption
+    ): Page<RepositoryInfo> {
+        val allRepos = listPermissionRepo(userId, projectId, option)
+        return Pages.buildPage(allRepos, pageNumber, pageSize)
+    }
+
     override fun rangeQuery(request: RepoRangeQueryRequest): Page<RepositoryInfo?> {
         val limit = request.limit
         val skip = request.offset
@@ -154,7 +185,7 @@ class RepositoryServiceImpl(
     override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
-            Preconditions.checkArgument(description?.length ?: 0 <= REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
@@ -209,10 +240,10 @@ class RepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
-            Preconditions.checkArgument(description?.length ?: 0 < REPO_DESCRIPTION_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
             val repository = checkRepository(projectId, name)
             quota?.let {
-                Preconditions.checkArgument(it >= repository.used ?: 0, this::quota.name)
+                Preconditions.checkArgument(it >= (repository.used ?: 0), this::quota.name)
                 repository.quota = it
             }
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
@@ -332,8 +363,8 @@ class RepositoryServiceImpl(
         val newPrivateProxyRepos = new.proxy.channelList.filter { !it.public }
         val existPrivateProxyRepos = old?.proxy?.channelList?.filter { !it.public }.orEmpty()
 
-        val newPrivateProxyRepoMap = newPrivateProxyRepos.map { it.name!! to it }.toMap()
-        val existPrivateProxyRepoMap = existPrivateProxyRepos.map { it.name!! to it }.toMap()
+        val newPrivateProxyRepoMap = newPrivateProxyRepos.associateBy { it.name.orEmpty() }
+        val existPrivateProxyRepoMap = existPrivateProxyRepos.associateBy { it.name.orEmpty() }
         Preconditions.checkArgument(newPrivateProxyRepoMap.size == newPrivateProxyRepos.size, "channelList")
 
         val toCreateList = mutableListOf<ProxyChannelSetting>()
@@ -439,7 +470,7 @@ class RepositoryServiceImpl(
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
-        private const val REPO_DESCRIPTION_MAX_LENGTH = 200
+        private const val REPO_DESC_MAX_LENGTH = 200
 
         private fun convertToDetail(
             tRepository: TRepository?,

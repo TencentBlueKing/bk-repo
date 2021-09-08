@@ -46,6 +46,7 @@ import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
+import io.micrometer.core.annotation.Timed
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -60,6 +61,7 @@ class GenericController(
     private val downloadService: DownloadService
 ) {
 
+    @Timed
     @PutMapping(GENERIC_MAPPING_URI)
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
@@ -76,6 +78,7 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
+    @Timed
     @Permission(ResourceType.NODE, PermissionAction.READ)
     @GetMapping(GENERIC_MAPPING_URI)
     fun download(@ArtifactPathVariable artifactInfo: GenericArtifactInfo) {

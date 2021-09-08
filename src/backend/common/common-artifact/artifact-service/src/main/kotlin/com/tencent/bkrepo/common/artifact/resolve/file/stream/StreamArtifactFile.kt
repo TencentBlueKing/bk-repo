@@ -30,38 +30,45 @@ package com.tencent.bkrepo.common.artifact.resolve.file.stream
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.artifact.resolve.file.SmartStreamReceiver
-import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 
 /**
- * application/octet-stream流类型ArtifactFile
+ * 基于数据流的ArtifactFile
  */
-open class OctetStreamArtifactFile(
+open class StreamArtifactFile(
     private val source: InputStream,
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials
 ) : ArtifactFile {
 
-    private var hasInitialized: Boolean = false
+    /**
+     * 是否初始化
+     */
+    private var initialized: Boolean = false
+
+    /**
+     * 文件sha1值
+     */
     private var sha1: String? = null
-    private val listener: DigestCalculateListener = DigestCalculateListener()
-    private val receiver: SmartStreamReceiver
+
+    /**
+     * 数据接收器
+     */
+    private val receiver: ArtifactDataReceiver
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        val enableTransfer = storageProperties.monitor.enableTransfer
-        receiver = SmartStreamReceiver(storageProperties.receive, enableTransfer, path)
+        receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
         if (!storageProperties.receive.resolveLazily) {
             init()
         }
@@ -69,36 +76,30 @@ open class OctetStreamArtifactFile(
 
     override fun getInputStream(): InputStream {
         init()
-        return if (!isInMemory()) {
-            Files.newInputStream(receiver.getFilePath())
-        } else {
-            ByteArrayInputStream(receiver.getCachedByteArray())
-        }
+        return receiver.getInputStream()
     }
 
     override fun getSize(): Long {
         init()
-        return receiver.totalSize
+        return receiver.received
     }
 
     override fun isInMemory(): Boolean {
         init()
-        return receiver.isInMemory
+        return receiver.inMemory
     }
 
     override fun getFile(): File? {
         init()
         return if (!isInMemory()) {
-            receiver.getFilePath().toFile()
+            receiver.filePath.toFile()
         } else null
     }
 
     override fun flushToFile(): File {
         init()
-        if (isInMemory()) {
-            receiver.flushToFile()
-        }
-        return receiver.getFilePath().toFile()
+        receiver.flushToFile()
+        return receiver.filePath.toFile()
     }
 
     override fun isFallback(): Boolean {
@@ -108,9 +109,12 @@ open class OctetStreamArtifactFile(
 
     override fun getFileMd5(): String {
         init()
-        return listener.getMd5()
+        return receiver.listener.getMd5()
     }
 
+    /**
+     * sha1的计算会重新读取流
+     */
     override fun getFileSha1(): String {
         init()
         return sha1 ?: getInputStream().sha1().apply { sha1 = this }
@@ -118,24 +122,24 @@ open class OctetStreamArtifactFile(
 
     override fun getFileSha256(): String {
         init()
-        return listener.getSha256()
+        return receiver.listener.getSha256()
     }
 
     override fun delete() {
-        if (hasInitialized && !isInMemory()) {
+        if (initialized && !isInMemory()) {
             try {
-                Files.deleteIfExists(receiver.getFilePath())
+                Files.deleteIfExists(receiver.filePath)
             } catch (ignored: NoSuchFileException) { // already deleted
             }
         }
     }
 
     override fun hasInitialized(): Boolean {
-        return hasInitialized
+        return initialized
     }
 
     private fun init() {
-        if (hasInitialized) {
+        if (initialized) {
             return
         }
         try {
@@ -145,8 +149,9 @@ open class OctetStreamArtifactFile(
                     receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
                 }
             }
-            val throughput = receiver.receive(source, listener)
-            hasInitialized = true
+            receiver.receiveStream(source)
+            val throughput = receiver.finish()
+            initialized = true
             SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
         } finally {
             monitor.remove(receiver)

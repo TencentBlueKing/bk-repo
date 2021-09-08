@@ -205,7 +205,11 @@ abstract class NodeBaseService(
     fun mkdirs(projectId: String, repoName: String, path: String, createdBy: String) {
         // 格式化
         val fullPath = PathUtils.toFullPath(path)
-        if (!nodeDao.exists(projectId, repoName, fullPath)) {
+        val creatingNode = nodeDao.findNode(projectId, repoName, fullPath)
+        if (creatingNode != null && !creatingNode.folder) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+        }
+        if (creatingNode == null) {
             val parentPath = PathUtils.resolveParent(fullPath)
             val name = PathUtils.resolveName(fullPath)
             mkdirs(projectId, repoName, parentPath, createdBy)

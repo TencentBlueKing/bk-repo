@@ -222,7 +222,7 @@ class ChartRepositoryServiceImpl(
             "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
                 ", size [${nodeList.size}], starting full refresh index.yaml ... "
         )
-        val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo)
+        val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
         uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
     }
 

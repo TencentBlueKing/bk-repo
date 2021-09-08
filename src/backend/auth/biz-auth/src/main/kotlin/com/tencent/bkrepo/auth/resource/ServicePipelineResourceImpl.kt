@@ -43,7 +43,7 @@ class ServicePipelineResourceImpl @Autowired constructor(
     private val bkAuthPipelineService: BkAuthPipelineService
 ) : ServicePipelineResource {
     override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return ResponseBuilder.success(bkAuthPipelineService.listPermissionedPipelines(uid, projectId))
+        return ResponseBuilder.success(bkAuthPipelineService.listPermissionPipelines(uid, projectId))
     }
 
     override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {

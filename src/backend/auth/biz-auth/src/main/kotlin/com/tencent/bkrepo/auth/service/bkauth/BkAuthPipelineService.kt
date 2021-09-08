@@ -48,7 +48,7 @@ class BkAuthPipelineService(
     private val bkciAuthService: BkciAuthService,
     private val bkAuthConfig: BkAuthConfig
 ) {
-    fun listPermissionedPipelines(uid: String, projectId: String): List<String> {
+    fun listPermissionPipelines(uid: String, projectId: String): List<String> {
         if (bkAuthConfig.choseBkAuth()) {
             return bkAuthService.getUserResourceByPermission(
                 user = uid,
