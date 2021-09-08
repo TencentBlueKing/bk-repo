@@ -35,16 +35,16 @@ import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
 import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.V1
-import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 
 object HelmUtils {
 
     fun getChartFileFullPath(name: String, version: String): String {
-        return String.format("/%s-%s.%s", name, version, CHART_PACKAGE_FILE_EXTENSION)
+        return "/%s-%s.%s".format(name, version, CHART_PACKAGE_FILE_EXTENSION)
     }
 
     fun getProvFileFullPath(name: String, version: String): String {
-        return String.format("/%s-%s.%s", name, version, PROVENANCE_FILE_EXTENSION)
+        return "/%s-%s.%s".format(name, version, PROVENANCE_FILE_EXTENSION)
     }
 
     fun getIndexYamlFullPath(): String {
