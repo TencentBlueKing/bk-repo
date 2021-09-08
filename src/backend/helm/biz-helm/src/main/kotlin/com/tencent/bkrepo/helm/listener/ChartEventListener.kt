@@ -56,6 +56,7 @@ class ChartEventListener(
 ) : AbstractEventListener() {
 
     private val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
+    private val objectLock = Object()
 
     /**
      * 删除chart版本，更新index.yaml文件
@@ -69,10 +70,24 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
-            val lock = RedisLock(redisOperation, buildRedisKey(projectId, repoName), expiredTimeInSeconds)
+            val lockKey = buildRedisKey(projectId, repoName)
+            val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
+            val isLocked = try {
+                lock.tryLock()
+            } catch (exception: RuntimeException) {
+                false
+            }
             val task = {
-                if (lock.tryLock()) {
+                if (isLocked) {
+                    logger.info("execute update index yaml for delete package [$name], version [$version]" +
+                        " with redis distribute lock [$lockKey].")
                     lock.use {
+                        doRefreshIndexForDeleteVersion(this)
+                    }
+                } else {
+                    logger.info("execute update index yaml for delete package [$name], version [$version]" +
+                        " with synchronized lock [$objectLock].")
+                    synchronized(objectLock) {
                         doRefreshIndexForDeleteVersion(this)
                     }
                 }
@@ -155,10 +170,24 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
-            val lock = RedisLock(redisOperation, buildRedisKey(projectId, repoName), expiredTimeInSeconds)
+            val lockKey = buildRedisKey(projectId, repoName)
+            val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
+            val isLocked = try {
+                lock.tryLock()
+            } catch (exception: RuntimeException) {
+                false
+            }
             val task = {
-                if (lock.tryLock()) {
+                if (isLocked) {
+                    logger.info("execute update index yaml for delete package [$name] " +
+                        "with redis distribute lock [$lockKey].")
                     lock.use {
+                        doRefreshIndexForDeletePackage(this)
+                    }
+                } else {
+                    logger.info("execute update index yaml for delete package [$name] " +
+                        "with synchronized lock [$objectLock].")
+                    synchronized(objectLock) {
                         doRefreshIndexForDeletePackage(this)
                     }
                 }

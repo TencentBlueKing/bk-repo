@@ -35,7 +35,7 @@ class HelmDeleteArtifactInfoResolver : ArtifactInfoResolver {
             val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
             val id = attributes[NAME].toString().trim()
             val version = attributes[VERSION].toString().trim()
-            HelmDeleteArtifactInfo(projectId, repoName, PackageKeys.ofNuget(id), version)
+            HelmDeleteArtifactInfo(projectId, repoName, PackageKeys.ofHelm(id), version)
         }
     }
 }
