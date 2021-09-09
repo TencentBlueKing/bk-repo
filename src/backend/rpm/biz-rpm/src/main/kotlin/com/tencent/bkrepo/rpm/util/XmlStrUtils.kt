@@ -71,7 +71,7 @@ object XmlStrUtils {
     ): Int {
         logger.info(
             "updatePackageIndex: indexType: $indexType, " +
-                    "locationStr: ${locationStr.replace("\n", "")}"
+                "locationStr: ${locationStr.replace("\n", "")}"
         )
         val stopWatch = StopWatch("updatePackageIndex")
 
@@ -106,7 +106,7 @@ object XmlStrUtils {
     fun deletePackageIndex(randomAccessFile: RandomAccessFile, indexType: IndexType, locationStr: String): Int {
         logger.info(
             "deletePackageIndex: indexType: $indexType, " +
-                    "locationStr: ${locationStr.replace("\n", "")}"
+                "locationStr: ${locationStr.replace("\n", "")}"
         )
 
         val stopWatch = StopWatch("deletePackageIndex")
@@ -269,8 +269,8 @@ object XmlStrUtils {
         return if (prefixIndex <= 0L || locationIndex <= 0L || suffixIndex <= 0L) {
             logger.warn(
                 "findPackageIndex failed, locationStr: $locationStr, " +
-                        "prefixIndex: $prefixIndex, " +
-                        "locationIndex: $locationIndex, suffixIndex: $suffixIndex"
+                    "prefixIndex: $prefixIndex, " +
+                    "locationIndex: $locationIndex, suffixIndex: $suffixIndex"
             )
             null
         } else {
@@ -311,8 +311,8 @@ object XmlStrUtils {
     ) {
         logger.info(
             "updatePackageCount, indexType: $indexType, " +
-                    "changCount: $changCount, " +
-                    "calculatePackage: $calculatePackage"
+                "changCount: $changCount, " +
+                "calculatePackage: $calculatePackage"
         )
         val currentCount = resolvePackageCount(randomAccessFile, indexType)
         logger.info("currentCount: $currentCount")
@@ -364,8 +364,8 @@ object XmlStrUtils {
         if (logger.isDebugEnabled) {
             logger.debug(
                 "updatePackageXml: updateIndex: $updateIndex, " +
-                        "cleanLength: $cleanLength, " +
-                        "newContentSize: ${newContent.size}"
+                    "cleanLength: $cleanLength, " +
+                    "newContentSize: ${newContent.size}"
             )
         }
 
@@ -475,8 +475,10 @@ object XmlStrUtils {
      */
     fun resolvePackageCount(randomAccessFile: RandomAccessFile, indexType: IndexType): Int {
         val regex = when (indexType) {
-            IndexType.PRIMARY -> ("""^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
-                    """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$""").trimMargin()
+            IndexType.PRIMARY -> (
+                """^<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm=""" +
+                    """"http://linux.duke.edu/metadata/rpm" packages="(\d+)">$"""
+                ).trimMargin()
             IndexType.FILELISTS -> """^<metadata xmlns="http://linux.duke.edu/metadata/filelists" packages="(\d+)">$"""
             IndexType.OTHER -> """^<metadata xmlns="http://linux.duke.edu/metadata/other" packages="(\d+)">$"""
         }
@@ -505,7 +507,7 @@ object XmlStrUtils {
             IndexType.OTHER -> "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"1\">\n"
             IndexType.PRIMARY ->
                 "<metadata xmlns=\"http://linux.duke.edu/metadata/common\" " +
-                        "xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n"
+                    "xmlns:rpm=\"http://linux.duke.edu/metadata/rpm\" packages=\"1\">\n"
             IndexType.FILELISTS -> "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"1\">\n"
         }
         return rpmXmlMetadata.toXml().removePrefix(prefix).removeSuffix(METADATA_SUFFIX)

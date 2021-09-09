@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.repository.AccountRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.auth.util.query.AccountQueryHelper
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.apache.commons.lang.RandomStringUtils
 import org.slf4j.LoggerFactory
@@ -188,10 +189,7 @@ class AccountServiceImpl constructor(
 
     override fun checkCredential(accessKey: String, secretKey: String): String? {
         logger.debug("check  credential  accessKey : [$accessKey] , secretKey: []")
-        val query = Query.query(
-            Criteria.where("credentials.secretKey").`is`(secretKey)
-                .and("credentials.accessKey").`is`(accessKey)
-        )
+        val query = AccountQueryHelper.checkCredential(accessKey, secretKey)
         val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
         return result.appId
     }

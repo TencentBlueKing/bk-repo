@@ -1,8 +1,10 @@
 package com.tencent.bkrepo.nuget.handler
 
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
+import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
 import com.tencent.bkrepo.nuget.pojo.nuspec.DependencyGroup
 import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
@@ -45,6 +47,10 @@ class NugetPackageHandler {
                             "in repo [${getRepoIdentify()}], elapse [$this] ms."
                     )
                 }
+                // versionExtension
+                val versionExtension = mutableMapOf<String, Any>(
+                    PACKAGE to this.toJsonString()
+                )
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
@@ -56,6 +62,7 @@ class NugetPackageHandler {
                     size = size,
                     artifactPath = getArtifactFullPath(),
                     metadata = metadata,
+                    extension = versionExtension,
                     overwrite = true,
                     createdBy = context.userId
                 )
@@ -76,7 +83,7 @@ class NugetPackageHandler {
                 metadata["version"] = version
                 metadata["authors"] = authors
                 metadata["description"] = description
-                /*owners?.let { metadata["owners"] = it }
+                /**owners?.let { metadata["owners"] = it }
                 projectUrl?.let { metadata["projectUrl"] = it }
                 licenseUrl?.let { metadata["licenseUrl"] = it }
                 license?.let { metadata["license"] = it }
@@ -90,7 +97,7 @@ class NugetPackageHandler {
                 language?.let { metadata["language"] = it }
                 tags?.let { metadata["tags"] = it }
                 serviceable?.let { metadata["serviceable"] = it }
-                title?.let { metadata["title"] = it }*/
+                title?.let { metadata["title"] = it }**/
                 dependencies?.let { metadata["dependency"] = buildDependencies(it) }
                 references?.let { metadata["reference"] = buildReferences(it) }
                 frameworkAssemblies?.let { metadata["frameworks"] = buildFrameworks(it) }

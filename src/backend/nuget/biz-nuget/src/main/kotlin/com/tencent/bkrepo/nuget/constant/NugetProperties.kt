@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,24 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.resource
+package com.tencent.bkrepo.nuget.constant
 
-import com.tencent.bkrepo.auth.api.ServicePipelineResource
-import com.tencent.bkrepo.auth.service.bkauth.BkAuthPipelineService
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.common.api.constant.StringPool
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@RestController
-class ServicePipelineResourceImpl @Autowired constructor(
-    private val bkAuthPipelineService: BkAuthPipelineService
-) : ServicePipelineResource {
-    override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return ResponseBuilder.success(bkAuthPipelineService.listPermissionPipelines(uid, projectId))
-    }
-
-    override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, null)))
-    }
-}
+@ConfigurationProperties("nuget")
+data class NugetProperties(
+    var domain: String = StringPool.EMPTY
+)
