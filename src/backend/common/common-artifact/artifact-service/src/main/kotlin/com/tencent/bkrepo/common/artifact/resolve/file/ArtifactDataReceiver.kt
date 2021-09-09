@@ -201,10 +201,14 @@ class ArtifactDataReceiver(
      */
     fun finish(): Throughput {
         if (!finished) {
-            finished = true
-            endTime = System.nanoTime()
-            checkSize()
-            listener.finished()
+            try {
+                finished = true
+                endTime = System.nanoTime()
+                checkSize()
+                listener.finished()
+            } finally {
+                cleanOriginalOutputStream()
+            }
         }
         return Throughput(received, endTime - startTime)
     }
@@ -241,6 +245,21 @@ class ArtifactDataReceiver(
     }
 
     /**
+     * 关闭原始输出流
+     */
+    fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (ignored: IOException) {
+        }
+
+        try {
+            outputStream.close()
+        } catch (ignored: IOException) {
+        }
+    }
+
+    /**
      * 写入数据
      * @param buffer 字节数组
      * @param offset 偏移量
@@ -260,8 +279,8 @@ class ArtifactDataReceiver(
     private fun handleIOException(exception: IOException) {
         finished = true
         endTime = System.nanoTime()
-        cleanTempFile()
         cleanOriginalOutputStream()
+        cleanTempFile()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
         } else throw exception
@@ -331,21 +350,6 @@ class ArtifactDataReceiver(
                     "$received bytes received, but $actualSize bytes saved in file."
                 }
             }
-        }
-    }
-
-    /**
-     * 关闭原始输出流
-     */
-    private fun cleanOriginalOutputStream() {
-        try {
-            outputStream.flush()
-        } catch (ignored: IOException) {
-        }
-
-        try {
-            outputStream.close()
-        } catch (ignored: IOException) {
         }
     }
 
