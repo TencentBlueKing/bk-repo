@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.helm.service
 
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import org.springframework.http.ResponseEntity
 import java.time.LocalDateTime
