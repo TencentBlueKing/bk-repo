@@ -390,7 +390,7 @@
 
 ## 修改仓库配额
 
-- API： POST /repository/api/repo/quota/{projectId}/{repoName}/{quota}
+- API： POST /repository/api/repo/quota/{projectId}/{repoName}
 
 - API 名称：update_repo_quota
 
@@ -401,7 +401,9 @@
 
 - 请求体
 
-  - 此接口无请求体
+  ```
+  quota=102400
+  ```
 
   - 请求字段说明
 
@@ -409,6 +411,7 @@
     | --------- | ------ | -------- | ------ | -------- | ------------ |
     | projectId | string | 是       | 无     | 项目名称 | project name |
     | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+    | quota     | long   | 是       | 无     | 仓库配额 | repo quota   |
 
 - 响应体
 

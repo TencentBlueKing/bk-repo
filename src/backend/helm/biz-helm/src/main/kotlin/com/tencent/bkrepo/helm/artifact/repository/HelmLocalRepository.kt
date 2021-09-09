@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -48,9 +49,12 @@ import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -151,17 +155,41 @@ class HelmLocalRepository : LocalRepository() {
         if (node == null || node.folder) return null
         return storageService.load(
             node.sha256!!, Range.full(node.size), context.storageCredentials
-        )?.also { logger.info("search artifact [$fullPath] success") }
+        )
     }
 
+    /**
+     * 版本不存在时 status code 404
+     */
     override fun remove(context: ArtifactRemoveContext) {
-        val repositoryDetail = context.repositoryDetail
-        val projectId = repositoryDetail.projectId
-        val repoName = repositoryDetail.name
-        val fullPath = context.getAttribute<List<String>>(FULL_PATH).orEmpty()
-        val userId = context.userId
-        fullPath.forEach {
-            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it, userId))
+        with(context.artifactInfo as HelmDeleteArtifactInfo) {
+            if (version.isNotBlank()) {
+                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                    removeVersion(this, it, context.userId)
+                } ?: throw VersionNotFoundException(version)
+            } else {
+                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
+                    removeVersion(this, it, context.userId)
+                }
+            }
+        }
+    }
+
+    /**
+     * 删除[version] 对应的node节点也会一起删除
+     */
+    private fun removeVersion(artifactInfo: HelmDeleteArtifactInfo, version: PackageVersion, userId: String) {
+        with(artifactInfo) {
+            packageClient.deleteVersion(projectId, repoName, packageName, version.name)
+            val chartPath = HelmUtils.getChartFileFullPath(getArtifactName(), version.name)
+            val provPath = HelmUtils.getProvFileFullPath(getArtifactName(), version.name)
+            if (chartPath.isNotBlank()) {
+                val request = NodeDeleteRequest(projectId, repoName, chartPath, userId)
+                nodeClient.deleteNode(request)
+            }
+            if (provPath.isNotBlank()) {
+                nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, provPath, userId))
+            }
         }
     }
 

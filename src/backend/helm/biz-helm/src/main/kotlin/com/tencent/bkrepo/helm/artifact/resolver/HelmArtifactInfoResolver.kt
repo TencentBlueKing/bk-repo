@@ -29,12 +29,23 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":helm:api-helm"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-redis"))
-    implementation("org.yaml:snakeyaml")
-    implementation("org.apache.commons:commons-compress")
-    implementation("com.github.zafarkhaja:java-semver")
+package com.tencent.bkrepo.helm.artifact.resolver
+
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
+import org.springframework.stereotype.Component
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(HelmArtifactInfo::class)
+class HelmArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): HelmArtifactInfo {
+        return HelmArtifactInfo(projectId, repoName, artifactUri)
+    }
 }

@@ -43,12 +43,15 @@ import com.tencent.bkrepo.nuget.artifact.auth.NugetApiKeyAuthHandler
 import com.tencent.bkrepo.nuget.artifact.repository.NugetLocalRepository
 import com.tencent.bkrepo.nuget.artifact.repository.NugetRemoteRepository
 import com.tencent.bkrepo.nuget.artifact.repository.NugetVirtualRepository
+import com.tencent.bkrepo.nuget.constant.NugetProperties
 import com.tencent.bkrepo.nuget.model.NugetErrorResponse
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
-import org.springframework.stereotype.Component
 
-@Component
+@Configuration
+@EnableConfigurationProperties(NugetProperties::class)
 class NugetArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.NUGET

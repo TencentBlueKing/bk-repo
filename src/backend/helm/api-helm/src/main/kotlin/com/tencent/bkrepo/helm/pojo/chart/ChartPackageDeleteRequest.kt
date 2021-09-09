@@ -29,37 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.artifact
+package com.tencent.bkrepo.helm.pojo.chart
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-class HelmArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val CHARTS_LIST = "/{projectId}/{repoName}/api/charts/**"
-
-        // helm upload
-        const val HELM_PUSH_URL = "/api/{projectId}/{repoName}/charts"
-        const val HELM_PUSH_PLUGIN_URL = "/{projectId}/{repoName}/charts"
-        const val HELM_PUSH_PROV_URL = "/api/{projectId}/{repoName}/prov"
-
-        // chart delete
-        const val CHART_DELETE_VERSION_URL = "/{projectId}/{repoName}/api/charts/{name}/{version}"
-
-        // get index.yaml
-        const val HELM_INDEX_YAML_URL = "/{projectId}/{repoName}/index.yaml"
-        // chart install
-        const val HELM_INSTALL_URL = "/{projectId}/{repoName}/charts/*.tgz"
-        // chart prov install
-        const val HELM_PROV_INSTALL_URL = "/{projectId}/{repoName}/charts/*.prov"
-
-        // helm version detail
-        const val HELM_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
-        // chart delete
-        const val CHART_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"
-        const val CHART_VERSION_DELETE_URL = "/version/delete/{projectId}/{repoName}"
-    }
-}
+@ApiModel("chart包删除请求")
+data class ChartPackageDeleteRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    override val projectId: String,
+    @ApiModelProperty("所属仓库id", required = true)
+    override val repoName: String,
+    @ApiModelProperty("chart名称", required = true)
+    val name: String,
+    @ApiModelProperty("操作用户id", required = true)
+    override val operator: String
+) : ChartDeleteRequest

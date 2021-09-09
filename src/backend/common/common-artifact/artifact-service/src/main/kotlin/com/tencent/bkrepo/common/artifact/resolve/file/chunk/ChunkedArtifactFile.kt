@@ -162,6 +162,7 @@ class ChunkedArtifactFile(
      * 关闭文件执行清理逻辑，因为是被动接收数据，所以需要手动关闭文件
      */
     fun close() {
+        receiver.cleanOriginalOutputStream()
         monitor.remove(receiver)
     }
 }

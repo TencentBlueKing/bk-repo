@@ -1,19 +1,19 @@
-package com.tencent.bkrepo.nuget.artifact.resolver
+package com.tencent.bkrepo.helm.artifact.resolver
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.nuget.constant.ID
-import com.tencent.bkrepo.nuget.constant.VERSION
-import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
+import com.tencent.bkrepo.helm.constants.NAME
+import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
 @Component
-@Resolver(NugetDeleteArtifactInfo::class)
-class NugetDeleteArtifactInfoResolver : ArtifactInfoResolver {
+@Resolver(HelmDeleteArtifactInfo::class)
+class HelmDeleteArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(
         projectId: String,
         repoName: String,
@@ -25,17 +25,17 @@ class NugetDeleteArtifactInfoResolver : ArtifactInfoResolver {
         // 页面删除包请求
         return if (requestURL.contains("/ext/package/delete/$projectId/$repoName")) {
             val packageKey = request.queryString.substringAfterLast("=")
-            NugetDeleteArtifactInfo(projectId, repoName, packageKey)
+            HelmDeleteArtifactInfo(projectId, repoName, packageKey)
         } else if (requestURL.contains("/ext/version/delete/$projectId/$repoName")) {
             val parameters = request.queryString.split("&")
             val packageKey = parameters.first().substringAfterLast("=")
             val version = parameters.last().substringAfterLast("=")
-            NugetDeleteArtifactInfo(projectId, repoName, packageKey, version)
+            HelmDeleteArtifactInfo(projectId, repoName, packageKey, version)
         } else {
             val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
-            val id = attributes[ID].toString().trim()
+            val id = attributes[NAME].toString().trim()
             val version = attributes[VERSION].toString().trim()
-            NugetDeleteArtifactInfo(projectId, repoName, PackageKeys.ofNuget(id), version)
+            HelmDeleteArtifactInfo(projectId, repoName, PackageKeys.ofHelm(id), version)
         }
     }
 }
