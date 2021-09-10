@@ -133,11 +133,13 @@ open class PermissionManager(
     }
 
     fun registerProject(userId: String, projectId: String) {
-        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT.toString(), projectId))
+        val request = RegisterResourceRequest(userId, ResourceType.PROJECT.toString(), projectId)
+        permissionResource.registerResource(request)
     }
 
     fun registerRepo(userId: String, projectId: String, repoName: String) {
-        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT.toString(), projectId, repoName))
+        val request = RegisterResourceRequest(userId, ResourceType.REPO.toString(), projectId, repoName)
+        permissionResource.registerResource(request)
     }
 
     /**
