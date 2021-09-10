@@ -97,12 +97,12 @@ class BkciAuthService @Autowired constructor(
         projectCode: String,
         action: BkAuthPermission,
         resourceType: BkAuthResourceType,
-        permissionAction: PermissionAction?
+        permissionAction: String?
     ): Boolean {
 
         if (!enableSuperAdmin) return false
 
-        if (permissionAction != PermissionAction.READ) return false
+        if (permissionAction != PermissionAction.READ.toString()) return false
 
         val cacheKey = "superAdmin::$user::$projectCode"
         val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)
@@ -120,7 +120,7 @@ class BkciAuthService @Autowired constructor(
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
-            logger.debug("validateProjectSuperAdmin  result : [${apiResponse.content.replace("\n","")}]")
+            logger.debug("validateProjectSuperAdmin  result : [${apiResponse.content.replace("\n", "")}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
