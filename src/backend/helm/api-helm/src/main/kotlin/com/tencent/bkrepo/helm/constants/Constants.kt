@@ -51,10 +51,10 @@ const val DIGEST = "digest"
 const val CREATED = "created"
 const val CHART_PACKAGE_FILE_EXTENSION = "tgz"
 const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
-const val REDIS_LOCK_KEY_PREIX = "helm:lock:indexFile"
+const val REDIS_LOCK_KEY_PREFIX = "helm:lock:indexFile:"
 
 // 定义返回代码片段
 val CHART_NOT_FOUND = mapOf("error" to "chart not found")
 val NO_CHART_NAME_FOUND = mapOf("error" to "no chart name found")
 
-fun buildRedisKey(vararg key: String): String = REDIS_LOCK_KEY_PREIX + key
+fun buildRedisKey(vararg key: String): String = REDIS_LOCK_KEY_PREFIX + key
