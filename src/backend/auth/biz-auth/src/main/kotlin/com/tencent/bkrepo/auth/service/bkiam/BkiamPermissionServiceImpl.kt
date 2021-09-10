@@ -81,7 +81,7 @@ class BkiamPermissionServiceImpl constructor(
             userId = request.uid,
             systemCode = SystemCode.BK_REPO,
             projectId = request.projectId!!,
-            resourceType = ResourceType.valueOf(request.resourceType),
+            resourceType = request.resourceType,
             resourceId = resourceId,
             resourceName = resourceId
         )
@@ -92,7 +92,7 @@ class BkiamPermissionServiceImpl constructor(
             userId = request.uid,
             systemCode = SystemCode.BK_REPO,
             projectId = request.projectId!!,
-            resourceType = ResourceType.valueOf(request.resourceType),
+            resourceType = request.resourceType,
             action = request.action,
             resourceId = getResourceId(request)
         )

@@ -73,7 +73,7 @@ class BkciAuthServiceTest {
             "bkrepo",
             BkAuthPermission.DOWNLOAD,
             BkAuthResourceType.PIPELINE_DEFAULT,
-            PermissionAction.READ
+            PermissionAction.READ.toString()
         )
         Assertions.assertEquals(result1, false)
     }

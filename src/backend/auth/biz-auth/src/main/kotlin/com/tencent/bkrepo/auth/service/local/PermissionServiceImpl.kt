@@ -115,7 +115,7 @@ open class PermissionServiceImpl constructor(
         }
         val result = permissionRepository.insert(
             TPermission(
-                resourceType = request.resourceType,
+                resourceType = request.resourceType.toString(),
                 projectId = request.projectId,
                 permName = request.permName,
                 repos = request.repos,
@@ -220,7 +220,7 @@ open class PermissionServiceImpl constructor(
 
     private fun checkProjectAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         if (roles.isNotEmpty() && request.projectId != null) {
-            roles.filter { !it.isNullOrEmpty() }.forEach {
+            roles.filter { !it.isEmpty() }.forEach {
                 val role = roleRepository.findFirstByIdAndProjectIdAndType(it, request.projectId!!, RoleType.PROJECT)
                 if (role != null && role.admin) return true
             }
@@ -231,7 +231,7 @@ open class PermissionServiceImpl constructor(
     private fun checkRepoAdmin(request: CheckPermissionRequest, roles: List<String>): Boolean {
         // check role repo admin
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
-            roles.filter { !it.isNullOrEmpty() }.forEach {
+            roles.filter { !it.isEmpty() }.forEach {
                 val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
                     it,
                     request.projectId!!,
@@ -247,7 +247,7 @@ open class PermissionServiceImpl constructor(
     private fun checkRepoAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
             val query = PermissionQueryHelper.buildPermissionCheck(
-                projectId!!, repoName!!, uid, action, ResourceType.valueOf(resourceType), roles
+                projectId!!, repoName!!, uid, action, resourceType, roles
             )
             val result = mongoTemplate.count(query, TPermission::class.java)
             if (result != 0L) return true
@@ -420,8 +420,8 @@ open class PermissionServiceImpl constructor(
                 projectId = projectId,
                 repos = listOf(repoName),
                 permName = permName,
-                actions = actions,
-                resourceType = ResourceType.REPO,
+                actions = actions.map { it.toString() },
+                resourceType = ResourceType.REPO.toString(),
                 createAt = LocalDateTime.now(),
                 updateAt = LocalDateTime.now(),
                 createBy = AUTH_ADMIN,

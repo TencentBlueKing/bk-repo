@@ -34,7 +34,6 @@ package com.tencent.bkrepo.auth.service.bkauth
 import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -48,7 +47,7 @@ class BkAuthProjectService @Autowired constructor(
     fun isProjectMember(
         user: String,
         projectCode: String,
-        permissionAction: PermissionAction,
+        permissionAction: String,
         retryIfTokenInvalid: Boolean = false
     ): Boolean {
         if (bkAuthConfig.choseBkAuth()) {

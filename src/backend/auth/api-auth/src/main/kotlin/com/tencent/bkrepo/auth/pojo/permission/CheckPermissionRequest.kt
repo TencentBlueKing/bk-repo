@@ -32,14 +32,13 @@
 package com.tencent.bkrepo.auth.pojo.permission
 
 import com.tencent.bkrepo.auth.pojo.ResourceBaseRequest
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import io.swagger.annotations.ApiModel
 
 @ApiModel("校验权限请求")
 data class CheckPermissionRequest(
     val uid: String,
     override var resourceType: String,
-    val action: PermissionAction,
+    val action: String,
     override var projectId: String? = null,
     override var repoName: String? = null,
     override var path: String? = null,

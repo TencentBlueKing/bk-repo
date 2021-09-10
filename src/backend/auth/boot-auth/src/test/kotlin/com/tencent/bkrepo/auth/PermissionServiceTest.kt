@@ -160,7 +160,7 @@ class PermissionServiceTest {
         val checkPermissionRequest = CheckPermissionRequest(
             uid = userId,
             resourceType = ResourceType.PROJECT.toString(),
-            action = PermissionAction.READ,
+            action = PermissionAction.READ.toString(),
             projectId = "text",
             repoName = "test-local"
         )
@@ -186,7 +186,7 @@ class PermissionServiceTest {
         val checkRequest = CheckPermissionRequest(
             uid = userId,
             resourceType = ResourceType.REPO.toString(),
-            action = PermissionAction.READ,
+            action = PermissionAction.READ.toString(),
             projectId = "test",
             repoName = "test-local"
         )
@@ -216,7 +216,7 @@ class PermissionServiceTest {
         val checkRequest = CheckPermissionRequest(
             uid = userId,
             resourceType = ResourceType.PROJECT.toString(),
-            action = PermissionAction.READ,
+            action = PermissionAction.READ.toString(),
             projectId = "test",
             repoName = "test-local"
         )
@@ -247,7 +247,7 @@ class PermissionServiceTest {
         val checkRequest = CheckPermissionRequest(
             uid = userId,
             resourceType = ResourceType.REPO.toString(),
-            action = PermissionAction.READ,
+            action = PermissionAction.READ.toString(),
             projectId = "test",
             repoName = "test-local"
         )

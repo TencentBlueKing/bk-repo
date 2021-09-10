@@ -92,7 +92,7 @@ class ServiceUserResourceImpl @Autowired constructor(
                 CheckPermissionRequest(
                     uid = userId,
                     resourceType = ResourceType.SYSTEM.toString(),
-                    action = PermissionAction.WRITE
+                    action = PermissionAction.WRITE.toString()
                 )
             if (!permissionService.checkPermission(checkRequest)) {
                 logger.warn("check user permission error [$checkRequest]")
@@ -123,7 +123,7 @@ class ServiceUserResourceImpl @Autowired constructor(
                 CheckPermissionRequest(
                     uid = userId,
                     resourceType = ResourceType.PROJECT.toString(),
-                    action = PermissionAction.WRITE,
+                    action = PermissionAction.WRITE.toString(),
                     projectId = request.projectId
                 )
             if (!permissionService.checkPermission(checkRequest)) {
@@ -199,15 +199,14 @@ class ServiceUserResourceImpl @Autowired constructor(
     override fun addUserToken(uid: String, name: String, expiredAt: String?, projectId: String?): Response<Token?> {
         // add user to project first
         projectId?.let {
-            val createRoleRequest =
-                CreateRoleRequest(
-                    PROJECT_MANAGE_ID,
-                    PROJECT_MANAGE_NAME,
-                    RoleType.PROJECT,
-                    projectId,
-                    null,
-                    true
-                )
+            val createRoleRequest = CreateRoleRequest(
+                PROJECT_MANAGE_ID,
+                PROJECT_MANAGE_NAME,
+                RoleType.PROJECT,
+                projectId,
+                null,
+                true
+            )
             val roleId = roleService.createRole(createRoleRequest)
             userService.addUserToRole(uid, roleId!!)
         }

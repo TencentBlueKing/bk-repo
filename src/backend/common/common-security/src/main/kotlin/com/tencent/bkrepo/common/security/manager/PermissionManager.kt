@@ -187,7 +187,7 @@ open class PermissionManager(
             uid = userId,
             appId = platformId,
             resourceType = type.toString(),
-            action = action,
+            action = action.toString(),
             projectId = projectId,
             repoName = repoName,
             path = path
