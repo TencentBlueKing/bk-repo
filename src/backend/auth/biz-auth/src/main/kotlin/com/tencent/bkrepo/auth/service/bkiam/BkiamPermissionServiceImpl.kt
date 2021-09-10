@@ -99,11 +99,12 @@ class BkiamPermissionServiceImpl constructor(
     }
 
     private fun getResourceId(request: ResourceBaseRequest): String {
-        return when (ResourceType.valueOf(request.resourceType)) {
-            ResourceType.SYSTEM -> StringPool.EMPTY
-            ResourceType.PROJECT -> request.projectId!!
-            ResourceType.REPO -> request.repoName!!
-            ResourceType.NODE -> throw IllegalArgumentException("invalid resource type")
+        return when (request.resourceType) {
+            ResourceType.SYSTEM.toString() -> StringPool.EMPTY
+            ResourceType.PROJECT.toString() -> request.projectId!!
+            ResourceType.REPO.toString() -> request.repoName!!
+            ResourceType.NODE.toString() -> throw IllegalArgumentException("invalid resource type")
+            else -> throw IllegalArgumentException("invalid resource type")
         }
     }
 
