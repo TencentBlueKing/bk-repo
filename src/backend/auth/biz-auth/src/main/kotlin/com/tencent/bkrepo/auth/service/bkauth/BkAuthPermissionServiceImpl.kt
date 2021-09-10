@@ -85,7 +85,7 @@ class BkAuthPermissionServiceImpl constructor(
             logger.debug("check devops permission request [$request]")
 
             // project权限
-            if (request.resourceType == ResourceType.PROJECT) {
+            if (request.resourceType == ResourceType.PROJECT.toString()) {
                 // devops直接放过
                 if (request.appId == bkAuthConfig.devopsAppId) return true
                 // 其它请求校验项目权限
@@ -98,7 +98,7 @@ class BkAuthPermissionServiceImpl constructor(
                     checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    checkPipelinePermission(uid, projectId!!, path, resourceType, action) ||
+                    checkPipelinePermission(uid, projectId!!, path, ResourceType.valueOf(resourceType), action) ||
                         checkProjectPermission(uid, projectId!!, action)
                 }
                 REPORT -> {
@@ -231,7 +231,7 @@ class BkAuthPermissionServiceImpl constructor(
     private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
         return CheckPermissionRequest(
             uid = userId,
-            resourceType = ResourceType.PROJECT,
+            resourceType = ResourceType.PROJECT.toString(),
             action = PermissionAction.READ,
             projectId = projectId,
             appId = appId

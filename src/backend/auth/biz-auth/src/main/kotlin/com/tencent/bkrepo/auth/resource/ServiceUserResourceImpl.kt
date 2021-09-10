@@ -91,7 +91,7 @@ class ServiceUserResourceImpl @Autowired constructor(
             val checkRequest =
                 CheckPermissionRequest(
                     uid = userId,
-                    resourceType = ResourceType.SYSTEM,
+                    resourceType = ResourceType.SYSTEM.toString(),
                     action = PermissionAction.WRITE
                 )
             if (!permissionService.checkPermission(checkRequest)) {
@@ -122,7 +122,7 @@ class ServiceUserResourceImpl @Autowired constructor(
             val checkRequest =
                 CheckPermissionRequest(
                     uid = userId,
-                    resourceType = ResourceType.PROJECT,
+                    resourceType = ResourceType.PROJECT.toString(),
                     action = PermissionAction.WRITE,
                     projectId = request.projectId
                 )

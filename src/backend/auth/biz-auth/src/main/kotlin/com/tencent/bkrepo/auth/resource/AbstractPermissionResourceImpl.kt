@@ -41,7 +41,7 @@ open class AbstractPermissionResourceImpl {
 
     fun checkRequest(request: CheckPermissionRequest) {
         with(request) {
-            when (resourceType) {
+            when (ResourceType.valueOf(resourceType)) {
                 ResourceType.SYSTEM -> {
                 }
                 ResourceType.PROJECT -> {

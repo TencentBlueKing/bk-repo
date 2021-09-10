@@ -133,11 +133,11 @@ open class PermissionManager(
     }
 
     fun registerProject(userId: String, projectId: String) {
-        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT, projectId))
+        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT.toString(), projectId))
     }
 
     fun registerRepo(userId: String, projectId: String, repoName: String) {
-        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT, projectId, repoName))
+        permissionResource.registerResource(RegisterResourceRequest(userId, ResourceType.PROJECT.toString(), projectId, repoName))
     }
 
     /**
@@ -184,7 +184,7 @@ open class PermissionManager(
         val checkRequest = CheckPermissionRequest(
             uid = userId,
             appId = platformId,
-            resourceType = type,
+            resourceType = type.toString(),
             action = action,
             projectId = projectId,
             repoName = repoName,
