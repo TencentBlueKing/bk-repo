@@ -58,6 +58,7 @@ mongodb:
     password: bkrepo
   persistence:
     subPath: mongodb
+    size: 20Gi
         
 ## 如果mongodb.enabled为false，bkrepo将使用下面的参数连接外部mongodb
 externalMongodb:
