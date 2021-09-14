@@ -126,7 +126,7 @@ common:
 ## 网关配置
 gateway:
   ## bkrepo 地址
-  host: bkrepo.com
+  host: bkrepo.example.com
   ## dns服务器地址，用于配置nginx resolver。local=on为openrestry语法，取本机/etc/resolv.conf配置
   dnsServer: local=on
   ## 网关访问微服务认证信息
