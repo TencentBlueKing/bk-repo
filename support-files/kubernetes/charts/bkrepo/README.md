@@ -87,7 +87,7 @@ $ helm uninstall bkrepo
 | `podLabels`                             | Add additional labels to the pod (evaluated as a template)                                                            | `nil`                                       |
 | `podAnnotations`                     | Pod annotations                                                                                                         | `{}` (evaluated as a template) |
 | `podAffinityPreset`                  | Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                     | `""`                           |
-| `podAntiAffinityPreset`              | Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                | `soft`                         |
+| `podAntiAffinityPreset`              | Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                | `""`                         |
 | `podSecurityContext.enabled`         | Enable pod security context                                                                                             | `true`                         |
 | `podSecurityContext.fsGroup`         | fsGroup ID for the pod                                                                                                  | `1001`                         |
 | `priorityClassName`                     | Define the priority class name for the pod.                                                        | `""`                                        |

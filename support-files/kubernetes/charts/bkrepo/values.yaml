@@ -161,7 +161,7 @@ gateway:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -198,7 +198,7 @@ repository:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -235,7 +235,7 @@ auth:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -271,7 +271,7 @@ generic:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -307,7 +307,7 @@ docker:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -343,7 +343,7 @@ npm:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -379,7 +379,7 @@ pypi:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -415,7 +415,7 @@ helm:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
