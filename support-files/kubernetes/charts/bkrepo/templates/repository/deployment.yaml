@@ -55,7 +55,7 @@ spec:
       {{- if .Values.mongodb.enabled }}
       initContainers:
         - name: wait-for-mongodb
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.init.mongodb.image.pullPolicy }}
           command:
             - "/bin/sh"
@@ -70,7 +70,7 @@ spec:
       {{- end }}
       containers:
         - name: repository
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.repository.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.repository.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.repository.image.pullPolicy }}
           {{- if .Values.repository.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.repository.containerSecurityContext "enabled" | toYaml | nindent 12 }}

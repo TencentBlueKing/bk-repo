@@ -152,6 +152,9 @@ $ helm uninstall bkrepo
 
 |参数|描述|默认值 |
 |---|---|---|
+| `common.imageRegistry` | bkrepo镜像仓库全局配置, 具有最高优先级 | `""` |
+| `common.imageTag` | bkrepo镜像tag全局配置, 具有最高优先级 | `""` |
+| `common.region` | 部署区域, 可不填 | `""` |
 | `common.jvmOption` | jvm启动选项, 如-Xms1024M -Xmx1024M | `""` |
 | `common.springProfile` | SpringBoot active profile | `dev` |
 | `common.username` | bkrepo初始用户名 | `admin` |

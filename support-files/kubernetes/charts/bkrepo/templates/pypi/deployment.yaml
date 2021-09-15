@@ -55,7 +55,7 @@ spec:
       {{- end }}
       containers:
         - name: pypi
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.pypi.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.pypi.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.pypi.image.pullPolicy }}
           {{- if .Values.pypi.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.pypi.containerSecurityContext "enabled" | toYaml | nindent 12 }}

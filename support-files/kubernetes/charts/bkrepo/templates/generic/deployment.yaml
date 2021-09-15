@@ -55,7 +55,7 @@ spec:
       {{- end }}
       containers:
         - name: generic
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
           {{- if .Values.generic.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.generic.containerSecurityContext "enabled" | toYaml | nindent 12 }}

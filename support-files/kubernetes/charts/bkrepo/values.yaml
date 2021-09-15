@@ -97,6 +97,10 @@ init:
       pullSecrets: []
 ## bkrepo公共配置
 common:
+  # bkrepo镜像仓库全局配置, 具有最高优先级
+  imageRegistry: ""
+  # bkrepo镜像tag全局配置, 具有最高优先级
+  imageTag: ""
   ## 部署区域，可不填
   region: 
   ## jvm启动选项, 如-Xms1024M -Xmx1024M

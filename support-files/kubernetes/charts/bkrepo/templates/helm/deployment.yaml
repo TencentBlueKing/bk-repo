@@ -55,7 +55,7 @@ spec:
       {{- end }}
       containers:
         - name: helm
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.helm.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.helm.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.helm.image.pullPolicy }}
           {{- if .Values.helm.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.helm.containerSecurityContext "enabled" | toYaml | nindent 12 }}
