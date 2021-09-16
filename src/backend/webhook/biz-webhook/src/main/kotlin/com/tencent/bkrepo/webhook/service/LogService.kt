@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.service
+
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.webhook.pojo.ListWebHookLogOption
+import com.tencent.bkrepo.webhook.pojo.WebHookLog
+import java.time.LocalDateTime
 
 /**
- * 事件类型
+ * WebHook日志服务接口
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+interface LogService {
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
+    /**
+     * 分页获取日志列表
+     */
+    fun listLog(webHookId: String, option: ListWebHookLogOption): Page<WebHookLog>
 
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
+    /**
+     * 删除[date]日期之前的WebHook日志
+     */
+    fun deleteLogBeforeDate(date: LocalDateTime): Long
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
+    /**
+     * 重试WebHook请求
+     */
+    fun retryWebHookRequest(id: String): WebHookLog
 }

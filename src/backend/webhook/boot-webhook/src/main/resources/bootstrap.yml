@@ -1,0 +1,16 @@
+service.name: webhook
+server.port: 25907
+
+spring:
+  cloud:
+    stream:
+      default-binder: file
+      binders:
+        file:
+          type: file
+      bindings:
+        artifactEvent-in-0:
+          destination: artifact-event
+      source: artifactEvent
+      function:
+        definition: artifactEvent

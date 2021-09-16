@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.service
+
+import com.tencent.bkrepo.webhook.constant.AssociationType
+import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
+import com.tencent.bkrepo.webhook.pojo.UpdateWebHookRequest
+import com.tencent.bkrepo.webhook.pojo.WebHook
+import com.tencent.bkrepo.webhook.pojo.WebHookLog
 
 /**
- * 事件类型
+ * WebHook服务接口
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+interface WebHookService {
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
+    /**
+     * 创建WebHook
+     */
+    fun createWebHook(userId: String, request: CreateWebHookRequest)
 
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
+    /**
+     * 更新WebHook
+     */
+    fun updateWebHook(userId: String, request: UpdateWebHookRequest)
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
+    /**
+     * 删除WebHook
+     */
+    fun deleteWebHook(userId: String, id: String)
 
-    // PACKAGE
+    /**
+     * 获取WebHook
+     */
+    fun getWebHook(userId: String, id: String): WebHook
 
-    // VERSION
-    VERSION_CREATED,
+    /**
+     * 根据关联对象类型[associationType]、关联对象id[associationId]获取WebHook列表
+     */
+    fun listWebHook(userId: String, associationType: AssociationType, associationId: String): List<WebHook>
 
-    // WebHook
-    WEBHOOK_TEST,
+    /**
+     * 测试WebHook
+     */
+    fun testWebHook(userId: String, id: String): WebHookLog
 }

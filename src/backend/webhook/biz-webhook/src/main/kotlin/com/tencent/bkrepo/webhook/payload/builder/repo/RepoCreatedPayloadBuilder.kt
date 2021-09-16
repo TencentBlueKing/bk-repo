@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.payload.builder.repo
 
-/**
- * 事件类型
- */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.webhook.pojo.payload.repo.RepoCreatedEventPayload
+import org.springframework.stereotype.Component
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
+@Component
+class RepoCreatedPayloadBuilder : RepoPayloadBuilder(
+    eventType = EventType.REPO_CREATED
+) {
 
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
-
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
+    override fun build(event: ArtifactEvent): RepoCreatedEventPayload {
+        return RepoCreatedEventPayload(
+            user = getUser(event.userId),
+            repository = getRepo(event.projectId, event.repoName)
+        )
+    }
 }

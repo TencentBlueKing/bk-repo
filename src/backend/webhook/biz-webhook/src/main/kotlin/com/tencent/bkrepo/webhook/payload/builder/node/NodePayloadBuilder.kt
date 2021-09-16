@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.payload.builder.node
 
-/**
- * 事件类型
- */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
+import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
+import org.springframework.beans.factory.annotation.Autowired
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
+abstract class NodePayloadBuilder(
+    override val eventType: EventType
+) : EventPayloadBuilder(
+    eventType = eventType
+) {
 
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
+    @Autowired
+    private lateinit var nodeClient: NodeClient
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
+    fun getNode(projectId: String, repoName: String, fullPath: String): NodeDetail {
+        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            ?: throw NotFoundException(WebHookMessageCode.WEBHOOK_NODE_NOT_FOUND)
+    }
 }
