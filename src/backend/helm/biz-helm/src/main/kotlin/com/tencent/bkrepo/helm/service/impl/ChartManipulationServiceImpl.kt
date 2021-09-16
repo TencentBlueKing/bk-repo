@@ -41,7 +41,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.handler.HelmPackageHandler
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -52,9 +51,11 @@ import com.tencent.bkrepo.helm.exception.HelmErrorInvalidProvenanceFileException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
-import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
-import com.tencent.bkrepo.helm.pojo.chart.ChartDeleteRequest
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
+import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.service.ChartManipulationService
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils.getChartFileFullPath
@@ -63,7 +64,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import kotlin.streams.toList
 
 @Service
 class ChartManipulationServiceImpl(
@@ -137,50 +137,31 @@ class ChartManipulationServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deleteVersion(chartVersionDeleteRequest: ChartVersionDeleteRequest) {
-        logger.info("handling delete chart version request: [$chartVersionDeleteRequest]")
-        with(chartVersionDeleteRequest) {
-            val chartFullPath = getChartFileFullPath(name, version)
-            val provFullPath = getProvFileFullPath(name, version)
-            val context = ArtifactRemoveContext()
-            checkRepositoryExist(context.artifactInfo)
-            if (!packageVersionExist(projectId, repoName, PackageKeys.ofHelm(name), version)) {
-                throw HelmFileNotFoundException("remove package $chartFullPath failed: no such file or directory")
+    override fun deleteVersion(userId: String, artifactInfo: HelmDeleteArtifactInfo) {
+        logger.info("handling delete chart version request: [$artifactInfo]")
+        with(artifactInfo) {
+            if (!packageVersionExist(projectId, repoName, packageName, version)) {
+                throw HelmFileNotFoundException("remove package $packageName failed: no such file or directory")
             }
-            context.putAttribute(FULL_PATH, mutableListOf(chartFullPath, provFullPath))
-            ArtifactContextHolder.getRepository().remove(context)
-                .also { publishEvent(ChartVersionDeleteEvent(this)) }
-                .also {
-                    logger.info(
-                        "delete chart [$name], version: [$version] in repo [$projectId/$repoName] success."
-                    )
-                }
-            // 删除包版本
-            helmPackageHandler.deleteVersion(context.userId, name, version, context.artifactInfo)
+            repository.remove(ArtifactRemoveContext())
+            publishEvent(ChartVersionDeleteEvent(
+                ChartVersionDeleteRequest(projectId, repoName, PackageKeys.resolveHelm(packageName), version, userId)
+            ))
         }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deletePackage(chartDeleteRequest: ChartDeleteRequest) {
-        logger.info("handling delete chart request: [$chartDeleteRequest]")
-        with(chartDeleteRequest) {
-            val context = ArtifactRemoveContext()
-            checkRepositoryExist(context.artifactInfo)
-            val originalIndexYamlMetadata = queryOriginalIndexYaml()
-            val versionList =
-                originalIndexYamlMetadata.entries[name]!!.stream().map { it.version }.toList()
-            val fullPathList = mutableListOf<String>()
-            versionList.forEach {
-                fullPathList.add(getChartFileFullPath(name, it))
-                fullPathList.add(getProvFileFullPath(name, it))
+    override fun deletePackage(userId: String, artifactInfo: HelmDeleteArtifactInfo) {
+        logger.info("handling delete chart request: [$artifactInfo]")
+        with(artifactInfo) {
+            if (!packageExist(projectId, repoName, packageName)) {
+                throw HelmFileNotFoundException("remove package $packageName failed: no such file or directory")
             }
-            context.putAttribute(FULL_PATH, fullPathList)
-            ArtifactContextHolder.getRepository().remove(context)
-                .also { publishEvent(ChartDeleteEvent(this)) }
-                .also { logger.info("delete chart [$name] in repo [$projectId/$repoName] success.") }
-            // 删除包版本
-            helmPackageHandler.deletePackage(context.userId, name, context.artifactInfo)
+            repository.remove(ArtifactRemoveContext())
+            publishEvent(ChartDeleteEvent(
+                ChartPackageDeleteRequest(projectId, repoName, PackageKeys.resolveHelm(packageName), userId)
+            ))
         }
     }
 

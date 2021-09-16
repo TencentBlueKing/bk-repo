@@ -32,18 +32,22 @@
 package com.tencent.bkrepo.helm.listener
 
 import com.tencent.bkrepo.common.api.util.readYamlString
-import com.tencent.bkrepo.common.api.util.toYamlString
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.helm.constants.FULL_PATH
-import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import org.springframework.beans.factory.annotation.Autowired
 
-open class AbstractEventListener(private val nodeClient: NodeClient) {
+open class AbstractEventListener {
+
+    @Autowired
+    lateinit var nodeClient: NodeClient
+
+    @Autowired
+    lateinit var storageManager: StorageManager
 
     /**
      * check node exists
@@ -55,19 +59,18 @@ open class AbstractEventListener(private val nodeClient: NodeClient) {
     /**
      * query original index.yaml file
      */
-    fun getOriginalIndexYaml(): HelmIndexYamlMetadata {
-        val context = ArtifactQueryContext()
-        context.putAttribute(FULL_PATH, HelmUtils.getIndexYamlFullPath())
-        return (ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream).use { it.readYamlString() }
+    fun getOriginalIndexYaml(projectId: String, repoName: String): HelmIndexYamlMetadata {
+        val fullPath = HelmUtils.getIndexYamlFullPath()
+        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val inputStream = storageManager.loadArtifactInputStream(nodeDetail, null)
+            ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
+        return inputStream.use { it.readYamlString() }
     }
 
     /**
      * upload index.yaml file
      */
-    fun uploadIndexYamlMetadata(indexYamlMetadata: HelmIndexYamlMetadata) {
-        val artifactFile = ArtifactFileFactory.build(indexYamlMetadata.toYamlString().byteInputStream())
-        val context = ArtifactUploadContext(artifactFile)
-        context.putAttribute(FULL_PATH, HelmUtils.getIndexYamlFullPath())
-        ArtifactContextHolder.getRepository().upload(context)
+    fun uploadIndexYamlMetadata(artifactFile: ArtifactFile, nodeCreateRequest: NodeCreateRequest) {
+        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, null)
     }
 }

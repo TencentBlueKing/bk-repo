@@ -115,7 +115,7 @@ open class PermissionServiceImpl constructor(
         }
         val result = permissionRepository.insert(
             TPermission(
-                resourceType = request.resourceType,
+                resourceType = request.resourceType.toString(),
                 projectId = request.projectId,
                 permName = request.permName,
                 repos = request.repos,
@@ -420,8 +420,8 @@ open class PermissionServiceImpl constructor(
                 projectId = projectId,
                 repos = listOf(repoName),
                 permName = permName,
-                actions = actions,
-                resourceType = ResourceType.REPO,
+                actions = actions.map { it.toString() },
+                resourceType = ResourceType.REPO.toString(),
                 createAt = LocalDateTime.now(),
                 updateAt = LocalDateTime.now(),
                 createBy = AUTH_ADMIN,

@@ -40,7 +40,6 @@ import com.tencent.bk.sdk.iam.helper.AuthHelper
 import com.tencent.bk.sdk.iam.service.PolicyService
 import com.tencent.bkrepo.auth.pojo.iam.AncestorsApiReq
 import com.tencent.bkrepo.auth.pojo.iam.IamCreateApiReq
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.SystemCode
 import com.tencent.bkrepo.auth.util.BkiamUtils
@@ -59,8 +58,8 @@ class BkiamServiceImpl @Autowired constructor(
         userId: String,
         systemCode: SystemCode,
         projectId: String,
-        resourceType: ResourceType,
-        action: PermissionAction,
+        resourceType: String,
+        action: String,
         resourceId: String
     ): Boolean {
         logger.info(
@@ -68,14 +67,14 @@ class BkiamServiceImpl @Autowired constructor(
                 " resourceType: $resourceType, action: $action, resourceId: $resourceId"
         )
         val resourceAction = BkiamUtils.buildAction(resourceType, action)
-        if (systemCode == SystemCode.BK_REPO && resourceType == ResourceType.PROJECT) {
+        if (systemCode == SystemCode.BK_REPO && resourceType == ResourceType.PROJECT.toString()) {
             return authHelper.isAllowed(userId, resourceAction)
         }
 
         val instanceDTO = InstanceDTO()
         instanceDTO.system = systemCode.id()
         instanceDTO.id = resourceId
-        instanceDTO.type = resourceType.id()
+        instanceDTO.type = resourceType
 
         val path = PathInfoDTO()
         path.type = ResourceType.PROJECT.id()
@@ -89,8 +88,8 @@ class BkiamServiceImpl @Autowired constructor(
         userId: String,
         systemCode: SystemCode,
         projectId: String,
-        resourceType: ResourceType,
-        action: PermissionAction
+        resourceType: String,
+        action: String
     ): List<String> {
         logger.info(
             "listResourceByPermission, userId: $userId, projectId: $projectId, systemCode: $systemCode," +
@@ -107,12 +106,12 @@ class BkiamServiceImpl @Autowired constructor(
             return listOf("*")
         }
 
-        return if (resourceType == ResourceType.PROJECT) {
+        return if (resourceType == ResourceType.PROJECT.toString()) {
             BkiamUtils.getProjects(expression)
         } else {
             val instancesList = BkiamUtils.getResourceInstance(expression, projectId, resourceType)
             logger.debug(
-                "getUserResourceByPermission getInstance project[$projectId], type[${resourceType.id()}]," +
+                "getUserResourceByPermission getInstance project[$projectId], type[$resourceType]," +
                     " instances[$instancesList]"
             )
             if (!instancesList.contains("*")) {
@@ -127,7 +126,7 @@ class BkiamServiceImpl @Autowired constructor(
         userId: String,
         systemCode: SystemCode,
         projectId: String,
-        resourceType: ResourceType,
+        resourceType: String,
         resourceId: String,
         resourceName: String
     ) {
@@ -136,7 +135,7 @@ class BkiamServiceImpl @Autowired constructor(
                 " resourceType: $resourceType, resourceId: $resourceId, resourceName: $resourceName"
         )
         val ancestors = mutableListOf<AncestorsApiReq>()
-        if (resourceType != ResourceType.PROJECT) {
+        if (resourceType != ResourceType.PROJECT.toString()) {
             ancestors.add(
                 AncestorsApiReq(
                     system = iamConfiguration.systemId,
@@ -149,7 +148,7 @@ class BkiamServiceImpl @Autowired constructor(
             creator = userId,
             name = resourceName,
             id = resourceId,
-            type = resourceType.id(),
+            type = resourceType,
             system = iamConfiguration.systemId,
             ancestors = ancestors,
             bk_app_code = "",
