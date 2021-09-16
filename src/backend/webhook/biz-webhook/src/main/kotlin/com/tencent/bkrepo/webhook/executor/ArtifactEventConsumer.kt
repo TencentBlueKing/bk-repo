@@ -52,7 +52,7 @@ class ArtifactEventConsumer(
     private val systemWebHookCache = CacheBuilder.newBuilder()
         .maximumSize(100)
         .expireAfterWrite(10, TimeUnit.MINUTES)
-        .build<EventType, List<TWebHook>>(CacheLoader.from { key -> webHookDao.findSystemWebHookByEventType(key)})
+        .build<EventType, List<TWebHook>>(CacheLoader.from { key -> webHookDao.findSystemWebHookByEventType(key) })
 
     override fun accept(event: ArtifactEvent) {
         logger.info("accept artifact event: $event")

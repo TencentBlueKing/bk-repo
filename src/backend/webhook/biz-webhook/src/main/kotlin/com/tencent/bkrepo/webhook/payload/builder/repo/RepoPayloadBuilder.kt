@@ -39,7 +39,7 @@ abstract class RepoPayloadBuilder(
     override val eventType: EventType
 ) : EventPayloadBuilder(
     eventType = eventType
-){
+) {
 
     @Autowired
     private lateinit var repositoryClient: RepositoryClient

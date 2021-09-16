@@ -43,9 +43,7 @@ abstract class EventPayloadBuilder(
     @Autowired
     private lateinit var userResource: ServiceUserResource
 
-    open fun build(event: ArtifactEvent): CommonEventPayload {
-        throw UnsupportedOperationException()
-    }
+    abstract fun build(event: ArtifactEvent): CommonEventPayload
 
     fun getUser(userId: String): UserInfo {
         return userResource.userInfoById(userId).data
