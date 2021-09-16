@@ -14,7 +14,7 @@ BACKEND=0
 INIT=0
 VERSION=latest
 PUSH=0
-REGISTRY=docker.io
+REGISTRY=docker.io/bkrepo
 USERNAME=
 PASSWORD=
 BACKENDS=(repository auth generic docker helm npm pypi)
@@ -116,8 +116,9 @@ if [[ $PUSH -eq 1 && -n "$USERNAME" ]] ; then
 fi
 
 # 创建临时目录
-mkdir -p $WORKING_DIR/tmp
-tmp_dir=$WORKING_DIR/tmp
+random=$RANDOM
+mkdir -p $WORKING_DIR/tmp_$random
+tmp_dir=$WORKING_DIR/tmp_$random
 # 执行退出时自动清理tmp目录
 trap 'rm -rf $tmp_dir' EXIT TERM
 
@@ -129,15 +130,15 @@ if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
 
     # 打包gateway镜像
     log "构建gateway镜像..."
-    rm -rf tmp/*
-    cp -rf $FRONTEND_DIR/frontend tmp/
-    cp -rf $GATEWAY_DIR tmp/gateway
-    cp -rf gateway/startup.sh tmp/
-    cp -rf $ROOT_DIR/scripts/render_tpl tmp/
-    cp -rf $ROOT_DIR/support-files/templates tmp/
-    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo/bkrepo-gateway:$VERSION tmp --network=host
+    rm -rf $tmp_dir/*
+    cp -rf $FRONTEND_DIR/frontend $tmp_dir/
+    cp -rf $GATEWAY_DIR $tmp_dir/gateway
+    cp -rf gateway/startup.sh $tmp_dir/
+    cp -rf $ROOT_DIR/scripts/render_tpl $tmp_dir/
+    cp -rf $ROOT_DIR/support-files/templates $tmp_dir/
+    docker build -f gateway/gateway.Dockerfile -t $REGISTRY/bkrepo-gateway:$VERSION $tmp_dir --network=host
     if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo/bkrepo-gateway:$VERSION
+        docker push $REGISTRY/bkrepo-gateway:$VERSION
     fi
 fi
 
@@ -147,12 +148,12 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
     do
         log "构建${SERVICE}镜像..."
         $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
-        rm -rf tmp/*
-        cp backend/startup.sh tmp/
-        cp $BACKEND_DIR/release/boot-$SERVICE-*.jar tmp/app.jar
-        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo/bkrepo-$SERVICE:$VERSION tmp --network=host
+        rm -rf $tmp_dir/*
+        cp backend/startup.sh $tmp_dir/
+        cp $BACKEND_DIR/release/boot-$SERVICE-*.jar $tmp_dir/app.jar
+        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
         if [[ $PUSH -eq 1 ]] ; then
-            docker push $REGISTRY/bkrepo/bkrepo-$SERVICE:$VERSION
+            docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
         fi
     done
 fi
@@ -160,12 +161,12 @@ fi
 # 构建init镜像
 if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     log "构建init镜像..."
-    rm -rf tmp/*
-    cp -rf init/init-mongodb.sh tmp/
-    cp -rf $ROOT_DIR/support-files/sql/init-data.js tmp/
-    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo/bkrepo-init:$VERSION tmp --no-cache --network=host
+    rm -rf $tmp_dir/*
+    cp -rf init/init-mongodb.sh $tmp_dir/
+    cp -rf $ROOT_DIR/support-files/sql/init-data.js $tmp_dir/
+    docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
     if [[ $PUSH -eq 1 ]] ; then
-        docker push $REGISTRY/bkrepo/bkrepo-init:$VERSION
+        docker push $REGISTRY/bkrepo-init:$VERSION
     fi
 fi
 echo "BUILD SUCCESSFUL!"

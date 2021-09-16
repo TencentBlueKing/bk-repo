@@ -64,7 +64,7 @@ open class ArtifactEvent(
 ) {
     override fun toString(): String {
         return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +
-                "resourceKey='$resourceKey', userId='$userId', data=$data)"
+            "resourceKey='$resourceKey', userId='$userId', data=$data)"
     }
 
     /**

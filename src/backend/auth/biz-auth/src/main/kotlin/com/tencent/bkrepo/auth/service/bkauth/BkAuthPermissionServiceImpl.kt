@@ -181,6 +181,29 @@ class BkAuthPermissionServiceImpl constructor(
         return true
     }
 
+    override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
+        appId?.let {
+            val request = buildProjectCheckRequest(projectId, userId, appId)
+
+            // gitci
+            if (matchGitCiCond(projectId)) {
+                if (checkGitCiPermission(request)) {
+                    return getAllRepoByProjectId(projectId)
+                }
+                return emptyList()
+            }
+
+            // devops 体系
+            if (matchDevopsCond(appId)) {
+                if (checkDevopsPermission(request)) {
+                    return getAllRepoByProjectId(projectId)
+                }
+                return emptyList()
+            }
+        }
+        return super.listPermissionRepo(projectId, userId, appId)
+    }
+
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         // git ci项目校验单独权限
         if (matchGitCiCond(request.projectId)) {
@@ -195,7 +218,6 @@ class BkAuthPermissionServiceImpl constructor(
 
         // devops实名访问请求处理
         if (matchDevopsCond(request.appId)) {
-
             // 优先校验本地权限
             if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
 
@@ -204,6 +226,16 @@ class BkAuthPermissionServiceImpl constructor(
 
         // 非devops体系
         return super.checkPermission(request)
+    }
+
+    private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
+        return CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT,
+            action = PermissionAction.READ,
+            projectId = projectId,
+            appId = appId
+        )
     }
 
     private fun matchGitCiCond(projectId: String?): Boolean {

@@ -226,7 +226,7 @@ class RpmLocalRepository(
         )
         stopWatch.start("storeOthers")
         storeIndexMarkFile(
-            context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHERS, othersIndexData, artifactSha256
+            context, repoDataPojo, repeat, markFileMatedata, IndexType.OTHER, othersIndexData, artifactSha256
         )
         stopWatch.stop()
         if (rpmRepoConf.enabledFileLists) {
@@ -277,8 +277,10 @@ class RpmLocalRepository(
         sha256: String?
     ) {
         val repodataUri = repoData.repoDataPath
-        logger.info("storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType," +
-            " metadata: $metadata")
+        logger.info(
+            "storeIndexMarkFile, repodataUri: $repodataUri, repeat: $repeat, indexType: $indexType," +
+                " metadata: $metadata"
+        )
         val artifactFile = when (repeat) {
             FULLPATH_SHA256 -> {
                 logger.warn("artifact repeat is $FULLPATH_SHA256, skip")
@@ -599,7 +601,7 @@ class RpmLocalRepository(
             null, artifactSha256
         )
         storeIndexMarkFile(
-            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHERS,
+            context, repoData, ArtifactRepeat.DELETE, rpmVersion.toMetadata(), IndexType.OTHER,
             null, artifactSha256
         )
         if (rpmRepoConf.enabledFileLists) {
@@ -730,7 +732,7 @@ class RpmLocalRepository(
             if (nodeInfoPage.records.isEmpty()) break@loop
             logger.info(
                 "populatePackage: found ${nodeInfoPage.records.size}," +
-                        " totalRecords: ${nodeInfoPage.totalRecords}"
+                    " totalRecords: ${nodeInfoPage.totalRecords}"
             )
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {
