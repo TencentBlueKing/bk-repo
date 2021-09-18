@@ -35,11 +35,10 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.NodeModel
-import com.tencent.bkrepo.opdata.model.ProjectMetricsModel
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.SizeDistributionMetricsRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -47,26 +46,32 @@ import org.springframework.stereotype.Component
  */
 @Component
 class NodeSizeDistributionHandler(
-    private val projectMetricsModel: ProjectMetricsModel,
-    private val nodeModel: NodeModel
+    private val sizeDistributionMetricsRepository: SizeDistributionMetricsRepository
 ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.NODESIZEDISTRIBUTION
 
     @Suppress("UNCHECKED_CAST")
     override fun handle(target: Target, result: MutableList<Any>) {
-        val resultMap = if (target.data.toString().isBlank()) {
-            projectMetricsModel.getSizeDistribution()
+        val resultList = if (target.data.toString().isBlank()) {
+            sizeDistributionMetricsRepository.findAll()
         } else {
             val data = target.data as Map<String, Any>
             val projectId = data[OPDATA_PROJECT_ID] as String?
             val repoName = data[OPDATA_REPO_NAME] as String?
             if (projectId.isNullOrBlank()) {
-                projectMetricsModel.getSizeDistribution()
+                sizeDistributionMetricsRepository.findAll()
             } else if (repoName.isNullOrBlank()) {
-                projectMetricsModel.getProjSizeDistribution(projectId)
+                sizeDistributionMetricsRepository.findByProjectId(projectId)
             } else {
-                nodeModel.getRepoNodeSizeDistribution(projectId, repoName)
+                sizeDistributionMetricsRepository.findByProjectIdAndRepoName(projectId, repoName)
+            }
+        }
+        val resultMap = mutableMapOf<String, Long>()
+        resultList.forEach {
+            val keys = it.sizeDistribution.keys
+            keys.forEach { key ->
+                resultMap[key] = resultMap[key]?.plus(it.sizeDistribution[key]!!) ?: it.sizeDistribution[key]!!
             }
         }
         val results = resultMap.toList().map { Pair(it.first.toLong(), it.second) }.sortedBy { it.first }
