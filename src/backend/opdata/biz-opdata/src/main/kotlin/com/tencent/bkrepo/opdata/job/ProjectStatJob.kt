@@ -60,7 +60,7 @@ class ProjectStatJob(
             var repoCapSize = 0L
             var repoNodeNum = 0L
             val projectId = it.name
-            val projSizeDistribution = nodeModel.getProjNodeSizeDistribution(projectId)
+//            val projSizeDistribution = nodeModel.getProjNodeSizeDistribution(projectId)
             val repos = repoModel.getRepoListByProjectId(it.name)
             val repoMetrics = mutableListOf<RepoMetrics>()
             repos.forEach {
@@ -78,7 +78,7 @@ class ProjectStatJob(
                     repoNodeNum,
                     repoCapSize / (1024 * 1024 * 1024),
                     repoMetrics,
-                    projSizeDistribution
+                    emptyMap()
                 )
             )
         }

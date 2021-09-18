@@ -36,8 +36,6 @@ import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
 import com.tencent.bkrepo.opdata.repository.FileExtensionMetricsRepository
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
@@ -47,8 +45,8 @@ class FileExtensionStatJob(
     val fileExtensionMetricsRepository: FileExtensionMetricsRepository
 ) {
 
-    @Scheduled(cron = "00 45 00 * * ?")
-    @SchedulerLock(name = "FileExtensionStatJob", lockAtMostFor = "PT1H")
+//    @Scheduled(cron = "00 45 00 * * ?")
+//    @SchedulerLock(name = "FileExtensionStatJob", lockAtMostFor = "PT1H")
     fun statFileExtension() {
         logger.info("start to stat file extension")
         val results = mutableListOf<TFileExtensionMetrics>()
