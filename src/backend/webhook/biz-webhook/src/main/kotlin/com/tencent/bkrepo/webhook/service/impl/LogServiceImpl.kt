@@ -49,9 +49,7 @@ import java.time.LocalDateTime
 
 @Service
 class LogServiceImpl(
-    private val webHookDao: WebHookDao,
-    private val webHookLogDao: WebHookLogDao,
-    private val webHookExecutor: WebHookExecutor
+    private val webHookLogDao: WebHookLogDao
 ) : LogService {
 
     override fun listLog(webHookId: String, option: ListWebHookLogOption): Page<WebHookLog> {
@@ -81,15 +79,6 @@ class LogServiceImpl(
 
     override fun deleteLogBeforeDate(date: LocalDateTime): Long {
         return webHookLogDao.deleteByRequestTimeBefore(date).deletedCount
-    }
-
-    override fun retryWebHookRequest(id: String): WebHookLog {
-        val log = webHookLogDao.findById(id)
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_LOG_NOT_FOUND)
-        val webHook = webHookDao.findById(log.webHookId)
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_NOT_FOUND)
-        val payload = log.requestPayload.readJsonString<CommonEventPayload>()
-        return transfer(webHookExecutor.execute(payload, webHook))
     }
 
     private fun transfer(tWebHookLog: TWebHookLog): WebHookLog {

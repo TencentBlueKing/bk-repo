@@ -46,9 +46,4 @@ interface LogService {
      * 删除[date]日期之前的WebHook日志
      */
     fun deleteLogBeforeDate(date: LocalDateTime): Long
-
-    /**
-     * 重试WebHook请求
-     */
-    fun retryWebHookRequest(id: String): WebHookLog
 }

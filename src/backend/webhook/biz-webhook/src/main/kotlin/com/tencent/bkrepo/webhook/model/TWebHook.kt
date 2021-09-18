@@ -29,10 +29,17 @@ package com.tencent.bkrepo.webhook.model
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.webhook.constant.AssociationType
+import com.tencent.bkrepo.webhook.model.TWebHook.Companion.ASSOCIATION_IDX
+import com.tencent.bkrepo.webhook.model.TWebHook.Companion.ASSOCIATION_IDX_DEF
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 @Document("webhook")
+@CompoundIndexes(
+    CompoundIndex(name = ASSOCIATION_IDX, def = ASSOCIATION_IDX_DEF, background = true)
+)
 data class TWebHook(
     var id: String? = null,
     var url: String,
@@ -44,4 +51,9 @@ data class TWebHook(
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime
-)
+) {
+    companion object {
+        const val ASSOCIATION_IDX = "association_idx"
+        const val ASSOCIATION_IDX_DEF = "{'associationType': 1, 'associationId': 1}"
+    }
+}

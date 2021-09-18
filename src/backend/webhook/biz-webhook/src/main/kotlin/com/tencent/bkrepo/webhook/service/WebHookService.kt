@@ -67,4 +67,9 @@ interface WebHookService {
      * 测试WebHook
      */
     fun testWebHook(userId: String, id: String): WebHookLog
+
+    /**
+     * 重试WebHook请求
+     */
+    fun retryWebHookRequest(logId: String): WebHookLog
 }

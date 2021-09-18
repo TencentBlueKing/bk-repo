@@ -56,12 +56,4 @@ class UserLogController(
     ): Response<Page<WebHookLog>> {
         return ResponseBuilder.success(logService.listLog(webHookId, option))
     }
-
-    @ApiOperation("重试WebHook请求")
-    @PostMapping("/retry/{id}")
-    fun retryWebHookRequest(
-        @PathVariable id: String
-    ): Response<WebHookLog> {
-        return ResponseBuilder.success(logService.retryWebHookRequest(id))
-    }
 }

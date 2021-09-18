@@ -101,7 +101,7 @@ class WebHookExecutor(
                 buildWebHookSuccessLog(log, startTimestamp, it)
             }
         } catch (exception: IOException) {
-            logger.info("Execute web hook[id=${webHook.id}, url=${webHook.url}] error.")
+            logger.error("Execute web hook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
             buildWebHookFailedLog(log, startTimestamp, exception.message)
         }
         return webHookLogDao.insert(log)
@@ -131,7 +131,7 @@ class WebHookExecutor(
                         buildWebHookSuccessLog(log, startTimestamp, it)
                     }
                 } catch (exception: IOException) {
-                    logger.info("Execute web hook[id=${webHook.id}, url=${webHook.url}] error.")
+                    logger.error("Execute web hook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
                     buildWebHookFailedLog(log, startTimestamp, exception.message)
                 }
                 webHookLogDao.insert(log)

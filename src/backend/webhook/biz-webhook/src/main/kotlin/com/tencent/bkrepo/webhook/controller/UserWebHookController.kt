@@ -34,6 +34,7 @@ import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.UpdateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.WebHook
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
+import com.tencent.bkrepo.webhook.service.LogService
 import com.tencent.bkrepo.webhook.service.WebHookService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -111,5 +112,13 @@ class UserWebHookController(
         @PathVariable id: String
     ): Response<WebHookLog> {
         return ResponseBuilder.success(webHookService.testWebHook(userId, id))
+    }
+
+    @ApiOperation("重试WebHook请求")
+    @PostMapping("/retry/{logId}")
+    fun retryWebHookRequest(
+        @PathVariable logId: String
+    ): Response<WebHookLog> {
+        return ResponseBuilder.success(webHookService.retryWebHookRequest(logId))
     }
 }

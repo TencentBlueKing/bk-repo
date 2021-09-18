@@ -30,9 +30,12 @@ package com.tencent.bkrepo.webhook.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
+import com.tencent.bkrepo.webhook.dao.WebHookLogDao
 import com.tencent.bkrepo.webhook.event.WebHookTestEvent
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.executor.WebHookExecutor
@@ -42,6 +45,7 @@ import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.UpdateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.WebHook
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
+import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import com.tencent.bkrepo.webhook.service.WebHookService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -50,6 +54,7 @@ import java.time.LocalDateTime
 @Service
 class WebHookServiceImpl(
     private val webHookDao: WebHookDao,
+    private val webHookLogDao: WebHookLogDao,
     private val webHookExecutor: WebHookExecutor,
     private val permissionManager: PermissionManager
 ) : WebHookService {
@@ -114,6 +119,15 @@ class WebHookServiceImpl(
         return transferLog(webHookExecutor.execute(event, webHook))
     }
 
+    override fun retryWebHookRequest(logId: String): WebHookLog {
+        val log = webHookLogDao.findById(logId)
+            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_LOG_NOT_FOUND)
+        val webHook = webHookDao.findById(log.webHookId)
+            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_NOT_FOUND)
+        val payload = log.requestPayload.readJsonString<CommonEventPayload>()
+        return transferLog(webHookExecutor.execute(payload, webHook))
+    }
+
     private fun findWebHookById(id: String): TWebHook {
         return webHookDao.findById(id)
             ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_NOT_FOUND)
@@ -123,6 +137,11 @@ class WebHookServiceImpl(
         val projectId: String
         val repoName: String
         when (type) {
+            AssociationType.SYSTEM -> {
+                projectId = ""
+                repoName = ""
+                permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
+            }
             AssociationType.PROJECT -> {
                 projectId = associationId
                 repoName = ""
@@ -132,9 +151,6 @@ class WebHookServiceImpl(
                 projectId = associationId.split(StringPool.COLON).first()
                 repoName = associationId.split(StringPool.COLON).last()
                 permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName)
-            }
-            else -> {
-                throw UnsupportedOperationException()
             }
         }
         return Pair(projectId, repoName)
