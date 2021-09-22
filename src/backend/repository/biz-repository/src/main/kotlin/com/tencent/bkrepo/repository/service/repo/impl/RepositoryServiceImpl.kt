@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -138,7 +139,11 @@ class RepositoryServiceImpl(
         projectId: String,
         option: RepoListOption
     ): List<RepositoryInfo> {
-        var names = servicePermissionResource.listPermissionRepo(projectId, userId, null).data.orEmpty()
+        var names = servicePermissionResource.listPermissionRepo(
+            projectId = projectId,
+            userId = userId,
+            appId = SecurityUtils.getPlatformId()
+        ).data.orEmpty()
         if (!option.name.isNullOrBlank()) {
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }

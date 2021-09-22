@@ -66,7 +66,8 @@ class NugetPackageHandler {
                     overwrite = true,
                     createdBy = context.userId
                 )
-                packageClient.createVersion(packageVersionCreateRequest).apply {
+                packageClient.createVersion(packageVersionCreateRequest)
+                if (logger.isDebugEnabled) {
                     logger.info(
                         "user: [${context.userId}] create package version [$packageVersionCreateRequest] success!"
                     )

@@ -40,7 +40,6 @@ import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TokenType
-import io.micrometer.core.annotation.Timed
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -77,7 +76,6 @@ class TemporaryAccessController(
         }
     }
 
-    @Timed
     @GetMapping("/download/$GENERIC_MAPPING_URI")
     fun downloadByToken(
         artifactInfo: GenericArtifactInfo,
@@ -88,7 +86,6 @@ class TemporaryAccessController(
         temporaryAccessService.decrementPermits(tokenInfo)
     }
 
-    @Timed
     @CrossOrigin
     @PutMapping("/upload/$GENERIC_MAPPING_URI")
     fun uploadByToken(

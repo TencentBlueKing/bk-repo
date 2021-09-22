@@ -70,14 +70,14 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
-            val lockKey = buildRedisKey(projectId, repoName)
-            val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
-            val isLocked = try {
-                lock.tryLock()
-            } catch (exception: RuntimeException) {
-                false
-            }
             val task = {
+                val lockKey = buildRedisKey(projectId, repoName)
+                val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
+                val isLocked = try {
+                    lock.tryLock()
+                } catch (exception: RuntimeException) {
+                    false
+                }
                 if (isLocked) {
                     logger.info("execute update index yaml for delete package [$name], version [$version]" +
                         " with redis distribute lock [$lockKey].")
@@ -170,14 +170,14 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
-            val lockKey = buildRedisKey(projectId, repoName)
-            val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
-            val isLocked = try {
-                lock.tryLock()
-            } catch (exception: RuntimeException) {
-                false
-            }
             val task = {
+                val lockKey = buildRedisKey(projectId, repoName)
+                val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
+                val isLocked = try {
+                    lock.tryLock()
+                } catch (exception: RuntimeException) {
+                    false
+                }
                 if (isLocked) {
                     logger.info("execute update index yaml for delete package [$name] " +
                         "with redis distribute lock [$lockKey].")

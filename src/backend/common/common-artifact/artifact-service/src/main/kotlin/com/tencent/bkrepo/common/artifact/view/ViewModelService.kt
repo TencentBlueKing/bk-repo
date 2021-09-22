@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.view
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -73,7 +74,9 @@ class ViewModelService(
 
     private fun writePageContent(listViewObject: ListViewObject) {
         with(listViewObject) {
-            val writer = HttpContextHolder.getResponse().writer
+            val response = HttpContextHolder.getResponse()
+            response.contentType = MediaTypes.TEXT_HTML
+            val writer = response.writer
             val headerContent = buildHeaderContent(this)
             writer.println(FIRST_PART.format(title, title, headerContent).trimIndent())
             writeListContent(this, writer)

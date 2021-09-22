@@ -34,7 +34,6 @@ package com.tencent.bkrepo.common.artifact.metrics
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxProperties
-import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -54,10 +53,5 @@ class ArtifactMetricsConfiguration {
         commonTagProvider: ObjectProvider<CommonTagProvider>
     ): InfluxMetricsExporter {
         return InfluxMetricsExporter(influxProperties, commonTagProvider)
-    }
-
-    @Bean
-    fun webMvcTagsProvider(): WebMvcTagsProvider {
-        return CustomWebMvcTagsProvider()
     }
 }
