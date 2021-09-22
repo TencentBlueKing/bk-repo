@@ -50,7 +50,7 @@ spec:
       {{- end }}
       containers:
         - name: gateway
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.gateway.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.gateway.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
           {{- if .Values.gateway.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.gateway.containerSecurityContext "enabled" | toYaml | nindent 12 }}

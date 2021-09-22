@@ -40,3 +40,29 @@ Return the mongodb connection uri
 {{- .Values.externalMongodb.uri -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Return the proper image name
+{{ include "bkrepo.images.image" ( dict "imageRoot" .Values.path.to.the.image "global" $) }}
+*/}}
+{{- define "bkrepo.images.image" -}}
+{{- $registryName := .imageRoot.registry -}}
+{{- $repositoryName := .imageRoot.repository -}}
+{{- $tag := .imageRoot.tag | toString -}}
+{{- if .global }}
+    {{- if .global.imageRegistry }}
+     {{- $registryName = .global.imageRegistry -}}
+    {{- end -}}
+{{- end -}}
+{{- if .bkrepo.imageRegistry }}
+    {{- $registryName = .bkrepo.imageRegistry -}}
+{{- end -}}
+{{- if .bkrepo.imageTag }}
+    {{- $tag = .bkrepo.imageTag -}}
+{{- end -}}
+{{- if $registryName }}
+{{- printf "%s/%s:%s" $registryName $repositoryName $tag -}}
+{{- else -}}
+{{- printf "%s:%s" $repositoryName $tag -}}
+{{- end -}}
+{{- end -}}
