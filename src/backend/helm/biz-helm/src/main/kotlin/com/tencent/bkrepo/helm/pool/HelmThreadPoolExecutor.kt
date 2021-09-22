@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.helm.pool
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -20,8 +20,8 @@ object HelmThreadPoolExecutor {
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("helm-worker-%d").build()
         return ThreadPoolExecutor(
-            100, 500, 30, TimeUnit.SECONDS,
-            ArrayBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            1, 200, 60, TimeUnit.SECONDS,
+            LinkedBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }

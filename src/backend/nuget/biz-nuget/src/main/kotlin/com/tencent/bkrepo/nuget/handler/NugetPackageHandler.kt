@@ -67,9 +67,11 @@ class NugetPackageHandler {
                     createdBy = context.userId
                 )
                 packageClient.createVersion(packageVersionCreateRequest).apply {
-                    logger.info(
-                        "user: [${context.userId}] create package version [$packageVersionCreateRequest] success!"
-                    )
+                    if (logger.isDebugEnabled) {
+                        logger.info(
+                            "user: [${context.userId}] create package version [$packageVersionCreateRequest] success!"
+                        )
+                    }
                 }
             }
         }
