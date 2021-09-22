@@ -75,13 +75,13 @@ interface UserService {
 
     fun findUserByUserToken(userId: String, pwd: String): User?
 
-    fun userPage(pageNumber: Int, pageSize: Int, user: String?, admin: Boolean?, locked: Boolean?): Page<UserInfo>
+    fun userPage(pageNumber: Int, pageSize: Int, userName: String?, admin: Boolean?, locked: Boolean?): Page<UserInfo>
 
-    fun getUserInfoById(uid: String): UserInfo?
+    fun getUserInfoById(userId: String): UserInfo?
 
-    fun updatePassword(uid: String, oldPwd: String, newPwd: String): Boolean
+    fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean
 
-    fun resetPassword(uid: String): Boolean
+    fun resetPassword(userId: String): Boolean
 
-    fun repeatUid(uid: String): Boolean
+    fun repeatUid(userId: String): Boolean
 }
