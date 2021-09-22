@@ -16,11 +16,11 @@ class NugetPackageContentServiceImpl(
     private val packageClient: PackageClient
 ) : NugetPackageContentService, ArtifactService() {
     override fun downloadPackageContent(artifactInfo: NugetDownloadArtifactInfo) {
-         repository.download(ArtifactDownloadContext())
+        repository.download(ArtifactDownloadContext())
     }
 
     override fun downloadPackageManifest(artifactInfo: NugetDownloadArtifactInfo) {
-         repository.download(ArtifactDownloadContext())
+        repository.download(ArtifactDownloadContext())
     }
 
     override fun packageVersions(artifactInfo: NugetArtifactInfo, packageId: String): VersionListResponse {
