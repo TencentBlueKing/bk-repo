@@ -39,13 +39,16 @@ import com.tencent.bkrepo.opdata.constant.GB_10
 import com.tencent.bkrepo.opdata.constant.MB_100
 import com.tencent.bkrepo.opdata.constant.MB_500
 import com.tencent.bkrepo.opdata.model.ProjectModel
+import com.tencent.bkrepo.opdata.model.RepoInfo
 import com.tencent.bkrepo.opdata.model.RepoModel
 import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
 import com.tencent.bkrepo.opdata.model.TSizeDistributionMetrics
 import com.tencent.bkrepo.opdata.repository.FileExtensionMetricsRepository
 import com.tencent.bkrepo.opdata.repository.SizeDistributionMetricsRepository
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -72,38 +75,7 @@ class FileStatJob(
         projects.forEach { project ->
             val repos = repoModel.getRepoListByProjectId(project.name)
             repos.forEach { repo ->
-                val sizeDistribution = initMap()
-                val extensionStat = mutableMapOf<String, Pair<Long, Long>>()
-                var pageNum = 1
-                val pageSize = 1000
-                var queryCount: Int
-                do {
-                    val option = NodeListOption(pageNum, pageSize, includeFolder = false, deep = true)
-                    val nodePageInfo = nodeClient.listNodePage(project.name, repo.name, PathUtils.ROOT, option).data
-                    val nodeList = nodePageInfo?.records ?: emptyList()
-                    queryCount = nodeList.size
-                    pageNum += 1
-                    nodeList.forEach {
-                        for (lowerLimit in sizeRange.reversed()) {
-                            if (it.size > lowerLimit.toLong()) {
-                                sizeDistribution[lowerLimit] = sizeDistribution[lowerLimit]!! + 1L
-                            }
-                        }
-                        val extension = it.name.substringAfterLast(".", "none")
-                        extensionStat[extension] = Pair(
-                            (extensionStat[extension]?.first ?: 0L) + 1L,
-                            (extensionStat[extension]?.second ?: 0L) + it.size
-                        )
-                    }
-                } while (queryCount == pageNum)
-                extensionStat.forEach { (extension, pair) ->
-                    val fileExtensionMetrics = TFileExtensionMetrics(
-                        project.name, repo.name, extension, pair.first, pair.second
-                    )
-                    fileExtensionMetricsList.add(fileExtensionMetrics)
-                }
-                val sizeDistributionMetrics = TSizeDistributionMetrics(project.name, repo.name, sizeDistribution)
-                sizeDistributionMetricsList.add(sizeDistributionMetrics)
+                paginationStatFileInfo(project, repo, fileExtensionMetricsList, sizeDistributionMetricsList)
             }
         }
         fileExtensionMetricsRepository.deleteAll()
@@ -111,6 +83,54 @@ class FileStatJob(
         sizeDistributionMetricsRepository.deleteAll()
         sizeDistributionMetricsRepository.insert(sizeDistributionMetricsList)
         logger.info("stat file info done")
+    }
+
+    private fun paginationStatFileInfo(
+        project: ProjectInfo,
+        repo: RepoInfo,
+        fileExtensionMetricsList: MutableList<TFileExtensionMetrics>,
+        sizeDistributionMetricsList: MutableList<TSizeDistributionMetrics>
+    ) {
+        val sizeDistribution = initMap()
+        val extensionStat = mutableMapOf<String, Pair<Long, Long>>()
+        var pageNum = 1
+        val pageSize = 1000
+        var queryCount: Int
+        do {
+            val option = NodeListOption(pageNum, pageSize, includeFolder = false, deep = true)
+            val nodePageInfo = nodeClient.listNodePage(project.name, repo.name, PathUtils.ROOT, option).data
+            val nodeList = nodePageInfo?.records ?: emptyList()
+            queryCount = nodeList.size
+            pageNum += 1
+            nodeList.forEach {
+                statNodeInfo(it, sizeDistribution, extensionStat)
+            }
+        } while (queryCount == pageNum)
+        extensionStat.forEach { (extension, pair) ->
+            val fileExtensionMetrics = TFileExtensionMetrics(
+                project.name, repo.name, extension, pair.first, pair.second
+            )
+            fileExtensionMetricsList.add(fileExtensionMetrics)
+        }
+        val sizeDistributionMetrics = TSizeDistributionMetrics(project.name, repo.name, sizeDistribution)
+        sizeDistributionMetricsList.add(sizeDistributionMetrics)
+    }
+
+    private fun statNodeInfo(
+        it: NodeInfo,
+        sizeDistribution: MutableMap<String, Long>,
+        extensionStat: MutableMap<String, Pair<Long, Long>>
+    ) {
+        for (lowerLimit in sizeRange.reversed()) {
+            if (it.size > lowerLimit.toLong()) {
+                sizeDistribution[lowerLimit] = sizeDistribution[lowerLimit]!! + 1L
+            }
+        }
+        val extension = it.name.substringAfterLast(".", "none")
+        extensionStat[extension] = Pair(
+            (extensionStat[extension]?.first ?: 0L) + 1L,
+            (extensionStat[extension]?.second ?: 0L) + it.size
+        )
     }
 
     private fun initMap(): MutableMap<String, Long> {
