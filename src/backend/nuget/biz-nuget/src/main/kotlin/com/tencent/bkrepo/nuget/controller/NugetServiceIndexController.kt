@@ -3,10 +3,10 @@ package com.tencent.bkrepo.nuget.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.service.NugetServiceIndexService
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -23,8 +23,8 @@ class NugetServiceIndexController(
     @GetMapping("/index.json", produces = [MediaTypes.APPLICATION_JSON])
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun feed(
-        @ArtifactPathVariable artifactInfo: NugetArtifactInfo
-    ) {
-        nugetServiceIndexService.getFeed(artifactInfo)
+        artifactInfo: NugetArtifactInfo
+    ): ResponseEntity<Any> {
+        return nugetServiceIndexService.getFeed(artifactInfo)
     }
 }

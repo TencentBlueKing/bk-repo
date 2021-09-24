@@ -246,11 +246,13 @@ open class PermissionServiceImpl constructor(
 
     private fun checkRepoAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
-            val query = PermissionQueryHelper.buildPermissionCheck(
-                projectId!!, repoName!!, uid, action, resourceType, roles
-            )
-            val result = mongoTemplate.count(query, TPermission::class.java)
-            if (result != 0L) return true
+            if (resourceType == ResourceType.REPO.toString() && repoName != null) {
+                val query = PermissionQueryHelper.buildPermissionCheck(
+                    projectId!!, repoName!!, uid, action, resourceType, roles
+                )
+                val result = mongoTemplate.count(query, TPermission::class.java)
+                if (result != 0L) return true
+            }
         }
         return false
     }
