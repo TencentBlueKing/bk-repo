@@ -42,14 +42,14 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregat
 import org.springframework.data.mongodb.core.aggregation.Aggregation.project
 import org.springframework.data.mongodb.core.aggregation.Aggregation.sort
 import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 
 @Service
 class FileExtensionMetricsModel @Autowired constructor(
-    private val mongoTemplate: MongoTemplate,
-    private val nodeModel: NodeModel
+    private val mongoTemplate: MongoTemplate
 ) {
     /**
      * 获取总体的文件后缀名的统计信息
@@ -74,28 +74,12 @@ class FileExtensionMetricsModel @Autowired constructor(
         repoName: String,
         metrics: StatMetrics
     ): List<HashMap<String, Any>> {
-        val resultList = mutableListOf<HashMap<String, Any>>()
-        val fileExtensions = nodeModel.getFileExtensions(projectId, repoName)
-        if (fileExtensions.isNotEmpty()) {
-            fileExtensions.forEach {
-                val fileExtensionStatInfo = nodeModel.getFileExtensionStat(projectId, it, repoName)
-                val resultMap = hashMapOf<String, Any>(
-                    TFileExtensionMetrics::extension.name to fileExtensionStatInfo.extension
-                )
-                when (metrics) {
-                    StatMetrics.NUM -> {
-                        resultMap[TFileExtensionMetrics::num.name] = fileExtensionStatInfo.num
-                    }
-                    StatMetrics.SIZE -> {
-                        resultMap[TFileExtensionMetrics::size.name] = fileExtensionStatInfo.size
-                    }
-                }
-                resultList.add(resultMap)
-            }
-        }
-        return resultList
+        val criteria = where(TFileExtensionMetrics::projectId).isEqualTo(projectId)
+            .and(TFileExtensionMetrics::repoName).isEqualTo(repoName)
+        return aggregateQuery(criteria, metrics)
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun aggregateQuery(criteria: Criteria, metrics: StatMetrics): List<HashMap<String, Any>> {
         val field = metrics.name.toLowerCase()
         val aggregate = newAggregation(

@@ -36,7 +36,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("file_extension_metrics")
 data class TFileExtensionMetrics(
     val projectId: String,
-    val repoName: String?,
+    val repoName: String,
     val extension: String,
     val num: Long,
     val size: Long

@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
-import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
@@ -84,18 +83,6 @@ class NodeServiceImpl(
 
     override fun countFileNode(artifact: ArtifactInfo): Long {
         return NodeStatsSupport(this).countFileNode(artifact)
-    }
-
-    override fun computeSizeDistribution(projectId: String, range: List<Long>, repoName: String?): Map<String, Long> {
-        return NodeStatsSupport(this).computeSizeDistribution(projectId, range, repoName)
-    }
-
-    override fun getFileExtensions(projectId: String, repoName: String?): List<String> {
-        return NodeStatsSupport(this).getFileExtensions(projectId, repoName)
-    }
-
-    override fun statFileExtension(projectId: String, extension: String, repoName: String?): FileExtensionStatInfo {
-        return NodeStatsSupport(this).statFileExtension(projectId, extension, repoName)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
