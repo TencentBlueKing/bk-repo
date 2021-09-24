@@ -33,7 +33,6 @@ package com.tencent.bkrepo.repository.pojo.node
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
 /**
  * 节点恢复选项
