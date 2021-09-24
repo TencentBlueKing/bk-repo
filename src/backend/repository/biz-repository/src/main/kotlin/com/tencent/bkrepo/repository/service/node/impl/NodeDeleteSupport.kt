@@ -51,10 +51,9 @@ import java.time.LocalDateTime
  * 节点删除接口实现
  */
 open class NodeDeleteSupport(
-    nodeBaseService: NodeBaseService
+    private val nodeBaseService: NodeBaseService
 ) : NodeDeleteOperation {
 
-    private val nodeBaseService: NodeBaseService = nodeBaseService
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
     private val quotaService: QuotaService = nodeBaseService.quotaService
 
@@ -86,9 +85,9 @@ open class NodeDeleteSupport(
             nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
             publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
         } catch (exception: DuplicateKeyException) {
-            logger.warn("Delete node[/$projectId/$repoName$fullPath] error: [${exception.message}]")
+            logger.warn("Delete node[/$projectId/$repoName$fullPath] by [$operator] error: [${exception.message}]")
         }
-        logger.info("Delete node [/$projectId/$repoName$fullPath] by [$operator] success.")
+        logger.info("Delete node[/$projectId/$repoName$fullPath] by [$operator] success.")
     }
 
     override fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String) {
