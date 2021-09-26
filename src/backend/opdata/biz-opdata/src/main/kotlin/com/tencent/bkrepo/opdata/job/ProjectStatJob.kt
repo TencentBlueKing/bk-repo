@@ -82,6 +82,7 @@ class ProjectStatJob(
         }
         projectMetricsRepository.deleteAll()
         projectMetricsRepository.insert(result)
+        logger.info("stat node table metrics done")
     }
 
     companion object {

@@ -105,7 +105,7 @@ class FileStatJob(
             nodeList.forEach {
                 statNodeInfo(it, sizeDistribution, extensionStat)
             }
-        } while (queryCount == pageNum)
+        } while (queryCount == pageSize)
         extensionStat.forEach { (extension, pair) ->
             val fileExtensionMetrics = TFileExtensionMetrics(
                 project.name, repo.name, extension, pair.first, pair.second

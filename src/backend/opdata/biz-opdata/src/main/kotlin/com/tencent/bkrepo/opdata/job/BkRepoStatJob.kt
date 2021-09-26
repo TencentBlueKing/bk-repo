@@ -68,6 +68,7 @@ class BkRepoStatJob(
         }
         val data = TBkRepoMetrics(date, projectNum, nodeNum, capSize)
         bkRepoMetricsRepository.insert(data)
+        logger.info("stat bkrepo metrics done")
     }
 
     companion object {
