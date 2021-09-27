@@ -113,7 +113,7 @@ class BkAuthPermissionServiceImpl constructor(
             // devops来源的账号，不做拦截
             if (!pass && appId == bkAuthConfig.devopsAppId) {
                 logger.warn("devops forbidden [$request]")
-                return !bkAuthConfig.devopsAuthEnabled
+                return !bkAuthConfig.devopsAuthEnabledcheck devops permission request
             }
 
             logger.debug("devops pass [$request]")
