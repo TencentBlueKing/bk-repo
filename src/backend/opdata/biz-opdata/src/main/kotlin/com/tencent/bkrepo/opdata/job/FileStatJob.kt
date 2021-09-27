@@ -65,7 +65,7 @@ class FileStatJob(
     /**
      * 统计文件后缀名和文件大小分布信息
      */
-    @Scheduled(cron = "00 30 00 * * ?")
+    @Scheduled(cron = "00 00 18 * * ?")
     @SchedulerLock(name = "FileStatJob", lockAtMostFor = "PT1H")
     fun statFileInfo() {
         logger.info("start to stat file info")
