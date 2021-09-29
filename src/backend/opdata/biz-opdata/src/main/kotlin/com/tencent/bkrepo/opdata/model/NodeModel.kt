@@ -31,15 +31,9 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.constant.B_0
-import com.tencent.bkrepo.opdata.constant.GB_1
-import com.tencent.bkrepo.opdata.constant.GB_10
-import com.tencent.bkrepo.opdata.constant.MB_100
-import com.tencent.bkrepo.opdata.constant.MB_500
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
-import java.lang.Exception
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -47,34 +41,14 @@ import org.springframework.stereotype.Service
 class NodeModel @Autowired constructor(
     private val nodeClient: NodeClient
 ) {
-    companion object {
-        private val sizeRange = listOf(B_0, MB_100, MB_500, GB_1, GB_10)
-    }
 
     fun getNodeSize(projectId: String, repoName: String): RepoMetrics {
         try {
-            val result = nodeClient.computeSize(projectId, repoName, "/").data
+            val result = nodeClient.computeSize(projectId, repoName, PathUtils.ROOT).data
                 ?: return RepoMetrics(repoName = repoName, size = 0L, num = 0L)
             return RepoMetrics(repoName = repoName, size = result.size, num = result.subNodeCount)
         } catch (ignored: Exception) {
             return RepoMetrics(repoName = repoName, size = 0L, num = 0L)
         }
-    }
-
-    fun getProjNodeSizeDistribution(projectId: String): Map<String, Long> {
-        return nodeClient.computeSizeDistribution(projectId, sizeRange, null).data ?: mapOf()
-    }
-
-    fun getRepoNodeSizeDistribution(projectId: String, repoName: String): Map<String, Long> {
-        return nodeClient.computeSizeDistribution(projectId, sizeRange, repoName).data ?: mapOf()
-    }
-
-    fun getFileExtensions(projectId: String, repoName: String?): List<String> {
-        return nodeClient.getFileExtensions(projectId, repoName).data ?: listOf()
-    }
-
-    fun getFileExtensionStat(projectId: String, extension: String, repoName: String?): FileExtensionStatInfo {
-        return nodeClient.statFileExtension(projectId, extension, repoName).data
-            ?: FileExtensionStatInfo(projectId, repoName, extension, 0L, 0L)
     }
 }

@@ -33,7 +33,6 @@ package com.tencent.bkrepo.opdata.model
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 
 @Service
@@ -49,8 +48,7 @@ class NodeCollectionModel @Autowired constructor(
         val result = mutableMapOf<String, Long>()
         for (i in 0..SHARDING_COUNT) {
             val collection = "${COLLECTION_NAME}_$i"
-            val count = mongoTemplate.count(Query(), collection)
-            result[collection] = count
+            result[collection] = mongoTemplate.getCollection(collection).estimatedDocumentCount()
         }
         return result
     }

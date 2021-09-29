@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.nuget.service.impl
 
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
@@ -15,11 +16,11 @@ class NugetPackageContentServiceImpl(
     private val packageClient: PackageClient
 ) : NugetPackageContentService, ArtifactService() {
     override fun downloadPackageContent(artifactInfo: NugetDownloadArtifactInfo) {
-        // repository.download(ArtifactDownloadContext())
+        repository.download(ArtifactDownloadContext())
     }
 
     override fun downloadPackageManifest(artifactInfo: NugetDownloadArtifactInfo) {
-        // repository.download(ArtifactDownloadContext())
+        repository.download(ArtifactDownloadContext())
     }
 
     override fun packageVersions(artifactInfo: NugetArtifactInfo, packageId: String): VersionListResponse {

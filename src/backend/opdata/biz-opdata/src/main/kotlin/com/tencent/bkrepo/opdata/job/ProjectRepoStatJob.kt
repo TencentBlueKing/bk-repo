@@ -90,6 +90,7 @@ class ProjectRepoStatJob(
         }
         inluxdDb.write(batchPoints)
         inluxdDb.close()
+        logger.info("stat project metrics done")
     }
 
     companion object {

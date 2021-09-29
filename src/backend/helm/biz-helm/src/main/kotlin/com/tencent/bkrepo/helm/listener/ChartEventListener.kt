@@ -27,68 +27,104 @@
 
 package com.tencent.bkrepo.helm.listener
 
-import com.tencent.bkrepo.helm.exception.HelmException
+import com.tencent.bkrepo.common.api.util.toYamlString
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
+import com.tencent.bkrepo.helm.constants.buildRedisKey
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
-import com.tencent.bkrepo.helm.model.metadata.HelmChartMetadata
-import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.chart.ChartDeleteRequest
+import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
+import com.tencent.bkrepo.helm.pool.HelmThreadPoolExecutor
 import com.tencent.bkrepo.helm.utils.HelmUtils
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.SortedSet
+import java.util.concurrent.ThreadPoolExecutor
 
 @Component
-class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeClient) {
+class ChartEventListener(
+    private val redisOperation: RedisOperation
+) : AbstractEventListener() {
+
+    private val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
+    private val objectLock = Object()
 
     /**
      * 删除chart版本，更新index.yaml文件
      */
-    @Synchronized
     @EventListener(ChartVersionDeleteEvent::class)
     fun handle(event: ChartVersionDeleteEvent) {
         // 如果index.yaml文件不存在，说明还没有初始化该文件，return
         // 如果index.yaml文件存在，则进行更新
         with(event.request) {
-            try {
-                if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
-                    logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
-                    return
+            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+                logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
+                return
+            }
+            val task = {
+                val lockKey = buildRedisKey(projectId, repoName)
+                val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
+                val isLocked = try {
+                    lock.tryLock()
+                } catch (exception: RuntimeException) {
+                    false
                 }
-                val originalIndexYamlMetadata = freshIndexYamlForDelete(this)
-                uploadIndexYamlMetadata(originalIndexYamlMetadata)
+                if (isLocked) {
+                    logger.info("execute update index yaml for delete package [$name], version [$version]" +
+                        " with redis distribute lock [$lockKey].")
+                    lock.use {
+                        doRefreshIndexForDeleteVersion(this)
+                    }
+                } else {
+                    logger.info("execute update index yaml for delete package [$name], version [$version]" +
+                        " with synchronized lock [$objectLock].")
+                    synchronized(objectLock) {
+                        doRefreshIndexForDeleteVersion(this)
+                    }
+                }
+            }
+            threadPoolExecutor.submit(task)
+        }
+    }
+
+    private fun doRefreshIndexForDeleteVersion(chartVersionDeleteRequest: ChartVersionDeleteRequest) {
+        with(chartVersionDeleteRequest) {
+            try {
+                val originalIndexYamlMetadata = getOriginalIndexYaml(projectId, repoName)
+                val entries = originalIndexYamlMetadata.entries
+                // 如果不包含该包或者该版本说明索引还未刷新
+                if (!entries.containsKey(name)) return
+                if (entries[name].orEmpty().none { it.version == version }) return
+                val chartMetadataSet = entries[name]!!
+                if (chartMetadataSet.size == 1 && (version == chartMetadataSet.first().version)) {
+                    entries.remove(name)
+                } else {
+                    updateIndexYaml(version, chartMetadataSet)
+                }
+                val (artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
+                    originalIndexYamlMetadata, this
+                )
+                uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
                 logger.info(
                     "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
-                            "in repo [$projectId/$repoName] success!"
+                        "in repo [$projectId/$repoName] success!"
                 )
             } catch (exception: TypeCastException) {
                 logger.error(
                     "User [$operator] fresh index.yaml for delete chart [$name], version [$version] " +
-                            "in repo [$projectId/$repoName] failed, message: $exception"
+                        "in repo [$projectId/$repoName] failed, message: $exception"
                 )
                 throw exception
             }
-        }
-    }
-
-    private fun freshIndexYamlForDelete(request: ChartVersionDeleteRequest): HelmIndexYamlMetadata {
-        with(request) {
-            val originalIndexYamlMetadata = getOriginalIndexYaml()
-            originalIndexYamlMetadata.entries.let {
-                val chartMetadataSet =
-                    it[name] ?: throw HelmException(
-                        "index.yaml file for chart [$name] not found in repo [$projectId/$repoName]."
-                    )
-                if (chartMetadataSet.size == 1 && (version == chartMetadataSet.first().version)) {
-                    it.remove(name)
-                } else {
-                    updateIndexYaml(version, chartMetadataSet)
-                }
-            }
-            return originalIndexYamlMetadata
         }
     }
 
@@ -103,29 +139,82 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
         }
     }
 
+    private fun buildFileAndNodeCreateRequest(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        request: ChartDeleteRequest
+    ): Pair<ArtifactFile, NodeCreateRequest> {
+        val artifactFile = ArtifactFileFactory.build(indexYamlMetadata.toYamlString().byteInputStream())
+        val nodeCreateRequest = with(request) {
+            NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = HelmUtils.getIndexYamlFullPath(),
+                size = artifactFile.getSize(),
+                sha256 = artifactFile.getFileSha256(),
+                md5 = artifactFile.getFileMd5(),
+                overwrite = true,
+                operator = operator
+            )
+        }
+        return Pair(artifactFile, nodeCreateRequest)
+    }
+
     /**
      * 删除chart版本，更新index.yaml文件
      */
-    @Synchronized
     @EventListener(ChartDeleteEvent::class)
     fun handle(event: ChartDeleteEvent) {
-        with(event.request) {
-            try {
-                if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
-                    logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
-                    return
+        with(event.requestPackage) {
+            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+                logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
+                return
+            }
+            val task = {
+                val lockKey = buildRedisKey(projectId, repoName)
+                val lock = RedisLock(redisOperation, lockKey, expiredTimeInSeconds)
+                val isLocked = try {
+                    lock.tryLock()
+                } catch (exception: RuntimeException) {
+                    false
                 }
-                val originalIndexYamlMetadata = getOriginalIndexYaml()
+                if (isLocked) {
+                    logger.info("execute update index yaml for delete package [$name] " +
+                        "with redis distribute lock [$lockKey].")
+                    lock.use {
+                        doRefreshIndexForDeletePackage(this)
+                    }
+                } else {
+                    logger.info("execute update index yaml for delete package [$name] " +
+                        "with synchronized lock [$objectLock].")
+                    synchronized(objectLock) {
+                        doRefreshIndexForDeletePackage(this)
+                    }
+                }
+            }
+            threadPoolExecutor.submit(task)
+        }
+    }
+
+    private fun doRefreshIndexForDeletePackage(chartPackageDeleteRequest: ChartPackageDeleteRequest) {
+        with(chartPackageDeleteRequest) {
+            try {
+                val originalIndexYamlMetadata = getOriginalIndexYaml(projectId, repoName)
+                // 需要进行判断，如果是上传的包索引延迟刷新导致这里里面可能没这条数据
+                if (!originalIndexYamlMetadata.entries.containsKey(name)) return
                 originalIndexYamlMetadata.entries.remove(name)
-                uploadIndexYamlMetadata(originalIndexYamlMetadata)
+                val (artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
+                    originalIndexYamlMetadata, this
+                )
+                uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
                 logger.info(
                     "User [$operator] fresh index.yaml for delete chart [$name] " +
-                            "in repo [$projectId/$repoName] success!"
+                        "in repo [$projectId/$repoName] success!"
                 )
             } catch (exception: TypeCastException) {
                 logger.error(
                     "User [$operator] fresh index.yaml for delete chart [$name] " +
-                            "in repo [$projectId/$repoName] failed, message: $exception"
+                        "in repo [$projectId/$repoName] failed, message: $exception"
                 )
                 throw exception
             }
@@ -134,5 +223,10 @@ class ChartEventListener(nodeClient: NodeClient) : AbstractEventListener(nodeCli
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(ChartEventListener::class.java)
+
+        /**
+         * 定义Redis过期时间
+         */
+        private const val expiredTimeInSeconds: Long = 5 * 60 * 1000L
     }
 }

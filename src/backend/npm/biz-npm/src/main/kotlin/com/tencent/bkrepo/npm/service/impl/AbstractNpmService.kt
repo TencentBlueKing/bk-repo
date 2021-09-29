@@ -79,7 +79,7 @@ open class AbstractNpmService {
     }
 
     /**
-     * check node exists
+     * check package exists
      */
     fun packageExist(projectId: String, repoName: String, key: String): Boolean {
         return packageClient.findPackageByKey(projectId, repoName, key).data?.let { true } ?: false
@@ -93,7 +93,7 @@ open class AbstractNpmService {
     }
 
     /**
-     * check package version exists
+     * check package history version exists
      */
     fun packageHistoryVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
         val packageSummary = packageClient.findPackageByKey(projectId, repoName, key).data ?: return false

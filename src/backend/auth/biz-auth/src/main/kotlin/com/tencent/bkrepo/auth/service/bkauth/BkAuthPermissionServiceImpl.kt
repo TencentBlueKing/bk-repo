@@ -85,7 +85,7 @@ class BkAuthPermissionServiceImpl constructor(
             logger.debug("check devops permission request [$request]")
 
             // project权限
-            if (request.resourceType == ResourceType.PROJECT) {
+            if (request.resourceType == ResourceType.PROJECT.toString()) {
                 // devops直接放过
                 if (request.appId == bkAuthConfig.devopsAppId) return true
                 // 其它请求校验项目权限
@@ -121,20 +121,22 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkReportPermission(action: PermissionAction): Boolean {
-        return action == PermissionAction.READ || action == PermissionAction.WRITE || action == PermissionAction.VIEW
+    private fun checkReportPermission(action: String): Boolean {
+        return action == PermissionAction.READ.toString() ||
+            action == PermissionAction.WRITE.toString() ||
+            action == PermissionAction.VIEW.toString()
     }
 
     private fun checkPipelinePermission(
         uid: String,
         projectId: String,
         path: String?,
-        resourceType: ResourceType,
-        action: PermissionAction
+        resourceType: String,
+        action: String
     ): Boolean {
         return when (resourceType) {
-            ResourceType.REPO -> checkProjectPermission(uid, projectId, action)
-            ResourceType.NODE -> {
+            ResourceType.REPO.toString() -> checkProjectPermission(uid, projectId, action)
+            ResourceType.NODE.toString() -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
                 checkPipelinePermission(uid, projectId, pipelineId, action)
             }
@@ -142,12 +144,7 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkPipelinePermission(
-        uid: String,
-        projectId: String,
-        pipelineId: String,
-        action: PermissionAction
-    ): Boolean {
+    private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String, action: String): Boolean {
         logger.debug(
             "checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
                 "permissionAction: $action"
@@ -161,7 +158,7 @@ class BkAuthPermissionServiceImpl constructor(
         }
     }
 
-    private fun checkProjectPermission(uid: String, projectId: String, action: PermissionAction): Boolean {
+    private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
         logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, permissionAction: $action")
         return try {
             bkAuthProjectService.isProjectMember(uid, projectId, action, retryIfTokenInvalid = true)
@@ -231,8 +228,8 @@ class BkAuthPermissionServiceImpl constructor(
     private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
         return CheckPermissionRequest(
             uid = userId,
-            resourceType = ResourceType.PROJECT,
-            action = PermissionAction.READ,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.READ.toString(),
             projectId = projectId,
             appId = appId
         )
