@@ -33,9 +33,13 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.maven.FILENAME_REGEX
+import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import org.apache.commons.lang.StringUtils
+import org.apache.maven.model.InputLocation
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.regex.Pattern
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -51,7 +55,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             MavenArtifactInfo(projectId, repoName, artifactUri)
         // 仅当上传jar包时校验地址格式
         val fileName = artifactUri.substringAfterLast("/")
-        if (fileName.matches(Regex("(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip)\$"))) {
+        if (fileName.matches(Regex(PACKAGE_SUFFIX_REGEX))) {
             val paths = artifactUri.removePrefix("/").removeSuffix("/").split("/")
             if (paths.size < pathMinLimit) {
                 logger.debug(
@@ -62,8 +66,11 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             }
             var pos = paths.size - groupMark
             mavenArtifactInfo.jarName = paths.last()
-            mavenArtifactInfo.versionId = paths[pos--]
-            mavenArtifactInfo.artifactId = paths[pos]
+            mavenArtifactInfo.artifactId = paths[--pos]
+            val matcher = Pattern.compile(String.format(FILENAME_REGEX, paths[pos])).matcher(paths.last())
+            if (matcher.find()) {
+                mavenArtifactInfo.versionId = matcher.group(1)
+            }
             val groupCollection = paths.subList(0, pos)
             mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
 
