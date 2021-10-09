@@ -32,9 +32,11 @@
 package com.tencent.bkrepo.common.storage.util
 
 import java.io.File
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 
 fun String.toPath(): Path = Paths.get(this)
 
@@ -50,4 +52,14 @@ fun Path.createFile(): File {
         }
     }
     return this.toFile()
+}
+
+fun Path.createNewOutputStream(): OutputStream {
+    if (!Files.isDirectory(this.parent)) {
+        Files.createDirectories(this.parent)
+    }
+    return Files.newOutputStream(
+        this,
+        StandardOpenOption.CREATE_NEW
+    )
 }
