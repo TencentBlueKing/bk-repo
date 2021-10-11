@@ -73,13 +73,13 @@ open class NodeMoveCopySupport(
     override fun moveNode(moveRequest: NodeMoveCopyRequest) {
         moveCopy(moveRequest, true)
         publishEvent(NodeEventFactory.buildMovedEvent(moveRequest))
-        logger.info("Move node success: [$this]")
+        logger.info("Move node success: [$moveRequest]")
     }
 
     override fun copyNode(copyRequest: NodeMoveCopyRequest) {
         moveCopy(copyRequest, false)
         publishEvent(NodeEventFactory.buildCopiedEvent(copyRequest))
-        logger.info("Copy node success: [$this]")
+        logger.info("Copy node success: [$copyRequest]")
     }
 
     /**

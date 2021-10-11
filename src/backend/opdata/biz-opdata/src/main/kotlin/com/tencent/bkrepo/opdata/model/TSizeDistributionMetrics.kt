@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.nuget.constant
+package com.tencent.bkrepo.opdata.model
 
-const val REPO_TYPE = "NUGET"
+import org.springframework.data.mongodb.core.mapping.Document
 
-const val ID = "id"
-const val VERSION = "version"
-const val LOWER_VERSION = "lowerVersion"
-const val UPPER_VERSION = "upperVersion"
-const val PACKAGE = "package"
-
-const val METADATA = "nuget_metadata"
-
-const val REMOTE_URL = "remote_url"
-
-const val NUGET_V3_NOT_FOUND =
-    """
-    <Error>
-        <Code>BlobNotFound</Code>
-        <Message>
-            The specified blob does not exist.
-        </Message>
-    </Error>
-"""
+@Document("size_distribution_metrics")
+data class TSizeDistributionMetrics(
+    val projectId: String,
+    val repoName: String,
+    val sizeDistribution: Map<String, Long>
+)

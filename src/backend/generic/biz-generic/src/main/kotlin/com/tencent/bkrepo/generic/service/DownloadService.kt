@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
@@ -57,7 +57,7 @@ class DownloadService(
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw ArtifactNotFoundException(getArtifactFullPath())
+                ?: throw NodeNotFoundException(getArtifactFullPath())
             val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
             if (node.folder && !download) {
                 renderListView(node, this)

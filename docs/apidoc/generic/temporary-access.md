@@ -123,7 +123,7 @@
     "projectId": "test",
     "repoName": "generic-local",
     "fullPath": "/path/file",
-    "url": "http://bkrepo.com/generic/temporary/test/generic-local/path/file?token=xxx",
+    "url": "http://bkrepo.example.com/generic/temporary/test/generic-local/path/file?token=xxx",
     "authorizedUserSet": ["user1", "user2"],
     "authorizedIpSet": ["127.0.0.1", "192.168.191.1"],
     "expireDate": "2020-02-02T02:02:02.002",

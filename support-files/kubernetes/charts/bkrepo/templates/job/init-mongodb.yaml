@@ -24,7 +24,7 @@ spec:
       {{- if .Values.mongodb.enabled }}
       initContainers:
         - name: wait-for-mongodb
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.init.mongodb.image.pullPolicy }}
           command:
             - "/bin/sh"
@@ -39,7 +39,7 @@ spec:
       {{- end }}
       containers:
         - name: init-mongodb
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.mongodb.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.init.mongodb.image.pullPolicy }}
           command: ['/bin/sh','-c','/data/workspace/init-mongodb.sh']
           env:

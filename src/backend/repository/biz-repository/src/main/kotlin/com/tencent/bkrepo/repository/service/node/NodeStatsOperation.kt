@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.repository.service.node
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.FileExtensionStatInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import org.springframework.data.mongodb.core.query.Criteria
 
@@ -55,19 +54,4 @@ interface NodeStatsOperation {
      * 聚合查询节点大小
      */
     fun aggregateComputeSize(criteria: Criteria): Long
-
-    /**
-     * 计算文件大小分布
-     */
-    fun computeSizeDistribution(projectId: String, range: List<Long>, repoName: String?): Map<String, Long>
-
-    /**
-     * 查询文件的后缀名
-     */
-    fun getFileExtensions(projectId: String, repoName: String?): List<String>
-
-    /**
-     * 根据文件后缀名统计文件数量，大小
-     */
-    fun statFileExtension(projectId: String, extension: String, repoName: String?): FileExtensionStatInfo
 }

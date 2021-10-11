@@ -31,11 +31,16 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.IOException
 import java.nio.file.Path
 import java.time.Duration
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
+import kotlin.random.Random
 
 internal class StorageHealthMonitorTest {
 
@@ -133,5 +138,52 @@ internal class StorageHealthMonitorTest {
 
         TimeUnit.SECONDS.sleep(60)
         monitor.stop()
+    }
+
+    @DisplayName("测试并发情况下的观察者的变更与通知")
+    @Test
+    fun testConcurrentOperateObservers() {
+        val monitor = StorageHealthMonitor(storageProperties)
+        val observer = object : StorageHealthMonitor.Observer {
+            override fun unhealthy(fallbackPath: Path?, reason: String?) {
+                println("change to unhealthy")
+            }
+
+            override fun restore(monitor: StorageHealthMonitor) {
+                println("restore")
+            }
+        }
+        val operateThreadNum = 10
+        val latch = CountDownLatch(operateThreadNum + 1)
+        // 模拟监控线程
+        thread {
+            assertDoesNotThrow {
+                repeat(10) { idx ->
+                    println("notify $idx")
+                    monitor.notifyObservers {
+                        it.unhealthy(null, null)
+                    }
+                    TimeUnit.NANOSECONDS.sleep(Random.nextLong(100, 500))
+                    monitor.notifyObservers {
+                        it.restore(monitor)
+                    }
+                }
+            }
+            latch.countDown()
+        }
+        // 模拟业务操作线程
+        repeat(operateThreadNum) {
+            thread {
+                assertDoesNotThrow {
+                    println("add observer $it")
+                    monitor.add(observer)
+                    TimeUnit.NANOSECONDS.sleep(Random.nextLong(500, 1000))
+                    println("remove observer $it")
+                    monitor.remove(observer)
+                }
+                latch.countDown()
+            }
+        }
+        latch.await()
     }
 }

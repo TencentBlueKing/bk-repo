@@ -63,6 +63,7 @@ import org.springframework.stereotype.Component
 class HelmLocalRepository : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
+        super.onUploadBefore(context)
         // 判断是否是强制上传
         val isForce = context.request.getParameter(FORCE)?.let { true } ?: false
         context.putAttribute(FORCE, isForce)

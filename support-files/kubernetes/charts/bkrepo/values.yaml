@@ -58,6 +58,7 @@ mongodb:
     password: bkrepo
   persistence:
     subPath: mongodb
+    size: 20Gi
         
 ## 如果mongodb.enabled为false，bkrepo将使用下面的参数连接外部mongodb
 externalMongodb:
@@ -91,11 +92,15 @@ init:
     image:
       registry: mirrors.tencent.com/bkrepo
       repository: bkrepo-init
-      tag: 1.0.13
+      tag: 1.0.14
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
 common:
+  # bkrepo镜像仓库全局配置, 具有最高优先级
+  imageRegistry: ""
+  # bkrepo镜像tag全局配置, 具有最高优先级
+  imageTag: ""
   ## 部署区域，可不填
   region: 
   ## jvm启动选项, 如-Xms1024M -Xmx1024M
@@ -126,7 +131,7 @@ common:
 ## 网关配置
 gateway:
   ## bkrepo 地址
-  host: bkrepo.com
+  host: bkrepo.example.com
   ## dns服务器地址，用于配置nginx resolver。local=on为openrestry语法，取本机/etc/resolv.conf配置
   dnsServer: local=on
   ## 网关访问微服务认证信息
@@ -144,7 +149,7 @@ gateway:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-gateway
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -160,7 +165,7 @@ gateway:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -181,7 +186,7 @@ repository:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-repository
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -197,7 +202,7 @@ repository:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -218,7 +223,7 @@ auth:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-auth
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -234,7 +239,7 @@ auth:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -254,7 +259,7 @@ generic:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-generic
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -270,7 +275,7 @@ generic:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -290,7 +295,7 @@ docker:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-docker
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -306,7 +311,7 @@ docker:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -326,7 +331,7 @@ npm:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-npm
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -342,7 +347,7 @@ npm:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -362,7 +367,7 @@ pypi:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-pypi
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -378,7 +383,7 @@ pypi:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""
@@ -398,7 +403,7 @@ helm:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-helm
-    tag: 1.0.13
+    tag: 1.0.14
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -414,7 +419,7 @@ helm:
     enabled: false
     fsGroup: 1001
   podAffinityPreset: ""
-  podAntiAffinityPreset: soft
+  podAntiAffinityPreset: ""
   nodeAffinityPreset:
     type: ""
     key: ""

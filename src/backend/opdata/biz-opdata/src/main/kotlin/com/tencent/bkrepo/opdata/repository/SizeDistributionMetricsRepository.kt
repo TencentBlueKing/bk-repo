@@ -25,30 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.opdata.repository
 
-import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.Tags
-import org.springframework.boot.actuate.metrics.web.servlet.DefaultWebMvcTagsProvider
-import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import com.tencent.bkrepo.opdata.model.TSizeDistributionMetrics
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-class CustomWebMvcTagsProvider : DefaultWebMvcTagsProvider() {
-
-    override fun getTags(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        handler: Any?,
-        exception: Throwable?
-    ): MutableIterable<Tag> {
-        return Tags.of(super.getTags(request, response, handler, exception))
-            .and(getPathParamAsTag(request))
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun getPathParamAsTag(request: HttpServletRequest): List<Tag> {
-        val tagsMap = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<String, String>
-        return tagsMap.map { Tag.of(it.key, it.value) }
-    }
+@Repository
+interface SizeDistributionMetricsRepository : MongoRepository<TSizeDistributionMetrics, String> {
+    fun findByProjectId(projectId: String): List<TSizeDistributionMetrics>
+    fun findByProjectIdAndRepoName(projectId: String, repoName: String): List<TSizeDistributionMetrics>
 }
