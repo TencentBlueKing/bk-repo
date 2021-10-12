@@ -415,7 +415,7 @@
     "message":null,
     "data":{
         "basic":{
-            "domain":"bkrepo.com",
+            "domain":"bkrepo.example.com",
             "size":2487,
             "version":"v1",
             "createdBy":"owen",

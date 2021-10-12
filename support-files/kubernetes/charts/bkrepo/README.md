@@ -87,7 +87,7 @@ $ helm uninstall bkrepo
 | `podLabels`                             | Add additional labels to the pod (evaluated as a template)                                                            | `nil`                                       |
 | `podAnnotations`                     | Pod annotations                                                                                                         | `{}` (evaluated as a template) |
 | `podAffinityPreset`                  | Pod affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                     | `""`                           |
-| `podAntiAffinityPreset`              | Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                | `soft`                         |
+| `podAntiAffinityPreset`              | Pod anti-affinity preset. Ignored if `affinity` is set. Allowed values: `soft` or `hard`                                | `""`                         |
 | `podSecurityContext.enabled`         | Enable pod security context                                                                                             | `true`                         |
 | `podSecurityContext.fsGroup`         | fsGroup ID for the pod                                                                                                  | `1001`                         |
 | `priorityClassName`                     | Define the priority class name for the pod.                                                        | `""`                                        |
@@ -152,6 +152,9 @@ $ helm uninstall bkrepo
 
 |参数|描述|默认值 |
 |---|---|---|
+| `common.imageRegistry` | bkrepo镜像仓库全局配置, 具有最高优先级 | `""` |
+| `common.imageTag` | bkrepo镜像tag全局配置, 具有最高优先级 | `""` |
+| `common.region` | 部署区域, 可不填 | `""` |
 | `common.jvmOption` | jvm启动选项, 如-Xms1024M -Xmx1024M | `""` |
 | `common.springProfile` | SpringBoot active profile | `dev` |
 | `common.username` | bkrepo初始用户名 | `admin` |
@@ -180,7 +183,7 @@ $ helm uninstall bkrepo
 | `gateway.service.type` | 服务类型 | `ClusterIP` |
 | `gateway.service.port` | 服务类型为`ClusterIP`时端口设置 | `80` |
 | `gateway.service.nodePort` | 服务类型为`NodePort`时端口设置 | `80` |
-| `gateway.host` | bkrepo 地址 | `bkrepo.com` |
+| `gateway.host` | bkrepo 地址 | `bkrepo.example.com` |
 | `gateway.dnsServer` | dns服务器地址，用于配置nginx resolver | `local=on`(openrestry语法，取本机`/etc/resolv.conf`配置) |
 | `gateway.authorization` | 网关访问微服务认证信息 | `"Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="` |
 | `gateway.deployMode` | 部署模式，standalone: 独立模式，ci: 与ci搭配模式 | `standalone` |
@@ -252,7 +255,7 @@ $ helm uninstall bkrepo
 ```shell
 $ helm install bkrepo bkee/bkrepo \
   --set global.imageRegistry=your.registry.com \
-  --set gateway.host=your.bkrepo.com
+  --set gateway.host=bkrepo.example.com
 ```
 
 
@@ -379,7 +382,7 @@ nginx-ingress-controller.enabled=false
 gateway.service.type=NodePort
 gateway.service.nodePort=30000
 ```
-部署成功后，即可通过 bkrepo.com:\<nodePort\> 访问（您仍需要配置dns解析）
+部署成功后，即可通过 bkrepo.example.com:\<nodePort\> 访问（您仍需要配置dns解析）
 
 - 使用port-forward访问
 ```
@@ -388,7 +391,7 @@ nginx-ingress-controller.enabled=false
 gateway.service.type=ClusterIP
 ```
 
-部署成功后，通过`kubectl port-forward`将`bkrepo-gateway`服务暴露出去，即可通过 bkrepo.com:\<port\> 访问（您仍需要配置dns解析）
+部署成功后，通过`kubectl port-forward`将`bkrepo-gateway`服务暴露出去，即可通过 bkrepo.example.com:\<port\> 访问（您仍需要配置dns解析）
 ```shell
 kubectl port-forward service/bkrepo-gateway <port>:80
 ```
