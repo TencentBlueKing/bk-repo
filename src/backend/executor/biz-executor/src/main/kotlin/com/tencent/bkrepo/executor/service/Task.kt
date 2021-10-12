@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.executor.service
 
-import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.executor.pojo.ArtifactScanContext
+import com.tencent.bkrepo.executor.pojo.TaskRunTimeConfig
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils
 
 /**
  * 任务执行入口
+ * TODO:任务是否启用单独的线程去处理
  */
 @Service
 class Task @Autowired constructor(
@@ -27,25 +28,26 @@ class Task @Autowired constructor(
     /**
      * 制品扫描任务触发接口
      */
-    fun run(context: ArtifactScanContext, taskId: String, rootDir: String): Boolean {
+    fun run(context: ArtifactScanContext, rootDir: String): Boolean {
+
+        //生成运行时环境
+        val cmd = buildRunTime(context.taskId)
 
         //生成文件
         loadFileToRunTime(context, rootDir)
 
-        //生成运行时环境
-        val cmd = buildRunTime(taskId)
         //执行任务
         if (cmd != null) {
-            val ll = exec(cmd)
+            runTask(cmd.execCmd)
             //采集输出
-            reportOutput()
+            reportOutput(cmd.outputDir)
             return true
         }
 
         return false
     }
 
-    private fun exec(cmd: String): Boolean {
+    private fun runTask(cmd: String): Boolean {
         try {
             val process = Runtime.getRuntime().exec(cmd)
             BufferedReader(InputStreamReader(process.inputStream))
@@ -60,7 +62,7 @@ class Task @Autowired constructor(
         return false
     }
 
-    private fun loadFileToRunTime(context: ArtifactScanContext, taskId: String, rootDir: String): String? {
+    private fun loadFileToRunTime(context: ArtifactScanContext, rootDir: String): String? {
         with(context) {
             try {
                 val repository = repositoryClient.getRepoDetail(projectId, repoName).data
@@ -90,21 +92,22 @@ class Task @Autowired constructor(
     }
 
 
-    private fun buildRunTime(taskId: String): String? {
+    private fun buildRunTime(taskId: String): TaskRunTimeConfig? {
 
         //生成命令行
-        val workDir = "/data"
-        val cmd = "docker run -it --rm -v $workDir/${taskId}:/data arrowhead /data/standalone.toml"
+        val workDir = "/data/${taskId}"
+        val cmd = "docker run -it --rm -v $workDir:/data arrowhead /data/standalone.toml"
+        val outputDir = "$workDir/output/"
 
         //生成workspace
         val workSpace = "mkdir -p /data/${taskId}"
-        if (exec(workSpace)) {
-            return cmd
+        if (runTask(workSpace)) {
+            return TaskRunTimeConfig(cmd, outputDir)
         }
         return null
     }
 
-    private fun reportOutput() {
+    private fun reportOutput(outputDir: String) {
 
     }
 
