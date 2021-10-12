@@ -73,6 +73,10 @@ open class PlatformAuthHandler(private val authenticationManager: Authentication
         val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
         val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
             .takeIf { it.isNotEmpty() }?.apply { checkUserId(this) } ?: ANONYMOUS_USER
+        if (userId == ANONYMOUS_USER) {
+            logger.warn("anonymous user, AUTH_HEADER_UID[${request.getHeader(AUTH_HEADER_UID)}], " +
+                "appId[$appId], requestUri: ${request.requestURI}")
+        }
         request.setAttribute(PLATFORM_KEY, appId)
         request.setAttribute(USER_KEY, userId)
         return userId
