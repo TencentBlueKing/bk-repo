@@ -45,8 +45,7 @@ object MavenGAVCUtils {
         return MavenGAVC(
             groupId,
             artifactId,
-            version,
-            null
+            version
         )
     }
 
@@ -55,6 +54,6 @@ object MavenGAVCUtils {
         val version = this.getParameter("version")
         val artifactId = packageKey.split(":").last()
         val groupId = packageKey.removePrefix("gav://").split(":")[0]
-        return MavenGAVC(groupId, artifactId, version, null)
+        return MavenGAVC(groupId, artifactId, version)
     }
 }
