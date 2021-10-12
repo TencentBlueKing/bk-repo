@@ -29,8 +29,10 @@ package com.tencent.bkrepo.common.storage.core.cache
 
 import com.tencent.bkrepo.common.artifact.stream.StreamReadListener
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
+import com.tencent.bkrepo.common.storage.util.createNewOutputStream
 import org.slf4j.LoggerFactory
 import java.io.OutputStream
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -43,16 +45,14 @@ import java.nio.file.StandardCopyOption
  * @param tempPath 临时路径
  *
  * 处理逻辑：
- * 1. 在临时目录创建一个"$filename.locked"目录(如果不存在)
- * 2. 在该目录下创建一个临时文件，文件名随机
- * 3. 数据写入该临时文件
- * 4. 数据写完毕后，将该文件move到[cachePath]位置
+ * 1. 在该目录下原子创建一个临时文件
+ * 2. 数据写入该临时文件
+ * 3. 数据写完毕后，将该文件move到[cachePath]位置
  *
  * 并发处理逻辑：对于同一个文件[filename]，可能存在多个并发下载请求触发缓存
- * 1. 首先判断目录"$filename.locked"是否存在，存在则跳过(说明此时有其它请求正在进行缓存)
+ * 1. 首先判断目录临时文件是否存在，存在则跳过(说明此时有其它请求正在进行缓存)
  * 2. 不存在则按照上述缓存逻辑执行
- * 3. 在极少数情况下第1、2存在并发问题，导致多个请求都进行缓存，
- *    但因为文件名随机，不同请求会缓存到不同文件，不会对结果造成影响，只会浪费一些流量
+ * 3. 在极少数情况下第1、2存在并发问题，导致多个请求都进行缓存,但只有原子创建文件成功的才可以进行缓存
  *
  */
 class CachedFileWriter(
@@ -61,19 +61,18 @@ class CachedFileWriter(
     tempPath: Path
 ) : StreamReadListener {
 
-    private val tempFileDirPath = tempPath.resolve(filename.plus(LOCK_SUFFIX))
-    private var tempFilePath: Path? = null
+    private var tempFilePath: Path = tempPath.resolve(filename)
     private var outputStream: OutputStream? = null
 
     init {
         try {
-            if (Files.isDirectory(tempFileDirPath)) {
-                logger.debug("Path[$tempFileDirPath] exists, ignore caching")
+            if (Files.exists(tempFilePath)) {
+                logger.debug("Path[$tempFilePath] exists, ignore caching")
             } else {
-                Files.createDirectories(tempFileDirPath)
-                tempFilePath = tempFileDirPath.resolve(filename)
-                outputStream = Files.newOutputStream(tempFilePath!!)
+                outputStream = tempFilePath.createNewOutputStream()
             }
+        } catch (ignore: FileAlreadyExistsException) {
+            // 如果目录或者文件已存在则忽略
         } catch (exception: Exception) {
             logger.error("initial CacheFileWriter error: $exception", exception)
             close()
@@ -108,10 +107,8 @@ class CachedFileWriter(
                 it.flush()
                 it.closeQuietly()
                 Files.createDirectories(cachePath)
-                Files.move(tempFilePath!!, cachePath.resolve(filename), StandardCopyOption.REPLACE_EXISTING)
+                Files.move(tempFilePath, cachePath.resolve(filename), StandardCopyOption.REPLACE_EXISTING)
                 logger.info("Success cache file $filename")
-            } catch (ignored: java.nio.file.NoSuchFileException) {
-                // ignored, 当多个缓存线程执行时，前者执行成功后会删除目录，导致后者失败
             } catch (exception: Exception) {
                 logger.warn("finish CacheFileWriter error: $exception")
             } finally {
@@ -124,11 +121,6 @@ class CachedFileWriter(
         outputStream?.let {
             try {
                 it.closeQuietly()
-                deleteTempDir()
-            } catch (ignored: java.nio.file.NoSuchFileException) {
-                // ignored, 当多个缓存线程执行时，前者执行成功后会删除目录，导致后者失败
-            } catch (ignored: java.nio.file.DirectoryNotEmptyException) {
-                deleteTempDir()
             } catch (exception: Exception) {
                 logger.error("close CacheFileWriter error: $exception", exception)
             } finally {
@@ -137,18 +129,7 @@ class CachedFileWriter(
         }
     }
 
-    /**
-     * 删除临时目录
-     */
-    private fun deleteTempDir() {
-        Files.list(tempFileDirPath).forEach {
-            Files.delete(it)
-        }
-        Files.deleteIfExists(tempFileDirPath)
-    }
-
     companion object {
-        private const val LOCK_SUFFIX = ".locked"
         private val logger = LoggerFactory.getLogger(CachedFileWriter::class.java)
     }
 }

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.Collections
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
@@ -85,7 +86,7 @@ class StorageHealthMonitor(
     /**
      * 观察者列表，当健康状况发生变化时会通知列表中的观察者
      */
-    private val observerList = mutableListOf<Observer>()
+    private val observerList = Collections.synchronizedList(mutableListOf<Observer>())
 
     /**
      * 记录当前连续检测成功次数
@@ -223,13 +224,19 @@ class StorageHealthMonitor(
             logger.error("Path[${getPrimaryPath()}] change to unhealthy, reason: $fallBackReason")
             fallBackTime = System.currentTimeMillis()
             // 通知观察者
-            for (observer in observerList) {
+            notifyObservers {
                 try {
-                    observer.unhealthy(getFallbackPath(), fallBackReason)
+                    it.unhealthy(getFallbackPath(), fallBackReason)
                 } catch (exception: Exception) {
                     logger.error("Failed to change observer: $exception", exception)
                 }
             }
+        }
+    }
+
+    fun notifyObservers(action: (Observer) -> Unit) {
+        synchronized(observerList) {
+            observerList.forEach { action(it) }
         }
     }
 
@@ -241,9 +248,9 @@ class StorageHealthMonitor(
             val duration = System.currentTimeMillis() - fallBackTime
             logger.info("Path[${getPrimaryPath()}] restore healthy, during: ${time(duration, TimeUnit.MILLISECONDS)}")
             // 通知观察者
-            for (observer in observerList) {
+            notifyObservers {
                 try {
-                    observer.restore(this)
+                    it.restore(this)
                 } catch (exception: Exception) {
                     logger.error("Failed to restore observer: $exception", exception)
                 }
