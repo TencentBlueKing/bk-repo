@@ -33,13 +33,10 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import com.tencent.bkrepo.maven.FILENAME_REGEX
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import org.apache.commons.lang.StringUtils
-import org.apache.maven.model.InputLocation
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import java.util.regex.Pattern
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -51,9 +48,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): MavenArtifactInfo {
-        val mavenArtifactInfo =
-            MavenArtifactInfo(projectId, repoName, artifactUri)
-        // 仅当上传jar包时校验地址格式
+        val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri)
         val fileName = artifactUri.substringAfterLast("/")
         if (fileName.matches(Regex(PACKAGE_SUFFIX_REGEX))) {
             val paths = artifactUri.removePrefix("/").removeSuffix("/").split("/")
@@ -66,11 +61,12 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             }
             var pos = paths.size - groupMark
             mavenArtifactInfo.jarName = paths.last()
-            mavenArtifactInfo.artifactId = paths[--pos]
-            val matcher = Pattern.compile(String.format(FILENAME_REGEX, paths[pos])).matcher(paths.last())
-            if (matcher.find()) {
-                mavenArtifactInfo.versionId = matcher.group(1)
-            }
+            /*以请求路径作为版本号
+            e.g. /com/apache/http/1.0/http-1.0.jar   version = 1.0
+            e.g. /com/apache/http/1.0-SNAPSHOT/http-1.0-20210928.064954-1.jar   version = 1.0-SNAPSHOT
+             */
+            mavenArtifactInfo.versionId = paths[pos--]
+            mavenArtifactInfo.artifactId = paths[pos]
             val groupCollection = paths.subList(0, pos)
             mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
 
