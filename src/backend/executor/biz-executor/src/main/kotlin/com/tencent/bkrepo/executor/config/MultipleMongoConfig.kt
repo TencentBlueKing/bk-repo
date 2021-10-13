@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.executor.config
 
-import com.mongodb.client.MongoClient
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -21,12 +20,12 @@ class MultipleMongoConfig {
 
     @Bean(name = ["secondaryMongoTemplate"])
     @Throws(Exception::class)
-    fun secondaryMongoTemplate(): MongoTemplate? {
+    fun secondaryMongoTemplate(): MongoTemplate {
         return MongoTemplate(secondaryFactory(getSecondary()))
     }
 
     @Bean
-    fun secondaryFactory(mongo: MongoProperties): MongoDatabaseFactory? {
+    fun secondaryFactory(mongo: MongoProperties): MongoDatabaseFactory {
         return SimpleMongoClientDatabaseFactory(mongo.uri)
     }
 }
