@@ -42,6 +42,5 @@ data class MavenPom(
     override val groupId: String,
     override val artifactId: String,
     override val version: String,
-    override val classifier: String?,
     val packaging: String?
-) : MavenGAVC(groupId, artifactId, version, classifier)
+) : MavenGAVC(groupId, artifactId, version)

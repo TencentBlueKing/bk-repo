@@ -33,6 +33,7 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -47,11 +48,9 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): MavenArtifactInfo {
-        val mavenArtifactInfo =
-            MavenArtifactInfo(projectId, repoName, artifactUri)
-        // 仅当上传jar包时校验地址格式
+        val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri)
         val fileName = artifactUri.substringAfterLast("/")
-        if (fileName.matches(Regex("(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip)\$"))) {
+        if (fileName.matches(Regex(PACKAGE_SUFFIX_REGEX))) {
             val paths = artifactUri.removePrefix("/").removeSuffix("/").split("/")
             if (paths.size < pathMinLimit) {
                 logger.debug(
@@ -62,6 +61,10 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             }
             var pos = paths.size - groupMark
             mavenArtifactInfo.jarName = paths.last()
+            /*以请求路径作为版本号
+            e.g. /com/apache/http/1.0/http-1.0.jar   version = 1.0
+            e.g. /com/apache/http/1.0-SNAPSHOT/http-1.0-20210928.064954-1.jar   version = 1.0-SNAPSHOT
+             */
             mavenArtifactInfo.versionId = paths[pos--]
             mavenArtifactInfo.artifactId = paths[pos]
             val groupCollection = paths.subList(0, pos)
