@@ -31,11 +31,7 @@
 
 package com.tencent.bkrepo.maven.artifact.repository
 
-import com.tencent.bkrepo.common.api.util.readXmlString
-import com.tencent.bkrepo.common.api.util.toXmlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.hash.md5
-import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -45,25 +41,30 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
-import com.tencent.bkrepo.maven.pojo.MavenMetadata
-import com.tencent.bkrepo.maven.pojo.MavenPom
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
+import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
 import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.apache.commons.lang.StringUtils
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
+import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.regex.Pattern
 
 @Component
@@ -86,13 +87,19 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
-        val regex = "(.)+-(.)+\\.(jar|war|tar|ear|ejb|rar|msi|rpm|tar\\.bz2|tar\\.gz|tbz|zip|pom)$"
-        val matcher = Pattern.compile(regex).matcher(context.artifactInfo.getArtifactFullPath())
+        val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(context.artifactInfo.getArtifactFullPath())
         if (matcher.find()) {
             val packaging = matcher.group(3)
             if (packaging == "pom") {
-                val mavenPom = context.getArtifactFile().getInputStream().readXmlString<MavenPom>()
-                if (StringUtils.isNotBlank(mavenPom.version) && mavenPom.packaging == "pom") {
+                val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
+                if (StringUtils.isNotBlank(mavenPomModel.version) &&
+                    mavenPomModel.packaging.equals("pom", ignoreCase = true)
+                ) {
+                    val mavenPom = MavenGAVC(
+                        groupId = mavenPomModel.groupId,
+                        artifactId = mavenPomModel.artifactId,
+                        version = mavenPomModel.version
+                    )
                     val node = buildMavenArtifactNode(context, packaging)
                     storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
                     createMavenVersion(context, mavenPom)
@@ -129,8 +136,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
 
     fun metadataNodeCreateRequest(
         context: ArtifactUploadContext,
-        fullPath: String,
-        metadataArtifact: ArtifactFile
+        fullPath: String
     ): NodeCreateRequest {
         val request = super.buildNodeCreateRequest(context)
         return request.copy(
@@ -141,7 +147,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
 
     fun updateMetadata(fullPath: String, metadataArtifact: ArtifactFile) {
         val uploadContext = ArtifactUploadContext(metadataArtifact)
-        val metadataNode = metadataNodeCreateRequest(uploadContext, fullPath, metadataArtifact)
+        val metadataNode = metadataNodeCreateRequest(uploadContext, fullPath)
         storageManager.storeArtifactFile(metadataNode, metadataArtifact, uploadContext.storageCredentials)
         logger.info("Success to save $fullPath, size: ${metadataArtifact.getSize()}")
     }
@@ -149,8 +155,6 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
     override fun remove(context: ArtifactRemoveContext) {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
-        val artifactId = packageKey.split(":").last()
-        val groupId = packageKey.removePrefix("gav://").split(":")[0]
         with(context.artifactInfo) {
             if (version.isNullOrBlank()) {
                 packageClient.deletePackage(
@@ -168,87 +172,99 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
             }
             logger.info("Success to delete $packageKey:$version")
         }
-        updateMetadataXml(context, groupId, artifactId, version)
+        executeDelete(context, packageKey, version)
+    }
+
+    private fun findMetadata(projectId: String, repoName: String, path: String): NodeDetail? {
+        return nodeClient.getNodeDetail(projectId, repoName, "/$path/maven-metadata.xml").data
     }
 
     /**
-     * 删除jar包时 对包一级目录下maven-metadata.xml 更新
+     * 删除jar包 关联文件 并修改该包的版本管理文件
      */
-    fun updateMetadataXml(context: ArtifactRemoveContext, groupId: String, artifactId: String, version: String?) {
-        val packageKey = context.request.getParameter("packageKey")
+    fun executeDelete(context: ArtifactRemoveContext, packageKey: String, version: String?) {
+        val artifactId = packageKey.split(":").last()
+        val groupId = packageKey.removePrefix("gav://").split(":")[0]
         val artifactPath = StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+        val versionPath = "$artifactPath/$version"
+        // 删除 `/{groupId}/{artifact}/` 目录
         if (version.isNullOrBlank()) {
             nodeClient.deleteNode(
                 NodeDeleteRequest(
                     context.projectId,
                     context.repoName,
-                    artifactPath,
+                    "/$artifactPath",
                     ArtifactRemoveContext().userId
                 )
             )
             return
+        } else {
+            nodeClient.deleteNode(
+                NodeDeleteRequest(
+                    context.projectId,
+                    context.repoName,
+                    "/$versionPath",
+                    ArtifactRemoveContext().userId
+                )
+            )
+            updateMetadata(context.projectId, context.repoName, artifactPath, version, context.userId)
+            return
         }
-        // 加载xml
-        with(context.artifactInfo) {
-            val nodeList = nodeClient.listNode(projectId, repoName, "/$artifactPath").data ?: return
-            val mavenMetadataNode = nodeList.filter { it.name == "maven-metadata.xml" }[0]
-            val artifactInputStream = storageService.load(
-                mavenMetadataNode.sha256!!,
-                Range.full(mavenMetadataNode.size),
+    }
+
+    /**
+     * [path] /groupId/artifactId
+     */
+    private fun updateMetadata(
+        projectId: String,
+        repoName: String,
+        path: String,
+        deleteVersion: String,
+        userId: String
+    ) {
+        // reference https://maven.apache.org/guides/getting-started/#what-is-a-snapshot-version
+        // 查找 `/groupId/artifactId/maven-metadata.xml`
+        val artifactMetadataNode = findMetadata(projectId, repoName, path)
+        artifactMetadataNode?.let { node ->
+            storageService.load(
+                node.sha256!!,
+                Range.full(node.size),
                 ArtifactRemoveContext().storageCredentials
-            ) ?: return
-            val xmlStr = String(artifactInputStream.readBytes())
-                .removePrefix("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-            val mavenMetadata = xmlStr.readXmlString<MavenMetadata>()
-            mavenMetadata.versioning.versions.version.removeIf { it == version }
-            // 当删除当前版本后不存在任一版本则删除整个包。
-            if (mavenMetadata.versioning.versions.version.size == 0) {
-                nodeClient.deleteNode(
-                    NodeDeleteRequest(
-                        projectId,
-                        repoName,
-                        artifactPath,
-                        ArtifactRemoveContext().userId
-                    )
-                )
-                packageClient.deletePackage(
-                    projectId,
-                    repoName,
-                    packageKey
-                )
-                return
-            } else {
-                nodeClient.deleteNode(
-                    NodeDeleteRequest(
-                        projectId,
-                        repoName,
-                        "$artifactPath/$version",
-                        ArtifactRemoveContext().userId
-                    )
-                )
-                mavenMetadata.versioning.release = mavenMetadata.versioning.versions.version.last()
-                val resultXml = mavenMetadata.toXmlString()
-                val resultXmlMd5 = resultXml.md5()
-                val resultXmlSha1 = resultXml.sha1()
-
-                val metadataArtifact = ByteArrayInputStream(resultXml.toByteArray()).use {
-                    ArtifactFileFactory.build(it)
+            ).use { artifactInputStream ->
+                // 更新 `/groupId/artifactId/maven-metadata.xml`
+                val mavenMetadata = MetadataXpp3Reader().read(artifactInputStream)
+                mavenMetadata.versioning.versions.remove(deleteVersion)
+                if (mavenMetadata.versioning.versions.size == 0) {
+                    nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, artifactMetadataNode.fullPath, userId))
+                    return
                 }
-                val metadataArtifactMd5 = ByteArrayInputStream(resultXmlMd5.toByteArray()).use {
-                    ArtifactFileFactory.build(it)
-                }
-                val metadataArtifactSha1 = ByteArrayInputStream(resultXmlSha1.toByteArray()).use {
-                    ArtifactFileFactory.build(it)
-                }
-
-                logger.warn("${metadataArtifact.getSize()}")
-                updateMetadata("$artifactPath/maven-metadata.xml", metadataArtifact)
-                metadataArtifact.delete()
-                updateMetadata("$artifactPath/maven-metadata.xml.md5", metadataArtifactMd5)
-                metadataArtifactMd5.delete()
-                updateMetadata("$artifactPath/maven-metadata.xml.sha1", metadataArtifactSha1)
-                metadataArtifactSha1.delete()
+                mavenMetadata.deleteVersioning()
+                storeMetadataXml(mavenMetadata, node)
             }
+        }
+    }
+
+    private fun storeMetadataXml(
+        mavenMetadata: org.apache.maven.artifact.repository.metadata.Metadata,
+        node: NodeDetail
+    ) {
+        ByteArrayOutputStream().use { metadata ->
+            MetadataXpp3Writer().write(metadata, mavenMetadata)
+            val artifactFile = ArtifactFileFactory.build(metadata.toByteArray().inputStream())
+            val resultXmlMd5 = artifactFile.getFileMd5()
+            val resultXmlSha1 = artifactFile.getFileSha1()
+            val metadataArtifactMd5 = ByteArrayInputStream(resultXmlMd5.toByteArray()).use {
+                ArtifactFileFactory.build(it)
+            }
+            val metadataArtifactSha1 = ByteArrayInputStream(resultXmlSha1.toByteArray()).use {
+                ArtifactFileFactory.build(it)
+            }
+            updateMetadata("${node.path}/maven-metadata.xml", artifactFile)
+            artifactFile.delete()
+            updateMetadata("${node.path}/maven-metadata.xml.md5", metadataArtifactMd5)
+            metadataArtifactMd5.delete()
+            updateMetadata("${node.path}/maven-metadata.xml.sha1", metadataArtifactSha1)
+            metadataArtifactSha1.delete()
         }
     }
 
