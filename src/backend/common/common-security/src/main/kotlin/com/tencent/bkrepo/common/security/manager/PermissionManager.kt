@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
@@ -181,6 +182,11 @@ open class PermissionManager(
         val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
+
+        if (userId == ANONYMOUS_USER) {
+            logger.warn("anonymous user, platform id[$platformId], " +
+                "requestUri: ${HttpContextHolder.getRequest().requestURI}")
+        }
 
         // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(

@@ -41,7 +41,6 @@ import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.CyclicBarrier
 import kotlin.concurrent.thread
 import kotlin.system.measureTimeMillis
 
@@ -65,20 +64,21 @@ internal class CachedFileWriterTest {
         val randomString = StringPool.randomString(size.toInt())
         val expectedSha256 = randomString.sha256()
         val count = 100
-        val cyclicBarrier = CyclicBarrier(count)
+        val readers = Runtime.getRuntime().availableProcessors()
         val threadList = mutableListOf<Thread>()
         measureTimeMillis {
-            repeat(count) {
+            repeat(readers) {
                 val thread = thread {
-                    cyclicBarrier.await()
-                    val inputStream = randomString.byteInputStream().artifactStream(Range.full(size))
-                    val out = ByteArrayOutputStream()
+                    repeat(count) {
+                        val inputStream = randomString.byteInputStream().artifactStream(Range.full(size))
+                        val out = ByteArrayOutputStream()
 
-                    val listener = CachedFileWriter(cachePath, filename, tempPath)
-                    inputStream.addListener(listener)
-                    inputStream.use { it.copyTo(out) }
-                    val toString = out.toString(Charset.defaultCharset().name())
-                    Assertions.assertEquals(expectedSha256, toString.sha256())
+                        val listener = CachedFileWriter(cachePath, filename, tempPath)
+                        inputStream.addListener(listener)
+                        inputStream.use { it.copyTo(out) }
+                        val toString = out.toString(Charset.defaultCharset().name())
+                        Assertions.assertEquals(expectedSha256, toString.sha256())
+                    }
                 }
                 threadList.add(thread)
             }
