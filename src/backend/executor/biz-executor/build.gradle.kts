@@ -32,7 +32,8 @@ dependencies {
     api(project(":repository:api-repository"))
     api(project(":common:common-job"))
     api(project(":common:common-stream"))
-    api(project(":common:common-storage"))
+    api(project(":common:common-service"))
+    api(project(":common:common-storage:storage-service"))
 
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }
