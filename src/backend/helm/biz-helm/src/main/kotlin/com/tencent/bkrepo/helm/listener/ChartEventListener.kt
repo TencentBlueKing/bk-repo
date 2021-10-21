@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.helm.constants.buildRedisKey
+import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
@@ -263,5 +263,7 @@ class ChartEventListener(
          * 定义Redis过期时间
          */
         private const val expiredTimeInSeconds: Long = 5 * 60 * 1000L
+
+        fun buildRedisKey(projectId: String, repoName: String): String = "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
     }
 }
