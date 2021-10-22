@@ -6,8 +6,10 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.DEPENDENCY
 import com.tencent.bkrepo.nuget.constant.FRAMEWORKS
+import com.tencent.bkrepo.nuget.constant.ID
 import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.REFERENCE
+import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
 import com.tencent.bkrepo.nuget.pojo.nuspec.DependencyGroup
 import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
@@ -42,6 +44,8 @@ class NugetPackageHandler {
                         "in repo [${getRepoIdentify()}]"
                 )
                 val metadata = mutableMapOf<String, Any>()
+                metadata[ID] = id
+                metadata[VERSION] = version
                 dependencies?.let { metadata[DEPENDENCY] = buildDependencies(it) }
                 references?.let { metadata[REFERENCE] = buildReferences(it) }
                 frameworkAssemblies?.let { metadata[FRAMEWORKS] = buildFrameworks(it) }

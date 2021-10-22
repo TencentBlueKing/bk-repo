@@ -2,7 +2,6 @@ package com.tencent.bkrepo.nuget.util
 
 import com.github.zafarkhaja.semver.Version
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
 import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
 import com.tencent.bkrepo.nuget.pojo.request.NugetSearchRequest
@@ -42,14 +41,14 @@ object NugetV3RegistrationUtils {
     }
 
     fun metadataToRegistrationPage(
-        metadataList: List<Map<String, Any>>,
+        sortedPackageVersionList: List<PackageVersion>,
         packageId: String,
         lowerVersion: String,
         upperVersion: String,
         v3RegistrationUrl: String
     ): RegistrationPage {
-        val registrationPageItemList = metadataList.stream().filter {
-            betweenVersions(lowerVersion, upperVersion, it[VERSION] as String)
+        val registrationPageItemList = sortedPackageVersionList.stream().filter {
+            betweenVersions(lowerVersion, upperVersion, it.name)
         }.map {
             metadataToRegistrationPageItem(it, v3RegistrationUrl)
         }.toList()
@@ -64,7 +63,7 @@ object NugetV3RegistrationUtils {
             NugetVersionUtils.compareSemVer(upperVersion, version) >= 0
     }
 
-    private fun registrationPageItemToRegistrationPage(
+    fun registrationPageItemToRegistrationPage(
         registrationPageItemList: List<RegistrationPageItem>,
         packageId: String,
         lowerVersion: String,
@@ -85,22 +84,23 @@ object NugetV3RegistrationUtils {
     }
 
     fun metadataToRegistrationIndex(
-        metadataList: List<Map<String, Any>>,
+        sortedPackageVersionList: List<PackageVersion>,
         v3RegistrationUrl: String
     ): RegistrationIndex {
-        val registrationLeafList = metadataList.stream().map {
+        val registrationLeafList = sortedPackageVersionList.stream().map {
             metadataToRegistrationPageItem(it, v3RegistrationUrl)
         }.toList()
         // 涉及到分页的问题需要处理
         return registrationPageItemToRegistrationIndex(registrationLeafList, v3RegistrationUrl)
     }
 
-    private fun metadataToRegistrationPageItem(
-        metadataMap: Map<String, Any>?,
+    fun metadataToRegistrationPageItem(
+        packageVersion: PackageVersion,
         v3RegistrationUrl: String
     ): RegistrationPageItem {
-        val writeValueAsString = JsonUtils.objectMapper.writeValueAsString(metadataMap)
-        val nuspecMetadata = JsonUtils.objectMapper.readValue(writeValueAsString, NuspecMetadata::class.java)
+//        val writeValueAsString = JsonUtils.objectMapper.writeValueAsString(metadataMap)
+//        val nuspecMetadata = JsonUtils.objectMapper.readValue(writeValueAsString, NuspecMetadata::class.java)
+        val nuspecMetadata = NugetUtils.resolveVersionMetadata(packageVersion)
         val registrationPageItemId =
             NugetUtils.buildRegistrationLeafUrl(v3RegistrationUrl, nuspecMetadata.id, nuspecMetadata.version)
         val packageContent =
@@ -155,7 +155,7 @@ object NugetV3RegistrationUtils {
         }
     }
 
-    private fun registrationPageItemToRegistrationIndex(
+    fun registrationPageItemToRegistrationIndex(
         registrationLeafList: List<RegistrationPageItem>,
         v3RegistrationUrl: String
     ): RegistrationIndex {
