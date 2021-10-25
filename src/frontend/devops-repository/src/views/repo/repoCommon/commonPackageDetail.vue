@@ -258,10 +258,10 @@
                 this.formDialog.show = false
             },
             downloadPackageHandler (row) {
-                const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}`
+                const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${row.name}&download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url + '&download=true',
+                        '/web' + url,
                         '_self'
                     )
                 }).catch(e => {
