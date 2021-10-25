@@ -76,17 +76,20 @@ open class PermissionManager(
      * @param action 动作
      * @param projectId 项目id
      * @param repoName 仓库名称
+     * @param public 仓库是否为public
+     * @param anonymous 是否允许匿名
      */
     open fun checkRepoPermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
-        public: Boolean? = null
+        public: Boolean? = null,
+        anonymous: Boolean = false
     ) {
         if (isReadPublicRepo(action, projectId, repoName, public)) {
             return
         }
-        checkPermission(ResourceType.REPO, action, projectId, repoName)
+        checkPermission(ResourceType.REPO, action, projectId, repoName, anonymous = anonymous)
     }
 
     /**
@@ -96,18 +99,20 @@ open class PermissionManager(
      * @param repoName 仓库名称
      * @param path 节点路径
      * @param public 仓库是否为public
+     * @param anonymous 是否允许匿名
      */
     open fun checkNodePermission(
         action: PermissionAction,
         projectId: String,
         repoName: String,
         path: String,
-        public: Boolean? = null
+        public: Boolean? = null,
+        anonymous: Boolean = false
     ) {
         if (isReadPublicRepo(action, projectId, repoName, public)) {
             return
         }
-        checkPermission(ResourceType.NODE, action, projectId, repoName, path)
+        checkPermission(ResourceType.NODE, action, projectId, repoName, path, anonymous)
     }
 
     /**
@@ -173,7 +178,8 @@ open class PermissionManager(
         action: PermissionAction,
         projectId: String? = null,
         repoName: String? = null,
-        path: String? = null
+        path: String? = null,
+        anonymous: Boolean = false
     ) {
         // 判断是否开启认证
         if (!httpAuthProperties.enabled) {
@@ -182,7 +188,9 @@ open class PermissionManager(
         val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
-
+        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
+            return
+        }
         if (userId == ANONYMOUS_USER) {
             logger.warn("anonymous user, platform id[$platformId], " +
                 "requestUri: ${HttpContextHolder.getRequest().requestURI}")
