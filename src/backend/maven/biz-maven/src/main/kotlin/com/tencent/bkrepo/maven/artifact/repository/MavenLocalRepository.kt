@@ -40,11 +40,13 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.ConflictException
@@ -159,6 +161,18 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
             }
         } else {
             super.onUpload(context)
+        }
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        with(context) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            node?.metadata?.get(HashType.SHA1.ext)?.let {
+                response.addHeader(X_CHECKSUM_SHA1, it.toString())
+            }
+            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            val responseName = artifactInfo.getResponseName()
+            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 
