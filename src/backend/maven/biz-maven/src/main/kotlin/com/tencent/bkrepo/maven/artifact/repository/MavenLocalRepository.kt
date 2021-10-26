@@ -31,7 +31,9 @@
 
 package com.tencent.bkrepo.maven.artifact.repository
 
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -43,11 +45,15 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.enum.HashType
+import com.tencent.bkrepo.maven.enum.MavenMessageCode
+import com.tencent.bkrepo.maven.exception.ConflictException
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
+import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.maven.util.StringUtils.formatSeparator
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
@@ -75,15 +81,54 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
      */
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val request = super.buildNodeCreateRequest(context)
-        return request.copy(overwrite = true)
+        val md5 = context.getArtifactMd5()
+        val sha1 = context.getArtifactSha1()
+        return request.copy(
+            overwrite = true,
+            metadata = mutableMapOf(
+                HashType.MD5.ext to md5,
+                HashType.SHA1.ext to sha1
+            )
+        )
     }
 
     private fun buildMavenArtifactNode(context: ArtifactUploadContext, packaging: String): NodeCreateRequest {
-        val request = super.buildNodeCreateRequest(context)
-        return request.copy(
-            overwrite = true,
-            metadata = mapOf("packaging" to packaging)
-        )
+        val request = buildNodeCreateRequest(context)
+        val metadata = request.metadata as? MutableMap
+        metadata?.set("packaging", packaging)
+        return request
+    }
+
+    override fun onUploadBefore(context: ArtifactUploadContext) {
+        for (hashType in HashType.values()) {
+            val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+            val suffix = ".${hashType.ext}"
+            val isDigestFile = artifactFullPath.endsWith(suffix)
+            if (isDigestFile) {
+                // 校验hash
+                validateDigest(hashType, context)
+                return
+            }
+        }
+    }
+
+    private fun validateDigest(
+        hashType: HashType,
+        context: ArtifactUploadContext
+    ) {
+        with(context) {
+            val suffix = ".${hashType.ext}"
+            val artifactFilePath = artifactInfo.getArtifactFullPath().removeSuffix(suffix)
+            val node =
+                nodeClient.getNodeDetail(projectId, repoName, artifactFilePath).data ?: throw NotFoundException(
+                    ArtifactMessageCode.NODE_NOT_FOUND, artifactFilePath
+                )
+            val serverDigest = node.metadata[hashType.ext].toString()
+            val clientDigest = MavenUtil.extractDigest(getArtifactFile().getInputStream())
+            if (clientDigest != serverDigest) {
+                throw ConflictException(MavenMessageCode.CHECKSUM_CONFLICT, clientDigest, serverDigest)
+            }
+        }
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
