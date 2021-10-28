@@ -141,7 +141,9 @@ class ChartManipulationServiceImpl(
         logger.info("handling delete chart version request: [$artifactInfo]")
         with(artifactInfo) {
             if (!packageVersionExist(projectId, repoName, packageName, version)) {
-                throw HelmFileNotFoundException("remove package $packageName failed: no such file or directory")
+                throw HelmFileNotFoundException(
+                    "remove package $packageName for version [$version] failed: no such file or directory"
+                )
             }
             repository.remove(ArtifactRemoveContext())
             publishEvent(ChartVersionDeleteEvent(

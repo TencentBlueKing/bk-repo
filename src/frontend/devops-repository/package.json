@@ -13,12 +13,12 @@
     "public:external": "cross-env NODE_ENV=external npm run public --"
   },
   "dependencies": {
-    "@icon-cool/bk-icon-devops": "0.0.6",
-    "axios": "^0.18.1",
+    "@icon-cool/bk-icon-devops": "^0.1.17",
+    "axios": "^0.21.1",
     "bk-magic-vue": "2.3.0",
     "clipboard": "^2.0.6",
+    "core-js": "3.10.0",
     "js-cookie": "^2.2.1",
-    "uuid": "^8.1.0",
     "vue": "^2.6.10",
     "vue-i18n": "^8.18.1",
     "vue-router": "^2.8.1",
@@ -26,15 +26,6 @@
     "vuex": "^2.4.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^10.0.2",
-    "babel-loader": "^7.1.2",
-    "babel-plugin-syntax-dynamic-import": "^6.18.0",
-    "babel-plugin-transform-object-assign": "^6.22.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.6.0",
-    "babel-preset-stage-2": "^6.24.1",
     "copy-webpack-plugin": "^4.0.1",
     "cross-env": "^5.0.5",
     "css-loader": "^0.28.7",
@@ -61,14 +52,5 @@
     "webpack": "^4.27.1",
     "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^3.1.10"
-  },
-  "engines": {
-    "node": ">= 4.0.0",
-    "npm": ">= 3.0.0"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not ie <= 8"
-  ]
+  }
 }

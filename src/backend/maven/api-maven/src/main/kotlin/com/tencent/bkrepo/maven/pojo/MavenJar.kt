@@ -5,6 +5,5 @@ data class MavenJar(
     override val groupId: String,
     override val artifactId: String,
     override val version: String,
-    override val classifier: String? = null,
     val packaging: String? = "jar"
-) : MavenGAVC(groupId, artifactId, version, classifier)
+) : MavenGAVC(groupId, artifactId, version)
