@@ -10,12 +10,17 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import com.tencent.bkrepo.repository.api.NodeClient
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
 class MavenExtService(
     private val nodeClient: NodeClient
 ) {
+
+    @Value("\${maven.domain:http://127.0.0.1:25803}")
+    val mavenDomain = ""
+
     fun gavc(
         projectId: String,
         g: String?,
@@ -29,7 +34,7 @@ class MavenExtService(
         }
         val result = buildGavcQuery(projectId, g, a, v, c, repos)
         val list = result.data?.records?.map {
-            MavenGAVCResponse.UriResult("/${it["projectId"]}/${it["repoName"]}${it["fullPath"]}")
+            MavenGAVCResponse.UriResult("$mavenDomain/${it["projectId"]}/${it["repoName"]}${it["fullPath"]}")
         }
         val page = Page(
             pageNumber = result.data!!.pageNumber,
