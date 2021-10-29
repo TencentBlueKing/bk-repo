@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
@@ -47,17 +48,17 @@ import java.io.InputStream
 @Component
 class ArtifactFileFactory(
     storageProperties: StorageProperties,
-    storageHealthMonitor: StorageHealthMonitor
+    storageHealthMonitorHelper: StorageHealthMonitorHelper
 ) {
 
     init {
-        monitor = storageHealthMonitor
+        monitorHelper = storageHealthMonitorHelper
         properties = storageProperties
     }
 
     companion object {
 
-        private lateinit var monitor: StorageHealthMonitor
+        private lateinit var monitorHelper: StorageHealthMonitorHelper
         private lateinit var properties: StorageProperties
 
         const val ARTIFACT_FILES = "artifact.files"
@@ -66,7 +67,7 @@ class ArtifactFileFactory(
          * 构造分块接收数据的artifact file
          */
         fun buildChunked(): ChunkedArtifactFile {
-            return ChunkedArtifactFile(monitor, properties, getStorageCredentials()).apply {
+            return ChunkedArtifactFile(getMonitor(), properties, getStorageCredentials()).apply {
                 track(this)
             }
         }
@@ -76,7 +77,7 @@ class ArtifactFileFactory(
          * @param inputStream 输入流
          */
         fun build(inputStream: InputStream): ArtifactFile {
-            return StreamArtifactFile(inputStream, monitor, properties, getStorageCredentials()).apply {
+            return StreamArtifactFile(inputStream, getMonitor(), properties, getStorageCredentials()).apply {
                 track(this)
             }
         }
@@ -95,7 +96,7 @@ class ArtifactFileFactory(
          * @param storageCredentials 存储凭证
          */
         fun build(multipartFile: MultipartFile, storageCredentials: StorageCredentials): ArtifactFile {
-            return MultipartArtifactFile(multipartFile, monitor, properties, storageCredentials).apply {
+            return MultipartArtifactFile(multipartFile, getMonitor(), properties, storageCredentials).apply {
                 track(this)
             }
         }
@@ -120,6 +121,10 @@ class ArtifactFileFactory(
                 attributes.setAttribute(ARTIFACT_FILES, artifactFileList, SCOPE_REQUEST)
             }
             artifactFileList.add(artifactFile)
+        }
+
+        private fun getMonitor(): StorageHealthMonitor {
+            return monitorHelper.getMonitor(properties, getStorageCredentials())
         }
     }
 }
