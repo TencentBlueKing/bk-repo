@@ -25,20 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.executor.config
 
-dependencies {
-    api(project(":executor:api-executor"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-stream"))
-    api(project(":common:common-service"))
-    api(project(":common:common-security"))
-    api(project(":common:common-storage:storage-service"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("com.github.docker-java:docker-java:3.2.5")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.5")
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.context.annotation.Configuration
 
+@Configuration
+class ExecutorConfigurer : ArtifactConfigurerSupport() {
 
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
+    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
+
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/scan")
+        }
+    }
 }
