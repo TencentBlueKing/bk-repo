@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.auth.repository
 
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
-import org.springframework.boot.actuate.health.AbstractHealthIndicator
-import org.springframework.boot.actuate.health.Health
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.auth.model.TKey
+import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.stereotype.Repository
 
-@Component("storageHealthIndicator")
-class StorageHealthIndicator(
-    private val monitorHelper: StorageHealthMonitorHelper
-) : AbstractHealthIndicator() {
-    override fun doHealthCheck(builder: Health.Builder) {
-        monitorHelper.all().forEach {
-            builder.withDetail("cfs-${it.path}", it.healthy.get())
-        }
-        builder.withDetail("cos", true)
-            .up()
-    }
+@Repository
+interface KeyRepository : MongoRepository<TKey, String> {
+    fun findByUserId(userId: String): List<TKey>
+    fun findByFingerprint(fingerprint: String): TKey?
 }

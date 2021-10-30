@@ -57,7 +57,7 @@ class StreamArtifactFileTest {
             receive = ReceiveProperties(fileSizeThreshold = DataSize.ofBytes(threshold)),
             monitor = MonitorProperties()
         )
-        val monitor = StorageHealthMonitor(storageProperties)
+        val monitor = StorageHealthMonitor(storageProperties, tempDir)
         return StreamArtifactFile(source, monitor, storageProperties, storageCredentials)
     }
 

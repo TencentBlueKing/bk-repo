@@ -69,11 +69,9 @@ class ChunkedArtifactFile(
     init {
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
-        if (storageCredentials == storageProperties.defaultStorageCredentials()) {
-            monitor.add(receiver)
-            if (!monitor.healthy.get()) {
-                receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
-            }
+        monitor.add(receiver)
+        if (!monitor.healthy.get()) {
+            receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
         }
     }
 
