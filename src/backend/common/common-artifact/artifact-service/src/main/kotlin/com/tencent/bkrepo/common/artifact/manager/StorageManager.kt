@@ -47,6 +47,7 @@ import com.tencent.bkrepo.replication.api.BlobReplicaClient
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -69,7 +70,8 @@ import org.slf4j.LoggerFactory
 class StorageManager(
     private val storageService: StorageService,
     private val nodeClient: NodeClient,
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    private val storageCredentialsClient: StorageCredentialsClient
 ) {
 
     /**
@@ -142,8 +144,8 @@ class StorageManager(
         val sha256 = node.sha256.orEmpty()
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
+            ?: loadFromCopyIfNecessary(node, range, storageCredentials)
     }
-
     /**
      * 加载ArtifactInputStream
      * 如果node为null，则返回null
@@ -154,6 +156,29 @@ class StorageManager(
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
         return loadArtifactInputStream(node?.nodeInfo, storageCredentials)
+    }
+
+    /**
+     * 因为支持快速copy，也就是说源节点的数据可能还未完全上传成功，
+     * 还在本地文件系统上，这时拷贝节点就会从源存储去加载数据。
+     * 当源节点数据已经上传到存储后，则进行真正的数据拷贝
+     * */
+    private fun loadFromCopyIfNecessary(
+        node: NodeInfo,
+        range: Range,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
+        node.copyFromCredentialsKey?.let {
+            val digest = node.sha256!!
+            logger.info("load data [$digest] from copy credentialsKey [$it]")
+            val fromCredentialsKey = storageCredentialsClient.findByKey(it).data
+            if (storageService.exist(digest, fromCredentialsKey)) {
+                logger.info("start copy data [$digest] from key[$it] to key[${storageCredentials?.key}]")
+                storageService.copy(digest, fromCredentialsKey, storageCredentials)
+            }
+            return storageService.load(digest, range, fromCredentialsKey)
+        }
+        return null
     }
 
     /**
