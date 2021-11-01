@@ -169,10 +169,10 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
     ) {
         with(context) {
             val suffix = ".${hashType.ext}"
-            val artifactFile = artifactInfo.getArtifactFullPath().removeSuffix(suffix)
+            val artifactFilePath = artifactInfo.getArtifactFullPath().removeSuffix(suffix)
             val node =
-                nodeClient.getNodeDetail(projectId, repoName, artifactFile).data ?: throw NotFoundException(
-                    ArtifactMessageCode.NODE_NOT_FOUND
+                nodeClient.getNodeDetail(projectId, repoName, artifactFilePath).data ?: throw NotFoundException(
+                    ArtifactMessageCode.NODE_NOT_FOUND, artifactFilePath
                 )
             val serverDigest = node.metadata[hashType.ext].toString()
             val clientDigest = MavenUtil.extractDigest(getArtifactFile().getInputStream())
