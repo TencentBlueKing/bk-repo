@@ -118,7 +118,7 @@ class WebHookExecutor(
         val log = buildWebHookLog(webHook, request, payload)
         httpClient.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, exception: IOException) {
-                logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] error.")
+                logger.error("Execute webhook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
                 buildWebHookFailedLog(log, startTimestamp, exception.message)
                 webHookLogDao.insert(log)
             }
