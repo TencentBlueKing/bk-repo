@@ -34,7 +34,6 @@ import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.UpdateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.WebHook
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
-import com.tencent.bkrepo.webhook.service.LogService
 import com.tencent.bkrepo.webhook.service.WebHookService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation

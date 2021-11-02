@@ -27,18 +27,12 @@
 
 package com.tencent.bkrepo.webhook.service.impl
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.executor.WebHookExecutor
 import com.tencent.bkrepo.webhook.model.TWebHookLog
 import com.tencent.bkrepo.webhook.pojo.ListWebHookLogOption
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import com.tencent.bkrepo.webhook.service.LogService
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
