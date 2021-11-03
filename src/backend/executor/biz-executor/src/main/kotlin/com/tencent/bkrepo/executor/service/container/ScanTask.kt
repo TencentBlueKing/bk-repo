@@ -11,6 +11,7 @@ import com.tencent.bkrepo.executor.pojo.context.FileScanContext
 import com.tencent.bkrepo.executor.pojo.context.RepoScanContext
 import com.tencent.bkrepo.executor.pojo.ReportScanRecord
 import com.tencent.bkrepo.executor.pojo.response.FileScanResponse
+import com.tencent.bkrepo.executor.pojo.response.TaskRunResponse
 import com.tencent.bkrepo.executor.service.Task
 import com.tencent.bkrepo.executor.util.BashUtil
 import com.tencent.bkrepo.executor.util.DockerUtil
@@ -45,47 +46,18 @@ class ScanTask @Autowired constructor(
     @Autowired
     lateinit var scanReport: ScanReport
 
-    /**
-     * 文件制品扫描任务入口
-     */
-    override fun runFile(context: FileScanContext): FileScanResponse {
-        var result = false
-        measureTimeMillis {
+
+    override fun runFile(context: FileScanContext): String {
+        val task = {
             logger.info("start to run file [$context]")
             val workDir = "${context.config.rootDir}/${context.taskId}"
             val outputDir = "$workDir${context.config.outputDir}"
-            result = scanFile(context, workDir)
+            val result = scanFile(context, workDir)
             reportOutput(context, outputDir, result)
-        }.apply {
             logger.info("finish  run file [$context] [$result]")
-            return (FileScanResponse(context.taskId, result, this))
         }
-    }
-
-    private fun scanFile(context: FileScanContext, workDir: String): Boolean {
-        val taskId = context.taskId
-
-        // 生成存储表
-        buildReportStore(taskId)
-
-        // 生成运行时环境
-        val runConfig = buildRunTime(workDir)
-        if (!runConfig) {
-            logger.warn("build runtime fail [$context]")
-            return false
-        }
-
-        // 生成扫描文件
-        val sha256 = loadFileToRunTime(context, workDir) ?: run {
-            logger.warn("load file fail [$context]")
-            return false
-        }
-        // 生成配置文件
-        if (!loadConfigFile(taskId, workDir, context.config, sha256)) {
-            logger.warn("load config file fail [$context]")
-            return false
-        }
-        return dockerUtil.runContainerOnce(workDir)
+        executor.submit(task)
+        return context.taskId
     }
 
     /**
@@ -119,6 +91,39 @@ class ScanTask @Autowired constructor(
             pageNumber++
         }
         return context.taskId
+    }
+
+    override fun getTaskStatus(taskId: String, pageNum: Int?, pageSize: Int?): TaskRunResponse {
+        if (pageNum == null || pageSize == null) {
+
+            return TaskRunResponse
+        }
+    }
+
+    private fun scanFile(context: FileScanContext, workDir: String): Boolean {
+        val taskId = context.taskId
+
+        // 生成存储表
+        buildReportStore(taskId)
+
+        // 生成运行时环境
+        val runConfig = buildRunTime(workDir)
+        if (!runConfig) {
+            logger.warn("build runtime fail [$context]")
+            return false
+        }
+
+        // 生成扫描文件
+        val sha256 = loadFileToRunTime(context, workDir) ?: run {
+            logger.warn("load file fail [$context]")
+            return false
+        }
+        // 生成配置文件
+        if (!loadConfigFile(taskId, workDir, context.config, sha256)) {
+            logger.warn("load config file fail [$context]")
+            return false
+        }
+        return dockerUtil.runContainerOnce(workDir)
     }
 
     private fun buildQueryModel(context: RepoScanContext, pageNumber: Int, pageSize: Int): NodeQueryBuilder {

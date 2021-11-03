@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.executor.model
 
 import com.tencent.bkrepo.executor.pojo.ReportScanRecord
+import com.tencent.bkrepo.executor.pojo.context.ScanTaskContext
 import org.bson.Document
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -29,6 +30,12 @@ class ScanReport {
         )
         mongoTemplate.getCollection(collectionName).drop()
         mongoTemplate.indexOps(collectionName).ensureIndex(indexDefinition)
+    }
+
+    fun setTaskStatus(context: ScanTaskContext) {
+        with(context) {
+            val collectionName = getCollectionName(taskId, reportName)
+        }
     }
 
     private fun getCollectionName(taskId: String, reportName: String): String {

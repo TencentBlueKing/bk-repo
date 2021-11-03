@@ -12,10 +12,9 @@ import com.tencent.bkrepo.executor.pojo.request.RepoScanRequest
 import com.tencent.bkrepo.executor.pojo.response.FileScanResponse
 import com.tencent.bkrepo.executor.service.Task
 import com.tencent.bkrepo.executor.util.TaskIdUtil
+import io.swagger.annotations.ApiParam
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 class RemoteTask @Autowired constructor() {
@@ -28,7 +27,7 @@ class RemoteTask @Autowired constructor() {
 
     @PostMapping("/scan/file")
     @Principal(PrincipalType.ADMIN)
-    fun runByFile(@RequestBody scanRequest: FileScanRequest): Response<FileScanResponse> {
+    fun runByFile(@RequestBody scanRequest: FileScanRequest): Response<String> {
         with(scanRequest) {
             val runTaskId = taskId ?: TaskIdUtil.build()
             val context = FileScanContext(
@@ -59,4 +58,15 @@ class RemoteTask @Autowired constructor() {
             return ResponseBuilder.success(result)
         }
     }
+
+    @PostMapping("/scan/status")
+    @Principal(PrincipalType.ADMIN)
+    fun getRunningStatus(
+        @RequestParam taskId: String,
+        @RequestParam pageNumber: Int?,
+        @RequestParam pageSize: Int?
+    ): Response<String> {
+
+    }
+
 }
