@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.cluster.ClusterProperties
 import com.tencent.bkrepo.common.artifact.cluster.FeignClientFactory
 import com.tencent.bkrepo.common.artifact.cluster.RoleType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 
 /**
@@ -142,10 +144,19 @@ class StorageManager(
             return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
         }
         val sha256 = node.sha256.orEmpty()
+        /*
+        * 顺序查找
+        * 1.当前仓库存储实例 (正常情况)
+        * 2.中央节点拉取（边缘节点情况）
+        * 3.拷贝存储实例（节点快速拷贝场景）
+        * 4.旧存储实例（仓库迁移场景）
+        * */
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
-            ?: loadFromCopyIfNecessary(node, range, storageCredentials)
+            ?: loadFromCopyIfNecessary(node, range)
+            ?: loadFromRepoOldIfNecessary(node,range)
     }
+
     /**
      * 加载ArtifactInputStream
      * 如果node为null，则返回null
@@ -165,20 +176,38 @@ class StorageManager(
      * */
     private fun loadFromCopyIfNecessary(
         node: NodeInfo,
-        range: Range,
-        storageCredentials: StorageCredentials?
+        range: Range
     ): ArtifactInputStream? {
         node.copyFromCredentialsKey?.let {
             val digest = node.sha256!!
             logger.info("load data [$digest] from copy credentialsKey [$it]")
             val fromCredentialsKey = storageCredentialsClient.findByKey(it).data
             if (storageService.exist(digest, fromCredentialsKey)) {
+                val storageCredentials = storageCredentialsClient.findByKey(node.copyIntoCredentialsKey).data
                 logger.info("start copy data [$digest] from key[$it] to key[${storageCredentials?.key}]")
                 storageService.copy(digest, fromCredentialsKey, storageCredentials)
             }
             return storageService.load(digest, range, fromCredentialsKey)
         }
         return null
+    }
+
+    /**
+     * 仓库迁移场景
+     * 仓库还在迁移中，旧的数据还未存储到新的存储实例上去，所以从仓库之前的存储实例中加载
+     * */
+    private fun loadFromRepoOldIfNecessary(node: NodeInfo, range: Range): ArtifactInputStream? {
+        val repositoryDetail = getRepoDetail(node)
+        val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
+        return storageService.load(node.sha256!!, range, oldCredentials)
+    }
+
+    /**
+     * 根据credentialsKey查找StorageCredentials
+     * */
+    private fun findStorageCredentialsByKey(credentialsKey: String?): StorageCredentials? {
+        credentialsKey ?: return null
+        return storageCredentialsClient.findByKey(credentialsKey).data
     }
 
     /**
@@ -233,6 +262,26 @@ class StorageManager(
             logger.error("Failed to pull blob data[$sha256] from center node.", exception)
         }
         return null
+    }
+
+    /**
+     * 获取RepoDetail
+     * */
+    private fun getRepoDetail(node: NodeInfo) :RepositoryDetail{
+        with(node) {
+            //如果当前上下文存在该node的repo信息则，返回上下文中的repo，大部分请求应该命中这
+            ArtifactContextHolder.getRepoDetail()?.let {
+                if (it.projectId == projectId && it.name == name) {
+                    return it
+                }
+            }
+            //如果是异步或者请求上下文找不到，则通过查询，并进行缓存
+            val repositoryId=ArtifactContextHolder.RepositoryId(
+                projectId = projectId,
+                repoName = repoName
+            )
+            return ArtifactContextHolder.getRepoDetail(repositoryId)
+        }
     }
 
     companion object {

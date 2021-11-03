@@ -185,6 +185,7 @@ open class NodeMoveCopySupport(
                 fullPath = dstFullPath,
                 // 默认存储为null,所以需要使用一个空串占位，以区分该节点是拷贝节点
                 copyFromCredentialsKey = srcCredentials?.key ?: EMPTY,
+                copyIntoCredentialsKey = dstCredentials?.key ?: EMPTY,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )

@@ -110,6 +110,7 @@ class RepositoryServiceImpl(
 
     override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
         repositoryDao.findByNameAndType(projectId, repoName, null)?.run {
+            oldCredentialsKey= credentialsKey
             credentialsKey = storageCredentialsKey
             repositoryDao.save(this)
         }
@@ -496,7 +497,8 @@ class RepositoryServiceImpl(
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
-                    used = it.used
+                    used = it.used,
+                    oldCredentialsKey = it.oldCredentialsKey
                 )
             }
         }
