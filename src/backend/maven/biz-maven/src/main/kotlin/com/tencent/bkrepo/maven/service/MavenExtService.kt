@@ -29,9 +29,7 @@ class MavenExtService(
         c: String?,
         repos: String?
     ): Response<Page<MavenGAVCResponse.UriResult>> {
-        if (g.isNullOrBlank() && a.isNullOrBlank() && v.isNullOrBlank() && c.isNullOrBlank()) {
-            throw MavenBadRequestException()
-        }
+        gavcCheck(g, a, v, c)
         val result = buildGavcQuery(projectId, g, a, v, c, repos)
         val list = result.data?.records?.map {
             MavenGAVCResponse.UriResult("$mavenDomain/${it["projectId"]}/${it["repoName"]}${it["fullPath"]}")
@@ -44,6 +42,14 @@ class MavenExtService(
             records = list!!
         )
         return ResponseBuilder.success(page)
+    }
+
+    private fun gavcCheck(g: String?, a: String?, v: String?, c: String?) {
+        var result = g.isNullOrBlank()
+        listOf(a, v, c).map {
+            result = it.isNullOrBlank() && result
+        }
+        if(result) throw MavenBadRequestException()
     }
 
     private fun buildGavcQuery(
