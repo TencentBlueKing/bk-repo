@@ -31,7 +31,11 @@
 
 package com.tencent.bkrepo.maven.exception
 
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.maven.pojo.MavenExceptionResponse
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -46,5 +50,30 @@ class MavenExceptionHandler {
     @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
     fun handleException(exception: MavenPathParserException): MavenExceptionResponse {
         return MavenExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
+    }
+
+    @ExceptionHandler(MavenBadRequestException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleException(exception: MavenBadRequestException) {
+        val response = HttpContextHolder.getResponse()
+        response.status = HttpStatus.BAD_REQUEST.value()
+        response.contentType = MediaTypes.APPLICATION_JSON
+        response.writer.print(String.format(gavcBadRequestPlainFormat, exception.message))
+        response.writer.flush()
+    }
+
+    @ExceptionHandler(MavenArtifactFormatException::class)
+    @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+    fun handleException(exception: MavenArtifactFormatException): MavenExceptionResponse {
+        logger.error("$exception")
+        return MavenExceptionResponse(HttpStatus.NOT_ACCEPTABLE.toString(), exception.message)
+    }
+
+    companion object {
+        const val gavcBadRequestPlainFormat = "\"errors\" : [ {\n" +
+            "    \"status\" : 400,\n" +
+            "    \"message\" : \"%s\"\n" +
+            "  } ]"
+        val logger: Logger = LoggerFactory.getLogger(MavenExceptionHandler::class.java)
     }
 }

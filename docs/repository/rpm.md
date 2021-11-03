@@ -12,7 +12,7 @@ curl -X POST http://{bk_repo_addr}/repository/repo/create \
   "category": "COMPOSITE",
   "public": true,
   "configuration": {
-    "type": "composite",  
+    "type": "local",  
     "settings": {
             "enabledFileLists": false,
             "repodataDepth": 1,
