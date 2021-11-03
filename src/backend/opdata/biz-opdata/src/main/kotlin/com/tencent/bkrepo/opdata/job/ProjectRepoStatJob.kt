@@ -59,7 +59,7 @@ class ProjectRepoStatJob(
 ) {
 
     @Scheduled(cron = "00 00 */12 * * ?")
-    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
+    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
         val influxDb = influxDbConfig.influxDbUtils().getInstance() ?: run {
