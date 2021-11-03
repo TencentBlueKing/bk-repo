@@ -36,4 +36,6 @@ import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>
+interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String> {
+    fun findNodeNumAndCapSize(): List<TProjectMetrics>
+}

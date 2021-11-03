@@ -51,7 +51,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
         val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri)
         val fileName = artifactUri.substringAfterLast("/")
         if (fileName.matches(Regex(PACKAGE_SUFFIX_REGEX))) {
-            val paths = artifactUri.removePrefix("/").removeSuffix("/").split("/")
+            val paths = artifactUri.trim('/').split("/")
             if (paths.size < pathMinLimit) {
                 logger.debug(
                     "Cannot build MavenArtifactInfo from '{}'. The groupId, artifactId and version are unreadable.",

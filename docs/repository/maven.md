@@ -10,7 +10,12 @@ curl -X POST http://{bk_repo_addr}/repository/repo/create \
   "type": "MAVEN",
   "category": "LOCAL|REMOTE|VIRTUAL",
   "public": true,
-  "configuration": {"type": "local|remote|virtual"}
+  "configuration": {
+  	"type": "local|remote|virtual",
+  	"settings": {
+            "SNAPSHOT_BEHAVIOR": 0|1,
+        }
+  }
 }'
 ```
 

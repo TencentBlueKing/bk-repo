@@ -192,8 +192,9 @@ open class PermissionManager(
             return
         }
         if (userId == ANONYMOUS_USER) {
-            logger.warn("anonymous user, platform id[$platformId], " +
-                "requestUri: ${HttpContextHolder.getRequest().requestURI}")
+            val request = HttpContextHolder.getRequest()
+            logger.warn("anonymous user, platform id[$platformId], project[$projectId], repoName[$repoName]" +
+                "requestMethod: ${request.method}, requestUri: ${request.requestURI}")
         }
 
         // 去auth微服务校验资源权限
