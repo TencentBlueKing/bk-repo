@@ -49,10 +49,12 @@ class ProjectModel @Autowired constructor(
     fun getProjectNum(projectType: ProjectType): Long {
         val query = when (projectType) {
             ProjectType.ALL -> Query()
-            ProjectType.BLUEKING -> Query(Criteria().andOperator(
-                where(ProjectInfo::name).not().regex(ProjectType.CODECC.prefix),
-                where(ProjectInfo::name).not().regex(ProjectType.GIT.prefix)
-            ))
+            ProjectType.BLUEKING -> Query(
+                Criteria().andOperator(
+                    where(ProjectInfo::name).not().regex(ProjectType.CODECC.prefix),
+                    where(ProjectInfo::name).not().regex(ProjectType.GIT.prefix)
+                )
+            )
             ProjectType.CODECC -> Query(where(ProjectInfo::name).regex(ProjectType.CODECC.prefix))
             ProjectType.GIT -> Query(where(ProjectInfo::name).regex(ProjectType.GIT.prefix))
         }
