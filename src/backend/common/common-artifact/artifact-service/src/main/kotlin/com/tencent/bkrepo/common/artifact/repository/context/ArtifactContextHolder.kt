@@ -148,8 +148,8 @@ class ArtifactContextHolder(
          * 在非http的上下文获取仓库信息
          * */
         fun getRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
-            return repositoryDetailCache.getIfPresent(repositoryId) ?: run {
-                queryRepoDetail(repositoryId).apply { repositoryDetailCache.put(repositoryId, this) }
+            return repositoryDetailCache.get(repositoryId) {
+                queryRepoDetail(repositoryId)
             }
         }
 

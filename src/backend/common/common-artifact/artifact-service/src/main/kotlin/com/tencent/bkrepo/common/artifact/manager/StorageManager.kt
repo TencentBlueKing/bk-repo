@@ -154,7 +154,7 @@ class StorageManager(
         return storageService.load(sha256, range, storageCredentials)
             ?: loadFromCenterIfNecessary(sha256, range, storageCredentials?.key)
             ?: loadFromCopyIfNecessary(node, range)
-            ?: loadFromRepoOldIfNecessary(node,range)
+            ?: loadFromRepoOldIfNecessary(node, range, storageCredentials)
     }
 
     /**
@@ -172,7 +172,6 @@ class StorageManager(
     /**
      * 因为支持快速copy，也就是说源节点的数据可能还未完全上传成功，
      * 还在本地文件系统上，这时拷贝节点就会从源存储去加载数据。
-     * 当源节点数据已经上传到存储后，则进行真正的数据拷贝
      * */
     private fun loadFromCopyIfNecessary(
         node: NodeInfo,
@@ -182,11 +181,6 @@ class StorageManager(
             val digest = node.sha256!!
             logger.info("load data [$digest] from copy credentialsKey [$it]")
             val fromCredentialsKey = storageCredentialsClient.findByKey(it).data
-            if (storageService.exist(digest, fromCredentialsKey)) {
-                val storageCredentials = storageCredentialsClient.findByKey(node.copyIntoCredentialsKey).data
-                logger.info("start copy data [$digest] from key[$it] to key[${storageCredentials?.key}]")
-                storageService.copy(digest, fromCredentialsKey, storageCredentials)
-            }
             return storageService.load(digest, range, fromCredentialsKey)
         }
         return null
@@ -196,10 +190,21 @@ class StorageManager(
      * 仓库迁移场景
      * 仓库还在迁移中，旧的数据还未存储到新的存储实例上去，所以从仓库之前的存储实例中加载
      * */
-    private fun loadFromRepoOldIfNecessary(node: NodeInfo, range: Range): ArtifactInputStream? {
+    private fun loadFromRepoOldIfNecessary(
+        node: NodeInfo,
+        range: Range,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream? {
         val repositoryDetail = getRepoDetail(node)
         val oldCredentials = findStorageCredentialsByKey(repositoryDetail.oldCredentialsKey)
-        return storageService.load(node.sha256!!, range, oldCredentials)
+        if (storageCredentials != oldCredentials) {
+            logger.info(
+                "load data [${node.sha256!!}] from" +
+                    " repo old credentialsKey [${repositoryDetail.oldCredentialsKey}]"
+            )
+            return storageService.load(node.sha256!!, range, oldCredentials)
+        }
+        return null
     }
 
     /**
@@ -267,16 +272,16 @@ class StorageManager(
     /**
      * 获取RepoDetail
      * */
-    private fun getRepoDetail(node: NodeInfo) :RepositoryDetail{
+    private fun getRepoDetail(node: NodeInfo): RepositoryDetail {
         with(node) {
-            //如果当前上下文存在该node的repo信息则，返回上下文中的repo，大部分请求应该命中这
+            // 如果当前上下文存在该node的repo信息则，返回上下文中的repo，大部分请求应该命中这
             ArtifactContextHolder.getRepoDetail()?.let {
                 if (it.projectId == projectId && it.name == name) {
                     return it
                 }
             }
-            //如果是异步或者请求上下文找不到，则通过查询，并进行缓存
-            val repositoryId=ArtifactContextHolder.RepositoryId(
+            // 如果是异步或者请求上下文找不到，则通过查询，并进行缓存
+            val repositoryId = ArtifactContextHolder.RepositoryId(
                 projectId = projectId,
                 repoName = repoName
             )

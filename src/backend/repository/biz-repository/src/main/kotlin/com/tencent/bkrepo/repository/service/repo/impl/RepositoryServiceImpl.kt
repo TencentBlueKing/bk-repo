@@ -110,7 +110,7 @@ class RepositoryServiceImpl(
 
     override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
         repositoryDao.findByNameAndType(projectId, repoName, null)?.run {
-            oldCredentialsKey= credentialsKey
+            oldCredentialsKey = credentialsKey
             credentialsKey = storageCredentialsKey
             repositoryDao.save(this)
         }
