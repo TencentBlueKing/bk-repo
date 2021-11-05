@@ -72,6 +72,7 @@ data class TNode(
     var sha256: String? = null,
     var md5: String? = null,
     var deleted: LocalDateTime? = null,
+    val copyFromCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
 
     @ShardingKey(count = SHARDING_COUNT)

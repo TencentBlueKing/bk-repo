@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -122,7 +123,14 @@ open class NodeMoveCopySupport(
 
             // 文件 & 跨存储node
             if (!node.folder && srcCredentials != dstCredentials) {
-                storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
+                if (storageService.exist(node.sha256!!, srcCredentials)) {
+                    val digest = node.sha256!!
+                    logger.info(
+                        "start copy data [$digest] from key[${srcCredentials?.key}] " +
+                            "to key[${dstCredentials?.key}]"
+                    )
+                    storageService.copy(digest, srcCredentials, dstCredentials)
+                }
             }
             // 创建dst节点
             nodeBaseService.doCreate(dstNode, dstRepo)
@@ -175,6 +183,8 @@ open class NodeMoveCopySupport(
                 path = dstPath,
                 name = dstName,
                 fullPath = dstFullPath,
+                // 默认存储为null,所以需要使用一个空串占位，以区分该节点是拷贝节点
+                copyFromCredentialsKey = srcCredentials?.key ?: EMPTY,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
