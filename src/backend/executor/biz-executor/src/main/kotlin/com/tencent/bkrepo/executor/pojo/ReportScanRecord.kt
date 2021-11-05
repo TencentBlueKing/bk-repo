@@ -8,6 +8,5 @@ data class ReportScanRecord(
     val repoName: String,
     val fullPath: String,
     val content: String,
-    val status: Boolean?,
-    val createAt: LocalDateTime
+    val createAt: LocalDateTime = LocalDateTime.now()
 )

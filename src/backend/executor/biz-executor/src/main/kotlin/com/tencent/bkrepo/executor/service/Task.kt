@@ -2,7 +2,7 @@ package com.tencent.bkrepo.executor.service
 
 import com.tencent.bkrepo.executor.pojo.context.FileScanContext
 import com.tencent.bkrepo.executor.pojo.context.RepoScanContext
-import com.tencent.bkrepo.executor.pojo.response.FileScanResponse
+import com.tencent.bkrepo.executor.pojo.context.ScanReportContext
 import com.tencent.bkrepo.executor.pojo.response.TaskRunResponse
 
 interface Task {
@@ -30,4 +30,10 @@ interface Task {
      */
     fun getTaskStatus(taskId: String, pageNum: Int?, pageSize: Int?): TaskRunResponse
 
+    /**
+     * 获取任务报告
+     * @param context 任务报告context
+     * @return Map<Any, Any>? 任务执行状态
+     */
+    fun getTaskReport(context: ScanReportContext): MutableList<*>?
 }

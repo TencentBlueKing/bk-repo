@@ -8,13 +8,18 @@ import com.tencent.bkrepo.executor.config.ExecutorConfig
 import com.tencent.bkrepo.executor.pojo.context.FileScanContext
 import com.tencent.bkrepo.executor.pojo.request.FileScanRequest
 import com.tencent.bkrepo.executor.pojo.context.RepoScanContext
+import com.tencent.bkrepo.executor.pojo.context.ScanReportContext
 import com.tencent.bkrepo.executor.pojo.request.RepoScanRequest
-import com.tencent.bkrepo.executor.pojo.response.FileScanResponse
+import com.tencent.bkrepo.executor.pojo.request.ScanReportRequest
+import com.tencent.bkrepo.executor.pojo.response.TaskRunResponse
 import com.tencent.bkrepo.executor.service.Task
 import com.tencent.bkrepo.executor.util.TaskIdUtil
-import io.swagger.annotations.ApiParam
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @RestController
 class RemoteTask @Autowired constructor() {
@@ -27,9 +32,9 @@ class RemoteTask @Autowired constructor() {
 
     @PostMapping("/scan/file")
     @Principal(PrincipalType.ADMIN)
-    fun runByFile(@RequestBody scanRequest: FileScanRequest): Response<String> {
-        with(scanRequest) {
-            val runTaskId = taskId ?: TaskIdUtil.build()
+    fun runByFile(@RequestBody request: FileScanRequest): Response<String> {
+        with(request) {
+            val runTaskId = TaskIdUtil.build()
             val context = FileScanContext(
                 taskId = runTaskId,
                 config = config,
@@ -43,9 +48,9 @@ class RemoteTask @Autowired constructor() {
 
     @PostMapping("/scan/repo")
     @Principal(PrincipalType.ADMIN)
-    fun runByRepo(@RequestBody scanRequest: RepoScanRequest): Response<String> {
-        with(scanRequest) {
-            val runTaskId = taskId ?: TaskIdUtil.build()
+    fun runByRepo(@RequestBody request: RepoScanRequest): Response<String> {
+        with(request) {
+            val runTaskId = TaskIdUtil.build()
             val context = RepoScanContext(
                 taskId = runTaskId,
                 config = config,
@@ -59,14 +64,28 @@ class RemoteTask @Autowired constructor() {
         }
     }
 
-    @PostMapping("/scan/status")
+    @GetMapping("/scan/status")
     @Principal(PrincipalType.ADMIN)
     fun getRunningStatus(
         @RequestParam taskId: String,
         @RequestParam pageNumber: Int?,
         @RequestParam pageSize: Int?
-    ): Response<String> {
-
+    ): Response<TaskRunResponse> {
+        return ResponseBuilder.success(remoteTask.getTaskStatus(taskId, pageNumber, pageSize))
     }
 
+    @GetMapping("/scan/report")
+    @Principal(PrincipalType.ADMIN)
+    fun getTaskReport(@RequestBody request: ScanReportRequest): Response<MutableList<*>?> {
+        with(request) {
+            val context = ScanReportContext(
+                projectId = projectId,
+                repoName = repoName,
+                taskId = taskId,
+                fullPath = fullPath,
+                report = report
+            )
+            return ResponseBuilder.success(remoteTask.getTaskReport(context))
+        }
+    }
 }

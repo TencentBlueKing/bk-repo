@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.executor.pojo.context
 
-import com.tencent.bkrepo.executor.pojo.enums.TaskRunStatus
+import com.tencent.bkrepo.executor.pojo.enums.ScanTaskReport
 
-data class ScanTaskContext(
+data class ScanReportContext(
     val taskId: String,
     val projectId: String,
     val repoName: String,
     val fullPath: String,
-    var status: TaskRunStatus
+    var report: ScanTaskReport?
 )

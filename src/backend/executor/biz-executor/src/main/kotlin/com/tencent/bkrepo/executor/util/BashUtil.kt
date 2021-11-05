@@ -2,6 +2,9 @@ package com.tencent.bkrepo.executor.util
 
 import org.slf4j.LoggerFactory
 
+/**
+ *  bash执行
+ */
 object BashUtil {
 
     fun runCmd(cmd: String): Boolean {

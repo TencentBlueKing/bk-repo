@@ -4,5 +4,5 @@ data class FileRunResponse(
     val projectId: String,
     val repoName: String,
     val fullPath: String,
-    val status: TaskRunResponse
+    val status: String
 )

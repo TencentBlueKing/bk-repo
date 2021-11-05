@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.executor.util
+package com.tencent.bkrepo.executor.model
 
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.Bind
@@ -9,12 +9,13 @@ import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientBuilder
 import com.github.dockerjava.okhttp.OkDockerHttpClient
 import com.tencent.bkrepo.executor.config.container.ContainerTaskConfig
+import com.tencent.bkrepo.executor.exception.RunContainerFailedException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class DockerUtil @Autowired constructor(var config: ContainerTaskConfig) {
+class DockerRunTime @Autowired constructor(val config: ContainerTaskConfig) {
 
     private val dockerConfig = DefaultDockerClientConfig.createDefaultConfigBuilder()
         .withDockerConfig(config.dockerHost)
@@ -33,30 +34,36 @@ class DockerUtil @Autowired constructor(var config: ContainerTaskConfig) {
         .withDockerHttpClient(longHttpClient)
         .build()
 
-    fun runContainerOnce(workDir: String): Boolean {
+    /**
+     * 调起容器执行一次性任务
+     * @param workDir  工作目录
+     * @throws RunContainerFailedException
+     */
+    fun runContainerOnce(workDir: String) {
+        val bind = Volume(config.containerDir)
+        val binds = Binds(Bind(workDir, bind))
+        val containerId = httpDockerCli.createContainerCmd(config.imageName)
+            .withHostConfig(HostConfig().withBinds(binds))
+            .withCmd(config.args)
+            .withTty(true)
+            .withStdinOpen(true)
+            .exec().id
+        logger.info("run container instance Id [$workDir, $containerId]")
         try {
-            val volumeWs = Volume(config.containerDir)
-            val binds = Binds(Bind(workDir, volumeWs))
-            val containerId = httpDockerCli.createContainerCmd(config.imageName)
-                .withHostConfig(HostConfig().withBinds(binds))
-                .withCmd(config.args)
-                .withTty(true)
-                .withStdinOpen(true)
-                .exec().id
-            logger.info("run container instance Id [$containerId]")
             httpDockerCli.startContainerCmd(containerId).exec()
-
             val resultCallback = WaitContainerResultCallback()
             httpDockerCli.waitContainerCmd(containerId).exec(resultCallback)
             resultCallback.awaitCompletion()
-            httpDockerCli.removeContainerCmd(containerId).withForce(true).exec()
-            logger.warn("task docker run success [$workDir, $containerId]")
-            return true
+            logger.info("task docker run success [$workDir, $containerId]")
         } catch (e: Exception) {
             logger.warn("exec docker task exception[$workDir, $e]")
+            throw RunContainerFailedException("exec docker task exception")
+        } finally {
+            httpDockerCli.removeContainerCmd(containerId).withForce(true).exec()
         }
-        return false
     }
 
-    private val logger = LoggerFactory.getLogger(DockerUtil::class.java)
+    companion object {
+        private val logger = LoggerFactory.getLogger(DockerRunTime::class.java)
+    }
 }
