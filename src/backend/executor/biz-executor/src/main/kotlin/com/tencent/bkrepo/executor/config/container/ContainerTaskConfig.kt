@@ -40,30 +40,30 @@ class ContainerTaskConfig {
     /**
      * docker host
      */
-    @Value("\${docker.api.host:}")
+    @Value("\${container.api.host:}")
     var dockerHost: String = "unix:///var/run/docker.sock"
 
     /**
      * docker api version
      */
-    @Value("\${docker.api.version:}")
+    @Value("\${container.api.version:}")
     var apiVerion: String = "1.23"
 
     /**
      * run docker entrypoint args
      */
-    @Value("\${docker.container.args:}")
+    @Value("\${container.run.args:}")
     var args: String = ""
 
     /**
      * task image name
      */
-    @Value("\${docker.container.imageName:}")
+    @Value("\${container.run.imageName:}")
     var imageName: String = ""
 
     /**
      * container work dir
      */
-    @Value("\${docker.container.dir:}")
+    @Value("\${docker.run.dir:}")
     var containerDir: String = ""
 }
