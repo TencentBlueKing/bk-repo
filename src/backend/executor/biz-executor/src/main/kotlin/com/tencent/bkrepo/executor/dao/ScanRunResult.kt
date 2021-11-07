@@ -80,8 +80,7 @@ class ScanRunResult {
         val filter = Document().append("taskId", taskId).append("projectId", projectId).append("repoName", repoName)
             .append("fullPath", fullPath)
         mongoTemplate.getCollection(collectionName).find(filter).forEach {
-            val result = it["content"] as String
-            return result
+            return it["content"] as String
         }
         return null
     }
