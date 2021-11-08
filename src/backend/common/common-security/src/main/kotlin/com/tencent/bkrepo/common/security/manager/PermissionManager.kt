@@ -209,7 +209,8 @@ open class PermissionManager(
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误
-            throw PermissionException()
+            throw PermissionException("user[$userId] does not have $action permission " +
+                "in project[$projectId] repo[$repoName] ")
         }
         if (logger.isDebugEnabled) {
             logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")
