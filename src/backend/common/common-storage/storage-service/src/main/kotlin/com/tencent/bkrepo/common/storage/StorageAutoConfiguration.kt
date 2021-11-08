@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.hdfs.HDFSStorage
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.common.storage.s3.S3Storage
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -51,6 +52,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.retry.annotation.EnableRetry
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 存储自动配置
@@ -88,8 +90,15 @@ class StorageAutoConfiguration {
     }
 
     @Bean
-    fun storageHealthMonitor(storageProperties: StorageProperties): StorageHealthMonitor {
-        return StorageHealthMonitor(storageProperties)
+    fun storageHealthMonitorHelper(storageProperties: StorageProperties): StorageHealthMonitorHelper {
+        val map = ConcurrentHashMap<String, StorageHealthMonitor>()
+        val location = storageProperties
+            .defaultStorageCredentials().upload.location
+        map[location] = StorageHealthMonitor(
+            storageProperties,
+            location
+        )
+        return StorageHealthMonitorHelper(map)
     }
 
     @Bean

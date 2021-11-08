@@ -98,8 +98,13 @@ class BkAuthPermissionServiceImpl constructor(
                     checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    checkPipelinePermission(uid, projectId!!, path, resourceType, action) ||
-                        checkProjectPermission(uid, projectId!!, action)
+                    var projectPass = false
+                    val pipelinePass = checkPipelinePermission(uid, projectId!!, path, resourceType, action)
+                    if (!pipelinePass) {
+                        logger.warn("devops pipeline permission check fail [$request]")
+                        projectPass = checkProjectPermission(uid, projectId!!, action)
+                    }
+                    pipelinePass || projectPass
                 }
                 REPORT -> {
                     checkReportPermission(action)
@@ -113,7 +118,7 @@ class BkAuthPermissionServiceImpl constructor(
             // devops来源的账号，不做拦截
             if (!pass && appId == bkAuthConfig.devopsAppId) {
                 logger.warn("devops forbidden [$request]")
-                return !bkAuthConfig.devopsAuthEnabled
+                return false
             }
 
             logger.debug("devops pass [$request]")

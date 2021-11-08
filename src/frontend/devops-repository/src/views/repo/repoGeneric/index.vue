@@ -570,10 +570,10 @@
                 }
             },
             handlerDownload () {
-                const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}`
+                const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url + '?download=true',
+                        '/web' + url,
                         '_self'
                     )
                 }).catch(e => {

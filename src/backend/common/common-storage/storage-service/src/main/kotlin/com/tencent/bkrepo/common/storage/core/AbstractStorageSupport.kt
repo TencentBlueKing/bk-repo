@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.beans.factory.annotation.Autowired
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -59,7 +59,7 @@ abstract class AbstractStorageSupport : StorageService {
     protected lateinit var storageProperties: StorageProperties
 
     @Autowired
-    protected lateinit var monitor: StorageHealthMonitor
+    protected lateinit var monitorHelper: StorageHealthMonitorHelper
 
     /**
      * 根据[storageCredentials]获取实际存储凭证，当storageCredentials为`null`则使用默认存储
