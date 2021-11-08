@@ -58,7 +58,7 @@ class DockerPackageRepo @Autowired constructor(
     }
 
     /**
-     * populalate package
+     * populate package
      * @param request the request to populate version
      * @return Boolean is the package version create success
      */
