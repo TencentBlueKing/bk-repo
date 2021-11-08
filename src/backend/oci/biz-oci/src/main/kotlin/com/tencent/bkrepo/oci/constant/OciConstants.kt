@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.tencent.bkrepo.oci.constant
 
-package com.tencent.bkrepo.maven.pojo
+const val OCI_API_PREFIX = "v2"
 
-data class MavenWebResponse(
-    val test: String
-)
+// OCIScheme is the URL scheme for OCI-based requests
+const val OCI_SCHEME = "oci"
+
+// CREDENTIALS_FILE_BASENAME is the filename for auth credentials file
+const val CREDENTIALS_FILE_BASENAME = "registry.json"
+
+// CONFIG_MEDIA_TYPE is the reserved media type for the Helm chart manifest config
+const val CONFIG_MEDIA_TYPE = "application/vnd.cncf.helm.config.v1+json"
+
+// CHART_LAYER_MEDIA_TYPE is the reserved media type for Helm chart package content
+const val CHART_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+
+// PROV_LAYER_MEDIA_TYPE is the reserved media type for Helm chart provenance files
+const val PROV_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.provenance.v1.prov"
+
+// LEGACY_CHART_LAYER_MEDIA_TYPE is the legacy reserved media type for Helm chart package content.
+const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"

@@ -29,33 +29,19 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.pojo
+package com.tencent.bkrepo.maven.util
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
+import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.maven.CHECKSUM_POLICY
+import com.tencent.bkrepo.maven.MAX_UNIQUE_SNAPSHOTS
+import com.tencent.bkrepo.maven.SNAPSHOT_BEHAVIOR
+import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 
-@JacksonXmlRootElement(localName = "metadata")
-data class MavenSnapshot(
-    @JacksonXmlProperty
-    val modelVersion: String,
-    val groupId: String,
-    val artifactId: String,
-    val versioning: SnapshotVersioning
-)
-
-data class SnapshotVersioning(
-    val snapshot: Snapshot,
-    val lastUpdated: String,
-    val snapshotVersions: List<SnapshotVersion>
-)
-
-data class Snapshot(
-    val timestamp: String,
-    val buildNumber: String
-)
-
-data class SnapshotVersion(
-    val extension: String,
-    val value: String,
-    val updated: String
-)
+object MavenConfiguration {
+    fun RepositoryConfiguration.toMavenRepoConf(): MavenRepoConf {
+        val checksumPolicy = this.getIntegerSetting(CHECKSUM_POLICY) ?: 0
+        val snapshotBehavior = this.getIntegerSetting(SNAPSHOT_BEHAVIOR) ?: 0
+        val maxUniqueSnapshots = this.getIntegerSetting(MAX_UNIQUE_SNAPSHOTS)
+        return MavenRepoConf(checksumPolicy, snapshotBehavior, maxUniqueSnapshots)
+    }
+}

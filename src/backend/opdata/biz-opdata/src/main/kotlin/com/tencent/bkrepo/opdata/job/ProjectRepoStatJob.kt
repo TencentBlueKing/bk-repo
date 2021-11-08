@@ -58,8 +58,9 @@ class ProjectRepoStatJob(
     private val projectMetricsRepository: ProjectMetricsRepository
 ) {
 
+
     @Scheduled(cron = "00 00 */12 * * ?")
-    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT1H")
+    @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
         val influxDb = influxDbConfig.influxDbUtils().getInstance() ?: run {
@@ -76,11 +77,10 @@ class ProjectRepoStatJob(
             val projectId = it.name
             val repos = repoModel.getRepoListByProjectId(it.name)
             val table = TABLE_PREFIX + (projectId.hashCode() and 255).toString()
+            var repoCapSize = 0L
+            var repoNodeNum = 0L
+            val repoMetrics = mutableListOf<RepoMetrics>()
             repos.forEach {
-
-                val repoMetrics = mutableListOf<RepoMetrics>()
-                var repoCapSize = 0L
-                var repoNodeNum = 0L
                 val repoName = it.name
                 val node = nodeModel.getNodeSize(projectId, repoName)
 
@@ -102,21 +102,22 @@ class ProjectRepoStatJob(
                         RepoMetrics(repoName, it.credentialsKey, node.size / TOGIGABYTE, node.num)
                     )
                 }
-
-                // 有效项目的统计数据
-                if (repoNodeNum != 0L && repoCapSize != 0L) {
-                    val metrics = TProjectMetrics(projectId, repoNodeNum, repoCapSize / TOGIGABYTE, repoMetrics)
-                    projectMetrics.add(metrics)
-                }
+            }
+            // 有效项目的统计数据
+            if (repoNodeNum != 0L && repoCapSize != 0L) {
+                val metrics = TProjectMetrics(projectId, repoNodeNum, repoCapSize / TOGIGABYTE, repoMetrics)
+                projectMetrics.add(metrics)
             }
         }
 
         // 数据写入 influxdb
+        logger.info("start to insert influxdb metrics ")
         influxDb.write(batchPoints)
         influxDb.close()
 
         // 数据写入mongodb统计表
         projectMetricsRepository.deleteAll()
+        logger.info("start to insert  mongodb metrics ")
         projectMetricsRepository.insert(projectMetrics)
         logger.info("stat project metrics done")
     }
