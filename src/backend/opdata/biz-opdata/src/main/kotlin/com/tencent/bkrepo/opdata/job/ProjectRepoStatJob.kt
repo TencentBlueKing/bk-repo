@@ -58,7 +58,7 @@ class ProjectRepoStatJob(
     private val projectMetricsRepository: ProjectMetricsRepository
 ) {
 
-    @Scheduled(cron = "00 00 */12 * * ?")
+    @Scheduled(cron = "00 00 20/12 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
@@ -112,11 +112,13 @@ class ProjectRepoStatJob(
         }
 
         // 数据写入 influxdb
+        logger.info("start to insert influxdb metrics ")
         influxDb.write(batchPoints)
         influxDb.close()
 
         // 数据写入mongodb统计表
         projectMetricsRepository.deleteAll()
+        logger.info("start to insert  mongodb metrics ")
         projectMetricsRepository.insert(projectMetrics)
         logger.info("stat project metrics done")
     }
