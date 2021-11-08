@@ -13,7 +13,12 @@ import javax.servlet.http.HttpServletRequest
 @Component
 @Resolver(OciArtifactInfo::class)
 class OciArtifactInfoResolver : ArtifactInfoResolver {
-	override fun resolve(projectId: String, repoName: String, artifactUri: String, request: HttpServletRequest): ArtifactInfo {
+	override fun resolve(
+		projectId: String,
+		repoName: String,
+		artifactUri: String,
+		request: HttpServletRequest
+	): ArtifactInfo {
 		val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
 		val packageName = requestUrl.replaceAfterLast("/blobs", StringPool.EMPTY).removeSuffix("/blobs")
 				.removePrefix("/v2/$projectId/$repoName/")
