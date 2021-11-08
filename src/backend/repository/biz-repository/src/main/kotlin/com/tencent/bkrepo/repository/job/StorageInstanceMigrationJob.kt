@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
@@ -67,7 +68,8 @@ class StorageInstanceMigrationJob(
     private val repositoryService: RepositoryService,
     private val fileReferenceService: FileReferenceService,
     private val storageCredentialService: StorageCredentialService,
-    private val taskAsyncExecutor: ThreadPoolTaskExecutor
+    private val taskAsyncExecutor: ThreadPoolTaskExecutor,
+    private val storageProperties: StorageProperties
 ) {
 
     fun migrate(projectId: String, repoName: String, dstStorageKey: String) {
@@ -244,7 +246,7 @@ class StorageInstanceMigrationJob(
         val repository = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
         val srcStorageKey = repository.storageCredentials?.key
-        val srcStorageCredentials = repository.storageCredentials
+        val srcStorageCredentials = repository.storageCredentials ?: storageProperties.defaultStorageCredentials()
         val dstStorageCredentials = storageCredentialService.findByKey(dstStorageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, dstStorageKey)
         if (srcStorageCredentials == dstStorageCredentials) {
