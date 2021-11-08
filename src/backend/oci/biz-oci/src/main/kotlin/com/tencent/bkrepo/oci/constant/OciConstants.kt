@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,49 +28,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.tencent.bkrepo.oci.constant
 
-rootProject.name = "bk-repo-backend"
+const val OCI_API_PREFIX = "v2"
 
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
+// OCIScheme is the URL scheme for OCI-based requests
+const val OCI_SCHEME = "oci"
 
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
+// CREDENTIALS_FILE_BASENAME is the filename for auth credentials file
+const val CREDENTIALS_FILE_BASENAME = "registry.json"
 
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
+// CONFIG_MEDIA_TYPE is the reserved media type for the Helm chart manifest config
+const val CONFIG_MEDIA_TYPE = "application/vnd.cncf.helm.config.v1+json"
 
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":common:common-plugin")
-includeAll(":composer")
-includeAll(":docker")
-includeAll(":dockerapi")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":maven")
-includeAll(":monitor")
-includeAll(":npm")
-includeAll(":npm-registry")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
-includeAll(":git")
-includeAll(":oci")
+// CHART_LAYER_MEDIA_TYPE is the reserved media type for Helm chart package content
+const val CHART_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.content.v1.tar+gzip"
+
+// PROV_LAYER_MEDIA_TYPE is the reserved media type for Helm chart provenance files
+const val PROV_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.provenance.v1.prov"
+
+// LEGACY_CHART_LAYER_MEDIA_TYPE is the legacy reserved media type for Helm chart package content.
+const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"
