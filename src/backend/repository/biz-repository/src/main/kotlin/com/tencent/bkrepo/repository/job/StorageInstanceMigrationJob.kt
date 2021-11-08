@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
@@ -68,7 +67,6 @@ class StorageInstanceMigrationJob(
     private val repositoryService: RepositoryService,
     private val fileReferenceService: FileReferenceService,
     private val storageCredentialService: StorageCredentialService,
-    private val storageProperties: StorageProperties,
     private val taskAsyncExecutor: ThreadPoolTaskExecutor
 ) {
 
@@ -245,14 +243,13 @@ class StorageInstanceMigrationJob(
     private fun checkAndBuildContext(projectId: String, repoName: String, dstStorageKey: String): MigrationContext {
         val repository = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-        // 限制只能由默认storage迁移
         val srcStorageKey = repository.storageCredentials?.key
-        if (srcStorageKey != null) {
-            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only support migrate from default storage")
-        }
-        val srcStorageCredentials = storageProperties.defaultStorageCredentials()
+        val srcStorageCredentials = repository.storageCredentials
         val dstStorageCredentials = storageCredentialService.findByKey(dstStorageKey)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, dstStorageKey)
+        if (srcStorageCredentials == dstStorageCredentials) {
+            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Src and Dst storageCredentials are same")
+        }
         // 限制存储实例类型必须相同且为InnerCos
         if (srcStorageCredentials !is InnerCosCredentials || dstStorageCredentials !is InnerCosCredentials) {
             throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Only support inner cos storage")
