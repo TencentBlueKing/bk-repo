@@ -64,6 +64,6 @@ class ContainerTaskConfig {
     /**
      * container work dir
      */
-    @Value("\${docker.run.dir:}")
+    @Value("\${container.run.dir:}")
     var containerDir: String = ""
 }
