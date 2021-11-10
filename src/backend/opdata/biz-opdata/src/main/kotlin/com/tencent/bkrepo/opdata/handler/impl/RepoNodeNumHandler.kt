@@ -46,12 +46,12 @@ class RepoNodeNumHandler(
     private val projectMetricsRepository: ProjectMetricsRepository
 ) : QueryHandler {
 
-    override val metric: Metrics get() = Metrics.PROJECTNODENUM
+    override val metric: Metrics get() = Metrics.REPONODENUM
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
         val projects = projectMetricsRepository.findAll()
         val tmpMap = HashMap<String, Long>()
-        projects.forEach {
+        projects.forEach { it ->
             val projectId = it.projectId
             it.repoMetrics.forEach {
                 val repoName = it.repoName
