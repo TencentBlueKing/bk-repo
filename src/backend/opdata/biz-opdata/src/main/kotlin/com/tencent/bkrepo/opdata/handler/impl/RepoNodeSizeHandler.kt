@@ -29,25 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.enums
+package com.tencent.bkrepo.opdata.handler.impl
 
-enum class Metrics {
-    DEFAULT,
-    PROJECTNUM,
-    CAPSIZE,
-    NODENUM,
-    PROJECTLIST,
-    REPOLIST,
-    PROJECTNODENUM,
-    PROJECTNODESIZE,
-    BKREPOSIZE,
-    EFFECTIVEPROJECTNUM,
-    NODESIZEDISTRIBUTION,
-    PROJECTIDLIST,
-    REPONAMELIST,
-    FILEEXTENSION,
-    STORAGECREDENTIAL,
-    NODECOLLECTION,
-    REPONODENUM,
-    REPONODESIZE,
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.stereotype.Component
+
+/**
+ * 项目节点容量统计
+ */
+@Component
+class RepoNodeSizeHandler(
+    private val projectMetricsRepository: ProjectMetricsRepository
+) : QueryHandler {
+
+    override val metric: Metrics get() = Metrics.REPONODESIZE
+
+    override fun handle(target: Target, result: MutableList<Any>): List<Any> {
+        val projects = projectMetricsRepository.findAll()
+        val tmpMap = HashMap<String, Long>()
+        projects.forEach { it ->
+            val projectId = it.projectId
+            it.repoMetrics.forEach {
+                val repoName = it.repoName
+                if (it.size != 0L) {
+                    tmpMap["$projectId-$repoName"] = it.size
+                }
+            }
+        }
+        return convToDisplayData(tmpMap, result)
+    }
 }
