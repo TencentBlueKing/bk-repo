@@ -197,6 +197,12 @@ open class PermissionManager(
                 "requestMethod: ${request.method}, requestUri: ${request.requestURI}")
         }
 
+        // 校验Oauth token对应权限
+        val authorities = SecurityUtils.getAuthorities()
+        if (authorities.isNotEmpty() && !authorities.contains(type.toString())) {
+            throw PermissionException()
+        }
+
         // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(
             uid = userId,

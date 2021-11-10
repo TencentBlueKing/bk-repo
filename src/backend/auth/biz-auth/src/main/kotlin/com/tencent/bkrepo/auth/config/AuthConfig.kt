@@ -44,6 +44,7 @@ class AuthConfig : WebMvcConfigurer {
         registry.addInterceptor(clientAuthInterceptor())
             .addPathPatterns("/api/**")
             .excludePathPatterns("/external/**")
+            .excludePathPatterns("/api/oauth/token")
             .order(0)
         super.addInterceptors(registry)
     }
