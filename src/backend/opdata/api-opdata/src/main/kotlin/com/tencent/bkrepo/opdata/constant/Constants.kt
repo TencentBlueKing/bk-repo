@@ -56,11 +56,9 @@ const val OPDATA_NODE_NUM = "NodeNum"
 
 const val OPDATA_PROJECT = "project"
 const val OPDATA_PROJECT_ID = "projectId"
-const val OPDATA_PROJECT_NAME = "name"
 const val OPDATA_REPOSITORY = "repository"
 const val OPDATA_REPO_NAME = "repoName"
 
-const val OPDATA_PROJECT_METRICS = "project_metrics"
 const val OPDATA_FILE_EXTENSION_METRICS = "file_extension_metrics"
 
 const val B_0 = "0"
