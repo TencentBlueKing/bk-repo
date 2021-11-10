@@ -34,8 +34,10 @@ package com.tencent.bkrepo.auth.resource
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
-import com.tencent.bkrepo.auth.pojo.token.CredentialSet
+import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
+import com.tencent.bkrepo.auth.pojo.token.CredentialSet
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -52,12 +54,24 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return ResponseBuilder.success(accountList)
     }
 
-    override fun createAccount(request: CreateAccountRequest): Response<Account?> {
+    override fun listOwnAccount(): Response<List<Account>> {
+        return ResponseBuilder.success(accountService.listOwnAccount())
+    }
+
+    override fun listAuthorizedAccount(): Response<List<Account>> {
+        return ResponseBuilder.success(accountService.listAuthorizedAccount())
+    }
+
+    override fun getAccountDetail(appId: String): Response<Account> {
+        return ResponseBuilder.success(accountService.findAccountByAppId(appId))
+    }
+
+    override fun createAccount(request: CreateAccountRequest): Response<Account> {
         return ResponseBuilder.success(accountService.createAccount(request))
     }
 
-    override fun updateAccount(appId: String, locked: Boolean): Response<Boolean> {
-        accountService.updateAccountStatus(appId, locked)
+    override fun updateAccount(request: UpdateAccountRequest): Response<Boolean> {
+        accountService.updateAccount(request)
         return ResponseBuilder.success(true)
     }
 
@@ -66,17 +80,22 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
+    override fun uninstallAccount(appId: String): Response<Boolean> {
+        accountService.uninstallAccount(appId)
+        return ResponseBuilder.success(true)
+    }
+
     override fun getCredential(appId: String): Response<List<CredentialSet>> {
         val credential = accountService.listCredentials(appId)
         return ResponseBuilder.success(credential)
     }
 
-    override fun createCredential(appId: String): Response<List<CredentialSet>> {
-        val result = accountService.createCredential(appId)
+    override fun createCredential(appId: String, type: AuthorizationGrantType?): Response<CredentialSet> {
+        val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM)
         return ResponseBuilder.success(result)
     }
 
-    override fun deleteCredential(appId: String, accesskey: String): Response<List<CredentialSet>> {
+    override fun deleteCredential(appId: String, accesskey: String): Response<Boolean> {
         val result = accountService.deleteCredential(appId, accesskey)
         return ResponseBuilder.success(result)
     }

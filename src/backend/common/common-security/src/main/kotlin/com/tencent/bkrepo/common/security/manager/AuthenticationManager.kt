@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.common.security.manager
 
 import com.tencent.bkrepo.auth.api.ServiceAccountResource
+import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
@@ -43,6 +45,7 @@ import org.springframework.stereotype.Component
 class AuthenticationManager(
     private val serviceUserResource: ServiceUserResource,
     private val serviceAccountResource: ServiceAccountResource,
+    private val serviceOauthAuthorizationResource: ServiceOauthAuthorizationResource,
     private val httpAuthProperties: HttpAuthProperties
 ) {
 
@@ -66,6 +69,14 @@ class AuthenticationManager(
     }
 
     /**
+     * 校验Oauth Token
+     */
+    fun checkOauthToken(accessToken: String): String {
+        val response = serviceOauthAuthorizationResource.validateToken(accessToken)
+        return response.data ?: throw AuthenticationException("Access token check failed.")
+    }
+
+    /**
      * 普通用户类型账户
      */
     fun createUserAccount(userId: String) {
@@ -79,6 +90,10 @@ class AuthenticationManager(
      */
     fun findUserAccount(userId: String): User? {
         return serviceUserResource.detail(userId).data
+    }
+
+    fun findOauthToken(accessToken: String): OauthToken? {
+        return serviceOauthAuthorizationResource.getToken(accessToken).data
     }
 
     private fun preCheck(): Boolean {
