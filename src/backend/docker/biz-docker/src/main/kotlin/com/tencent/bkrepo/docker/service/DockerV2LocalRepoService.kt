@@ -89,7 +89,6 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpHeaders.CONTENT_LENGTH
@@ -109,9 +108,6 @@ class DockerV2LocalRepoService @Autowired constructor(
     val artifactRepo: DockerArtifactRepo,
     val packageRepo: DockerPackageRepo
 ) : DockerV2RepoService {
-
-    @Value("\${docker.domain: ''}")
-    val domain: String = EMPTY
 
     var httpHeaders: HttpHeaders = HttpHeaders()
 
@@ -480,7 +476,7 @@ class DockerV2LocalRepoService @Autowired constructor(
                 DOCKER_CREATE_DATE to versionDetail.createdDate,
                 DOCKER_CREATE_BY to versionDetail.createdBy,
                 DOCKER_VERSION to tag,
-                DOCKER_VERSION_DOMAIN to domain,
+                DOCKER_VERSION_DOMAIN to artifactRepo.domain,
                 LAST_MODIFIED_BY to nodeDetail.lastModifiedBy,
                 LAST_MODIFIED_DATE to nodeDetail.lastModifiedDate,
                 DOWNLOAD_COUNT to versionDetail.downloads,

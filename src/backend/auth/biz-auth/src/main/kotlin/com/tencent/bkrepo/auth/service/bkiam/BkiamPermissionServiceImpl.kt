@@ -67,7 +67,7 @@ class BkiamPermissionServiceImpl constructor(
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.info("checkPermission, request: $request")
-        if (request.resourceType != ResourceType.SYSTEM && checkBkiamPermission(request)) {
+        if (request.resourceType != ResourceType.SYSTEM.toString() && checkBkiamPermission(request)) {
             logger.debug("checkBkiamPermission passed")
             return true
         }
@@ -100,10 +100,11 @@ class BkiamPermissionServiceImpl constructor(
 
     private fun getResourceId(request: ResourceBaseRequest): String {
         return when (request.resourceType) {
-            ResourceType.SYSTEM -> StringPool.EMPTY
-            ResourceType.PROJECT -> request.projectId!!
-            ResourceType.REPO -> request.repoName!!
-            ResourceType.NODE -> throw IllegalArgumentException("invalid resource type")
+            ResourceType.SYSTEM.toString() -> StringPool.EMPTY
+            ResourceType.PROJECT.toString() -> request.projectId!!
+            ResourceType.REPO.toString() -> request.repoName!!
+            ResourceType.NODE.toString() -> throw IllegalArgumentException("invalid resource type")
+            else -> throw IllegalArgumentException("invalid resource type")
         }
     }
 

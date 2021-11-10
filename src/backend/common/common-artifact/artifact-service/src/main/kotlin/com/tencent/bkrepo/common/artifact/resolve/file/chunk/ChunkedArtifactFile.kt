@@ -69,11 +69,9 @@ class ChunkedArtifactFile(
     init {
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
-        if (storageCredentials == storageProperties.defaultStorageCredentials()) {
-            monitor.add(receiver)
-            if (!monitor.healthy.get()) {
-                receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
-            }
+        monitor.add(receiver)
+        if (!monitor.healthy.get()) {
+            receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
         }
     }
 
@@ -162,6 +160,7 @@ class ChunkedArtifactFile(
      * 关闭文件执行清理逻辑，因为是被动接收数据，所以需要手动关闭文件
      */
     fun close() {
+        receiver.cleanOriginalOutputStream()
         monitor.remove(receiver)
     }
 }

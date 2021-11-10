@@ -115,7 +115,7 @@ open class PermissionServiceImpl constructor(
         }
         val result = permissionRepository.insert(
             TPermission(
-                resourceType = request.resourceType,
+                resourceType = request.resourceType.toString(),
                 projectId = request.projectId,
                 permName = request.permName,
                 repos = request.repos,
@@ -246,11 +246,13 @@ open class PermissionServiceImpl constructor(
 
     private fun checkRepoAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
-            val query = PermissionQueryHelper.buildPermissionCheck(
-                projectId!!, repoName!!, uid, action, resourceType, roles
-            )
-            val result = mongoTemplate.count(query, TPermission::class.java)
-            if (result != 0L) return true
+            if (resourceType == ResourceType.REPO.toString() && repoName != null) {
+                val query = PermissionQueryHelper.buildPermissionCheck(
+                    projectId!!, repoName!!, uid, action, resourceType, roles
+                )
+                val result = mongoTemplate.count(query, TPermission::class.java)
+                if (result != 0L) return true
+            }
         }
         return false
     }
@@ -420,8 +422,8 @@ open class PermissionServiceImpl constructor(
                 projectId = projectId,
                 repos = listOf(repoName),
                 permName = permName,
-                actions = actions,
-                resourceType = ResourceType.REPO,
+                actions = actions.map { it.toString() },
+                resourceType = ResourceType.REPO.toString(),
                 createAt = LocalDateTime.now(),
                 updateAt = LocalDateTime.now(),
                 createBy = AUTH_ADMIN,

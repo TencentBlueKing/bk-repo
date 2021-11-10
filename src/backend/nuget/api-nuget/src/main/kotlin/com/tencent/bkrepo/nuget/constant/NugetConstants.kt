@@ -30,11 +30,18 @@ package com.tencent.bkrepo.nuget.constant
 const val REPO_TYPE = "NUGET"
 
 const val ID = "id"
+const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
 const val LOWER_VERSION = "lowerVersion"
 const val UPPER_VERSION = "upperVersion"
+const val PACKAGE = "package"
+const val DEPENDENCY = "dependency"
+const val REFERENCE = "reference"
+const val FRAMEWORKS = "frameworks"
 
 const val METADATA = "nuget_metadata"
+
+const val REMOTE_URL = "remote_url"
 
 const val NUGET_V3_NOT_FOUND =
     """

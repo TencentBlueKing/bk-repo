@@ -33,7 +33,11 @@ spec:
       affinity: {{- include "common.tplvalues.render" ( dict "value" .Values.generic.affinity "context" $) | nindent 8 }}
       {{- else }}
       affinity:
-        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.generic.podAffinityPreset "component" "generic" "context" $) | nindent 10 }}
+        {{- if eq .Values.persistence.accessMode "ReadWriteOnce" }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" "hard" "component" "repository" "context" $) | nindent 10 }}
+        {{- else }}
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.repository.podAffinityPreset "component" "generic" "context" $) | nindent 10 }}
+        {{- end }}
         podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.generic.podAntiAffinityPreset "component" "generic" "context" $) | nindent 10 }}
         nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.generic.nodeAffinityPreset.type "key" .Values.generic.nodeAffinityPreset.key "values" .Values.generic.nodeAffinityPreset.values) | nindent 10 }}
       {{- end }}
@@ -51,7 +55,7 @@ spec:
       {{- end }}
       containers:
         - name: generic
-          image: {{ include "common.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global) }}
+          image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.generic.image "global" .Values.global "bkrepo" .Values.common) }}
           imagePullPolicy: {{ .Values.generic.image.pullPolicy }}
           {{- if .Values.generic.containerSecurityContext.enabled }}
           securityContext: {{- omit .Values.generic.containerSecurityContext "enabled" | toYaml | nindent 12 }}

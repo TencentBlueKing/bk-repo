@@ -143,11 +143,9 @@ open class StreamArtifactFile(
             return
         }
         try {
-            if (storageCredentials == storageProperties.defaultStorageCredentials()) {
-                monitor.add(receiver)
-                if (!monitor.healthy.get()) {
-                    receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
-                }
+            monitor.add(receiver)
+            if (!monitor.healthy.get()) {
+                receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
             }
             receiver.receiveStream(source)
             val throughput = receiver.finish()

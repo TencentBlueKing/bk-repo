@@ -43,7 +43,7 @@ data class CreateAccountRequest(
     @ApiModelProperty("是否锁定")
     val locked: Boolean = false,
     @ApiModelProperty("授权方式")
-    val authorizationGrantTypes: Set<AuthorizationGrantType>,
+    val authorizationGrantTypes: Set<AuthorizationGrantType> = setOf(AuthorizationGrantType.PLATFORM),
     @ApiModelProperty("应用主页")
     val homepageUrl: String?,
     @ApiModelProperty("应用回调地址")

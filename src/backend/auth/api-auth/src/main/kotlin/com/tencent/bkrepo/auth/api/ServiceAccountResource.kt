@@ -53,6 +53,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
 @Primary
@@ -112,12 +113,12 @@ interface ServiceAccountResource {
     ): Response<List<CredentialSet>>
 
     @ApiOperation("创建ak/sk对")
-    @PostMapping("/credential/{appId}/{type}")
+    @PostMapping("/credential/{appId}")
     fun createCredential(
         @ApiParam(value = "账户id")
         @PathVariable appId: String,
         @ApiParam(value = "认证授权类型")
-        @PathVariable type: AuthorizationGrantType
+        @RequestParam(required = false) type: AuthorizationGrantType?
     ): Response<CredentialSet?>
 
     @ApiOperation("删除ak/sk对")

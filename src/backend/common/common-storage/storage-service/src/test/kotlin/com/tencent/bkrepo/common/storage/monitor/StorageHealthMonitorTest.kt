@@ -31,11 +31,16 @@ import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import java.io.IOException
 import java.nio.file.Path
 import java.time.Duration
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
+import kotlin.random.Random
 
 internal class StorageHealthMonitorTest {
 
@@ -50,10 +55,11 @@ internal class StorageHealthMonitorTest {
         timesToFallback = 2
     )
     private val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = monitorConfig)
+    private val path = storageCredentials.upload.location
 
     @Test
     fun testCheck() {
-        val monitor = StorageHealthMonitor(storageProperties)
+        val monitor = StorageHealthMonitor(storageProperties, path)
         TimeUnit.SECONDS.sleep(10)
         monitor.stop()
     }
@@ -69,7 +75,7 @@ internal class StorageHealthMonitorTest {
             timesToFallback = 2
         )
         val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = config)
-        val monitor = StorageHealthMonitor(storageProperties)
+        val monitor = StorageHealthMonitor(storageProperties, path)
         repeat(2) {
             monitor.add(object : StorageHealthMonitor.Observer {
                 override fun unhealthy(fallbackPath: Path?, reason: String?) {
@@ -88,7 +94,7 @@ internal class StorageHealthMonitorTest {
         config.timeout = Duration.ofNanos(1)
 
         // 5s, check n time
-        TimeUnit.SECONDS.sleep(2)
+        TimeUnit.SECONDS.sleep(3)
         // should change to unhealthy
         Assertions.assertFalse(monitor.healthy.get())
 
@@ -96,7 +102,7 @@ internal class StorageHealthMonitorTest {
         config.timeout = Duration.ofSeconds(10)
 
         // 24s, check 4 time
-        TimeUnit.SECONDS.sleep(24)
+        TimeUnit.SECONDS.sleep(20)
         // should keep unhealthy
         Assertions.assertFalse(monitor.healthy.get())
 
@@ -114,12 +120,12 @@ internal class StorageHealthMonitorTest {
             enabled = true,
             fallbackLocation = "temp-fallback",
             interval = Duration.ofSeconds(5),
-            timeout = Duration.ofSeconds(10),
+            timeout = Duration.ofNanos(10),
             timesToRestore = 2,
             timesToFallback = 1
         )
         val storageProperties = StorageProperties(filesystem = storageCredentials, monitor = config)
-        val monitor = StorageHealthMonitor(storageProperties)
+        val monitor = StorageHealthMonitor(storageProperties, path)
         monitor.add(object : StorageHealthMonitor.Observer {
             override fun unhealthy(fallbackPath: Path?, reason: String?) {
                 println("unhealthy, fallbackPath: $fallbackPath, reason: $reason")
@@ -130,8 +136,55 @@ internal class StorageHealthMonitorTest {
                 println("restore")
             }
         })
-
-        TimeUnit.SECONDS.sleep(60)
+        config.timeout = Duration.ofSeconds(10)
+        TimeUnit.SECONDS.sleep(10)
         monitor.stop()
+    }
+
+    @DisplayName("测试并发情况下的观察者的变更与通知")
+    @Test
+    fun testConcurrentOperateObservers() {
+        val monitor = StorageHealthMonitor(storageProperties, path)
+        val observer = object : StorageHealthMonitor.Observer {
+            override fun unhealthy(fallbackPath: Path?, reason: String?) {
+                println("change to unhealthy")
+            }
+
+            override fun restore(monitor: StorageHealthMonitor) {
+                println("restore")
+            }
+        }
+        val operateThreadNum = 10
+        val latch = CountDownLatch(operateThreadNum + 1)
+        // 模拟监控线程
+        thread {
+            assertDoesNotThrow {
+                repeat(10) { idx ->
+                    println("notify $idx")
+                    monitor.notifyObservers {
+                        it.unhealthy(null, null)
+                    }
+                    TimeUnit.NANOSECONDS.sleep(Random.nextLong(100, 500))
+                    monitor.notifyObservers {
+                        it.restore(monitor)
+                    }
+                }
+            }
+            latch.countDown()
+        }
+        // 模拟业务操作线程
+        repeat(operateThreadNum) {
+            thread {
+                assertDoesNotThrow {
+                    println("add observer $it")
+                    monitor.add(observer)
+                    TimeUnit.NANOSECONDS.sleep(Random.nextLong(500, 1000))
+                    println("remove observer $it")
+                    monitor.remove(observer)
+                }
+                latch.countDown()
+            }
+        }
+        latch.await()
     }
 }

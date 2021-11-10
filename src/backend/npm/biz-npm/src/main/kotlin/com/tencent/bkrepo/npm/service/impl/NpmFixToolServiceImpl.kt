@@ -5,22 +5,24 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.DIST
+import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
@@ -35,9 +37,11 @@ import com.tencent.bkrepo.npm.pojo.fixtool.PackageManagerResponse
 import com.tencent.bkrepo.npm.pojo.fixtool.PackageMetadataFixResponse
 import com.tencent.bkrepo.npm.service.NpmFixToolService
 import com.tencent.bkrepo.npm.utils.GsonUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -46,7 +50,7 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class NpmFixToolServiceImpl(
-    private val storageService: StorageService,
+    private val storageManager: StorageManager,
     private val npmPackageHandler: NpmPackageHandler
 ) : NpmFixToolService, AbstractNpmService() {
 
@@ -110,7 +114,7 @@ class NpmFixToolServiceImpl(
     private fun repairNode(projectId: String, repoName: String, packageName: String, nodeInfo: NodeInfo) {
         val successVersionList = mutableListOf<String>()
         val existsAttrVersionList = mutableListOf<String>()
-        val packageJson = storageService.load(nodeInfo.sha256!!, Range.full(nodeInfo.size), null)
+        val packageJson = storageManager.loadArtifactInputStream(nodeInfo, null)
             ?.use { GsonUtils.transferInputStreamToJson(it) }
             ?: throw IllegalStateException("src package json not found in repo [$projectId/$repoName]")
         val queryTgzNode = queryTgzNode(projectId, repoName, packageName)
@@ -154,9 +158,8 @@ class NpmFixToolServiceImpl(
                 sha256 = artifactFile.getFileSha256(),
                 md5 = artifactFile.getFileMd5()
             )
-            storageService.store(request.sha256!!, artifactFile, null)
+            storageManager.storeArtifactFile(request, artifactFile, null)
             artifactFile.delete()
-            nodeClient.createNode(request)
         }
     }
 
@@ -201,7 +204,7 @@ class NpmFixToolServiceImpl(
         val pkgMetadata = ArtifactFileFactory.build(GsonUtils.gsonToInputStream(pkgFileInfo))
         val context = ArtifactUploadContext(pkgMetadata)
         val fullPath = String.format(NPM_PKG_METADATA_FULL_PATH, name)
-        context.putAttribute(OCTET_STREAM + "_full_path", fullPath)
+        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.upload(context)
     }
@@ -302,7 +305,7 @@ class NpmFixToolServiceImpl(
         packageName: String,
         nodeInfo: NodeInfo
     ): FailPackageDetail? {
-        val packageMetaData = storageService.load(nodeInfo.sha256!!, Range.full(nodeInfo.size), null)
+        val packageMetaData = storageManager.loadArtifactInputStream(nodeInfo, null)
             ?.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
             ?: throw IllegalStateException("src package json not found in repo [$projectId/$repoName]")
         val tgzNodeInfoMap = queryTgzNode(projectId, repoName, packageName)
@@ -379,6 +382,81 @@ class NpmFixToolServiceImpl(
             repoName = record["repoName"] as String,
             metadata = mapOf()
         )
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    override fun inconsistentCorrectionData(artifactInfo: NpmArtifactInfo, name: String) {
+        /**
+         * 查找到包的package.json文件，找到所有的版本
+         * 查找package的所有版本
+         * 对比版本差异，找到不存在的所有版本，删除即可，也要删除对饮的版本json文件
+         * 处理时注意tag处理，如果tag关联的版本不存在，删除该tag，如果是latest版本删除了则需要重新找个最新版本为latest版本
+         */
+        with(artifactInfo) {
+            val packageKey = PackageKeys.ofNpm(name)
+            val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey).data
+                ?: throw PackageNotFoundException("package [$name] not found")
+            val packageInfo = queryPackageInfo(this, name, false)
+            val metadataVersions = packageInfo.versions.map.keys
+            val packageVersions =
+                packageClient.listAllVersion(projectId, repoName, packageKey).data.orEmpty().map { it.name }
+            val subVersion = metadataVersions subtract packageVersions
+            val fullPathList = mutableListOf<String>()
+            if (subVersion.isNotEmpty()) {
+                // 处理tag
+                handlerDistTag(packageInfo, subVersion, packageSummary)
+                // packageInfo
+                subVersion.forEach {
+                    // 删除版本索引
+                    packageInfo.versions.map.remove(it)
+                    // 删除时间
+                    packageInfo.time.getMap().remove(it)
+                    // 删除版本索引文件
+                    fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, it))
+                }
+                removePackageVersionMetadata(fullPathList)
+                // 重新上传json索引文件
+                uploadPackageMetadata(packageInfo)
+            }
+        }
+    }
+
+    private fun handlerDistTag(
+        packageInfo: NpmPackageMetaData,
+        subVersion: Set<String>,
+        packageSummary: PackageSummary
+    ) {
+        val tagMap = packageInfo.distTags.getMap()
+        val iterator = tagMap.entries.iterator()
+        // 移除metadata中的distTag不存在的版本标签
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            if (subVersion.contains(entry.value)) {
+                iterator.remove()
+            }
+        }
+        // 如果latest版本也移除了，则获取当前的package中的最新版本作为latest版本
+        if (!tagMap.containsKey(LATEST)) {
+            tagMap[LATEST] = packageSummary.latest
+        }
+    }
+
+    private fun removePackageVersionMetadata(fullPathList: List<String>) {
+        val context = ArtifactRemoveContext()
+        context.putAttribute(NPM_FILE_FULL_PATH, fullPathList)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        repository.remove(context)
+    }
+
+    private fun uploadPackageMetadata(packageInfo: NpmPackageMetaData) {
+        val name = packageInfo.name.orEmpty()
+        val artifactFile = JsonUtils.objectMapper.writeValueAsBytes(packageInfo).inputStream()
+            .use { ArtifactFileFactory.build(it) }
+        val context = ArtifactUploadContext(artifactFile)
+        val fullPath = String.format(NPM_PKG_METADATA_FULL_PATH, name)
+        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
+        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+        repository.upload(context)
     }
 
     companion object {

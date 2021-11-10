@@ -411,6 +411,107 @@
   |subNodeCount|long|子节点数量（包括目录）|sub node count|
   |size|long|目录/文件大小|directory/file size|
 
+## 查询节点删除点
+
+- API: GET /repository/api/node/list-deleted/{projectId}/{repoName}/{fullPath}
+- API 名称: list_node_deleted
+- 功能说明：
+  - 中文：查询节点删除点
+  - English：list node deleted point
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |projectId|string|是|无|项目名称|project name|
+  |repoName|string|是|无|仓库名称|repo name|
+  |fullPath|string|是|无|删除的节点路径，可以为目录，也可以为文件|full path|
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": [
+        {
+            "id": 1632451573064,
+            "fullPath": "/test.txt",
+            "size": 6,
+            "sha256": "a73ec2f6ed66564f5714ed3d02aa6b54a70f47f0ecc5348c72fbc804a4b5f61c",
+            "metadata": {},
+            "deletedBy": "system",
+            "deletedTime": "2021-09-24T10:46:13.064"
+        }
+    ],
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  |字段|类型|说明|Description|
+  |---|---|---|---|
+  |id|long|删除点id|delete point id|
+  |fullPath|string|节点完整路径|node full path|
+  |size|long|节点大小|file size|
+  |sha256|string|节点sha256|file sha256|
+  |metadata|object|节点元数据，key-value键值对|node metadata|
+  |deletedBy|string|删除人|delete user|
+  |deletedTime|string|删除时间|delete time|
+
+## 恢复被删除节点
+
+- API: POST /repository/api/node/restore/{projectId}/{repoName}/{fullPath}?deletedId=1632451573064&conflictStrategy=SKIP
+- API 名称: restore_node
+- 功能说明：
+  - 中文：恢复被删除节点
+  - English：restore deleted node
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |projectId|string|是|无|项目名称|project name|
+  |repoName|string|是|无|仓库名称|repo name|
+  |fullPath|string|是|无|删除的节点路径，可以为目录，也可以为文件|full path|
+  |deletedId|long|是|无|删除点id，通过查询获得|deleted point id|
+  |conflictStrategy|string|是|SKIP|冲突处理策略。假如用户新创建了新的同名文件的冲突处理策略|conflict strategy|
+
+- ConflictStrategy 冲突处理策略选项
+  - SKIP: 跳过    
+  - OVERWRITE: 覆盖
+  - FAILED: 失败
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": {
+        "fullPath": "/test.txt",
+        "restoreCount": 1,
+        "skipCount": 0,
+        "conflictCount": 0
+    },
+    "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  |字段|类型|说明|Description|
+  |---|---|---|---|
+  |fullPath|string|节点完整路径|full path|
+  |restoreCount|long|恢复数量|restore count|
+  |skipCount|long|跳过数量|skip count|
+  |conflictCount|long|冲突数量|conflict count|
+
 ## 自定义搜索
 
 - API: POST /repository/api/node/search
@@ -420,9 +521,10 @@
   - English：search node
 - 请求体
   参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议)
-
+  
+  假设需要查询*项目test下, 仓库为generic-local1或generic-local2，文件名以.tgz结尾的文件，并按照文件名和大小排序，查询结果包含name、fullPath、size、sha256、md5、metadata字段*，构造的请求体如下，
   ``` json
-   分页查询在项目test下, 仓库为generic-local1或generic-local2，文件名以.tgz结尾的文件，并按照文件名和大小排序，查询结果包含name、fullPath、size、sha256、md5、metadata字段，
+   
   {
     "select": ["name", "fullPath", "size", "sha256", "md5", "metadata"],
     "page": {

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 @Document("project_metrics")
 data class TProjectMetrics(
@@ -40,5 +41,5 @@ data class TProjectMetrics(
     var nodeNum: Long,
     var capSize: Long,
     val repoMetrics: List<RepoMetrics>,
-    val sizeDistribution: Map<String, Long>
+    val createdDate: LocalDateTime? = LocalDateTime.now()
 )

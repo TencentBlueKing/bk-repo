@@ -35,8 +35,10 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.Collections
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -47,10 +49,11 @@ import kotlin.concurrent.thread
 /**
  * 存储监控状态监控类，目前只支持监控默认存储实例
  * @param storageProperties 存储配置
- * TODO: 监控多存储实例
  */
 class StorageHealthMonitor(
-    storageProperties: StorageProperties
+    storageProperties: StorageProperties,
+    val path: String,
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) {
     /**
      * 表示存储实例是否健康
@@ -73,19 +76,9 @@ class StorageHealthMonitor(
     private val monitorConfig = storageProperties.monitor
 
     /**
-     * 存储凭证
-     */
-    private val storageCredentials = storageProperties.defaultStorageCredentials()
-
-    /**
-     * Executor，用于异步执行检测逻辑判断超时
-     */
-    private val executorService = Executors.newSingleThreadExecutor()
-
-    /**
      * 观察者列表，当健康状况发生变化时会通知列表中的观察者
      */
-    private val observerList = mutableListOf<Observer>()
+    private val observerList = Collections.synchronizedList(mutableListOf<Observer>())
 
     /**
      * 记录当前连续检测成功次数
@@ -148,7 +141,7 @@ class StorageHealthMonitor(
                 TimeUnit.SECONDS.sleep(interval)
             }
         }
-        logger.info("Startup storage monitor for path[${storageCredentials.upload.location}]")
+        logger.info("Startup storage monitor for path[${getPrimaryPath()}]")
     }
 
     /**
@@ -180,7 +173,7 @@ class StorageHealthMonitor(
     /**
      * 获取主存储路径
      */
-    private fun getPrimaryPath(): Path = storageCredentials.upload.location.toPath()
+    private fun getPrimaryPath(): Path = path.toPath()
 
     /**
      * 检测失败处理逻辑
@@ -210,6 +203,7 @@ class StorageHealthMonitor(
         if (!healthy.get()) {
             logger.info("Try to restore [$times/${monitorConfig.timesToRestore}].")
         }
+        logger.debug("Path[${getPrimaryPath()}] check success")
 
         // 当连续失败次数超过阈值，进行降级操作
         if (times >= monitorConfig.timesToRestore) {
@@ -223,13 +217,19 @@ class StorageHealthMonitor(
             logger.error("Path[${getPrimaryPath()}] change to unhealthy, reason: $fallBackReason")
             fallBackTime = System.currentTimeMillis()
             // 通知观察者
-            for (observer in observerList) {
+            notifyObservers {
                 try {
-                    observer.unhealthy(getFallbackPath(), fallBackReason)
+                    it.unhealthy(getFallbackPath(), fallBackReason)
                 } catch (exception: Exception) {
                     logger.error("Failed to change observer: $exception", exception)
                 }
             }
+        }
+    }
+
+    fun notifyObservers(action: (Observer) -> Unit) {
+        synchronized(observerList) {
+            observerList.forEach { action(it) }
         }
     }
 
@@ -241,9 +241,9 @@ class StorageHealthMonitor(
             val duration = System.currentTimeMillis() - fallBackTime
             logger.info("Path[${getPrimaryPath()}] restore healthy, during: ${time(duration, TimeUnit.MILLISECONDS)}")
             // 通知观察者
-            for (observer in observerList) {
+            notifyObservers {
                 try {
-                    observer.restore(this)
+                    it.restore(this)
                 } catch (exception: Exception) {
                     logger.error("Failed to restore observer: $exception", exception)
                 }

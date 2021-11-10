@@ -31,20 +31,19 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_METRICS
 import com.tencent.bkrepo.opdata.pojo.enums.StatMetrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 
 @Service
 class StorageCredentialsModel @Autowired constructor(
-    private val mongoTemplate: MongoTemplate
+    private val projectMetricsRepository: ProjectMetricsRepository
 ) {
 
     fun getStorageCredentialsStat(metrics: StatMetrics): Map<String, Long> {
         val result = mutableMapOf<String, Long>()
-        val projectMetricsList = mongoTemplate.findAll(TProjectMetrics::class.java, OPDATA_PROJECT_METRICS)
+        val projectMetricsList = projectMetricsRepository.findAll()
         projectMetricsList.forEach { projectMetrics ->
             projectMetrics.repoMetrics.forEach {
                 val value = if (metrics == StatMetrics.NUM) it.num else it.size

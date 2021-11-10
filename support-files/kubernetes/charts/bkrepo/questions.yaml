@@ -63,7 +63,7 @@ questions:
   - variable: gateway.host
     label: "bkrepo hostname"
     type: string
-    default: "bkrepo.com"
+    default: "bkrepo.example.com"
     description: "bkrepo必须通过hostname访问"
     group: "gateway配置"
   - variable: gateway.service.type

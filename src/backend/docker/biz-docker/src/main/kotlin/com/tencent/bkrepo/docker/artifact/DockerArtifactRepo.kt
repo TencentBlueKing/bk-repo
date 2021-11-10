@@ -69,6 +69,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.InputStream
 
@@ -86,6 +87,9 @@ class DockerArtifactRepo @Autowired constructor(
 ) {
 
     lateinit var userId: String
+
+    @Value("\${docker.domain: ''}")
+    val domain: String = EMPTY
 
     /**
      * start a append upload
@@ -487,7 +491,8 @@ class DockerArtifactRepo @Autowired constructor(
                 val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
                 val size = it[DOCKER_NODE_SIZE] as Int
                 val downLoadCount = 0L
-                data.add(DockerTag(tag, EMPTY, size, lastModifiedBy, lastModifiedDate, downLoadCount))
+                val registryUrl = "$domain/$projectId/$repoName/$artifactName:$tag"
+                data.add(DockerTag(tag, EMPTY, size, lastModifiedBy, lastModifiedDate, downLoadCount, registryUrl))
             }
             return data
         }

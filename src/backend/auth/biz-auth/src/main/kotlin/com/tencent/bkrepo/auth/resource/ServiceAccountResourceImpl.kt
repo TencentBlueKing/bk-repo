@@ -90,8 +90,8 @@ class ServiceAccountResourceImpl @Autowired constructor(
         return ResponseBuilder.success(credential)
     }
 
-    override fun createCredential(appId: String, type: AuthorizationGrantType): Response<CredentialSet> {
-        val result = accountService.createCredential(appId, type)
+    override fun createCredential(appId: String, type: AuthorizationGrantType?): Response<CredentialSet> {
+        val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM)
         return ResponseBuilder.success(result)
     }
 

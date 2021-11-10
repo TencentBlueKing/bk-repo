@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.nio.file.Paths
@@ -128,6 +129,7 @@ class CacheStorageService(
     }
 
     override fun doCheckHealth(credentials: StorageCredentials) {
+        val monitor = getMonitor(credentials)
         if (!monitor.healthy.get()) {
             throw IllegalStateException("Cache storage is unhealthy: ${monitor.fallBackReason}")
         }
@@ -141,13 +143,13 @@ class CacheStorageService(
      */
     private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
         val isExceedThreshold = range.total > storageProperties.receive.fileSizeThreshold.toBytes()
-        val isHealth = if (credentials == storageProperties.defaultStorageCredentials()) {
-            monitor.healthy.get()
-        } else {
-            true
-        }
+        val isHealth = getMonitor(credentials).healthy.get()
         val cacheFirst = credentials.cache.loadCacheFirst
         return cacheFirst && isHealth && isExceedThreshold
+    }
+
+    private fun getMonitor(credentials: StorageCredentials): StorageHealthMonitor {
+        return monitorHelper.getMonitor(storageProperties, credentials)
     }
 
     private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {

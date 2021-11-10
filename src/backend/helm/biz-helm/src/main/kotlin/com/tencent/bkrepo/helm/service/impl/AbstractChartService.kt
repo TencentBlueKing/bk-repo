@@ -37,11 +37,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.helm.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
@@ -53,7 +53,8 @@ import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.TGZ_SUFFIX
 import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
-import com.tencent.bkrepo.helm.model.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -67,7 +68,7 @@ import java.time.LocalDateTime
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
-open class AbstractChartService {
+open class AbstractChartService : ArtifactService() {
     @Autowired
     lateinit var nodeClient: NodeClient
 
@@ -146,10 +147,17 @@ open class AbstractChartService {
     }
 
     /**
-     * check package version exists
+     * check package [key] version [version] exists
      */
     fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
         return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
+    }
+
+    /**
+     * check package [key] exists
+     */
+    fun packageExist(projectId: String, repoName: String, key: String): Boolean {
+        return packageClient.findPackageByKey(projectId, repoName, key).data?.let { true } ?: false
     }
 
     /**
