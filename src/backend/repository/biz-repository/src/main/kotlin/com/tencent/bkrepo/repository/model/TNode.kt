@@ -36,6 +36,8 @@ import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.COPY_FROM_IDX_DEF
+import com.tencent.bkrepo.repository.model.TNode.Companion.FOLDER_IDX
+import com.tencent.bkrepo.repository.model.TNode.Companion.FOLDER_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.FULL_PATH_IDX
 import com.tencent.bkrepo.repository.model.TNode.Companion.FULL_PATH_IDX_DEF
 import com.tencent.bkrepo.repository.model.TNode.Companion.METADATA_IDX
@@ -57,7 +59,8 @@ import java.time.LocalDateTime
     CompoundIndex(name = PATH_IDX, def = PATH_IDX_DEF, background = true),
     CompoundIndex(name = METADATA_IDX, def = METADATA_IDX_DEF, background = true),
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
-    CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true)
+    CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
+    CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true)
 )
 data class TNode(
     var id: String? = null,
@@ -94,5 +97,7 @@ data class TNode(
         const val METADATA_IDX_DEF = "{'metadata.key': 1, 'metadata.value': 1}"
         const val SHA256_IDX_DEF = "{'sha256': 1}"
         const val COPY_FROM_IDX_DEF = "{'copyFromCredentialsKey':1}"
+        const val FOLDER_IDX = "folder_idx"
+        const val FOLDER_IDX_DEF = "{'folder': 1}"
     }
 }

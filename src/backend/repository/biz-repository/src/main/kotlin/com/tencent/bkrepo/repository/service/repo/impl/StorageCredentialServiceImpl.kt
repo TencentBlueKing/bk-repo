@@ -86,7 +86,7 @@ class StorageCredentialServiceImpl(
     override fun list(region: String?): List<StorageCredentials> {
         return storageCredentialsRepository.findAll()
             .filter { region.isNullOrBlank() || it.region == region }
-            .map { it.credentials.readJsonString<StorageCredentials>() }
+            .map { it.credentials.readJsonString<StorageCredentials>().apply { this.key = it.id } }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
