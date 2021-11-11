@@ -78,7 +78,10 @@ include_binary = true
 
 [sysauditor.nvtools]
 enabled = true
+# cve漏洞库连接用户
 username = 
+# cve漏洞库连接密码
 key = 
+# cve漏洞库地址
 host = 
 ```
