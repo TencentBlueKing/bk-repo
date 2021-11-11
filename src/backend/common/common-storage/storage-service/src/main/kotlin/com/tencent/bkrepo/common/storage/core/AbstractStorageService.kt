@@ -72,12 +72,7 @@ abstract class AbstractStorageService : FileBlockSupport() {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
-            return doLoad(path, digest, range, credentials) ?: run {
-                if (credentials != storageProperties.defaultStorageCredentials()) {
-                    logger.warn("Fallback to load on default storage [$digest]")
-                    doLoad(path, digest, range, storageProperties.defaultStorageCredentials())
-                } else null
-            }
+            return doLoad(path, digest, range, credentials)
         } catch (exception: Exception) {
             logger.error("Failed to load file [$digest] on [${credentials.key}]", exception)
             throw StorageErrorException(StorageMessageCode.LOAD_ERROR)

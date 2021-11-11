@@ -60,6 +60,7 @@ data class TUser(
     val group: Boolean = false,
     val email: String? = null,
     val phone: String? = null,
+    var accounts: List<String>? = emptyList(),
     val createdDate: LocalDateTime? = LocalDateTime.now(),
     val lastModifiedDate: LocalDateTime? = LocalDateTime.now()
 )

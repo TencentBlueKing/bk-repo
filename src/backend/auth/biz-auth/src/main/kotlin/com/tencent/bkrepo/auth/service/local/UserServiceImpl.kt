@@ -60,7 +60,10 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -386,6 +389,24 @@ class UserServiceImpl constructor(
         val query = UserQueryHelper.getUserById(userId)
         val record = mongoTemplate.find(query, TUser::class.java)
         return record.isNotEmpty()
+    }
+
+    override fun addUserAccount(userId: String, accountId: String): Boolean {
+        checkUserExist(userId)
+        val query = Query(Criteria(TUser::userId.name).isEqualTo(userId))
+        val update = Update().addToSet(TUser::accounts.name, accountId)
+        val record = mongoTemplate.updateFirst(query, update, TUser::class.java)
+        if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
+        return false
+    }
+
+    override fun removeUserAccount(userId: String, accountId: String): Boolean {
+        checkUserExist(userId)
+        val query = Query(Criteria(TUser::userId.name).isEqualTo(userId))
+        val update = Update().pull(TUser::accounts.name, accountId)
+        val record = mongoTemplate.updateFirst(query, update, TUser::class.java)
+        if (record.modifiedCount == 1L || record.matchedCount == 1L) return true
+        return false
     }
 
     companion object {

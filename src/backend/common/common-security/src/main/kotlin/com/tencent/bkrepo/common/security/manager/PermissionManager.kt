@@ -197,6 +197,12 @@ open class PermissionManager(
                 "requestMethod: ${request.method}, requestUri: ${request.requestURI}")
         }
 
+        // 校验Oauth token对应权限
+        val authorities = SecurityUtils.getAuthorities()
+        if (authorities.isNotEmpty() && !authorities.contains(type.toString())) {
+            throw PermissionException()
+        }
+
         // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(
             uid = userId,
@@ -209,7 +215,8 @@ open class PermissionManager(
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误
-            throw PermissionException()
+            throw PermissionException("user[$userId] does not have $action permission " +
+                "in project[$projectId] repo[$repoName] ")
         }
         if (logger.isDebugEnabled) {
             logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")

@@ -69,5 +69,7 @@ data class NodeInfo(
     @ApiModelProperty("所属仓库名称")
     val repoName: String,
     @ApiModelProperty("拷贝的源存储key")
-    val copyFromCredentialsKey: String? = null
+    val copyFromCredentialsKey: String? = null,
+    @ApiModelProperty("拷贝的目标存储key")
+    val copyIntoCredentialsKey: String? = null
 )

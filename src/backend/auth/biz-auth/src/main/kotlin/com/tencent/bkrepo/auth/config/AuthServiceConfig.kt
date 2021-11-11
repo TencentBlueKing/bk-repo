@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.repository.AccountRepository
+import com.tencent.bkrepo.auth.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
@@ -68,8 +69,10 @@ class AuthServiceConfig {
     @ConditionalOnMissingBean(AccountService::class)
     fun accountService(
         accountRepository: AccountRepository,
+        oauthTokenRepository: OauthTokenRepository,
+        userService: UserService,
         mongoTemplate: MongoTemplate
-    ) = AccountServiceImpl(accountRepository, mongoTemplate)
+    ) = AccountServiceImpl(accountRepository, oauthTokenRepository, userService, mongoTemplate)
 
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = ["realm"], havingValue = "local", matchIfMissing = true)

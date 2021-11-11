@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.service.node.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -44,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -124,12 +124,11 @@ open class NodeMoveCopySupport(
             // 文件 & 跨存储node
             if (!node.folder && srcCredentials != dstCredentials) {
                 if (storageService.exist(node.sha256!!, srcCredentials)) {
-                    val digest = node.sha256!!
-                    logger.info(
-                        "start copy data [$digest] from key[${srcCredentials?.key}] " +
-                            "to key[${dstCredentials?.key}]"
-                    )
-                    storageService.copy(digest, srcCredentials, dstCredentials)
+                    storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
+                } else {
+                    // 默认存储为null,所以需要使用一个默认key，以区分该节点是拷贝节点
+                    dstNode.copyFromCredentialsKey = srcCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
+                    dstNode.copyIntoCredentialsKey = dstCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
                 }
             }
             // 创建dst节点
@@ -183,8 +182,6 @@ open class NodeMoveCopySupport(
                 path = dstPath,
                 name = dstName,
                 fullPath = dstFullPath,
-                // 默认存储为null,所以需要使用一个空串占位，以区分该节点是拷贝节点
-                copyFromCredentialsKey = srcCredentials?.key ?: EMPTY,
                 lastModifiedBy = operator,
                 lastModifiedDate = LocalDateTime.now()
             )
