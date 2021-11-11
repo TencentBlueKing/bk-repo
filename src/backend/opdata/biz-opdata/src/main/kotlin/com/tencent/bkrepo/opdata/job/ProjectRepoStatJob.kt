@@ -33,7 +33,6 @@ package com.tencent.bkrepo.opdata.job
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.config.InfluxDbConfig
-import com.tencent.bkrepo.opdata.config.JobConfig
 import com.tencent.bkrepo.opdata.model.NodeModel
 import com.tencent.bkrepo.opdata.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.RepoModel
@@ -43,7 +42,6 @@ import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.influxdb.dto.BatchPoints
 import org.influxdb.dto.Point
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
@@ -57,8 +55,7 @@ class ProjectRepoStatJob(
     private val projectModel: ProjectModel,
     private val repoModel: RepoModel,
     private val influxDbConfig: InfluxDbConfig,
-    private val projectMetricsRepository: ProjectMetricsRepository,
-    private val jobConfig: JobConfig
+    private val projectMetricsRepository: ProjectMetricsRepository
 ) {
 
     @Scheduled(cron = "00 00 */1 * * ?")
