@@ -59,7 +59,7 @@ class ProjectRepoStatJob(
 ) {
 
 
-    @Scheduled(cron = "00 10 12,24 * * ?")
+    @Scheduled(cron = "00 00 */3 * * ?")
     @SchedulerLock(name = "ProjectRepoStatJob", lockAtMostFor = "PT10H")
     fun statProjectRepoSize() {
         logger.info("start to stat project metrics")
