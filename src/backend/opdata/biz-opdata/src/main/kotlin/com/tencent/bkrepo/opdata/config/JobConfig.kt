@@ -33,20 +33,12 @@ package com.tencent.bkrepo.opdata.config
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
+import org.springframework.stereotype.Component
 
-@Configuration
-class InfluxDbConfig {
+@Component
+class JobConfig {
 
-    @Value("\${spring.influx.url:''}")
-    private val influxDBUrl: String? = null
-    @Value("\${spring.influx.user:''}")
-    private val userName: String? = null
-    @Value("\${spring.influx.password:''}")
-    private val password: String? = null
-    @Value("\${spring.influx.database:''}")
-    val database: String? = null
+    @Value("\${spring.opdata.projectstat:'00 00 */24 * * ?'}")
+    val projectStatTrigger: String? = null
 
-    fun influxDbUtils(): InfluxDbUtils {
-        return InfluxDbUtils(userName, password, influxDBUrl, database, "100day")
-    }
 }

@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
 import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.beans.factory.annotation.Autowired
@@ -48,7 +49,12 @@ class NodeModel @Autowired constructor(
                 ?: return RepoMetrics(repoName = repoName, size = 0L, num = 0L)
             return RepoMetrics(repoName = repoName, size = result.size, num = result.subNodeCount)
         } catch (ignored: Exception) {
+            logger.warn("get node size exception [$projectId, $repoName ,$ignored]")
             return RepoMetrics(repoName = repoName, size = 0L, num = 0L)
         }
+    }
+
+    companion object {
+        private val logger = LoggerHolder.jobLogger
     }
 }
