@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
 import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
@@ -306,12 +307,34 @@ class StorageInstanceMigrationJob(
     ): MigrationContext {
         val repository = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
-        val srcStorageKey = repository.storageCredentials?.key
-        val srcStorageCredentials = repository.storageCredentials ?: storageProperties.defaultStorageCredentials()
-        val dstStorageCredentials = storageCredentialService.findByKey(dstStorageKey)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, dstStorageKey)
-        if (srcStorageCredentials == dstStorageCredentials && failedPointId == null) {
-            throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Src and Dst storageCredentials are same")
+
+        val srcStorageKey: String?
+        val srcStorageCredentials: StorageCredentials
+        val dstStorageCredentials: StorageCredentials
+        if (failedPointId != null) {
+            srcStorageKey = repository.oldCredentialsKey
+            srcStorageCredentials = if (srcStorageKey == null) storageProperties.defaultStorageCredentials()
+                else storageCredentialService.findByKey(srcStorageKey) ?: throw ErrorCodeException(
+                    CommonMessageCode.RESOURCE_NOT_FOUND,
+                    srcStorageKey
+                )
+
+            dstStorageCredentials = repository.storageCredentials ?: throw ErrorCodeException(
+                CommonMessageCode.RESOURCE_NOT_FOUND,
+                dstStorageKey
+            )
+            logger.info("continue migrate src key $srcStorageKey ,dst key $dstStorageKey")
+        } else {
+            srcStorageKey = repository.storageCredentials?.key
+            srcStorageCredentials = repository.storageCredentials ?: storageProperties.defaultStorageCredentials()
+            dstStorageCredentials = storageCredentialService.findByKey(dstStorageKey)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, dstStorageKey)
+        }
+        if (srcStorageCredentials == dstStorageCredentials) {
+            throw ErrorCodeException(
+                CommonMessageCode.METHOD_NOT_ALLOWED,
+                "Src and Dst storageCredentials are same"
+            )
         }
         // 限制存储实例类型必须相同且为InnerCos
         if (srcStorageCredentials !is InnerCosCredentials || dstStorageCredentials !is InnerCosCredentials) {
