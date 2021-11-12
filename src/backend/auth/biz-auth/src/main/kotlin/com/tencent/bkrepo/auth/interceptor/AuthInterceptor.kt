@@ -33,6 +33,7 @@ package com.tencent.bkrepo.auth.interceptor
 
 import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
 import com.tencent.bkrepo.auth.constant.AUTH_PROJECT_SUFFIX
@@ -69,7 +70,8 @@ class AuthInterceptor : HandlerInterceptor {
                 AUTH_REPO_SUFFIX,
                 AUTH_PROJECT_SUFFIX,
                 AUTH_API_ACCOUNT_PREFIX,
-                AUTH_API_KEY_PREFIX
+                AUTH_API_KEY_PREFIX,
+                AUTH_API_OAUTH_PREFIX
             )
             var isBasicAuthUri = false
             basicAuthApiList.forEach {

@@ -37,7 +37,7 @@ class NugetRemoteAndVirtualCommon {
         registrationPath: String,
         v2BaseUrl: String,
         v3BaseUrl: String
-    ): RegistrationIndex {
+    ): RegistrationIndex? {
         val registrationBaseUrl = "$v3BaseUrl/$registrationPath".trimEnd('/')
         val originalRegistrationBaseUrl =
             convertToOriginalUrl(registrationBaseUrl, v2BaseUrl, v3BaseUrl)
@@ -50,10 +50,6 @@ class NugetRemoteAndVirtualCommon {
         return repository.query(context)?.let {
             JsonUtils.objectMapper.readValue(it as InputStream, RegistrationIndex::class.java)
         }
-        // 这里不应该抛这个异常
-            ?: throw NugetFeedNofFoundException(
-                "query remote registrationIndex for [$originalRegistrationIndexUrl] failed!"
-            )
     }
 
     fun downloadRemoteRegistrationPage(

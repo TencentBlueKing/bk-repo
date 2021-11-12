@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.common.NugetRemoteAndVirtualCommon
 import com.tencent.bkrepo.nuget.constant.REMOTE_URL
+import com.tencent.bkrepo.nuget.exception.NugetFeedNofFoundException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Feed
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.feed.Resource
@@ -97,8 +98,13 @@ class NugetRemoteRepository(
         val registrationIndex = commonUtils.downloadRemoteRegistrationIndex(
             artifactInfo, registrationPath, v2BaseUrl, v3BaseUrl
         )
-        val rewriteRegistrationIndex = NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
-            registrationIndex, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+        val rewriteRegistrationIndex = registrationIndex?.let {
+            NugetV3RemoteRepositoryUtils.rewriteRegistrationIndexUrls(
+                registrationIndex, artifactInfo, v2BaseUrl, v3BaseUrl, registrationPath
+            )
+        } ?: throw NugetFeedNofFoundException(
+            "Failed to parse registration json for package: [${artifactInfo.packageName}]," +
+                " in repo: [${artifactInfo.getRepoIdentify()}]"
         )
         return ResponseEntity.ok(rewriteRegistrationIndex)
     }

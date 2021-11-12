@@ -1,9 +1,13 @@
 package com.tencent.bkrepo.nuget.util
 
 import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.nuget.constant.PACKAGE
+import com.tencent.bkrepo.nuget.pojo.nuspec.NuspecMetadata
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.apache.commons.io.IOUtils
 import java.net.URI
 import java.util.StringJoiner
@@ -69,5 +73,12 @@ object NugetUtils {
         val packageContentUrl = StringJoiner("/").add(UrlFormatter.format(v3RegistrationUrl))
             .add(packageId.toLowerCase()).add("index.json")
         return URI.create(packageContentUrl.toString())
+    }
+
+    /**
+     * 从[versionPackage]中解析[NuspecMetadata]
+     */
+    fun resolveVersionMetadata(versionPackage: PackageVersion): NuspecMetadata {
+        return versionPackage.extension[PACKAGE].toString().readJsonString()
     }
 }

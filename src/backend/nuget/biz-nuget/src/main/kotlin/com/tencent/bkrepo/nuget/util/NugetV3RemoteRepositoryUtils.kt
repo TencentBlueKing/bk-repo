@@ -64,7 +64,7 @@ object NugetV3RemoteRepositoryUtils {
         )
     }
 
-    private fun registrationResultPageItemRewriter(
+    fun registrationResultPageItemRewriter(
         originalPageItem: RegistrationPageItem,
         packageName: String,
         v2BaseUrl: String,
