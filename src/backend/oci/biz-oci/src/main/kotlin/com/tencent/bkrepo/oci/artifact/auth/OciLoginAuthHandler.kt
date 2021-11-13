@@ -12,7 +12,7 @@ import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.oci.pojo.response.AuthenticateResponse
-import com.tencent.bkrepo.oci.pojo.response.HelmResponse
+import com.tencent.bkrepo.oci.pojo.response.OciResponse
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import javax.servlet.http.HttpServletRequest
@@ -60,7 +60,7 @@ class OciLoginAuthHandler(
     ) {
         response.status = HttpStatus.UNAUTHORIZED.value
         response.contentType = MediaType.APPLICATION_JSON_VALUE
-        val helmResponse = HelmResponse.unAuthenticated(
+        val helmResponse = OciResponse.unAuthenticated(
             listOf(AuthenticateResponse.unAuthenticated("UNAUTHORIZED", "authentication required", null))
         )
         response.writer.write(helmResponse.toJsonString())

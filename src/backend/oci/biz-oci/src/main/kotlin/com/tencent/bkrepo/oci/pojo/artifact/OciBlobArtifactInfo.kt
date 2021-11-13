@@ -22,4 +22,8 @@ class OciBlobArtifactInfo(
 	fun getDigestHex(): String {
 		return ociDigest.getDigestHex()
 	}
+
+	fun getDigest() = ociDigest
+
+	fun blobTempPath() = packageName + "/_uploads/" + ociDigest.fileName()
 }

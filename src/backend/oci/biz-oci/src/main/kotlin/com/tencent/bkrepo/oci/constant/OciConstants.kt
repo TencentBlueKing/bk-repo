@@ -32,6 +32,10 @@ package com.tencent.bkrepo.oci.constant
 
 const val OCI_API_PREFIX = "v2"
 
+const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
+const val DOCKER_API_VERSION = "registry/2.0"
+const val DOCKER_CONTENT_DIGEST = "Docker-Content-Digest"
+
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"
 
