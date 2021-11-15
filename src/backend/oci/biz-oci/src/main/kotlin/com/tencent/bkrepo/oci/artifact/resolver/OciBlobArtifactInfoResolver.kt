@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
+import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
@@ -28,6 +29,8 @@ class OciBlobArtifactInfoResolver : ArtifactInfoResolver {
 		val digest = attributes["digest"].toString().trim()
 		// 解析UUID
 		val uuid = attributes["uuid"].toString().trim()
-		return OciBlobArtifactInfo(projectId, repoName, packageName, "", digest, uuid)
+		// 解析mount
+		val mount = request.getAttribute("mount") as? String
+		return OciBlobArtifactInfo(projectId, repoName, packageName, "", digest, uuid, mount)
 	}
 }

@@ -11,7 +11,8 @@ class OciBlobArtifactInfo(
 	packageName: String,
 	version: String,
 	private val digest: String,
-	private val uuid: String
+	private val uuid: String,
+	val mount: String? = null
 ) : OciArtifactInfo(projectId, repoName, packageName, version) {
 	private val ociDigest = OciDigest(digest)
 

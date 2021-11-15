@@ -27,7 +27,7 @@ class OciBlobController(
 	 * 检查blob文件是否存在
 	 * helm chart push 时会调用该请求去判断blob文件在服务器上是否存在，如果存在则不上传
 	 */
-	@Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+	@Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
 	@RequestMapping("/{projectId}/{repoName}/**/blobs/{digest}", method = [RequestMethod.HEAD])
 	fun checkBlobExists(
 		artifactInfo: OciBlobArtifactInfo
@@ -39,7 +39,9 @@ class OciBlobController(
 	 * 上传blob文件或者是完成上传，通过请求头来判断
 	 */
 	@PutMapping("/{projectId}/{repoName}/**/blobs/uploads/{uuid}")
-	fun uploadBlob() {
+	fun uploadBlob(
+		artifactInfo: OciBlobArtifactInfo
+	) {
 		throw MethodNotAllowedException()
 	}
 
@@ -47,8 +49,10 @@ class OciBlobController(
 	 * 开始上传blob文件
 	 */
 	@PostMapping("/{projectId}/{repoName}/**/blobs/uploads/")
-	fun startBlobUpload() {
-		throw MethodNotAllowedException()
+	fun startBlobUpload(
+		artifactInfo: OciBlobArtifactInfo
+	) {
+		return ociBlobService.startUploadBlob(artifactInfo)
 	}
 
 	/**

@@ -35,6 +35,11 @@ const val OCI_API_PREFIX = "v2"
 const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
 const val DOCKER_API_VERSION = "registry/2.0"
 const val DOCKER_CONTENT_DIGEST = "Docker-Content-Digest"
+const val DOCKER_UPLOAD_UUID = "Docker-Upload-Uuid"
+
+const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
+const val HTTP_PROTOCOL_HTTP = "http"
+const val HTTP_PROTOCOL_HTTPS = "https"
 
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"
