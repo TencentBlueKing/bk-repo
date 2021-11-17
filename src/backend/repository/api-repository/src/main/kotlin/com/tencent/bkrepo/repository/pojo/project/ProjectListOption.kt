@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,48 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.repo
+package com.tencent.bkrepo.repository.pojo.project
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
-import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 项目服务接口
- */
-interface ProjectService {
-
-    /**
-     * 查询名称为[name]的项目信息
-     */
-    fun getProjectInfo(name: String): ProjectInfo?
-
-    /**
-     * 查询所有项目列表
-     */
-    fun listProject(): List<ProjectInfo>
-
-    /**
-     * 查询用户有权限的项目列表
-     * @param userId 用户id
-     * @param option 项目列表选项
-     */
-    fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo>
-
-    /**
-     * 分页查询项目列表
-     */
-    fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?>
-
-    /**
-     * 判断名称为[name]的项目是否存在
-     */
-    fun checkExist(name: String): Boolean
-
-    /**
-     * 根据[request]创建项目，创建成功后返回项目信息
-     */
-    fun createProject(request: ProjectCreateRequest): ProjectInfo
-}
+@ApiModel("项目列表选项")
+data class ProjectListOption(
+    @ApiModelProperty("当前页")
+    val pageNumber: Int?,
+    @ApiModelProperty("分页大小")
+    val pageSize: Int?,
+    @ApiModelProperty("项目名列表")
+    val names: List<String>?,
+    @ApiModelProperty("项目展示名列表")
+    val displayNames: List<String>?
+)
