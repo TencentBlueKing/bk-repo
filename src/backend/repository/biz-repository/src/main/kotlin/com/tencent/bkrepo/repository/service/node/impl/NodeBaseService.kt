@@ -271,7 +271,9 @@ abstract class NodeBaseService(
                     size = it.size,
                     sha256 = it.sha256,
                     md5 = it.md5,
-                    metadata = metadata
+                    metadata = metadata,
+                    copyFromCredentialsKey = it.copyFromCredentialsKey,
+                    copyIntoCredentialsKey = it.copyIntoCredentialsKey
                 )
             }
         }

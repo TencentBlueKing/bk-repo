@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TNode
@@ -122,7 +123,13 @@ open class NodeMoveCopySupport(
 
             // 文件 & 跨存储node
             if (!node.folder && srcCredentials != dstCredentials) {
-                storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
+                if (storageService.exist(node.sha256!!, srcCredentials)) {
+                    storageService.copy(node.sha256!!, srcCredentials, dstCredentials)
+                } else {
+                    // 默认存储为null,所以需要使用一个默认key，以区分该节点是拷贝节点
+                    dstNode.copyFromCredentialsKey = srcCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
+                    dstNode.copyIntoCredentialsKey = dstCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
+                }
             }
             // 创建dst节点
             nodeBaseService.doCreate(dstNode, dstRepo)
