@@ -82,7 +82,10 @@ class ProjectServiceImpl(
         return if (option?.pageNumber == null && option?.pageSize == null) {
             projectDao.find(query).map { convert(it)!! }
         } else {
-            val pageRequest = Pages.ofRequest(option.pageNumber ?: DEFAULT_PAGE_NUMBER, option.pageSize ?: DEFAULT_PAGE_SIZE)
+            val pageRequest = Pages.ofRequest(
+                option.pageNumber ?: DEFAULT_PAGE_NUMBER,
+                option.pageSize ?: DEFAULT_PAGE_SIZE
+            )
             projectDao.find(query.with(pageRequest)).map { convert(it)!! }
         }
     }
