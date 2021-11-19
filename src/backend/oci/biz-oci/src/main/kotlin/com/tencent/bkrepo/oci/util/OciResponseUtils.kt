@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.oci.util
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_CONTENT_DIGEST
@@ -9,9 +11,7 @@ import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTP
 import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTPS
 import com.tencent.bkrepo.oci.util.BlobUtils.emptyBlobDigest
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
 import java.net.URI
 import javax.ws.rs.core.UriBuilder
 
@@ -24,12 +24,13 @@ object OciResponseUtils {
 
 	private const val LOCAL_HOST = "localhost"
 
-	fun emptyBlobHeadResponse(): ResponseEntity<Any> {
-		return ResponseEntity.ok().header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-			.header(DOCKER_CONTENT_DIGEST, emptyBlobDigest())
-			.header(HttpHeaders.CONTENT_LENGTH, "32")
-			.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
-			.build()
+	fun emptyBlobHeadResponse() {
+		val response = HttpContextHolder.getResponse()
+		response.status = HttpStatus.OK.value
+		response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+		response.addHeader(DOCKER_CONTENT_DIGEST, emptyBlobDigest())
+		response.addHeader(HttpHeaders.CONTENT_LENGTH, "32")
+		response.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
 	}
 
 	fun getResponseLocationURI(path: String): URI {

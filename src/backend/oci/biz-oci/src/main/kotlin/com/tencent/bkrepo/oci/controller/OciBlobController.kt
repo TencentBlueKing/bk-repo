@@ -3,11 +3,12 @@ package com.tencent.bkrepo.oci.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.service.OciBlobService
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -31,18 +32,21 @@ class OciBlobController(
 	@RequestMapping("/{projectId}/{repoName}/**/blobs/{digest}", method = [RequestMethod.HEAD])
 	fun checkBlobExists(
 		artifactInfo: OciBlobArtifactInfo
-	):ResponseEntity<Any> {
-		return ociBlobService.checkBlobExists(artifactInfo)
+	) {
+		ociBlobService.checkBlobExists(artifactInfo)
 	}
 
 	/**
-	 * 上传blob文件或者是完成上传，通过请求头来判断
+	 * 上传blob文件或者是完成上传，通过请求头[User-Agent]来判断
+	 * 如果正则匹配成功，则进行上传，执行完成则完成；否则使用的是追加上传的方式，完成最后一块的上传进行合并。
 	 */
+	@Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
 	@PutMapping("/{projectId}/{repoName}/**/blobs/uploads/{uuid}")
 	fun uploadBlob(
-		artifactInfo: OciBlobArtifactInfo
+		artifactInfo: OciBlobArtifactInfo,
+		artifactFile: ArtifactFile
 	) {
-		throw MethodNotAllowedException()
+		ociBlobService.uploadBlob(artifactInfo, artifactFile)
 	}
 
 	/**
@@ -50,7 +54,7 @@ class OciBlobController(
 	 */
 	@PostMapping("/{projectId}/{repoName}/**/blobs/uploads/")
 	fun startBlobUpload(
-		artifactInfo: OciBlobArtifactInfo
+		artifactInfo: OciArtifactInfo
 	) {
 		return ociBlobService.startUploadBlob(artifactInfo)
 	}

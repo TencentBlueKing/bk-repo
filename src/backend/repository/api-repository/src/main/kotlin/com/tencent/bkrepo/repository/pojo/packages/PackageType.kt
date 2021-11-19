@@ -43,5 +43,6 @@ enum class PackageType {
     COMPOSER,
     RPM,
     NUGET,
-    GIT
+    GIT,
+    OCI
 }
