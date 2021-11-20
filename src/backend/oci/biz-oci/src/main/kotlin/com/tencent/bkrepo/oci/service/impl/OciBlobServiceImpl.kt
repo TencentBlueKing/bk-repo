@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -126,6 +127,18 @@ class OciBlobServiceImpl(
 			response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 			response.addHeader(DOCKER_CONTENT_DIGEST, getDigest().toString())
 			response.addHeader(HttpHeaders.LOCATION, location.toString())
+		}
+	}
+
+	override fun downloadBlob(artifactInfo: OciBlobArtifactInfo) {
+		with(artifactInfo) {
+			if (isEmptyBlob(getDigest())) {
+				logger.info("get empty layer [$artifactInfo] for image [${getDigest()}]")
+				emptyBlobHeadResponse()
+				return
+			}
+			val context = ArtifactDownloadContext()
+			repository.download(context)
 		}
 	}
 

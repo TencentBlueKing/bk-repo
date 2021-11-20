@@ -9,6 +9,7 @@ import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.service.OciBlobService
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -65,5 +66,16 @@ class OciBlobController(
 	@RequestMapping("/{projectId}/{repoName}/**/blobs/uploads/{uuid}", method = [RequestMethod.PATCH])
 	fun appendBlobUpload() {
 		throw MethodNotAllowedException()
+	}
+
+	/**
+	 * 获取Blob文件
+	 */
+	@Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+	@GetMapping("/{projectId}/{repoName}/**/blobs/{digest}")
+	fun downloadBlob(
+		artifactInfo: OciBlobArtifactInfo
+	) {
+		ociBlobService.downloadBlob(artifactInfo)
 	}
 }

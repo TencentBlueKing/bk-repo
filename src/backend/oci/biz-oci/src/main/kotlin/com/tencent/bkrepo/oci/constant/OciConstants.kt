@@ -58,3 +58,5 @@ const val PROV_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.provenance.v1
 
 // LEGACY_CHART_LAYER_MEDIA_TYPE is the legacy reserved media type for Helm chart package content.
 const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"
+
+const val OCI_IMAGE_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"

@@ -24,6 +24,8 @@ class OciManifestArtifactInfoResolver : ArtifactInfoResolver {
 		val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
 		// 解析tag
 		val tag = attributes["tag"].toString().trim()
-		return OciManifestArtifactInfo(projectId, repoName, packageName, "", tag)
+		// 解析digest
+		val digest = attributes["digest"]?.toString()?.trim()
+		return OciManifestArtifactInfo(projectId, repoName, packageName, "", tag, digest)
 	}
 }
