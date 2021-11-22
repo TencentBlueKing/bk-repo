@@ -2,7 +2,6 @@ package com.tencent.bkrepo.oci.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
@@ -57,15 +56,18 @@ class OciBlobController(
 	fun startBlobUpload(
 		artifactInfo: OciArtifactInfo
 	) {
-		return ociBlobService.startUploadBlob(artifactInfo)
+		ociBlobService.startUploadBlob(artifactInfo)
 	}
 
 	/**
 	 * 追加上传
 	 */
 	@RequestMapping("/{projectId}/{repoName}/**/blobs/uploads/{uuid}", method = [RequestMethod.PATCH])
-	fun appendBlobUpload() {
-		throw MethodNotAllowedException()
+	fun appendBlobUpload(
+		artifactInfo: OciBlobArtifactInfo,
+		artifactFile: ArtifactFile
+	) {
+		ociBlobService.appendBlobUpload(artifactInfo, artifactFile)
 	}
 
 	/**

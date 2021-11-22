@@ -95,8 +95,48 @@ class OciBlobServiceImpl(
 		if (OciUtils.putHasStream()) {
 			uploadBlobFromPut(artifactInfo, artifactFile)
 		} else {
-			TODO()
-//			finishPatchUpload(context, digest, uuid)
+			finishAppend(artifactInfo)
+		}
+	}
+
+	/**
+	 * 完成append追加上传
+	 */
+	private fun finishAppend(artifactInfo: OciBlobArtifactInfo) {
+		with(artifactInfo) {
+			logger.debug("handing request finish upload blob [$artifactInfo]")
+			val repoDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+				?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+			val fileInfo = storageService.finishAppend(uuid, repoDetail.storageCredentials)
+			val fullPath = blobTempPath()
+			val userId = SecurityUtils.getUserId()
+			val nodeCreateRequest = NodeCreateRequest(
+				projectId = projectId,
+				repoName = repoName,
+				folder = false,
+				fullPath = fullPath,
+				size = fileInfo.size,
+				sha256 = fileInfo.sha256,
+				md5 = fileInfo.md5,
+				operator = userId,
+				overwrite = true
+			)
+			val result = nodeClient.createNode(nodeCreateRequest)
+
+			if (result.isNotOk()) {
+				logger.error("user [$userId] finish append file  [$fullPath] failed: [$result]")
+				throw ErrorCodeException(
+					ArtifactMessageCode.ARTIFACT_RESPONSE_FAILED, fullPath, HttpStatus.INTERNAL_SERVER_ERROR
+				)
+			}
+			val path = "$projectId/$repoName/$packageName/blobs/${getDigest()}"
+			val location = OciResponseUtils.getResponseLocationURI(path)
+			val response = HttpContextHolder.getResponse()
+			response.status = HttpStatus.CREATED.value
+			response.setContentLength(0)
+			response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+			response.addHeader(HttpHeaders.LOCATION, location.toString())
+			response.addHeader(DOCKER_CONTENT_DIGEST, getDigest().toString())
 		}
 	}
 
@@ -123,9 +163,29 @@ class OciBlobServiceImpl(
 			val location = OciResponseUtils.getResponseLocationURI("$packageName/blobs/${getDigest()}")
 			val response = HttpContextHolder.getResponse()
 			response.status = HttpStatus.CREATED.value
-			response.addHeader(HttpHeaders.CONTENT_LENGTH, "0")
+			response.setContentLength(0)
 			response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 			response.addHeader(DOCKER_CONTENT_DIGEST, getDigest().toString())
+			response.addHeader(HttpHeaders.LOCATION, location.toString())
+		}
+	}
+
+	override fun appendBlobUpload(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
+		logger.info("handing request append upload blob [$artifactInfo].")
+		with(artifactInfo) {
+			// 如果mount不为空，这里需要处理
+			// artifactInfo.mount?.let { return }
+			val repoDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+				?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+			val appendId = storageService.append(uuid, artifactFile, repoDetail.storageCredentials)
+			val startUrl = "$projectId/$repoName/$packageName/blobs/uploads/$uuid"
+			val location = OciResponseUtils.getResponseLocationURI(startUrl)
+			val response = HttpContextHolder.getResponse()
+			response.status = HttpStatus.ACCEPTED.value
+			response.setContentLength(0)
+			response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+			response.addHeader(DOCKER_UPLOAD_UUID, uuid)
+			response.addHeader(HttpHeaders.RANGE, "0-" + (appendId - 1L))
 			response.addHeader(HttpHeaders.LOCATION, location.toString())
 		}
 	}

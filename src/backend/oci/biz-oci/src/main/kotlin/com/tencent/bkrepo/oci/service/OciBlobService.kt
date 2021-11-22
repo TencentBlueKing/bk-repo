@@ -21,6 +21,11 @@ interface OciBlobService {
 	fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile)
 
 	/**
+	 * 根据[artifactInfo]的信息来上传[artifactFile]文件
+	 */
+	fun appendBlobUpload(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile)
+
+	/**
 	 * 根据[artifactInfo]的信息下载blob文件
 	 */
 	fun downloadBlob(artifactInfo: OciBlobArtifactInfo)
