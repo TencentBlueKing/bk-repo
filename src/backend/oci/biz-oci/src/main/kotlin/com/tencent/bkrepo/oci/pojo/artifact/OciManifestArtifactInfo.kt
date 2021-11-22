@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.oci.pojo.artifact
 
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import com.tencent.bkrepo.oci.util.OciUtils
 
 class OciManifestArtifactInfo(
 	projectId: String,
@@ -15,7 +14,7 @@ class OciManifestArtifactInfo(
 
 	fun getDigest() = ociDigest
 
-	override fun getArtifactFullPath(): String  = OciUtils.buildManifestPath(packageName, digest.orEmpty())
+//	override fun getArtifactFullPath(): String  = OciUtils.buildManifestPath(packageName, digest.orEmpty())
 
 	private lateinit var manifestPath: String
 }

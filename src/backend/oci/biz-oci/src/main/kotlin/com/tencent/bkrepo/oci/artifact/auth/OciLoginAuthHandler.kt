@@ -72,6 +72,7 @@ class OciLoginAuthHandler(
 			listOf(AuthenticateResponse.unAuthenticated("UNAUTHORIZED", "authentication required", null))
 		)
 		response.writer.write(helmResponse.toJsonString())
+		response.writer.flush()
 	}
 
 	companion object {

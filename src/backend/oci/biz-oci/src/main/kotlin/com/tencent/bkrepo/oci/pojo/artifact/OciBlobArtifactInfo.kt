@@ -10,7 +10,7 @@ class OciBlobArtifactInfo(
 	repoName: String,
 	packageName: String,
 	version: String,
-	private val digest: String?,
+	val digest: String?,
 	val uuid: String,
 	val mount: String? = null
 ) : OciArtifactInfo(projectId, repoName, packageName, version) {
@@ -27,4 +27,6 @@ class OciBlobArtifactInfo(
 	fun getDigest() = ociDigest
 
 	fun blobTempPath() = packageName + "/_uploads/" + ociDigest.fileName()
+
+	override fun getArtifactFullPath() = packageName + "/_uploads/" + ociDigest.fileName()
 }

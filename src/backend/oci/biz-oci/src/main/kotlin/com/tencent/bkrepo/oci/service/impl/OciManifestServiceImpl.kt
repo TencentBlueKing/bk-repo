@@ -49,8 +49,8 @@ class OciManifestServiceImpl(
 				response.setContentLengthLong(it.size)
 				response.contentType = OCI_IMAGE_MANIFEST_MEDIA_TYPE
 				response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-				response.addHeader(DOCKER_CONTENT_DIGEST, digest.toString())
-				response.addHeader(HttpHeaders.ETAG, digest.toString())
+				response.addHeader(DOCKER_CONTENT_DIGEST, OciDigest.fromSha256(it.sha256.orEmpty()).toString())
+				response.addHeader(HttpHeaders.ETAG, OciDigest.fromSha256(it.sha256.orEmpty()).toString())
 			}
 		}
 	}
