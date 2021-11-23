@@ -68,10 +68,10 @@ class OciLoginAuthHandler(
 		response.addHeader(
 			HttpHeaders.WWW_AUTHENTICATE, AUTH_CHALLENGE_SERVICE_SCOPE.format("localhost", REGISTRY_SERVICE, SCOPE_STR)
 		)
-		val helmResponse = OciResponse.unAuthenticated(
+		val ociAuthResponse = OciResponse.unAuthenticated(
 			listOf(AuthenticateResponse.unAuthenticated("UNAUTHORIZED", "authentication required", null))
 		)
-		response.writer.write(helmResponse.toJsonString())
+		response.writer.write(ociAuthResponse.toJsonString())
 		response.writer.flush()
 	}
 

@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -25,7 +26,9 @@ import com.tencent.bkrepo.oci.util.OciResponseUtils.emptyBlobHeadResponse
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
@@ -39,26 +42,21 @@ class OciBlobServiceImpl(
 ) : OciBlobService, ArtifactService() {
 
 	override fun checkBlobExists(artifactInfo: OciBlobArtifactInfo) {
-		logger.info("handing request check blob $artifactInfo with digest ${artifactInfo.getDigestHex()} exists.")
+		logger.info("handing request check blob [$artifactInfo] exists with digest [${artifactInfo.getDigestHex()}].")
 		// digest为空处理
 		if (isEmptyBlob(artifactInfo.getDigest())) {
 			logger.info("check is empty blob $artifactInfo with digest ${artifactInfo.getDigestHex()}.")
 			emptyBlobHeadResponse()
 			return
 		}
-		// digest文件是否存在，先在_uploads目录下查找，找不到再在该仓库下全局查找
+		// digest文件是否存在，先在_uploads目录下查找，找不到再在该仓库下根据sha256值全局查找
 		with(artifactInfo) {
-			val tempPath = blobTempPath()
-			logger.info("search blob in temp path $tempPath first.")
-			val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, tempPath).data
-			nodeDetail?.let {
-				logger.info("attempt to search  blob $this with digest [${this.getDigestHex()}].")
-				// 查询name为ociDigest.getFilename()的node节点，感觉应该要查询fullPath为全路径的节点
-			} ?: run {
+			val nodeDetail = queryBlobByFullPathAndDigest(artifactInfo) ?: run {
+				logger.info("search blob $this with digest [${this.getDigestHex()}] in repo [${getRepoIdentify()}] failed.")
 				val response = HttpContextHolder.getResponse()
 				response.status = HttpStatus.NOT_FOUND.value
-				response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 				response.contentType = MediaTypes.APPLICATION_JSON
+				response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 				response.setContentLength(157)
 				return
 			}
@@ -68,6 +66,39 @@ class OciBlobServiceImpl(
 			response.addHeader(DOCKER_CONTENT_DIGEST, getDigest().toString())
 			response.addHeader(HttpHeaders.CONTENT_LENGTH, nodeDetail.size.toString())
 			response.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+		}
+	}
+
+	private fun queryBlobByFullPathAndDigest(artifactInfo: OciBlobArtifactInfo): NodeDetail? {
+		with(artifactInfo) {
+			val tempPath = blobTempPath()
+			logger.info("search blob in temp path $tempPath in repo [${getRepoIdentify()}] first.")
+			val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, tempPath).data
+			if (nodeDetail != null) return nodeDetail
+			logger.info("attempt to search  blob $this with digest [${this.getDigestHex()}] in repo [${getRepoIdentify()}].")
+			val fullPath = queryFullPathByDigest(this)
+			return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+		}
+	}
+
+	private fun queryFullPathByDigest(artifactInfo: OciBlobArtifactInfo): String {
+		with(artifactInfo) {
+			val sha256 = getDigest().getDigestHex()
+			val queryModel = NodeQueryBuilder()
+				.select("name", "fullPath")
+				.sortByAsc("name")
+				.page(1, 10)
+				.projectId(projectId)
+				.repoName(repoName)
+				.and()
+				.sha256(sha256)
+				.excludeFolder()
+				.build()
+			val result = nodeClient.search(queryModel).data ?: run {
+				logger.warn("query blob file with digest [${sha256}] in repo ${getRepoIdentify()} failed.")
+				throw NodeNotFoundException("${getRepoIdentify()}/$sha256")
+			}
+			return result.records.first()["fullPath"]?.toString().orEmpty()
 		}
 	}
 
