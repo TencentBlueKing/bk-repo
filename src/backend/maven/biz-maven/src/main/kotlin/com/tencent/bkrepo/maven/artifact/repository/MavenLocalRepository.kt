@@ -196,6 +196,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(context.artifactInfo.getArtifactFullPath())
         if (matcher.matches()) {
             var packaging = matcher.group(2)
+            val fileSuffix = packaging
             if (packaging == "pom") {
                 val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
                 if (StringUtils.isNotBlank(mavenPomModel.version) &&
@@ -207,7 +208,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
             val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
             val node = buildMavenArtifactNode(context, packaging, mavenGavc)
             storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
-            createMavenVersion(context, mavenGavc)
+            if(packaging == fileSuffix) createMavenVersion(context, mavenGavc)
         } else {
             super.onUpload(context)
         }
@@ -381,7 +382,6 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
                 ArtifactRemoveContext().storageCredentials
             ).use { artifactInputStream ->
                 // 更新 `/groupId/artifactId/maven-metadata.xml`
-                val parser = MXParser(EntityReplacementMap.defaultEntityReplacementMap)
                 val mavenMetadata = MetadataXpp3Reader().read(artifactInputStream)
                 mavenMetadata.versioning.versions.remove(deleteVersion)
                 if (mavenMetadata.versioning.versions.size == 0) {
