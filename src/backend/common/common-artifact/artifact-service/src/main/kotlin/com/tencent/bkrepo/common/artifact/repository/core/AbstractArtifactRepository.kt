@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -118,12 +119,12 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val throughput = artifactResourceWriter.write(artifactResponse)
             this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (exception: ArtifactResponseException) {
-            context.response.status = exception.status.value
             val principal = SecurityUtils.getPrincipal()
             val artifactInfo = context.artifactInfo
             val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
             val code = exception.messageCode.getCode()
-            logger.warn("User[$principal] download artifact[$artifactInfo] failed[$code]$message")
+            val clientAddress = HttpContextHolder.getClientAddress()
+            logger.warn("User[$principal],ip[$clientAddress] download artifact[$artifactInfo] failed[$code]$message")
         } catch (exception: Exception) {
             this.onDownloadFailed(context, exception)
         } finally {
