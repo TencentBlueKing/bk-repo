@@ -49,7 +49,7 @@ class MavenExtService(
         listOf(a, v, c).map {
             result = it.isNullOrBlank() && result
         }
-        if(result) throw MavenBadRequestException()
+        if (result) throw MavenBadRequestException()
     }
 
     private fun buildGavcQuery(

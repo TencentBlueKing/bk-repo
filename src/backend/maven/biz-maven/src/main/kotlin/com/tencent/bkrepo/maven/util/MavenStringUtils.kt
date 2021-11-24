@@ -61,11 +61,15 @@ object MavenStringUtils {
     }
 
     fun String.httpStatusCode(): Int {
-        return if (this.endsWith("maven-metadata.xml")) {
+        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri()) {
             HttpStatus.SC_ACCEPTED
         } else if (this.endsWith("maven-metadata.xml.md5") || this.endsWith("maven-metadata.xml.sha1")) {
             HttpStatus.SC_OK
         } else HttpStatus.SC_CREATED
+    }
+
+    private fun String.isSnapshotUri(): Boolean {
+        return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX)
     }
 
     fun String.resolverName(artifactId: String, version: String): MavenVersion {
