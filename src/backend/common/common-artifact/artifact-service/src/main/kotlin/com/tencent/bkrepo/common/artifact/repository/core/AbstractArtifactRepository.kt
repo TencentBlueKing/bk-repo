@@ -124,7 +124,11 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
             val code = exception.messageCode.getCode()
             val clientAddress = HttpContextHolder.getClientAddress()
-            logger.warn("User[$principal],ip[$clientAddress] download artifact[$artifactInfo] failed[$code]$message")
+            val xForwardedFor = HttpContextHolder.getXForwardedFor()
+            logger.warn(
+                "User[$principal],ip[$clientAddress] download artifact[$artifactInfo] failed[$code]$message" +
+                    " X_FORWARDED_FOR: $xForwardedFor"
+            )
         } catch (exception: Exception) {
             this.onDownloadFailed(context, exception)
         } finally {
