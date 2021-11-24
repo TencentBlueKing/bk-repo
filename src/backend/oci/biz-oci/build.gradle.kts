@@ -31,4 +31,5 @@
 
 dependencies {
     api(project(":common:common-artifact:artifact-service"))
+    api("javax.ws.rs:jsr311-api:1.1.1")
 }
