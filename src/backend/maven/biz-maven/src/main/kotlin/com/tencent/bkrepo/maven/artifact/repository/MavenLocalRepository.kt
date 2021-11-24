@@ -37,11 +37,11 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -59,15 +59,15 @@ import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.response.MavenArtifactResponse
-import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
-import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
-import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
+import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
 import com.tencent.bkrepo.maven.util.MavenStringUtils.fileMimeType
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.maven.util.MavenStringUtils.httpStatusCode
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
+import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -79,8 +79,6 @@ import org.apache.commons.lang.StringUtils
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
-import org.codehaus.plexus.util.xml.pull.EntityReplacementMap
-import org.codehaus.plexus.util.xml.pull.MXParser
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -196,6 +194,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(context.artifactInfo.getArtifactFullPath())
         if (matcher.matches()) {
             var packaging = matcher.group(2)
+            val fileSuffix = packaging
             if (packaging == "pom") {
                 val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
                 if (StringUtils.isNotBlank(mavenPomModel.version) &&
@@ -207,7 +206,7 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
             val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
             val node = buildMavenArtifactNode(context, packaging, mavenGavc)
             storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
-            createMavenVersion(context, mavenGavc)
+            if (packaging == fileSuffix) createMavenVersion(context, mavenGavc)
         } else {
             super.onUpload(context)
         }
@@ -381,7 +380,6 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
                 ArtifactRemoveContext().storageCredentials
             ).use { artifactInputStream ->
                 // 更新 `/groupId/artifactId/maven-metadata.xml`
-                val parser = MXParser(EntityReplacementMap.defaultEntityReplacementMap)
                 val mavenMetadata = MetadataXpp3Reader().read(artifactInputStream)
                 mavenMetadata.versioning.versions.remove(deleteVersion)
                 if (mavenMetadata.versioning.versions.size == 0) {
