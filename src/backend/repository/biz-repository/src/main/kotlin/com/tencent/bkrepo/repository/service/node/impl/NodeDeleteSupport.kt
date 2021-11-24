@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
@@ -96,13 +97,16 @@ open class NodeDeleteSupport(
             .and(TNode::createdDate).lt(date)
         val query = Query(criteria)
         val deleteNodesSize = nodeBaseService.aggregateComputeSize(criteria)
+        var deleteNodesNum = 0L
         try {
             quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
-            nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
+            val result = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
+            deleteNodesNum = result.modifiedCount
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName] created before $date error: [${exception.message}]")
         }
-        logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success.")
+        logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success. " +
+            "$deleteNodesNum nodes have been deleted. The size is ${HumanReadable.size(deleteNodesSize)}")
     }
 
     companion object {
