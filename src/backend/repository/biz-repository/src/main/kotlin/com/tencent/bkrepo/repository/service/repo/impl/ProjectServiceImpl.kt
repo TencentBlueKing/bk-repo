@@ -28,21 +28,26 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.ProjectDao
 import com.tencent.bkrepo.repository.model.TProject
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
@@ -67,10 +72,22 @@ class ProjectServiceImpl(
         return projectDao.findAll().map { convert(it)!! }
     }
 
-    override fun listPermissionProject(userId: String): List<ProjectInfo> {
-        val names = servicePermissionResource.listPermissionProject(userId).data.orEmpty()
-        val query = Query.query(where(TProject::name).`in`(names))
-        return projectDao.find(query).map { convert(it)!! }
+    override fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
+        var names = servicePermissionResource.listPermissionProject(userId).data.orEmpty()
+        option?.names?.let { names = names.intersect(option.names!!).toList() }
+        val query = Query.query(
+            where(TProject::name).`in`(names)
+            .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
+        )
+        return if (option?.pageNumber == null && option?.pageSize == null) {
+            projectDao.find(query).map { convert(it)!! }
+        } else {
+            val pageRequest = Pages.ofRequest(
+                option.pageNumber ?: DEFAULT_PAGE_NUMBER,
+                option.pageSize ?: DEFAULT_PAGE_SIZE
+            )
+            projectDao.find(query.with(pageRequest)).map { convert(it)!! }
+        }
     }
 
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {

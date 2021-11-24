@@ -110,7 +110,7 @@ class ListViewServiceImpl(
 
     override fun listProjectView() {
         viewModelService.trailingSlash()
-        val itemList = projectService.listPermissionProject(SecurityUtils.getUserId())
+        val itemList = projectService.listPermissionProject(SecurityUtils.getUserId(), null)
             .map { ProjectListViewItem.from(it) }
         val headerList = listOf(
             HeaderItem("Name"),
