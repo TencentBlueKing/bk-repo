@@ -29,49 +29,41 @@
  * SOFTWARE.
  */
 
-rootProject.name = "bk-repo-backend"
+package com.tencent.bkrepo.executor.config.container
 
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
-    }
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Component
+
+@Component
+class ContainerTaskConfig {
+
+    /**
+     * docker host
+     */
+    @Value("\${container.api.host:}")
+    var dockerHost: String = "unix:///var/run/docker.sock"
+
+    /**
+     * docker api version
+     */
+    @Value("\${container.api.version:}")
+    var apiVerion: String = "1.23"
+
+    /**
+     * run docker entrypoint args
+     */
+    @Value("\${container.run.args:}")
+    var args: String = ""
+
+    /**
+     * task image name
+     */
+    @Value("\${container.run.imageName:}")
+    var imageName: String = ""
+
+    /**
+     * container work dir
+     */
+    @Value("\${container.run.dir:}")
+    var containerDir: String = ""
 }
-
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
-
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
-
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":common:common-plugin")
-includeAll(":composer")
-includeAll(":docker")
-includeAll(":dockerapi")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":maven")
-includeAll(":monitor")
-includeAll(":npm")
-includeAll(":npm-registry")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
-includeAll(":git")
-includeAll(":executor")
-includeAll(":oci")
