@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
 /**
  * 包唯一id工具类

@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
