@@ -46,6 +46,7 @@ object PackageKeys {
     private const val COMPOSER = "composer"
     private const val NUGET = "nuget"
     private const val MAVEN = "gav"
+    private const val OCI = "oci"
     private const val SEPARATOR = "://"
 
     /**
@@ -65,6 +66,15 @@ object PackageKeys {
      */
     fun ofDocker(name: String): String {
         return ofName(DOCKER, name)
+    }
+
+    /**
+     * 生成OCI格式key
+     *
+     * 例子: oci://test
+     */
+    fun ofOci(name: String): String {
+        return ofName(OCI, name)
     }
 
     /**
@@ -158,6 +168,15 @@ object PackageKeys {
      */
     fun resolveDocker(dockerKey: String): String {
         return resolveName(DOCKER, dockerKey)
+    }
+
+    /**
+     * 解析oci格式的key
+     *
+     * 例子: oci://test  ->  test
+     */
+    fun resolveOci(ociKey: String): String {
+        return resolveName(OCI, ociKey)
     }
 
     /**

@@ -12,23 +12,26 @@ import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryLocalRepository
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryRemoteRepository
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryVirtualRepository
+import com.tencent.bkrepo.oci.constant.OciProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
 @Configuration
+@EnableConfigurationProperties(OciProperties::class)
 class OciRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
-    override fun getRepositoryType(): RepositoryType = RepositoryType.OCI
+	override fun getRepositoryType(): RepositoryType = RepositoryType.OCI
 
-    override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<OciRegistryLocalRepository>()
+	override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<OciRegistryLocalRepository>()
 
-    override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<OciRegistryRemoteRepository>()
+	override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<OciRegistryRemoteRepository>()
 
-    override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<OciRegistryVirtualRepository>()
+	override fun getVirtualRepository(): VirtualRepository = SpringContextUtils.getBean<OciRegistryVirtualRepository>()
 
-    override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = object : HttpAuthSecurityCustomizer {
-        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
-            val authenticationManager = httpAuthSecurity.authenticationManager!!
-            val helmLoginAuthHandler = OciLoginAuthHandler(authenticationManager)
-            httpAuthSecurity.withPrefix("/oci").addHttpAuthHandler(helmLoginAuthHandler)
-        }
-    }
+	override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = object : HttpAuthSecurityCustomizer {
+		override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+			val authenticationManager = httpAuthSecurity.authenticationManager!!
+			val helmLoginAuthHandler = OciLoginAuthHandler(authenticationManager)
+			httpAuthSecurity.withPrefix("/oci").addHttpAuthHandler(helmLoginAuthHandler)
+		}
+	}
 }
