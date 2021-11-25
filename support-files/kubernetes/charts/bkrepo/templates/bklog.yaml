@@ -12,7 +12,7 @@ spec:
   labelSelector:
     matchLabels:
       app.kubernetes.io/name: {{ include "common.names.fullname" . }}
-      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+      {{- include "bkrepo.labelValues.scope" . }}: {{- include "bkrepo.labelValues.scope.backend" . }}
   path:
     - /data/workspace/logs/*.log
   encoding: 'utf-8'
@@ -32,7 +32,7 @@ spec:
   labelSelector:
     matchLabels:
       app.kubernetes.io/name: {{ include "common.names.fullname" . }}
-      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.gateway" . }}
+      {{- include "bkrepo.labelValues.scope" . }}: {{- include "bkrepo.labelValues.scope.gateway" . }}
   path:
     - /data/workspace/logs/nginx/bkrepo.access.*.log
   ext_meta:
@@ -52,7 +52,7 @@ spec:
   labelSelector:
     matchLabels:
       app.kubernetes.io/name: {{ include "common.names.fullname" . }}
-      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.gateway" . }}
+      {{- include "bkrepo.labelValues.scope" . }}: {{- include "bkrepo.labelValues.scope.gateway" . }}
   path:
     - /data/workspace/logs/nginx/*.error.log
   ext_meta:
