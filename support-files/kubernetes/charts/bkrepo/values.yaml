@@ -35,9 +35,9 @@ log:
   collectEnabled: false
   service:
     dataId: 1
-  gateway-access:
+  gatewayAccess:
     dataId: 1
-  gateway-error:
+  gatewayError:
     dataId: 1
 
 ## ingress配置

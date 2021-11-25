@@ -26,7 +26,7 @@ kind: BkLogConfig
 metadata:
   name: bk-repo-gateway-acsess-log-config
 spec:
-  dataId: {{ .Values.log.gateway-access.dataId }}
+  dataId: {{ .Values.log.gatewayAccess.dataId }}
   logConfigType: gateway_access_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
@@ -45,7 +45,7 @@ kind: BkLogConfig
 metadata:
   name: bk-repo-gateway-error-log-config
 spec:
-  dataId: {{ .Values.log.gateway-error.dataId }}
+  dataId: {{ .Values.log.gatewayError.dataId }}
 
   logConfigType: gateway_error_log_config
   namespace: {{ .Release.Namespace }}
