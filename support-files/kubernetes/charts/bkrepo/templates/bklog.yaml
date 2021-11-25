@@ -7,7 +7,6 @@ metadata:
   name: bk-repo-service-log-config
 spec:
   dataId: {{ .Values.log.service.dataId }}
-
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
@@ -28,7 +27,6 @@ metadata:
   name: bk-repo-gateway-acsess-log-config
 spec:
   dataId: {{ .Values.log.gateway-access.dataId }}
-
   logConfigType: gateway_access_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
