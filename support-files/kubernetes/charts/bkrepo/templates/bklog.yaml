@@ -27,12 +27,12 @@ metadata:
   name: bk-repo-gateway-acsess-log-config
 spec:
   dataId: {{ .Values.log.gatewayAccess.dataId }}
-  logConfigType: gateway_access_log_config
+  logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
     matchLabels:
       app.kubernetes.io/name: {{ include "common.names.fullname" . }}
-      {{- include "bkrepo.labelValues.scope" . }}: {{- include "bkrepo.labelValues.scope.gateway" . }}
+      app.kubernetes.io/component: gateway
   path:
     - /data/workspace/logs/nginx/bkrepo.access.*.log
   ext_meta:
@@ -47,12 +47,12 @@ metadata:
 spec:
   dataId: {{ .Values.log.gatewayError.dataId }}
 
-  logConfigType: gateway_error_log_config
+  logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
     matchLabels:
       app.kubernetes.io/name: {{ include "common.names.fullname" . }}
-      {{- include "bkrepo.labelValues.scope" . }}: {{- include "bkrepo.labelValues.scope.gateway" . }}
+      app.kubernetes.io/component: gateway
   path:
     - /data/workspace/logs/nginx/*.error.log
   ext_meta:
