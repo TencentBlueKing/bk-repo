@@ -30,6 +30,16 @@ serviceAccount:
   ##
   name:
 
+## 日志采集配置
+log:
+  collectEnabled: false
+  service:
+    dataId: 1
+  gateway-access:
+    dataId: 1
+  gateway-error:
+    dataId: 1
+
 ## ingress配置
 ingress:
   enabled: true
