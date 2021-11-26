@@ -4,6 +4,7 @@ metadata:
   name: {{ include "common.names.fullname" . }}-repository
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: repository
+    abcd: {{ include "common.names.fullname" . }}
     {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
     {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
@@ -20,6 +21,7 @@ spec:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: repository
+        abcd: {{ include "common.names.fullname" . }}
         {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
         {{- if .Values.repository.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .Values.repository.podLabels "context" $) | nindent 8 }}

@@ -16,12 +16,12 @@ spec:
   selector:
     matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: npm
-      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
   replicas: {{ default 1 .Values.npm.replicaCount }}
   template:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: npm
+        {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
         {{- if .Values.npm.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .Values.npm.podLabels "context" $) | nindent 8 }}
         {{- end }}
