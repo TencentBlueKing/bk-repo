@@ -5,6 +5,10 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.executor.config.ExecutorConfig
+import com.tencent.bkrepo.executor.constant.SCAN_FILE_ENDPOINT
+import com.tencent.bkrepo.executor.constant.SCAN_REPORT_ENDPOINT
+import com.tencent.bkrepo.executor.constant.SCAN_REPO_ENDPOINT
+import com.tencent.bkrepo.executor.constant.SCAN_STATUS_ENDPOINT
 import com.tencent.bkrepo.executor.pojo.context.FileScanContext
 import com.tencent.bkrepo.executor.pojo.request.FileScanRequest
 import com.tencent.bkrepo.executor.pojo.context.RepoScanContext
@@ -30,7 +34,7 @@ class RemoteTask @Autowired constructor() {
     @Autowired
     lateinit var config: ExecutorConfig
 
-    @PostMapping("/scan/file")
+    @PostMapping(SCAN_FILE_ENDPOINT)
     @Principal(PrincipalType.ADMIN)
     fun runByFile(@RequestBody request: FileScanRequest): Response<String> {
         with(request) {
@@ -46,7 +50,7 @@ class RemoteTask @Autowired constructor() {
         }
     }
 
-    @PostMapping("/scan/repo")
+    @PostMapping(SCAN_REPO_ENDPOINT)
     @Principal(PrincipalType.ADMIN)
     fun runByRepo(@RequestBody request: RepoScanRequest): Response<String> {
         with(request) {
@@ -64,7 +68,7 @@ class RemoteTask @Autowired constructor() {
         }
     }
 
-    @GetMapping("/scan/status")
+    @GetMapping(SCAN_STATUS_ENDPOINT)
     @Principal(PrincipalType.ADMIN)
     fun getRunningStatus(
         @RequestParam taskId: String,
@@ -74,7 +78,7 @@ class RemoteTask @Autowired constructor() {
         return ResponseBuilder.success(remoteTask.getTaskStatus(taskId, pageNumber, pageSize))
     }
 
-    @GetMapping("/scan/report")
+    @GetMapping(SCAN_REPORT_ENDPOINT)
     @Principal(PrincipalType.ADMIN)
     fun getTaskReport(@RequestBody request: ScanReportRequest): Response<MutableList<*>?> {
         with(request) {
