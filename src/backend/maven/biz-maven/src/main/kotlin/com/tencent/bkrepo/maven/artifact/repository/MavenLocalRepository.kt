@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
@@ -149,6 +150,16 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
     }
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
+        super.onUploadBefore(context)
+        val overwrite = HeaderUtils.getBooleanHeader("X-BKREPO-OVERWRITE")
+        if (!overwrite) {
+            with(context.artifactInfo) {
+                val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                if (node != null) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactFullPath())
+                }
+            }
+        }
         for (hashType in HashType.values()) {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
             val suffix = ".${hashType.ext}"
