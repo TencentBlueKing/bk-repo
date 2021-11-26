@@ -21,6 +21,7 @@ spec:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: docker
+        {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
         {{- if .Values.docker.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .Values.docker.podLabels "context" $) | nindent 8 }}
         {{- end }}

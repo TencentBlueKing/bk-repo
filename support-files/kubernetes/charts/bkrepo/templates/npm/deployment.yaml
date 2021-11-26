@@ -16,6 +16,7 @@ spec:
   selector:
     matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
       app.kubernetes.io/component: npm
+      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
   replicas: {{ default 1 .Values.npm.replicaCount }}
   template:
     metadata:
