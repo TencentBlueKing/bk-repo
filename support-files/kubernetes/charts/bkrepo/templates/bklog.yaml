@@ -10,7 +10,7 @@ spec:
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
-    matchLabels: {{- include "common.labels.standard" . | nindent 4 }}
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
   path:
     - /data/workspace/logs/*.log
@@ -29,7 +29,7 @@ spec:
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
-    matchLabels: {{- include "common.labels.standard" . | nindent 4 }}
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.gateway" . }}
   path:
     - /data/workspace/logs/nginx/bkrepo.access.*.log
@@ -48,7 +48,7 @@ spec:
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
-    matchLabels: {{- include "common.labels.standard" . | nindent 4 }}
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.gateway" . }}
   path:
     - /data/workspace/logs/nginx/*.error.log
