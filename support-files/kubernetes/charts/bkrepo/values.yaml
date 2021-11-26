@@ -31,8 +31,8 @@ serviceAccount:
   name:
 
 ## 日志采集配置
-log:
-  collectEnabled: false
+bkLogConfig:
+  enabled: false
   service:
     dataId: 1
   gatewayAccess:

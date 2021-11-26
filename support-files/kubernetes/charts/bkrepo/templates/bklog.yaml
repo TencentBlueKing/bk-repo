@@ -1,4 +1,4 @@
-{{- if .Values.log.collectEnabled }}
+{{- if .Values.bkLogConfig.enabled }}
 
 # service log
 apiVersion: bk.tencent.com/v1alpha1
@@ -6,7 +6,7 @@ kind: BkLogConfig
 metadata:
   name: bk-repo-service-log-config
 spec:
-  dataId: {{ .Values.log.service.dataId }}
+  dataId: {{ .Values.bkLogConfig.service.dataId }}
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
@@ -26,7 +26,7 @@ kind: BkLogConfig
 metadata:
   name: bk-repo-gateway-acsess-log-config
 spec:
-  dataId: {{ .Values.log.gatewayAccess.dataId }}
+  dataId: {{ .Values.bkLogConfig.gatewayAccess.dataId }}
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
   labelSelector:
@@ -45,7 +45,7 @@ kind: BkLogConfig
 metadata:
   name: bk-repo-gateway-error-log-config
 spec:
-  dataId: {{ .Values.log.gatewayError.dataId }}
+  dataId: {{ .Values.bkLogConfig.gatewayError.dataId }}
 
   logConfigType: container_log_config
   namespace: {{ .Release.Namespace }}
