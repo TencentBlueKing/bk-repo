@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.auth.util.query
 
 import com.tencent.bkrepo.auth.model.TPermission
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 
