@@ -119,7 +119,8 @@ class RepoNameRuleInterceptor(
                 action = PermissionAction.READ,
                 projectId = projectId,
                 repoName = repoName,
-                public = repoPublic
+                public = repoPublic,
+                anonymous = true
             )
             true
         } catch (ignored: PermissionException) {
