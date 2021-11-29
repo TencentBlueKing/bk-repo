@@ -214,7 +214,7 @@ open class PermissionServiceImpl constructor(
         // check role repo admin
         if (checkRepoAdmin(request, user.roles)) return true
 
-        // check repo action action
+        // check repo action
         return checkRepoAction(request, user.roles)
     }
 
@@ -246,13 +246,11 @@ open class PermissionServiceImpl constructor(
 
     private fun checkRepoAction(request: CheckPermissionRequest, roles: List<String>): Boolean {
         with(request) {
-            if (resourceType == ResourceType.REPO.toString() && repoName != null) {
-                val query = PermissionQueryHelper.buildPermissionCheck(
-                    projectId!!, repoName!!, uid, action, resourceType, roles
-                )
-                val result = mongoTemplate.count(query, TPermission::class.java)
-                if (result != 0L) return true
-            }
+            val query = PermissionQueryHelper.buildPermissionCheck(
+                projectId, repoName, uid, action, resourceType, roles
+            )
+            val result = mongoTemplate.count(query, TPermission::class.java)
+            if (result != 0L) return true
         }
         return false
     }
