@@ -29,24 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.handler.impl
 
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Configuration
+import com.tencent.bkrepo.opdata.handler.QueryHandler
+import com.tencent.bkrepo.opdata.pojo.Target
+import com.tencent.bkrepo.opdata.pojo.enums.Metrics
+import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import org.springframework.stereotype.Component
 
-@Configuration
-class InfluxDbConfig {
+/**
+ * 项目节点容量统计
+ */
+@Component
+class RepoNodeSizeHandler(
+    private val projectMetricsRepository: ProjectMetricsRepository
+) : QueryHandler {
 
-    @Value("\${spring.influx.url:''}")
-    private val influxDBUrl: String? = null
-    @Value("\${spring.influx.user:''}")
-    private val userName: String? = null
-    @Value("\${spring.influx.password:''}")
-    private val password: String? = null
-    @Value("\${spring.influx.database:''}")
-    val database: String? = null
+    override val metric: Metrics get() = Metrics.REPONODESIZE
 
-    fun influxDbUtils(): InfluxDbUtils {
-        return InfluxDbUtils(userName, password, influxDBUrl, database, "100day")
+    override fun handle(target: Target, result: MutableList<Any>): List<Any> {
+        val projects = projectMetricsRepository.findAll()
+        val tmpMap = HashMap<String, Long>()
+        projects.forEach { it ->
+            val projectId = it.projectId
+            it.repoMetrics.forEach {
+                val repoName = it.repoName
+                if (it.size != 0L) {
+                    tmpMap["$projectId-$repoName"] = it.size
+                }
+            }
+        }
+        return convToDisplayData(tmpMap, result)
     }
 }
