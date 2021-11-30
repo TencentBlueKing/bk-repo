@@ -7,10 +7,10 @@ spec:
   endpoints:
     - basicAuth:
         password:
-          name: {{ .Values.common.password }}
+          name: bkrepo-basic-auth
           key: password
         username:
-          name: {{ .Values.common.username }}
+          name: bkrepo-basic-auth
           key: user
       interval: 30s # 采集周期
       path: /actuator/metrics # 指标接口路径
@@ -20,4 +20,15 @@ spec:
   selector: # 过滤出需要采集的service
     matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bkrepo-basic-auth
+data:
+  password: {{ .Values.common.password | b64enc }}
+  user: {{ .Values.common.password | b64enc }}
+type: Opaque
+
 {{- end }}
