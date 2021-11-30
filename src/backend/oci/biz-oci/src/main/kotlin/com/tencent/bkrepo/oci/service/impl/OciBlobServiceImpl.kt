@@ -126,7 +126,7 @@ class OciBlobServiceImpl(
 	}
 
 	override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
-		uploadBlobFromPut(artifactInfo, artifactFile)
+		finishAppend(artifactInfo)
 //		if (OciUtils.putHasStream()) {
 //			uploadBlobFromPut(artifactInfo, artifactFile)
 //		} else {
