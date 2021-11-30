@@ -30,6 +30,10 @@ serviceAccount:
   ##
   name:
 
+# metrics采集配置
+bkMonitorConfig:
+  enabled: false
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
