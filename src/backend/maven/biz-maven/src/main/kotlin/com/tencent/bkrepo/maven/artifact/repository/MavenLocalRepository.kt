@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
@@ -56,6 +57,7 @@ import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.ConflictException
+import com.tencent.bkrepo.maven.exception.MavenMetadataChecksumException
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
@@ -191,7 +193,10 @@ class MavenLocalRepository(
             val suffix = ".${hashType.ext}"
             val artifactFilePath = artifactInfo.getArtifactFullPath().removeSuffix(suffix)
             // *-SNAPSHOT/maven-metadata.xml 交由服务生成后，lastUpdated会与客户端生成的不同， 导致后续checksum校验不通过
-            if (artifactFilePath.isSnapshotUri() && artifactFilePath.endsWith("maven-metadata.xml")) return
+            if (artifactFilePath.isSnapshotUri() && artifactFilePath.endsWith("maven-metadata.xml")) {
+                // 丢掉该请求，由异常拦截器直接返回 200
+                throw MavenMetadataChecksumException()
+            }
             val node =
                 nodeClient.getNodeDetail(projectId, repoName, artifactFilePath).data ?: throw NotFoundException(
                     ArtifactMessageCode.NODE_NOT_FOUND, artifactFilePath
@@ -292,6 +297,38 @@ class MavenLocalRepository(
             val artifactFile = ArtifactFileFactory.build(bos.toByteArray().inputStream())
             updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
         }
+        // 生成.md5 和 .sha256
+        val node = nodeClient.getNodeDetail(
+            context.projectId,
+            context.repoName,
+            context.artifactInfo.getArtifactFullPath()
+        ).data ?: return
+        (node.metadata[HashType.MD5.ext] as? String)?.let {
+            generateMetadataChecksum(node, HashType.MD5, it, context.storageCredentials)
+        }
+        (node.metadata[HashType.SHA1.ext] as? String)?.let {
+            generateMetadataChecksum(node, HashType.SHA1, it, context.storageCredentials)
+        }
+    }
+
+    private fun generateMetadataChecksum(
+        node: NodeDetail,
+        type: HashType,
+        value: String,
+        storageCredentials: StorageCredentials?
+    ) {
+        val artifactFile = ArtifactFileFactory.build(value.byteInputStream())
+        val nodeCreateRequest = NodeCreateRequest(
+            projectId = node.projectId,
+            repoName = node.repoName,
+            fullPath = "${node.fullPath}.${type.ext}",
+            folder = false,
+            overwrite = true,
+            size = artifactFile.getSize(),
+            md5 = artifactFile.getFileMd5(),
+            sha256 = artifactFile.getFileSha256()
+        )
+        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
     }
 
     private fun generateMetadata(
