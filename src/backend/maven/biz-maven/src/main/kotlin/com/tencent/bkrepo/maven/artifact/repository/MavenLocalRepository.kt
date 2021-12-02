@@ -92,8 +92,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
@@ -191,6 +189,8 @@ class MavenLocalRepository(
         with(context) {
             val suffix = ".${hashType.ext}"
             val artifactFilePath = artifactInfo.getArtifactFullPath().removeSuffix(suffix)
+            // *-SNAPSHOT/maven-metadata.xml 交由服务生成后，lastUpdated会与客户端生成的不同， 导致后续checksum校验不通过
+            if (artifactFilePath.isSnapshotUri() && artifactFilePath.endsWith("maven-metadata.xml")) return
             val node =
                 nodeClient.getNodeDetail(projectId, repoName, artifactFilePath).data ?: throw NotFoundException(
                     ArtifactMessageCode.NODE_NOT_FOUND, artifactFilePath
@@ -271,18 +271,22 @@ class MavenLocalRepository(
         }
     }
 
-    override fun onDownloadBefore(context: ArtifactDownloadContext) {
-        // 只对请求 *-SNAPSHOT/maven-metadata.xml 做处理
+    override fun onUploadFinished(context: ArtifactUploadContext) {
         if (context.artifactInfo.getArtifactFullPath().isSnapshotUri() &&
             context.artifactInfo.getArtifactFullPath().endsWith("maven-metadata.xml")
         ) {
             generateMetadata(context)
         }
+        super.onUploadFinished(context)
     }
 
-    private fun generateMetadata(context: ArtifactDownloadContext) {
+    private fun generateMetadata(context: ArtifactUploadContext) {
         val mavenGavc = context.artifactInfo.getArtifactFullPath().mavenGAVC()
         val repoConf = getRepoConf(context)
+        val records = mavenMetadataService.search(context.artifactInfo as MavenArtifactInfo, mavenGavc)
+        if (records.isEmpty()) return
+        val pom = records.first { it.extension == "pom" }
+        val pomLastUpdated = pom.timestamp.replace(".", "")
         val mavenMetadata = if (repoConf.mavenSnapshotVersionBehavior == 1) {
             org.apache.maven.artifact.repository.metadata.Metadata().apply {
                 modelVersion = "1.1.0"
@@ -293,12 +297,10 @@ class MavenLocalRepository(
                     snapshot = Snapshot().apply {
                         buildNumber = 1
                     }
-                    lastUpdated = LocalDateTime.now(ZoneId.of("UTC")).format(formatter)
+                    lastUpdated = pomLastUpdated
                 }
             }
         } else {
-            val records = mavenMetadataService.search(context.artifactInfo as MavenArtifactInfo, mavenGavc)
-            if (records.isEmpty()) return
             org.apache.maven.artifact.repository.metadata.Metadata().apply {
                 modelVersion = "1.1.0"
                 groupId = mavenGavc.groupId
@@ -306,11 +308,10 @@ class MavenLocalRepository(
                 version = mavenGavc.version
                 versioning = Versioning().apply {
                     snapshot = Snapshot().apply {
-                        val pom = records.first { it.extension == "pom" }
                         timestamp = pom.timestamp
                         buildNumber = pom.buildNo
                     }
-                    lastUpdated = LocalDateTime.now(ZoneId.of("UTC")).format(formatter)
+                    lastUpdated = pomLastUpdated
                     val snapshotVersionList = mutableListOf<SnapshotVersion>()
                     for (record in records) {
                         snapshotVersionList.add(
@@ -375,9 +376,15 @@ class MavenLocalRepository(
         fullPath: String
     ): NodeCreateRequest {
         val request = super.buildNodeCreateRequest(context)
+        val md5 = context.getArtifactMd5()
+        val sha1 = context.getArtifactSha1()
         return request.copy(
             overwrite = true,
-            fullPath = fullPath
+            fullPath = fullPath,
+            metadata = mutableMapOf(
+                HashType.MD5.ext to md5,
+                HashType.SHA1.ext to sha1
+            )
         )
     }
 
