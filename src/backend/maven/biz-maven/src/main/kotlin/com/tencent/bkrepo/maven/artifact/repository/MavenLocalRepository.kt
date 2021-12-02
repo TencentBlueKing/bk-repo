@@ -56,6 +56,7 @@ import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.ConflictException
+import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
@@ -275,64 +276,95 @@ class MavenLocalRepository(
         if (context.artifactInfo.getArtifactFullPath().isSnapshotUri() &&
             context.artifactInfo.getArtifactFullPath().endsWith("maven-metadata.xml")
         ) {
-            generateMetadata(context)
+            verifyMetadata(context)
         }
         super.onUploadFinished(context)
     }
 
-    private fun generateMetadata(context: ArtifactUploadContext) {
+    private fun verifyMetadata(context: ArtifactUploadContext) {
         val mavenGavc = context.artifactInfo.getArtifactFullPath().mavenGAVC()
         val repoConf = getRepoConf(context)
         val records = mavenMetadataService.search(context.artifactInfo as MavenArtifactInfo, mavenGavc)
         if (records.isEmpty()) return
-        val pom = records.first { it.extension == "pom" }
-        val pomLastUpdated = pom.timestamp.replace(".", "")
-        val mavenMetadata = if (repoConf.mavenSnapshotVersionBehavior == 1) {
-            org.apache.maven.artifact.repository.metadata.Metadata().apply {
-                modelVersion = "1.1.0"
-                groupId = mavenGavc.groupId
-                artifactId = mavenGavc.artifactId
-                version = mavenGavc.version
-                versioning = Versioning().apply {
-                    snapshot = Snapshot().apply {
-                        buildNumber = 1
-                    }
-                    lastUpdated = pomLastUpdated
-                }
-            }
-        } else {
-            org.apache.maven.artifact.repository.metadata.Metadata().apply {
-                modelVersion = "1.1.0"
-                groupId = mavenGavc.groupId
-                artifactId = mavenGavc.artifactId
-                version = mavenGavc.version
-                versioning = Versioning().apply {
-                    snapshot = Snapshot().apply {
-                        timestamp = pom.timestamp
-                        buildNumber = pom.buildNo
-                    }
-                    lastUpdated = pomLastUpdated
-                    val snapshotVersionList = mutableListOf<SnapshotVersion>()
-                    for (record in records) {
-                        snapshotVersionList.add(
-                            SnapshotVersion().apply {
-                                classifier = record.classifier
-                                extension = record.extension
-                                version = "${mavenGavc.version.removeSuffix(SNAPSHOT_SUFFIX)}-" +
-                                    "${record.timestamp}-${record.buildNo}"
-                                updated = record.timestamp
-                            }
-                        )
-                    }
-                    snapshotVersions = snapshotVersionList
-                }
-            }
-        }
+        val mavenMetadata = generateMetadata(repoConf, mavenGavc, records)
         ByteArrayOutputStream().use { bos ->
             MetadataXpp3Writer().write(bos, mavenMetadata)
             val artifactFile = ArtifactFileFactory.build(bos.toByteArray().inputStream())
             updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
         }
+    }
+
+    private fun generateMetadata(
+        repoConf: MavenRepoConf,
+        mavenGavc: MavenGAVC,
+        records: List<TMavenMetadataRecord>
+    ): org.apache.maven.artifact.repository.metadata.Metadata {
+        val pom = records.first { it.extension == "pom" }
+        val pomLastUpdated = pom.timestamp.replace(".", "")
+        return if (repoConf.mavenSnapshotVersionBehavior == 1) {
+            nonuniqueMetadata(mavenGavc, pomLastUpdated)
+        } else {
+            uniqueMetadata(mavenGavc, pomLastUpdated, pom, records)
+        }
+    }
+
+    private fun nonuniqueMetadata(
+        mavenGavc: MavenGAVC,
+        pomLastUpdated: String
+    ): org.apache.maven.artifact.repository.metadata.Metadata {
+        return org.apache.maven.artifact.repository.metadata.Metadata().apply {
+            modelVersion = "1.1.0"
+            groupId = mavenGavc.groupId
+            artifactId = mavenGavc.artifactId
+            version = mavenGavc.version
+            versioning = Versioning().apply {
+                snapshot = Snapshot().apply {
+                    buildNumber = 1
+                }
+                lastUpdated = pomLastUpdated
+            }
+        }
+    }
+
+    private fun uniqueMetadata(
+        mavenGavc: MavenGAVC,
+        pomLastUpdated: String,
+        pom: TMavenMetadataRecord,
+        records: List<TMavenMetadataRecord>
+    ): org.apache.maven.artifact.repository.metadata.Metadata {
+        return org.apache.maven.artifact.repository.metadata.Metadata().apply {
+            modelVersion = "1.1.0"
+            groupId = mavenGavc.groupId
+            artifactId = mavenGavc.artifactId
+            version = mavenGavc.version
+            versioning = Versioning().apply {
+                snapshot = Snapshot().apply {
+                    timestamp = pom.timestamp
+                    buildNumber = pom.buildNo
+                }
+                lastUpdated = pomLastUpdated
+                snapshotVersions = generateSnapshotVersions(mavenGavc, records)
+            }
+        }
+    }
+
+    private fun generateSnapshotVersions(
+        mavenGavc: MavenGAVC,
+        records: List<TMavenMetadataRecord>
+    ): List<SnapshotVersion> {
+        val snapshotVersionList = mutableListOf<SnapshotVersion>()
+        for (record in records) {
+            snapshotVersionList.add(
+                SnapshotVersion().apply {
+                    classifier = record.classifier
+                    extension = record.extension
+                    version = "${mavenGavc.version.removeSuffix(SNAPSHOT_SUFFIX)}-" +
+                        "${record.timestamp}-${record.buildNo}"
+                    updated = record.timestamp
+                }
+            )
+        }
+        return snapshotVersionList
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
