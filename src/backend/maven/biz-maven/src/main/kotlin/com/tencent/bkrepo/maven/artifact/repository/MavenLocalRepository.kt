@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
+import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.response.MavenArtifactResponse
+import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
@@ -66,6 +68,7 @@ import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
 import com.tencent.bkrepo.maven.util.MavenStringUtils.fileMimeType
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.maven.util.MavenStringUtils.httpStatusCode
+import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.repository.api.StageClient
@@ -76,6 +79,9 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.apache.commons.lang.StringUtils
+import org.apache.maven.artifact.repository.metadata.Snapshot
+import org.apache.maven.artifact.repository.metadata.SnapshotVersion
+import org.apache.maven.artifact.repository.metadata.Versioning
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Writer
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
@@ -85,10 +91,16 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 @Component
-class MavenLocalRepository(private val stageClient: StageClient) : LocalRepository() {
+class MavenLocalRepository(
+    private val stageClient: StageClient,
+    private val mavenMetadataService: MavenMetadataService
+) : LocalRepository() {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
     val mavenDomain = ""
@@ -207,6 +219,8 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
             val node = buildMavenArtifactNode(context, packaging, mavenGavc)
             storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
             if (packaging == fileSuffix) createMavenVersion(context, mavenGavc)
+            // 更新包各模块版本最新记录
+            mavenMetadataService.update(context.artifactInfo as MavenArtifactInfo)
         } else {
             super.onUpload(context)
         }
@@ -243,6 +257,69 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
                 response.writer.println(mavenArtifactResponse.toJsonString())
                 response.writer.flush()
             }
+        }
+    }
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        // 只对请求 *-SNAPSHOT/maven-metadata.xml 做处理
+        if (context.artifactInfo.getArtifactFullPath().isSnapshotUri() &&
+            context.artifactInfo.getArtifactFullPath().endsWith("maven-metadata.xml")
+        ) {
+            generateMetadata(context)
+        }
+    }
+
+    private fun generateMetadata(context: ArtifactDownloadContext) {
+        val mavenGavc = context.artifactInfo.getArtifactFullPath().mavenGAVC()
+        val repoConf = getRepoConf(context)
+        val mavenMetadata = if (repoConf.mavenSnapshotVersionBehavior == 1) {
+            org.apache.maven.artifact.repository.metadata.Metadata().apply {
+                modelVersion = "1.1.0"
+                groupId = mavenGavc.groupId
+                artifactId = mavenGavc.artifactId
+                version = mavenGavc.version
+                versioning = Versioning().apply {
+                    snapshot = Snapshot().apply {
+                        buildNumber = 1
+                    }
+                    lastUpdated = LocalDateTime.now(ZoneId.of("UTC")).format(formatter)
+                }
+            }
+        } else {
+            val records = mavenMetadataService.search(context.artifactInfo as MavenArtifactInfo, mavenGavc)
+            if (records.isEmpty()) return
+            org.apache.maven.artifact.repository.metadata.Metadata().apply {
+                modelVersion = "1.1.0"
+                groupId = mavenGavc.groupId
+                artifactId = mavenGavc.artifactId
+                version = mavenGavc.version
+                versioning = Versioning().apply {
+                    snapshot = Snapshot().apply {
+                        val pom = records.first { it.extension == "pom" }
+                        timestamp = pom.timestamp
+                        buildNumber = pom.buildNo
+                    }
+                    lastUpdated = LocalDateTime.now(ZoneId.of("UTC")).format(formatter)
+                    val snapshotVersionList = mutableListOf<SnapshotVersion>()
+                    for (record in records) {
+                        snapshotVersionList.add(
+                            SnapshotVersion().apply {
+                                classifier = record.classifier
+                                extension = record.extension
+                                version = "${mavenGavc.version.removeSuffix(SNAPSHOT_SUFFIX)}-" +
+                                    "${record.timestamp}-${record.buildNo}"
+                                updated = record.timestamp
+                            }
+                        )
+                    }
+                    snapshotVersions = snapshotVersionList
+                }
+            }
+        }
+        ByteArrayOutputStream().use { bos ->
+            MetadataXpp3Writer().write(bos, mavenMetadata)
+            val artifactFile = ArtifactFileFactory.build(bos.toByteArray().inputStream())
+            updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
         }
     }
 
@@ -477,5 +554,6 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MavenLocalRepository::class.java)
+        private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
     }
 }
