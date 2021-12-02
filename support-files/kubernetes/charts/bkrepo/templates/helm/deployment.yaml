@@ -5,6 +5,7 @@ metadata:
   name: {{ include "common.names.fullname" . }}-helm
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: helm
+    {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
     {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
@@ -20,6 +21,7 @@ spec:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: helm
+        {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
         {{- if .Values.helm.podLabels }}
         {{- include "common.tplvalues.render" (dict "value" .Values.helm.podLabels "context" $) | nindent 8 }}
         {{- end }}

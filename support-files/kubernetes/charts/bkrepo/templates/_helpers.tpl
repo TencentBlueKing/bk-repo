@@ -17,6 +17,7 @@ Create the name of the service account to use
 {{- end -}}
 
 
+
 {{/*
 Create a default fully qualified mongodb subchart.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -39,6 +40,27 @@ Return the mongodb connection uri
 {{- else -}}
 {{- .Values.externalMongodb.uri -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Return the label key of bk-repo scope
+*/}}
+{{- define "bkrepo.labelValues.scope" -}}
+    {{- printf "bk.repo.scope" -}}
+{{- end -}}
+
+{{/*
+Return the label value of bk-repo scope backend
+*/}}
+{{- define "bkrepo.labelValues.scope.backend" -}}
+    {{- printf "backend" -}}
+{{- end -}}
+
+{{/*
+Return the label value of bk-repo scope gateway
+*/}}
+{{- define "bkrepo.labelValues.scope.gateway" -}}
+    {{- printf "gateway" -}}
 {{- end -}}
 
 {{/*

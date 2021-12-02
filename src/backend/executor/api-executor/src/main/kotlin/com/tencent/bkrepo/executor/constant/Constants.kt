@@ -29,24 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.executor.constant
 
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Configuration
+const val SCAN_REPORT_ENDPOINT = "/scan/report"
 
-@Configuration
-class InfluxDbConfig {
+const val SCAN_FILE_ENDPOINT = "/scan/file"
 
-    @Value("\${spring.influx.url:''}")
-    private val influxDBUrl: String? = null
-    @Value("\${spring.influx.user:''}")
-    private val userName: String? = null
-    @Value("\${spring.influx.password:''}")
-    private val password: String? = null
-    @Value("\${spring.influx.database:''}")
-    val database: String? = null
+const val SCAN_REPO_ENDPOINT = "/scan/repo"
 
-    fun influxDbUtils(): InfluxDbUtils {
-        return InfluxDbUtils(userName, password, influxDBUrl, database, "100day")
-    }
-}
+const val SCAN_STATUS_ENDPOINT = "/scan/status"

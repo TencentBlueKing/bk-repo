@@ -188,13 +188,13 @@ open class PermissionManager(
         val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
-        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
-            return
-        }
         if (userId == ANONYMOUS_USER) {
             val request = HttpContextHolder.getRequest()
             logger.warn("anonymous user, platform id[$platformId], project[$projectId], repoName[$repoName]" +
                 "requestMethod: ${request.method}, requestUri: ${request.requestURI}")
+        }
+        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
+            return
         }
 
         // 校验Oauth token对应权限

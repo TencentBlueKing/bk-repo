@@ -46,6 +46,7 @@ class OciRegistryLocalRepository : LocalRepository() {
 					response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 					response.addHeader(DOCKER_CONTENT_DIGEST, getDigest().toString())
 					val fullPath = queryFullPathByNameAndDigest(this)
+					if (fullPath.isEmpty()) return null
 					// 先根据
 					with(context) {
 						val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
@@ -76,7 +77,7 @@ class OciRegistryLocalRepository : LocalRepository() {
 				logger.warn("query manifest file with digest [${sha256}] in repo ${getRepoIdentify()} failed.")
 				throw NodeNotFoundException("${getRepoIdentify()}/$sha256")
 			}
-			return result.records.first()["fullPath"]?.toString().orEmpty()
+			return result.records.firstOrNull()?.get("fullPath")?.toString().orEmpty()
 		}
 	}
 
