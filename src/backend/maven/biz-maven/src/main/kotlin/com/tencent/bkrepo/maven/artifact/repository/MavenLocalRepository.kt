@@ -151,8 +151,8 @@ class MavenLocalRepository(private val stageClient: StageClient) : LocalReposito
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
-        val overwrite = HeaderUtils.getBooleanHeader("X-BKREPO-OVERWRITE")
-        if (!overwrite) {
+        val noOverwrite = HeaderUtils.getBooleanHeader("X-BKREPO-NO-OVERWRITE")
+        if (noOverwrite) {
             with(context.artifactInfo) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 if (node != null) {
