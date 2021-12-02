@@ -23,7 +23,6 @@ import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.util.BlobUtils.isEmptyBlob
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils.emptyBlobHeadResponse
-import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -52,7 +51,9 @@ class OciBlobServiceImpl(
 		// digest文件是否存在，先在_uploads目录下查找，找不到再在该仓库下根据sha256值全局查找
 		with(artifactInfo) {
 			val nodeDetail = queryBlobByFullPathAndDigest(artifactInfo) ?: run {
-				logger.info("search blob $this with digest [${this.getDigestHex()}] in repo [${getRepoIdentify()}] failed.")
+				logger.info(
+					"search blob $this with digest [${this.getDigestHex()}] in repo [${getRepoIdentify()}] failed."
+				)
 				val response = HttpContextHolder.getResponse()
 				response.status = HttpStatus.NOT_FOUND.value
 				response.contentType = MediaTypes.APPLICATION_JSON
@@ -75,9 +76,11 @@ class OciBlobServiceImpl(
 			logger.info("search blob in temp path $tempPath in repo [${getRepoIdentify()}] first.")
 			val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, tempPath).data
 			if (nodeDetail != null) return nodeDetail
-			logger.info("attempt to search  blob $this with digest [${this.getDigestHex()}] in repo [${getRepoIdentify()}].")
+			logger.info(
+				"attempt to search  blob $this with digest [${this.getDigestHex()}] in repo [${getRepoIdentify()}]."
+			)
 			val fullPath = queryFullPathByDigest(this)
-			return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+			return if (fullPath.isEmpty()) null else nodeClient.getNodeDetail(projectId, repoName, fullPath).data
 		}
 	}
 
@@ -98,7 +101,7 @@ class OciBlobServiceImpl(
 				logger.warn("query blob file with digest [${sha256}] in repo ${getRepoIdentify()} failed.")
 				throw NodeNotFoundException("${getRepoIdentify()}/$sha256")
 			}
-			return result.records.first()["fullPath"]?.toString().orEmpty()
+			return result.records.firstOrNull()?.get("fullPath")?.toString().orEmpty()
 		}
 	}
 
@@ -123,11 +126,12 @@ class OciBlobServiceImpl(
 	}
 
 	override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
-		if (OciUtils.putHasStream()) {
-			uploadBlobFromPut(artifactInfo, artifactFile)
-		} else {
-			finishAppend(artifactInfo)
-		}
+		finishAppend(artifactInfo)
+//		if (OciUtils.putHasStream()) {
+//			uploadBlobFromPut(artifactInfo, artifactFile)
+//		} else {
+//			finishAppend(artifactInfo)
+//		}
 	}
 
 	/**
