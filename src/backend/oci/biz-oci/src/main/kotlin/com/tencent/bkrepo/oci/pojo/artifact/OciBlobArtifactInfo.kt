@@ -28,5 +28,5 @@ class OciBlobArtifactInfo(
 
 	fun blobTempPath() = packageName + "/_uploads/" + ociDigest.fileName()
 
-	override fun getArtifactFullPath() = packageName + "/_uploads/" + ociDigest.fileName()
+//	override fun getArtifactFullPath() = packageName + "/_uploads/" + ociDigest.fileName()
 }

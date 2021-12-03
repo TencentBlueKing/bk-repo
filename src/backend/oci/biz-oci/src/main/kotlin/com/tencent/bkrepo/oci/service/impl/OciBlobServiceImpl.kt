@@ -126,7 +126,7 @@ class OciBlobServiceImpl(
 	}
 
 	override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
-		finishAppend(artifactInfo)
+		uploadBlobFromPut(artifactInfo, artifactFile)
 //		if (OciUtils.putHasStream()) {
 //			uploadBlobFromPut(artifactInfo, artifactFile)
 //		} else {
@@ -228,7 +228,7 @@ class OciBlobServiceImpl(
 	override fun downloadBlob(artifactInfo: OciBlobArtifactInfo) {
 		with(artifactInfo) {
 			if (isEmptyBlob(getDigest())) {
-				logger.info("get empty layer [$artifactInfo] for image [${getDigest()}]")
+				logger.info("get empty layer for image [${getDigest()}] in repo [${artifactInfo.getRepoIdentify()}]")
 				emptyBlobHeadResponse()
 				return
 			}
