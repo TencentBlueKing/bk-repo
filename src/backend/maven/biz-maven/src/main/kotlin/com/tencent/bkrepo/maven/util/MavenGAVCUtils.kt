@@ -38,6 +38,9 @@ import org.apache.commons.lang.StringUtils
 
 object MavenGAVCUtils {
 
+    /**
+     *
+     */
     fun String.mavenGAVC(): MavenGAVC {
         val pathList = this.trim('/').split("/")
         val version = pathList[pathList.size - 2]
@@ -46,6 +49,9 @@ object MavenGAVCUtils {
         return MavenGAVC(groupId, artifactId, version, null)
     }
 
+    /**
+     *
+     */
     fun MavenArtifactInfo.toMavenGAVC(): MavenGAVC {
         val mavenVersion = this.jarName.resolverName(this.artifactId, this.versionId)
         return MavenGAVC(
