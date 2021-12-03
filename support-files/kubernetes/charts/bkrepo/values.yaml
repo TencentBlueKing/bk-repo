@@ -169,8 +169,12 @@ gateway:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -206,8 +210,12 @@ repository:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -243,8 +251,12 @@ auth:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -279,8 +291,12 @@ generic:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -315,8 +331,12 @@ docker:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -351,8 +371,12 @@ npm:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -387,8 +411,12 @@ pypi:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -423,8 +451,12 @@ helm:
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
