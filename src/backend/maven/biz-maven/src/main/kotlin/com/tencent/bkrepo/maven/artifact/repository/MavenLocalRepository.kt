@@ -94,7 +94,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 @Component
