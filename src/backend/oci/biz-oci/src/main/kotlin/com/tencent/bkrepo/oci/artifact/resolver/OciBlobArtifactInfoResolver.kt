@@ -25,9 +25,11 @@ class OciBlobArtifactInfoResolver : ArtifactInfoResolver {
 		Preconditions.checkNotBlank(packageName, "packageName")
 		val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
 		// 解析digest
-		val digest = attributes["digest"].toString().trim()
+		val digest = attributes["digest"]?.toString()?.trim() ?: run { request.getParameter("digest")?.toString()?.trim() }
 		// 解析UUID
 		val uuid = attributes["uuid"].toString().trim()
-		return OciBlobArtifactInfo(projectId, repoName, packageName, "", digest, uuid)
+		// 解析mount
+		val mount = request.getAttribute("mount") as? String
+		return OciBlobArtifactInfo(projectId, repoName, packageName, "", digest, uuid, mount)
 	}
 }

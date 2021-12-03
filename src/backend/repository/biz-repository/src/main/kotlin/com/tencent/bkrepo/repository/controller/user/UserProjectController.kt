@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import io.swagger.annotations.Api
@@ -46,6 +47,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("项目用户接口")
@@ -87,8 +89,15 @@ class UserProjectController(
 
     @ApiOperation("项目列表")
     @GetMapping("/list")
-    fun listProject(@RequestAttribute userId: String): Response<List<ProjectInfo>> {
-        return ResponseBuilder.success(projectService.listPermissionProject(userId))
+    fun listProject(
+        @RequestAttribute userId: String,
+        @RequestParam pageNumber: Int?,
+        @RequestParam pageSize: Int?,
+        @RequestParam names: List<String>?,
+        @RequestParam displayNames: List<String>?
+    ): Response<List<ProjectInfo>> {
+        val option = ProjectListOption(pageNumber, pageSize, names, displayNames)
+        return ResponseBuilder.success(projectService.listPermissionProject(userId, option))
     }
 
     @Deprecated("waiting kb-ci", replaceWith = ReplaceWith("createProject"))

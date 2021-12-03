@@ -7,15 +7,17 @@ import org.apache.commons.lang.StringUtils
 /**
  * OCI digest
  */
-data class OciDigest(val digest: String) {
+data class OciDigest(val digest: String? = null) {
 	var alg: String = StringPool.EMPTY
 	var hex: String = StringPool.EMPTY
 
 	init {
-		val sepIndex = StringUtils.indexOf(digest, CharPool.COLON)
-		require(sepIndex >= 0) { "could not find ':' in digest: $digest" }
-		this.alg = StringUtils.substring(digest, 0, sepIndex)
-		this.hex = StringUtils.substring(digest, sepIndex + 1)
+		digest?.let {
+			val sepIndex = StringUtils.indexOf(digest, CharPool.COLON)
+			require(sepIndex >= 0) { "could not find ':' in digest: $digest" }
+			this.alg = StringUtils.substring(digest, 0, sepIndex)
+			this.hex = StringUtils.substring(digest, sepIndex + 1)
+		}
 	}
 
 	fun fileName(): String {

@@ -49,7 +49,7 @@ class MavenExtService(
         listOf(a, v, c).map {
             result = it.isNullOrBlank() && result
         }
-        if(result) throw MavenBadRequestException()
+        if (result) throw MavenBadRequestException()
     }
 
     private fun buildGavcQuery(
@@ -64,7 +64,6 @@ class MavenExtService(
         val repoRules = mutableListOf<Rule>()
         val metadataRules = mutableListOf<Rule>()
         val projectRule = Rule.QueryRule("projectId", projectId)
-//        val repoName = Rule.QueryRule("repoName", context.repoName)
         g?.let { metadataRules.add(Rule.QueryRule("metadata.groupId", g)) }
         a?.let { metadataRules.add(Rule.QueryRule("metadata.artifactId", a)) }
         v?.let { metadataRules.add(Rule.QueryRule("metadata.version", v)) }

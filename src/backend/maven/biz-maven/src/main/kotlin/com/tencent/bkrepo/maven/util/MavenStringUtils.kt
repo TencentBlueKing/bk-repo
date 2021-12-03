@@ -61,13 +61,28 @@ object MavenStringUtils {
     }
 
     fun String.httpStatusCode(): Int {
-        return if (this.endsWith("maven-metadata.xml")) {
+        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri()) {
             HttpStatus.SC_ACCEPTED
         } else if (this.endsWith("maven-metadata.xml.md5") || this.endsWith("maven-metadata.xml.sha1")) {
             HttpStatus.SC_OK
         } else HttpStatus.SC_CREATED
     }
 
+    fun String.isSnapshotUri(): Boolean {
+        return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX)
+    }
+
+    /**
+     * 将maven 包名转为[MavenVersion]
+     * 完整请求路径 e.g. /com/mycompany/app/my-app/1.0-SNAPSHOT/my-app-1.0-20211129.073728-8.jar
+     * [this] 请求路径中完整包名 e.g. my-app-1.0-20211129.073728-8.jar
+     * [artifactId] = my-app
+     * [version] = 1.0-SNAPSHOT
+     * @return [MavenVersion.timestamp] = 20211129.073728
+     * @return [MavenVersion.buildNo] = 8
+     * @return [MavenVersion.classifier] = null
+     * @return [MavenVersion.packaging] = jar
+     */
     fun String.resolverName(artifactId: String, version: String): MavenVersion {
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(this)
         if (matcher.matches()) {
