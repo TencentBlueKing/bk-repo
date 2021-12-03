@@ -92,7 +92,7 @@ class ShareServiceImpl(
             )
             mongoTemplate.save(shareRecord)
             val shareRecordInfo = convert(shareRecord)
-            logger.info("Create share record[$shareRecordInfo] success.")
+            logger.info("$userId create share record[$shareRecordInfo] success.")
             return shareRecordInfo
         }
     }

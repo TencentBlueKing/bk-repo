@@ -32,12 +32,21 @@
 package com.tencent.bkrepo.repository.model
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.repository.model.TOperateLog.Companion.RESOURCE_KEY_IDX
+import com.tencent.bkrepo.repository.model.TOperateLog.Companion.RESOURCE_KEY_IDX_DEF
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
-@Document("artifact_oplog")
+@ShardingDocument("artifact_oplog")
+@CompoundIndexes(
+    CompoundIndex(name = RESOURCE_KEY_IDX, def = RESOURCE_KEY_IDX_DEF, background = true)
+)
 data class TOperateLog(
     var id: String? = null,
+    @ShardingKey(count = 12)
     var createdDate: LocalDateTime = LocalDateTime.now(),
     var type: EventType,
     var projectId: String?,
@@ -46,4 +55,9 @@ data class TOperateLog(
     var userId: String,
     var clientAddress: String,
     var description: Map<String, Any>
-)
+) {
+    companion object {
+        const val RESOURCE_KEY_IDX = "projectId_repoName_resourceKey_type_idx"
+        const val RESOURCE_KEY_IDX_DEF = "{'projectId':1,'repoName':1,'resourceKey':1, 'type': 1}"
+    }
+}
