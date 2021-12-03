@@ -94,7 +94,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 @Component
@@ -309,7 +308,11 @@ class MavenLocalRepository(
         ByteArrayOutputStream().use { bos ->
             MetadataXpp3Writer().write(bos, mavenMetadata)
             val artifactFile = ArtifactFileFactory.build(bos.toByteArray().inputStream())
-            updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
+            try {
+                updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
+            } finally {
+                artifactFile.delete()
+            }
         }
         // 生成.md5 和 .sha256
         val node = nodeClient.getNodeDetail(
@@ -332,18 +335,21 @@ class MavenLocalRepository(
         storageCredentials: StorageCredentials?
     ) {
         val artifactFile = ArtifactFileFactory.build(value.byteInputStream())
-        val nodeCreateRequest = NodeCreateRequest(
-            projectId = node.projectId,
-            repoName = node.repoName,
-            fullPath = "${node.fullPath}.${type.ext}",
-            folder = false,
-            overwrite = true,
-            size = artifactFile.getSize(),
-            md5 = artifactFile.getFileMd5(),
-            sha256 = artifactFile.getFileSha256()
-        )
-        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
-        artifactFile.delete()
+        try {
+            val nodeCreateRequest = NodeCreateRequest(
+                projectId = node.projectId,
+                repoName = node.repoName,
+                fullPath = "${node.fullPath}.${type.ext}",
+                folder = false,
+                overwrite = true,
+                size = artifactFile.getSize(),
+                md5 = artifactFile.getFileMd5(),
+                sha256 = artifactFile.getFileSha256()
+            )
+            storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
+        } finally {
+            artifactFile.delete()
+        }
     }
 
     private fun generateMetadata(
