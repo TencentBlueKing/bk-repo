@@ -57,7 +57,6 @@ import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.ConflictException
-import com.tencent.bkrepo.maven.exception.MavenMetadataChecksumException
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
@@ -194,8 +193,7 @@ class MavenLocalRepository(
             val artifactFilePath = artifactInfo.getArtifactFullPath().removeSuffix(suffix)
             // *-SNAPSHOT/maven-metadata.xml 交由服务生成后，lastUpdated会与客户端生成的不同， 导致后续checksum校验不通过
             if (artifactFilePath.isSnapshotUri() && artifactFilePath.endsWith("maven-metadata.xml")) {
-                // 丢掉该请求，由异常拦截器直接返回 200
-                throw MavenMetadataChecksumException()
+                return
             }
             val node =
                 nodeClient.getNodeDetail(projectId, repoName, artifactFilePath).data ?: throw NotFoundException(
@@ -239,8 +237,24 @@ class MavenLocalRepository(
             // 更新包各模块版本最新记录
             mavenMetadataService.update(context.artifactInfo as MavenArtifactInfo)
         } else {
+            val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+            if (artifactFullPath.isSnapshotUri() && matedataUploadHandler(artifactFullPath)) {
+                return
+            }
             super.onUpload(context)
         }
+    }
+
+    private fun matedataUploadHandler(artifactFullPath: String): Boolean {
+        for (hashType in HashType.values()) {
+            val suffix = ".${hashType.ext}"
+            val isDigestFile = artifactFullPath.endsWith(suffix)
+            if (isDigestFile) {
+                val artifactFilePath = artifactFullPath.removeSuffix(suffix)
+                return artifactFilePath.endsWith("maven-metadata.xml")
+            }
+        }
+        return false
     }
 
     /**
@@ -329,6 +343,7 @@ class MavenLocalRepository(
             sha256 = artifactFile.getFileSha256()
         )
         storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
+        artifactFile.delete()
     }
 
     private fun generateMetadata(
@@ -461,6 +476,7 @@ class MavenLocalRepository(
         val uploadContext = ArtifactUploadContext(metadataArtifact)
         val metadataNode = metadataNodeCreateRequest(uploadContext, fullPath)
         storageManager.storeArtifactFile(metadataNode, metadataArtifact, uploadContext.storageCredentials)
+        metadataArtifact.delete()
         logger.info("Success to save $fullPath, size: ${metadataArtifact.getSize()}")
     }
 
@@ -641,6 +657,5 @@ class MavenLocalRepository(
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MavenLocalRepository::class.java)
-        private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
     }
 }
