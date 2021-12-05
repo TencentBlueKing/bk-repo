@@ -14,7 +14,6 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
@@ -27,6 +26,7 @@ import com.tencent.bkrepo.oci.model.ManifestSchema2
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.service.impl.NodeQuerySupport
 import com.tencent.bkrepo.oci.util.BlobUtils.EMPTY_BLOB_CONTENT
 import com.tencent.bkrepo.oci.util.BlobUtils.isEmptyBlob
 import com.tencent.bkrepo.oci.util.OciResponseUtils
@@ -36,13 +36,14 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 
 @Component
-class OciRegistryLocalRepository : LocalRepository() {
+class OciRegistryLocalRepository(
+	private val nodeQuerySupport: NodeQuerySupport
+) : LocalRepository() {
 
 	/**
 	 * 上传
@@ -60,7 +61,7 @@ class OciRegistryLocalRepository : LocalRepository() {
 					syncBlob(context, manifest)
 					createVersion(context)
 					val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
-					val location = OciResponseUtils.getResponseLocationURI("$packageName/manifests/${digest}")
+					val location = OciResponseUtils.getResponseLocationURI("$packageName/manifests/$digest")
 					val response = context.response
 					response.status = HttpStatus.CREATED.value
 					response.setContentLength(0)
@@ -149,7 +150,7 @@ class OciRegistryLocalRepository : LocalRepository() {
 				logger.info("move blob from the temp path [$tempPath] to final path [$finalPath] in repo [${getRepoIdentify()}].")
 				if (!moveNode(context, tempPath, finalPath)) {
 					logger.warn("move blob failed [$finalPath]")
-					//throw DockerFileSaveFailedException(finalPath)
+					// throw DockerFileSaveFailedException(finalPath)
 				}
 				return
 			}
@@ -157,14 +158,14 @@ class OciRegistryLocalRepository : LocalRepository() {
 			logger.info("blob temp file [$tempPath] doesn't exist in temp, try to copy")
 			if (!copyBlobFromRepo(context, fileName, finalPath)) {
 				logger.warn("copy file from other path failed [$finalPath]")
-				//					throw DockerFileSaveFailedException(finalPath)
+				// throw DockerFileSaveFailedException(finalPath)
 			}
 		}
 	}
 
 	private fun copyBlobFromRepo(context: ArtifactUploadContext, fileName: String, finalPath: String): Boolean {
 		with(context) {
-			val searchNodeList = searchNode(projectId, repoName, name = fileName)
+			val searchNodeList = nodeQuerySupport.searchNode(projectId, repoName, name = fileName)
 			if (searchNodeList.isEmpty()) return false
 			val nodeInfoMap = searchNodeList.first()
 			val sourcePath = nodeInfoMap["fullPath"]?.toString().orEmpty()
@@ -276,7 +277,7 @@ class OciRegistryLocalRepository : LocalRepository() {
 						response.addHeader(HttpHeaders.ETAG, digest.toString())
 						response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 						response.addHeader(DOCKER_CONTENT_DIGEST, digest.toString())
-						val resource =  ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+						val resource = ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
 						resource.contentType = OCI_IMAGE_MANIFEST_MEDIA_TYPE
 						return resource
 					}
@@ -286,13 +287,13 @@ class OciRegistryLocalRepository : LocalRepository() {
 		}
 	}
 
-
 	private fun queryManifestFullPathByNameAndDigest(artifactInfo: OciManifestArtifactInfo): String {
 		with(artifactInfo) {
 			val digest = OciDigest(reference)
 			val sha256 = digest.getDigestHex()
-			val searchNodeList =
-				searchNode(projectId, repoName, sha256 = sha256, name = MANIFEST, fullPathPrefix = packageName)
+			val searchNodeList = nodeQuerySupport.searchNode(
+				projectId, repoName, sha256 = sha256, name = MANIFEST, fullPathPrefix = packageName
+			)
 			if (searchNodeList.isEmpty()) {
 				logger.warn("query manifest file with digest [$sha256] in repo ${getRepoIdentify()} failed.")
 				throw NodeNotFoundException("${getRepoIdentify()}/$sha256")
@@ -304,37 +305,13 @@ class OciRegistryLocalRepository : LocalRepository() {
 	private fun queryBlobFullPathByNameAndDigest(artifactInfo: OciBlobArtifactInfo): String {
 		with(artifactInfo) {
 			val searchNodeList =
-				searchNode(projectId, repoName, sha256 = getDigestHex(), fullPathPrefix = packageName)
+				nodeQuerySupport.searchNode(projectId, repoName, sha256 = getDigestHex(), fullPathPrefix = packageName)
 			if (searchNodeList.isEmpty()) {
 				logger.warn("query blob file with name [$packageName] in repo ${getRepoIdentify()} failed.")
 				throw NodeNotFoundException("${getRepoIdentify()}/$packageName")
 			}
 			return searchNodeList.firstOrNull()?.get("fullPath")?.toString().orEmpty()
 		}
-	}
-
-	private fun searchNode(
-		projectId: String,
-		repoName: String,
-		sha256: String? = null,
-		name: String? = null,
-		fullPathPrefix: String? = null
-	): List<Map<String, Any?>> {
-		val queryModel = NodeQueryBuilder()
-			.select("name", "fullPath")
-			.sortByAsc("name")
-			.page(1, 10)
-			.projectId(projectId)
-			.repoName(repoName)
-			.excludeFolder()
-		sha256?.let { queryModel.and().sha256(it) }
-		name?.let { queryModel.and().name(it) }
-		fullPathPrefix?.let { queryModel.and().fullPath("/$it", OperationType.PREFIX) }
-		val result = nodeClient.search(queryModel.build()).data ?: run {
-			logger.warn("node not found in repo [$projectId/$repoName]")
-			return emptyList()
-		}
-		return result.records
 	}
 
 	companion object {

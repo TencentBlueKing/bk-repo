@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.oci.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 
 interface OciBlobService {
@@ -13,7 +12,7 @@ interface OciBlobService {
 	/**
 	 * 根据[artifactInfo]的信息来上传blob文件，返回appendID
 	 */
-	fun startUploadBlob(artifactInfo: OciArtifactInfo)
+	fun startUploadBlob(artifactInfo: OciBlobArtifactInfo)
 
 	/**
 	 * 根据[artifactInfo]的信息来上传[artifactFile]文件
