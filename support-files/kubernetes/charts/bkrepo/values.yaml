@@ -34,6 +34,7 @@ serviceAccount:
 bkMonitorConfig:
   enabled: false
 
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
@@ -135,6 +136,12 @@ common:
       ## filesystem配置，使用文件系统
       filesystem:
         path: /data/storage/store
+      # 是否启用nfs挂载
+      nfs:
+        enabled: false
+        path: /
+        server:
+
       ## 腾讯云cos存储配置
       #cos:
       ## 标准s3对象存储
