@@ -62,6 +62,14 @@ class MavenExceptionHandler {
         response.writer.flush()
     }
 
+    @ExceptionHandler(MavenMetadataChecksumException::class)
+    @ResponseStatus(HttpStatus.OK)
+    fun handleException(exception: MavenMetadataChecksumException) {
+        val response = HttpContextHolder.getResponse()
+        response.status = HttpStatus.OK.value()
+        response.writer.flush()
+    }
+
     @ExceptionHandler(MavenArtifactFormatException::class)
     @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
     fun handleException(exception: MavenArtifactFormatException): MavenExceptionResponse {
