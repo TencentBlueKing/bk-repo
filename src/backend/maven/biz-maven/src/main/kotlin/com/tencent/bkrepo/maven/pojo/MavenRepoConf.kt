@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.maven.pojo
 
+import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
+
 /**
  * maven 仓库配置属性
  * 默认值设置:@see [com.tencent.bkrepo.maven.util.MavenConfiguration]
@@ -10,7 +12,7 @@ package com.tencent.bkrepo.maven.pojo
 data class MavenRepoConf(
 
     val checksumPolicy: Int?,
-    val mavenSnapshotVersionBehavior: Int?,
+    val mavenSnapshotVersionBehavior: SnapshotBehaviorType? = SnapshotBehaviorType.UNIQUE,
     /**
      * The maximum number of unique snapshots of a single artifact to store.
      Once the number of snapshots exceeds this setting, older versions are removed.
