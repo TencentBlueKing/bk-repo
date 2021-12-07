@@ -17,8 +17,8 @@ import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_UPLOAD_UUID
-import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
+import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.util.BlobUtils.isEmptyBlob
 import com.tencent.bkrepo.oci.util.OciResponseUtils
@@ -37,7 +37,8 @@ class OciBlobServiceImpl(
 	private val nodeClient: NodeClient,
 	private val repositoryClient: RepositoryClient,
 	private val storageService: StorageService,
-	private val storageManager: StorageManager
+	private val storageManager: StorageManager,
+	private val nodeQuerySupport: NodeQuerySupport
 ) : OciBlobService, ArtifactService() {
 
 	override fun checkBlobExists(artifactInfo: OciBlobArtifactInfo) {
@@ -98,20 +99,35 @@ class OciBlobServiceImpl(
 				.excludeFolder()
 				.build()
 			val result = nodeClient.search(queryModel).data ?: run {
-				logger.warn("query blob file with digest [${sha256}] in repo ${getRepoIdentify()} failed.")
+				logger.warn("query blob file with digest [$sha256] in repo ${getRepoIdentify()} failed.")
 				throw NodeNotFoundException("${getRepoIdentify()}/$sha256")
 			}
 			return result.records.firstOrNull()?.get("fullPath")?.toString().orEmpty()
 		}
 	}
 
-	override fun startUploadBlob(artifactInfo: OciArtifactInfo) {
+	override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo) {
 		logger.info("handing request start blob $artifactInfo upload.")
 		with(artifactInfo) {
-			// 如果mount不为空，这里需要处理
-			// artifactInfo.mount?.let { return }
 			val repo = repositoryClient.getRepoDetail(projectId, repoName).data
 				?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+			// 如果mount不为空，这里需要处理
+			mount?.let {
+				val mountDigest = OciDigest(mount)
+				val nodeList = nodeQuerySupport.searchNode(projectId, repoName, name = mountDigest.fileName())
+				if (nodeList.isNotEmpty()) {
+					val fullPath = nodeList.firstOrNull()?.get("fullPath")?.toString().orEmpty()
+					val location = OciResponseUtils.getResponseLocationURI("$packageName/blobs/$mount")
+					logger.info("found accessible blob at [$fullPath] to mount [$mount] in repo [${getRepoIdentify()}]")
+					val response = HttpContextHolder.getResponse()
+					response.status = HttpStatus.CREATED.value
+					response.setContentLength(0)
+					response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+					response.setHeader(DOCKER_CONTENT_DIGEST, mount)
+					response.setHeader(HttpHeaders.LOCATION, location.toString())
+					return
+				}
+			}
 			val uuid = storageService.createAppendId(repo.storageCredentials)
 			val startUrl = "$projectId/$repoName/$packageName/blobs/uploads/$uuid"
 			val location = OciResponseUtils.getResponseLocationURI(startUrl)
@@ -119,14 +135,13 @@ class OciBlobServiceImpl(
 			response.status = HttpStatus.ACCEPTED.value
 			response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
 			response.addHeader(DOCKER_UPLOAD_UUID, uuid)
-			response.addHeader(HttpHeaders.RANGE, "0-0")
-			response.addHeader(HttpHeaders.CONTENT_LENGTH, "0")
 			response.addHeader(HttpHeaders.LOCATION, location.toString())
 		}
 	}
 
 	override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
-		finishAppend(artifactInfo)
+		logger.info("handing request upload blob [$artifactInfo].")
+		uploadBlobFromPut(artifactInfo, artifactFile)
 //		if (OciUtils.putHasStream()) {
 //			uploadBlobFromPut(artifactInfo, artifactFile)
 //		} else {
@@ -139,7 +154,7 @@ class OciBlobServiceImpl(
 	 */
 	private fun finishAppend(artifactInfo: OciBlobArtifactInfo) {
 		with(artifactInfo) {
-			logger.debug("handing request finish upload blob [$artifactInfo]")
+			logger.info("handing request finish upload blob [$artifactInfo]")
 			val repoDetail = repositoryClient.getRepoDetail(projectId, repoName).data
 				?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
 			val fileInfo = storageService.finishAppend(uuid, repoDetail.storageCredentials)
@@ -228,7 +243,7 @@ class OciBlobServiceImpl(
 	override fun downloadBlob(artifactInfo: OciBlobArtifactInfo) {
 		with(artifactInfo) {
 			if (isEmptyBlob(getDigest())) {
-				logger.info("get empty layer [$artifactInfo] for image [${getDigest()}]")
+				logger.info("get empty layer for image [${getDigest()}] in repo [${artifactInfo.getRepoIdentify()}]")
 				emptyBlobHeadResponse()
 				return
 			}
@@ -240,5 +255,4 @@ class OciBlobServiceImpl(
 	companion object {
 		private val logger = LoggerFactory.getLogger(OciBlobServiceImpl::class.java)
 	}
-
 }

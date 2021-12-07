@@ -41,6 +41,8 @@ const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 
+const val MANIFEST = "manifest.json"
+
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"
 
