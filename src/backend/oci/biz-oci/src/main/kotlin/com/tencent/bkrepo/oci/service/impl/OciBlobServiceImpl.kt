@@ -23,7 +23,6 @@ import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.util.BlobUtils.isEmptyBlob
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils.emptyBlobHeadResponse
-import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -142,11 +141,12 @@ class OciBlobServiceImpl(
 
 	override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
 		logger.info("handing request upload blob [$artifactInfo].")
-		if (OciUtils.putHasStream()) {
-			uploadBlobFromPut(artifactInfo, artifactFile)
-		} else {
-			finishAppend(artifactInfo)
-		}
+		uploadBlobFromPut(artifactInfo, artifactFile)
+//		if (OciUtils.putHasStream()) {
+//			uploadBlobFromPut(artifactInfo, artifactFile)
+//		} else {
+//			finishAppend(artifactInfo)
+//		}
 	}
 
 	/**
