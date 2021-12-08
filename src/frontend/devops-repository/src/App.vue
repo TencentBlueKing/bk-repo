@@ -1,35 +1,29 @@
 <template>
-    <div id="app" class="flex-column" v-bkloading="{ isLoading }">
-        <Header v-if="mode !== 'ci'" />
-        <main class="bkrepo-main-container"
-            :style="{
-                height: mode === 'ci' ? '100%' : 'calc(100% - 50px)'
-            }">
-            <router-view></router-view>
-        </main>
-        <Login />
+    <div class="bkrepo-main flex-column">
+        <Header v-if="!iframeMode" />
+        <router-view class="bkrepo-main-container"></router-view>
+        <ConfirmDialog />
+        <Login v-if="!iframeMode" />
     </div>
 </template>
 
 <script>
     import Header from '@/components/Header'
+    import ConfirmDialog from '@/components/ConfirmDialog'
     import Login from '@/components/Login'
     import Vue from 'vue'
     import { mapState, mapMutations, mapActions } from 'vuex'
     import cookies from 'js-cookie'
     export default {
         name: 'App',
-        components: { Login, Header },
+        components: { Header, ConfirmDialog, Login },
         data () {
             return {
-                isLoading: false
+                iframeMode: MODE_CONFIG === 'ci'
             }
         },
         computed: {
             ...mapState(['projectList']),
-            mode () {
-                return MODE_CONFIG
-            },
             projectId () {
                 return this.$route.params.projectId
             }
@@ -39,17 +33,17 @@
                 this.$syncUrl && this.$syncUrl(val.replace(/^\/ui\//, '/'))
             }
         },
-        async created () {
+        created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
 
             const urlProjectId = (location.pathname.match(/\/ui\/([^/]+)/) || [])[1]
             const localProjectId = localStorage.getItem('projectId')
-            if (this.mode === 'ci') {
+            if (this.iframeMode) {
                 window.Vue = Vue
                 const script = document.createElement('script')
                 script.type = 'text/javascript'
-                script.src = location.origin + '/ui/devops-utils.js'
+                script.src = '/ui/devops-utils.js'
                 document.getElementsByTagName('head')[0].appendChild(script)
                 script.onload = () => {
                     this.$syncUrl(this.$route.fullPath.replace(/^\/ui\//, '/'))
@@ -59,21 +53,30 @@
                             this.goHome(data.currentProjectId)
                         }
                     })
-                    window.globalVue.$on('change::$userInfo', data => { // 用户信息
-                        this.SET_USER_INFO(data.userInfo)
-                    })
+
+                    // window.globalVue.$on('change::$routePath', data => { // 蓝鲸Devops切换路径
+                    //     this.$router.push({ name: data.routePath.englishName })
+                    // })
+
                     window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换
                         this.goHome()
                     })
 
-                    window.globalVue.$on('change::$projectList', data => { // 获取项目列表
-                        // this.$store.dispatch('setProjectList', this.$projectList)
-                        // this.$store.dispatch('getProjectList')
-                    })
+                    // window.globalVue.$on('change::$projectList', data => { // 获取项目列表
+                    //     this.SET_PROJECT_LIST(data.projectList)
+                    // })
 
                     window.globalVue.$on('order::syncLocale', locale => {
                         this.$setLocale(locale)
                     })
+
+                    window.globalVue.$on('change::$userInfo', data => { // 用户信息
+                        this.SET_USER_INFO(data.userInfo)
+                    })
+
+                    // window.globalVue.$on('change::$userList', data => { // 用户信息
+                    //     this.SET_USER_LIST(data.userList)
+                    // })
                 }
                 localStorage.setItem('projectId', urlProjectId || localProjectId || '')
                 !urlProjectId && this.$router.replace({
@@ -83,23 +86,23 @@
                     }
                 })
             } else {
-                this.isLoading = true
-                await Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()])
-                if (!(urlProjectId && this.projectList.find(v => v.id === urlProjectId))) {
+                Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(() => {
                     let projectId = ''
-                    if (this.projectList.find(v => v.id === localProjectId)) {
-                        projectId = localProjectId
-                    } else {
-                        projectId = (this.projectList[0] || {}).id
-                    }
-                    this.$router.replace({
-                        name: 'repoList',
-                        params: {
-                            projectId
+                    if (!(urlProjectId && this.projectList.find(v => v.id === urlProjectId))) {
+                        if (this.projectList.find(v => v.id === localProjectId)) {
+                            projectId = localProjectId
+                        } else {
+                            projectId = (this.projectList[0] || {}).id
                         }
-                    })
-                }
-                this.isLoading = false
+                        this.$router.replace({
+                            name: 'repoList',
+                            params: {
+                                projectId
+                            }
+                        })
+                    }
+                    this.checkPM({ projectId: (projectId || urlProjectId || localProjectId) })
+                })
             }
             const callback = e => {
                 this.$bkMessage({
@@ -112,7 +115,7 @@
         },
         methods: {
             ...mapMutations(['SET_USER_INFO']),
-            ...mapActions(['getRepoUserList', 'getProjectList', 'ajaxUserInfo']),
+            ...mapActions(['getProjectList', 'ajaxUserInfo', 'checkPM', 'getRepoUserList']),
             goHome (projectId) {
                 const params = projectId ? { projectId } : {}
                 this.$router.replace({
@@ -125,11 +128,12 @@
 </script>
 <style lang="scss">
 @import '@/scss/index';
-#app {
+.bkrepo-main {
     height: 100%;
-    background-color: $bgLightColor;
-}
-.bkrepo-main-container {
-    padding: 20px;
+    background-color: var(--bgWeightColor);
+    .bkrepo-main-container {
+        flex: 1;
+        overflow: hidden;
+    }
 }
 </style>

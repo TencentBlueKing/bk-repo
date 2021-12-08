@@ -20,28 +20,22 @@
 const repoHome = () => import(/* webpackChunkName: "repoHome" */'@/views')
 
 const repoList = () => import(/* webpackChunkName: "repoList" */'@/views/repoList')
-const createRepo = () => import(/* webpackChunkName: "createRepo" */'@/views/repoList/createRepo')
 const repoConfig = () => import(/* webpackChunkName: "repoConfig" */'@/views/repoConfig')
-const repoDetail = () => import(/* webpackChunkName: "repoDetail" */'@/views/repo')
-// const repoToken = () => import(/* webpackChunkName: "repoToken" */'@/views/repoToken')
+const repoToken = () => import(/* webpackChunkName: "repoToken" */'@/views/repoToken')
 const userCenter = () => import(/* webpackChunkName: "userCenter" */'@/views/userCenter')
 const userManage = () => import(/* webpackChunkName: "userManage" */'@/views/userManage')
+const repoAudit = () => import(/* webpackChunkName: "repoAudit" */'@/views/repoAudit')
+const projectManage = () => import(/* webpackChunkName: "projectManage" */'@/views/projectManage')
+const projectConfig = () => import(/* webpackChunkName: "projectManage" */'@/views/projectManage/projectConfig')
 const nodeManage = () => import(/* webpackChunkName: "nodeManage" */'@/views/nodeManage')
-const createPlan = () => import(/* webpackChunkName: "createPlan" */'@/views/nodeManage/createPlan')
-const logDetail = () => import(/* webpackChunkName: "logDetail" */'@/views/nodeManage/plan/logDetail')
+const planManage = () => import(/* webpackChunkName: "planManage" */'@/views/planManage')
+const createPlan = () => import(/* webpackChunkName: "createPlan" */'@/views/planManage/createPlan')
+const logDetail = () => import(/* webpackChunkName: "logDetail" */'@/views/planManage/logDetail')
 
-const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/repo/repoGeneric')
+const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/repoGeneric')
 
-const repoCommon = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon')
-const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon/commonPackageList')
-const commonPackageDetail = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon/commonPackageDetail')
-const commonVersionDetail = () => import(/* webpackChunkName: "repoCommon" */'@/views/repo/repoCommon/commonVersionDetail')
-
-// const repoDocker = () => import(/* webpackChunkName: "repoDocker" */'@/views/repo/repoDocker')
-
-// const repoNpm = () => import(/* webpackChunkName: "repoNpm" */'@/views/repo/repoNpm')
-
-// const repoMaven = () => import(/* webpackChunkName: "repoNpm" */'@/views/repo/repoMaven')
+const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@/views/repoCommon/commonPackageList')
+const commonPackageDetail = () => import(/* webpackChunkName: "repoCommon" */'@/views/repoCommon/commonPackageDetail')
 
 const repoSearch = () => import(/* webpackChunkName: "repoSearch" */'@/views/repoSearch')
 
@@ -49,27 +43,16 @@ const routes = [
     {
         path: '/ui/:projectId',
         component: repoHome,
+        redirect: { name: 'repoList' },
         children: [
-            {
-                path: '',
-                redirect: {
-                    name: 'repoList'
-                }
-            },
             {
                 path: 'repoList',
                 name: 'repoList',
                 component: repoList,
                 meta: {
-                    title: '仓库列表'
-                }
-            },
-            {
-                path: 'createRepo',
-                name: 'createRepo',
-                component: createRepo,
-                meta: {
-                    title: '新建仓库'
+                    breadcrumb: [
+                        { name: 'repoList', label: '仓库列表' }
+                    ]
                 }
             },
             {
@@ -77,83 +60,60 @@ const routes = [
                 name: 'repoConfig',
                 component: repoConfig,
                 meta: {
-                    title: '仓库配置'
+                    breadcrumb: [
+                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'repoConfig', label: '仓库配置' }
+                    ]
                 }
-            },
-            {
-                path: 'repoDetail',
-                name: 'repoDetail',
-                component: repoDetail,
-                meta: {
-                    title: '仓库主页'
-                },
-                children: [
-                    {
-                        path: ':repoType',
-                        name: 'repoCommon',
-                        component: repoCommon,
-                        beforeEnter: (to, from, next) => {
-                            if (to.params.repoType === 'generic') {
-                                next({
-                                    name: 'repoGeneric',
-                                    params: to.params,
-                                    query: to.query,
-                                    replace: true
-                                })
-                            } else {
-                                next()
-                            }
-                        },
-                        redirect: {
-                            name: 'commonList'
-                        },
-                        children: [
-                            {
-                                path: 'list',
-                                name: 'commonList',
-                                component: commonPackageList
-                            },
-                            {
-                                path: 'package',
-                                name: 'commonPackage',
-                                component: commonPackageDetail
-                            },
-                            {
-                                path: 'version',
-                                name: 'commonVersion',
-                                component: commonVersionDetail
-                            }
-                        ]
-                    },
-                    {
-                        path: 'generic',
-                        name: 'repoGeneric',
-                        component: repoGeneric
-                    }
-                ]
             },
             {
                 path: 'repoSearch',
                 name: 'repoSearch',
                 component: repoSearch,
                 meta: {
-                    title: '文件搜索'
+                    breadcrumb: [
+                        { name: 'repoSearch', label: '制品搜索' }
+                    ]
                 }
             },
-            // {
-            //     path: 'repoToken',
-            //     name: 'repoToken',
-            //     component: repoToken,
-            //     meta: {
-            //         title: '访问令牌'
-            //     }
-            // },
+            {
+                path: 'projectManage',
+                name: 'projectManage',
+                component: projectManage,
+                meta: {
+                    breadcrumb: [
+                        { name: 'projectManage', label: '项目管理' }
+                    ]
+                }
+            },
+            {
+                path: 'projectConfig',
+                name: 'projectConfig',
+                component: projectConfig,
+                meta: {
+                    breadcrumb: [
+                        { name: 'projectConfig', label: '项目设置' }
+                    ]
+                }
+            },
+            {
+                path: 'repoToken',
+                name: 'repoToken',
+                component: repoToken,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoToken', label: '访问令牌' }
+                    ]
+                }
+            },
             {
                 path: 'userCenter',
                 name: 'userCenter',
                 component: userCenter,
                 meta: {
-                    title: '个人中心'
+                    breadcrumb: [
+                        { name: 'userCenter', label: '个人中心' }
+                    ]
                 }
             },
             {
@@ -161,7 +121,19 @@ const routes = [
                 name: 'userManage',
                 component: userManage,
                 meta: {
-                    title: '用户管理'
+                    breadcrumb: [
+                        { name: 'userManage', label: '用户管理' }
+                    ]
+                }
+            },
+            {
+                path: 'repoAudit',
+                name: 'repoAudit',
+                component: repoAudit,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoAudit', label: '审计日志' }
+                    ]
                 }
             },
             {
@@ -169,47 +141,97 @@ const routes = [
                 name: 'nodeManage',
                 component: nodeManage,
                 meta: {
-                    title: '节点管理'
+                    breadcrumb: [
+                        { name: 'nodeManage', label: '节点管理' }
+                    ]
                 }
             },
             {
                 path: 'planManage',
                 name: 'planManage',
-                component: nodeManage,
+                component: planManage,
                 meta: {
-                    title: '分发计划'
+                    breadcrumb: [
+                        { name: 'planManage', label: '制品分发' }
+                    ]
                 }
             },
             {
-                path: 'nodeManage/createPlan',
+                path: 'planManage/createPlan',
                 name: 'createPlan',
                 component: createPlan,
                 meta: {
-                    title: '创建计划'
+                    breadcrumb: [
+                        { name: 'planManage', label: '制品分发' },
+                        { name: 'createPlan', label: '创建计划' }
+                    ]
                 }
             },
             {
-                path: 'nodeManage/editPlan/:planId',
+                path: 'planManage/editPlan/:planId',
                 name: 'editPlan',
                 component: createPlan,
                 meta: {
-                    title: '编辑计划'
+                    breadcrumb: [
+                        { name: 'planManage', label: '{planName}', template: '制品分发' },
+                        { name: 'createPlan', label: '编辑计划' }
+                    ]
                 }
             },
             {
-                path: 'nodeManage/planDetail/:planId',
+                path: 'planManage/planDetail/:planId',
                 name: 'planDetail',
                 component: createPlan,
                 meta: {
-                    title: '计划详情'
+                    breadcrumb: [
+                        { name: 'planManage', label: '{planName}', template: '制品分发' },
+                        { name: 'createPlan', label: '计划详情' }
+                    ]
                 }
             },
             {
-                path: 'nodeManage/logDetail/:logId',
+                path: 'planManage/logDetail/:logId',
                 name: 'logDetail',
                 component: logDetail,
                 meta: {
-                    title: '日志详情'
+                    breadcrumb: [
+                        { name: 'planManage', label: '{planName}', template: '制品分发' },
+                        { name: 'logDetail', label: '日志详情' }
+                    ]
+                }
+            },
+            {
+                path: 'generic',
+                name: 'repoGeneric',
+                component: repoGeneric,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'repoGeneric', label: '{repoName}', template: '二进制仓库' }
+                    ]
+                }
+            },
+            {
+                path: ':repoType/list',
+                name: 'commonList',
+                component: commonPackageList,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'commonList', label: '{repoName}', template: '依赖仓库' }
+                    ]
+                }
+            },
+            {
+                path: ':repoType/package',
+                name: 'commonPackage',
+                component: commonPackageDetail,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoList', label: '仓库列表' },
+                        { name: 'commonList', label: '{repoName}', template: '依赖仓库' },
+                        { name: 'commonPackage', label: '{package}', template: '制品详情' }
+                    ]
                 }
             }
         ]

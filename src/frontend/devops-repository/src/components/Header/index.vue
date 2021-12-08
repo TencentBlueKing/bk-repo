@@ -7,7 +7,7 @@
                     :height="34"
                     style="fill: currentColor"
                 >
-                    <use xlink:href="#color-logo-bkrepo" />
+                    <use xlink:href="#repository" />
                 </svg>
                 <header class="ml10 bkrepo-title">{{ $t('bkrepo') }}</header>
             </router-link>
@@ -18,6 +18,7 @@
                 :clearable="false"
                 placeholder="请选择项目"
                 @change="changeProject"
+                size="small"
                 :enable-virtual-scroll="projectList && projectList.length > 3000"
                 :list="projectList">
                 <bk-option v-for="option in projectList"
@@ -32,7 +33,7 @@
 </template>
 <script>
     import User from '../User'
-    import { mapState } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'bkrepoHeader',
         components: { User },
@@ -43,9 +44,11 @@
             }
         },
         methods: {
+            ...mapActions(['checkPM']),
             changeProject (projectId) {
                 localStorage.setItem('projectId', projectId)
                 if (this.projectId === projectId) return
+                this.checkPM({ projectId })
                 this.$router.push({
                     name: 'repoList',
                     params: {
@@ -58,44 +61,20 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .bkrepo-header {
     height: 50px;
     padding: 0 20px;
     justify-content: space-between;
-    background-color:  #191929;
+    background-color:  var(--fontPrimaryColor);
     color: white;
     .bkre-project-select {
-        $headerBgColor: #191929;
-        $dropdownBorder: #2a2a42;
-        width: 233px;
-        color: $fontColor;
-        border-color: $dropdownBorder;
-        background-color: $headerBgColor;
-
-        &:hover,
-        &.active,
-        &.is-focus {
-            border-color: $dropdownBorder !important;
-            background-color: black;
-            color: white !important;
-            box-shadow: none;
-        }
-        .bk-select-angle {
-            color: white;
-            top: 7px;
-        }
-        .bk-tooltip-ref {
-            outline: none;
-        }
-        .bk-select-dropdown .bk-select-name {
-            color: $fontLigtherColor;
-            font-size: 14px;
-            outline: none;
-        }
+        width: 300px;
+        color: white;
+        border-color: #FFFFFF33;
+        background-color: #FFFFFF1A;
     }
     .bkrepo-logo {
-        margin-right: 120px;
+        margin-right: 40px;
         color: white;
     }
     .bkrepo-title {

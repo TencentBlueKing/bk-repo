@@ -17,16 +17,16 @@ export function debounce (fn, interval = DEFAULT_TIME_INTERVAL) {
 
     return (...args) => {
         clearTimeout(timer)
-        timer = setTimeout(() => {
-            clearTimeout(timer)
-            return fn(...args)
-        }, interval)
+        timer = setTimeout(() => fn(...args), interval)
     }
 }
 
 export function throttle (func, interval = DEFAULT_TIME_INTERVAL) {
     let lastRun = Date.now()
+    let finalRun = null
     return (...args) => {
+        clearTimeout(finalRun)
+        finalRun = setTimeout(() => func(...args), interval)
         if (Date.now() - lastRun > interval) {
             func(...args)
             lastRun = Date.now()
@@ -47,7 +47,12 @@ export function throttleMessage (fn, delay = 1000) {
             fn(message)
             return
         }
-        if (['property', 'defined'].find(ignore => !message.message || message.message.indexOf(ignore) !== -1)) {
+        if (
+            [
+                'property',
+                'defined'
+            ].find(ignore => !message.message || message.message.indexOf(ignore) !== -1)
+        ) {
             throw new Error(message.message)
         }
         const now = +new Date()

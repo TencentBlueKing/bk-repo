@@ -1,65 +1,30 @@
 <template>
-    <bk-transition name="collapse">
+    <div class="virtual-tree" @scroll="scrollTree($event)">
         <ul class="repo-tree-list">
             <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
-                <div v-if="deepCount" class="line-dashed" :class="{ 'more': sortable && list.length > 20 }" :style="{
-                    'border-width': '0 1px 0 0',
-                    'margin-left': (20 * deepCount + 5) + 'px',
-                    'height': '100%',
-                    'margin-top': '-15px'
-                }"></div>
                 <div class="repo-tree-title hover-btn"
                     :title="item.name"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
-                    :style="{ 'padding-left': 20 * (deepCount + 1) + 'px' }"
+                    :style="{ 'padding-left': 20 * (computedDepth(item) + 1) + 'px' }"
                     @click.stop="itemClickHandler(item)">
-                    <div class="line-dashed" :style="{
-                        'border-width': openList.includes(item.roadMap) ? '0 1px 0 0' : '0',
-                        'margin-left': (20 * deepCount + 25) + 'px',
-                        'height': 'calc(100% - 45px)',
-                        'margin-top': '25px'
-                    }"></div>
-                    <div v-if="deepCount" class="line-dashed" :style="{
-                        'border-width': '1px 0 0',
-                        'margin-left': '-13px',
-                        'width': '15px'
-                    }"></div>
-                    <i v-if="item.loading" class="mr5 loading"></i>
+                    <i v-if="item.loading" class="mr5 loading spin-icon"></i>
                     <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
                         :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
                     <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
                     <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
                 </div>
-                <template v-if="item.children && item.children.length">
-                    <repo-tree
-                        v-show="openList.includes(item.roadMap)"
-                        :list.sync="item.children"
-                        :sortable="sortable"
-                        :deep-count="deepCount + 1"
-                        :selected-node="selectedNode"
-                        :important-search="importantSearch"
-                        :open-list="openList"
-                        @icon-click="iconClickHandler"
-                        @item-click="itemClickHandler">
-                    </repo-tree>
-                </template>
             </li>
         </ul>
-    </bk-transition>
+        <div class="tree-phantom" :style="`height:${totalHeight}px;`"></div>
+    </div>
 </template>
 
 <script>
+    import { mapState } from 'vuex'
+    import { throttle } from '@repository/utils'
     export default {
         name: 'repo-tree',
         props: {
-            list: {
-                type: Array,
-                default: () => []
-            },
-            deepCount: {
-                type: Number,
-                default: 0
-            },
             importantSearch: {
                 type: String,
                 default: ''
@@ -71,35 +36,81 @@
             openList: {
                 type: Array,
                 default: () => []
-            },
-            sortable: {
-                type: Boolean,
-                default: false
+            }
+        },
+        data () {
+            return {
+                resizeFn: null,
+                size: 0,
+                start: 0
             }
         },
         computed: {
-            treeList () {
-                const list = this.list.filter(v => v.folder)
-                if (this.sortable) {
-                    const reg = new RegExp(`^${this.selectedNode.roadMap},[0-9]+$`)
-                    const isSearch = reg.test(list[0].roadMap) && this.importantSearch
-                    return list.sort((a, b) => {
-                        if (~this.selectedNode.roadMap.indexOf(a.roadMap)) return -1
-                        // 选中项的子项应用搜索
-                        if (isSearch) {
-                            const weightA = a.name.indexOf(this.importantSearch)
-                            const weightB = b.name.indexOf(this.importantSearch)
-                            if (~weightA && ~weightB) return weightA - weightB
-                            else return weightB - weightA
-                        }
-                        return 0
-                    }).slice(0, 20)
-                } else {
-                    return list
+            ...mapState(['genericTree']),
+            flattenGenericTree () {
+                const flatNodes = []
+                const flatten = treeData => {
+                    treeData.forEach(treeNode => {
+                        flatNodes.push(treeNode)
+                        // 过滤未展开文件夹
+                        this.openList.includes(treeNode.roadMap) && flatten(treeNode.children || [])
+                    })
                 }
+                flatten(this.genericTree)
+                return flatNodes
+            },
+            treeList () {
+                return this.flattenGenericTree.slice(this.start, this.start + this.size)
+            },
+            totalHeight () {
+                return (this.flattenGenericTree.length + 1) * 40
             }
         },
+        watch: {
+            'selectedNode.roadMap' () {
+                this.calculateScrollTop(new RegExp(`^${this.selectedNode.name}$`))
+            },
+            importantSearch (val) {
+                val && this.calculateScrollTop(val)
+            }
+        },
+        mounted () {
+            this.resizeFn = throttle(this.computedSize)
+            this.computedSize()
+            window.addEventListener('resize', this.resizeFn)
+        },
+        beforeDestroy () {
+            window.removeEventListener('resize', this.resizeFn)
+        },
         methods: {
+            scrollTree () {
+                this.start = Math.floor(this.$el.scrollTop / 40)
+            },
+            calculateScrollTop (keyword) {
+                let fn = () => false
+                if (typeof keyword === 'string') {
+                    fn = v => v.name.includes(keyword)
+                } else if (keyword instanceof RegExp) {
+                    fn = v => keyword.test(v.name)
+                }
+                const index = this.flattenGenericTree.findIndex(fn)
+                if (!~index) return
+                if (index < this.start) {
+                    this.$el.scrollTop = index * 40
+                } else if (index > (this.start + this.size - 1)) {
+                    this.$el.scrollTop = (index - this.size + 1) * 40
+                }
+            },
+            computedSize () {
+                setTimeout(() => {
+                    const height = this.$el.getBoundingClientRect().height
+                    this.size = Math.ceil(height / 40)
+                // dialog缩放动画.4s
+                }, 400)
+            },
+            computedDepth (node) {
+                return node.roadMap.split(',').length - 1
+            },
             /**
              *  点击icon的回调函数
              */
@@ -124,30 +135,35 @@
 </script>
 
 <style lang="scss">
-@import '@/scss/conf';
+.virtual-tree {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    height: 100%;
+    overflow: auto;
+    .repo-tree-list {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+}
 .repo-tree-item {
     position: relative;
-    color: $fontBoldColor;
-    font-size: 12px;
+    color: var(--fontPrimaryColor);
     .line-dashed {
         position: absolute;
-        border-color: $borderLightColor;
+        border-color: var(--borderColor);
         border-style: dashed;
         z-index: 1;
     }
     &:last-child > .line-dashed {
-        height: 30px!important;
-        &.more:after {
-            content: '...';
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            font-size: 20px;
-        }
+        height: 40px!important;
     }
     .repo-tree-title {
         position: relative;
-        height: 30px;
+        height: 40px;
         display: flex;
         align-items: center;
         .loading {
@@ -157,10 +173,11 @@
             border: 1px solid;
             border-right-color: transparent;
             border-radius: 50%;
-            animation: loading 1s linear infinite;
+            z-index: 1;
         }
         .devops-icon {
-            color: $fontColor;
+            color: var(--fontSubsidiaryColor);
+            z-index: 1;
         }
         .node-text {
             max-width: 150px;
@@ -170,12 +187,15 @@
             em {
                 font-style: normal;
                 font-weight: bold;
-                background-color: #edf45d;
+                background-color: var(--warningColor);
             }
         }
         &.selected {
-            background-color: $primaryLightColor;
-            color: $primaryColor;
+            background-color: var(--bgHoverColor);
+            color: var(--primaryColor);
+            .devops-icon {
+                color: var(--primaryColor);
+            }
         }
     }
 }

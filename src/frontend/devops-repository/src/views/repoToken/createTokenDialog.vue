@@ -1,48 +1,44 @@
 <template>
-    <bk-dialog
+    <canway-dialog
         v-model="show"
-        width="600"
-        :title="token ? '' : $t('createToken')"
-        :mask-close="false"
-        :close-icon="false"
-    >
-        <template v-if="token">
-            <div class="flex-align-center">
-                <i class="flex-center devops-icon icon-check-1"></i>
-                <div>
-                    <h3>{{ $t('createToken') + $t('success') }}</h3>
-                    <div @click="copyToken" class="mt10 mb10 hover-btn flex-align-center">
-                        {{ $t('tokenIs') + token }}
-                        <i class="ml10 devops-icon icon-clipboard"></i>
-                    </div>
-                    <span class="token-tip">{{ $t('tokenCopyTip') }}</span>
+        width="540"
+        height-num="280"
+        title="创建访问令牌"
+        @cancel="cancel">
+        <div v-if="token" class="flex-align-center">
+            <i class="flex-center devops-icon icon-check-1"></i>
+            <div>
+                <h3>{{ $t('create') + $t('success') }}</h3>
+                <div @click="copyToken" class="mt10 mb10 hover-btn flex-align-center">
+                    {{ $t('tokenIs') + token }}
+                    <i class="ml10 devops-icon icon-clipboard"></i>
                 </div>
+                <span class="token-tip">{{ $t('tokenCopyTip') }}</span>
             </div>
-            <div slot="footer">
-                <bk-button theme="primary" @click="cancel">{{$t('confirm')}}</bk-button>
-            </div>
-        </template>
-        <template v-else>
-            <bk-form :label-width="100" :model="tokenFormData" :rules="rules" ref="tokenForm">
-                <bk-form-item :label="$t('name')" :required="true" property="name">
-                    <bk-input v-model.trim="tokenFormData.name"></bk-input>
-                </bk-form-item>
-                <bk-form-item :label="$t('expiress')" property="expiredAt">
-                    <bk-date-picker
-                        v-model="tokenFormData.expiredAt"
-                        :options="{
-                            disabledDate: (date) => date < new Date()
-                        }"
-                        :placeholder="$t('tokenExpiressTip')">
-                    </bk-date-picker>
-                </bk-form-item>
-            </bk-form>
-            <div slot="footer">
-                <bk-button :loading="loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
+        </div>
+        <bk-form v-else :label-width="100" :model="tokenFormData" :rules="rules" ref="tokenForm">
+            <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
+                <bk-input v-model.trim="tokenFormData.name" maxlength="32" show-word-limit></bk-input>
+            </bk-form-item>
+            <bk-form-item :label="$t('expiress')" property="expiredAt">
+                <bk-date-picker
+                    style="width:100%"
+                    v-model="tokenFormData.expiredAt"
+                    :options="{
+                        disabledDate: (date) => date < new Date()
+                    }"
+                    :placeholder="$t('tokenExpiressTip')">
+                </bk-date-picker>
+            </bk-form-item>
+        </bk-form>
+        <template #footer>
+            <bk-button v-if="token" theme="primary" @click="cancel">{{$t('confirm')}}</bk-button>
+            <template v-else>
                 <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
-            </div>
+                <bk-button class="ml10" :loading="loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
+            </template>
         </template>
-    </bk-dialog>
+    </canway-dialog>
 </template>
 <script>
     import Clipboard from 'clipboard'
@@ -100,7 +96,9 @@
             },
             cancel () {
                 this.show = false
-                this.$emit('refresh')
+                if (this.token) {
+                    this.$emit('refresh')
+                }
             },
             copyToken () {
                 // eslint-disable-next-line prefer-const
@@ -128,18 +126,17 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .icon-check-1 {
     width: 58px;
     height: 58px;
     margin: 0 auto;
     line-height: 58px;
     font-size: 30px;
-    color: #fff;
+    color: white;
     border-radius: 50%;
-    background-color: #2dcb56;
+    background-color: var(--successColor);
 }
 .token-tip {
-    color: #E16F1D;
+    color: var(--warningColor);
 }
 </style>

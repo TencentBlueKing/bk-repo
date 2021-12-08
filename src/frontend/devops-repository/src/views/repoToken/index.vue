@@ -1,51 +1,42 @@
 <template>
-    <div class="repo-token-container">
-        <!-- <header class="repo-token-header">
-            <div class="flex-center">
-                {{ $t('token') }}
-            </div>
-            <div class="repo-token-operation">
-                <bk-button theme="default" @click="$router.back()">
-                    {{$t('returnBack')}}
-                </bk-button>
-            </div>
-        </header> -->
-        <main class="repo-token-main" v-bkloading="{ isLoading }">
-            <div class="mb20 repo-token-operation">
-                <bk-button theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
-            </div>
-            <bk-table
-                :data="tokenList"
-                height="calc(100% - 52px)"
-                stripe
-                :outer-border="false"
-                :row-border="false"
-                size="small"
-            >
-                <bk-table-column :label="$t('name')" prop="name"></bk-table-column>
-                <bk-table-column :label="$t('createdDate')">
-                    <template slot-scope="props">
-                        {{ formatDate(props.row.createdAt) }}
-                    </template>
-                </bk-table-column>
-                <bk-table-column :label="$t('expiress')">
-                    <template slot-scope="props">
-                        {{ transformFormatDate(props.row.expiredAt) }}
-                    </template>
-                </bk-table-column>
-                <bk-table-column :label="$t('operation')" width="100">
-                    <template slot-scope="props">
-                        <i class="hover-btn devops-icon icon-delete" @click="deleteTokenHandler(props.row)"></i>
-                    </template>
-                </bk-table-column>
-            </bk-table>
-        </main>
+    <div class="repo-token-container" v-bkloading="{ isLoading }">
+        <bk-button class="ml20 mt10" icon="plus" theme="primary" @click="createToken"><span class="mr5">{{ $t('create') }}</span></bk-button>
+        <bk-table
+            class="mt10"
+            :data="tokenList"
+            height="calc(100% - 52px)"
+            :outer-border="false"
+            :row-border="false"
+            size="small">
+            <template #empty>
+                <empty-data :is-loading="isLoading">
+                    <span class="ml10">暂无个人令牌数据，</span>
+                    <bk-button text @click="createToken">即刻创建</bk-button>
+                </empty-data>
+            </template>
+            <bk-table-column :label="$t('name')" prop="name"></bk-table-column>
+            <bk-table-column :label="$t('createdDate')">
+                <template slot-scope="props">
+                    {{ formatDate(props.row.createdAt) }}
+                </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('expiress')">
+                <template slot-scope="props">
+                    {{ transformFormatDate(props.row.expiredAt) }}
+                </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('operation')" width="100">
+                <template slot-scope="props">
+                    <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteTokenHandler(props.row)"></i>
+                </template>
+            </bk-table-column>
+        </bk-table>
         <create-token-dialog ref="createToken" @refresh="getToken"></create-token-dialog>
     </div>
 </template>
 <script>
     import createTokenDialog from './createTokenDialog'
-    import { formatDate } from '@/utils'
+    import { formatDate } from '@repository/utils'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoToken',
@@ -89,16 +80,15 @@
                     this.isLoading = false
                 })
             },
-            deleteTokenHandler (row) {
-                this.$bkInfo({
-                    type: 'error',
-                    title: this.$t('deleteTokenTitle'),
-                    showFooter: true,
+            deleteTokenHandler ({ name }) {
+                this.$confirm({
+                    theme: 'danger',
+                    message: this.$t('deleteTokenTitle', { name }),
                     confirmFn: () => {
-                        this.deleteToken({
+                        return this.deleteToken({
                             username: this.userInfo.username,
-                            name: row.name
-                        }).then(data => {
+                            name
+                        }).then(() => {
                             this.getToken()
                             this.$bkMessage({
                                 theme: 'success',
@@ -115,32 +105,8 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .repo-token-container {
     height: 100%;
-    // .repo-token-header {
-    //     height: 50px;
-    //     padding: 0 20px;
-    //     display: flex;
-    //     align-items: center;
-    //     font-size: 14px;
-    //     background-color: white;
-    // }
-    .repo-token-operation {
-        flex: 1;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-    }
-    .repo-token-main {
-        height: 100%;
-        // height: calc(100% - 70px);
-        // margin-top: 20px;
-        // padding: 20px;
-        // background-color: white;
-        .icon-delete {
-            font-size: 16px;
-        }
-    }
+    background-color: white;
 }
 </style>

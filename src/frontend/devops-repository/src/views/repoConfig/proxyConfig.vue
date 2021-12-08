@@ -1,33 +1,37 @@
 <template>
     <div class="proxy-config-container">
-        <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
-        <div class="proxy-item">
+        <div class="mb10 flex-between-center">
+            <bk-button icon="plus" theme="primary" @click="addProxy"><span class="mr5">{{ $t('add') }}</span></bk-button>
+            <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
+        </div>
+        <div class="proxy-head">
             <div class="proxy-index"></div>
             <div class="proxy-origin">{{$t('name')}}</div>
             <div class="proxy-type">{{$t('type')}}</div>
             <div class="proxy-address">{{$t('address')}}</div>
             <div class="proxy-operation">{{$t('operation')}}</div>
         </div>
-        <draggable v-model="proxyList" :options="{ animation: 200 }">
+        <draggable v-if="proxyList.length" v-model="proxyList" :options="{ animation: 200 }" @update="debounceSaveProxy">
             <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.name + Math.random()">
-                <div class="proxy-index flex-align-center">
-                    <i class="devops-icon icon-more"></i>
-                    <i class="devops-icon icon-more" style="margin-left:-5px"></i>
+                <div class="proxy-index flex-center">
+                    <Icon name="drag" size="16" />
                 </div>
                 <div class="proxy-origin">{{proxy.name}}</div>
                 <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
                 <div class="proxy-address">{{proxy.url}}</div>
                 <div class="flex-align-center proxy-operation">
                     <i v-if="!proxy.public" class="mr10 devops-icon icon-edit hover-btn" @click.stop.prevent="editProxy(proxy)"></i>
-                    <i class="devops-icon icon-delete hover-btn" @click.stop.prevent="deleteProxy(proxy)"></i>
+                    <i class="devops-icon icon-delete hover-btn hover-danger" @click.stop.prevent="deleteProxy(proxy)"></i>
                 </div>
             </div>
         </draggable>
-        <div class="proxy-add flex-align-center" @click="addProxy">
-            <i class="mr10 devops-icon icon-plus-square"></i>
-            <span>{{$t('addProxy')}}</span>
-        </div>
-        <bk-button class="mt20 ml20" :loading="saveLoading" theme="primary" @click.stop.prevent="saveProxy">{{$t('save')}}</bk-button>
+        <empty-data v-else ex-style="margin-top:80px;"
+            :config="{
+                imgSrc: '/ui/no-proxy.png',
+                title: '暂无代理源配置',
+                subTitle: '请尝试添加公有代理源或配置私有代理源'
+            }">
+        </empty-data>
         <proxy-origin-dialog :show="showProxyDialog" :public-proxy="filterPublicProxy" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
     </div>
 </template>
@@ -35,6 +39,7 @@
     import draggable from 'vuedraggable'
     import proxyOriginDialog from './proxyOriginDialog'
     import { mapActions } from 'vuex'
+    import { debounce } from '@repository/utils'
     export default {
         name: 'proxyConfig',
         components: { draggable, proxyOriginDialog },
@@ -48,7 +53,8 @@
                 // 当前仓库的代理源
                 proxyList: [],
                 proxyData: {},
-                publicProxy: []
+                publicProxy: [],
+                debounceSaveProxy: null
             }
         },
         computed: {
@@ -56,7 +62,7 @@
                 return this.$route.params.projectId
             },
             repoName () {
-                return this.$route.query.name
+                return this.$route.query.repoName
             },
             repoType () {
                 return this.$route.params.repoType
@@ -68,13 +74,13 @@
             }
         },
         watch: {
-            baseData (val) {
+            baseData () {
                 this.proxyList = this.baseData.configuration.proxy.channelList
             }
         },
         created () {
             this.getPublicProxy({
-                repoType: this.repoType.toUpperCase()
+                repoType: this.repoType
             }).then(res => {
                 this.publicProxy = res.map(v => {
                     return {
@@ -83,6 +89,7 @@
                     }
                 })
             })
+            this.debounceSaveProxy = debounce(this.saveProxy)
         },
         methods: {
             ...mapActions(['updateRepoInfo', 'getPublicProxy']),
@@ -102,8 +109,9 @@
             },
             deleteProxy (row) {
                 this.proxyList.splice(this.proxyList.findIndex(v => v.name === row.name), 1)
+                this.debounceSaveProxy()
             },
-            async confirmProxyData ({ name, data }) {
+            confirmProxyData ({ name, data }) {
                 // 添加公有源
                 if (data.type === 'add' && data.proxyType === 'publicProxy') {
                     this.proxyList.push(this.publicProxy.find(v => v.channelId === data.channelId))
@@ -113,10 +121,12 @@
                         public: false,
                         name: data.name,
                         url: data.url,
-                        ...(data.ticket ? {
-                            username: data.username,
-                            password: data.password
-                        } : {})
+                        ...(data.ticket
+                            ? {
+                                username: data.username,
+                                password: data.password
+                            }
+                            : {})
                     })
                 // 编辑私有源
                 } else if (data.type === 'edit' && data.proxyType === 'privateProxy') {
@@ -124,13 +134,16 @@
                         public: false,
                         name: data.name,
                         url: data.url,
-                        ...(data.ticket ? {
-                            username: data.username,
-                            password: data.password
-                        } : {})
+                        ...(data.ticket
+                            ? {
+                                username: data.username,
+                                password: data.password
+                            }
+                            : {})
                     })
                 }
                 this.cancelProxy()
+                this.debounceSaveProxy()
             },
             cancelProxy () {
                 this.showProxyDialog = false
@@ -144,6 +157,7 @@
                     })
                     return
                 }
+                if (this.saveLoading) return
                 this.saveLoading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
@@ -170,19 +184,21 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .proxy-config-container {
     .proxy-config-tips {
-        color: $fontWeightColor;
+        padding: 5px 20px;
+        font-size: 12px;
+        color: var(--primaryHoverColor);
+        background-color: #3a84ff1a;
     }
-    .proxy-item {
+    .proxy-item,
+    .proxy-head {
         display: flex;
         align-items: center;
         height: 40px;
         line-height: 40px;
-        border-bottom: 1px solid $borderColor;
+        border-bottom: 1px solid var(--borderColor);
         .proxy-index {
-            font-size: 16px;
             flex-basis: 50px;
         }
         .proxy-origin {
@@ -196,16 +212,14 @@
         }
         .proxy-operation {
             flex:1;
-            .icon-delete {
-                font-size: 16px;
-            }
         }
     }
-    .proxy-add {
-        cursor: pointer;
-        user-select: none;
-        margin: 10px;
-        color: $primaryColor
+    .proxy-head {
+        color: var(--fontSubsidiaryColor);
+        background-color: var(--bgColor);
+    }
+    .proxy-item {
+        cursor: move;
     }
 }
 </style>

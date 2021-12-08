@@ -243,7 +243,6 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .cron-container {
     position: relative;
     .cron-display {
@@ -255,7 +254,7 @@
     .cron-icon {
         padding: 5px;
         margin-left: -1px;
-        border: 1px solid $disabledColor;
+        border: 1px solid var(--borderWeightColor);
         cursor: pointer;
     }
     .cron-main {
@@ -290,7 +289,7 @@
     }
     &:hover {
         .cron-icon {
-            color: $primaryColor;
+            color: var(--primaryColor);
         }
     }
 }

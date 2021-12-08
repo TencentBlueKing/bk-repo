@@ -1,28 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
     <head>
         <meta charset=UTF-8>
         <meta name=viewport content="width=device-width,initial-scale=1">
-        <meta http-equiv=X-UA-Compatible content="ie=edge">
-        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <link rel="icon" href="/ui/favicon.ico" type="image/x-icon" />
-        <title>制品库管理</title>
+        <title>制品管理CPack</title>
     </head>
 <body>
     <div id="app"></div>
-    <script src="<%= htmlWebpackPlugin.options.VENDOR_LIBS%>"></script>
     <script>
+        var LOGIN_SERVICE_URL = '__BK_REPO_PAAS_LOGIN_URL__'
         // standalone: 独立部署模式
         // ci: ci模式
         // saas: saas模式
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
-        var LOGIN_SERVICE_URL = '__BK_REPO_PAAS_LOGIN_URL__'
     </script>
     <script>
-        const redirectUrl = location.href.split(/\?redirect=/)[1]
-
-        window.getLoginUrl = function () {
-            const cUrl = location.origin + (redirectUrl ? (redirectUrl + '?preview=true') : '')
+        window.getLoginUrl = function (cUrl = location.origin) {
             if (/\{+curl\}+/i.test(LOGIN_SERVICE_URL)) {
                 return LOGIN_SERVICE_URL.replace(/\{+curl\}+/i, encodeURIComponent(cUrl))
             } else if (/=%s/.test(LOGIN_SERVICE_URL)) {
@@ -31,28 +26,56 @@
                 const loginUrl = new URL(LOGIN_SERVICE_URL)
                 if (/=$/.test(loginUrl.search)) {
                     return LOGIN_SERVICE_URL + cUrl
-                    } else {
-                    loginUrl.searchParams.append('c_url', cUrl)
+                } else {
+                    loginUrl.searchParams.set('c_url', cUrl)
                     return loginUrl.href
                 }
             }
         }
 
-        if (redirectUrl) {
-            document.body.removeChild(document.querySelector('#app'))
+        const search = new URL(location.href).searchParams
+        const redirect = search.get('redirect')
+        search.delete('redirect')
+        const redirectUrl = new URL(location.origin + redirect)
+        search.forEach((val, key) => {
+            redirectUrl.searchParams.set(key, val)
+        })
+        // 兼容之前的预览链接格式
+        if (!search.toString()) {
+            redirectUrl.searchParams.set('preview', true)
+        }
+
+        if (redirect) {
+            if (MODE_CONFIG === 'standalone') {
+                // 内部登录逻辑
+                // 直接登录
+                window.login = true
+            } else {
+                // 跳转外部登录所以阻止加载页面
+                document.body.removeChild(document.querySelector('#app'))
+            }
             const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = function (e) {
                 const { readyState, status } = e.currentTarget
-                if (readyState === 4 && status === 200) {
-                    location.href = location.origin + redirectUrl + '?preview=true'
-                } else if (status === 401) {
-                    location.href = window.getLoginUrl(location.origin + redirectUrl + '?preview=true')
-                } else if (status === 403 || status === 404) {
-                    printError(status)
+                // 已登录
+                if (readyState === 4) {
+                    if (status === 200) {
+                        location.href = redirectUrl.href
+                    } else if (status === 401) {
+                        if (MODE_CONFIG === 'standalone') {
+                            // 保存操作链接，登陆后调用
+                            sessionStorage.setItem('afterLogin', redirectUrl.href)
+                        } else {
+                            // ci登录逻辑
+                            location.href = window.getLoginUrl(redirectUrl.href)
+                        }
+                    } else {
+                        printError(status)
+                    }
                 }
             }
             xhr.withCredentials = true
-            xhr.open('HEAD', redirectUrl)
+            xhr.open('HEAD', redirectUrl.href)
             xhr.send()
         }
 
@@ -60,10 +83,10 @@
             let message
             switch (status) {
                 case 403:
-                    message = '未获得预览文件的访问权限'
+                    message = '未获得文件的访问权限'
                     break
                 case 404:
-                    message = '预览文件不存在'
+                    message = '文件不存在'
                     break
                 default:
                     message = '服务异常，请稍后重试'

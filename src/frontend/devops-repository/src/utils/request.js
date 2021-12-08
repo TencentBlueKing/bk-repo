@@ -32,6 +32,7 @@ request.interceptors.response.use(response => {
         }
         return Promise.reject() // eslint-disable-line
     } else if (httpStatus === 403) {
+        window.repositoryVue.$router.replace({ name: 'repoList' })
         return Promise.reject({ // eslint-disable-line
             status: httpStatus,
             message: '未获得授权'
