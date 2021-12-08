@@ -8,6 +8,10 @@ spring:
       uri: __BK_REPO_MONGODB_URI__
       transaction:
         enabled: false
+  redis:
+    host: __BK_REPO_REDIS_HOST__
+    password: __BK_REPO_REDIS_ADMIN_PASSWORD__
+    port: __BK_REPO_REDIS_PORT__
 
 logging:
   config: classpath:logback-config.xml
