@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.dao.RepositoryDao
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
@@ -86,17 +87,27 @@ class NodeServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deleteNode(deleteRequest: NodeDeleteRequest) {
-        NodeDeleteSupport(this).deleteNode(deleteRequest)
+    override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteNode(deleteRequest)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String) {
-        NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+    override fun deleteByPath(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String
+    ): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
     }
 
-    override fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String) {
-        NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
+    override fun deleteBeforeDate(
+        projectId: String,
+        repoName: String,
+        date: LocalDateTime,
+        operator: String
+    ): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
