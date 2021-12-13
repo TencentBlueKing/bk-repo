@@ -34,6 +34,7 @@ package com.tencent.bkrepo.rpm.job
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.hash.sha1
@@ -548,11 +549,12 @@ class JobService(
             try {
                 nodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
             } catch (e: Exception) {
+                logger.error("update ${indexType.value} index: [${repo.projectId}|${repo.name}|$repodataPath] error")
+                logger.info("nodeList: ${nodeList?.toJsonString()}")
+                logger.error("$e")
                 if (!nodeList.isNullOrEmpty()) {
-                    logger.warn(
-                        "update primary index[${repo.projectId}|${repo.name}|$repodataPath]" +
-                                "with ${nodeList.first()} failed"
-                    )
+                    logger.warn("${nodeList.first()}")
+
                 }
             } finally {
                 nodeList?.let { updateNodes(it) }
