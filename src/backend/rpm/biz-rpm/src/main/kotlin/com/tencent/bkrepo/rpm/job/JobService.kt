@@ -548,10 +548,10 @@ class JobService(
             try {
                 nodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
             } catch (e: Exception) {
-                nodeList?.let {
+                if (!nodeList.isNullOrEmpty()) {
                     logger.warn(
                         "update primary index[${repo.projectId}|${repo.name}|$repodataPath]" +
-                                "with ${it.first()} failed"
+                                "with ${nodeList.first()} failed"
                     )
                 }
             } finally {
