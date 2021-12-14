@@ -34,6 +34,7 @@ package com.tencent.bkrepo.rpm.job
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.hash.sha1
@@ -543,19 +544,21 @@ class JobService(
     ) {
         var nodeList: List<NodeInfo>? = mutableListOf()
         try {
-            batchUpdateIndex(repo, repodataPath, indexType, maxCount)
+            nodeList = batchUpdateIndex(repo, repodataPath, indexType, maxCount)
         } catch (e: Exception) {
+            logger.error("Batch update ${indexType.value} index: [${repo.projectId}|${repo.name}|$repodataPath] error")
+            logger.info("nodeList: ${nodeList?.toJsonString()}")
+            logger.error("msg", e)
             try {
                 nodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
             } catch (e: Exception) {
-                nodeList?.let {
-                    logger.warn(
-                        "update primary index[${repo.projectId}|${repo.name}|$repodataPath]" +
-                            "with ${it.first()} failed"
-                    )
-                }
+                logger.error("Single update ${indexType.value} " +
+                        "index: [${repo.projectId}|${repo.name}|$repodataPath] error")
+                logger.info("nodeList: ${nodeList?.toJsonString()}")
+                logger.error("msg", e)
+                if (!nodeList.isNullOrEmpty()) { logger.warn("${nodeList.first()}") }
             } finally {
-                nodeList?.let { updateNodes(it) }
+                if (!nodeList.isNullOrEmpty()) { updateNodes(nodeList) }
             }
         }
     }
