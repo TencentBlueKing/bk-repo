@@ -573,6 +573,7 @@ class JobService(
     /**
      * 更新索引
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun batchUpdateIndex(
         repo: RepositoryDetail,
         repodataPath: String,
@@ -580,6 +581,7 @@ class JobService(
         maxCount: Int
     ): List<NodeInfo>? {
         logger.info("batchUpdateIndex, [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
+        // 待处理节点
         val markNodePage = listMarkNodes(repo, repodataPath, indexType, maxCount)
         if (markNodePage.records.isEmpty()) {
             logger.info("no index file to process")
@@ -603,34 +605,56 @@ class JobService(
                 "${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created"
         )
         try {
+            // 已处理节点
             val processedMarkNodes = mutableListOf<NodeInfo>()
-            var changeCount = 0
-            RandomAccessFile(unzipedIndexTempFile, "rw").use { randomAccessFile ->
-                markNodes.forEach { markNode ->
-                    changeCount += updateIndexFile(randomAccessFile, markNode, indexType, repo, repodataPath)
-                    processedMarkNodes.add(markNode)
-                }
-
-                logger.debug("changeCount: $changeCount")
-                if (changeCount != 0) {
-                    val start = System.currentTimeMillis()
-                    XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
-                    logger.debug(
-                        "updatePackageCount indexType: $indexType," +
-                            " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
-                            "cost: ${System.currentTimeMillis() - start} ms"
-                    )
-                }
-            }
+            batchUpdateIndexFile(unzipedIndexTempFile, markNodes, indexType, repo, repodataPath, processedMarkNodes)
             logger.debug("Check valid :[${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
             checkValid(unzipedIndexTempFile)
             storeXmlGZNode(repo, unzipedIndexTempFile, repodataPath, indexType)
             flushRepoMdXML(repo, repodataPath)
             deleteNodes(processedMarkNodes)
+        } catch (e: Exception) {
+            logger.error("batchUpdateIndex failed: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]", e)
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
             return markNodes
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun batchUpdateIndexFile(
+        unzipedIndexTempFile: File,
+        markNodes: List<NodeInfo>,
+        indexType: IndexType,
+        repo: RepositoryDetail,
+        repodataPath: String,
+        processedMarkNodes: MutableList<NodeInfo>
+    ) {
+        var changeCount = 0
+        RandomAccessFile(unzipedIndexTempFile, "rw").use { randomAccessFile ->
+            markNodes.forEach { markNode ->
+                try {
+                    changeCount += updateIndexFile(randomAccessFile, markNode, indexType, repo, repodataPath)
+                    processedMarkNodes.add(markNode)
+                } catch (e: Exception) {
+                    logger.error(
+                        "Execute index node failed: " +
+                            "[${markNode.projectId}|${markNode.repoName}|${markNode.fullPath}]",
+                        e
+                    )
+                }
+            }
+            logger.debug("changeCount: $changeCount")
+            if (changeCount != 0) {
+                val start = System.currentTimeMillis()
+                XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
+                logger.debug(
+                    "updatePackageCount indexType: $indexType," +
+                        " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
+                        "cost: ${System.currentTimeMillis() - start} ms"
+                )
+            }
         }
     }
 
