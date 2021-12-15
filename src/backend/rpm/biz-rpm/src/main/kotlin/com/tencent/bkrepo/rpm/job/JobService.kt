@@ -211,13 +211,14 @@ class JobService(
                 xmlRepodataArtifact.getFileSha256(),
                 xmlRepodataArtifact.getFileMd5()
             )
-            store(xmlRepomdNode, xmlRepodataArtifact)
+            store(xmlRepomdNode, xmlRepodataArtifact, repo)
         }
     }
 
     /**
      * 保存索引节点
      */
+    @Suppress("TooGenericExceptionCaught")
     fun storeXmlGZNode(
         repo: RepositoryDetail,
         xmlFile: File,
@@ -254,12 +255,15 @@ class JobService(
                 xmlGZArtifact.getFileMd5(),
                 metadata
             )
-            store(xmlGZNode, xmlGZArtifact)
+            store(xmlGZNode, xmlGZArtifact, repo)
             logger.debug("Store gzIndex success: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
             GlobalScope.launch {
                 val indexTypeList = getIndexTypeList(repo, repodataPath, indexType)
                 deleteSurplusNode(indexTypeList)
             }.start()
+        } catch (e: Exception) {
+            logger.error("Store gzIndex error: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
+            logger.error("msg", e)
         } finally {
             xmlGZFile.delete()
         }
@@ -291,8 +295,8 @@ class JobService(
         return indexList.filter { it.name.endsWith(target) }.sortedByDescending { it.lastModifiedDate }
     }
 
-    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile) {
-        storageManager.storeArtifactFile(node, artifactFile, null)
+    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, repo: RepositoryDetail) {
+        storageManager.storeArtifactFile(node, artifactFile, repo.storageCredentials)
         artifactFile.delete()
         with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
         logger.info("Success to insert $node")
