@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -420,7 +419,7 @@ class JobService(
         when (repeat) {
             ArtifactRepeat.NONE -> {
                 logger.info("insert index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}")
-                val markContent = resolveIndexXml(markNodeInfo, indexType) ?: return 0
+                val markContent = resolveIndexXml(markNodeInfo, indexType, repo) ?: return 0
                 return XmlStrUtils.insertPackageIndex(randomAccessFile, markContent)
             }
             ArtifactRepeat.DELETE -> {
@@ -433,7 +432,7 @@ class JobService(
                 logger.info("replace index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 val rpmVersion = markNodeInfo.metadata!!.toRpmVersion(markNodeInfo.fullPath)
                 val uniqueStr = getLocationStr(indexType, rpmVersion, locationStr)
-                val markContent = resolveIndexXml(markNodeInfo, indexType) ?: return 0
+                val markContent = resolveIndexXml(markNodeInfo, indexType, repo) ?: return 0
                 return XmlStrUtils.updatePackageIndex(randomAccessFile, indexType, uniqueStr, markContent)
             }
             ArtifactRepeat.FULLPATH_SHA256 -> {
@@ -464,18 +463,17 @@ class JobService(
         }
     }
 
-    private fun resolveIndexXml(indexNodeInfo: NodeInfo, indexType: IndexType): ByteArray? {
-        storageService.load(
-            indexNodeInfo.sha256!!,
-            Range.full(indexNodeInfo.size), null
-        ).use { inputStream ->
-            val content = inputStream!!.readBytes()
+    private fun resolveIndexXml(indexNodeInfo: NodeInfo, indexType: IndexType, repo: RepositoryDetail): ByteArray? {
+        storageManager.loadArtifactInputStream(indexNodeInfo, repo.storageCredentials)?.use { inputStream ->
+            val content = inputStream.readBytes()
             return if (XStreamUtil.checkMarkFile(content, indexType)) {
                 content
             } else {
                 null
             }
         }
+        logger.error("Load input stream failed: [$indexNodeInfo]")
+        return null
     }
 
     private fun resolveNode(mapData: Map<String, Any?>): NodeInfo {
