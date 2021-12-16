@@ -71,12 +71,14 @@ class MavenWebController(
 
     override fun gavc(
         projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
         g: String?,
         a: String?,
         v: String?,
         c: String?,
         repos: String?
     ): Response<Page<MavenGAVCResponse.UriResult>> {
-        return mavenExtService.gavc(projectId, g, a, v, c, repos)
+        return mavenExtService.gavc(projectId,pageNumber, pageSize, g, a, v, c, repos)
     }
 }
