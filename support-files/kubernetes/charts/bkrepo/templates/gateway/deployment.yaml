@@ -84,7 +84,7 @@ spec:
               containerPort: 80
               protocol: TCP
             - name: gateway
-              port: 8081
+              containerPort: 8081
               targetPort: 8081
               nodePort: 8088
               protocol: TCP
