@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -57,6 +56,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.rpm.REPODATA
 import com.tencent.bkrepo.rpm.exception.RpmConfNotFoundException
+import com.tencent.bkrepo.rpm.exception.RpmIndexNotFoundException
 import com.tencent.bkrepo.rpm.pojo.ArtifactRepeat
 import com.tencent.bkrepo.rpm.pojo.IndexType
 import com.tencent.bkrepo.rpm.pojo.RpmRepoConf
@@ -210,13 +210,14 @@ class JobService(
                 xmlRepodataArtifact.getFileSha256(),
                 xmlRepodataArtifact.getFileMd5()
             )
-            store(xmlRepomdNode, xmlRepodataArtifact)
+            store(xmlRepomdNode, xmlRepodataArtifact, repo)
         }
     }
 
     /**
      * 保存索引节点
      */
+    @Suppress("TooGenericExceptionCaught")
     fun storeXmlGZNode(
         repo: RepositoryDetail,
         xmlFile: File,
@@ -253,12 +254,15 @@ class JobService(
                 xmlGZArtifact.getFileMd5(),
                 metadata
             )
-            store(xmlGZNode, xmlGZArtifact)
+            store(xmlGZNode, xmlGZArtifact, repo)
             logger.debug("Store gzIndex success: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
             GlobalScope.launch {
                 val indexTypeList = getIndexTypeList(repo, repodataPath, indexType)
                 deleteSurplusNode(indexTypeList)
             }.start()
+        } catch (e: Exception) {
+            logger.error("Store gzIndex error: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")
+            logger.error("msg", e)
         } finally {
             xmlGZFile.delete()
         }
@@ -290,8 +294,8 @@ class JobService(
         return indexList.filter { it.name.endsWith(target) }.sortedByDescending { it.lastModifiedDate }
     }
 
-    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile) {
-        storageManager.storeArtifactFile(node, artifactFile, null)
+    fun store(node: NodeCreateRequest, artifactFile: ArtifactFile, repo: RepositoryDetail) {
+        storageManager.storeArtifactFile(node, artifactFile, repo.storageCredentials)
         artifactFile.delete()
         with(node) { logger.info("Success to store$projectId/$repoName/$fullPath") }
         logger.info("Success to insert $node")
@@ -415,7 +419,7 @@ class JobService(
         when (repeat) {
             ArtifactRepeat.NONE -> {
                 logger.info("insert index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}")
-                val markContent = resolveIndexXml(markNodeInfo, indexType) ?: return 0
+                val markContent = resolveIndexXml(markNodeInfo, indexType, repo) ?: return 0
                 return XmlStrUtils.insertPackageIndex(randomAccessFile, markContent)
             }
             ArtifactRepeat.DELETE -> {
@@ -428,7 +432,7 @@ class JobService(
                 logger.info("replace index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 val rpmVersion = markNodeInfo.metadata!!.toRpmVersion(markNodeInfo.fullPath)
                 val uniqueStr = getLocationStr(indexType, rpmVersion, locationStr)
-                val markContent = resolveIndexXml(markNodeInfo, indexType) ?: return 0
+                val markContent = resolveIndexXml(markNodeInfo, indexType, repo) ?: return 0
                 return XmlStrUtils.updatePackageIndex(randomAccessFile, indexType, uniqueStr, markContent)
             }
             ArtifactRepeat.FULLPATH_SHA256 -> {
@@ -459,18 +463,17 @@ class JobService(
         }
     }
 
-    private fun resolveIndexXml(indexNodeInfo: NodeInfo, indexType: IndexType): ByteArray? {
-        storageService.load(
-            indexNodeInfo.sha256!!,
-            Range.full(indexNodeInfo.size), null
-        ).use { inputStream ->
-            val content = inputStream!!.readBytes()
+    private fun resolveIndexXml(indexNodeInfo: NodeInfo, indexType: IndexType, repo: RepositoryDetail): ByteArray? {
+        storageManager.loadArtifactInputStream(indexNodeInfo, repo.storageCredentials)?.use { inputStream ->
+            val content = inputStream.readBytes()
             return if (XStreamUtil.checkMarkFile(content, indexType)) {
                 content
             } else {
                 null
             }
         }
+        logger.error("Load input stream failed: [$indexNodeInfo]")
+        return null
     }
 
     private fun resolveNode(mapData: Map<String, Any?>): NodeInfo {
@@ -544,20 +547,23 @@ class JobService(
     ) {
         var nodeList: List<NodeInfo>? = mutableListOf()
         try {
-            batchUpdateIndex(repo, repodataPath, indexType, maxCount)
+            nodeList = batchUpdateIndex(repo, repodataPath, indexType, maxCount)
         } catch (e: Exception) {
+            logger.error("Batch update ${indexType.value} index: [${repo.projectId}|${repo.name}|$repodataPath] error")
+            logger.info("nodeList: ${nodeList?.toJsonString()}")
+            logger.error("msg", e)
             try {
                 nodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
             } catch (e: Exception) {
-                logger.error("update ${indexType.value} index: [${repo.projectId}|${repo.name}|$repodataPath] error")
+                logger.error(
+                    "Single update ${indexType.value} " +
+                        "index: [${repo.projectId}|${repo.name}|$repodataPath] error"
+                )
                 logger.info("nodeList: ${nodeList?.toJsonString()}")
-                logger.error("$e")
-                if (!nodeList.isNullOrEmpty()) {
-                    logger.warn("${nodeList.first()}")
-
-                }
+                logger.error("msg", e)
+                if (!nodeList.isNullOrEmpty()) { logger.warn("${nodeList.first()}") }
             } finally {
-                nodeList?.let { updateNodes(it) }
+                if (!nodeList.isNullOrEmpty()) { updateNodes(nodeList) }
             }
         }
     }
@@ -565,6 +571,7 @@ class JobService(
     /**
      * 更新索引
      */
+    @Suppress("TooGenericExceptionCaught")
     private fun batchUpdateIndex(
         repo: RepositoryDetail,
         repodataPath: String,
@@ -572,6 +579,7 @@ class JobService(
         maxCount: Int
     ): List<NodeInfo>? {
         logger.info("batchUpdateIndex, [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
+        // 待处理节点
         val markNodePage = listMarkNodes(repo, repodataPath, indexType, maxCount)
         if (markNodePage.records.isEmpty()) {
             logger.info("no index file to process")
@@ -584,44 +592,67 @@ class JobService(
         val markNodes = markNodePage.records
         val latestIndexNode = getLatestIndexNode(repo, repodataPath, "${indexType.value}.xml.gz")!!
         logger.info("latestIndexNode, fullPath: ${latestIndexNode.fullPath}")
-        val unzipedIndexTempFile = storageService.load(
-            latestIndexNode.sha256!!,
-            Range.full(latestIndexNode.size), null
-        )!!.use { it.unGzipInputStream() }
+        val unzipedIndexTempFile = storageManager.loadArtifactInputStream(
+            latestIndexNode,
+            repo.storageCredentials
+        )?.use { it.unGzipInputStream() }
+            ?: throw RpmIndexNotFoundException("Load input stream failed: [$latestIndexNode]")
         logger.debug("temp index file: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
         logger.info(
             "temp index file " +
                 "${unzipedIndexTempFile.absolutePath}(${HumanReadable.size(unzipedIndexTempFile.length())}) created"
         )
         try {
+            // 已处理节点
             val processedMarkNodes = mutableListOf<NodeInfo>()
-            var changeCount = 0
-            RandomAccessFile(unzipedIndexTempFile, "rw").use { randomAccessFile ->
-                markNodes.forEach { markNode ->
-                    changeCount += updateIndexFile(randomAccessFile, markNode, indexType, repo, repodataPath)
-                    processedMarkNodes.add(markNode)
-                }
-
-                logger.debug("changeCount: $changeCount")
-                if (changeCount != 0) {
-                    val start = System.currentTimeMillis()
-                    XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
-                    logger.debug(
-                        "updatePackageCount indexType: $indexType," +
-                            " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
-                            "cost: ${System.currentTimeMillis() - start} ms"
-                    )
-                }
-            }
+            batchUpdateIndexFile(unzipedIndexTempFile, markNodes, indexType, repo, repodataPath, processedMarkNodes)
             logger.debug("Check valid :[${repo.projectId}|${repo.name}|$repodataPath|$indexType]")
             checkValid(unzipedIndexTempFile)
             storeXmlGZNode(repo, unzipedIndexTempFile, repodataPath, indexType)
             flushRepoMdXML(repo, repodataPath)
             deleteNodes(processedMarkNodes)
+        } catch (e: Exception) {
+            logger.error("batchUpdateIndex failed: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]", e)
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
             return markNodes
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun batchUpdateIndexFile(
+        unzipedIndexTempFile: File,
+        markNodes: List<NodeInfo>,
+        indexType: IndexType,
+        repo: RepositoryDetail,
+        repodataPath: String,
+        processedMarkNodes: MutableList<NodeInfo>
+    ) {
+        var changeCount = 0
+        RandomAccessFile(unzipedIndexTempFile, "rw").use { randomAccessFile ->
+            markNodes.forEach { markNode ->
+                try {
+                    changeCount += updateIndexFile(randomAccessFile, markNode, indexType, repo, repodataPath)
+                    processedMarkNodes.add(markNode)
+                } catch (e: Exception) {
+                    logger.error(
+                        "Execute index node failed: " +
+                            "[${markNode.projectId}|${markNode.repoName}|${markNode.fullPath}]",
+                        e
+                    )
+                }
+            }
+            logger.debug("changeCount: $changeCount")
+            if (changeCount != 0) {
+                val start = System.currentTimeMillis()
+                XmlStrUtils.updatePackageCount(randomAccessFile, indexType, changeCount, false)
+                logger.debug(
+                    "updatePackageCount indexType: $indexType," +
+                        " indexFileSize: ${HumanReadable.size(randomAccessFile.length())}, " +
+                        "cost: ${System.currentTimeMillis() - start} ms"
+                )
+            }
         }
     }
 
