@@ -201,7 +201,7 @@
 
 ### 查询角色下的用户
 
-- API: GET /auth/api/role/user/list?id=5ea4f6608c165f702f5bd41e
+- API: GET /auth/api/role/users/{id}
 
 - API 名称: role_user_list
 - 功能说明：
