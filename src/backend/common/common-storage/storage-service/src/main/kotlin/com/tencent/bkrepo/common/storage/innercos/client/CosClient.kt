@@ -79,7 +79,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      */
     fun getObject(cosRequest: GetObjectRequest): CosObject {
         val httpRequest = buildHttpRequest(cosRequest)
-        return CosHttpClient.execute(httpRequest, GetObjectResponseHandler())
+        return CosHttpClient.execute(httpRequest, GetObjectResponseHandler(), 1)
     }
 
     /**

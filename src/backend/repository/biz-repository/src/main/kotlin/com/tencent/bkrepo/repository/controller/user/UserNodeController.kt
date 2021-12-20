@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -123,7 +124,7 @@ class UserNodeController(
     fun deleteNode(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo
-    ): Response<Void> {
+    ): Response<NodeDeleteResult> {
         with(artifactInfo) {
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
@@ -131,8 +132,7 @@ class UserNodeController(
                 fullPath = getArtifactFullPath(),
                 operator = userId
             )
-            nodeService.deleteNode(deleteRequest)
-            return ResponseBuilder.success()
+            return ResponseBuilder.success(nodeService.deleteNode(deleteRequest))
         }
     }
 
@@ -143,9 +143,10 @@ class UserNodeController(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) date: LocalDateTime
-    ): Response<Void> {
-        nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId)
-        return ResponseBuilder.success()
+    ): Response<NodeDeleteResult> {
+        return ResponseBuilder.success(
+            nodeService.deleteBeforeDate(artifactInfo.projectId, artifactInfo.repoName, date, userId)
+        )
     }
 
     @ApiOperation("更新节点")
