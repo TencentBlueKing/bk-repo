@@ -38,11 +38,11 @@ import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Api("Maven 产品接口")
 @RequestMapping("/ext")
@@ -71,9 +71,11 @@ interface MavenWebResource {
     ): Response<Any?>
 
     @ApiOperation("maven gavc 搜索接口")
-    @GetMapping("/search/gavc/{projectId}")
+    @GetMapping("/search/gavc/{projectId}/{pageNumber}/{pageSize}")
     fun gavc(
         @PathVariable projectId: String,
+        @PathVariable pageNumber: Int,
+        @PathVariable pageSize: Int,
         @RequestParam g: String?,
         @RequestParam a: String?,
         @RequestParam v: String?,

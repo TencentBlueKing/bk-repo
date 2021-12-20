@@ -5,7 +5,6 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
-import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.service.OciBlobService
 import org.springframework.web.bind.annotation.GetMapping
@@ -54,7 +53,7 @@ class OciBlobController(
 	 */
 	@PostMapping("/{projectId}/{repoName}/**/blobs/uploads/")
 	fun startBlobUpload(
-		artifactInfo: OciArtifactInfo
+		artifactInfo: OciBlobArtifactInfo
 	) {
 		ociBlobService.startUploadBlob(artifactInfo)
 	}

@@ -35,12 +35,21 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfigura
 import com.tencent.bkrepo.maven.CHECKSUM_POLICY
 import com.tencent.bkrepo.maven.MAX_UNIQUE_SNAPSHOTS
 import com.tencent.bkrepo.maven.SNAPSHOT_BEHAVIOR
+import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 
 object MavenConfiguration {
     fun RepositoryConfiguration.toMavenRepoConf(): MavenRepoConf {
         val checksumPolicy = this.getIntegerSetting(CHECKSUM_POLICY) ?: 0
-        val snapshotBehavior = this.getIntegerSetting(SNAPSHOT_BEHAVIOR) ?: 0
+        val snapshotBehavior = (
+            this.getIntegerSetting(SNAPSHOT_BEHAVIOR)?.let {
+                when (it) {
+                    0 -> SnapshotBehaviorType.UNIQUE
+                    1 -> SnapshotBehaviorType.NON_UNIQUE
+                    else -> SnapshotBehaviorType.DEPLOYER
+                }
+            }
+            ) ?: SnapshotBehaviorType.UNIQUE
         val maxUniqueSnapshots = this.getIntegerSetting(MAX_UNIQUE_SNAPSHOTS)
         return MavenRepoConf(checksumPolicy, snapshotBehavior, maxUniqueSnapshots)
     }
