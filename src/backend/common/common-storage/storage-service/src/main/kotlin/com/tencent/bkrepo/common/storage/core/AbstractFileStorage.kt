@@ -126,9 +126,11 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         range: Range,
         storageCredentials: StorageCredentials
     ): InputStream? {
+        val client = getClient(storageCredentials)
         return try {
-            val client = getClient(storageCredentials)
-            load(path, name, range, client)
+            retryTemplate.execute<InputStream, IOException> {
+                load(path, name, range, client)
+            }
         } catch (exception: IOException) {
             logger.error("Failed to load stream[$name]: ${exception.message}", exception)
             null
