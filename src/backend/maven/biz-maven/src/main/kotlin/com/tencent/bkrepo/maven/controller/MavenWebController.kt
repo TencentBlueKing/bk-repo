@@ -31,16 +31,20 @@
 
 package com.tencent.bkrepo.maven.controller
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.api.MavenWebResource
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
+import com.tencent.bkrepo.maven.service.MavenExtService
 import com.tencent.bkrepo.maven.service.MavenService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class MavenWebController(
-    private val mavenService: MavenService
+    private val mavenService: MavenService,
+    private val mavenExtService: MavenExtService
 ) : MavenWebResource {
 
     override fun deletePackage(mavenArtifactInfo: MavenArtifactInfo, packageKey: String): Response<Void> {
@@ -63,5 +67,18 @@ class MavenWebController(
         version: String?
     ): Response<Any?> {
         return ResponseBuilder.success(mavenService.artifactDetail(mavenArtifactInfo, packageKey, version))
+    }
+
+    override fun gavc(
+        projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
+        g: String?,
+        a: String?,
+        v: String?,
+        c: String?,
+        repos: String?
+    ): Response<Page<MavenGAVCResponse.UriResult>> {
+        return mavenExtService.gavc(projectId,pageNumber, pageSize, g, a, v, c, repos)
     }
 }

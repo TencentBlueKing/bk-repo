@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter
 
 object MavenMetadataUtils {
 
-    private val formater: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+    private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
     private const val elementVersion = "0okm(IJN"
 
     fun Metadata.deleteVersioning(): Metadata {
@@ -26,7 +26,7 @@ object MavenMetadataUtils {
             }
             this.versioning.versions.remove(elementVersion)
         }
-        this.versioning.lastUpdated = LocalDateTime.now(ZoneId.of("UTC")).format(formater)
+        this.versioning.lastUpdated = LocalDateTime.now(ZoneId.of("UTC")).format(formatter)
         return this
     }
 }

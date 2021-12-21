@@ -29,10 +29,12 @@ package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
+import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.service.node.NodeDeleteOperation
@@ -57,17 +59,24 @@ open class NodeDeleteSupport(
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
     private val quotaService: QuotaService = nodeBaseService.quotaService
 
-    override fun deleteNode(deleteRequest: NodeDeleteRequest) {
+    override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
         with(deleteRequest) {
             // 不允许直接删除根目录
             if (PathUtils.isRoot(fullPath)) {
                 throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Can't delete root node.")
             }
-            deleteByPath(projectId, repoName, fullPath, operator)
+            return deleteByPath(projectId, repoName, fullPath, operator)
         }
     }
 
-    override fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String) {
+    override fun deleteByPath(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String
+    ): NodeDeleteResult {
+        var deletedSize = 0L
+        var deletedNum = 0L
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val normalizedPath = PathUtils.toPath(normalizedFullPath)
         val escapedPath = PathUtils.escapeRegex(normalizedPath)
@@ -79,30 +88,45 @@ open class NodeDeleteSupport(
                 where(TNode::fullPath).isEqualTo(normalizedFullPath)
             )
         val query = Query(criteria)
-        val deleteNodesSize = nodeBaseService.aggregateComputeSize(criteria)
+        val deleteTime = LocalDateTime.now()
         try {
-            quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
-            nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
+            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+            deletedNum = updateResult.modifiedCount
+            deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
+            quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName$fullPath] by [$operator] error: [${exception.message}]")
         }
-        logger.info("Delete node[/$projectId/$repoName$fullPath] by [$operator] success.")
+        logger.info("Delete node[/$projectId/$repoName$fullPath] by [$operator] success." +
+            "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}")
+        return NodeDeleteResult(deletedNum, deletedSize)
     }
 
-    override fun deleteBeforeDate(projectId: String, repoName: String, date: LocalDateTime, operator: String) {
+    override fun deleteBeforeDate(
+        projectId: String,
+        repoName: String,
+        date: LocalDateTime,
+        operator: String
+    ): NodeDeleteResult {
+        var deletedSize = 0L
+        var deletedNum = 0L
         val option = NodeListOption(includeFolder = false, deep = true)
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, PathUtils.ROOT, option)
             .and(TNode::createdDate).lt(date)
         val query = Query(criteria)
-        val deleteNodesSize = nodeBaseService.aggregateComputeSize(criteria)
+        val deleteTime = LocalDateTime.now()
         try {
-            quotaService.decreaseUsedVolume(projectId, repoName, deleteNodesSize)
-            nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator))
+            val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
+            deletedNum = updateResult.modifiedCount
+            deletedSize = nodeBaseService.aggregateComputeSize(criteria.and(TNode::deleted).isEqualTo(deleteTime))
+            quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[/$projectId/$repoName] created before $date error: [${exception.message}]")
         }
-        logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success.")
+        logger.info("Delete node [/$projectId/$repoName] created before $date by [$operator] success. " +
+            "$deletedNum nodes have been deleted. The size is ${HumanReadable.size(deletedSize)}")
+        return NodeDeleteResult(deletedNum, deletedSize)
     }
 
     companion object {

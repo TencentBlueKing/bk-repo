@@ -27,18 +27,20 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.boot.actuate.health.AbstractHealthIndicator
 import org.springframework.boot.actuate.health.Health
 import org.springframework.stereotype.Component
 
 @Component("storageHealthIndicator")
 class StorageHealthIndicator(
-    private val storageHealthMonitor: StorageHealthMonitor
+    private val monitorHelper: StorageHealthMonitorHelper
 ) : AbstractHealthIndicator() {
     override fun doHealthCheck(builder: Health.Builder) {
-        builder.withDetail("cfs", storageHealthMonitor.healthy.get())
-            .withDetail("cos", true)
+        monitorHelper.all().forEach {
+            builder.withDetail("cfs-${it.path}", it.healthy.get())
+        }
+        builder.withDetail("cos", true)
             .up()
     }
 }

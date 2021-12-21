@@ -42,6 +42,11 @@ const val USER_KEY = "userId"
 const val PLATFORM_KEY = "platformId"
 
 /**
+ * Oauth认证成功后scope写入request attributes的key
+ */
+const val AUTHORITIES_KEY = "authorities"
+
+/**
  * 微服务调用请求标记key
  */
 const val MS_REQUEST_KEY = "MSRequest"

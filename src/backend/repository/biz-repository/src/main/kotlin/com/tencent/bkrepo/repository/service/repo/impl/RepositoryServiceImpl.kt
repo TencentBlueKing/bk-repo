@@ -110,6 +110,7 @@ class RepositoryServiceImpl(
 
     override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String) {
         repositoryDao.findByNameAndType(projectId, repoName, null)?.run {
+            oldCredentialsKey = credentialsKey
             credentialsKey = storageCredentialsKey
             repositoryDao.save(this)
         }
@@ -445,7 +446,10 @@ class RepositoryServiceImpl(
         val query = Query(TRepository::type.isEqualTo(type)).with(Sort.by(TRepository::name.name))
         val count = repositoryDao.count(query)
         val pageQuery = query.with(PageRequest.of(pageNumber, pageSize))
-        val data = repositoryDao.find(pageQuery).map { convertToDetail(it)!! }
+        val data = repositoryDao.find(pageQuery).map {
+            val storageCredentials = it.credentialsKey?.let { key -> storageCredentialService.findByKey(key) }
+            convertToDetail(it, storageCredentials)!!
+        }
 
         return Page(pageNumber, pageSize, count, data)
     }
@@ -496,7 +500,8 @@ class RepositoryServiceImpl(
                     lastModifiedBy = it.lastModifiedBy,
                     lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     quota = it.quota,
-                    used = it.used
+                    used = it.used,
+                    oldCredentialsKey = it.oldCredentialsKey
                 )
             }
         }

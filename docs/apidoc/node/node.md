@@ -562,3 +562,38 @@
     }
   }
   ```
+
+## 清理创建时间早于{date}的文件节点
+
+- API: DELETE /repository/api/node/clean/{projectId}/{repoName}?date=yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+
+- API 名称: delete_node_created_before_date
+
+- 功能说明：
+
+  - 中文：清理创建时间早于{date}的文件节点
+  - English：delete node created before date
+
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明     | Description  |
+  | --------- | ------ | -------- | ------ | -------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称 | project name |
+  | repoName  | string | 是       | 无     | 仓库名称 | repo name    |
+  | date      | string | 是       | 无     | 日期     | date time    |
+
+- 响应体
+
+  ```json
+  {
+    "code": 0,
+    "message": null,
+    "data": null,
+    "traceId": null
+  }
+  ```
+
+## 

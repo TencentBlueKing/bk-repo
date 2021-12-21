@@ -90,7 +90,7 @@ class GenericLocalRepository : LocalRepository() {
         // 校验md5
         val calculatedMd5 = context.getArtifactMd5()
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
-        if (uploadMd5 != null && !calculatedMd5.equals(calculatedMd5, true)) {
+        if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
     }

@@ -30,6 +30,16 @@ serviceAccount:
   ##
   name:
 
+## 日志采集配置
+bkLogConfig:
+  enabled: false
+  service:
+    dataId: 1
+  gatewayAccess:
+    dataId: 1
+  gatewayError:
+    dataId: 1
+
 ## ingress配置
 ingress:
   enabled: true

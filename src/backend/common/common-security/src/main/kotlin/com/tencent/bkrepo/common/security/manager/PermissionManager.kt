@@ -188,13 +188,19 @@ open class PermissionManager(
         val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
-        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
-            return
-        }
         if (userId == ANONYMOUS_USER) {
             val request = HttpContextHolder.getRequest()
             logger.warn("anonymous user, platform id[$platformId], project[$projectId], repoName[$repoName]" +
                 "requestMethod: ${request.method}, requestUri: ${request.requestURI}")
+        }
+        if (userId == ANONYMOUS_USER && platformId != null && anonymous) {
+            return
+        }
+
+        // 校验Oauth token对应权限
+        val authorities = SecurityUtils.getAuthorities()
+        if (authorities.isNotEmpty() && !authorities.contains(type.toString())) {
+            throw PermissionException()
         }
 
         // 去auth微服务校验资源权限
@@ -209,7 +215,8 @@ open class PermissionManager(
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误
-            throw PermissionException()
+            throw PermissionException("user[$userId] does not have $action permission " +
+                "in project[$projectId] repo[$repoName] ")
         }
         if (logger.isDebugEnabled) {
             logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")

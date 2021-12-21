@@ -31,15 +31,18 @@
 
 package com.tencent.bkrepo.maven.api
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @Api("Maven 产品接口")
 @RequestMapping("/ext")
@@ -66,4 +69,17 @@ interface MavenWebResource {
         @RequestParam packageKey: String,
         @RequestParam version: String?
     ): Response<Any?>
+
+    @ApiOperation("maven gavc 搜索接口")
+    @GetMapping("/search/gavc/{projectId}/{pageNumber}/{pageSize}")
+    fun gavc(
+        @PathVariable projectId: String,
+        @PathVariable pageNumber: Int,
+        @PathVariable pageSize: Int,
+        @RequestParam g: String?,
+        @RequestParam a: String?,
+        @RequestParam v: String?,
+        @RequestParam c: String?,
+        @RequestParam repos: String?
+    ): Response<Page<MavenGAVCResponse.UriResult>>
 }
