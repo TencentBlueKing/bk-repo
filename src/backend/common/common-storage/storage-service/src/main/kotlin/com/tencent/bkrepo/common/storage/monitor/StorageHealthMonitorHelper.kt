@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+
 /**
  * 存储监控助手
  * */
@@ -24,7 +25,15 @@ class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<Strin
      * */
     fun getMonitor(properties: StorageProperties, storageCredentials: StorageCredentials): StorageHealthMonitor {
         val location = storageCredentials.upload.location
-        return monitorMap.getOrPut(location) { StorageHealthMonitor(properties, location, executorService) }
+        return monitorMap[location] ?: synchronized(location.intern()) {
+            monitorMap[location]?.let { return it }
+            val storageHealthMonitor = StorageHealthMonitor(properties, location, executorService)
+            monitorMap.putIfAbsent(
+                location,
+                storageHealthMonitor
+            )
+            storageHealthMonitor
+        }
     }
 
     /**
