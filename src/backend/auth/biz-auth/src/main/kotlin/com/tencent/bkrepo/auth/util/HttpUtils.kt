@@ -49,7 +49,7 @@ object HttpUtils {
             if (response.isSuccessful || acceptCode.contains(responseCode)) {
                 return ApiResponse(responseCode, responseContent)
             }
-            logger.warn("http request failed, code: $responseCode, responseContent: $responseContent")
+            throw RuntimeException("http request url ${request.url().toString()} failed, code: $responseCode, responseContent: $responseContent")
         } catch (e: Exception) {
             if (retry > 0) {
                 logger.warn("http request error, cause: ${e.message}")
