@@ -126,9 +126,12 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         range: Range,
         storageCredentials: StorageCredentials
     ): InputStream? {
+        val client = getClient(storageCredentials)
         return try {
-            val client = getClient(storageCredentials)
-            load(path, name, range, client)
+            retryTemplate.execute<InputStream, IOException> {
+                it.setAttribute(RetryContext.NAME, RETRY_NAME_LOAD_STREAM)
+                load(path, name, range, client)
+            }
         } catch (exception: IOException) {
             logger.error("Failed to load stream[$name]: ${exception.message}", exception)
             null
@@ -183,5 +186,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         private const val RETRY_MULTIPLIER = 2.0
         private const val RETRY_NAME_STORE_FILE = "FileStorage.storeFile"
         private const val RETRY_NAME_STORE_STREAM = "FileStorage.storeStream"
+        private const val RETRY_NAME_LOAD_STREAM = "FileStorage.loadStream"
     }
 }
