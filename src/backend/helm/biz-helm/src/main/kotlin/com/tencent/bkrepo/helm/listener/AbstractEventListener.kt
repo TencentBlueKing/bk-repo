@@ -34,43 +34,64 @@ package com.tencent.bkrepo.helm.listener
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
 open class AbstractEventListener {
 
-    @Autowired
-    lateinit var nodeClient: NodeClient
+	@Autowired
+	lateinit var nodeClient: NodeClient
 
-    @Autowired
-    lateinit var storageManager: StorageManager
+	@Autowired
+	lateinit var storageManager: StorageManager
 
-    /**
-     * check node exists
-     */
-    fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
-        return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
-    }
+	@Autowired
+	lateinit var repositoryClient: RepositoryClient
 
-    /**
-     * query original index.yaml file
-     */
-    fun getOriginalIndexYaml(projectId: String, repoName: String): HelmIndexYamlMetadata {
-        val fullPath = HelmUtils.getIndexYamlFullPath()
-        val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-        val inputStream = storageManager.loadArtifactInputStream(nodeDetail, null)
-            ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
-        return inputStream.use { it.readYamlString() }
-    }
+	/**
+	 * check node exists
+	 */
+	fun exist(projectId: String, repoName: String, fullPath: String): Boolean {
+		return nodeClient.checkExist(projectId, repoName, fullPath).data ?: false
+	}
 
-    /**
-     * upload index.yaml file
-     */
-    fun uploadIndexYamlMetadata(artifactFile: ArtifactFile, nodeCreateRequest: NodeCreateRequest) {
-        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, null)
-    }
+	/**
+	 * query original index.yaml file
+	 */
+	fun getOriginalIndexYaml(projectId: String, repoName: String): HelmIndexYamlMetadata {
+		val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+			logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+			throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+		}
+		val fullPath = HelmUtils.getIndexYamlFullPath()
+		val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+		val inputStream = storageManager.loadArtifactInputStream(nodeDetail, repositoryDetail.storageCredentials)
+			?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
+		return inputStream.use { it.readYamlString() }
+	}
+
+	/**
+	 * upload index.yaml file
+	 */
+	fun uploadIndexYamlMetadata(artifactFile: ArtifactFile, nodeCreateRequest: NodeCreateRequest) {
+		with(nodeCreateRequest) {
+			val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+				logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+				throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+			}
+			storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, repositoryDetail.storageCredentials)
+		}
+	}
+
+	companion object {
+		private val logger = LoggerFactory.getLogger(AbstractEventListener::class.java)
+	}
 }
