@@ -57,7 +57,7 @@
 | BK_REPO_COS_SECRET_ID    | 对象存储secret id                                   |                            |
 | BK_REPO_COS_SECRET_KEY   | 对象存储secret key                                  |                            |
 | BK_REPO_COS_REGION       | 对象存储区域                                        | ap-guangzhou               |
-| BK_REPO_COS_BUCKET       | 对象存储桶                                          |                            |
+| BK_REPO_COS_BUCKET       | 对象存储桶                                          | example-123456             |
 | BK_REPO_CACHE_ENABLE     | 是否启动存储缓存。存储缓存使用分布式文件系统，如cfs | true / false               |
 | BK_REPO_CACHE_MOUNT_PATH | 存储缓存挂载路径                                    | /data/bkrepo               |
 | BK_REPO_CACHE_EXPIRE_DAY | 存储缓存过期天数， -1表示永不过期                   |                            |
