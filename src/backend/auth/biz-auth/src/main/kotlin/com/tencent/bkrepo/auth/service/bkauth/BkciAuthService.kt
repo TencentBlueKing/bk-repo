@@ -87,7 +87,7 @@ class BkciAuthService @Autowired constructor(
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
-            logger.error("validateProjectUsers url is $url, error: ", exception)
+            logger.error("validateProjectUsers error:", exception)
             false
         }
     }
