@@ -68,10 +68,26 @@ object MavenStringUtils {
         } else HttpStatus.SC_CREATED
     }
 
-    private fun String.isSnapshotUri(): Boolean {
+    fun String.isSnapshotUri(): Boolean {
         return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX)
     }
 
+    fun String.isSnapshotNonUniqueUri(): Boolean {
+        return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX) &&
+            this.substringAfterLast("/").contains(SNAPSHOT_SUFFIX)
+    }
+
+    /**
+     * 将maven 包名转为[MavenVersion]
+     * 完整请求路径 e.g. /com/mycompany/app/my-app/1.0-SNAPSHOT/my-app-1.0-20211129.073728-8.jar
+     * [this] 请求路径中完整包名 e.g. my-app-1.0-20211129.073728-8.jar
+     * [artifactId] = my-app
+     * [version] = 1.0-SNAPSHOT
+     * @return [MavenVersion.timestamp] = 20211129.073728
+     * @return [MavenVersion.buildNo] = 8
+     * @return [MavenVersion.classifier] = null
+     * @return [MavenVersion.packaging] = jar
+     */
     fun String.resolverName(artifactId: String, version: String): MavenVersion {
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(this)
         if (matcher.matches()) {
@@ -83,20 +99,28 @@ object MavenStringUtils {
                 packaging = packaging
             )
             val suffix = artifactName.removePrefix("$artifactId-${version.removeSuffix(SNAPSHOT_SUFFIX)}").trim('-')
-            if (suffix.isNotBlank() && version.endsWith(SNAPSHOT_SUFFIX)) {
-                val strList = suffix.split('-')
+            mavenVersion.setMavenVersion(suffix)
+            return mavenVersion
+        }
+        throw MavenArtifactFormatException(this)
+    }
+
+    private fun MavenVersion.setMavenVersion(suffix: String) {
+        if (suffix.isNotBlank() && version.endsWith(SNAPSHOT_SUFFIX)) {
+            val strList = suffix.split('-')
+            if ((strList.isNotEmpty() && strList[0] == "SNAPSHOT")) {
+                this.classifier = if (strList.size > 1) strList[1] else null
+            } else {
                 val timestamp = if (strList.isNotEmpty()) strList[0] else null
                 val buildNo = if (strList.size > 1) strList[1] else null
                 val classifier =
                     if (strList.size > 2) StringUtils.join(strList.subList(2, strList.size), "-") else null
-                mavenVersion.timestamp = timestamp
-                mavenVersion.buildNo = buildNo
-                mavenVersion.classifier = classifier
-            } else {
-                mavenVersion.classifier = suffix
+                this.timestamp = timestamp
+                this.buildNo = buildNo
+                this.classifier = classifier
             }
-            return mavenVersion
+        } else {
+            this.classifier = suffix
         }
-        throw MavenArtifactFormatException(this)
     }
 }

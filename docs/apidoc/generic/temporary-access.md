@@ -150,7 +150,7 @@
 
 ## 临时token文件下载接口
 
-- API: GET /generic/temporary/token/download/{project}/{repo}/{path}?token=xxx
+- API: GET /generic/temporary/download/{project}/{repo}/{path}?token=xxx
 - API 名称: temporary download
 - 功能说明：
 	- 中文：临时token文件下载
@@ -160,7 +160,7 @@
   
 ## 临时token文件上传接口
 
-- API: PUT /generic/temporary/token/upload/{project}/{repo}/{path}?token=xxx
+- API: PUT /generic/temporary/upload/{project}/{repo}/{path}?token=xxx
 - API 名称: temporary upload
 - 功能说明：
 	- 中文：临时token文件上传

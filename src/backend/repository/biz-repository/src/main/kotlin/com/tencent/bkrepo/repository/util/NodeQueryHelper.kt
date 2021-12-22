@@ -159,8 +159,8 @@ object NodeQueryHelper {
         }
     }
 
-    fun nodeDeleteUpdate(operator: String): Update {
-        return update(operator).set(TNode::deleted.name, LocalDateTime.now())
+    fun nodeDeleteUpdate(operator: String, deleteTime: LocalDateTime = LocalDateTime.now()): Update {
+        return update(operator).set(TNode::deleted.name, deleteTime)
     }
 
     private fun update(operator: String): Update {

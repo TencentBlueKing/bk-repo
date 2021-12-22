@@ -23,6 +23,8 @@ class MavenExtService(
 
     fun gavc(
         projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
         g: String?,
         a: String?,
         v: String?,
@@ -30,7 +32,7 @@ class MavenExtService(
         repos: String?
     ): Response<Page<MavenGAVCResponse.UriResult>> {
         gavcCheck(g, a, v, c)
-        val result = buildGavcQuery(projectId, g, a, v, c, repos)
+        val result = buildGavcQuery(projectId, pageNumber, pageSize, g, a, v, c, repos)
         val list = result.data?.records?.map {
             MavenGAVCResponse.UriResult("$mavenDomain/${it["projectId"]}/${it["repoName"]}${it["fullPath"]}")
         }
@@ -54,6 +56,8 @@ class MavenExtService(
 
     private fun buildGavcQuery(
         projectId: String,
+        pageNumber: Int,
+        pageSize: Int,
         g: String?,
         a: String?,
         v: String?,
@@ -64,7 +68,6 @@ class MavenExtService(
         val repoRules = mutableListOf<Rule>()
         val metadataRules = mutableListOf<Rule>()
         val projectRule = Rule.QueryRule("projectId", projectId)
-//        val repoName = Rule.QueryRule("repoName", context.repoName)
         g?.let { metadataRules.add(Rule.QueryRule("metadata.groupId", g)) }
         a?.let { metadataRules.add(Rule.QueryRule("metadata.artifactId", a)) }
         v?.let { metadataRules.add(Rule.QueryRule("metadata.version", v)) }
@@ -84,7 +87,7 @@ class MavenExtService(
             rules, Rule.NestedRule.RelationType.AND
         )
         val queryModel = QueryModel(
-            page = PageLimit(),
+            page = PageLimit(pageNumber = pageNumber, pageSize = pageSize),
             sort = Sort(properties = listOf("lastModifiedDate"), direction = Sort.Direction.ASC),
             select = listOf("projectId", "repoName", "fullPath"),
             rule = rule
