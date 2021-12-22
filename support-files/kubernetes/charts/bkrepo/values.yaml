@@ -170,7 +170,7 @@ gateway:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-gateway
-    tag: 1.0.30-beta8
+    tag: 1.0.30-beta9
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
