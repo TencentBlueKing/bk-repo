@@ -7,6 +7,11 @@ Vue.use(Vuex)
 const storeObject = {
     state: {
         showLoginDialog: Boolean(window.login),
+        permission: {
+            write: true,
+            edit: true,
+            delete: true
+        },
         genericTree: [
             {
                 name: '/',

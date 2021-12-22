@@ -1,15 +1,15 @@
 import Vue from 'vue'
-import App from './App'
-import createRouter from './router'
-import store from './store'
-import '@/utils/request'
+import App from '@/App'
+import createRouter from '@/router'
+import store from '@/store'
+import '@repository/utils/request'
 
-import Icon from '@/components/Icon'
-import CanwayDialog from '@/components/CanwayDialog'
-import EmptyData from '@/components/EmptyData'
+import Icon from '@repository/components/Icon'
+import CanwayDialog from '@repository/components/CanwayDialog'
+import EmptyData from '@repository/components/EmptyData'
 import createLocale from '@locale'
 import '@icon-cool/bk-icon-devops/src/index'
-import { throttleMessage } from './utils'
+import { throttleMessage } from '@repository/utils'
 
 import bkMagic from 'bk-magic-vue'
 // 全量引入 bk-magic-vue 样式
@@ -17,7 +17,7 @@ import 'bk-magic-vue/dist/bk-magic-vue.min.css'
 
 // 打包svg文件
 const requireAll = requireContext => requireContext.keys().map(requireContext)
-const req = require.context('@/images', false, /\.svg$/)
+const req = require.context('@repository/images', false, /\.svg$/)
 requireAll(req)
 
 const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))

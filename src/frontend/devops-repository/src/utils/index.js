@@ -47,14 +47,6 @@ export function throttleMessage (fn, delay = 1000) {
             fn(message)
             return
         }
-        if (
-            [
-                'property',
-                'defined'
-            ].find(ignore => !message.message || message.message.indexOf(ignore) !== -1)
-        ) {
-            throw new Error(message.message)
-        }
         const now = +new Date()
         if (lastTime + delay > now) return
         fn(message)

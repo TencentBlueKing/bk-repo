@@ -86,7 +86,7 @@
             v-model="editNodeDialog.show"
             :title="editNodeDialog.add ? '新建节点' : '编辑节点'"
             width="600"
-            height-num="425"
+            height-num="402"
             @cancel="editNodeDialog.show = false">
             <bk-form class="mr50" :label-width="110" :model="editNodeDialog" :rules="rules" ref="editNodeDialog">
                 <bk-form-item :label="$t('type')" property="type">

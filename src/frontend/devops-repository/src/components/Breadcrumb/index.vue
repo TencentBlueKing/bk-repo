@@ -4,7 +4,7 @@
         <bk-breadcrumb-item
             v-for="item in list"
             :key="item.name">
-            <span
+            <span class="bk-breadcrumb-item-inner is-link"
                 @click="() => item.cilckHandler && item.cilckHandler(item)">
                 {{ item.name }}
             </span>

@@ -11,7 +11,7 @@ Router.prototype.replace = function (location, onResolve, onReject) {
 
 Vue.use(Router)
 
-const createRouter = (store) => {
+const createRouter = () => {
     const router = new Router({
         mode: 'history',
         routes: routerArr

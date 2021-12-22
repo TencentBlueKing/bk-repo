@@ -2,7 +2,7 @@
     <canway-dialog
         :value="show"
         width="528"
-        height-num="274"
+        height-num="281"
         title="添加文件路径"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">

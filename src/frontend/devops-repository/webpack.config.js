@@ -23,7 +23,8 @@ module.exports = (env, argv) => {
         new HtmlWebpackPlugin({
             filename: isProd ? `${dist}/frontend#ui#index.html` : `${dist}/index.html`,
             template: 'index.html',
-            inject: true
+            inject: true,
+            title: '制品管理CPack'
         }),
         new CopyWebpackPlugin({
             patterns: [{ from: path.join(__dirname, './static'), to: dist }]

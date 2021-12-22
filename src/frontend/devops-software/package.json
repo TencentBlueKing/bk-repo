@@ -1,0 +1,30 @@
+{
+  "name": "devops-software",
+  "version": "1.0.1",
+  "description": "devops-software",
+  "scripts": {
+    "dev": "webpack-dev-server --mode development --progress",
+    "public": "webpack --mode production",
+    "public:dev": "cross-env NODE_ENV=dev  npm run public --",
+    "public:test": "cross-env NODE_ENV=test  npm run public --",
+    "public:master": "cross-env NODE_ENV=master  npm run public --",
+    "public:external": "cross-env NODE_ENV=external npm run public --"
+  },
+  "dependencies": {
+    "@icon-cool/bk-icon-devops": "^0.1.17",
+    "axios": "^0.21.1",
+    "bk-magic-vue": "^2.3.10",
+    "clipboard": "^2.0.6",
+    "js-cookie": "^2.2.1",
+    "qrcode": "^1.5.0",
+    "vue": "^2.6.12",
+    "vue-i18n": "^8.18.1",
+    "vue-router": "^3.0.1",
+    "vuedraggable": "^2.24.1",
+    "vuex": "^3.0.1"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "9.0.1",
+    "html-webpack-plugin": "^5.3.2"
+  }
+}

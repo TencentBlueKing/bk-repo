@@ -27,6 +27,11 @@
                 </empty-data>
             </template>
             <bk-table-column label="用户组名称" prop="name" width="200"></bk-table-column>
+            <bk-table-column label="关联用户数" width="200">
+                <template #default="{ row }">
+                    {{ row.users.length }}
+                </template>
+            </bk-table-column>
             <bk-table-column label="描述" prop="description"></bk-table-column>
             <bk-table-column :label="$t('operation')" width="150">
                 <div slot-scope="props" class="flex-align-center">
@@ -39,6 +44,7 @@
             v-model="editRoleConfig.show"
             theme="primary"
             width="500"
+            height-num="301"
             :title="editRoleConfig.id ? '编辑用户组' : '创建用户组'"
             @cancel="editRoleConfig.show = false">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
@@ -49,10 +55,10 @@
                     <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>
                 </bk-form-item>
             </bk-form>
-            <div slot="footer">
+            <template #footer>
                 <bk-button @click="editRoleConfig.show = false">{{ $t('cancel') }}</bk-button>
                 <bk-button class="ml10" theme="primary" @click="confirm">{{ $t('confirm') }}</bk-button>
-            </div>
+            </template>
         </canway-dialog>
         <bk-sideslider
             class="show-userlist-sideslider"
@@ -63,10 +69,11 @@
             <template #content>
                 <div class="m10 flex-align-center">
                     <bk-tag-input
-                        class="w250"
+                        style="width: 300px"
                         v-model="editRoleUsers.addUsers"
                         :list="Object.values(selectList)"
                         :search-key="['id', 'name']"
+                        :title="editRoleUsers.addUsers.map(u => userList[u] ? userList[u].name : u)"
                         placeholder="添加用户，按Enter键确认"
                         trigger="focus"
                         allow-create>

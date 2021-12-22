@@ -5,11 +5,11 @@
             <Icon class="cron-icon" name="cron" size="32" />
         </div>
         <div v-if="showMain" class="cron-main">
-            <bk-radio-group class="mb20" v-model="mode">
+            <bk-radio-group style="display:flex;" v-model="mode">
                 <bk-radio value="manual">手动输入</bk-radio>
-                <bk-radio class="ml20" value="ui">自动编辑</bk-radio>
+                <bk-radio value="ui">自动编辑</bk-radio>
             </bk-radio-group>
-            <div v-if="mode === 'manual'">
+            <div v-if="mode === 'manual'" class="mt10">
                 <bk-input v-model="manualVal" @blur="manualChange"></bk-input>
             </div>
             <bk-tab v-else class="cron-tab" type="unborder-card" :active.sync="tabName">
@@ -93,7 +93,7 @@
                             </template>
                             <template v-else-if="type === 'enumeration' && cron[tab].type === 'enumeration' && tab !== 'year'">
                                 <bk-tag-input
-                                    style="min-width: 200px;max-width:400px"
+                                    style="width:400px"
                                     v-model="cron[tab][type]"
                                     :allow-create="tab === 'year'"
                                     trigger="focus"
@@ -101,12 +101,13 @@
                                     :create-tag-validator="tag => {
                                         return Number(tag) && tag >= new Date().getFullYear()
                                     }"
-                                    @change="uiChange"
-                                    @click.native.stop.prevent="() => {}"
+                                    :title="cron[tab][type]"
                                     :list="cron[tab].enumerationList.map(v => ({
                                         id: v,
                                         name: tab === 'week' ? $t(`cron.${tab}`) + $t(`cron.${v}`) : v + $t(`cron.${tab}`)
                                     }))">
+                                    @change="uiChange"
+                                    @click.native.stop.prevent="() => {}"
                                 </bk-tag-input>
                             </template>
                         </bk-radio>

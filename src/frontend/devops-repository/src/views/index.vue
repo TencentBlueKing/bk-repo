@@ -3,6 +3,7 @@
         <div class="nav-submain-list" :class="{ 'hidden-menu': hiddenMenu }">
             <router-link
                 class="nav-submain-item flex-align-center"
+                :class="{ 'active-link': $route.meta.breadcrumb.find(route => route.name === name) }"
                 v-for="name in menuList.project"
                 :key="name"
                 :to="{ name }">
@@ -15,6 +16,7 @@
             <template v-if="userInfo.admin">
                 <router-link
                     class="nav-submain-item flex-align-center"
+                    :class="{ 'active-link': $route.meta.breadcrumb.find(route => route.name === name) }"
                     v-for="name in menuList.global"
                     :key="name"
                     :to="{ name }">
@@ -41,8 +43,8 @@
     </div>
 </template>
 <script>
-    import Breadcrumb from '@/components/Breadcrumb/topBreadcrumb'
-    import { mapState, mapGetters, mapMutations, mapActions } from 'vuex'
+    import Breadcrumb from '@repository/components/Breadcrumb/topBreadcrumb'
+    import { mapState, mapGetters, mapActions } from 'vuex'
     export default {
         components: { Breadcrumb },
         data () {
@@ -78,7 +80,6 @@
             this.getClusterList()
         },
         methods: {
-            ...mapMutations(['SHOW_LOGIN_DIALOG']),
             ...mapActions(['getClusterList'])
         }
     }
@@ -114,7 +115,8 @@
                 color: white;
                 background-color: #407BE0;
             }
-            &.router-link-active {
+            &.router-link-active,
+            &.active-link {
                 color: var(--primaryColor);
                 background-color: white;
             }
@@ -136,7 +138,7 @@
         }
     }
     .bkrepo-view-main {
-        height: calc(100% - 20px);
+        height: calc(100% - 20px); // margin
         .repo-breadcrumb {
             height: 20px;
         }

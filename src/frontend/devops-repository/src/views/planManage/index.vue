@@ -107,14 +107,14 @@
                 <template #default="{ row }">
                     <bk-popover placement="bottom-end" theme="light" ext-cls="operation-container">
                         <i class="p5 devops-icon icon-ellipsis hover-btn"></i>
-                        <ul class="operation-list" slot="content">
+                        <template #content><ul class="operation-list">
                             <li class="operation-item hover-btn"
                                 :class="{ 'disabled': Boolean(row.lastExecutionStatus) || row.replicaType === 'REAL_TIME' }"
                                 @click.stop="editPlanHandler(row)">编辑</li>
                             <li class="operation-item hover-btn" @click.stop="copyPlanHandler(row)">复制</li>
                             <li class="operation-item hover-btn" @click.stop="deletePlanHandler(row)">删除</li>
                             <li class="operation-item hover-btn" @click.stop="showPlanLogHandler(row)">日志</li>
-                        </ul>
+                        </ul></template>
                     </bk-popover>
                 </template>
             </bk-table-column>

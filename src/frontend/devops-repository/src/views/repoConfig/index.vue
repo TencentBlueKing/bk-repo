@@ -12,8 +12,11 @@
                     <bk-form-item :label="$t('repoAddress')">
                         <span>{{repoAddress}}</span>
                     </bk-form-item>
-                    <bk-form-item :label="$t('publicRepo')" property="public">
-                        <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
+                    <bk-form-item label="访问权限">
+                        <card-radio-group
+                            v-model="available"
+                            :list="availableList">
+                        </card-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'rpm'">
                         <bk-form-item :label="$t('enabledFileLists')">
@@ -63,12 +66,13 @@
     </div>
 </template>
 <script>
-    import proxyConfig from './proxyConfig'
+    import CardRadioGroup from '@repository/components/CardRadioGroup'
+    import proxyConfig from '@repository/views/repoConfig/proxyConfig'
     import permissionConfig from './permissionConfig'
     import { mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
-        components: { proxyConfig, permissionConfig },
+        components: { CardRadioGroup, proxyConfig, permissionConfig },
         data () {
             return {
                 tabName: 'baseInfo',
@@ -77,6 +81,7 @@
                     loading: false,
                     repoName: '',
                     public: false,
+                    system: false,
                     repoType: '',
                     enabledFileLists: false,
                     repodataDepth: 0,
@@ -120,6 +125,24 @@
             },
             repoAddress () {
                 return location.origin + `/${this.repoBaseInfo.repoType}/${this.projectId}/${this.repoBaseInfo.name}/`
+            },
+            available: {
+                get () {
+                    if (this.repoBaseInfo.public) return 'public'
+                    if (this.repoBaseInfo.system) return 'system'
+                    return 'project'
+                },
+                set (val) {
+                    this.repoBaseInfo.public = val === 'public'
+                    this.repoBaseInfo.system = val === 'system'
+                }
+            },
+            availableList () {
+                return [
+                    { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
+                    { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
+                    { label: '对外公开', value: 'public', tip: '所有用户都可以使用' }
+                ]
             }
         },
         created () {
@@ -151,18 +174,23 @@
                 })
             },
             async saveBaseInfo () {
+                this.repoType === 'rpm' && await this.$refs.repoBaseInfo.validate()
                 const body = {
                     public: this.repoBaseInfo.public,
-                    description: this.repoBaseInfo.description
-                }
-                if (this.repoType === 'rpm') {
-                    await this.$refs.repoBaseInfo.validate()
-                    body.configuration = {
+                    description: this.repoBaseInfo.description,
+                    configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
-                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                            repodataDepth: this.repoBaseInfo.repodataDepth,
-                            groupXmlSet: this.repoBaseInfo.groupXmlSet
+                            system: this.repoBaseInfo.system,
+                            ...(
+                                this.repoType === 'rpm'
+                                    ? {
+                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                        repodataDepth: this.repoBaseInfo.repodataDepth,
+                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                    }
+                                    : {}
+                            )
                         }
                     }
                 }

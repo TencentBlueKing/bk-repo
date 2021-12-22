@@ -1,0 +1,16 @@
+{
+    "name": "制品管理CPack",
+    "short_name": "CPack",
+    "description": "WelCome to CPack provide by Canway",
+    "icons": [
+        {
+            "src": "/ui/CPack.png",
+            "sizes": "168x168",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/",
+    "display": "fullscreen",
+    "theme_color": "#9CC1FF",
+    "background_color": "#9CC1FF"
+}

@@ -5,8 +5,8 @@
                 <icon size="20" class="section-title-icon" name="guide-h-left"></icon>
                 {{ $t('token') }}
             </header>
-            <div slot="content" class="section-main">
-                <div class="flex-column">
+            <template #content>
+                <div class="section-main flex-column">
                     <span class="sub-title">
                         {{ $t('tokenSubTitle') }}
                         <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
@@ -15,7 +15,7 @@
                         <bk-button class="mt15" style="padding:0 8px;" theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                     </div>
                 </div>
-            </div>
+            </template>
             <create-token-dialog ref="createToken"></create-token-dialog>
         </bk-collapse-item>
         <bk-collapse-item v-for="(section, index) in article" :key="`section${index}`" :name="`section${index}`">
@@ -23,12 +23,12 @@
                 <icon size="20" class="section-title-icon" name="guide-h-left"></icon>
                 {{ section.title }}
             </header>
-            <div slot="content" class="section-main">
-                <div class="flex-column" v-for="block in section.main" :key="block.subTitle">
+            <template #content>
+                <div class="section-main flex-column" v-for="block in section.main" :key="block.subTitle">
                     <span v-if="block.subTitle" class="sub-title" :style="block.subTitleStyle">{{ block.subTitle }}</span>
                     <code-area class="mt15" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
                 </div>
-            </div>
+            </template>
         </bk-collapse-item>
     </bk-collapse>
 </template>

@@ -1,7 +1,16 @@
 <template>
     <div class="user-container" v-bkloading="{ isLoading }">
         <div class="mt10 flex-between-center">
-            <bk-button class="ml20" icon="plus" theme="primary" @click="showCreateUser"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-popover class="ml20" placement="bottom-start" theme="light" ext-cls="operation-container">
+                <bk-button icon="plus" theme="primary" @click="showCreateUser"><span class="mr5">{{ $t('create') }}</span></bk-button>
+                <template #content><ul class="operation-list">
+                    <li class="operation-item hover-btn">
+                        <label for="importUsersInput" class="hover-btn">批量导入</label>
+                        <input id="importUsersInput" type="file" accept=".xlsx" @change="importUsersHandler" title="" placeholder="">
+                    </li>
+                    <li class="operation-item hover-btn" @click.stop="downloadTemplate">下载模板</li>
+                </ul></template>
+            </bk-popover>
             <div class="mr20 flex-align-center">
                 <bk-input
                     v-model.trim="userInput"
@@ -25,7 +34,7 @@
         <bk-table
             class="mt10"
             height="calc(100% - 104px)"
-            :data="userList"
+            :data="userListPages"
             :outer-border="false"
             :row-border="false"
             row-key="userId"
@@ -79,9 +88,10 @@
         <canway-dialog
             v-model="editUserDialog.show"
             :title="editUserDialog.add ? '创建用户' : '编辑用户'"
-            width="600"
+            width="500"
+            height-num="350"
             @cancel="editUserDialog.show = false">
-            <bk-form class="mr50" :label-width="110" :model="editUserDialog" :rules="rules" ref="editUserDialog">
+            <bk-form class="mr30" :label-width="90" :model="editUserDialog" :rules="rules" ref="editUserDialog">
                 <bk-form-item :label="$t('account')" :required="true" property="userId" error-display-type="normal">
                     <bk-input v-model.trim="editUserDialog.userId"
                         :disabled="!editUserDialog.add"
@@ -99,16 +109,17 @@
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
             </bk-form>
-            <div slot="footer">
+            <template #footer>
                 <bk-button theme="default" @click.stop="editUserDialog.show = false">{{$t('cancel')}}</bk-button>
                 <bk-button class="ml10" :loading="editUserDialog.loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
-            </div>
+            </template>
         </canway-dialog>
     </div>
 </template>
 <script>
     import { mapState, mapActions } from 'vuex'
-    import { formatDate } from '@/utils'
+    import { formatDate } from '@repository/utils'
+    import XLSX from 'xlsx'
     export default {
         name: 'user',
         data () {
@@ -116,7 +127,7 @@
                 isLoading: false,
                 showAdmin: '',
                 userInput: '',
-                userList: [],
+                userListPages: [],
                 pagination: {
                     count: 0,
                     current: 1,
@@ -146,7 +157,7 @@
                         },
                         {
                             validator: this.asynCheckUserId,
-                            message: this.$t('account') + this.$t('repeat'),
+                            message: this.$t('account') + '已被占用',
                             trigger: 'blur'
                         }
                     ],
@@ -164,7 +175,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /\@/,
+                            regex: /@/,
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('email'),
                             trigger: 'blur'
                         }
@@ -173,7 +184,7 @@
             }
         },
         computed: {
-            ...mapState(['userInfo']),
+            ...mapState(['userInfo', 'userList']),
             isSearching () {
                 const { user, admin } = this.$route.query
                 return user || admin
@@ -193,13 +204,14 @@
                 'editUser',
                 'deleteUser',
                 'checkUserId',
-                'getUserInfo'
+                'getUserInfo',
+                'importUsers'
             ]),
             asynCheckUserId () {
-                if (!this.editUserDialog.add) return true
-                return this.checkUserId({
-                    userId: this.editUserDialog.userId
-                }).then(res => !res)
+                return !this.editUserDialog.add || !(this.editUserDialog.userId in this.userList)
+                // return this.checkUserId({
+                //     userId: this.editUserDialog.userId
+                // }).then(res => !res)
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -221,7 +233,7 @@
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
-                    this.userList = records
+                    this.userListPages = records
                     this.pagination.count = totalRecords
                 }).finally(() => {
                     this.isLoading = false
@@ -238,6 +250,73 @@
                     email: '',
                     phone: ''
                 }
+            },
+            importUsersHandler (e) {
+                const file = e.target.files[0]
+                if (!(/\.xlsx$/.test(file.name))) {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: '文件类型错误'
+                    })
+                    e.target.value = ''
+                    return
+                }
+                const reader = new FileReader()
+                reader.onload = (e) => {
+                    const ab = e.target.result
+                    const wb = XLSX.read(new Uint8Array(ab), { type: 'array' })
+                    const wsname = wb.SheetNames[0]
+                    const ws = wb.Sheets[wsname]
+                    const data = XLSX.utils.sheet_to_json(ws, { header: ['userId', 'name', 'email', 'phone'], range: 1 })
+                    this.requestImportUsers(data)
+                }
+                reader.readAsArrayBuffer(file)
+            },
+            requestImportUsers (data) {
+                const errMessage = {
+                    userId: [],
+                    name: [],
+                    email: []
+                }
+                data.forEach(({ userId, name, email }, index) => {
+                    if (userId in this.userList) {
+                        errMessage.userId.push(index + 2)
+                    }
+                    if (!name) {
+                        errMessage.name.push(index + 2)
+                    }
+                    if (!(/@/.test(email))) {
+                        errMessage.email.push(index + 2)
+                    }
+                })
+                if (errMessage.userId.length || errMessage.name.length || errMessage.email.length) {
+                    const message = (errMessage.userId.length ? `第${errMessage.userId}行账号已被占用` : '')
+                        + (errMessage.name.length ? `第${errMessage.name}行中文名未填写` : '')
+                        + (errMessage.email.length ? `第${errMessage.email}行邮箱格式错误` : '')
+                    this.$bkMessage({
+                        theme: 'error',
+                        message
+                    })
+                } else {
+                    this.isLoading = true
+                    this.importUsers({ body: data }).then(() => {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: '用户导入' + this.$t('success')
+                        })
+                        this.handlerPaginationChange()
+                    }).finally(() => {
+                        this.isLoading = false
+                    })
+                }
+            },
+            downloadTemplate () {
+                const ws = XLSX.utils.aoa_to_sheet([[
+                    `${this.$t('account')}(仅支持${this.$t('userIdPlacehodler')}，最长不超过32位)`, '中文名', '邮箱', '电话'
+                ]])
+                const wb = XLSX.utils.book_new()
+                XLSX.utils.book_append_sheet(wb, ws, '用户数据')
+                XLSX.writeFile(wb, '制品管理-用户导入模板.xlsx')
             },
             async confirm () {
                 await this.$refs.editUserDialog.validate()

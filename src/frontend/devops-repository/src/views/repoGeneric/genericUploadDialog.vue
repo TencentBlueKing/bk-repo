@@ -3,13 +3,13 @@
         :value="show"
         :title="title"
         width="620"
-        height-num="280"
+        height-num="267"
         @cancel="$emit('cancel')">
         <artifactory-upload ref="artifactoryUpload" :upload-status="uploadStatus" :upload-progress="uploadProgress"></artifactory-upload>
-        <div slot="footer">
+        <template #footer>
             <bk-button @click="loading ? abortUpload() : $emit('cancel')">{{ $t('cancel') }}</bk-button>
             <bk-button class="ml10" :loading="loading" theme="primary" @click="submitUpload">{{ $t('confirm') }}</bk-button>
-        </div>
+        </template>
     </canway-dialog>
 </template>
 <script>

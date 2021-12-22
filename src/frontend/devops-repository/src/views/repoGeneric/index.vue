@@ -13,9 +13,9 @@
             </div>
         </header>
         <div class="repo-generic-main flex-align-center"
-            :style="{ 'margin-left': `${searchFileName ? -sideBarLeft : 0}px` }">
+            :style="{ 'margin-left': `${searchFileName ? -(sideBarWidth + moveBarWidth) : 0}px` }">
             <div class="repo-generic-side"
-                :style="{ 'flex-basis': `${sideBarLeft - 10}px` }"
+                :style="{ 'flex-basis': `${sideBarWidth}px` }"
                 v-bkloading="{ isLoading: treeLoading }">
                 <div class="important-search">
                     <bk-input
@@ -30,6 +30,7 @@
                 <repo-tree
                     class="repo-generic-tree"
                     ref="repoTree"
+                    :tree="genericTree"
                     :important-search="importantSearch"
                     :open-list="sideTreeOpenList"
                     :selected-node="selectedTreeNode"
@@ -37,7 +38,11 @@
                     @item-click="itemClickHandler">
                 </repo-tree>
             </div>
-            <move-split-bar v-model="sideBarLeft" :min-value="210" :width="10"></move-split-bar>
+            <move-split-bar
+                :left="sideBarWidth"
+                :width="moveBarWidth"
+                @change="changeSideBarWidth"
+            />
             <div class="repo-generic-table" v-bkloading="{ isLoading }">
                 <div class="m10 flex-between-center">
                     <bk-input
@@ -64,14 +69,14 @@
                         </bk-button>
                         <bk-popover v-if="operationBtns.length" placement="bottom-end" theme="light" ext-cls="operation-container">
                             <bk-button @click.stop="() => {}" icon="ellipsis"></bk-button>
-                            <ul class="operation-list" slot="content">
+                            <template #content><ul class="operation-list">
                                 <li class="operation-item hover-btn"
                                     v-for="btn in operationBtns"
                                     :key="btn.label"
                                     @click.stop="btn.clickEvent()">
                                     {{ btn.label }}
                                 </li>
-                            </ul>
+                            </ul></template>
                         </bk-popover>
                     </div>
                 </div>
@@ -111,10 +116,10 @@
                     <bk-table-column :label="$t('size')" width="100">
                         <template #default="{ row }">
                             <bk-button text
-                                v-show="row.folder && !row.hasOwnProperty('folderSize')"
+                                v-show="row.folder && !('folderSize' in row)"
                                 :disabled="row.sizeLoading"
                                 @click="calculateFolderSize(row)">{{ $t('calculate') }}</bk-button>
-                            <span v-show="!row.folder || row.hasOwnProperty('folderSize')">
+                            <span v-show="!row.folder || ('folderSize' in row)">
                                 {{ convertFileSize(row.size || row.folderSize || 0) }}
                             </span>
                         </template>
@@ -134,8 +139,9 @@
             </div>
         </div>
 
-        <generic-detail :detail-slider="detailSlider" @refresh="getArtifactories"></generic-detail>
-        <generic-form-dialog ref="genericFormDialog" @submit="submitGenericForm"></generic-form-dialog>
+        <generic-detail ref="genericDetail"></generic-detail>
+        <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
+        <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @submit="submitGenericTree"></generic-tree-dialog>
         <generic-upload-dialog v-bind="uploadDialog" @update="getArtifactories" @cancel="uploadDialog.show = false"></generic-upload-dialog>
     </div>
@@ -147,6 +153,7 @@
     import genericDetail from './genericDetail'
     import genericUploadDialog from './genericUploadDialog'
     import genericFormDialog from './genericFormDialog'
+    import genericShareDialog from './genericShareDialog'
     import genericTreeDialog from './genericTreeDialog'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
@@ -160,12 +167,14 @@
             genericDetail,
             genericUploadDialog,
             genericFormDialog,
+            genericShareDialog,
             genericTreeDialog
         },
         data () {
             return {
                 MODE_CONFIG,
-                sideBarLeft: 310,
+                sideBarWidth: 300,
+                moveBarWidth: 10,
                 isLoading: false,
                 treeLoading: false,
                 importantSearch: this.$route.query.fileName,
@@ -189,13 +198,6 @@
                 rowClickCallback: null,
                 // table选中的行
                 selectedRow: {},
-                // 查看详情
-                detailSlider: {
-                    show: false,
-                    loading: false,
-                    folder: false,
-                    data: {}
-                },
                 // 上传制品
                 uploadDialog: {
                     show: false,
@@ -205,7 +207,7 @@
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'userList', 'genericTree']),
+            ...mapState(['repoListAll', 'userList', 'permission', 'genericTree']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -225,13 +227,13 @@
                 // 是否选中的是文件夹
                 const isFolder = this.selectedRow.folder
                 return [
-                    isSelectedRow && !isLimit && { clickEvent: this.renameRes, label: this.$t('rename') },
-                    isSelectedRow && !isLimit && { clickEvent: this.moveRes, label: this.$t('move') },
-                    isSelectedRow && !isLimit && { clickEvent: this.copyRes, label: this.$t('copy') },
-                    isSelectedRow && !isLimit && { clickEvent: this.deleteRes, label: this.$t('delete') },
+                    this.permission.edit && isSelectedRow && !isLimit && { clickEvent: this.renameRes, label: this.$t('rename') },
+                    this.permission.write && isSelectedRow && !isLimit && { clickEvent: this.moveRes, label: this.$t('move') },
+                    this.permission.write && isSelectedRow && !isLimit && { clickEvent: this.copyRes, label: this.$t('copy') },
+                    this.permission.delete && isSelectedRow && !isLimit && { clickEvent: this.deleteRes, label: this.$t('delete') },
                     isSelectedRow && !isFolder && { clickEvent: this.handlerShare, label: this.$t('share') },
-                    !isSelectedRow && !isLimit && !isSearch && { clickEvent: this.addFolder, label: this.$t('create') },
-                    !isSelectedRow && !isLimit && !isSearch && { clickEvent: this.handlerUpload, label: this.$t('upload') },
+                    this.permission.write && !isSelectedRow && !isLimit && !isSearch && { clickEvent: this.addFolder, label: this.$t('create') },
+                    this.permission.write && !isSelectedRow && !isLimit && !isSearch && { clickEvent: this.handlerUpload, label: this.$t('upload') },
                     !isSelectedRow && !isSearch && { clickEvent: this.getArtifactories, label: this.$t('refresh') }
                 ].filter(Boolean)
             },
@@ -277,18 +279,19 @@
             ...mapMutations(['INIT_TREE']),
             ...mapActions([
                 'getRepoListAll',
-                'getNodeDetail',
                 'getFolderList',
                 'getArtifactoryList',
-                'createFolder',
                 'deleteArtifactory',
-                'renameNode',
                 'moveNode',
                 'copyNode',
-                'shareArtifactory',
                 'getFolderSize',
                 'getFileNumOfFolder'
             ]),
+            changeSideBarWidth (sideBarWidth) {
+                if (sideBarWidth > 200) {
+                    this.sideBarWidth = sideBarWidth
+                }
+            },
             renderHeader (h, { column }) {
                 return h('div', {
                     class: {
@@ -437,41 +440,28 @@
                 }, 300)
             },
             showDetail () {
-                this.detailSlider = {
+                this.$refs.genericDetail.setData({
                     show: true,
-                    loading: true,
-                    folder: this.selectedRow.folder,
-                    data: {}
-                }
-                this.getNodeDetail({
+                    loading: false,
                     projectId: this.projectId,
                     repoName: this.repoName,
-                    fullPath: this.selectedRow.fullPath
-                }).then(data => {
-                    this.detailSlider.data = {
-                        ...data,
-                        name: data.name || this.repoName,
-                        size: convertFileSize(data.size),
-                        createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
-                        createdDate: formatDate(data.createdDate),
-                        lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
-                        lastModifiedDate: formatDate(data.lastModifiedDate)
-                    }
-                }).finally(() => {
-                    this.detailSlider.loading = false
+                    folder: this.selectedRow.folder,
+                    path: this.selectedRow.fullPath,
+                    data: {}
                 })
             },
             renameRes () {
-                this.$refs.genericFormDialog.setFormData({
+                this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
                     type: 'rename',
                     name: this.selectedRow.name,
+                    path: this.selectedRow.fullPath,
                     title: `${this.$t('rename')} (${this.selectedRow.name})`
                 })
             },
             addFolder () {
-                this.$refs.genericFormDialog.setFormData({
+                this.$refs.genericFormDialog.setData({
                     show: true,
                     loading: false,
                     type: 'add',
@@ -479,79 +469,21 @@
                     title: `${this.$t('create') + this.$t('folder')}`
                 })
             },
+            refreshNodeChange () {
+                this.updateGenericTreeNode(this.selectedTreeNode)
+                this.selectRow(this.selectedTreeNode)
+                this.getArtifactories()
+            },
             handlerShare () {
-                this.$refs.genericFormDialog.setFormData({
+                this.$refs.genericShareDialog.setData({
                     show: true,
                     loading: false,
-                    type: 'share',
                     title: `${this.$t('share')} (${this.selectedRow.name})`,
+                    path: this.selectedRow.fullPath,
                     user: [],
                     ip: [],
-                    permits: 0,
-                    time: 0
-                })
-            },
-            submitGenericForm (data) {
-                this.$refs.genericFormDialog.setFormData({ loading: true })
-                let message = ''
-                let fn = null
-                switch (data.type) {
-                    case 'add':
-                        fn = this.submitAddFolder(data).then(() => {
-                            this.updateGenericTreeNode(this.selectedTreeNode)
-                        })
-                        message = this.$t('create') + this.$t('folder')
-                        break
-                    case 'rename':
-                        fn = this.submitRenameNode(data).then(() => {
-                            this.updateGenericTreeNode(this.selectedTreeNode)
-                        })
-                        message = this.$t('rename')
-                        break
-                    case 'share':
-                        fn = this.submitShareArtifactory(data)
-                        message = this.$t('share')
-                        break
-                }
-                fn.then(() => {
-                    this.selectRow(this.selectedTreeNode)
-                    this.getArtifactories()
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: message + this.$t('success')
-                    })
-                    this.$refs.genericFormDialog.setFormData({ show: false })
-                }).finally(() => {
-                    this.$refs.genericFormDialog.setFormData({ loading: false })
-                })
-            },
-            submitAddFolder (data) {
-                return this.createFolder({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPath: data.path
-                })
-            },
-            submitRenameNode (data) {
-                return this.renameNode({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPath: this.selectedRow.fullPath,
-                    newFullPath: this.selectedRow.fullPath.replace(/[^/]*$/, data.name)
-                })
-            },
-            submitShareArtifactory (data) {
-                return this.shareArtifactory({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    fullPathSet: [this.selectedRow.fullPath],
-                    type: 'DOWNLOAD',
-                    host: `${location.origin}/web/generic`,
-                    needsNotify: true,
-                    ...(data.ip.length ? { authorizedIpSet: data.ip } : {}),
-                    ...(data.user.length ? { authorizedUserSet: data.user } : {}),
-                    ...(Number(data.time) > 0 ? { expireSeconds: Number(data.time) * 86400 } : {}),
-                    ...(Number(data.permits) > 0 ? { permits: Number(data.permits) } : {})
+                    permits: '',
+                    time: 7
                 })
             },
             async deleteRes () {
@@ -624,7 +556,7 @@
                     this.getArtifactories()
                     this.$bkMessage({
                         theme: 'success',
-                        message: data.type + this.$t('success')
+                        message: this.$t(data.type) + this.$t('success')
                     })
                 }).finally(() => {
                     this.$refs.genericTreeDialog.setTreeData({ loading: false })

@@ -23,7 +23,7 @@
             <div class="package-search-tools flex-between-center">
                 <bk-input
                     class="w250"
-                    v-model.trim="packageName"
+                    v-model.trim="packageNameVal"
                     placeholder="请输入制品名称, 按Enter键搜索"
                     clearable
                     @enter="handlerPaginationChange()"
@@ -59,6 +59,7 @@
                             v-for="pkg in packageList"
                             :key="pkg.key"
                             :card-data="pkg"
+                            :readonly="!permission.delete"
                             @click.native="showCommonPackageDetail(pkg)"
                             @delete-card="deletePackageHandler(pkg)">
                         </package-card>
@@ -76,8 +77,12 @@
         </template>
 
         <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="600">
-            <div slot="header" class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ replaceRepoName(repoName) + $t('guide') }}</div>
-            <repo-guide class="pt20 pb20 pl10 pr10" slot="content" :article="articleGuide"></repo-guide>
+            <template #header>
+                <div class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ replaceRepoName(repoName) + $t('guide') }}</div>
+            </template>
+            <template #content>
+                <repo-guide class="pt20 pb20 pl10 pr10" :article="articleGuide"></repo-guide>
+            </template>
         </bk-sideslider>
     </div>
 </template>
@@ -95,7 +100,7 @@
         data () {
             return {
                 isLoading: false,
-                packageName: this.$route.query.packageName,
+                packageNameVal: this.$route.query.packageName,
                 property: this.$route.query.property || 'lastModifiedDate',
                 direction: this.$route.query.direction || 'ASC',
                 packageList: [],
@@ -109,7 +114,7 @@
             }
         },
         computed: {
-            ...mapState(['repoListAll']),
+            ...mapState(['repoListAll', 'permission']),
             currentRepo () {
                 return this.repoListAll.find(repo => repo.name === this.repoName) || {}
             }
@@ -137,7 +142,7 @@
                     this.$router.replace({
                         query: {
                             ...this.$route.query,
-                            packageName: this.packageName,
+                            packageName: this.packageNameVal,
                             property: this.property,
                             direction: this.direction
                         }
@@ -151,7 +156,7 @@
                     projectId: this.projectId,
                     repoType: this.repoType,
                     repoName: this.repoName,
-                    packageName: this.packageName,
+                    packageName: this.packageNameVal,
                     property: this.property,
                     direction: this.direction,
                     current: this.pagination.current,

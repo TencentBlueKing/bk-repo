@@ -11,7 +11,7 @@
                     v-model="planForm.executionStrategy"
                     @change="clearError">
                     <bk-radio value="IMMEDIATELY" :disabled="disabled">
-                        <span class="flex-align-center">立即执行</span>
+                        <span>立即执行</span>
                     </bk-radio>
                     <bk-radio value="SPECIFIED_TIME" :disabled="disabled">
                         <div class="flex-align-center">
@@ -38,7 +38,7 @@
                         </div>
                     </bk-radio>
                     <bk-radio v-if="planForm.replicaObjectType === 'REPOSITORY'" value="REAL_TIME" :disabled="disabled">
-                        <span class="flex-align-center">实时同步</span>
+                        <span>实时同步</span>
                     </bk-radio>
                 </bk-radio-group>
             </bk-form-item>
@@ -55,23 +55,13 @@
                     </bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item label="同步类型" property="replicaObjectType">
-                <bk-radio-group v-model="planForm.replicaObjectType" class="replica-type-radio-group" @change="changeReplicaObjectType">
-                    <bk-radio-button
-                        class="mr20"
-                        v-for="type in replicaObjectTypeList"
-                        :key="type.value"
-                        :value="type.value"
-                        :disabled="disabled">
-                        <div class="replica-type-radio" :class="{ 'checked': type.value === planForm.replicaObjectType }">
-                            <label class="replica-type-label">{{ type.label }}</label>
-                            <div class="replica-type-tip">{{ type.tip }}</div>
-                            <div v-show="type.value === planForm.replicaObjectType" class="top-right-selected">
-                                <i class="devops-icon icon-check-1"></i>
-                            </div>
-                        </div>
-                    </bk-radio-button>
-                </bk-radio-group>
+            <bk-form-item label="同步类型">
+                <card-radio-group
+                    v-model="planForm.replicaObjectType"
+                    :disabled="disabled"
+                    :list="replicaObjectTypeList"
+                    @change="changeReplicaObjectType">
+                </card-radio-group>
             </bk-form-item>
             <bk-form-item label="同步对象" :required="true" property="config" error-display-type="normal">
                 <template v-if="planForm.replicaObjectType === 'REPOSITORY'">
@@ -135,12 +125,13 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import Cron from '@repository/components/Cron'
+    import CardRadioGroup from '@repository/components/CardRadioGroup'
     import repositoryTable from './repositoryTable'
     import packageTable from './packageTable'
     import pathTable from './pathTable'
     export default {
         name: 'createPlan',
-        components: { Cron, repositoryTable, packageTable, pathTable },
+        components: { Cron, CardRadioGroup, repositoryTable, packageTable, pathTable },
         data () {
             return {
                 isLoading: false,
@@ -384,56 +375,6 @@
                 border-width: 1px 1px 0 0;
                 border-style: solid;
                 transform: rotate(45deg);
-            }
-        }
-        .replica-type-radio-group {
-            ::v-deep .bk-form-radio-button {
-                .bk-radio-button-text {
-                    height: auto;
-                    line-height: initial;
-                    padding: 0;
-                    border: 0 none;
-                }
-            }
-            .replica-type-radio {
-                position: relative;
-                padding: 10px;
-                width: 155px;
-                height: 70px;
-                text-align: left;
-                border: 1px solid transparent;
-                background-color: var(--bgHoverColor);
-                &.checked {
-                    border-color: var(--primaryColor);
-                    .replica-type-label {
-                        color: var(--primaryColor);
-                    }
-                    .replica-type-tip {
-                        color: var(--fontPrimaryColor);
-                    }
-                }
-                .replica-type-label {
-                    font-weight: bold;
-                    color: var(--fontPrimaryColor);
-                }
-                .replica-type-tip {
-                    margin-top: 10px;
-                    font-size: 12px;
-                    color: var(--subsidiaryColor);
-                }
-                .top-right-selected {
-                    position: absolute;
-                    top: 0;
-                    right: 0;
-                    border-width: 16px;
-                    border-style: solid;
-                    border-color: var(--primaryColor) var(--primaryColor) transparent transparent;
-                    i {
-                        position: absolute;
-                        margin-top: -12px;
-                        color: white;
-                    }
-                }
             }
         }
         .plan-object-container {

@@ -41,13 +41,14 @@
                             <span>{{ $version.name }}</span>
                             <bk-popover class="version-operation" placement="bottom-end" theme="light" ext-cls="operation-container">
                                 <i class="devops-icon icon-more flex-center"></i>
-                                <ul class="operation-list" slot="content">
-                                    <li class="operation-item hover-btn"
+                                <template #content><ul class="operation-list">
+                                    <li v-if="permission.edit"
+                                        class="operation-item hover-btn"
                                         :class="{ 'disabled': ($version.stageTag || '').includes('@release') }"
                                         @click.stop="changeStageTagHandler($version)">晋级</li>
                                     <li v-if="repoType !== 'docker'" class="operation-item hover-btn" @click.stop="downloadPackageHandler($version)">下载</li>
-                                    <li class="operation-item hover-btn" @click.stop="deleteVersionHandler($version)">删除</li>
-                                </ul>
+                                    <li v-if="permission.delete" class="operation-item hover-btn" @click.stop="deleteVersionHandler($version)">删除</li>
+                                </ul></template>
                             </bk-popover>
                         </div>
                     </infinite-scroll>
@@ -65,11 +66,11 @@
         
         <canway-dialog
             v-model="formDialog.show"
-            width="600"
-            height-num="186"
+            width="400"
+            height-num="193"
             :title="$t('upgrade')"
             @cancel="cancelFormDialog">
-            <bk-form :label-width="120" :model="formDialog" :rules="rules" ref="formDialog">
+            <bk-form :label-width="100" :model="formDialog" :rules="rules" ref="formDialog">
                 <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag" error-display-type="normal">
                     <bk-radio-group v-model="formDialog.tag">
                         <bk-radio :disabled="!!formDialog.default.length" value="@prerelease">@prerelease</bk-radio>
@@ -77,17 +78,17 @@
                     </bk-radio-group>
                 </bk-form-item>
             </bk-form>
-            <div slot="footer">
+            <template #footer>
                 <bk-button theme="default" @click.stop="cancelFormDialog">{{$t('cancel')}}</bk-button>
                 <bk-button class="ml5" :loading="formDialog.loading" theme="primary" @click="submitFormDialog">{{$t('confirm')}}</bk-button>
-            </div>
+            </template>
         </canway-dialog>
     </div>
 </template>
 <script>
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
         components: { InfiniteScroll, VersionDetail },
@@ -132,6 +133,7 @@
             }
         },
         computed: {
+            ...mapState(['permission']),
             projectId () {
                 return this.$route.params.projectId || ''
             },

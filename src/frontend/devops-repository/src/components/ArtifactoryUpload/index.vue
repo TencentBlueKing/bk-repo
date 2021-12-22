@@ -86,7 +86,13 @@
         methods: {
             getIconName,
             async getFiles () {
-                if (!this.file.blob) throw new Error('请选择文件')
+                if (!this.file.blob) {
+                    this.$bkMessage({
+                        message: '请选择文件',
+                        theme: 'error'
+                    })
+                    return
+                }
                 await this.$refs.fileName.validate()
                 return this.file
             },
@@ -139,14 +145,6 @@
         position: absolute;
         top: 10px;
         right: 10px;
-    }
-    input[type=file] {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        z-index: 10;
-        opacity: 0;
-        cursor: pointer;
     }
 }
 </style>

@@ -22,7 +22,7 @@
                 // eslint-disable-next-line no-new-func
                 const transform = new Function(
                     'ctx',
-                    `return '${label.replace(/\{(.*?)(\?){0,1}\}/g, '\'\+ (ctx.hasOwnProperty(\'$1\') ? ctx[\'$1\'] : "") \+\'')}'`
+                    `return '${label.replace(/\{(.*?)(\?){0,1}\}/g, '\'\+ ((\'$1\' in ctx) ? ctx[\'$1\'] : "") \+\'')}'`
                 )
                 const transformLabel = transform({ ...this.$route.params, ...this.$route.query })
                 return this.replaceRepoName(transformLabel)

@@ -2,7 +2,7 @@
     <canway-dialog
         :value="show"
         width="600"
-        height-num="342"
+        height-num="350"
         title="复制计划"
         @cancel="$emit('cancel')">
         <bk-form :label-width="100" :model="formData" :rules="rules" ref="planCopyForm">

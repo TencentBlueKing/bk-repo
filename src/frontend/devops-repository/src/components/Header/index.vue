@@ -9,10 +9,14 @@
                 >
                     <use xlink:href="#repository" />
                 </svg>
-                <header class="ml10 bkrepo-title">{{ $t('bkrepo') }}</header>
+                <header class="ml10 bkrepo-title">{{ title }}</header>
             </router-link>
+            <a class="ml20 link" target="_self" href="/software/repoList">
+                <i class="devops-icon icon-sort"></i>
+                <span class="ml5">软件源</span>
+            </a>
             <bk-select
-                class="bkre-project-select"
+                class="ml20 bkre-project-select"
                 :value="projectId"
                 searchable
                 :clearable="false"
@@ -41,6 +45,9 @@
             ...mapState(['projectList']),
             projectId () {
                 return this.$route.params.projectId
+            },
+            title () {
+                return document.title
             }
         },
         methods: {
@@ -74,12 +81,23 @@
         background-color: #FFFFFF1A;
     }
     .bkrepo-logo {
-        margin-right: 40px;
         color: white;
     }
     .bkrepo-title {
         font-size: 18px;
         letter-spacing: 1px;
+    }
+    .link {
+        padding: 0 10px;
+        color: white;
+        line-height: 24px;
+        border: 1px solid #FFFFFF33;
+        background-color: #FFFFFF1A;
+        .icon-sort {
+            display:inline-block;
+            font-size: 12px;
+            transform: rotate(90deg);
+        }
     }
 }
 </style>

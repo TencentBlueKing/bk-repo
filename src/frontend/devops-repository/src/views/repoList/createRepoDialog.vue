@@ -2,7 +2,7 @@
     <canway-dialog
         v-model="show"
         width="800"
-        :height-num="repoBaseInfo.type === 'rpm' ? 714 : 558"
+        :height-num="repoBaseInfo.type === 'rpm' ? 759 : 603"
         title="创建仓库"
         @cancel="cancel">
         <bk-form class="mr10 repo-base-info" :label-width="130" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
@@ -24,8 +24,11 @@
                     <span v-if="repoBaseInfo.type === 'docker'" class="ml10 form-tip">docker仓库仅能使用英文小写</span>
                 </div>
             </bk-form-item>
-            <bk-form-item :label="$t('publicRepo')" :required="true" property="public" error-display-type="normal">
-                <bk-checkbox v-model="repoBaseInfo.public">{{ repoBaseInfo.public ? $t('publicRepoDesc') : '' }}</bk-checkbox>
+            <bk-form-item label="访问权限">
+                <card-radio-group
+                    v-model="available"
+                    :list="availableList">
+                </card-radio-group>
             </bk-form-item>
             <template v-if="repoBaseInfo.type === 'rpm'">
                 <bk-form-item :label="$t('enabledFileLists')">
@@ -68,19 +71,22 @@
     </canway-dialog>
 </template>
 <script>
+    import CardRadioGroup from '@repository/components/CardRadioGroup'
     import { repoEnum } from '@repository/store/publicEnum'
     import { mapActions } from 'vuex'
     export default {
         name: 'createRepo',
+        components: { CardRadioGroup },
         data () {
             return {
-                repoEnum: MODE_CONFIG === 'ci' ? ['generic'] : repoEnum,
+                repoEnum,
                 show: false,
                 loading: false,
                 repoBaseInfo: {
                     type: 'generic',
                     name: '',
                     public: false,
+                    system: false,
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
@@ -137,6 +143,24 @@
                         }
                     ]
                 }
+            },
+            available: {
+                get () {
+                    if (this.repoBaseInfo.public) return 'public'
+                    if (this.repoBaseInfo.system) return 'system'
+                    return 'project'
+                },
+                set (val) {
+                    this.repoBaseInfo.public = val === 'public'
+                    this.repoBaseInfo.system = val === 'system'
+                }
+            },
+            availableList () {
+                return [
+                    { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
+                    { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
+                    { label: '对外公开', value: 'public', tip: '所有用户都可以使用' }
+                ]
             }
         },
         methods: {
@@ -147,6 +171,7 @@
                     type: 'generic',
                     name: '',
                     public: false,
+                    system: false,
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
@@ -178,18 +203,21 @@
                         public: this.repoBaseInfo.public,
                         description: this.repoBaseInfo.description,
                         category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
-                        ...(this.repoBaseInfo.type === 'rpm'
-                            ? {
-                                configuration: {
-                                    type: 'composite',
-                                    settings: {
-                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                                        repodataDepth: this.repoBaseInfo.repodataDepth,
-                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
-                                    }
-                                }
+                        configuration: {
+                            type: 'composite',
+                            settings: {
+                                system: this.repoBaseInfo.system,
+                                ...(
+                                    this.repoBaseInfo.type === 'rpm'
+                                        ? {
+                                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                            repodataDepth: this.repoBaseInfo.repodataDepth,
+                                            groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                        }
+                                        : {}
+                                )
                             }
-                            : {})
+                        }
                     }
                 }).then(() => {
                     this.$bkMessage({

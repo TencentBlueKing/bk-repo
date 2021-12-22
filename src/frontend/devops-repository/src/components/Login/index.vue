@@ -152,9 +152,12 @@
     .login-main {
         position: relative;
         height: 100%;
+        overflow-y: auto;
         padding-top: 20vh;
+        padding-bottom: 10vh;
         width: 440px;
         background-color: white;
+        transition: width .5s;
         .login-form {
             margin-top: 90px;
             ::v-deep .bk-form-input {

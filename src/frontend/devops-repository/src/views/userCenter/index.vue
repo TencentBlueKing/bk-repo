@@ -33,6 +33,7 @@
             v-model="pwdDialog.show"
             title="修改密码"
             width="550"
+            height-num="297"
             @cancel="pwdDialog.show = false">
             <bk-form class="mr20" :label-width="90" :model="pwdDialog" :rules="rules" ref="modifyPwdForm">
                 <bk-form-item label="原密码" :required="true" property="oldPwd">
@@ -73,10 +74,10 @@
                     </bk-input>
                 </bk-form-item>
             </bk-form>
-            <div slot="footer">
+            <template #footer>
                 <bk-button theme="default" @click.stop="pwdDialog.show = false">{{$t('cancel')}}</bk-button>
                 <bk-button class="ml10" :loading="pwdDialog.loading" theme="primary" @click="confirmModifyPwd">{{$t('confirm')}}</bk-button>
-            </div>
+            </template>
         </canway-dialog>
     </div>
 </template>

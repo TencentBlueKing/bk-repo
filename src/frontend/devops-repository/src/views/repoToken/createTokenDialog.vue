@@ -2,14 +2,14 @@
     <canway-dialog
         v-model="show"
         width="540"
-        height-num="280"
+        height-num="245"
         title="创建访问令牌"
         @cancel="cancel">
         <div v-if="token" class="flex-align-center">
             <i class="flex-center devops-icon icon-check-1"></i>
             <div>
                 <h3>{{ $t('create') + $t('success') }}</h3>
-                <div @click="copyToken" class="mt10 mb10 hover-btn flex-align-center">
+                <div @click="copyToken(token)" class="mt10 mb10 hover-btn flex-align-center">
                     {{ $t('tokenIs') + token }}
                     <i class="ml10 devops-icon icon-clipboard"></i>
                 </div>
@@ -100,12 +100,9 @@
                     this.$emit('refresh')
                 }
             },
-            copyToken () {
-                // eslint-disable-next-line prefer-const
+            copyToken (text) {
                 const clipboard = new Clipboard('body', {
-                    text: () => {
-                        return this.token
-                    }
+                    text: () => text
                 })
                 clipboard.on('success', (e) => {
                     this.$bkMessage({

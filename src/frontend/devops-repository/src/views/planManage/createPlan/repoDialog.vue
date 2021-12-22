@@ -2,7 +2,7 @@
     <canway-dialog
         :value="show"
         width="800"
-        height-num="554"
+        height-num="561"
         title="添加仓库"
         @cancel="$emit('cancel')"
         @confirm="confirmPackageData">

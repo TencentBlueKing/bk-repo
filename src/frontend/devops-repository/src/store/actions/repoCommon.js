@@ -101,8 +101,8 @@ export default {
                     [isGeneric ? 'name' : 'packageName']: '*' + packageName + '*'
                 }
             }
-        ).then(({ list, sum }) => {
-            return [{ repoName: '', total: sum }, ...list.map(item => ({ repoName: item.repoName, total: item.packages || item.nodes }))]
+        ).then(([{ repos, sum }]) => {
+            return [{ repoName: '', total: sum }, ...repos.map(item => ({ repoName: item.repoName, total: item.packages || item.nodes }))]
         })
     },
     // 跨仓库搜索
@@ -121,11 +121,13 @@ export default {
                 },
                 rule: {
                     rules: [
-                        {
-                            field: 'projectId',
-                            value: projectId,
-                            operation: 'EQ'
-                        },
+                        ...(projectId
+                            ? [{
+                                field: 'projectId',
+                                value: projectId,
+                                operation: 'EQ'
+                            }]
+                            : []),
                         ...(repoType
                             ? [{
                                 field: 'repoType',

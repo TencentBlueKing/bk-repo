@@ -1,15 +1,17 @@
 <template>
     <canway-dialog
         v-model="show"
-        width="480"
-        height-num="275"
+        width="380"
+        height-num="221"
         title="操作确认"
         @cancel="cancel">
-        <div class="p20 confirm-body flex-align-center">
-            <i :class="`devops-icon icon-${getIcon()}`"></i>
-            <span class="ml10">{{ message }}</span>
+        <div class="confirm-body">
+            <div class="confirm-main">
+                <i :class="`devops-icon icon-${getIcon()}`"></i>
+                <span class="ml10">{{ message }}</span>
+            </div>
+            <span class="confirm-tip">{{ subMessage }}</span>
         </div>
-        <span class="confirm-tip">{{ subMessage }}</span>
         <template #footer>
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="loading" :theme="theme" @click="confirm">{{$t('confirm')}}</bk-button>
@@ -69,33 +71,33 @@
     }
 </script>
 <style lang="scss" scoped>
-::v-deep .bk-dialog-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 150px;
-}
 .confirm-body {
+    min-height: 60px;
+    padding-left: 26px;
+    .confirm-main {
+        font-size: 14px;
+        font-weight: bold;
+    }
     .devops-icon {
-        width: 38px;
-        height: 38px;
+        width: 26px;
+        height: 26px;
         color:white;
         border-radius: 50%;
+        &.icon-exclamation {
+            padding: 6px;
+            font-size: 14px;
+            background-color: var(--warningColor);
+        }
+        &.icon-close {
+            padding: 7px;
+            font-size: 12px;
+            background-color: var(--dangerColor);
+        }
     }
-    .icon-exclamation {
-        padding: 9px;
-        font-size: 20px;
-        background-color: var(--warningColor);
+    .confirm-tip {
+        padding-left: 40px;
+        font-size: 12px;
+        color: var(--fontSubsidiaryColor);
     }
-    .icon-close {
-        padding: 11px;
-        font-size: 16px;
-        background-color: var(--dangerColor);
-    }
-}
-.confirm-tip {
-    font-size: 12px;
-    color: var(--fontSubsidiaryColor);
 }
 </style>

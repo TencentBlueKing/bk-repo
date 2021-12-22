@@ -2,7 +2,7 @@
     <canway-dialog
         v-model="show"
         width="600"
-        :height-num="editProxyData.proxyType === 'privateProxy' ? 456 : 321"
+        :height-num="editProxyData.proxyType === 'privateProxy' ? 463 : 328"
         :title="editProxyData.type === 'add' ? $t('addProxy') : $t('editProxy')"
         @cancel="$emit('cancel')"
         @confirm="confirmProxyData">

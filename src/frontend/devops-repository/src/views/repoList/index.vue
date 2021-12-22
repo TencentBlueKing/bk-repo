@@ -13,7 +13,6 @@
                     right-icon="bk-icon icon-search">
                 </bk-input>
                 <bk-select
-                    v-if="MODE_CONFIG !== 'ci'"
                     v-model="query.type"
                     class="ml10 w250"
                     @change="handlerPaginationChange()"
@@ -47,19 +46,22 @@
                 <template #default="{ row }">
                     <div class="flex-align-center" :title="replaceRepoName(row.name)">
                         <Icon size="20" :name="row.repoType" />
-                        <span class="ml10 text-overflow hover-btn" style="max-width:250px">{{replaceRepoName(row.name)}}</span>
-                        <Icon v-if="MODE_CONFIG === 'ci' && (row.name === 'custom' || row.name === 'pipeline')"
-                            class="ml10" style="color:#1F6ED4"
-                            size="24" name="repo-tag-system" />
+                        <span class="ml10 text-overflow hover-btn" style="max-width:400px">{{replaceRepoName(row.name)}}</span>
+                        <bk-tag v-if="MODE_CONFIG === 'ci' && (row.name === 'custom' || row.name === 'pipeline' || row.name === 'docker-local')"
+                            class="ml10" type="filled" style="background-color: var(--successColor);">内置</bk-tag>
+                        <bk-tag v-if="row.configuration.settings.system"
+                            class="ml10" type="filled" style="background-color: var(--primaryHoverColor);">系统</bk-tag>
+                        <bk-tag v-if="row.public"
+                            class="ml10" type="filled" style="background-color: var(--warningColor);">公开</bk-tag>
                     </div>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')">
+            <bk-table-column :label="$t('createdDate')" width="250">
                 <template #default="{ row }">
                     {{ formatDate(row.createdDate) }}
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')">
+            <bk-table-column :label="$t('createdBy')" width="200">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
@@ -67,7 +69,8 @@
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <i class="mr10 devops-icon icon-cog hover-btn" @click.stop="toRepoConfig(row)"></i>
-                    <i v-if="row.repoType !== 'generic'" class="devops-icon icon-delete hover-btn hover-danger" @click.stop="deleteRepo(row)"></i>
+                    <i v-if="row.repoType !== 'generic' && (MODE_CONFIG !== 'ci' || row.name !== 'docker-local')"
+                        class="devops-icon icon-delete hover-btn hover-danger" @click.stop="deleteRepo(row)"></i>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -156,11 +159,11 @@
             createRepo () {
                 this.$refs.createRepo.showDialogHandler()
             },
-            toPackageList ({ repoType, name }) {
+            toPackageList ({ projectId, repoType, name }) {
                 this.$router.push({
                     name: repoType === 'generic' ? 'repoGeneric' : 'commonList',
                     params: {
-                        projectId: this.projectId,
+                        projectId,
                         repoType
                     },
                     query: {

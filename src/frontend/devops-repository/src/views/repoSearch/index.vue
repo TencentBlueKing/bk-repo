@@ -2,7 +2,7 @@
     <div class="repo-search-container" v-bkloading="{ isLoading }">
         <div class="repo-search-tools flex-column">
             <div class="name-tool flex-center">
-                <type-select :repo-type="repoType" @change="changeRepoType"></type-select>
+                <type-select :repo-list="repoEnum" :repo-type="repoType" @change="changeRepoType"></type-select>
                 <bk-input
                     v-focus
                     style="width:390px"
@@ -15,7 +15,7 @@
             </div>
             <div v-if="pagination.count" class="mt20 flex-between-center">
                 <div class="result-count flex-align-center">
-                    <span v-if="isSearching">搜索到到相关结果</span>
+                    <span v-if="isSearching">搜索到相关结果</span>
                     <span v-else>全部制品共</span>
                     <span>{{ pagination.count }}个</span>
                 </div>
@@ -45,7 +45,7 @@
                         :title="repo.repoName"
                         @click="changeRepoInput(repo.repoName)">
                         <span class="flex-1 text-overflow">{{ repo.repoName || '全部' }}</span>
-                        <span class="ml5 repo-sum">{{ repo.total }}</span>
+                        <span class="repo-sum">{{ repo.total }}</span>
                     </div>
                 </div>
                 <infinite-scroll
@@ -72,7 +72,7 @@
                 }">
             </empty-data>
         </main>
-        <generic-detail :detail-slider="detailSlider" @refresh="showDetail"></generic-detail>
+        <generic-detail ref="genericDetail"></generic-detail>
     </div>
 </template>
 <script>
@@ -81,7 +81,8 @@
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
     import typeSelect from './typeSelect'
     import { mapState, mapActions } from 'vuex'
-    import { convertFileSize, formatDate } from '@repository/utils'
+    import { formatDate } from '@repository/utils'
+    import { repoEnum } from '@repository/store/publicEnum'
     export default {
         name: 'repoSearch',
         components: { packageCard, InfiniteScroll, typeSelect, genericDetail },
@@ -94,6 +95,7 @@
         },
         data () {
             return {
+                repoEnum,
                 isLoading: false,
                 property: this.$route.query.property || 'lastModifiedDate',
                 direction: this.$route.query.direction || 'ASC',
@@ -106,14 +108,7 @@
                     limit: 20,
                     count: 0
                 },
-                resultList: [],
-                // 查看详情
-                detailSlider: {
-                    show: false,
-                    loading: false,
-                    folder: false,
-                    data: {}
-                }
+                resultList: []
             }
         },
         computed: {
@@ -131,7 +126,7 @@
         },
         methods: {
             formatDate,
-            ...mapActions(['searchPackageList', 'searchRepoList', 'getNodeDetail']),
+            ...mapActions(['searchPackageList', 'searchRepoList']),
             searchRepoHandler () {
                 this.searchRepoList({
                     projectId: this.projectId,
@@ -213,28 +208,14 @@
                 this.handlerPaginationChange()
             },
             showDetail (pkg) {
-                this.detailSlider = {
+                this.$refs.genericDetail.setData({
                     show: true,
-                    loading: true,
-                    folder: false,
-                    data: {}
-                }
-                this.getNodeDetail({
-                    projectId: this.projectId,
+                    loading: false,
+                    projectId: pkg.projectId,
                     repoName: pkg.repoName,
-                    fullPath: pkg.fullPath
-                }).then(data => {
-                    this.detailSlider.data = {
-                        ...data,
-                        name: data.name || pkg.repoName,
-                        size: convertFileSize(data.size),
-                        createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
-                        createdDate: formatDate(data.createdDate),
-                        lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
-                        lastModifiedDate: formatDate(data.lastModifiedDate)
-                    }
-                }).finally(() => {
-                    this.detailSlider.loading = false
+                    folder: pkg.folder,
+                    path: pkg.fullPath,
+                    data: {}
                 })
             }
         }

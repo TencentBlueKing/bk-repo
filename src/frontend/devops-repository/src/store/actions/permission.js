@@ -79,6 +79,13 @@ export default {
             body
         )
     },
+    // 批量创建用户
+    importUsers (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/batch`,
+            body
+        )
+    },
     // 编辑用户
     editUser (_, { body }) {
         return Vue.prototype.$ajax.put(

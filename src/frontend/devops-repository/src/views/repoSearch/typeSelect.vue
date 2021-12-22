@@ -7,7 +7,7 @@
         <i class="ml10 devops-icon" :class="showDropdown ? 'icon-up-shape' : 'icon-down-shape'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
             <bk-radio-group :value="repoType" class="repo-type-radio-group" @change="changeType">
-                <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
+                <bk-radio-button v-for="repo in repoList" :key="repo" :value="repo">
                     <div class="flex-column flex-center repo-type-radio">
                         <Icon size="32" :name="repo" />
                         <span>{{repo}}</span>
@@ -18,10 +18,13 @@
     </div>
 </template>
 <script>
-    import { repoEnum } from '@repository/store/publicEnum'
     export default {
         name: 'typeSelect',
         props: {
+            repoList: {
+                type: Array,
+                default: () => []
+            },
             repoType: {
                 type: String,
                 default: 'generic'
@@ -29,7 +32,6 @@
         },
         data () {
             return {
-                repoEnum,
                 showDropdown: false
             }
         },

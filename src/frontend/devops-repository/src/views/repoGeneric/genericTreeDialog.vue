@@ -3,7 +3,7 @@
         v-model="genericTreeData.show"
         :title="genericTreeData.title"
         width="600"
-        height-num="616"
+        height-num="623"
         @cancel="genericTreeData.show = false">
         <bk-input
             class="w250"
@@ -15,6 +15,7 @@
         <div class="mt10 dialog-tree-container">
             <repo-tree
                 ref="dialogTree"
+                :tree="genericTree"
                 :important-search="importantSearch"
                 :open-list="genericTreeData.openList"
                 :selected-node="genericTreeData.selectedNode"
@@ -22,13 +23,14 @@
                 @item-click="itemClickHandler">
             </repo-tree>
         </div>
-        <div slot="footer">
+        <template #footer>
             <bk-button @click="genericTreeData.show = false">{{ $t('cancel') }}</bk-button>
             <bk-button class="ml10" :loading="genericTreeData.loading" theme="primary" @click="submit">{{ $t('confirm') }}</bk-button>
-        </div>
+        </template>
     </canway-dialog>
 </template>
 <script>
+    import { mapState } from 'vuex'
     import RepoTree from '@repository/components/RepoTree'
     export default {
         name: 'genericTreeDialog',
@@ -45,6 +47,9 @@
                     selectedNode: {}
                 }
             }
+        },
+        computed: {
+            ...mapState(['genericTree'])
         },
         methods: {
             // 树组件选中文件夹

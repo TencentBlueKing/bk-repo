@@ -17,27 +17,27 @@
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PrepoCULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-const repoHome = () => import(/* webpackChunkName: "repoHome" */'@/views')
+const repoHome = () => import(/* webpackChunkName: "repoHome" */'@repository/views')
 
-const repoList = () => import(/* webpackChunkName: "repoList" */'@/views/repoList')
-const repoConfig = () => import(/* webpackChunkName: "repoConfig" */'@/views/repoConfig')
-const repoToken = () => import(/* webpackChunkName: "repoToken" */'@/views/repoToken')
-const userCenter = () => import(/* webpackChunkName: "userCenter" */'@/views/userCenter')
-const userManage = () => import(/* webpackChunkName: "userManage" */'@/views/userManage')
-const repoAudit = () => import(/* webpackChunkName: "repoAudit" */'@/views/repoAudit')
-const projectManage = () => import(/* webpackChunkName: "projectManage" */'@/views/projectManage')
-const projectConfig = () => import(/* webpackChunkName: "projectManage" */'@/views/projectManage/projectConfig')
-const nodeManage = () => import(/* webpackChunkName: "nodeManage" */'@/views/nodeManage')
-const planManage = () => import(/* webpackChunkName: "planManage" */'@/views/planManage')
-const createPlan = () => import(/* webpackChunkName: "createPlan" */'@/views/planManage/createPlan')
-const logDetail = () => import(/* webpackChunkName: "logDetail" */'@/views/planManage/logDetail')
+const repoList = () => import(/* webpackChunkName: "repoList" */'@repository/views/repoList')
+const repoConfig = () => import(/* webpackChunkName: "repoConfig" */'@repository/views/repoConfig')
+const repoToken = () => import(/* webpackChunkName: "repoToken" */'@repository/views/repoToken')
+const userCenter = () => import(/* webpackChunkName: "userCenter" */'@repository/views/userCenter')
+const userManage = () => import(/* webpackChunkName: "userManage" */'@repository/views/userManage')
+const repoAudit = () => import(/* webpackChunkName: "repoAudit" */'@repository/views/repoAudit')
+const projectManage = () => import(/* webpackChunkName: "projectManage" */'@repository/views/projectManage')
+const projectConfig = () => import(/* webpackChunkName: "projectManage" */'@repository/views/projectManage/projectConfig')
+const nodeManage = () => import(/* webpackChunkName: "nodeManage" */'@repository/views/nodeManage')
+const planManage = () => import(/* webpackChunkName: "planManage" */'@repository/views/planManage')
+const createPlan = () => import(/* webpackChunkName: "createPlan" */'@repository/views/planManage/createPlan')
+const logDetail = () => import(/* webpackChunkName: "logDetail" */'@repository/views/planManage/logDetail')
 
-const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@/views/repoGeneric')
+const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@repository/views/repoGeneric')
 
-const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@/views/repoCommon/commonPackageList')
-const commonPackageDetail = () => import(/* webpackChunkName: "repoCommon" */'@/views/repoCommon/commonPackageDetail')
+const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@repository/views/repoCommon/commonPackageList')
+const commonPackageDetail = () => import(/* webpackChunkName: "repoCommon" */'@repository/views/repoCommon/commonPackageDetail')
 
-const repoSearch = () => import(/* webpackChunkName: "repoSearch" */'@/views/repoSearch')
+const repoSearch = () => import(/* webpackChunkName: "repoSearch" */'@repository/views/repoSearch')
 
 const routes = [
     {

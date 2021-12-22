@@ -5,13 +5,17 @@
                 <div class="repo-tree-title hover-btn"
                     :title="item.name"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
-                    :style="{ 'padding-left': 20 * (computedDepth(item) + 1) + 'px' }"
+                    :style="{ 'padding-left': 20 * computedDepth(item) + 10 + 'px' }"
                     @click.stop="itemClickHandler(item)">
                     <i v-if="item.loading" class="mr5 loading spin-icon"></i>
-                    <i v-else class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
+                    <i v-else-if="!item.leaf" class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
                         :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
-                    <icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'"></icon>
-                    <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
+                    <slot name="icon" :item="item" :open-list="openList">
+                        <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
+                    </slot>
+                    <slot name="text" :item="item">
+                        <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
+                    </slot>
                 </div>
             </li>
         </ul>
@@ -20,18 +24,21 @@
 </template>
 
 <script>
-    import { mapState } from 'vuex'
     import { throttle } from '@repository/utils'
     export default {
         name: 'repo-tree',
         props: {
+            tree: Array, // roadMap、name、children、leaf
             importantSearch: {
                 type: String,
                 default: ''
             },
             selectedNode: {
                 type: Object,
-                default: () => {}
+                default: () => ({
+                    roadMap: '',
+                    name: ''
+                })
             },
             openList: {
                 type: Array,
@@ -46,8 +53,7 @@
             }
         },
         computed: {
-            ...mapState(['genericTree']),
-            flattenGenericTree () {
+            flattenTree () {
                 const flatNodes = []
                 const flatten = treeData => {
                     treeData.forEach(treeNode => {
@@ -56,14 +62,14 @@
                         this.openList.includes(treeNode.roadMap) && flatten(treeNode.children || [])
                     })
                 }
-                flatten(this.genericTree)
+                flatten(this.tree)
                 return flatNodes
             },
             treeList () {
-                return this.flattenGenericTree.slice(this.start, this.start + this.size)
+                return this.flattenTree.slice(this.start, this.start + this.size)
             },
             totalHeight () {
-                return (this.flattenGenericTree.length + 1) * 40
+                return (this.flattenTree.length + 1) * 40
             }
         },
         watch: {
@@ -93,7 +99,7 @@
                 } else if (keyword instanceof RegExp) {
                     fn = v => keyword.test(v.name)
                 }
-                const index = this.flattenGenericTree.findIndex(fn)
+                const index = this.flattenTree.findIndex(fn)
                 if (!~index) return
                 if (index < this.start) {
                     this.$el.scrollTop = index * 40

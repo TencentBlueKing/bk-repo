@@ -167,4 +167,19 @@ body {
         height: calc(100% - 60px);
         overflow: hidden;
     }
+    .bk-tag-selector{
+        .bk-tag-input {
+            height: 32px;
+            .tag-list {
+                position: absolute;
+                width: calc(100% - 25px);
+                height: 100%;
+                float: none;
+            }
+            .clear-icon {
+                position: absolute;
+                right: 0;
+            }
+        }
+    }
 }
