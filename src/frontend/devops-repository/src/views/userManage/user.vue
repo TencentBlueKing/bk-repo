@@ -52,25 +52,30 @@
             <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
             <bk-table-column label="电话" prop="phone"></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
-                <span slot-scope="props">{{formatDate(props.row.createdDate)}}</span>
+                <template #default="{ row }">
+                    {{formatDate(row.createdDate)}}
+                </template>
             </bk-table-column>
             <bk-table-column label="账号权限">
-                <div slot-scope="props" class="flex-align-center">
-                    <bk-switcher class="mr10" :key="props.row.id" v-model="props.row.admin" @change="changeAdminStatus(props.row)"></bk-switcher>
-                    <div>{{props.row.admin ? '系统管理员' : '普通用户'}}</div>
-                </div>
+                <template #default="{ row }"><div class="flex-align-center">
+                    <bk-switcher class="mr10" :key="row.id" v-model="row.admin" @change="changeAdminStatus(row)"></bk-switcher>
+                    <div>{{row.admin ? '系统管理员' : '普通用户'}}</div>
+                </div></template>
             </bk-table-column>
             <bk-table-column :label="$t('account') + $t('status')">
-                <div slot-scope="props" class="flex-align-center">
-                    <bk-switcher class="mr10" :key="props.row.id" :value="!props.row.locked" @change="changeUserStatus(props.row)"></bk-switcher>
-                    <div>{{props.row.locked ? '已禁用' : '已启用'}}</div>
-                </div>
+                <template #default="{ row }"><div class="flex-align-center">
+                    <bk-switcher class="mr10" :key="row.id" :value="!row.locked" @change="changeUserStatus(row)"></bk-switcher>
+                    <div>{{row.locked ? '已禁用' : '已启用'}}</div>
+                </div></template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="100">
-                <div slot-scope="props" class="flex-align-center">
-                    <i class="mr20 devops-icon icon-edit hover-btn" @click="showEditUser(props.row)"></i>
-                    <i class="devops-icon icon-delete hover-btn" @click="deleteUserHandler(props.row)"></i>
-                </div>
+            <bk-table-column :label="$t('operation')" width="70">
+                <template #default="{ row }">
+                    <operation-list
+                        :list="[
+                            { label: '编辑', clickEvent: () => showEditUser(row) },
+                            { label: '删除', clickEvent: () => deleteUserHandler(row) }
+                        ]"></operation-list>
+                </template>
             </bk-table-column>
         </bk-table>
         <bk-pagination
@@ -117,11 +122,13 @@
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import XLSX from 'xlsx'
     export default {
         name: 'user',
+        components: { OperationList },
         data () {
             return {
                 isLoading: false,

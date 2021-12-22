@@ -17,8 +17,7 @@
             height="calc(100% - 104px)"
             :outer-border="false"
             :row-border="false"
-            size="small"
-            @row-click="showProjectDetailHandler">
+            size="small">
             <template #empty>
                 <empty-data :search="Boolean(projectInput)">
                     <template v-if="!Boolean(projectInput)">
@@ -40,6 +39,14 @@
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
             </bk-table-column>
+            <bk-table-column :label="$t('operation')" width="70">
+                <template #default="{ row }">
+                    <operation-list
+                        :list="[
+                            { label: '详情', clickEvent: () => showProjectDetailHandler(row) }
+                        ]"></operation-list>
+                </template>
+            </bk-table-column>
         </bk-table>
         <bk-pagination
             class="p10"
@@ -53,53 +60,17 @@
             @change="current => handlerPaginationChange({ current })"
             @limit-change="limit => handlerPaginationChange({ limit })">
         </bk-pagination>
-        <canway-dialog
-            v-model="editProjectDialog.show"
-            :title="editProjectDialog.add ? '新建项目' : '编辑项目'"
-            width="500"
-            height-num="354"
-            @cancel="editProjectDialog.show = false">
-            <bk-form class="ml10 mr10" :label-width="75" :model="editProjectDialog" :rules="rules" ref="editProjectDialog">
-                <bk-form-item label="项目标识" :required="true" property="id" error-display-type="normal">
-                    <bk-input v-model.trim="editProjectDialog.id"
-                        :disabled="!editProjectDialog.add" maxlength="32"
-                        show-word-limit
-                        placeholder="请输入2-32字符的小写字母+数字组合，以字母开头">
-                    </bk-input>
-                </bk-form-item>
-                <bk-form-item label="项目名称" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model.trim="editProjectDialog.name" maxlength="32" show-word-limit></bk-input>
-                </bk-form-item>
-                <bk-form-item label="项目描述" property="description">
-                    <bk-input type="textarea" v-model.trim="editProjectDialog.description" maxlength="200" show-word-limit></bk-input>
-                </bk-form-item>
-            </bk-form>
-            <template #footer>
-                <bk-button theme="default" @click.stop="editProjectDialog.show = false">{{$t('cancel')}}</bk-button>
-                <bk-button class="ml10" :loading="editProjectDialog.loading" theme="primary" @click.stop.prevent="submitProject()">{{$t('confirm')}}</bk-button>
-            </template>
-        </canway-dialog>
-        <bk-sideslider
-            :is-show.sync="showProjectDetail"
-            quick-close
-            :width="650"
-            title="项目配置">
-            <template #content>
-                <project-config
-                    :project="selectedProject"
-                    @edit-basic="showProjectDialog">
-                </project-config>
-            </template>
-        </bk-sideslider>
+        <project-info-dialog ref="projectInfoDialog"></project-info-dialog>
     </div>
 </template>
 <script>
-    import projectConfig from './projectConfig'
-    import { mapState, mapActions } from 'vuex'
+    import OperationList from '@repository/components/OperationList'
+    import projectInfoDialog from './projectInfoDialog'
+    import { mapState } from 'vuex'
     import { formatDate } from '@repository/utils'
     export default {
         name: 'projectManage',
-        components: { projectConfig },
+        components: { OperationList, projectInfoDialog },
         data () {
             return {
                 projectInput: '',
@@ -107,47 +78,6 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                },
-                editProjectDialog: {
-                    show: false,
-                    loading: false,
-                    add: true,
-                    id: '',
-                    name: '',
-                    description: ''
-                },
-                showProjectDetail: false,
-                selectedProject: null,
-                rules: {
-                    id: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseInput') + '项目标识',
-                            trigger: 'blur'
-                        },
-                        {
-                            regex: /^[a-z][a-z0-9]{1,31}$/,
-                            message: '请输入2-32字符的小写字母+数字组合，以字母开头',
-                            trigger: 'blur'
-                        },
-                        {
-                            validator: id => this.asynCheck({ id }),
-                            message: '项目标识已存在',
-                            trigger: 'blur'
-                        }
-                    ],
-                    name: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseInput') + '项目名称',
-                            trigger: 'blur'
-                        },
-                        {
-                            validator: name => this.asynCheck({ name }),
-                            message: '项目名称已存在',
-                            trigger: 'blur'
-                        }
-                    ]
                 }
             }
         },
@@ -161,58 +91,28 @@
         },
         methods: {
             formatDate,
-            ...mapActions([
-                'getProjectList',
-                'createProject',
-                'editProject',
-                'checkProject'
-            ]),
-            asynCheck ({ id, name }) {
-                if (!this.editProjectDialog.add) {
-                    const project = this.projectList.find(v => v.id === this.editProjectDialog.id)
-                    if (id || project.name === name) return false
-                }
-                return this.checkProject({ id, name }).then(res => !res)
-            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
             },
             showProjectDialog (project = {}) {
-                this.$refs.editProjectDialog.clearError()
                 const { id = '', name = '', description = '' } = project
-                this.editProjectDialog = {
+                this.$refs.projectInfoDialog.setData({
                     show: true,
                     loading: false,
                     add: !id,
                     id,
                     name,
                     description
-                }
-            },
-            async submitProject () {
-                await this.$refs.editProjectDialog.validate()
-                this.editProjectDialog.loading = true
-                const { id, name, description } = this.editProjectDialog
-                const fn = this.editProjectDialog.add ? this.createProject : this.editProject
-                fn({
-                    id,
-                    name,
-                    description
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: (this.editProjectDialog.add ? '新建项目' : '编辑项目') + this.$t('success')
-                    })
-                    this.editProjectDialog.show = false
-                    this.getProjectList()
-                }).finally(() => {
-                    this.editProjectDialog.loading = false
                 })
             },
-            showProjectDetailHandler (row) {
-                this.selectedProject = row
-                this.showProjectDetail = true
+            showProjectDetailHandler ({ id }) {
+                this.$router.push({
+                    name: 'projectConfig',
+                    query: {
+                        projectId: id
+                    }
+                })
             }
         }
     }

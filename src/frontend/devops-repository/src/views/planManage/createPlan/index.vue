@@ -206,9 +206,6 @@
             routeName () {
                 return this.$route.name
             },
-            title () {
-                return this.$route.meta.title
-            },
             disabled () {
                 return this.routeName === 'planDetail'
             },
@@ -333,7 +330,7 @@
                 request.then(() => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.title + this.$t('success')
+                        message: this.$t('save') + this.$t('success')
                     })
                     this.$router.back()
                 }).finally(() => {

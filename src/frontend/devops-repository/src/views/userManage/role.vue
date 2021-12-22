@@ -16,8 +16,7 @@
             :data="filterRoleList"
             :outer-border="false"
             :row-border="false"
-            size="small"
-            @row-click="showUsers">
+            size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(role)">
                     <template v-if="!Boolean(role)">
@@ -33,11 +32,15 @@
                 </template>
             </bk-table-column>
             <bk-table-column label="描述" prop="description"></bk-table-column>
-            <bk-table-column :label="$t('operation')" width="150">
-                <div slot-scope="props" class="flex-align-center">
-                    <i class="mr20 devops-icon icon-edit hover-btn" @click.stop="editRoleHandler(props.row)"></i>
-                    <i class="devops-icon icon-delete hover-btn" @click.stop="deleteRoleHandler(props.row)"></i>
-                </div>
+            <bk-table-column :label="$t('operation')" width="70">
+                <template #default="{ row }">
+                    <operation-list
+                        :list="[
+                            { label: '详情', clickEvent: () => showUsers(row) },
+                            { label: '编辑', clickEvent: () => editRoleHandler(row) },
+                            { label: '删除', clickEvent: () => deleteRoleHandler(row) }
+                        ]"></operation-list>
+                </template>
             </bk-table-column>
         </bk-table>
         <canway-dialog
@@ -78,8 +81,8 @@
                         trigger="focus"
                         allow-create>
                     </bk-tag-input>
-                    <bk-button v-if="editRoleUsers.addUsers.length" theme="primary" class="ml10" @click="handleAddUsers">添加</bk-button>
-                    <bk-button v-if="editRoleUsers.deleteUsers.length" theme="warning" class="ml10" @click="handleDeleteUsers">批量移除</bk-button>
+                    <bk-button :disabled="!editRoleUsers.addUsers.length" theme="primary" class="ml10" @click="handleAddUsers">添加</bk-button>
+                    <bk-button :disabled="!editRoleUsers.deleteUsers.length" theme="warning" class="ml10" @click="handleDeleteUsers">批量移除</bk-button>
                 </div>
                 <bk-table
                     :data="editRoleUsers.users"
@@ -95,8 +98,8 @@
                     }">
                     <bk-table-column type="selection" width="60"></bk-table-column>
                     <bk-table-column label="用户">
-                        <template slot-scope="props">
-                            <div>{{userList[props.row] ? userList[props.row].name : props.row}}</div>
+                        <template #default="{ row }">
+                            <div>{{userList[row] ? userList[row].name : row}}</div>
                         </template>
                     </bk-table-column>
                 </bk-table>
@@ -105,9 +108,11 @@
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'role',
+        components: { OperationList },
         data () {
             return {
                 isLoading: false,

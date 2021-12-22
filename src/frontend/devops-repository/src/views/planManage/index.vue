@@ -36,8 +36,7 @@
             :outer-border="false"
             :row-border="false"
             row-key="userId"
-            size="small"
-            @row-click="showPlanDetailHandler">
+            size="small">
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(planInput || lastExecutionStatus || showEnabled)">
                     <template v-if="!Boolean(planInput || lastExecutionStatus || showEnabled)">
@@ -103,19 +102,16 @@
                     </i>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="90">
+            <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
-                    <bk-popover placement="bottom-end" theme="light" ext-cls="operation-container">
-                        <i class="p5 devops-icon icon-ellipsis hover-btn"></i>
-                        <template #content><ul class="operation-list">
-                            <li class="operation-item hover-btn"
-                                :class="{ 'disabled': Boolean(row.lastExecutionStatus) || row.replicaType === 'REAL_TIME' }"
-                                @click.stop="editPlanHandler(row)">编辑</li>
-                            <li class="operation-item hover-btn" @click.stop="copyPlanHandler(row)">复制</li>
-                            <li class="operation-item hover-btn" @click.stop="deletePlanHandler(row)">删除</li>
-                            <li class="operation-item hover-btn" @click.stop="showPlanLogHandler(row)">日志</li>
-                        </ul></template>
-                    </bk-popover>
+                    <operation-list
+                        :list="[
+                            { label: '详情', clickEvent: () => showPlanDetailHandler(row) },
+                            { label: '编辑', clickEvent: () => editPlanHandler(row), disabled: Boolean(row.lastExecutionStatus) || row.replicaType === 'REAL_TIME' },
+                            { label: '复制', clickEvent: () => copyPlanHandler(row) },
+                            { label: '删除', clickEvent: () => deletePlanHandler(row) },
+                            { label: '日志', clickEvent: () => showPlanLogHandler(row) }
+                        ]"></operation-list>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -136,6 +132,7 @@
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import planLog from './planLog'
@@ -147,7 +144,7 @@
     }
     export default {
         name: 'plan',
-        components: { planLog, planCopyDialog },
+        components: { planLog, planCopyDialog, OperationList },
         data () {
             return {
                 statusMap,

@@ -10,9 +10,19 @@
 <body>
     <div id="app"></div>
     <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/ui/sw.js');
+        }
+        function isPWA() {
+            return ["fullscreen", "standalone", "minimal-ui"].some(
+                (displayMode) => window.matchMedia('(display-mode: ' + displayMode + ')').matches
+            )
+        }
+    </script>
+    <script>
         var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
         var DEVOPS_SITE_URL = '__BK_HTTP_SCHEMA__://__BK_CI_FQDN__'
-        var LOGIN_SERVICE_URL = /^http(s)/.test(PAAS_SERVICE_URL)
+        var LOGIN_SERVICE_URL = /^https?/.test(PAAS_SERVICE_URL)
             ? PAAS_SERVICE_URL + '/login/'
             : '__BK_REPO_PAAS_LOGIN_URL__'
         // standalone: 独立部署模式
@@ -40,7 +50,7 @@
         const search = new URL(location.href).searchParams
         const redirect = search.get('redirect')
         search.delete('redirect')
-        const redirectUrl = new URL(/^http(s)/.test(redirect) ? redirect : location.origin + redirect)
+        const redirectUrl = new URL(/^https?/.test(redirect) ? redirect : location.origin + redirect)
         search.forEach((val, key) => {
             redirectUrl.searchParams.set(key, val)
         })
@@ -105,11 +115,6 @@
                 + '</p>'
                 + '</div>'
             )
-        }
-    </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/ui/sw.js');
         }
     </script>
 </body>

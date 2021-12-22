@@ -221,7 +221,7 @@ export default {
     // 发送邮件
     sendEmail (_, body) {
         return Vue.prototype.$ajax.post(
-            '/generic/notify/mail',
+            '/generic/notify/mail/user',
             body
         )
     },

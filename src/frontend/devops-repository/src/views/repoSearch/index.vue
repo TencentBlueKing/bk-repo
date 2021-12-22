@@ -101,7 +101,7 @@
                 direction: this.$route.query.direction || 'ASC',
                 packageName: this.$route.query.packageName || '',
                 repoType: this.$route.query.repoType || 'generic',
-                repoList: [{ repoName: '', total: 0 }],
+                repoList: [],
                 repoName: this.$route.query.repoName || '',
                 pagination: {
                     current: 1,

@@ -12,8 +12,8 @@
                     <bk-form-item label="项目描述">
                         <span>{{ currentProject.description }}</span>
                     </bk-form-item>
-                    <bk-form-item v-if="$route.name === 'projectManage'">
-                        <bk-button theme="primary" @click="$emit('edit-basic', currentProject)">修改</bk-button>
+                    <bk-form-item>
+                        <bk-button theme="primary" @click="showProjectDialog">修改</bk-button>
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
@@ -32,8 +32,8 @@
                             :name="option.name">
                         </bk-option>
                     </bk-select>
-                    <bk-button icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')"><span class="mr5">{{ $t('add') }}</span></bk-button>
-                    <bk-button v-show="tab.delete.length" theme="warning" class="ml10" @click="confirmHandler(tab, 'delete')"><span class="mr5">批量删除</span></bk-button>
+                    <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')"><span class="mr5">{{ $t('add') }}</span></bk-button>
+                    <bk-button :disabled="!tab.delete.length" theme="warning" class="ml10" @click="confirmHandler(tab, 'delete')"><span class="mr5">批量删除</span></bk-button>
                 </div>
                 <bk-table
                     class="mt10"
@@ -56,17 +56,15 @@
                 </bk-table>
             </bk-tab-panel>
         </bk-tab>
+        <project-info-dialog ref="projectInfoDialog"></project-info-dialog>
     </div>
 </template>
 <script>
+    import projectInfoDialog from './projectInfoDialog'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'projectConfig',
-        props: {
-            project: {
-                type: Object
-            }
-        },
+        components: { projectInfoDialog },
         data () {
             return {
                 tabName: 'basic',
@@ -103,16 +101,25 @@
         computed: {
             ...mapState(['userList', 'projectList']),
             projectId () {
-                return this.$route.params.projectId
+                return this.$route.query.projectId || this.$route.params.projectId
             },
             currentProject () {
-                return this.project || this.projectList.find(project => project.id === this.projectId) || {}
+                return this.projectList.find(project => project.id === this.projectId) || {}
             }
         },
         watch: {
             currentProject () {
                 this.initProjectConfig()
             }
+        },
+        beforeRouteEnter (to, from, next) {
+            const breadcrumb = to.meta.breadcrumb
+            if (to.query.projectId) {
+                breadcrumb.splice(0, breadcrumb.length, { name: 'projectManage', label: to.query.projectId }, { name: 'projectConfig', label: '项目设置' })
+            } else {
+                breadcrumb.splice(0, breadcrumb.length, { name: 'projectConfig', label: '项目设置' })
+            }
+            next()
         },
         created () {
             this.currentProject.id && this.initProjectConfig()
@@ -185,6 +192,17 @@
                     tab[type] = []
                 }).finally(() => {
                     tab.loading = false
+                })
+            },
+            showProjectDialog () {
+                const { id = '', name = '', description = '' } = this.currentProject
+                this.$refs.projectInfoDialog.setData({
+                    show: true,
+                    loading: false,
+                    add: !id,
+                    id,
+                    name,
+                    description
                 })
             }
         }

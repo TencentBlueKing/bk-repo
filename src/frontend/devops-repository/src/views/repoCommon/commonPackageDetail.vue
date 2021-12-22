@@ -39,17 +39,13 @@
                             :key="$version.name"
                             @click="changeVersion($version)">
                             <span>{{ $version.name }}</span>
-                            <bk-popover class="version-operation" placement="bottom-end" theme="light" ext-cls="operation-container">
-                                <i class="devops-icon icon-more flex-center"></i>
-                                <template #content><ul class="operation-list">
-                                    <li v-if="permission.edit"
-                                        class="operation-item hover-btn"
-                                        :class="{ 'disabled': ($version.stageTag || '').includes('@release') }"
-                                        @click.stop="changeStageTagHandler($version)">晋级</li>
-                                    <li v-if="repoType !== 'docker'" class="operation-item hover-btn" @click.stop="downloadPackageHandler($version)">下载</li>
-                                    <li v-if="permission.delete" class="operation-item hover-btn" @click.stop="deleteVersionHandler($version)">删除</li>
-                                </ul></template>
-                            </bk-popover>
+                            <operation-list
+                                class="version-operation"
+                                :list="[
+                                    permission.edit && { label: '晋级', clickEvent: () => changeStageTagHandler($version), disabled: ($version.stageTag || '').includes('@release') },
+                                    repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
+                                    permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
+                                ].filter(Boolean)"></operation-list>
                         </div>
                     </infinite-scroll>
                 </div>
@@ -86,12 +82,13 @@
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
-        components: { InfiniteScroll, VersionDetail },
+        components: { OperationList, InfiniteScroll, VersionDetail },
         data () {
             return {
                 tabName: 'commonVersion',
@@ -364,17 +361,6 @@
                     .version-operation {
                         position: absolute;
                         right: 10px;
-                        width: 24px;
-                        height: 24px;
-                        border-radius: 50%;
-                        ::v-deep .bk-tooltip-ref,
-                        .icon-more {
-                            width: 100%;
-                            height: 100%;
-                        }
-                        &:hover {
-                            background-color: white;
-                        }
                     }
                     &.selected {
                         color: white;

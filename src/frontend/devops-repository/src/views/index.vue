@@ -62,7 +62,7 @@
                         'repoSearch',
                         MODE_CONFIG === 'ci' && 'repoToken',
                         this.userInfo.admin && this.isMasterNode && 'planManage',
-                        this.userInfo.manage && 'projectConfig'
+                        !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
                     ].filter(Boolean),
                     global: [
                         'projectManage',

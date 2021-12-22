@@ -67,17 +67,11 @@
                             @click.stop="handlerDownload()">
                             {{ $t('download') }}
                         </bk-button>
-                        <bk-popover v-if="operationBtns.length" placement="bottom-end" theme="light" ext-cls="operation-container">
+                        <operation-list
+                            v-if="operationBtns.length"
+                            :list="operationBtns">
                             <bk-button @click.stop="() => {}" icon="ellipsis"></bk-button>
-                            <template #content><ul class="operation-list">
-                                <li class="operation-item hover-btn"
-                                    v-for="btn in operationBtns"
-                                    :key="btn.label"
-                                    @click.stop="btn.clickEvent()">
-                                    {{ btn.label }}
-                                </li>
-                            </ul></template>
-                        </bk-popover>
+                        </operation-list>
                     </div>
                 </div>
                 <bk-table
@@ -147,6 +141,7 @@
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import Breadcrumb from '@repository/components/Breadcrumb'
     import MoveSplitBar from '@repository/components/MoveSplitBar'
     import RepoTree from '@repository/components/RepoTree'
@@ -161,6 +156,7 @@
     export default {
         name: 'repoGeneric',
         components: {
+            OperationList,
             Breadcrumb,
             MoveSplitBar,
             RepoTree,

@@ -102,7 +102,14 @@ export default {
                 }
             }
         ).then(([{ repos, sum }]) => {
-            return [{ repoName: '', total: sum }, ...repos.map(item => ({ repoName: item.repoName, total: item.packages || item.nodes }))]
+            return [
+                { repoName: '', total: sum },
+                ...repos.map(
+                    item => ({ repoName: item.repoName, total: item.packages || item.nodes })
+                ).sort(
+                    (a, b) => (b.total - a.total) || (b.repoName < a.repoName ? 1 : -1)
+                )
+            ]
         })
     },
     // 跨仓库搜索

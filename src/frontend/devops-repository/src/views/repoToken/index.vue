@@ -16,18 +16,18 @@
             </template>
             <bk-table-column :label="$t('name')" prop="name"></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
-                <template slot-scope="props">
-                    {{ formatDate(props.row.createdAt) }}
+                <template #default="{ row }">
+                    {{ formatDate(row.createdAt) }}
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('expiress')">
-                <template slot-scope="props">
-                    {{ transformFormatDate(props.row.expiredAt) }}
+                <template #default="{ row }">
+                    {{ transformFormatDate(row.expiredAt) }}
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
-                <template slot-scope="props">
-                    <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteTokenHandler(props.row)"></i>
+                <template #default="{ row }">
+                    <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteTokenHandler(row)"></i>
                 </template>
             </bk-table-column>
         </bk-table>

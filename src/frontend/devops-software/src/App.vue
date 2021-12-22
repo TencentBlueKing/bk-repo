@@ -26,7 +26,7 @@
             username && this.SET_USER_INFO({ username })
 
             if (this.iframeMode) {
-                const url = /^http(s)/.test(DEVOPS_SITE_URL)
+                const url = /^https?/.test(DEVOPS_SITE_URL)
                     ? DEVOPS_SITE_URL + '/console/static/devops-utils.js'
                     : '/ui/devops-utils.js'
                 this.loadDevopsUtils(url)

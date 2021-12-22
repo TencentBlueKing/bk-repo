@@ -176,6 +176,9 @@
                             }
                         })
                     }]
+                    if (this.selectedNode.roadMap !== '0') {
+                        this.itemClickHandler(this.repoList[0])
+                    }
                 })
             },
             searckPackageHandler (load) {

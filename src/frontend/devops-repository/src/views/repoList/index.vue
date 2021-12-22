@@ -66,11 +66,14 @@
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="100">
+            <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
-                    <i class="mr10 devops-icon icon-cog hover-btn" @click.stop="toRepoConfig(row)"></i>
-                    <i v-if="row.repoType !== 'generic' && (MODE_CONFIG !== 'ci' || row.name !== 'docker-local')"
-                        class="devops-icon icon-delete hover-btn hover-danger" @click.stop="deleteRepo(row)"></i>
+                    <operation-list
+                        :list="[
+                            { label: '设置', clickEvent: () => toRepoConfig(row) },
+                            row.repoType !== 'generic' && (MODE_CONFIG !== 'ci' || row.name !== 'docker-local') && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
+                        ].filter(Boolean)">
+                    </operation-list>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -90,13 +93,14 @@
     </div>
 </template>
 <script>
-    import createRepoDialog from './createRepoDialog'
+    import OperationList from '@repository/components/OperationList'
+    import createRepoDialog from '@repository/views/repoList/createRepoDialog'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@repository/store/publicEnum'
     import { formatDate } from '@repository/utils'
     export default {
         name: 'repoList',
-        components: { createRepoDialog },
+        components: { OperationList, createRepoDialog },
         data () {
             return {
                 MODE_CONFIG,
