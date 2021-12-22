@@ -2,8 +2,8 @@ apiVersion: v2
 name: bkrepo
 description: A Helm chart for BlueKing Repository
 type: application
-version: 1.0.30-beta6
-appVersion: 1.0.30-beta6
+version: 1.0.30
+appVersion: 1.0.30
 
 dependencies:
 - name: common
