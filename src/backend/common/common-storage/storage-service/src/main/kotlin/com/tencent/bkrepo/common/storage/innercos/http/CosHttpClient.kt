@@ -53,14 +53,10 @@ object CosHttpClient {
         .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
         .build()
 
-    fun <T> execute(request: Request, handler: HttpResponseHandler<T>, retry: Int = 0): T {
+    fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
         val response = try {
             client.newCall(request).execute()
         } catch (exception: IOException) {
-            if (retry > 0) {
-                logger.info("retry request: $request")
-                return execute(request, handler, retry - 1)
-            }
             val message = buildMessage(request)
             throw InnerCosException("Failed to execute http request: $message", exception)
         }
