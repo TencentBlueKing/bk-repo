@@ -317,7 +317,7 @@ class ArtifactDataReceiver(
                 // 开Transfer功能时，从NFS转移到本地盘
                 cleanOriginalOutputStream()
                 val originalFile = originalPath.resolve(filename)
-                val filePath = path.resolve(filename).apply { this.createFile() }
+                val filePath = this.filePath.apply { this.createFile() }
                 originalFile.toFile().inputStream().use {
                     outputStream = filePath.toFile().outputStream()
                     it.copyTo(outputStream, bufferSize)
