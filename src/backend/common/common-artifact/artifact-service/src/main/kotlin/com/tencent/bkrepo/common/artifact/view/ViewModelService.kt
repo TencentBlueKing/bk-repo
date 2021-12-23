@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.apache.commons.lang.StringEscapeUtils
 import java.io.PrintWriter
+import java.net.URLEncoder
 
 class ViewModelService(
     private val viewModelProperties: ViewModelProperties
@@ -107,7 +108,8 @@ class ViewModelService(
                 row.itemList.forEachIndexed { columnIndex, item ->
                     if (columnIndex == 0) {
                         val escapedItem = StringEscapeUtils.escapeXml(item)
-                        writer.print("""<a href="$item">$escapedItem</a>""")
+                        val encodedItem = URLEncoder.encode(item, Charsets.UTF_8.name())
+                        writer.print("""<a href="$encodedItem">$escapedItem</a>""")
                         writer.print(" ".repeat(headerList[columnIndex].width!! - item.length))
                     } else {
                         writer.print(item.padEnd(headerList[columnIndex].width!!))
