@@ -65,6 +65,7 @@ class OperateLogServiceImpl(
         operateLogDao.insert(log)
     }
 
+    @Async
     override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
         val logs = eventList.map {
             TOperateLog(
@@ -82,13 +83,22 @@ class OperateLogServiceImpl(
 
     override fun listPage(option: OpLogListOption): Page<OperateLog> {
         with(option) {
-            val query = Query(
-                where(TOperateLog::projectId).isEqualTo(projectId)
-                    .and(TOperateLog::repoName).isEqualTo(repoName)
-                    .and(TOperateLog::resourceKey).isEqualTo(resourceKey)
-                    .and(TOperateLog::type).isEqualTo(eventType)
-                    .and(TOperateLog::createdDate).gte(startTime).lte(endTime)
-            )
+            val criteria = where(TOperateLog::projectId).isEqualTo(projectId)
+                .and(TOperateLog::repoName).isEqualTo(repoName)
+                .and(TOperateLog::type).isEqualTo(eventType)
+                .and(TOperateLog::createdDate).gte(startTime).lte(endTime)
+                .apply {
+                    userId?.run { and(TOperateLog::userId).isEqualTo(userId) }
+                    sha256?.run { and("${TOperateLog::description.name}.sha256").isEqualTo(sha256) }
+                    pipelineId?.run { and("${TOperateLog::description.name}.pipelineId").isEqualTo(pipelineId) }
+                    buildId?.run { and("${TOperateLog::description.name}.buildId").isEqualTo(buildId) }
+                }
+            if (prefixSearch) {
+                criteria.and(TOperateLog::resourceKey).regex("^$resourceKey")
+            } else {
+                criteria.and(TOperateLog::resourceKey).isEqualTo(resourceKey)
+            }
+            val query = Query(criteria)
             val totalCount = operateLogDao.count(query)
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val sort = Sort.by(Sort.Direction.valueOf(direction.toString()), TOperateLog::createdDate.name)

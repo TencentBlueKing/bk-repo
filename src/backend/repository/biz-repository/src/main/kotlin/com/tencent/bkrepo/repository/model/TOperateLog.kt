@@ -46,7 +46,7 @@ import java.time.LocalDateTime
 )
 data class TOperateLog(
     var id: String? = null,
-    @ShardingKey(count = 12)
+    @ShardingKey
     var createdDate: LocalDateTime = LocalDateTime.now(),
     var type: EventType,
     var projectId: String?,

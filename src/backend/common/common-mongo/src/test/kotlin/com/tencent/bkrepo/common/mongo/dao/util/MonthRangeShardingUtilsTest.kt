@@ -25,34 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util.sharding
+package com.tencent.bkrepo.common.mongo.dao.util
 
-import org.bson.Document
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 
-object MonthRangeShardingUtils : RangeShardingUtils {
+class MonthRangeShardingUtilsTest {
 
-    override fun shardingCountFor(i: Int): Int {
-        return -1
+    @Test
+    fun testShardingSequence() {
+        Assertions.assertEquals(
+            202112,
+            MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.parse("2021-12-01T00:01:24.123"), -1)
+        )
+        Assertions.assertEquals(
+            202201,
+            MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.parse("2022-01-01T11:01:24.000"), -1)
+        )
     }
-
-    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
-        require(value is LocalDateTime)
-        return calculateSequence(value)
-    }
-
-    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
-        require(value is Document && value.size == 2)
-        val startValue = (value["\$gte"] ?: value["\$gt"]) as LocalDateTime
-        val endValue = (value["\$lte"] ?: value["\$lt"]) as LocalDateTime
-        var yearMonth = startValue
-        val sequences = mutableSetOf<Int>()
-        do {
-            sequences.add(calculateSequence(yearMonth))
-            yearMonth = yearMonth.plusMonths(1L)
-        } while (calculateSequence(yearMonth) <= calculateSequence(endValue))
-        return sequences
-    }
-
-    private fun calculateSequence(value: LocalDateTime) = value.year * 100 + value.monthValue
 }

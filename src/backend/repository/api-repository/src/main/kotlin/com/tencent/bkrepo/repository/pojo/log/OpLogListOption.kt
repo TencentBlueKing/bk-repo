@@ -49,12 +49,12 @@ data class OpLogListOption(
     val resourceKey: String,
     @ApiModelProperty("事件类型")
     val eventType: EventType,
-//    @ApiModelProperty("sha256校验值")
-//    val sha256: String,
-//    @ApiModelProperty("流水线Id")
-//    val pipelineId: String?,
-//    @ApiModelProperty("流水线构建Id")
-//    val buildId: String?,
+    @ApiModelProperty("sha256校验值")
+    val sha256: String?,
+    @ApiModelProperty("流水线Id")
+    val pipelineId: String?,
+    @ApiModelProperty("流水线构建Id")
+    val buildId: String?,
     @ApiModelProperty("下载用户Id")
     val userId: String?,
     @ApiModelProperty("查询起始时间")
@@ -62,5 +62,7 @@ data class OpLogListOption(
     @ApiModelProperty("查询截至时间")
     val endTime: LocalDateTime = LocalDateTime.now(),
     @ApiModelProperty("时间排序方向")
-    val direction: Sort.Direction? = Sort.Direction.DESC
+    val direction: Sort.Direction = Sort.Direction.DESC,
+    @ApiModelProperty("前缀查询")
+    val prefixSearch: Boolean = false
 )

@@ -103,6 +103,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     private fun ensureIndex() {
+        if (shardingCount < 0) {
+            return
+        }
         val start = System.currentTimeMillis()
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
         val nonexistentIndexDefinitions = filterExistedIndex(indexDefinitions)

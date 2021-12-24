@@ -28,5 +28,4 @@
 package com.tencent.bkrepo.common.mongo.dao.util.sharding
 
 interface RangeShardingUtils : ShardingUtils {
-
 }

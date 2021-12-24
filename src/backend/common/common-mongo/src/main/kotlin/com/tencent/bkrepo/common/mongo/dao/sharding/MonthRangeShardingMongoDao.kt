@@ -27,12 +27,53 @@
 
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
+import com.google.common.cache.CacheBuilder
+import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
+import org.springframework.data.mongodb.core.index.IndexDefinition
+import java.util.concurrent.TimeUnit
 
 abstract class MonthRangeShardingMongoDao<E> : RangeShardingMongoDao<E>() {
 
+    private val indexCache = CacheBuilder.newBuilder()
+        .maximumSize(100)
+        .expireAfterWrite(1, TimeUnit.DAYS)
+        .build<String, Boolean>()
+
     override fun determineShardingUtils(): ShardingUtils {
         return MonthRangeShardingUtils
+    }
+
+    override fun insert(entity: E): E {
+        ensureIndex(entity)
+        return super.insert(entity)
+    }
+
+    override fun insert(entityCollection: Collection<E>): Collection<E> {
+        ensureIndex(entityCollection.first())
+        return super.insert(entityCollection)
+    }
+
+    override fun save(entity: E): E {
+        ensureIndex(entity)
+        return super.save(entity)
+    }
+
+    private fun getIndexCacheKey(collectionName: String, indexDefinition: IndexDefinition): String {
+        return collectionName + indexDefinition.hashCode()
+    }
+
+    private fun ensureIndex(entity: E) {
+        val collectionName = determineCollectionName(entity)
+        val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
+        indexDefinitions.forEach {
+            val indexCacheKey = getIndexCacheKey(collectionName, it)
+            if (indexCache.getIfPresent(indexCacheKey) != true) {
+                determineMongoTemplate().indexOps(collectionName).ensureIndex(it)
+                indexCache.put(indexCacheKey, true)
+                logger.info("$collectionName create Index: $it")
+            }
+        }
     }
 }
