@@ -31,12 +31,17 @@
 
 package com.tencent.bkrepo.repository.job
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.job.base.CenterNodeJob
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.service.node.impl.NodeBaseService
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 
 /**
@@ -45,24 +50,31 @@ import org.springframework.stereotype.Component
 @Component
 class RepoUsedVolumeSynJob(
     private val nodeBaseService: NodeBaseService
-) : CenterNodeJob() {
+) {
 
     private val repositoryDao = nodeBaseService.repositoryDao
 
-    override fun run() {
-        var pageNum = 1
-        val pageSize = 1000
-        var querySize: Int
-        do {
-            val pageRequest = Pages.ofRequest(pageNum, pageSize)
-            val repoList = repositoryDao.find(Query().with(pageRequest))
-            repoList.forEach {
-                val usedVolume = nodeBaseService.computeSize(ArtifactInfo(it.projectId, it.name, PathUtils.ROOT)).size
-                it.used = usedVolume
-                repositoryDao.save(it)
-            }
-            querySize = repoList.size
-            pageNum ++
-        } while (querySize == pageSize)
+    fun syn(projectId: String, repoName: String): Long {
+        logger.info("start to synchronize repo used volume, projectId: $projectId, repoName: $repoName")
+        val query = Query(
+            where(TRepository::projectId).isEqualTo(projectId)
+                .and(TRepository::name).isEqualTo(repoName)
+        )
+        val repo = repositoryDao.findOne(query)
+            ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+        return if (repo.quota != null){
+            val usedVolume = nodeBaseService.computeSize(ArtifactInfo(projectId, repoName, PathUtils.ROOT)).size
+            repo.used = usedVolume
+            repositoryDao.save(repo)
+            logger.info("synchronize repo[$projectId/$repoName] used volume job finished, used volume: $usedVolume")
+            usedVolume
+        } else {
+            logger.warn("repo[$projectId/$repoName] quota is null.")
+            -1
+        }
+    }
+
+    companion object {
+        private val logger = LoggerHolder.jobLogger
     }
 }
