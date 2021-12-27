@@ -72,7 +72,7 @@ open class StreamArtifactFile(
             storageProperties.receive,
             storageProperties.monitor,
             path,
-            randomFilePath = true
+            randomPath = true
         )
         if (!storageProperties.receive.resolveLazily) {
             init()
