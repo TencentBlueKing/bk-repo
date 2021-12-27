@@ -1,59 +1,44 @@
 <template>
-    <bk-dialog
-        v-model="showLoginDialog"
-        :close-icon="false"
-        :quick-close="false"
-        :draggable="false"
-        :show-footer="false">
-        <div class="flex-center login-logo">
-            <svg
-                :width="42"
-                :height="42"
-                style="fill: currentColor"
-            >
-                <use xlink:href="#color-logo-bkrepo" />
-            </svg>
-            <header class="ml20 login-title">{{ $t('bkrepo') }}</header>
+    <div class="login-container flex-align-center" v-if="showLoginDialog">
+        <div class="login-bg"></div>
+        <div class="login-main flex-column flex-align-center">
+            <img width="150" height="50" src="/ui/logo_login.png" />
+            <bk-form ref="loginForm" class="login-form" :label-width="0">
+                <bk-form-item>
+                    <bk-input
+                        style="width: 320px"
+                        v-model.trim="loginForm.username"
+                        placeholder="请输入用户名/邮箱/手机号">
+                    </bk-input>
+                </bk-form-item>
+                <bk-form-item>
+                    <bk-input
+                        style="width: 320px"
+                        v-model.trim="loginForm.password"
+                        placeholder="请输入密码"
+                        type="password"
+                        :native-attributes="{
+                            autocomplete: 'on'
+                        }">
+                    </bk-input>
+                </bk-form-item>
+                <bk-form-item>
+                    <div v-show="loginFailed" class="flex-align-center login-error-tip">
+                        <i class="mr5 bk-icon icon-exclamation-circle"></i>
+                        {{ disableLogin ? `登录失败次数过多，请${wait}s后重试` : $t('loginErrorTip') }}
+                    </div>
+                    <bk-button
+                        class="login-button"
+                        :disabled="!loginForm.username || !loginForm.password || disableLogin"
+                        theme="primary"
+                        :loading="loginForm.loading"
+                        @click="submitLogin">
+                        {{$t('login')}}
+                    </bk-button>
+                </bk-form-item>
+            </bk-form>
         </div>
-        <div v-show="loginFailed" class="flex-align-center login-error-tip">
-            <i class="mr5 bk-icon icon-exclamation-circle-shape"></i>
-            {{ $t('loginErrorTip') }}
-        </div>
-        <bk-form ref="loginForm" class="login-form" :label-width="0">
-            <bk-form-item>
-                <bk-input
-                    class="login-input"
-                    v-model.trim="loginForm.username"
-                    size="large"
-                    :placeholder="$t('username')"
-                    left-icon="bk-icon icon-user">
-                </bk-input>
-            </bk-form-item>
-            <bk-form-item>
-                <bk-input
-                    class="login-input"
-                    v-model.trim="loginForm.password"
-                    type="password"
-                    size="large"
-                    :native-attributes="{
-                        autocomplete: 'on'
-                    }"
-                    :placeholder="$t('password')"
-                    left-icon="bk-icon icon-lock">
-                </bk-input>
-            </bk-form-item>
-            <bk-form-item>
-                <bk-button
-                    class="login-button"
-                    size="large"
-                    :loading="loginForm.loading"
-                    theme="primary"
-                    @click="submitLogin">
-                    {{$t('login')}}
-                </bk-button>
-            </bk-form-item>
-        </bk-form>
-    </bk-dialog>
+    </div>
 </template>
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex'
@@ -61,12 +46,16 @@
         name: 'login',
         data () {
             return {
+                disableLogin: false,
+                loginFailCounter: 0,
+                wait: 0,
                 loginFailed: false,
                 loginForm: {
                     loading: false,
                     username: '',
                     password: ''
-                }
+                },
+                countdownInterval: null
             }
         },
         computed: {
@@ -78,7 +67,19 @@
                     document.addEventListener('keydown', this.enterEvent)
                 } else {
                     document.removeEventListener('keydown', this.enterEvent)
+                    clearInterval(this.countdownInterval)
                 }
+            },
+            loginFailCounter (val) {
+                if (val > 4) this.countdown()
+            }
+        },
+        mounted () {
+            const time = localStorage.getItem('login_time')
+            localStorage.removeItem('login_time')
+            const wait = time - new Date().getTime()
+            if (wait > 0) {
+                this.countdown(Math.floor(wait / 1000))
             }
         },
         methods: {
@@ -86,10 +87,6 @@
             ...mapActions(['bkrepoLogin']),
             submitLogin () {
                 this.loginFailed = false
-                if (!this.loginForm.username || !this.loginForm.password) {
-                    this.loginFailed = true
-                    return
-                }
                 const formData = new FormData()
                 formData.append('uid', this.loginForm.username)
                 formData.append('token', this.loginForm.password)
@@ -100,45 +97,95 @@
                             message: this.$t('login') + this.$t('success')
                         })
                         this.SHOW_LOGIN_DIALOG(false)
-                        location.href = ''
+                        location.href = this.getAfterLogin()
+                        this.loginFailCounter = 0
                     } else {
                         this.loginFailed = true
+                        this.loginFailCounter++
                     }
                 })
             },
+            getAfterLogin () {
+                const afterLoginUrl = sessionStorage.getItem('afterLogin')
+                sessionStorage.removeItem('afterLogin')
+                return afterLoginUrl || ''
+            },
             enterEvent (e) {
-                if (e.keyCode === 13) this.submitLogin()
+                if (e.keyCode === 13 && this.formData.username && this.formData.password && !this.disableLogin) this.submitLogin()
+            },
+            countdown (counter = 60) {
+                this.wait = counter
+                this.loginFailed = true
+                this.disableLogin = true
+                this.countdownInterval = setInterval(() => {
+                    this.wait--
+                    if (this.wait < 1) {
+                        clearInterval(this.countdownInterval)
+                        this.disableLogin = false
+                        this.loginFailed = false
+                        this.loginFailCounter = 0
+                    } else {
+                        const now = new Date().getTime()
+                        localStorage.setItem('login_time', (now + this.wait * 1000).toString())
+                    }
+                }, 1000)
             }
         }
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
-.login-logo {
-    padding-bottom: 20px;
-    border-bottom: 1px solid $borderWeightColor;
-    svg {
-        margin-left: -20px;
+.login-container{
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10000;
+    background-color: var(--bgWeightColor);
+    .login-bg {
+        flex: 1;
+        height: 100%;
+        background-image: url('/ui/bg_login.png');
+        background-position: center left;
+        background-size: cover;
     }
-    .login-title {
-        font-size: 24px;
-        letter-spacing: 1.5px;
+    .login-main {
+        position: relative;
+        height: 100%;
+        overflow-y: auto;
+        padding-top: 20vh;
+        padding-bottom: 10vh;
+        width: 440px;
+        background-color: white;
+        transition: width .5s;
+        .login-form {
+            margin-top: 90px;
+            ::v-deep .bk-form-input {
+                height: 46px;
+                line-height: 46px;
+                border-radius: 4px;
+            }
+            .login-button {
+                width: 100%;
+                height: 46px;
+                margin-top: 10px;
+                font-size: 14px;
+                border-radius: 4px;
+                &.is-disabled {
+                    background: rgba(58, 132, 255, 0.4);
+                }
+            }
+        }
+        .login-error-tip {
+            position: absolute;
+            margin-top: -20px;
+            color: var(--dangerColor);
+        }
     }
 }
-.login-error-tip {
-    position: absolute;
-    margin-left: 25px;
-    margin-top: 10px;
-    font-size: 12px;
-    color: $failColor;
-}
-.login-form {
-    margin: 40px 0 30px;
-    .login-button {
-        width: 100%;
-        height: 40px;
-        font-size: 12px;
-        margin-top: 20px;
+@media screen and (min-width: 1600px) {
+    .login-container .login-main {
+        width: 600px;
     }
 }
 </style>

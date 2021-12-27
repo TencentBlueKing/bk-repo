@@ -18,17 +18,39 @@
     "@babel/plugin-transform-object-assign": "^7.14.5",
     "@babel/plugin-transform-runtime": "^7.15.8",
     "@babel/preset-env": "^7.15.8",
-    "@babel/runtime-corejs3": "^7.15.4",
     "@commitlint/cli": "^9.1.1",
     "@commitlint/config-conventional": "^9.1.1",
     "babel-helper-vue-jsx-merge-props": "^2.0.3",
     "babel-loader": "^8.2.2",
     "babel-plugin-transform-vue-jsx": "4.0.1",
+    "cross-env": "^7.0.3",
+    "css-loader": "^6.4.0",
+    "eslint": "^7.3.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-friendly-formatter": "~4.0.1",
+    "eslint-loader": "^2.1.2",
+    "eslint-plugin-import": "^2.25.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "eslint-plugin-vue": "6.2.2",
     "gulp": "^4.0.2",
     "husky": "^3.0.7",
     "lerna": "3.17.0",
     "lint-staged": "^10.2.11",
-    "ora": "^3.4.0"
+    "mini-css-extract-plugin": "^2.4.2",
+    "ora": "^3.4.0",
+    "sass": "^1.42.1",
+    "sass-loader": "^12.1.0",
+    "style-loader": "^0.23.0",
+    "svg-sprite-loader": "^6.0.9",
+    "vue-loader": "^15.9.8",
+    "vue-style-loader": "^3.0.3",
+    "vue-template-compiler": "^2.6.12",
+    "webpack": "^5.58.1",
+    "webpack-bundle-analyzer": "^4.4.2",
+    "webpack-cli": "^4.9.0",
+    "webpack-dev-server": "^4.3.1"
   },
   "scripts": {
     "start": "lerna bootstrap",
@@ -39,17 +61,13 @@
     "changelog": "conventional-changelog -c changelog.config.js -p github -i CHANGELOG.md -s",
     "public": "gulp -d frontend"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "*.{js,ts,tsx,vue}": [
       "eslint --fix"
     ]
   },
   "workspaces": [
-    "devops-repository"
+    "devops-repository",
+    "devops-software"
   ]
 }

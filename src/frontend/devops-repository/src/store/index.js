@@ -4,10 +4,14 @@ import actions from './actions'
 
 Vue.use(Vuex)
 
-export default new Vuex.Store({
+const storeObject = {
     state: {
-        showLoginDialog: false,
-        breadcrumb: [],
+        showLoginDialog: Boolean(window.login),
+        permission: {
+            write: true,
+            edit: true,
+            delete: true
+        },
         genericTree: [
             {
                 name: '/',
@@ -30,7 +34,8 @@ export default new Vuex.Store({
             name: '',
             email: '',
             phone: '',
-            admin: true
+            admin: true,
+            manage: false
         },
         domain: {
             docker: '',
@@ -44,16 +49,8 @@ export default new Vuex.Store({
         }
     },
     mutations: {
-        INIT_TREE (state) {
-            state.genericTree = [
-                {
-                    name: '/',
-                    fullPath: '',
-                    folder: true,
-                    children: [],
-                    roadMap: '0'
-                }
-            ]
+        INIT_TREE (state, root) {
+            state.genericTree = root
         },
         UPDATE_TREE (state, { roadMap, list }) {
             let tree = state.genericTree
@@ -70,9 +67,6 @@ export default new Vuex.Store({
                 }
             })
             tree.splice(0, tree.length, ...list)
-        },
-        SET_BREADCRUMB (state, data) {
-            state.breadcrumb = data
         },
         SET_USER_LIST (state, data) {
             state.userList = {
@@ -99,7 +93,13 @@ export default new Vuex.Store({
             state.clusterList = data
         },
         SET_PROJECT_LIST (state, data) {
-            state.projectList = data
+            state.projectList = data.map(v => {
+                return {
+                    ...v,
+                    id: v.name || v.englishName,
+                    name: v.displayName || v.projectName
+                }
+            })
         },
         SET_REPO_LIST_ALL (state, data) {
             state.repoListAll = data
@@ -109,4 +109,27 @@ export default new Vuex.Store({
         }
     },
     actions
-})
+}
+
+export function createExtStore ({ state = {}, getters = {}, mutations = {}, actions = {} }) {
+    return new Vuex.Store({
+        state: {
+            ...storeObject.state,
+            ...state
+        },
+        getters: {
+            ...storeObject.getters,
+            ...getters
+        },
+        mutations: {
+            ...storeObject.mutations,
+            ...mutations
+        },
+        actions: {
+            ...storeObject.actions,
+            ...actions
+        }
+    })
+}
+
+export default new Vuex.Store(storeObject)

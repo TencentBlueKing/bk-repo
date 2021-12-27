@@ -1,0 +1,185 @@
+
+body {
+    /*  */
+    .bk-page {
+        margin-top: -1px;
+        border-top: 1px solid var(--borderColor);
+    }
+    /* 表格 */
+    .bk-table {
+        /* 列边距 */
+        .cell {
+            padding: 0 10px;
+        }
+        /* 行高 */
+        td, th {
+            height: 40px;
+            /* 列边距 */
+            &:first-child > .cell {
+                padding-left: 30px;
+            }
+            &:last-child > .cell {
+                padding-right: 30px;
+            }
+        }
+        th {
+            :hover {
+                background-color: transparent;
+            }
+            > .cell {
+                height: 40px;
+                line-height: 40px;
+            }
+        }
+        /* 行hover背景 */
+        .bk-table-body tr.bk-table-row.hover-row > td {
+            background-color: var(--bgLighterColor);
+        }
+        /* 流体布局适应 */
+        .bk-table-body-wrapper {
+            overflow-y: auto!important;
+        }
+        .bk-table-body,
+        .bk-table-footer,
+        .bk-table-header,
+        .bk-table-empty-block {
+            width: auto!important;
+        }
+        .bk-table-empty-text {
+            padding: 20px 0 100px;
+        }
+    }
+    /* 按钮 */
+    .bk-button,
+    .bk-button.no-slot {
+        padding: 0 2px;
+        height: 30px;
+        line-height: 28px;
+        min-width: 56px;
+        .bk-icon {
+            font-size: 20px;
+        }
+    }
+    /* 面包屑 */
+    .bk-breadcrumb .bk-breadcrumb-item {
+        display: inline-flex;
+        align-items: center;
+        .bk-breadcrumb-separator {
+            margin: 0;
+            font-size: 20px;
+        }
+    }
+    /* 字体颜色重置 */
+    .bk-breadcrumb .bk-breadcrumb-item,
+    .bk-table,
+    .bk-form .bk-label,
+    .bk-form-checkbox .bk-checkbox-text,
+    .bk-form-radio,
+    .bk-tab-header,
+    .bk-form-control,
+    .bk-button,
+    .bk-select,
+    .bk-sideslider-title {
+        color: var(--fontPrimaryColor);
+    }
+
+    .bk-breadcrumb .bk-breadcrumb-item:last-child,
+    .bk-table th .bk-table-header-label,
+    .bk-form-radio-button .bk-radio-button-text {
+        color: var(--fontSubsidiaryColor);
+    }
+    /* 字体大小重置 */
+    .bk-form .bk-label,
+    .bk-form-checkbox .bk-checkbox-text,
+    .bk-breadcrumb,
+    .bk-button,
+    .bk-button-text,
+    .bk-form-radio {
+        font-size: 12px;
+    }
+    .bk-sideslider-title {
+        font-size: 14px;
+    }
+    /* 边框颜色重置 */
+    .bk-table:before {
+        background-color: var(--borderColor);
+    }
+    .bk-table td,
+    .bk-table th.is-leaf {
+        border-color: var(--borderColor);
+    }
+    .bk-form-input,
+    .bk-form-control .group-box,
+    .bk-form-password,
+    .bk-form-select,
+    .bk-form-textarea,
+    .bk-textarea-wrapper,
+    .bk-select,
+    .bk-button,
+    .bk-date-picker-rel .bk-date-picker-editor,
+    .bk-form-checkbox .bk-checkbox,
+    .bk-form-radio input[type=radio] {
+        border-color: var(--borderWeightColor);
+    }
+    .bk-form-radio:hover {
+        color: var(--primaryColor);
+        input[type=radio] {
+            border-color: var(--primaryColor);
+        }
+    }
+
+    .bk-tab-label-item .bk-tab-label {
+        position: relative;
+        &::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: var(--activeBarHeight);
+            background: var(--primaryColor);
+            transition: width .3s cubic-bezier(.645,.045,.355,1);
+            will-change: width;
+        }
+    }
+    .bk-tab-label-item.active .bk-tab-label {
+        font-weight: bold;
+        &::before {
+            width: 100%;
+        }
+    }
+    .bk-tab-label-list-has-bar:after {
+        background: transparent;
+    }
+
+    .bk-message-icon {
+        min-width: 20px !important;
+    }
+
+    .bk-option-name {
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .bk-sideslider-content {
+        height: calc(100% - 60px);
+        overflow: hidden;
+    }
+    .bk-tag-selector{
+        .bk-tag-input {
+            height: 32px;
+            .tag-list {
+                position: absolute;
+                width: calc(100% - 25px);
+                height: 100%;
+                float: none;
+            }
+            .clear-icon {
+                position: absolute;
+                right: 0;
+            }
+        }
+    }
+}

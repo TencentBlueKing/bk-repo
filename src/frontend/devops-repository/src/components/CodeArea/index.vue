@@ -1,17 +1,18 @@
 <template>
     <div class="code-area"
         :style="{
-            'background-color': bgColor,
-            'color': color
-        }">
+            '--bgColor': bgColor,
+            '--color': color
+        }"
+        @click="copyCode()">
         <div v-for="code in codeList" :key="code + Math.random()"
             :class="{
                 'code-main': true,
-                'line-number': lineNumber && codeList.length > 1
+                'line-number': showLineNumber && codeList.length > 1
             }">
             <pre class="code-pre">{{ code }}</pre>
         </div>
-        <i class="code-copy devops-icon icon-clipboard" @click="copyCode()"></i>
+        <Icon size="28" name="copy" class="code-copy" />
     </div>
 </template>
 <script>
@@ -23,17 +24,17 @@
                 type: Array,
                 default: () => []
             },
-            lineNumber: {
+            showLineNumber: {
                 type: Boolean,
                 default: true
             },
             bgColor: {
                 type: String,
-                default: '#555e66'
+                default: '#E6EDF6'
             },
             color: {
                 type: String,
-                default: '#ffffff'
+                default: '#081E40'
             }
         },
         methods: {
@@ -63,19 +64,20 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .code-area {
     position: relative;
     line-height: 2;
-    padding: 10px 40px;
-    min-height: 48px;
+    padding: 13px 45px 13px 30px;
+    min-height: 50px;
     word-break: break-all;
     counter-reset: row-num;
+    color: var(--color);
+    background-color: var(--bgColor);
     .code-main {
         position: relative;
         &.line-number:before {
             position: absolute;
-            margin-left: -30px;
+            margin-left: -20px;
             counter-increment: row-num;
             content: counter(row-num);
         }
@@ -90,13 +92,17 @@
         visibility: hidden;
         top: 10px;
         right: 10px;
-        font-size: 24px;
+        padding: 5px;
+        border-radius: 2px;
+        color: var(--primaryColor);
+        background-color: white;
         cursor: pointer;
     }
-    &:hover .code-copy {
-        visibility: visible;
-        &:hover {
-            color: $iconPrimaryColor;
+    &:hover {
+        color: white;
+        background-color: var(--fontPrimaryColor);
+        .code-copy {
+            visibility: visible;
         }
     }
 }
