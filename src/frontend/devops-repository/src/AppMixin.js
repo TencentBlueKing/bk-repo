@@ -5,7 +5,7 @@ export default {
     name: 'App',
     components: { ConfirmDialog },
     computed: {
-        ...mapState(['projectList']),
+        ...mapState(['userInfo', 'projectList']),
         projectId () {
             return this.$route.params.projectId
         }

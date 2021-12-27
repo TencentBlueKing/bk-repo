@@ -60,6 +60,7 @@
                         :key="pkg.repoName + (pkg.key || pkg.fullPath)"
                         :card-data="pkg"
                         readonly
+                        @share="handlerShare"
                         @click.native="showCommonPackageDetail(pkg)">
                     </package-card>
                 </infinite-scroll>
@@ -73,19 +74,21 @@
             </empty-data>
         </main>
         <generic-detail ref="genericDetail"></generic-detail>
+        <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
     </div>
 </template>
 <script>
     import packageCard from '@repository/components/PackageCard'
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
+    import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import typeSelect from './typeSelect'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { repoEnum } from '@repository/store/publicEnum'
     export default {
         name: 'repoSearch',
-        components: { packageCard, InfiniteScroll, typeSelect, genericDetail },
+        components: { packageCard, InfiniteScroll, typeSelect, genericDetail, genericShareDialog },
         directives: {
             focus: {
                 inserted (el) {
@@ -216,6 +219,20 @@
                     folder: pkg.folder,
                     path: pkg.fullPath,
                     data: {}
+                })
+            },
+            handlerShare (cardData) {
+                this.$refs.genericShareDialog.setData({
+                    projectId: cardData.projectId,
+                    repoName: cardData.repoName,
+                    show: true,
+                    loading: false,
+                    title: `${this.$t('share')} (${cardData.name})`,
+                    path: cardData.fullPath,
+                    user: [],
+                    ip: [],
+                    permits: '',
+                    time: 7
                 })
             }
         }

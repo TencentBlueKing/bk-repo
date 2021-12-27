@@ -83,6 +83,8 @@
                 shareUrl: '',
                 sending: false,
                 genericShare: {
+                    projectId: '',
+                    repoName: '',
                     show: false,
                     loading: false,
                     title: '',
@@ -95,13 +97,7 @@
             }
         },
         computed: {
-            ...mapState(['userList']),
-            projectId () {
-                return this.$route.params.projectId
-            },
-            repoName () {
-                return this.$route.query.repoName
-            }
+            ...mapState(['userList'])
         },
         methods: {
             ...mapActions(['shareArtifactory', 'sendEmail']),
@@ -123,11 +119,11 @@
                 this.genericShare.show = false
             },
             submitShare () {
-                const { path, time, permits } = this.genericShare
+                const { projectId, repoName, path, time, permits } = this.genericShare
                 this.genericShare.loading = true
                 this.shareArtifactory({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
+                    projectId,
+                    repoName,
                     fullPathSet: [path],
                     type: 'DOWNLOAD',
                     host: location.origin,

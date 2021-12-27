@@ -314,6 +314,4 @@
         }
     }
 }
-.show-userlist-sideslider{
-}
 </style>
