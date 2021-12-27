@@ -43,5 +43,5 @@ data class CreateWebHookRequest(
     @ApiModelProperty("关联对象类型")
     val associationType: AssociationType,
     @ApiModelProperty("关联对象id")
-    val associationId: String
+    val associationId: String = ""
 )
