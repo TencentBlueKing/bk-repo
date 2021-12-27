@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.mongo.dao.util.sharding
 import org.bson.Document
 import java.time.LocalDateTime
 
-object MonthRangeShardingUtils : RangeShardingUtils {
+object MonthRangeShardingUtils : ShardingUtils {
 
     override fun shardingCountFor(i: Int): Int {
         return -1

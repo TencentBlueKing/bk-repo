@@ -198,7 +198,10 @@ class NodeRestoreSupportTest @Autowired constructor(
     @DisplayName("测试FAILED模式恢复存在冲突的目录")
     fun testRestoreFolder2() {
         val deletedTime = initTestFolder(true)
-        val option = NodeRestoreOption(deletedId = Timestamp.valueOf(deletedTime).time, conflictStrategy = ConflictStrategy.FAILED)
+        val option = NodeRestoreOption(
+            deletedId = Timestamp.valueOf(deletedTime).time,
+            conflictStrategy = ConflictStrategy.FAILED
+        )
         assertThrows<ErrorCodeException> { nodeService.restoreNode(artifactInfo("/"), option) }
     }
 
@@ -206,7 +209,10 @@ class NodeRestoreSupportTest @Autowired constructor(
     @DisplayName("测试SKIP模式恢复存在冲突的目录")
     fun testRestoreFolder3() {
         val deletedTime = initTestFolder(true)
-        val option = NodeRestoreOption(deletedId = Timestamp.valueOf(deletedTime).time, conflictStrategy = ConflictStrategy.SKIP)
+        val option = NodeRestoreOption(
+            deletedId = Timestamp.valueOf(deletedTime).time,
+            conflictStrategy = ConflictStrategy.SKIP
+        )
         val result = nodeService.restoreNode(artifactInfo("/a"), option)
 
         Assertions.assertEquals(2, result.restoreCount)
@@ -219,7 +225,10 @@ class NodeRestoreSupportTest @Autowired constructor(
     @DisplayName("测试OVERWRITE模式恢复存在冲突的目录")
     fun testRestoreFolder4() {
         val deletedTime = initTestFolder(true)
-        val option = NodeRestoreOption(deletedId = Timestamp.valueOf(deletedTime).time, conflictStrategy = ConflictStrategy.OVERWRITE)
+        val option = NodeRestoreOption(
+            deletedId = Timestamp.valueOf(deletedTime).time,
+            conflictStrategy = ConflictStrategy.OVERWRITE
+        )
         val result = nodeService.restoreNode(artifactInfo("/a"), option)
 
         Assertions.assertEquals(5, result.restoreCount)

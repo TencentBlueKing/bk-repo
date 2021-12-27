@@ -32,5 +32,4 @@ import com.tencent.bkrepo.repository.model.TOperateLog
 import org.springframework.stereotype.Repository
 
 @Repository
-class OperateLogDao : MonthRangeShardingMongoDao<TOperateLog>() {
-}
+class OperateLogDao : MonthRangeShardingMongoDao<TOperateLog>()
