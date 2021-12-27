@@ -128,34 +128,7 @@ class MavenLocalRepository(
         val request = super.buildNodeCreateRequest(context)
         val mavenArtifactInfo = context.artifactInfo as MavenArtifactInfo
         // 此处对请求的fullPath 做处理
-        val combineUrl: String = if (mavenArtifactInfo.isSnapshot()) {
-
-            if (getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE) {
-                val name = request.fullPath.split("/").last()
-                val nonUniqueName =
-                    name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId).combineToNonUnique()
-                request.fullPath.replace(name, nonUniqueName)
-            } else if (getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE) {
-                val name = request.fullPath.split("/").last()
-                val mavenVersion = name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
-                if (mavenVersion.timestamp.isNullOrBlank()) {
-                    // 查询最新记录
-                    val lastRecord = mavenMetadataService.searchOne(
-                        MavenMetadataSearchPojo(
-                            projectId = context.projectId,
-                            repoName = context.repoName,
-                            groupId = mavenArtifactInfo.groupId,
-                            artifactId = mavenArtifactInfo.artifactId,
-                            version = mavenArtifactInfo.versionId,
-                            classifier = mavenVersion.classifier,
-                            extension = mavenVersion.packaging
-                        )
-                    )
-                    val nonUniqueName = mavenVersion.combineToUnique(lastRecord?.buildNo)
-                    request.fullPath.replace(name, nonUniqueName)
-                } else mavenArtifactInfo.getArtifactFullPath()
-            } else mavenArtifactInfo.getArtifactFullPath()
-        } else mavenArtifactInfo.getArtifactFullPath()
+        val combineUrl = combineUrl(context, mavenArtifactInfo, request)
         val md5 = context.getArtifactMd5()
         val sha1 = context.getArtifactSha1()
         return request.copy(
@@ -166,6 +139,50 @@ class MavenLocalRepository(
                 HashType.SHA1.ext to sha1
             )
         )
+    }
+
+    /**
+     * 对请求参数和仓库SnapshotVersionBehavior的设置做判断，如果行为不一致生成新的url
+     */
+    private fun combineUrl(
+        context: ArtifactUploadContext,
+        mavenArtifactInfo: MavenArtifactInfo,
+        request: NodeCreateRequest
+    ): String {
+        var result: String? = null
+        if (mavenArtifactInfo.isSnapshot()
+            && getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE
+        ) {
+            val name = request.fullPath.split("/").last()
+            val nonUniqueName =
+                name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId).combineToNonUnique()
+            result = request.fullPath.replace(name, nonUniqueName)
+        } else if (mavenArtifactInfo.isSnapshot()
+            && getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
+        ) {
+            val name = request.fullPath.split("/").last()
+            val mavenVersion = name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
+            if (mavenVersion.timestamp.isNullOrBlank()) {
+                // 查询最新记录
+                mavenMetadataService.findAndModify(
+                    MavenMetadataSearchPojo(
+                        projectId = context.projectId,
+                        repoName = context.repoName,
+                        groupId = mavenArtifactInfo.groupId,
+                        artifactId = mavenArtifactInfo.artifactId,
+                        version = mavenArtifactInfo.versionId,
+                        classifier = mavenVersion.classifier,
+                        extension = mavenVersion.packaging
+                    )
+                ).apply {
+                    mavenVersion.timestamp = this.timestamp
+                    mavenVersion.buildNo = this.buildNo.toString()
+                }
+                val nonUniqueName = mavenVersion.combineToUnique()
+                result = request.fullPath.replace(name, nonUniqueName)
+            }
+        }
+        return result?:mavenArtifactInfo.getArtifactFullPath()
     }
 
     /**
