@@ -150,34 +150,36 @@ class MavenLocalRepository(
         request: NodeCreateRequest
     ): String {
         var result: String? = null
-        if (mavenArtifactInfo.isSnapshot()) {
-            if (getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE) {
-                val name = request.fullPath.split("/").last()
-                val nonUniqueName =
-                    name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId).combineToNonUnique()
-                result = request.fullPath.replace(name, nonUniqueName)
-            } else if (getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE) {
-                val name = request.fullPath.split("/").last()
-                val mavenVersion = name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
-                if (mavenVersion.timestamp.isNullOrBlank()) {
-                    // 查询最新记录
-                    mavenMetadataService.findAndModify(
-                        MavenMetadataSearchPojo(
-                            projectId = context.projectId,
-                            repoName = context.repoName,
-                            groupId = mavenArtifactInfo.groupId,
-                            artifactId = mavenArtifactInfo.artifactId,
-                            version = mavenArtifactInfo.versionId,
-                            classifier = mavenVersion.classifier,
-                            extension = mavenVersion.packaging
-                        )
-                    ).apply {
-                        mavenVersion.timestamp = this.timestamp
-                        mavenVersion.buildNo = this.buildNo.toString()
-                    }
-                    val nonUniqueName = mavenVersion.combineToUnique()
-                    result = request.fullPath.replace(name, nonUniqueName)
+        if (mavenArtifactInfo.isSnapshot()
+            && getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE
+        ) {
+            val name = request.fullPath.split("/").last()
+            val nonUniqueName =
+                name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId).combineToNonUnique()
+            result = request.fullPath.replace(name, nonUniqueName)
+        } else if (mavenArtifactInfo.isSnapshot()
+            && getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
+        ) {
+            val name = request.fullPath.split("/").last()
+            val mavenVersion = name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
+            if (mavenVersion.timestamp.isNullOrBlank()) {
+                // 查询最新记录
+                mavenMetadataService.findAndModify(
+                    MavenMetadataSearchPojo(
+                        projectId = context.projectId,
+                        repoName = context.repoName,
+                        groupId = mavenArtifactInfo.groupId,
+                        artifactId = mavenArtifactInfo.artifactId,
+                        version = mavenArtifactInfo.versionId,
+                        classifier = mavenVersion.classifier,
+                        extension = mavenVersion.packaging
+                    )
+                ).apply {
+                    mavenVersion.timestamp = this.timestamp
+                    mavenVersion.buildNo = this.buildNo.toString()
                 }
+                val nonUniqueName = mavenVersion.combineToUnique()
+                result = request.fullPath.replace(name, nonUniqueName)
             }
         }
         return result?:mavenArtifactInfo.getArtifactFullPath()
