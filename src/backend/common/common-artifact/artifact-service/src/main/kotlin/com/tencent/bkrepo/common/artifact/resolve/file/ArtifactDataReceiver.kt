@@ -230,7 +230,7 @@ class ArtifactDataReceiver(
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
         if (inMemory) {
-            val filePath = path.resolve(filename).apply { this.createFile() }
+            val filePath = this.filePath.apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
             contentBytes.writeTo(fileOutputStream)
             outputStream = fileOutputStream
@@ -319,7 +319,7 @@ class ArtifactDataReceiver(
                 // 开Transfer功能时，从NFS转移到本地盘
                 cleanOriginalOutputStream()
                 val originalFile = originalPath.resolve(filename)
-                val filePath = path.resolve(filename).apply { this.createFile() }
+                val filePath = this.filePath.apply { this.createFile() }
                 originalFile.toFile().inputStream().use {
                     outputStream = filePath.toFile().outputStream()
                     it.copyTo(outputStream, bufferSize)
@@ -355,7 +355,7 @@ class ArtifactDataReceiver(
             }
         } else {
             retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
-                val actualSize = Files.size(path.resolve(filename))
+                val actualSize = Files.size(this.filePath)
                 require(received == actualSize) {
                     "$received bytes received, but $actualSize bytes saved in file."
                 }
@@ -369,7 +369,7 @@ class ArtifactDataReceiver(
     private fun cleanTempFile() {
         if (!inMemory) {
             try {
-                Files.deleteIfExists(path.resolve(filename))
+                Files.deleteIfExists(this.filePath)
             } catch (ignored: IOException) {
             }
         }
