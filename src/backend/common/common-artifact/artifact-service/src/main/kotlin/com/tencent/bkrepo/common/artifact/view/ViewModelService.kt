@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.artifact.view
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.apache.commons.lang.StringEscapeUtils
 import java.io.PrintWriter
+import java.net.URLEncoder.encode
 
 class ViewModelService(
     private val viewModelProperties: ViewModelProperties
@@ -50,20 +52,20 @@ class ViewModelService(
         val host = viewModelProperties.domain
         val builder = StringBuilder(UrlFormatter.formatHost(host))
         val url = builder.append(HttpContextHolder.getRequest().requestURI).toString()
-        if (!url.endsWith(PathUtils.UNIX_SEPARATOR)) {
+        if (!url.endsWith(UNIX_SEPARATOR)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
     }
 
     fun computeCurrentPath(currentNode: NodeDetail): String {
         val builder = StringBuilder()
-        builder.append(PathUtils.UNIX_SEPARATOR)
+        builder.append(UNIX_SEPARATOR)
             .append(currentNode.projectId)
-            .append(PathUtils.UNIX_SEPARATOR)
+            .append(UNIX_SEPARATOR)
             .append(currentNode.repoName)
             .append(currentNode.fullPath)
         if (!PathUtils.isRoot(currentNode.fullPath)) {
-            builder.append(PathUtils.UNIX_SEPARATOR)
+            builder.append(UNIX_SEPARATOR)
         }
         return builder.toString()
     }
@@ -107,7 +109,13 @@ class ViewModelService(
                 row.itemList.forEachIndexed { columnIndex, item ->
                     if (columnIndex == 0) {
                         val escapedItem = StringEscapeUtils.escapeXml(item)
-                        writer.print("""<a href="$item">$escapedItem</a>""")
+                        // 不对末尾的'/'进行URLEncode，避免在访问目录链接时触发重定向
+                        val encodedItem = if (item.endsWith(UNIX_SEPARATOR)) {
+                            encode(item.substring(0, item.length - 1), Charsets.UTF_8.name()) + UNIX_SEPARATOR
+                        } else {
+                            encode(item, Charsets.UTF_8.name())
+                        }
+                        writer.print("""<a href="$encodedItem">$escapedItem</a>""")
                         writer.print(" ".repeat(headerList[columnIndex].width!! - item.length))
                     } else {
                         writer.print(item.padEnd(headerList[columnIndex].width!!))
