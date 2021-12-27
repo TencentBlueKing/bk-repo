@@ -40,6 +40,7 @@ dependencies {
     api(project(":common:common-storage:storage-service"))
 
     api("org.springframework.boot:spring-boot-starter-aop")
+    api("io.micrometer:micrometer-registry-prometheus")
     api("org.influxdb:influxdb-java")
 
 }
