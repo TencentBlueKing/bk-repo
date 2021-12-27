@@ -181,6 +181,7 @@ internal class ArtifactDataReceiverTest {
         )
         val source = shortContent.byteInputStream()
         receiver.receiveStream(source)
+        receiver.finish()
         Assertions.assertFalse(Files.exists(primaryPath.resolve(filename)))
         Assertions.assertTrue(receiver.filePath.startsWith(primaryPath))
     }
@@ -232,7 +233,7 @@ internal class ArtifactDataReceiverTest {
     private fun createReceiver(
         enableTransfer: Boolean,
         fileSizeThreshold: Long = DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
-        randomFilePath: Boolean = false
+        randomPath: Boolean = false
     ): ArtifactDataReceiver {
         val receive = ReceiveProperties(
             fileSizeThreshold = DataSize.ofBytes(fileSizeThreshold),
@@ -241,6 +242,6 @@ internal class ArtifactDataReceiverTest {
         val monitor = MonitorProperties(
             enableTransfer = enableTransfer
         )
-        return ArtifactDataReceiver(receive, monitor, primaryPath, filename, randomFilePath)
+        return ArtifactDataReceiver(receive, monitor, primaryPath, filename, randomPath)
     }
 }

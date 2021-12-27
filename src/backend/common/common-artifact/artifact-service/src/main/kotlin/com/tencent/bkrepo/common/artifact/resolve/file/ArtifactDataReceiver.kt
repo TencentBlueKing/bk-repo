@@ -65,7 +65,7 @@ class ArtifactDataReceiver(
     private val monitorProperties: MonitorProperties,
     private var path: Path,
     private val filename: String = generateRandomName(),
-    private val randomFilePath: Boolean = false
+    private val randomPath: Boolean = false
 ) : StorageHealthMonitor.Observer {
 
     /**
@@ -110,14 +110,10 @@ class ArtifactDataReceiver(
         get() = contentBytes.toByteArray()
 
     /**
-     * 文件定位器
-     * */
-    private val fileLocator = HashFileLocator()
-
-    /**
      * 接收文件路径
      */
-    val filePath: Path = if (randomFilePath) generateRandomFilePath(path, filename) else path.resolve(filename)
+    val filePath: Path
+        get() = path.resolve(filename)
 
     /**
      * 数据摘要计算监听类
@@ -153,6 +149,12 @@ class ArtifactDataReceiver(
      * 接收是否完成
      */
     var finished = false
+
+    init {
+        if (randomPath) {
+            path = generateRandomPath(path, filename)
+        }
+    }
 
     override fun unhealthy(fallbackPath: Path?, reason: String?) {
         if (!finished && !fallback) {
@@ -228,7 +230,7 @@ class ArtifactDataReceiver(
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
         if (inMemory) {
-            val filePath = this.filePath.apply { this.createFile() }
+            val filePath = path.resolve(filename).apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
             contentBytes.writeTo(fileOutputStream)
             outputStream = fileOutputStream
@@ -317,7 +319,7 @@ class ArtifactDataReceiver(
                 // 开Transfer功能时，从NFS转移到本地盘
                 cleanOriginalOutputStream()
                 val originalFile = originalPath.resolve(filename)
-                val filePath = this.filePath.apply { this.createFile() }
+                val filePath = path.resolve(filename).apply { this.createFile() }
                 originalFile.toFile().inputStream().use {
                     outputStream = filePath.toFile().outputStream()
                     it.copyTo(outputStream, bufferSize)
@@ -376,9 +378,10 @@ class ArtifactDataReceiver(
     /**
      * 生成随机文件路径
      * */
-    private fun generateRandomFilePath(root: Path, filename: String): Path {
+    private fun generateRandomPath(root: Path, filename: String): Path {
+        val fileLocator = HashFileLocator()
         val dir = fileLocator.locate(filename.sha256())
-        return Paths.get(root.toFile().path, dir, filename)
+        return Paths.get(root.toFile().path, dir)
     }
 
     companion object {
