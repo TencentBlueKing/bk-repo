@@ -131,7 +131,10 @@ class NodeRestoreSupportTest @Autowired constructor(
         Assertions.assertEquals(1, list.size)
 
         // FAILED 模式恢复
-        val option1 = NodeRestoreOption(deletedId = Timestamp.valueOf(list[0].deletedTime).time, conflictStrategy = ConflictStrategy.FAILED)
+        val option1 = NodeRestoreOption(
+            deletedId = Timestamp.valueOf(list[0].deletedTime).time,
+            conflictStrategy = ConflictStrategy.FAILED
+        )
         assertThrows<ErrorCodeException> { nodeService.restoreNode(artifactInfo, option1) }
         // 数据不会有变化
         Assertions.assertEquals(2, nodeService.getNodeDetail(artifactInfo)!!.size)
