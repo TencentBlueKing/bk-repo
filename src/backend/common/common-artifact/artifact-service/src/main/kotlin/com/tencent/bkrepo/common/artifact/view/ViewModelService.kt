@@ -108,7 +108,11 @@ class ViewModelService(
                 row.itemList.forEachIndexed { columnIndex, item ->
                     if (columnIndex == 0) {
                         val escapedItem = StringEscapeUtils.escapeXml(item)
-                        val encodedItem = URLEncoder.encode(item, Charsets.UTF_8.name())
+                        val encodedItem = if (item.endsWith(PathUtils.UNIX_SEPARATOR)) {
+                            URLEncoder.encode(item.substring(0, item.length - 1), Charsets.UTF_8.name())
+                        } else {
+                            URLEncoder.encode(item, Charsets.UTF_8.name())
+                        }
                         writer.print("""<a href="$encodedItem">$escapedItem</a>""")
                         writer.print(" ".repeat(headerList[columnIndex].width!! - item.length))
                     } else {
