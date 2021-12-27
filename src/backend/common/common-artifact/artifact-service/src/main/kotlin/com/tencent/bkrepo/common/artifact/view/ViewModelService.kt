@@ -108,6 +108,7 @@ class ViewModelService(
                 row.itemList.forEachIndexed { columnIndex, item ->
                     if (columnIndex == 0) {
                         val escapedItem = StringEscapeUtils.escapeXml(item)
+//                         不对末尾的'/'进行URLEncode，避免在访问目录链接时触发重定向
                         val encodedItem = if (item.endsWith(PathUtils.UNIX_SEPARATOR)) {
                             URLEncoder.encode(item.substring(0, item.length - 1), Charsets.UTF_8.name())
                         } else {
