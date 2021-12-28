@@ -89,41 +89,81 @@ export default {
             }
         )
     },
-    // 跨仓库搜索包
-    searchPackageList (_, { projectId, repoType, packageName, repoName, current = 1, limit = 20 }) {
+    // 包搜索-仓库数量
+    searchRepoList (_, { projectId, repoType, packageName }) {
+        const isGeneric = repoType === 'generic'
+        return Vue.prototype.$ajax.get(
+            `${prefix}/${isGeneric ? 'node' : 'package'}/search/overview`,
+            {
+                params: {
+                    projectId,
+                    repoType: repoType.toUpperCase(),
+                    [isGeneric ? 'name' : 'packageName']: '*' + packageName + '*'
+                }
+            }
+        ).then(([{ repos, sum }]) => {
+            return [
+                { repoName: '', total: sum },
+                ...repos.map(
+                    item => ({ repoName: item.repoName, total: item.packages || item.nodes })
+                ).sort(
+                    (a, b) => (b.total - a.total) || (b.repoName < a.repoName ? 1 : -1)
+                )
+            ]
+        })
+    },
+    // 跨仓库搜索
+    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20 }) {
+        const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
-            `${prefix}/package/search`,
+            `${prefix}/${isGeneric ? 'node/query' : 'package/search'}`,
             {
                 page: {
                     pageNumber: current,
                     pageSize: limit
                 },
                 sort: {
-                    properties: ['name'],
-                    direction: 'ASC'
+                    properties: [property],
+                    direction
                 },
                 rule: {
                     rules: [
-                        {
-                            field: 'projectId',
-                            value: projectId,
-                            operation: 'EQ'
-                        },
-                        {
-                            field: 'repoType',
-                            value: repoType.toUpperCase(),
-                            operation: 'EQ'
-                        },
-                        ...(repoName ? [{
-                            field: 'repoName',
-                            value: repoName,
-                            operation: 'EQ'
-                        }] : []),
-                        {
-                            field: 'name',
-                            value: '*' + packageName + '*',
-                            operation: 'MATCH'
-                        }
+                        ...(projectId
+                            ? [{
+                                field: 'projectId',
+                                value: projectId,
+                                operation: 'EQ'
+                            }]
+                            : []),
+                        ...(repoType
+                            ? [{
+                                field: 'repoType',
+                                value: repoType.toUpperCase(),
+                                operation: 'EQ'
+                            }]
+                            : []),
+                        ...(repoName
+                            ? [{
+                                field: 'repoName',
+                                value: repoName,
+                                operation: 'EQ'
+                            }]
+                            : []),
+                        ...(packageName
+                            ? [{
+                                field: 'name',
+                                value: '*' + packageName + '*',
+                                operation: 'MATCH'
+                            }]
+                            : []),
+                        ...(isGeneric
+                            ? [{
+                                field: 'folder',
+                                value: false,
+                                operation: 'EQ'
+                            }]
+                            : [])
+                        
                     ],
                     relation: 'AND'
                 }
@@ -133,7 +173,7 @@ export default {
     // 获取docker域名
     getDockerDomain ({ commit }) {
         Vue.prototype.$ajax.get(
-            `docker/ext/addr`
+            'docker/ext/addr'
         ).then(domain => {
             commit('SET_DOMAIN', {
                 type: 'docker',
@@ -144,11 +184,11 @@ export default {
     // 获取npm域名
     getNpmDomain ({ commit }) {
         Vue.prototype.$ajax.get(
-            `npm/ext/address`
+            'npm/ext/address'
         ).then(({ domain }) => {
             commit('SET_DOMAIN', {
                 type: 'npm',
-                domain
+                domain: domain || `${location.origin}/npm`
             })
         })
     },
@@ -165,6 +205,13 @@ export default {
                     tag
                 }
             }
+        )
+    },
+    // 添加元数据
+    addPackageMetadata (_, { projectId, repoName, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/metadata/package/${projectId}/${repoName}`,
+            body
         )
     }
 }

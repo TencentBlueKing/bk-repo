@@ -1,7 +1,7 @@
 module.exports = {
-    owner: 'Tencent',
+    owner: 'Canway',
     repository: 'bk-repo',
-    host: 'https://git.tencent.com',
+    host: 'https://code.canway.net',
     commit: 'commit',
     issue: 'issue'
 }

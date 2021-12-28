@@ -247,7 +247,7 @@ const devopsUtil = {};
     }
 
     for (const key in exports) {
-        if (exports.hasOwnProperty(key)) {
+        if (key in exports) {
             const cb = exports[key]
             addToGlobal(key, cb)
         }

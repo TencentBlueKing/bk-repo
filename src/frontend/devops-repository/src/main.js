@@ -1,25 +1,30 @@
 import Vue from 'vue'
-import App from './App'
-import createRouter from './router'
-import store from './store'
-import '@/utils/request'
+import App from '@/App'
+import createRouter from '@/router'
+import store from '@/store'
+import '@repository/utils/request'
 
-import Icon from '@/components/Icon'
-import createLocale from '../../locale'
+import Icon from '@repository/components/Icon'
+import CanwayDialog from '@repository/components/CanwayDialog'
+import EmptyData from '@repository/components/EmptyData'
+import createLocale from '@locale'
 import '@icon-cool/bk-icon-devops/src/index'
-import { throttleMessage } from './utils'
+import { throttleMessage } from '@repository/utils'
 
 import bkMagic from 'bk-magic-vue'
 // 全量引入 bk-magic-vue 样式
-require('bk-magic-vue/dist/bk-magic-vue.min.css')
+import 'bk-magic-vue/dist/bk-magic-vue.min.css'
 
+// 打包svg文件
 const requireAll = requireContext => requireContext.keys().map(requireContext)
-const req = require.context('@/images', false, /\.svg$/)
+const req = require.context('@repository/images', false, /\.svg$/)
 requireAll(req)
 
 const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 Vue.component('Icon', Icon)
+Vue.component('CanwayDialog', CanwayDialog)
+Vue.component('EmptyData', EmptyData)
 
 Vue.use(bkMagic)
 
@@ -30,6 +35,7 @@ Vue.mixin({
     methods: {
         // 特殊仓库名称替换
         replaceRepoName (name) {
+            if (MODE_CONFIG !== 'ci') return name
             switch (name) {
                 case 'custom':
                     return '自定义仓库'
