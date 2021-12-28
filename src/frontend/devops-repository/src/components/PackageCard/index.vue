@@ -24,15 +24,22 @@
         </div>
         <div class="card-operation flex-center">
             <i v-if="!readonly" class="devops-icon icon-delete flex-center operation-btn" @click.stop="deleteCard"></i>
-            <i v-if="!cardData.type" class="devops-icon icon-download flex-center operation-btn" @click.stop="download"></i>
+            <operation-list
+                v-if="!cardData.type"
+                :list="[
+                    { label: '下载', clickEvent: () => download() },
+                    { label: '共享', clickEvent: () => share() }
+                ]"></operation-list>
         </div>
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
     export default {
         name: 'packageCard',
+        components: { OperationList },
         props: {
             cardData: {
                 type: Object,
@@ -63,6 +70,9 @@
                         message: e.status !== 404 ? e.message : this.$t('fileNotExist')
                     })
                 })
+            },
+            share () {
+                this.$emit('share', this.cardData)
             }
         }
     }
@@ -129,16 +139,10 @@
             width: 24px;
             height: 24px;
             font-size: 16px;
-            &:hover {
+            &.icon-delete:hover:hover {
                 color: white;
                 background-color: var(--dangerColor);
                 border-radius: 4px;
-            }
-            &.icon-delete:hover {
-                background-color: var(--dangerColor);
-            }
-            &.icon-download:hover {
-                background-color: var(--primaryColor);
             }
         }
     }

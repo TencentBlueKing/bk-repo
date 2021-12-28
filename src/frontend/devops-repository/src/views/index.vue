@@ -12,7 +12,7 @@
                 </bk-popover>
                 <span v-if="!hiddenMenu" class="menu-name text-overflow">{{ $t(name) }}</span>
             </router-link>
-            <div class="split-line"></div>
+            <div v-if="projectList.length" class="split-line"></div>
             <template v-if="userInfo.admin">
                 <router-link
                     class="nav-submain-item flex-align-center"
@@ -53,16 +53,16 @@
             }
         },
         computed: {
-            ...mapState(['userInfo']),
+            ...mapState(['userInfo', 'projectList']),
             ...mapGetters(['masterNode']),
             menuList () {
                 return {
                     project: [
-                        'repoList',
-                        'repoSearch',
+                        this.projectList.length && 'repoList',
+                        this.projectList.length && 'repoSearch',
                         MODE_CONFIG === 'ci' && 'repoToken',
-                        this.userInfo.admin && this.isMasterNode && 'planManage',
-                        !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
+                        this.projectList.length && this.userInfo.admin && this.isMasterNode && 'planManage',
+                        this.projectList.length && !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
                     ].filter(Boolean),
                     global: [
                         'projectManage',

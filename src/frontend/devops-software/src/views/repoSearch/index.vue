@@ -65,6 +65,7 @@
                         :key="pkg.repoName + (pkg.key || pkg.fullPath)"
                         :card-data="pkg"
                         readonly
+                        @share="handlerShare"
                         @click.native="showCommonPackageDetail(pkg)">
                     </package-card>
                 </infinite-scroll>
@@ -78,6 +79,7 @@
             </empty-data>
         </main>
         <generic-detail ref="genericDetail"></generic-detail>
+        <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
     </div>
 </template>
 <script>
@@ -85,13 +87,14 @@
     import packageCard from '@repository/components/PackageCard'
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
+    import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import typeSelect from '@repository/views/repoSearch/typeSelect'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { repoEnum } from '@repository/store/publicEnum'
     export default {
         name: 'repoSearch',
-        components: { repoTree, packageCard, InfiniteScroll, typeSelect, genericDetail },
+        components: { repoTree, packageCard, InfiniteScroll, typeSelect, genericDetail, genericShareDialog },
         directives: {
             focus: {
                 inserted (el) {
@@ -108,7 +111,11 @@
                 projectId: this.$route.query.projectId || '',
                 packageName: this.$route.query.packageName || '',
                 repoType: this.$route.query.repoType || 'docker',
-                repoList: [],
+                repoList: [{
+                    name: '全部',
+                    roadMap: '0',
+                    children: []
+                }],
                 selectedNode: {},
                 openList: [],
                 repoName: this.$route.query.repoName || '',
@@ -129,6 +136,7 @@
         },
         created () {
             this.handlerPaginationChange()
+            this.itemClickHandler(this.repoList[0]) // 重置树
         },
         methods: {
             formatDate,
@@ -144,9 +152,8 @@
             itemClickHandler (node) {
                 this.selectedNode = node
                 this.projectId = node.projectId
-                this.repoName = node.repoName
                 this.openList.push(node.roadMap)
-                this.handlerPaginationChange()
+                this.changeRepoInput(node.repoName)
             },
             searchRepoHandler () {
                 this.searchRepoList({
@@ -176,9 +183,6 @@
                             }
                         })
                     }]
-                    if (this.selectedNode.roadMap !== '0') {
-                        this.itemClickHandler(this.repoList[0])
-                    }
                 })
             },
             searckPackageHandler (load) {
@@ -246,8 +250,7 @@
                 this.changePackageName()
             },
             changePackageName () {
-                this.repoName = ''
-                this.changeRepoInput()
+                this.itemClickHandler(this.repoList[0]) // 重置树
             },
             changeRepoInput (repoName = '') {
                 this.repoName = repoName
@@ -262,6 +265,20 @@
                     folder: pkg.folder,
                     path: pkg.fullPath,
                     data: {}
+                })
+            },
+            handlerShare (cardData) {
+                this.$refs.genericShareDialog.setData({
+                    projectId: cardData.projectId,
+                    repoName: cardData.repoName,
+                    show: true,
+                    loading: false,
+                    title: `${this.$t('share')} (${cardData.name})`,
+                    path: cardData.fullPath,
+                    user: [],
+                    ip: [],
+                    permits: '',
+                    time: 7
                 })
             }
         }

@@ -1,6 +1,7 @@
 <template>
     <bk-popover
         :class="{ 'operation-trigger': !Object.keys($slots).length }"
+        :style="list.length ? '' : 'display:none;'"
         placement="bottom-end"
         theme="light"
         ext-cls="operation-container"

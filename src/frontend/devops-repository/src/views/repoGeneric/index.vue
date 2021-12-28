@@ -57,18 +57,17 @@
                     </bk-input>
                     <breadcrumb v-else :list="breadcrumb"></breadcrumb>
                     <div class="repo-generic-actions bk-button-group">
-                        <bk-button class="mr10"
+                        <bk-button
                             v-if="!searchFileName || selectedRow.fullPath !== selectedTreeNode.fullPath"
                             @click.stop="showDetail()">
                             {{ $t('detail') }}
                         </bk-button>
-                        <bk-button class="mr10"
+                        <bk-button class="ml10"
                             v-if="selectedRow.fullPath !== selectedTreeNode.fullPath"
                             @click.stop="handlerDownload()">
                             {{ $t('download') }}
                         </bk-button>
-                        <operation-list
-                            v-if="operationBtns.length"
+                        <operation-list class="ml10"
                             :list="operationBtns">
                             <bk-button @click.stop="() => {}" icon="ellipsis"></bk-button>
                         </operation-list>
@@ -472,6 +471,8 @@
             },
             handlerShare () {
                 this.$refs.genericShareDialog.setData({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
                     show: true,
                     loading: false,
                     title: `${this.$t('share')} (${this.selectedRow.name})`,

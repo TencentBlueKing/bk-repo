@@ -182,7 +182,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /@/,
+                            regex: /^\w[-_.\w]*@\w[-_\w]*\.\w[-_.\w]*$/,
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('email'),
                             trigger: 'blur'
                         }
@@ -269,13 +269,15 @@
                     return
                 }
                 const reader = new FileReader()
-                reader.onload = (e) => {
-                    const ab = e.target.result
+                reader.onload = (f) => {
+                    const ab = f.target.result
                     const wb = XLSX.read(new Uint8Array(ab), { type: 'array' })
                     const wsname = wb.SheetNames[0]
                     const ws = wb.Sheets[wsname]
                     const data = XLSX.utils.sheet_to_json(ws, { header: ['userId', 'name', 'email', 'phone'], range: 1 })
-                    this.requestImportUsers(data)
+                    this.requestImportUsers(data).finally(() => {
+                        e.target.value = ''
+                    })
                 }
                 reader.readAsArrayBuffer(file)
             },
@@ -283,30 +285,39 @@
                 const errMessage = {
                     userId: [],
                     name: [],
-                    email: []
+                    email: [],
+                    repeat: new Set()
                 }
+                const catchUser = new Set()
                 data.forEach(({ userId, name, email }, index) => {
+                    if (catchUser.has(userId)) {
+                        errMessage.repeat.add(userId)
+                    } else {
+                        catchUser.add(userId)
+                    }
                     if (userId in this.userList) {
                         errMessage.userId.push(index + 2)
                     }
                     if (!name) {
                         errMessage.name.push(index + 2)
                     }
-                    if (!(/@/.test(email))) {
+                    if (!(/^\w[-_.\w]*@\w[-_\w]*\.\w[-_.\w]*$/.test(email))) {
                         errMessage.email.push(index + 2)
                     }
                 })
                 if (errMessage.userId.length || errMessage.name.length || errMessage.email.length) {
-                    const message = (errMessage.userId.length ? `第${errMessage.userId}行账号已被占用` : '')
+                    const message = (errMessage.repeat.length ? `${Array.from(errMessage.repeat)}重复导入` : '')
+                        + (errMessage.userId.length ? `第${errMessage.userId}行账号已被占用` : '')
                         + (errMessage.name.length ? `第${errMessage.name}行中文名未填写` : '')
                         + (errMessage.email.length ? `第${errMessage.email}行邮箱格式错误` : '')
                     this.$bkMessage({
                         theme: 'error',
                         message
                     })
+                    return Promise.resolve()
                 } else {
                     this.isLoading = true
-                    this.importUsers({ body: data }).then(() => {
+                    return this.importUsers({ body: data }).then(() => {
                         this.$bkMessage({
                             theme: 'success',
                             message: '用户导入' + this.$t('success')

@@ -19,10 +19,9 @@
 
 @font-face {
   font-family: 'bk-icons-linear';
-  src:  url('/ui/fonts/bk_icons_linear.eot?gwzxfm');
-  src:  url('/ui/fonts/bk_icons_linear.eot?gwzxfm#iefix') format('embedded-opentype'),
-    url('/ui/fonts/bk_icons_linear.ttf?gwzxfm') format('truetype'),
-    url('/ui/fonts/bk_icons_linear.woff?gwzxfm') format('woff');
+  src:  url('/ui/fonts/bk_icons_linear.eot') format('embedded-opentype'),
+    url('/ui/fonts/bk_icons_linear.ttf') format('truetype'),
+    url('/ui/fonts/bk_icons_linear.woff') format('woff');
   font-weight: normal;
   font-style: normal;
 }
