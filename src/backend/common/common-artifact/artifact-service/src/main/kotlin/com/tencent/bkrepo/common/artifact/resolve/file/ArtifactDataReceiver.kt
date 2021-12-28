@@ -28,10 +28,12 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
@@ -45,6 +47,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.SecureRandom
 import kotlin.math.abs
 
@@ -61,7 +64,8 @@ class ArtifactDataReceiver(
     private val receiveProperties: ReceiveProperties,
     private val monitorProperties: MonitorProperties,
     private var path: Path,
-    private val filename: String = generateRandomName()
+    private val filename: String = generateRandomName(),
+    private val randomPath: Boolean = false
 ) : StorageHealthMonitor.Observer {
 
     /**
@@ -146,6 +150,12 @@ class ArtifactDataReceiver(
      */
     var finished = false
 
+    init {
+        if (randomPath) {
+            path = generateRandomPath(path, filename)
+        }
+    }
+
     override fun unhealthy(fallbackPath: Path?, reason: String?) {
         if (!finished && !fallback) {
             fallBackPath = fallbackPath
@@ -220,7 +230,7 @@ class ArtifactDataReceiver(
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
         if (inMemory) {
-            val filePath = path.resolve(filename).apply { this.createFile() }
+            val filePath = this.filePath.apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
             contentBytes.writeTo(fileOutputStream)
             outputStream = fileOutputStream
@@ -309,7 +319,7 @@ class ArtifactDataReceiver(
                 // 开Transfer功能时，从NFS转移到本地盘
                 cleanOriginalOutputStream()
                 val originalFile = originalPath.resolve(filename)
-                val filePath = path.resolve(filename).apply { this.createFile() }
+                val filePath = this.filePath.apply { this.createFile() }
                 originalFile.toFile().inputStream().use {
                     outputStream = filePath.toFile().outputStream()
                     it.copyTo(outputStream, bufferSize)
@@ -345,7 +355,7 @@ class ArtifactDataReceiver(
             }
         } else {
             retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
-                val actualSize = Files.size(path.resolve(filename))
+                val actualSize = Files.size(this.filePath)
                 require(received == actualSize) {
                     "$received bytes received, but $actualSize bytes saved in file."
                 }
@@ -359,10 +369,19 @@ class ArtifactDataReceiver(
     private fun cleanTempFile() {
         if (!inMemory) {
             try {
-                Files.deleteIfExists(path.resolve(filename))
+                Files.deleteIfExists(this.filePath)
             } catch (ignored: IOException) {
             }
         }
+    }
+
+    /**
+     * 生成随机文件路径
+     * */
+    private fun generateRandomPath(root: Path, filename: String): Path {
+        val fileLocator = HashFileLocator()
+        val dir = fileLocator.locate(filename.sha256())
+        return Paths.get(root.toFile().path, dir)
     }
 
     companion object {

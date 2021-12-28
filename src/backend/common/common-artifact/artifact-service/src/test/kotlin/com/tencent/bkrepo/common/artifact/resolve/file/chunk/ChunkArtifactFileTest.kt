@@ -53,7 +53,7 @@ class ChunkArtifactFileTest {
             filesystem = storageCredentials,
             receive = ReceiveProperties(fileSizeThreshold = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()))
         )
-        val monitor = StorageHealthMonitor(storageProperties)
+        val monitor = StorageHealthMonitor(storageProperties, storageCredentials.upload.location)
         return ChunkedArtifactFile(monitor, storageProperties, storageCredentials)
     }
 

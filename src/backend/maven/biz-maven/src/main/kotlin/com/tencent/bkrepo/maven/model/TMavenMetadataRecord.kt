@@ -32,7 +32,7 @@ data class TMavenMetadataRecord(
     val repoName: String,
     val groupId: String,
     val artifactId: String,
-    val version: String?,
+    val version: String,
     val timestamp: String,
     val buildNo: Int,
     val classifier: String?,

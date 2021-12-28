@@ -42,6 +42,7 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.concurrent.thread
+import org.junit.jupiter.api.DisplayName
 
 internal class ArtifactDataReceiverTest {
 
@@ -170,6 +171,21 @@ internal class ArtifactDataReceiverTest {
         Assertions.assertEquals(shortContent + shortContent, memoryContent)
     }
 
+    @DisplayName("测试文件接受到随机路径下面")
+    @Test
+    fun testRandomFilePath() {
+        val receiver = createReceiver(
+            true,
+            DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong() - 1).toBytes(),
+            true
+        )
+        val source = shortContent.byteInputStream()
+        receiver.receiveStream(source)
+        receiver.finish()
+        Assertions.assertFalse(Files.exists(primaryPath.resolve(filename)))
+        Assertions.assertTrue(receiver.filePath.startsWith(primaryPath))
+    }
+
     private fun createRateLimitInputStream(content: String): InputStream {
         return RateLimitInputStream(content.byteInputStream(), DEFAULT_BUFFER_SIZE.toLong())
     }
@@ -216,7 +232,8 @@ internal class ArtifactDataReceiverTest {
 
     private fun createReceiver(
         enableTransfer: Boolean,
-        fileSizeThreshold: Long = DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes()
+        fileSizeThreshold: Long = DataSize.ofBytes(DEFAULT_BUFFER_SIZE * 10L).toBytes(),
+        randomPath: Boolean = false
     ): ArtifactDataReceiver {
         val receive = ReceiveProperties(
             fileSizeThreshold = DataSize.ofBytes(fileSizeThreshold),
@@ -225,6 +242,6 @@ internal class ArtifactDataReceiverTest {
         val monitor = MonitorProperties(
             enableTransfer = enableTransfer
         )
-        return ArtifactDataReceiver(receive, monitor, primaryPath, filename)
+        return ArtifactDataReceiver(receive, monitor, primaryPath, filename, randomPath)
     }
 }

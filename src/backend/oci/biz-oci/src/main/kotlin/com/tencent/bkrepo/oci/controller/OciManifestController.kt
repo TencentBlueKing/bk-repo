@@ -26,7 +26,7 @@ class OciManifestController(
 	 * 检查manifest文件是否存在
 	 */
 	@Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-	@RequestMapping("/{projectId}/{repoName}/**/manifests/{tag}", method = [RequestMethod.HEAD])
+	@RequestMapping("/{projectId}/{repoName}/**/manifests/{reference}", method = [RequestMethod.HEAD])
 	fun checkManifestsExists(artifactInfo: OciManifestArtifactInfo) {
 		ociManifestService.checkManifestsExists(artifactInfo)
 	}
@@ -35,7 +35,7 @@ class OciManifestController(
 	 * 上传manifest文件
 	 */
 	@Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-	@PutMapping("/{projectId}/{repoName}/**/manifests/{tag}")
+	@PutMapping("/{projectId}/{repoName}/**/manifests/{reference}")
 	fun uploadManifests(
 		artifactInfo: OciManifestArtifactInfo,
 		artifactFile: ArtifactFile
@@ -43,11 +43,15 @@ class OciManifestController(
 		ociManifestService.uploadManifest(artifactInfo, artifactFile)
 	}
 
+	/**
+	 * 下载manifest文件
+	 * 可以通过digest或者tag去下载
+	 */
 	@Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-	@GetMapping("/{projectId}/{repoName}/**/manifests/{digest}")
+	@GetMapping("/{projectId}/{repoName}/**/manifests/{reference}")
 	fun downloadManifests(
 		artifactInfo: OciManifestArtifactInfo
-	){
+	) {
 		ociManifestService.downloadManifests(artifactInfo)
 	}
 }
