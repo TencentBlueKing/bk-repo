@@ -24,7 +24,7 @@
                         style="width:150px;"
                         v-model="property"
                         :clearable="false"
-                        @change="handlerPaginationChange()">
+                        @change="changeSortType">
                         <bk-option id="name" name="名称排序"></bk-option>
                         <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
                         <bk-option id="downloads" name="下载量排序"></bk-option>
@@ -135,31 +135,29 @@
             }
         },
         created () {
-            this.handlerPaginationChange()
-            this.itemClickHandler(this.repoList[0]) // 重置树
+            // 更新程度：类型 》 包名 》 树/排序 》 滚动加载
+            this.changeRepoType(this.repoType)
         },
         methods: {
             formatDate,
             ...mapActions(['searchPackageList', 'searchRepoList']),
-            iconClickHandler (node) {
-                const openList = this.openList
-                if (openList.includes(node.roadMap)) {
-                    openList.splice(0, openList.length, ...openList.filter(v => v !== node.roadMap))
-                } else {
-                    openList.push(node.roadMap)
-                }
-            },
-            itemClickHandler (node) {
-                this.selectedNode = node
-                this.projectId = node.projectId
-                this.openList.push(node.roadMap)
-                this.changeRepoInput(node.repoName)
+            refreshRoute () {
+                this.$router.replace({
+                    query: {
+                        projectId: this.projectId,
+                        repoType: this.repoType,
+                        repoName: this.repoName,
+                        packageName: this.packageName,
+                        property: this.property,
+                        direction: this.direction
+                    }
+                })
             },
             searchRepoHandler () {
                 this.searchRepoList({
                     projectId: this.projectId,
                     repoType: this.repoType,
-                    packageName: this.packageName
+                    packageName: this.packageName || ''
                 }).then(list => {
                     this.repoList = [{
                         name: '全部',
@@ -185,9 +183,9 @@
                     }]
                 })
             },
-            searckPackageHandler (load) {
+            searckPackageHandler (scrollLoad) {
                 if (this.isLoading) return
-                this.isLoading = !load
+                this.isLoading = !scrollLoad
                 this.searchPackageList({
                     projectId: this.projectId,
                     repoType: this.repoType,
@@ -199,10 +197,52 @@
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.pagination.count = totalRecords
-                    load ? this.resultList.push(...records) : (this.resultList = records)
+                    scrollLoad ? this.resultList.push(...records) : (this.resultList = records)
                 }).finally(() => {
                     this.isLoading = false
                 })
+            },
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, scrollLoad = false) {
+                this.pagination.current = current
+                this.pagination.limit = limit
+                this.searckPackageHandler(scrollLoad)
+                !scrollLoad && this.$refs.infiniteScroll && this.$refs.infiniteScroll.scrollToTop()
+            },
+            changeSortType () {
+                this.refreshRoute()
+                this.handlerPaginationChange()
+            },
+            changeDirection () {
+                this.direction = this.direction === 'ASC' ? 'DESC' : 'ASC'
+                this.refreshRoute()
+                this.handlerPaginationChange()
+            },
+            changeRepoType (repoType) {
+                this.repoType = repoType
+                this.packageName = ''
+                this.changePackageName()
+            },
+            changePackageName () {
+                this.searchRepoHandler()
+                this.itemClickHandler(this.repoList[0]) // 重置树
+            },
+            iconClickHandler (node) {
+                const openList = this.openList
+                if (openList.includes(node.roadMap)) {
+                    openList.splice(0, openList.length, ...openList.filter(v => v !== node.roadMap))
+                } else {
+                    openList.push(node.roadMap)
+                }
+            },
+            itemClickHandler (node) {
+                this.selectedNode = node
+                this.openList.push(node.roadMap)
+
+                this.projectId = node.projectId
+                this.repoName = node.repoName
+
+                this.refreshRoute()
+                this.handlerPaginationChange()
             },
             showCommonPackageDetail (pkg) {
                 if (pkg.fullPath) {
@@ -220,41 +260,6 @@
                         package: pkg.key
                     }
                 })
-            },
-            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, load) {
-                this.pagination.current = current
-                this.pagination.limit = limit
-                this.searckPackageHandler(load)
-                if (!load) {
-                    this.$refs.infiniteScroll && this.$refs.infiniteScroll.scrollToTop()
-                    this.searchRepoHandler()
-                    this.$router.replace({
-                        query: {
-                            projectId: this.projectId,
-                            repoType: this.repoType,
-                            repoName: this.repoName,
-                            packageName: this.packageName,
-                            property: this.property,
-                            direction: this.direction
-                        }
-                    })
-                }
-            },
-            changeDirection () {
-                this.direction = this.direction === 'ASC' ? 'DESC' : 'ASC'
-                this.handlerPaginationChange()
-            },
-            changeRepoType (repoType) {
-                this.repoType = repoType
-                this.packageName = ''
-                this.changePackageName()
-            },
-            changePackageName () {
-                this.itemClickHandler(this.repoList[0]) // 重置树
-            },
-            changeRepoInput (repoName = '') {
-                this.repoName = repoName
-                this.handlerPaginationChange()
             },
             showDetail (pkg) {
                 this.$refs.genericDetail.setData({

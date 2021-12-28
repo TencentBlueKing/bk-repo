@@ -58,14 +58,14 @@
             menuList () {
                 return {
                     project: [
-                        this.projectList.length && 'repoList',
-                        this.projectList.length && 'repoSearch',
+                        (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoList',
+                        (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoSearch',
                         MODE_CONFIG === 'ci' && 'repoToken',
-                        this.projectList.length && this.userInfo.admin && this.isMasterNode && 'planManage',
-                        this.projectList.length && !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
+                        (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.admin && this.isMasterNode && 'planManage',
+                        (MODE_CONFIG === 'ci' || this.projectList.length) && !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
                     ].filter(Boolean),
                     global: [
-                        'projectManage',
+                        MODE_CONFIG !== 'ci' && 'projectManage',
                         'userManage',
                         this.isMasterNode && 'nodeManage',
                         'repoAudit'
