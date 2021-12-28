@@ -64,7 +64,9 @@
             },
             repoGroupList () {
                 return this.repoListAll
-                    .filter(repo => repo.type !== 'GENERIC')
+                    .filter(r => {
+                        return ['DOCKER', 'MAVEN', 'NPM'].includes(r.type)
+                    })
                     .reduce((target, repo) => {
                         if (!target[repo.type]) target[repo.type] = []
                         target[repo.type].push(repo)

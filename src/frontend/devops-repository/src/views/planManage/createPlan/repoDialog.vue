@@ -42,7 +42,14 @@
         computed: {
             ...mapState(['repoListAll']),
             repoList () {
-                return this.repoListAll.map(repo => ({ ...repo, fid: repo.projectId + repo.name }))
+                return this.repoListAll
+                    .filter(r => {
+                        return ['DOCKER', 'MAVEN', 'NPM', 'GENERIC'].includes(r.type)
+                    })
+                    .map(repo => ({ ...repo, fid: repo.projectId + repo.name }))
+                    .sort((a, b) => {
+                        return Boolean(a.type > b.type) || -1
+                    })
             },
             targetList () {
                 return this.replicaTaskObjects.map(v => v.fid)

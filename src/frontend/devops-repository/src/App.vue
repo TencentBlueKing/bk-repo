@@ -25,35 +25,58 @@
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
 
-            const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
-            const localProjectId = localStorage.getItem('projectId')
             if (this.iframeMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
-                
-                localStorage.setItem('projectId', urlProjectId || localProjectId || '')
-                !urlProjectId && this.$router.replace({
-                    name: 'repoList',
-                    params: {
-                        projectId: urlProjectId || localProjectId || ''
-                    }
-                })
             } else {
+                const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
+                const localProjectId = localStorage.getItem('projectId')
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(() => {
-                    let projectId = ''
-                    if (!(urlProjectId && this.projectList.find(v => v.id === urlProjectId))) {
-                        if (this.projectList.find(v => v.id === localProjectId)) {
+                    if (!this.projectList.length) {
+                        if (this.userInfo.admin) {
+                            // TODO: 管理员创建项目引导页
+                            this.$bkMessage({
+                                message: '无项目数据',
+                                theme: 'error'
+                            })
+                            this.$router.replace({
+                                name: 'projectManage',
+                                params: {
+                                    projectId: urlProjectId || localProjectId || 'default'
+                                }
+                            })
+                        } else {
+                            // TODO: 普通用户无项目提示页
+                            this.$bkMessage({
+                                message: '无项目数据',
+                                theme: 'error'
+                            })
+                            this.$router.replace({
+                                name: 'repoToken',
+                                params: {
+                                    projectId: urlProjectId || localProjectId || 'default'
+                                }
+                            })
+                        }
+                    } else {
+                        let projectId = ''
+                        if (this.projectList.find(v => v.id === urlProjectId)) {
+                            projectId = urlProjectId
+                        } else if (this.projectList.find(v => v.id === localProjectId)) {
                             projectId = localProjectId
                         } else {
                             projectId = (this.projectList[0] || {}).id
                         }
-                        this.$router.replace({
+                        localStorage.setItem('projectId', projectId)
+
+                        projectId !== urlProjectId && this.$router.replace({
                             name: 'repoList',
                             params: {
                                 projectId
                             }
                         })
+
+                        this.checkPM({ projectId })
                     }
-                    this.checkPM({ projectId: (projectId || urlProjectId || localProjectId) })
                 })
             }
         },
