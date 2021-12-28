@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.OperateLogClient
 import org.springframework.context.event.EventListener
@@ -44,7 +43,7 @@ class ArtifactDownloadListener(
         val projectId = event.context.projectId
         val repoName = event.context.repoName
         val fullPath = event.context.artifactInfo.getArtifactFullPath()
-        val userId = SecurityUtils.getUserId()
+        val userId = event.context.userId
         val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data!!
         if (node.folder) {
             val nodeList =
