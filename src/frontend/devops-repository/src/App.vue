@@ -31,7 +31,7 @@
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(() => {
-                    if (!this.projectList.length) {
+                    if (!this.iframeMode && !this.projectList.length) {
                         if (this.userInfo.admin) {
                             // TODO: 管理员创建项目引导页
                             this.$bkMessage({
@@ -68,14 +68,14 @@
                         }
                         localStorage.setItem('projectId', projectId)
 
-                        projectId !== urlProjectId && this.$router.replace({
+                        projectId && projectId !== urlProjectId && this.$router.replace({
                             name: 'repoList',
                             params: {
                                 projectId
                             }
                         })
 
-                        this.checkPM({ projectId })
+                        projectId && this.checkPM({ projectId })
                     }
                 })
             }
