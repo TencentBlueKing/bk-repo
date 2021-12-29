@@ -137,10 +137,6 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         return query.sortObject.isNotEmpty()
     }
 
-    private fun shardingFieldIsFirstSortKey(query: Query): Boolean {
-        return query.sortObject.keys.firstOrNull() == shardingField.name
-    }
-
     private fun count(
         collectionNames: List<String>,
         countMap: ConcurrentHashMap<String, Long>,
