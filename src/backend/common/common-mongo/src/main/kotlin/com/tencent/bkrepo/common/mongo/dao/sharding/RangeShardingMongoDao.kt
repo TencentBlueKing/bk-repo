@@ -113,32 +113,6 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         throw UnsupportedOperationException()
     }
 
-    private fun <T> getSortedCollection(
-        queryWithoutPage: Query,
-        skip: Int,
-        limit: Int,
-        clazz: Class<T>,
-        collectionNames: List<String>
-    ): List<T> {
-        var index = 1
-        var collection = determineMongoTemplate().find(queryWithoutPage, clazz, collectionNames.first())
-        while (index < collectionNames.size) {
-            val nextCollection = determineMongoTemplate().find(queryWithoutPage, clazz, collectionNames[index])
-            val size = collection.size + nextCollection.size
-            if (size < skip) {
-                collection.addAll(nextCollection)
-            } else {
-                collection = mergeSort(
-                    collection = collection + nextCollection,
-                    sort = queryWithoutPage.sortObject,
-                    clazz = clazz
-                ).subList(skip, skip + limit)
-            }
-            index++
-        }
-        return collection
-    }
-
     override fun count(query: Query): Long {
         val countMap = ConcurrentHashMap<String, Long>()
         val collectionNames = determineCollectionNames(query)
@@ -153,31 +127,6 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
 
     override fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): AggregationResults<O> {
         throw UnsupportedOperationException()
-    }
-
-    private fun <T> mergeSort(collection: List<T>, sort: Document, clazz: Class<T>): List<T> {
-        val mid = collection.size / 2
-        val left = collection.subList(0, mid)
-        val right = collection.subList(mid, collection.size - 1)
-        return merge(mergeSort(left, sort, clazz), mergeSort(right, sort, clazz), sort, clazz)
-    }
-
-    private fun <T> merge(left: List<T>, right: List<T>, sort: Document, clazz: Class<T>): List<T> {
-        val size = left.size + right.size
-        val result = ArrayList<T>(size)
-        var index = 0
-        var i = 0
-        var j = 0
-        while (index < size) {
-            when {
-                i >= left.size -> result[index] = right[j++]
-                j >= right.size -> result[index] = left[i++]
-                left[i].compareTo(right[j], sort, clazz) > 0 -> result[index] = right[j++]
-                else -> result[index] = left[i++]
-            }
-            index++
-        }
-        return result
     }
 
     private fun queryWithPage(query: Query): Boolean {
