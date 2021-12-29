@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
@@ -526,7 +527,8 @@ class MavenLocalRepository(
                 overwrite = true,
                 createdBy = context.userId,
                 metadata = metadata
-            )
+            ),
+            HttpContextHolder.getClientAddress()
         )
     }
 
