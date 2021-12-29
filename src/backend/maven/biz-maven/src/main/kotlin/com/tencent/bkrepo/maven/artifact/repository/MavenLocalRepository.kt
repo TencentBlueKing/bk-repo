@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
@@ -371,7 +372,7 @@ class MavenLocalRepository(
     }
 
     private fun verifyArtifact(context: ArtifactUploadContext) {
-        // 生成.md5 和 .sha256
+        // 生成.md5 和 .sha1
         val node = nodeClient.getNodeDetail(
             context.projectId,
             context.repoName,
@@ -400,7 +401,7 @@ class MavenLocalRepository(
                 artifactFile.delete()
             }
         }
-        // 生成.md5 和 .sha256
+        // 生成.md5 和 .sha1
         val node = nodeClient.getNodeDetail(
             context.projectId,
             context.repoName,
@@ -430,7 +431,8 @@ class MavenLocalRepository(
                 overwrite = true,
                 size = artifactFile.getSize(),
                 md5 = artifactFile.getFileMd5(),
-                sha256 = artifactFile.getFileSha256()
+                sha256 = artifactFile.getFileSha256(),
+                operator = SecurityUtils.getUserId()
             )
             storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
         } finally {
