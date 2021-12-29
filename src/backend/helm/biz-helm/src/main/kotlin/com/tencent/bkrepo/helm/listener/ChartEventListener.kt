@@ -29,34 +29,33 @@ package com.tencent.bkrepo.helm.listener
 
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
-import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
-import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.chart.ChartDeleteRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
-import com.tencent.bkrepo.helm.pool.HelmThreadPoolExecutor
+import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import java.util.SortedSet
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import org.springframework.util.StopWatch
-import java.util.SortedSet
-import java.util.concurrent.ThreadPoolExecutor
 
 @Component
 class ChartEventListener(
     private val redisOperation: RedisOperation
-) : AbstractEventListener() {
+) : AbstractChartService() {
 
-    private val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
     private val objectLock = Object()
 
     /**
@@ -68,7 +67,7 @@ class ChartEventListener(
         // 如果index.yaml文件存在，则进行更新
         with(event.request) {
             logger.info("handling chart version delete event for [$name@$version] in repo [$projectId/$repoName]")
-            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+            if (!exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
@@ -84,14 +83,18 @@ class ChartEventListener(
                     false
                 }
                 if (isLocked) {
-                    logger.info("execute update index yaml for delete package [$name], version [$version]" +
-                        " with redis distribute lock [$lockKey].")
+                    logger.info(
+                        "execute update index yaml for delete package [$name], version [$version]" +
+                            " with redis distribute lock [$lockKey]."
+                    )
                     lock.use {
                         doRefreshIndexForDeleteVersion(this)
                     }
                 } else {
-                    logger.info("execute update index yaml for delete package [$name], version [$version]" +
-                        " with synchronized lock [$objectLock].")
+                    logger.info(
+                        "execute update index yaml for delete package [$name], version [$version]" +
+                            " with synchronized lock [$objectLock]."
+                    )
                     synchronized(objectLock) {
                         doRefreshIndexForDeleteVersion(this)
                     }
@@ -125,15 +128,19 @@ class ChartEventListener(
                     return
                 }
                 val chartMetadataSet = entries[name]!!
-                logger.debug("delete version: original entries size: [${entries.size}], " +
-                    "chart [$name] metadata size: [${chartMetadataSet.size}]")
+                logger.debug(
+                    "delete version: original entries size: [${entries.size}], " +
+                        "chart [$name] metadata size: [${chartMetadataSet.size}]"
+                )
                 if (chartMetadataSet.size == 1 && (version == chartMetadataSet.first().version)) {
                     entries.remove(name)
                 } else {
                     updateIndexYaml(version, chartMetadataSet)
                 }
-                logger.debug("delete version: updated entries size: [${entries.size}], " +
-                    "chart [$name] metadata size: [${chartMetadataSet.size}]")
+                logger.debug(
+                    "delete version: updated entries size: [${entries.size}], " +
+                        "chart [$name] metadata size: [${chartMetadataSet.size}]"
+                )
                 val (artifactFile, nodeCreateRequest) = buildFileAndNodeCreateRequest(
                     originalIndexYamlMetadata, this
                 )
@@ -173,7 +180,7 @@ class ChartEventListener(
                 projectId = projectId,
                 repoName = repoName,
                 folder = false,
-                fullPath = HelmUtils.getIndexYamlFullPath(),
+                fullPath = HelmUtils.getIndexCacheYamlFullPath(),
                 size = artifactFile.getSize(),
                 sha256 = artifactFile.getFileSha256(),
                 md5 = artifactFile.getFileMd5(),
@@ -191,7 +198,7 @@ class ChartEventListener(
     fun handle(event: ChartDeleteEvent) {
         with(event.requestPackage) {
             logger.info("handling chart delete event for [$name] in repo [$projectId/$repoName]")
-            if (!exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+            if (!exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
@@ -207,14 +214,18 @@ class ChartEventListener(
                     false
                 }
                 if (isLocked) {
-                    logger.info("execute update index yaml for delete package [$name] " +
-                        "with redis distribute lock [$lockKey].")
+                    logger.info(
+                        "execute update index yaml for delete package [$name] " +
+                            "with redis distribute lock [$lockKey]."
+                    )
                     lock.use {
                         doRefreshIndexForDeletePackage(this)
                     }
                 } else {
-                    logger.info("execute update index yaml for delete package [$name] " +
-                        "with synchronized lock [$objectLock].")
+                    logger.info(
+                        "execute update index yaml for delete package [$name] " +
+                            "with synchronized lock [$objectLock]."
+                    )
                     synchronized(objectLock) {
                         doRefreshIndexForDeletePackage(this)
                     }
@@ -253,6 +264,16 @@ class ChartEventListener(
                 )
                 throw exception
             }
+        }
+    }
+
+    /**
+     * 文件上传成功后，进行后续操作，如创建package/packageVersion
+     */
+    @EventListener(ArtifactUploadedEvent::class)
+    fun handle(event: ArtifactUploadedEvent) {
+        with(event) {
+            initPackageInfo(context)
         }
     }
 
