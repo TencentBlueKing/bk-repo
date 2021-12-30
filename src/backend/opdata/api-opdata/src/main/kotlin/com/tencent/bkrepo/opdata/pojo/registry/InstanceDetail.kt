@@ -29,15 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.service
+package com.tencent.bkrepo.opdata.pojo.registry
 
-import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("服务信息")
-data class ServiceInfo(
-    @ApiModelProperty("服务名")
-    val name: String,
-    @ApiModelProperty("服务节点信息")
-    val nodes: List<NodeInfo>
+/**
+ * 服务节点详细信息
+ */
+data class InstanceDetail(
+    @ApiModelProperty("正在下载的数量", required = true)
+    val downloadingCount:Long,
+    @ApiModelProperty("正在上传的数量", required = true)
+    val uploadingCount: Long
 )

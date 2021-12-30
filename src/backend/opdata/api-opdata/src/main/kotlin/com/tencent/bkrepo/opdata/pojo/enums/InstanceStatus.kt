@@ -3,7 +3,7 @@ package com.tencent.bkrepo.opdata.pojo.enums
 /**
  * 节点状态
  */
-enum class NodeStatus {
+enum class InstanceStatus {
     /**
      * 正常运行
      */

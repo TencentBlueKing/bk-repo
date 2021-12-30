@@ -29,16 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.service
+package com.tencent.bkrepo.opdata.pojo.registry
 
+import com.tencent.bkrepo.opdata.pojo.enums.InstanceStatus
+import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-/**
- * 服务节点详细信息
- */
-data class NodeDetail(
-    @ApiModelProperty("正在下载的数量", required = true)
-    val downloadingCount:Long,
-    @ApiModelProperty("正在上传的数量", required = true)
-    val uploadingCount: Long
+@ApiModel("服务节点信息")
+data class InstanceInfo(
+    @ApiModelProperty("节点id", required = true)
+    val id: String,
+    @ApiModelProperty("节点ip或域名", required = true)
+    val host: String,
+    @ApiModelProperty("节点端口", required = true)
+    val port: String,
+    @ApiModelProperty("节点状态", required = true)
+    val status: InstanceStatus,
+    @ApiModelProperty("节点详情")
+    val detail: InstanceDetail? = null
 )
