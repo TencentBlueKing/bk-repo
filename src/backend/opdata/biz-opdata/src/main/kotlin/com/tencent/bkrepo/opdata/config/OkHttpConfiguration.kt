@@ -33,9 +33,7 @@
 
 package com.tencent.bkrepo.opdata.config
 
-import com.tencent.bkrepo.opdata.exception.HttpRequestException
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.concurrent.TimeUnit
