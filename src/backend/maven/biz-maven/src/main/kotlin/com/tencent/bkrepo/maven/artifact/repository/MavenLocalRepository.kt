@@ -67,6 +67,7 @@ import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.response.MavenArtifactResponse
 import com.tencent.bkrepo.maven.service.MavenMetadataService
+import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
@@ -98,6 +99,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
 
 @Component
@@ -116,11 +120,18 @@ class MavenLocalRepository(
         val request = super.buildNodeCreateRequest(context)
         val md5 = context.getArtifactMd5()
         val sha1 = context.getArtifactSha1()
+        val sha256 = context.getArtifactSha256()
+        val sha512 = context.getArtifactFile().getInputStream().use {
+            val bytes = it.readBytes()
+            DigestUtils.sha512(bytes, 0, bytes.size)
+        }
         return request.copy(
             overwrite = true,
             metadata = mutableMapOf(
                 HashType.MD5.ext to md5,
-                HashType.SHA1.ext to sha1
+                HashType.SHA1.ext to sha1,
+                HashType.SHA256.ext to sha256,
+                HashType.SHA512.ext to sha512
             )
         )
     }
@@ -132,12 +143,19 @@ class MavenLocalRepository(
         val combineUrl = combineUrl(context, mavenArtifactInfo, request)
         val md5 = context.getArtifactMd5()
         val sha1 = context.getArtifactSha1()
+        val sha256 = context.getArtifactSha256()
+        val sha512 = context.getArtifactFile().getInputStream().use {
+            val bytes = it.readBytes()
+            DigestUtils.sha512(bytes, 0, bytes.size)
+        }
         return request.copy(
             fullPath = combineUrl,
             overwrite = true,
             metadata = mutableMapOf(
                 HashType.MD5.ext to md5,
-                HashType.SHA1.ext to sha1
+                HashType.SHA1.ext to sha1,
+                HashType.SHA256.ext to sha256,
+                HashType.SHA512.ext to sha512
             )
         )
     }
@@ -151,15 +169,15 @@ class MavenLocalRepository(
         request: NodeCreateRequest
     ): String {
         var result: String? = null
-        if (mavenArtifactInfo.isSnapshot()
-            && getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE
+        if (mavenArtifactInfo.isSnapshot() &&
+            getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE
         ) {
             val name = request.fullPath.split("/").last()
             val nonUniqueName =
                 name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId).combineToNonUnique()
             result = request.fullPath.replace(name, nonUniqueName)
-        } else if (mavenArtifactInfo.isSnapshot()
-            && getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
+        } else if (mavenArtifactInfo.isSnapshot() &&
+            getRepoConf(context).mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
         ) {
             val name = request.fullPath.split("/").last()
             val mavenVersion = name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
@@ -183,7 +201,7 @@ class MavenLocalRepository(
                 result = request.fullPath.replace(name, nonUniqueName)
             }
         }
-        return result?:mavenArtifactInfo.getArtifactFullPath()
+        return result ?: mavenArtifactInfo.getArtifactFullPath()
     }
 
     /**
@@ -293,8 +311,9 @@ class MavenLocalRepository(
                 (matedataUploadHandler(artifactFullPath) || artifactUploadHandler(artifactFullPath, context))
             ) {
                 return
+            } else {
+                super.onUpload(context)
             }
-            super.onUpload(context)
         }
     }
 
@@ -312,15 +331,29 @@ class MavenLocalRepository(
 
     private fun artifactUploadHandler(artifactFullPath: String, context: ArtifactContext): Boolean {
         val repoConf = getRepoConf(context)
+        var result = false
         if (repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE &&
             artifactFullPath.isSnapshotNonUniqueUri()
         ) {
             for (hashType in HashType.values()) {
                 val suffix = ".${hashType.ext}"
-                return artifactFullPath.endsWith(suffix)
+                result = artifactFullPath.endsWith(suffix)
             }
         }
-        return false
+        return result
+    }
+
+    /**
+     * 判断请求是否为checksum请求，并返回类型
+     */
+    private fun checksumType(context: ArtifactContext): HashType? {
+        var type: HashType? = null
+        val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+        for (hashType in HashType.values()) {
+            val suffix = ".${hashType.ext}"
+            if (artifactFullPath.endsWith(suffix)) type = hashType
+        }
+        return type
     }
 
     /**
@@ -359,13 +392,25 @@ class MavenLocalRepository(
 
     override fun onUploadFinished(context: ArtifactUploadContext) {
         val repoConf = getRepoConf(context)
-        if (context.artifactInfo.getArtifactFullPath().isSnapshotUri()) {
-            if (context.artifactInfo.getArtifactFullPath().endsWith("maven-metadata.xml")) {
-                verifyMetadata(context)
-            } else if (context.artifactInfo.getArtifactFullPath().isSnapshotNonUniqueUri() &&
+        val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+        if (artifactFullPath.isSnapshotUri()) {
+            // 生成`maven-metadata.xml`
+            if (artifactFullPath.endsWith("maven-metadata.xml")) {
+                verifyMetadataContent(context)
+            } else if (artifactFullPath.isSnapshotNonUniqueUri() &&
                 repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
             ) {
+                // 处理maven2 *1.0-SNAPSHOT/1.0-SNAPSHOT.jar 格式构件
                 verifyArtifact(context)
+            }
+        } else {
+            // 当有`maven-metadata.xml.checksum` 再去生成对应checksum文件
+            for (hashType in HashType.values()) {
+                val suffix = "maven-metadata.xml.${hashType.ext}"
+                val isDigestFile = artifactFullPath.endsWith(suffix)
+                if (isDigestFile) {
+                    verifyMetadataChecksumType(context, hashType)
+                }
             }
         }
         super.onUploadFinished(context)
@@ -386,7 +431,19 @@ class MavenLocalRepository(
         }
     }
 
-    private fun verifyMetadata(context: ArtifactUploadContext) {
+    private fun verifyMetadataChecksumType(context: ArtifactUploadContext, hashType: HashType) {
+        val node = nodeClient.getNodeDetail(
+            context.projectId,
+            context.repoName,
+            context.artifactInfo.getArtifactFullPath().removeSuffix(".${hashType.ext}")
+        ).data ?: return
+        val checksum = node.metadata[hashType.ext] as? String
+        if (checksum != null) {
+            generateMetadataChecksum(node, hashType, checksum, context.storageCredentials)
+        }
+    }
+
+    private fun verifyMetadataContent(context: ArtifactUploadContext) {
         val mavenGavc = context.artifactInfo.getArtifactFullPath().mavenGAVC()
         val repoConf = getRepoConf(context)
         val records = mavenMetadataService.search(context.artifactInfo as MavenArtifactInfo, mavenGavc)
@@ -400,18 +457,6 @@ class MavenLocalRepository(
             } finally {
                 artifactFile.delete()
             }
-        }
-        // 生成.md5 和 .sha1
-        val node = nodeClient.getNodeDetail(
-            context.projectId,
-            context.repoName,
-            context.artifactInfo.getArtifactFullPath()
-        ).data ?: return
-        (node.metadata[HashType.MD5.ext] as? String)?.let {
-            generateMetadataChecksum(node, HashType.MD5, it, context.storageCredentials)
-        }
-        (node.metadata[HashType.SHA1.ext] as? String)?.let {
-            generateMetadataChecksum(node, HashType.SHA1, it, context.storageCredentials)
         }
     }
 
@@ -446,7 +491,8 @@ class MavenLocalRepository(
         records: List<TMavenMetadataRecord>
     ): org.apache.maven.artifact.repository.metadata.Metadata {
         val pom = records.first { it.extension == "pom" }
-        val pomLastUpdated = pom.timestamp.replace(".", "")
+        val pomLastUpdated = (pom.timestamp ?: ZonedDateTime.now(ZoneId.of("UTC")).format(formatter))
+            .replace(".", "")
         return if (repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE) {
             nonuniqueMetadata(mavenGavc, pomLastUpdated)
         } else {
@@ -486,7 +532,7 @@ class MavenLocalRepository(
             versioning = Versioning().apply {
                 snapshot = Snapshot().apply {
                     timestamp = pom.timestamp
-                    buildNumber = pom.buildNo
+                    buildNumber = pom.buildNo ?: 1
                 }
                 lastUpdated = pomLastUpdated
                 snapshotVersions = generateSnapshotVersions(mavenGavc, records)
@@ -549,26 +595,9 @@ class MavenLocalRepository(
         )
     }
 
-    fun metadataNodeCreateRequest(
-        context: ArtifactUploadContext,
-        fullPath: String
-    ): NodeCreateRequest {
-        val request = super.buildNodeCreateRequest(context)
-        val md5 = context.getArtifactMd5()
-        val sha1 = context.getArtifactSha1()
-        return request.copy(
-            overwrite = true,
-            fullPath = fullPath,
-            metadata = mutableMapOf(
-                HashType.MD5.ext to md5,
-                HashType.SHA1.ext to sha1
-            )
-        )
-    }
-
     fun updateMetadata(fullPath: String, metadataArtifact: ArtifactFile) {
         val uploadContext = ArtifactUploadContext(metadataArtifact)
-        val metadataNode = metadataNodeCreateRequest(uploadContext, fullPath)
+        val metadataNode = buildNodeCreateRequest(uploadContext).copy(fullPath = fullPath)
         storageManager.storeArtifactFile(metadataNode, metadataArtifact, uploadContext.storageCredentials)
         metadataArtifact.delete()
         logger.info("Success to save $fullPath, size: ${metadataArtifact.getSize()}")
@@ -751,5 +780,6 @@ class MavenLocalRepository(
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MavenLocalRepository::class.java)
+        private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss")
     }
 }
