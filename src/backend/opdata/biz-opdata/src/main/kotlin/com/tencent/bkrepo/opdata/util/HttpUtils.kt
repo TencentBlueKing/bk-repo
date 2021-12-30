@@ -31,32 +31,19 @@
  *
  */
 
-package com.tencent.bkrepo.opdata.config
+package com.tencent.bkrepo.opdata.util
 
 import com.tencent.bkrepo.opdata.exception.HttpRequestException
-import okhttp3.OkHttpClient
 import okhttp3.Response
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import java.util.concurrent.TimeUnit
 
-@Configuration
-class OkHttpConfiguration {
 
-    @Bean(OP_OKHTTP_CLIENT_NAME)
-    fun okHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .connectTimeout(DEFAULT_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .readTimeout(DEFAULT_READ_TIMEOUT, TimeUnit.MILLISECONDS)
-            .writeTimeout(DEFAULT_WRITE_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()
+fun <T> parseResAndThrowExceptionOnRequestFailed(res: Response, block: (res: Response) -> T): T {
+    if (res.isSuccessful) {
+        return block.invoke(res)
     }
-
-    companion object {
-        const val OP_OKHTTP_CLIENT_NAME = "opOkHttpClient"
-        private const val DEFAULT_CONNECT_TIMEOUT = 5000L
-        private const val DEFAULT_READ_TIMEOUT = 5000L
-        private const val DEFAULT_WRITE_TIMEOUT = 5000L
-    }
-
+    throw HttpRequestException(
+        "http request url: ${res.request().url()}," +
+            " response code: ${res.code()}," +
+            " error message: ${res.message()}"
+    )
 }

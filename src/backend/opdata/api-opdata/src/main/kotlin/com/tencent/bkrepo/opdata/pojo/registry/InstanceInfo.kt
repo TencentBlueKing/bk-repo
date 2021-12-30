@@ -42,7 +42,7 @@ data class InstanceInfo(
     @ApiModelProperty("节点ip或域名", required = true)
     val host: String,
     @ApiModelProperty("节点端口", required = true)
-    val port: String,
+    val port: Int,
     @ApiModelProperty("节点状态", required = true)
     val status: InstanceStatus,
     @ApiModelProperty("节点详情")

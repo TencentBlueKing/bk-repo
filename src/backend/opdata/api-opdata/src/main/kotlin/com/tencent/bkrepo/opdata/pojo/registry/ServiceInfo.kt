@@ -38,6 +38,6 @@ import io.swagger.annotations.ApiModelProperty
 data class ServiceInfo(
     @ApiModelProperty("服务名")
     val name: String,
-    @ApiModelProperty("服务节点信息")
+    @ApiModelProperty("服务实例信息")
     val instances: List<InstanceInfo>
 )

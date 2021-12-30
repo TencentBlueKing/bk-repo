@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/op/services")
-class OpRegistryController {
+class OpServiceController {
 
     /**
      * 列出当前注册中心中的所有服务
@@ -60,14 +60,6 @@ class OpRegistryController {
      */
     @GetMapping("/{serviceName}")
     fun instances(@PathVariable("serviceName") serviceName: String): Response<List<InstanceInfo>> {
-        TODO()
-    }
-
-    /**
-     * 获取节点当前运行状态详情
-     */
-    @GetMapping("/{serviceName}/nodes/{instanceId}")
-    fun instanceStatus(@PathVariable serviceName: String, @PathVariable instanceId: String): Response<InstanceInfo> {
         TODO()
     }
 
