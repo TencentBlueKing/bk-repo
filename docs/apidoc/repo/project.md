@@ -47,6 +47,14 @@
   - English：get project list
 - 请求体
   此接口请求体为空
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |names|string|否|无|项目名称，多个以,隔开|project name|
+  |displayNames|string|否|无|显示名称，多个以,隔开|project display name|
+  |pageSize|int|否|无|分页数量|page size|
+  |pageNumber|int|否|无|当前页|page number|
 - 响应体
 
   ``` json
