@@ -253,7 +253,8 @@
                 "size":524,
                 "lastModifiedBy":"admin",
                 "lastModifiedDate":"2020-09-10T14:48:22.846",
-                "downloadCount":0
+                "downloadCount":0,
+                "registryUrl":"bkrepo.example.com/test/test/php:latest"
             },
             {
                 "tag":"v1",
@@ -261,7 +262,8 @@
                 "size":524,
                 "lastModifiedBy":"admin",
                 "lastModifiedDate":"2020-09-10T14:49:37.904",
-                "downloadCount":0
+                "downloadCount":0,
+                "registryUrl":"bkrepo.example.com/test/test/php:v1"
             }
         ]
     },

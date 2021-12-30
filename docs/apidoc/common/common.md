@@ -8,7 +8,7 @@
 
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
-|Authorization|string|否|无|Basic Auth认证头，Basic base64(username:password)|Basic Auth header|
+|Authorization|string|是|无|Basic Auth认证头，Basic base64(username:password)|Basic Auth header|
 
 ## 统一响应格式
 
