@@ -83,6 +83,9 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
+            - name: gateway
+              containerPort: 8081
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /ui/

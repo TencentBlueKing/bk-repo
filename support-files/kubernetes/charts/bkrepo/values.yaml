@@ -30,6 +30,11 @@ serviceAccount:
   ##
   name:
 
+# metrics采集配置
+bkMonitorConfig:
+  enabled: false
+
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
@@ -102,7 +107,7 @@ init:
     image:
       registry: mirrors.tencent.com/bkrepo
       repository: bkrepo-init
-      tag: 1.0.15
+      tag: 1.0.36
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
@@ -131,6 +136,12 @@ common:
       ## filesystem配置，使用文件系统
       filesystem:
         path: /data/storage/store
+      # 是否启用nfs挂载
+      nfs:
+        enabled: false
+        path: /
+        server:
+
       ## 腾讯云cos存储配置
       #cos:
       ## 标准s3对象存储
@@ -159,14 +170,18 @@ gateway:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-gateway
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -196,14 +211,18 @@ repository:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-repository
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -233,14 +252,18 @@ auth:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-auth
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -269,14 +292,18 @@ generic:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-generic
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -305,14 +332,18 @@ docker:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-docker
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -341,14 +372,18 @@ npm:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-npm
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -377,14 +412,18 @@ pypi:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-pypi
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001
@@ -413,14 +452,18 @@ helm:
   image:
     registry: mirrors.tencent.com/bkrepo
     repository: bkrepo-helm
-    tag: 1.0.15
+    tag: 1.0.36
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
   hostAliases: []
   resources:
-    limits: {}
-    requests: {}
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
   containerSecurityContext:
     enabled: false
     runAsUser: 1001

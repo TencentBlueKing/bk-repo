@@ -68,7 +68,12 @@ open class StreamArtifactFile(
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
+        receiver = ArtifactDataReceiver(
+            storageProperties.receive,
+            storageProperties.monitor,
+            path,
+            randomFilePath = true
+        )
         if (!storageProperties.receive.resolveLazily) {
             init()
         }
