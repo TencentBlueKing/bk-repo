@@ -153,6 +153,10 @@ common:
 gateway:
   ## bkrepo 地址
   host: bkrepo.example.com
+  ## bkrepo docker仓库地址
+  dockeHost: docker.bkrepo.example.com
+  ## bkrepo helm仓库地址
+  helmHost: helm.bkrepo.example.com
   ## dns服务器地址，用于配置nginx resolver。local=on为openrestry语法，取本机/etc/resolv.conf配置
   dnsServer: local=on
   ## 网关访问微服务认证信息

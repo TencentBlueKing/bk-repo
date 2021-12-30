@@ -77,8 +77,12 @@ spec:
               value: {{ .Values.gateway.deployMode }}
             - name: BK_REPO_DOCKER_HTTP_PORT
               value: "80"
+            - name: BK_REPO_DOCKER_HOST
+              value: {{ .Values.gateway.dockeHost }}
             - name: BK_REPO_HELM_HTTP_PORT
               value: "80"
+            - name: BK_REPO_HELM_HOST
+              value: {{ .Values.gateway.helmHost }}
           ports:
             - name: http
               containerPort: 80
