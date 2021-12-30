@@ -16,7 +16,7 @@ data:
     docker:
       domain: docker.{{ .Values.gateway.host }}
       auth:
-        url: http://docker.{{ .Values.gateway.host }}/v2/auth
+        url: http://{{ .Values.gateway.host }}/docker/v2/auth
       {{- if keys $.Values.docker.config }}
         {{- toYaml .Values.docker.config | nindent 6 }}
       {{- end}}
