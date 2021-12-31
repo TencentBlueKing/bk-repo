@@ -10,7 +10,7 @@ enum class InstanceStatus {
     RUNNING,
 
     /**
-     * 已从注册中心下线
+     * 已从注册中心下线，但是还存活
      */
     DEREGISTER,
 
