@@ -60,6 +60,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
+import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
@@ -309,6 +310,15 @@ class UserNodeController(
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
+    }
+
+    @ApiOperation("仓库 包数量 总览")
+    @GetMapping("/search/overview")
+    fun nodeGlobalSearchOverview(
+        @RequestParam projectId: String,
+        @RequestParam name: String
+    ): Response<List<ProjectPackageOverview>> {
+        return ResponseBuilder.success(nodeSearchService.nodeOverview(projectId, name))
     }
 
     /**
