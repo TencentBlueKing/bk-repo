@@ -27,4 +27,4 @@ spec:
       {{- else }}
       nodePort: null
       {{- end }}
-      targetPort: 8081
+      targetPort: 80
