@@ -25,26 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.util
+package com.tencent.bkrepo.opdata.pojo.registry
 
-import com.tencent.bkrepo.opdata.exception.HttpRequestException
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okhttp3.Response
+/**
+ * 节点状态
+ */
+enum class InstanceStatus {
+    /**
+     * 正常运行
+     */
+    RUNNING,
 
-fun throwExceptionOnRequestFailed(res: Response) {
-    parseResAndThrowExceptionOnRequestFailed(res) {}
+    /**
+     * 已从注册中心下线，但是还存活
+     */
+    DEREGISTER,
+
+    /**
+     * 离线，无法连通
+     */
+    OFFLINE;
 }
-
-fun <T> parseResAndThrowExceptionOnRequestFailed(res: Response, block: (res: Response) -> T): T {
-    if (res.isSuccessful) {
-        return block.invoke(res)
-    }
-    throw HttpRequestException(
-        "http request url: ${res.request().url()}," +
-            " response code: ${res.code()}," +
-            " error message: ${res.message()}"
-    )
-}
-
-fun HttpUrl.requestBuilder(): Request.Builder = Request.Builder().url(this)
