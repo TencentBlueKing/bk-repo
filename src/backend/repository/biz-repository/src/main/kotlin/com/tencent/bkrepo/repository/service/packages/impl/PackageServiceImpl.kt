@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
@@ -230,9 +231,10 @@ class PackageServiceImpl(
             packageDao.save(tPackage)
 
             if (!isOverride) {
-                publishEvent((buildCreatedEvent(request, realIpAddress)))
+                publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
             } else {
-                publishEvent((PackageEventFactory.buildUpdatedEvent(request, realIpAddress)))
+                publishEvent((PackageEventFactory.buildUpdatedEvent(
+                    request, realIpAddress ?: HttpContextHolder.getClientAddress())))
             }
             logger.info("Create package version[$newVersion] success")
         }
@@ -251,7 +253,7 @@ class PackageServiceImpl(
                 packageName = tPackage.name,
                 versionName = null,
                 createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
             )
         )
         logger.info("Delete package [$projectId/$repoName/$packageKey] success")
@@ -287,7 +289,7 @@ class PackageServiceImpl(
                 packageName = tPackage.name,
                 versionName = versionName,
                 createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
             )
         )
         logger.info("Delete package version[$projectId/$repoName/$packageKey-$versionName] success")
@@ -333,7 +335,7 @@ class PackageServiceImpl(
                 packageType = tPackage.type.name,
                 packageName = tPackage.name,
                 createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
             )
         )
     }
@@ -362,7 +364,7 @@ class PackageServiceImpl(
                 packageName = tPackage.name,
                 versionName = versionName,
                 createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
             )
         )
     }

@@ -86,13 +86,18 @@ class PackageController(
         return ResponseBuilder.success(packageVersion)
     }
 
-    override fun createVersion(request: PackageVersionCreateRequest): Response<Void> {
-        packageService.createPackageVersion(request)
+    override fun createVersion(request: PackageVersionCreateRequest, realIpAddress: String?): Response<Void> {
+        packageService.createPackageVersion(request, realIpAddress)
         return ResponseBuilder.success()
     }
 
-    override fun deletePackage(projectId: String, repoName: String, packageKey: String): Response<Void> {
-        packageService.deletePackage(projectId, repoName, packageKey)
+    override fun deletePackage(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        realIpAddress: String?
+    ): Response<Void> {
+        packageService.deletePackage(projectId, repoName, packageKey, realIpAddress)
         return ResponseBuilder.success()
     }
 
@@ -100,19 +105,20 @@ class PackageController(
         projectId: String,
         repoName: String,
         packageKey: String,
-        version: String
+        version: String,
+        realIpAddress: String?
     ): Response<Void> {
-        packageService.deleteVersion(projectId, repoName, packageKey, version)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, realIpAddress)
         return ResponseBuilder.success()
     }
 
-    override fun updatePackage(request: PackageUpdateRequest): Response<Void> {
-        packageService.updatePackage(request)
+    override fun updatePackage(request: PackageUpdateRequest, realIpAddress: String?): Response<Void> {
+        packageService.updatePackage(request, realIpAddress)
         return ResponseBuilder.success()
     }
 
-    override fun updateVersion(request: PackageVersionUpdateRequest): Response<Void> {
-        packageService.updateVersion(request)
+    override fun updateVersion(request: PackageVersionUpdateRequest, realIpAddress: String?): Response<Void> {
+        packageService.updateVersion(request, realIpAddress)
         return ResponseBuilder.success()
     }
 
