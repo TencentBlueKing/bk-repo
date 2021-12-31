@@ -29,35 +29,48 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util
+package com.tencent.bkrepo.helm.service
 
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.context.WebApplicationContext
 
-class ShardingUtilsTest {
+@DisplayName("helm修复服务测试")
+@SpringBootTest
+class HelmFixToolServiceTest {
 
-    @Test
-    fun testShardingCount() {
-        assertThrows<IllegalArgumentException> { ShardingUtils.shardingCountFor(-1) }
-        Assertions.assertEquals(1, ShardingUtils.shardingCountFor(0))
-        Assertions.assertEquals(1, ShardingUtils.shardingCountFor(1))
-        Assertions.assertEquals(2, ShardingUtils.shardingCountFor(2))
-        Assertions.assertEquals(4, ShardingUtils.shardingCountFor(3))
-        Assertions.assertEquals(256, ShardingUtils.shardingCountFor(255))
-        Assertions.assertEquals(256, ShardingUtils.shardingCountFor(256))
-        Assertions.assertEquals(512, ShardingUtils.shardingCountFor(257))
-        Assertions.assertEquals(1024, ShardingUtils.shardingCountFor(2000))
+    @Autowired
+    private lateinit var wac: WebApplicationContext
+
+    private lateinit var mockMvc: MockMvc
+
+    @BeforeEach
+    fun setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
     }
 
-    @Test
-    fun testShardingSequence() {
-        Assertions.assertEquals(0, ShardingUtils.shardingSequenceFor(0, 256))
-        Assertions.assertEquals(255, ShardingUtils.shardingSequenceFor(255, 256))
-        Assertions.assertEquals(0, ShardingUtils.shardingSequenceFor(256, 256))
+    val projectId = "test"
+    val repoName = "test"
 
-        Assertions.assertEquals(0, ShardingUtils.shardingSequenceFor(0, 1))
-        Assertions.assertEquals(0, ShardingUtils.shardingSequenceFor(1, 1))
-        Assertions.assertEquals(0, ShardingUtils.shardingSequenceFor(2, 1))
+    @Test
+    @DisplayName("元属性修复")
+    fun metaDataRegenerateTest() {
+        val perform =
+            mockMvc.perform(
+                MockMvcRequestBuilders.post("/test/test/metaDate/regenerate").header(
+                    "Authorization",
+                    "Basic XXXXX="
+                ).contentType(MediaType.APPLICATION_JSON)
+            )
+        perform.andExpect { MockMvcResultMatchers.status().is4xxClientError }
+        perform.andExpect { MockMvcResultMatchers.status().isOk }
     }
 }

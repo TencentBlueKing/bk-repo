@@ -42,15 +42,23 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.helm.constants.CHART
+import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FORCE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.META_DETAIL
 import com.tencent.bkrepo.helm.constants.NAME
+import com.tencent.bkrepo.helm.constants.OVERWRITE
+import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.utils.ChartParserUtil
+import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -63,70 +71,75 @@ import org.springframework.stereotype.Component
 class HelmLocalRepository : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
-        super.onUploadBefore(context)
-        // 判断是否是强制上传
-        val isForce = context.request.getParameter(FORCE)?.let { true } ?: false
-        context.putAttribute(FORCE, isForce)
-        val repositoryDetail = context.repositoryDetail
-        val projectId = repositoryDetail.projectId
-        val repoName = repositoryDetail.name
-        val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
-        val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
-        val isOverwrite = isOverwrite(fullPath, isForce)
-        context.putAttribute("isOverwrite", isOverwrite)
-        if (isExist && !isOverwrite) {
-            throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
+        with(context) {
+            super.onUploadBefore(context)
+            val size = getArtifactFile().getSize()
+            putAttribute(SIZE, size)
+            when (getStringAttribute(FILE_TYPE)) {
+                CHART -> {
+                    val chartMetadata = ChartParserUtil.parseChartFileInfo(context.getArtifactFile())
+                    putAttribute(FULL_PATH, HelmUtils.getChartFileFullPath(chartMetadata.name, chartMetadata.version))
+                    putAttribute(META_DETAIL, HelmMetadataUtils.convertToMap(chartMetadata))
+                }
+                PROV -> {
+                    val provFileInfo = ChartParserUtil.parseProvFileInfo(context.getArtifactFile())
+                    putAttribute(FULL_PATH, HelmUtils.getProvFileFullPath(provFileInfo.first, provFileInfo.second))
+                }
+            }
+            // 判断是否是强制上传
+            val isForce = request.getParameter(FORCE)?.let { true } ?: false
+            putAttribute(FORCE, isForce)
+            val repositoryDetail = repositoryDetail
+            val projectId = repositoryDetail.projectId
+            val repoName = repositoryDetail.name
+            val fullPath = getStringAttribute(FULL_PATH).orEmpty()
+            val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
+            val isOverwrite = isOverwrite(fullPath, isForce)
+            putAttribute(OVERWRITE, isOverwrite)
+            if (isExist && !isOverwrite) {
+                throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
+            }
         }
     }
 
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val fullPath = context.getStringAttribute(FULL_PATH).orEmpty()
-        val isForce = context.getBooleanAttribute(FORCE)!!
-        val size = context.getArtifactFile().getSize()
-        context.putAttribute(SIZE, size)
-        return NodeCreateRequest(
-            projectId = context.projectId,
-            repoName = context.repoName,
-            folder = false,
-            fullPath = fullPath,
-            size = size,
-            sha256 = context.getArtifactSha256(),
-            md5 = context.getArtifactMd5(),
-            operator = context.userId,
-            metadata = parseMetaData(fullPath, isForce),
-            overwrite = isOverwrite(fullPath, isForce)
-        )
-    }
+        with(context) {
+            val fullPath = getStringAttribute(FULL_PATH).orEmpty()
+            val isForce = getBooleanAttribute(FORCE)!!
 
-    private fun parseMetaData(fullPath: String, isForce: Boolean): Map<String, String>? {
-        if (isOverwrite(fullPath, isForce) || !fullPath.endsWith(".tgz")) {
-            return emptyMap()
+            return NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = fullPath,
+                size = getLongAttribute(SIZE),
+                sha256 = getArtifactSha256(),
+                md5 = getArtifactMd5(),
+                operator = userId,
+                metadata = parseMetaData(context),
+                overwrite = isOverwrite(fullPath, isForce)
+            )
         }
-        val substring = fullPath.trimStart('/').substring(0, fullPath.lastIndexOf('.') - 1)
-        val name = substring.substringBeforeLast('-')
-        val version = substring.substringAfterLast('-')
-        return mapOf("name" to name, "version" to version)
-    }
-
-    private fun isOverwrite(fullPath: String, isForce: Boolean): Boolean {
-        return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
-            node!!.metadata[NAME]?.let { context.putAttribute(NAME, it) }
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+        node?.let {
+            node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
+        }
+        val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
+        inputStream?.let {
             return ArtifactResource(
                 inputStream,
-                artifactInfo.getResponseName(),
+                context.artifactInfo.getResponseName(),
                 node,
                 ArtifactChannel.LOCAL,
-                useDisposition
+                context.useDisposition
             )
         }
+        return null
     }
 
     override fun buildDownloadRecord(
@@ -173,6 +186,32 @@ class HelmLocalRepository : LocalRepository() {
                     removeVersion(this, it, context.userId)
                 }
             }
+            updatePackageExtension(context)
+        }
+    }
+
+    /**
+     * 节点删除后，将package extension信息更新
+     */
+    private fun updatePackageExtension(context: ArtifactRemoveContext) {
+        with(context.artifactInfo as HelmDeleteArtifactInfo) {
+            val version = packageClient.findPackageByKey(projectId, repoName, packageName).data?.latest
+            try {
+                val chartPath = HelmUtils.getChartFileFullPath(getArtifactName(), version!!)
+                val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
+                val chartInfo = map?.let { it1 -> HelmMetadataUtils.convertToObject(it1) }
+                chartInfo?.appVersion?.let {
+                    val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
+                        context.artifactInfo,
+                        PackageKeys.resolveHelm(packageName),
+                        chartInfo.appVersion!!,
+                        chartInfo.description
+                    )
+                    packageClient.updatePackage(packageUpdateRequest)
+                }
+            } catch (e: Exception) {
+                logger.warn("can not convert meta data")
+            }
         }
     }
 
@@ -187,11 +226,32 @@ class HelmLocalRepository : LocalRepository() {
             if (chartPath.isNotBlank()) {
                 val request = NodeDeleteRequest(projectId, repoName, chartPath, userId)
                 nodeClient.deleteNode(request)
+                // 节点删除后，将package信息更新
             }
             if (provPath.isNotBlank()) {
                 nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, provPath, userId))
             }
         }
+    }
+
+    private fun parseMetaData(context: ArtifactUploadContext): Map<String, Any>? {
+        with(context) {
+            val fullPath = getStringAttribute(FULL_PATH)
+            val forceUpdate = getBooleanAttribute(FORCE)
+            val fileType = getStringAttribute(FILE_TYPE)
+            var result: Map<String, Any>? = emptyMap()
+            if (!isOverwrite(fullPath!!, forceUpdate!!)) {
+                when (fileType) {
+                    CHART -> result = getAttribute<Map<String, Any>?>(META_DETAIL)
+                    PROV -> result = ChartParserUtil.parseNameAndVersion(fullPath)
+                }
+            }
+            return result
+        }
+    }
+
+    private fun isOverwrite(fullPath: String, isForce: Boolean): Boolean {
+        return isForce || !(fullPath.trim().endsWith(".tgz", true) || fullPath.trim().endsWith(".prov", true))
     }
 
     companion object {

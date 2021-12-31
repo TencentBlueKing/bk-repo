@@ -77,7 +77,7 @@ class UserRepositoryController(
         @ApiParam(value = "仓库类型", required = true)
         @PathVariable type: String? = null
     ): Response<RepositoryInfo?> {
-        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName))
+        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, type))
     }
 
     @ApiOperation("根据名称查询仓库是否存在")

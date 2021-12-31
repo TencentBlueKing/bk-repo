@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.log
+package com.tencent.bkrepo.repository.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
+import com.tencent.bkrepo.repository.service.log.OperateLogService
+import org.springframework.web.bind.annotation.RestController
 
-interface OperateLogService {
+@RestController
+class OperateLogController(
+    private val operateLogService: OperateLogService
+) : OperateLogClient {
+    override fun record(event: ArtifactEvent): Response<Void> {
+        operateLogService.saveEventAsync(event, HttpContextHolder.getClientAddress())
+        return ResponseBuilder.success()
+    }
 
-    /**
-     * 异步保存事件
-     * @param event 事件
-     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
-     */
-    fun saveEventAsync(event: ArtifactEvent, address: String)
+    override fun batchRecord(eventList: List<ArtifactEvent>): Response<Void> {
+        operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
+        return ResponseBuilder.success()
+    }
 
-    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
-
-    fun listPage(option: OpLogListOption): Page<OperateLog>
+    override fun list(option: OpLogListOption): Response<Page<OperateLog>> {
+        return ResponseBuilder.success(operateLogService.listPage(option))
+    }
 }

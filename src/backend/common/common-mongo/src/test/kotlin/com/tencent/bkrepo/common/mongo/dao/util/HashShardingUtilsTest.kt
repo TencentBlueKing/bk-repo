@@ -29,46 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.service
+package com.tencent.bkrepo.common.mongo.dao.util
 
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import org.springframework.web.context.WebApplicationContext
+import org.junit.jupiter.api.assertThrows
 
-@DisplayName("helm仓库获取tgz包测试")
-@SpringBootTest
-class ChartRepositoryServiceTest {
-    @Autowired
-    private lateinit var wac: WebApplicationContext
+class HashShardingUtilsTest {
 
-    private lateinit var mockMvc: MockMvc
-
-    @BeforeEach
-    fun setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(wac).build()
+    @Test
+    fun testShardingCount() {
+        assertThrows<IllegalArgumentException> { HashShardingUtils.shardingCountFor(-1) }
+        Assertions.assertEquals(1, HashShardingUtils.shardingCountFor(0))
+        Assertions.assertEquals(1, HashShardingUtils.shardingCountFor(1))
+        Assertions.assertEquals(2, HashShardingUtils.shardingCountFor(2))
+        Assertions.assertEquals(4, HashShardingUtils.shardingCountFor(3))
+        Assertions.assertEquals(256, HashShardingUtils.shardingCountFor(255))
+        Assertions.assertEquals(256, HashShardingUtils.shardingCountFor(256))
+        Assertions.assertEquals(512, HashShardingUtils.shardingCountFor(257))
+        Assertions.assertEquals(1024, HashShardingUtils.shardingCountFor(2000))
     }
 
     @Test
-    @DisplayName("index.yaml文件刷新测试")
-    fun getIndexYamlTest() {
-        val perform =
-            mockMvc.perform(
-                MockMvcRequestBuilders.get("/test/test/index.yaml").header(
-                    "Authorization",
-                    "Basic XXXXXX="
-                ).contentType(MediaType.APPLICATION_JSON)
-            )
-        perform.andExpect { MockMvcResultMatchers.status().is4xxClientError }
-        perform.andExpect { MockMvcResultMatchers.status().isOk }
-        val contentLength = perform.andReturn().response.contentLength
-        println("****************$contentLength")
+    fun testShardingSequence() {
+        Assertions.assertEquals(0, HashShardingUtils.shardingSequenceFor(0, 256))
+        Assertions.assertEquals(255, HashShardingUtils.shardingSequenceFor(255, 256))
+        Assertions.assertEquals(0, HashShardingUtils.shardingSequenceFor(256, 256))
+
+        Assertions.assertEquals(0, HashShardingUtils.shardingSequenceFor(0, 1))
+        Assertions.assertEquals(0, HashShardingUtils.shardingSequenceFor(1, 1))
+        Assertions.assertEquals(0, HashShardingUtils.shardingSequenceFor(2, 1))
     }
 }

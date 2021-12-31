@@ -29,22 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util
+package com.tencent.bkrepo.common.mongo.dao.util.sharding
 
 import org.slf4j.LoggerFactory
 
 /**
  * Sharding 工具类
  */
-object ShardingUtils {
+object HashShardingUtils : ShardingUtils {
 
     private const val MAXIMUM_CAPACITY = 1 shl 10
-    private val logger = LoggerFactory.getLogger(ShardingUtils::class.java)
+    private val logger = LoggerFactory.getLogger(HashShardingUtils::class.java)
 
     /**
      * 计算[i]对应的合适的sharding数量，规则是得到大于等于[i]的2的次幂，最小值为1，最大值为[MAXIMUM_CAPACITY]
      */
-    fun shardingCountFor(i: Int): Int {
+    override fun shardingCountFor(i: Int): Int {
         require(i >= 0) { "Illegal initial sharding count : $i" }
         var result = if (i > MAXIMUM_CAPACITY) MAXIMUM_CAPACITY else i
         result = tableSizeFor(result)
@@ -59,9 +59,13 @@ object ShardingUtils {
      *
      * [shardingCount]表示分表数量，计算出的结果范围为[0, shardingCount)
      */
-    fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
+    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
         val hashCode = value.hashCode()
         return hashCode and shardingCount - 1
+    }
+
+    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+        throw UnsupportedOperationException()
     }
 
     private fun tableSizeFor(cap: Int): Int {

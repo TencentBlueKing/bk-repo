@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.filesystem.cleanup
+package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
+import com.tencent.bkrepo.repository.pojo.log.OperateLog
+import com.tencent.bkrepo.repository.service.log.OperateLogService
+import io.swagger.annotations.Api
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-data class CleanupResult(
-    var totalFile: Long = 0,
-    var totalFolder: Long = 0,
-    var totalSize: Long = 0,
-    var cleanupFile: Long = 0,
-    var cleanupFolder: Long = 0,
-    var cleanupSize: Long = 0,
-    var errorCount: Long = 0
+@Api("操作日志用户接口")
+@RestController
+@RequestMapping("/api/log")
+class UserOperateLogController(
+    private val operateLogService: OperateLogService
 ) {
-    override fun toString(): String {
-        return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
-            "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."
+
+    @PostMapping("/list")
+    fun list(
+        @RequestBody option: OpLogListOption
+    ) : Response<Page<OperateLog>> {
+        return ResponseBuilder.success(operateLogService.listPage(option))
     }
 }

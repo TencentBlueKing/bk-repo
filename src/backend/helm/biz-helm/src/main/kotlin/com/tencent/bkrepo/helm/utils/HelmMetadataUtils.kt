@@ -31,35 +31,21 @@
 
 package com.tencent.bkrepo.helm.utils
 
-import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
-import com.tencent.bkrepo.helm.constants.INDEX_YAML
-import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.V1
-import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 
-object HelmUtils {
+object HelmMetadataUtils {
 
-    fun getChartFileFullPath(name: String, version: String): String {
-        return "/%s-%s.%s".format(name, version, CHART_PACKAGE_FILE_EXTENSION)
+    fun convertToMap(chartInfo: HelmChartMetadata): Map<String, Any> {
+        return chartInfo.toJsonString().readJsonString<Map<String, Any>>()
     }
 
-    fun getProvFileFullPath(name: String, version: String): String {
-        return "/%s-%s.%s".format(name, version, PROVENANCE_FILE_EXTENSION)
+    fun convertToObject(map: Map<String, Any>): HelmChartMetadata {
+        return map.toJsonString().readJsonString<HelmChartMetadata>()
     }
 
-    fun getIndexCacheYamlFullPath(): String {
-        return "/$INDEX_CACHE_YAML"
-    }
-
-    fun getIndexYamlFullPath(): String {
-        return "/$INDEX_YAML"
-    }
-
-    fun initIndexYamlMetadata(): HelmIndexYamlMetadata {
-        return HelmIndexYamlMetadata(
-            apiVersion = V1,
-            generated = TimeFormatUtil.getUtcTime()
-        )
+    fun convertToString(chartInfo: HelmChartMetadata): String {
+        return chartInfo.toJsonString()
     }
 }
