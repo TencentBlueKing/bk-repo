@@ -24,6 +24,7 @@ spec:
       port: {{ .Values.gateway.service.port }}
       targetPort: 80
     - name: node
+      port: 8081
       {{- if and .Values.gateway.service.nodePort (or (eq .Values.gateway.service.type "NodePort") (eq .Values.gateway.service.type "LoadBalancer")) }}
       nodePort: {{ .Values.gateway.service.nodePort }}
       {{- else }}
