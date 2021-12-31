@@ -44,6 +44,7 @@ import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
+import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
@@ -192,12 +193,6 @@ class ChartRepositoryServiceImpl(
         }
     }
 
-    fun downloadIndexYaml() {
-        val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, HelmUtils.getIndexYamlFullPath())
-        ArtifactContextHolder.getRepository().download(context)
-    }
-
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun installTgz(artifactInfo: HelmArtifactInfo) {
@@ -247,7 +242,6 @@ class ChartRepositoryServiceImpl(
     }
 
     companion object {
-        const val SLEEP_MILLIS = 20L
         val logger: Logger = LoggerFactory.getLogger(ChartRepositoryServiceImpl::class.java)
 
         fun convertDateTime(timeStr: String): String {

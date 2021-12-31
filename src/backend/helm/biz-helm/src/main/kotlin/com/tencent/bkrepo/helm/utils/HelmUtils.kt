@@ -33,6 +33,7 @@ package com.tencent.bkrepo.helm.utils
 
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.INDEX_CACHE_YAML
+import com.tencent.bkrepo.helm.constants.INDEX_YAML
 import com.tencent.bkrepo.helm.constants.PROVENANCE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.V1
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
@@ -47,8 +48,12 @@ object HelmUtils {
         return "/%s-%s.%s".format(name, version, PROVENANCE_FILE_EXTENSION)
     }
 
-    fun getIndexYamlFullPath(): String {
+    fun getIndexCacheYamlFullPath(): String {
         return "/$INDEX_CACHE_YAML"
+    }
+
+    fun getIndexYamlFullPath(): String {
+        return "/$INDEX_YAML"
     }
 
     fun initIndexYamlMetadata(): HelmIndexYamlMetadata {

@@ -27,7 +27,10 @@
 
 package com.tencent.bkrepo.repository.service.log
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
+import com.tencent.bkrepo.repository.pojo.log.OperateLog
 
 interface OperateLogService {
 
@@ -37,4 +40,8 @@ interface OperateLogService {
      * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
      */
     fun saveEventAsync(event: ArtifactEvent, address: String)
+
+    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
+
+    fun listPage(option: OpLogListOption): Page<OperateLog>
 }
