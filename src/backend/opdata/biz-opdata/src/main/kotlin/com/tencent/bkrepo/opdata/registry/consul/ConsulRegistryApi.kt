@@ -43,7 +43,6 @@ import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck.Companion.STATUS_PASSING
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceHealth
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceId
-import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulNode
 import com.tencent.bkrepo.opdata.util.parseResAndThrowExceptionOnRequestFailed
 import com.tencent.bkrepo.opdata.util.requestBuilder
 import com.tencent.bkrepo.opdata.util.throwExceptionOnRequestFailed
