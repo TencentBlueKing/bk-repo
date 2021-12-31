@@ -77,11 +77,13 @@
 
                         projectId && this.checkPM({ projectId })
                     }
+
+                    this.userInfo.admin && this.getClusterList()
                 })
             }
         },
         methods: {
-            ...mapActions(['getProjectList', 'ajaxUserInfo', 'checkPM', 'getRepoUserList'])
+            ...mapActions(['getProjectList', 'ajaxUserInfo', 'checkPM', 'getRepoUserList', 'getClusterList'])
         }
     }
 </script>

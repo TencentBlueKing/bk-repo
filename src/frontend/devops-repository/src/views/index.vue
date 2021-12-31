@@ -44,7 +44,7 @@
 </template>
 <script>
     import Breadcrumb from '@repository/components/Breadcrumb/topBreadcrumb'
-    import { mapState, mapGetters, mapActions } from 'vuex'
+    import { mapState, mapGetters } from 'vuex'
     export default {
         components: { Breadcrumb },
         data () {
@@ -67,7 +67,7 @@
                     global: [
                         MODE_CONFIG !== 'ci' && 'projectManage',
                         'userManage',
-                        this.isMasterNode && 'nodeManage',
+                        'nodeManage',
                         'repoAudit'
                     ].filter(Boolean)
                 }
@@ -75,12 +75,6 @@
             isMasterNode () {
                 return this.masterNode.url && this.masterNode.url.indexOf(location.origin) !== -1
             }
-        },
-        created () {
-            this.getClusterList()
-        },
-        methods: {
-            ...mapActions(['getClusterList'])
         }
     }
 </script>

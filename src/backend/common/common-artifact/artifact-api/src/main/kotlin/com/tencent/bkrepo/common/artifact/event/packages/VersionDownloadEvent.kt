@@ -25,39 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.common.artifact.event.packages
+
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 
 /**
- * 事件类型
+ * 包版本下载事件
  */
-enum class EventType(val nick: String) {
-    // PROJECT
-    PROJECT_CREATED("创建项目"),
-
-    // REPOSITORY
-    REPO_CREATED("创建仓库"),
-    REPO_UPDATED("更新仓库"),
-    REPO_DELETED("删除仓库"),
-
-    // NODE
-    NODE_CREATED("创建节点"),
-    NODE_RENAMED("重命名节点"),
-    NODE_MOVED("移动节点"),
-    NODE_COPIED("复制节点"),
-    NODE_DELETED("删除节点"),
-
-    // METADATA
-    METADATA_DELETED("删除元数据"),
-    METADATA_SAVED("添加元数据"),
-
-    // VERSION
-    VERSION_CREATED("创建制品"),
-    VERSION_DELETED("删除制品"),
-    VERSION_DOWNLOAD("下载制品"),
-    VERSION_UPDATED("更新制品"),
-    VERSION_STAGED("晋级制品"),
-
-    // ADMIN
-    ADMIN_ADD("添加管理员"),
-    ADMIN_DELETE("移除管理员")
-}
+class VersionDownloadEvent(
+    override val projectId: String,
+    override val repoName: String,
+    override val userId: String,
+    val packageKey: String,
+    val packageVersion: String,
+    val packageName: String,
+    val packageType: String,
+    val realIpAddress: String?
+) : ArtifactEvent(
+    type = EventType.VERSION_DOWNLOAD,
+    projectId = projectId,
+    repoName = repoName,
+    resourceKey = "$packageKey-$packageVersion",
+    userId = userId,
+    data = mutableMapOf(
+        "packageKey" to packageKey,
+        "packageType" to packageType,
+        "packageName" to packageName,
+        "packageVersion" to packageVersion
+    ).apply {
+        realIpAddress?.let { this["realIpAddress"] = realIpAddress }
+    }
+)
