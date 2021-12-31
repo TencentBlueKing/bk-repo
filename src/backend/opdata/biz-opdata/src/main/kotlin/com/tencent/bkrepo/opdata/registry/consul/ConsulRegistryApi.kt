@@ -64,7 +64,7 @@ class ConsulRegistryApi @Autowired constructor(
 ) : RegistryApi {
 
     override fun services(): List<ServiceInfo> {
-        val url = urlBuilder().addPathSegment(CONSUL_LIST_SERVICES_PATH).build()
+        val url = urlBuilder().addPathSegments(CONSUL_LIST_SERVICES_PATH).build()
         val req = url.requestBuilder().build()
         val res = httpClient.newCall(req).execute()
         return res.use {
@@ -103,7 +103,7 @@ class ConsulRegistryApi @Autowired constructor(
             .scheme(consulProperties.scheme ?: CONSUL_DEFAULT_SCHEME)
             .host(consulNode.address)
             .port(consulProperties.port)
-            .addPathSegment(CONSUL_DEREGISTER_PATH)
+            .addPathSegments(CONSUL_DEREGISTER_PATH)
             .addPathSegment(consulInstanceId.serviceId)
             .build()
         val req = url.requestBuilder().put(EMPTY_REQUEST).build()
@@ -129,7 +129,7 @@ class ConsulRegistryApi @Autowired constructor(
         serviceName: String,
         instanceId: String? = null
     ): List<ConsulInstanceHealth> {
-        val urlBuilder = urlBuilder().addPathSegment(CONSUL_LIST_SERVICE_HEALTH_PATH).addPathSegment(serviceName)
+        val urlBuilder = urlBuilder().addPathSegments(CONSUL_LIST_SERVICE_HEALTH_PATH).addPathSegment(serviceName)
         val url = if (instanceId.isNullOrEmpty()) {
             urlBuilder.build()
         } else {
@@ -189,8 +189,8 @@ class ConsulRegistryApi @Autowired constructor(
         private const val CONSUL_FILTER_SELECTOR_SERVICE_ID = "Service.ID"
         private const val CONSUL_FILTER_SELECTOR_NODE_NAME = "Node.Node"
 
-        private const val CONSUL_LIST_SERVICES_PATH = "/v1/catalog/services"
-        private const val CONSUL_LIST_SERVICE_HEALTH_PATH = "/v1/health/service"
-        private const val CONSUL_DEREGISTER_PATH = "/v1/agent/service/deregister"
+        private const val CONSUL_LIST_SERVICES_PATH = "v1/catalog/services"
+        private const val CONSUL_LIST_SERVICE_HEALTH_PATH = "v1/health/service"
+        private const val CONSUL_DEREGISTER_PATH = "v1/agent/service/deregister"
     }
 }
