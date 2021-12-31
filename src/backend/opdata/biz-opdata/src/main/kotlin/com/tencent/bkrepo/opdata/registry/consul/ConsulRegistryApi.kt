@@ -50,15 +50,18 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.cloud.consul.ConditionalOnConsulEnabled
 import org.springframework.cloud.consul.ConsulProperties
 import org.springframework.stereotype.Component
 
 @Component
+@ConditionalOnConsulEnabled
 class ConsulRegistryApi @Autowired constructor(
     @Qualifier(OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient,
     private val consulProperties: ConsulProperties
 ) : RegistryApi {
     companion object {
+        private const val CONSUL_DEFAULT_SCHEME = "http"
         private const val CONSUL_LIST_SERVICES_PATH = "/v1/catalog/services"
         private const val CONSUL_LIST_SERVICE_INSTANCES_PATH = "/v1/health/service"
     }
@@ -116,7 +119,7 @@ class ConsulRegistryApi @Autowired constructor(
     }
 
     private fun urlBuilder() = HttpUrl.Builder()
-        .scheme(consulProperties.scheme)
+        .scheme(consulProperties.scheme ?: CONSUL_DEFAULT_SCHEME)
         .host(consulProperties.host)
         .port(consulProperties.port)
 }

@@ -32,8 +32,11 @@
 package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
+import com.tencent.bkrepo.opdata.service.OpServiceService
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -45,14 +48,16 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/op/services")
-class OpServiceController {
+class OpServiceController @Autowired constructor(
+    private val opServiceService: OpServiceService
+) {
 
     /**
      * 列出当前注册中心中的所有服务
      */
     @GetMapping
     fun services(): Response<List<ServiceInfo>> {
-        TODO()
+        return success(opServiceService.listServices())
     }
 
     /**
@@ -60,7 +65,7 @@ class OpServiceController {
      */
     @GetMapping("/{serviceName}")
     fun instances(@PathVariable("serviceName") serviceName: String): Response<List<InstanceInfo>> {
-        TODO()
+        return success(opServiceService.instances(serviceName))
     }
 
     /**

@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.opdata.pojo.registry
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.opdata.pojo.enums.InstanceStatus
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("服务节点信息")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class InstanceInfo(
     @ApiModelProperty("节点id", required = true)
     val id: String,

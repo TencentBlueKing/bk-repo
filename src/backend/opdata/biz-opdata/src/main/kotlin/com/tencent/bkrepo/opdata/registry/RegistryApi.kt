@@ -36,6 +36,9 @@ package com.tencent.bkrepo.opdata.registry
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 
+/**
+ * 微服务注册中心api接口
+ */
 interface RegistryApi {
     fun services(): List<ServiceInfo>
     fun instances(serviceName: String): List<InstanceInfo>
