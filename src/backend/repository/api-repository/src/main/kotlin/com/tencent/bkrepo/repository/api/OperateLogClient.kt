@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.log
+package com.tencent.bkrepo.repository.api
 
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
-interface OperateLogService {
+@Api("操作日志服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeDownloadsClient")
+@RequestMapping("/service/log")
+interface OperateLogClient {
 
-    /**
-     * 异步保存事件
-     * @param event 事件
-     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
-     */
-    fun saveEventAsync(event: ArtifactEvent, address: String)
+    @ApiOperation("记录操作日志")
+    @PostMapping("/record")
+    fun record(@RequestBody event: ArtifactEvent): Response<Void>
 
-    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
+    @ApiOperation("批量记录操作日志")
+    @PostMapping("/record/batch")
+    fun batchRecord(@RequestBody eventList: List<ArtifactEvent>): Response<Void>
 
-    fun listPage(option: OpLogListOption): Page<OperateLog>
+    @ApiOperation("操作日志列表")
+    @PostMapping("/list")
+    fun list(@RequestBody option: OpLogListOption): Response<Page<OperateLog>>
 }

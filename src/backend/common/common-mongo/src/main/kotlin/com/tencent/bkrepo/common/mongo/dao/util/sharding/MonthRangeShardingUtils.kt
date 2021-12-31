@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.log
+package com.tencent.bkrepo.common.mongo.dao.util.sharding
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
-import com.tencent.bkrepo.repository.pojo.log.OperateLog
+import org.bson.Document
+import java.time.LocalDateTime
 
-interface OperateLogService {
+object MonthRangeShardingUtils : ShardingUtils {
 
-    /**
-     * 异步保存事件
-     * @param event 事件
-     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
-     */
-    fun saveEventAsync(event: ArtifactEvent, address: String)
+    override fun shardingCountFor(i: Int): Int {
+        return -1
+    }
 
-    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
+    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
+        require(value is LocalDateTime)
+        return calculateSequence(value)
+    }
 
-    fun listPage(option: OpLogListOption): Page<OperateLog>
+    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+        require(value is Document && value.size == 2)
+        val startValue = (value["\$gte"] ?: value["\$gt"]) as LocalDateTime
+        val endValue = (value["\$lte"] ?: value["\$lt"]) as LocalDateTime
+        var yearMonth = startValue
+        val sequences = mutableSetOf<Int>()
+        do {
+            sequences.add(calculateSequence(yearMonth))
+            yearMonth = yearMonth.plusMonths(1L)
+        } while (calculateSequence(yearMonth) <= calculateSequence(endValue))
+        return sequences
+    }
+
+    private fun calculateSequence(value: LocalDateTime) = value.year * 100 + value.monthValue
 }
