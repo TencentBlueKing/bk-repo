@@ -64,8 +64,6 @@ class OpServiceService @Autowired constructor(
      * 下线服务实例
      */
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
-        val instanceInfo = registryApi.instanceInfo(serviceName, instanceId)
-        registryApi.deregister(serviceName, instanceId)
-        return instanceInfo
+        return registryApi.deregister(serviceName, instanceId)
     }
 }

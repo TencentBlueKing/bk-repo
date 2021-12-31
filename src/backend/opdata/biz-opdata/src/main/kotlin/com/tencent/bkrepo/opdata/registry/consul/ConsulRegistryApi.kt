@@ -39,19 +39,18 @@ import com.tencent.bkrepo.opdata.pojo.enums.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryApi
-import com.tencent.bkrepo.opdata.registry.consul.exception.ConsulApiException
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck.Companion.STATUS_PASSING
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceHealth
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceId
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulNode
-import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulServiceHealth
-import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulServiceHealth.Companion.STATUS_FAILING
-import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulServiceHealth.Companion.STATUS_PASSING
-import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulServiceHealth.Companion.STATUS_WARNING
 import com.tencent.bkrepo.opdata.util.parseResAndThrowExceptionOnRequestFailed
 import com.tencent.bkrepo.opdata.util.requestBuilder
 import com.tencent.bkrepo.opdata.util.throwExceptionOnRequestFailed
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.internal.Util.EMPTY_REQUEST
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.cloud.consul.ConditionalOnConsulEnabled
@@ -64,13 +63,6 @@ class ConsulRegistryApi @Autowired constructor(
     @Qualifier(OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient,
     private val consulProperties: ConsulProperties
 ) : RegistryApi {
-
-    companion object {
-        private const val CONSUL_DEFAULT_SCHEME = "http"
-        private const val CONSUL_LIST_SERVICES_PATH = "/v1/catalog/services"
-        private const val CONSUL_LIST_SERVICE_INSTANCES_PATH = "/v1/health/service"
-        private const val CONSUL_DEREGISTER_PATH = "/v1/agent/service/deregister"
-    }
 
     override fun services(): List<ServiceInfo> {
         val url = urlBuilder().addPathSegment(CONSUL_LIST_SERVICES_PATH).build()
@@ -86,26 +78,28 @@ class ConsulRegistryApi @Autowired constructor(
     }
 
     override fun instances(serviceName: String): List<InstanceInfo> {
-        val url = urlBuilder().addPathSegment(CONSUL_LIST_SERVICE_INSTANCES_PATH).addPathSegment(serviceName).build()
-        val req = url.requestBuilder().build()
-        val res = httpClient.newCall(req).execute()
-        return res.use {
-            parseResAndThrowExceptionOnRequestFailed(res) { res ->
-                res.body()!!.string()
-                    .readJsonString<List<ConsulServiceHealth>>()
-                    .flatMap { convertToInstanceInfoList(it) }
-            }
-        }
+        return listConsulInstanceHealth(serviceName).map { convertToInstanceInfo(it) }
     }
 
-    override fun deregister(serviceName: String, instanceId: String) {
+    override fun deregister(serviceName: String, instanceId: String): InstanceInfo {
         val consulInstanceId = ConsulInstanceId.create(instanceId)
 
         // 获取服务所在节点，必须在服务所在节点上注销，服务实例才不会再次自动注册
-        val consulNode = listConsulNode().firstOrNull {
-            it.datacenter == consulInstanceId.datacenter && it.nodeName == consulInstanceId.nodeName
-        } ?: throw ConsulApiException("node not found: $instanceId")
+        val consulInstanceHealth = consulInstanceHealth(serviceName, instanceId)
 
+        // 确定注销后服务实例状态
+        var instanceStatus = InstanceStatus.DEREGISTER
+        consulInstanceHealth.consulInstanceChecks
+            .filter { it.serviceName.isNotEmpty() }
+            .forEach {
+                if (it.status != STATUS_PASSING) {
+                    logger.warn("consul instance status: ${it.status}, node: ${it.node}, serviceId: ${it.serviceId}")
+                    instanceStatus = InstanceStatus.OFFLINE
+                }
+            }
+
+        // 注销服务实例
+        val consulNode = consulInstanceHealth.consulNode
         val url = HttpUrl.Builder()
             .scheme(consulProperties.scheme ?: CONSUL_DEFAULT_SCHEME)
             .host(consulNode.address)
@@ -116,54 +110,88 @@ class ConsulRegistryApi @Autowired constructor(
         val req = url.requestBuilder().put(EMPTY_REQUEST).build()
         val res = httpClient.newCall(req).execute()
         throwExceptionOnRequestFailed(res)
+
+        // 返回服务实例信息
+        return convertToInstanceInfo(consulInstanceHealth).copy(status = instanceStatus)
     }
 
     override fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo {
-        TODO("Not yet implemented")
+        val consulInstanceHealth = consulInstanceHealth(serviceName, instanceId)
+        return convertToInstanceInfo(consulInstanceHealth)
     }
 
-    /**
-     * 获取所有Consul Agent节点
-     */
-    private fun listConsulNode(): List<ConsulNode> {
-        val url = urlBuilder().addPathSegment(CONSUL_DEREGISTER_PATH).build()
+    private fun consulInstanceHealth(serviceName: String, instanceId: String): ConsulInstanceHealth {
+        val consulInstances = listConsulInstanceHealth(serviceName, instanceId)
+        require(consulInstances.size == 1)
+        return consulInstances[0]
+    }
+
+    private fun listConsulInstanceHealth(
+        serviceName: String,
+        instanceId: String? = null
+    ): List<ConsulInstanceHealth> {
+        val urlBuilder = urlBuilder().addPathSegment(CONSUL_LIST_SERVICE_HEALTH_PATH).addPathSegment(serviceName)
+        val url = if (instanceId.isNullOrEmpty()) {
+            urlBuilder.build()
+        } else {
+            val consulInstanceId = ConsulInstanceId.create(instanceId)
+            val filterExpression = "$CONSUL_FILTER_SELECTOR_SERVICE_ID == ${consulInstanceId.serviceId} and" +
+                " $CONSUL_FILTER_SELECTOR_NODE_NAME == ${consulInstanceId.nodeName}"
+            urlBuilder.addQueryParameter(CONSUL_QUERY_PARAM_FILTER, filterExpression).build()
+        }
         val req = url.requestBuilder().build()
         val res = httpClient.newCall(req).execute()
         return res.use {
-            parseResAndThrowExceptionOnRequestFailed(res) { res ->
-                res.body()!!.string().readJsonString()
-            }
+            parseResAndThrowExceptionOnRequestFailed(res) { res -> res.body()!!.string().readJsonString() }
         }
     }
 
-    private fun convertToInstanceInfoList(consulServiceHealth: ConsulServiceHealth): List<InstanceInfo> {
-        val consulInstance = consulServiceHealth.consulInstance
-        val consulNode = consulServiceHealth.consulNode
-        return consulServiceHealth.consulInstanceStatuses
-            // consul返回数据第一条为node节点的状态信息，直接过滤
-            .filter { it.serviceName.isNotEmpty() }
-            .map { instanceStatus ->
-                val consulInstanceId =
-                    ConsulInstanceId.create(consulNode.datacenter, consulNode.nodeName, instanceStatus.serviceId)
-                InstanceInfo(
-                    id = consulInstanceId.instanceIdStr(),
-                    host = consulInstance.address,
-                    port = consulInstance.port,
-                    status = convertToInstanceStatus(instanceStatus.status)
-                )
-            }
+    private fun convertToInstanceInfo(consulInstanceHealth: ConsulInstanceHealth): InstanceInfo {
+        val consulInstance = consulInstanceHealth.consulInstance
+        val consulNode = consulInstanceHealth.consulNode
+        // 过滤非服务实例的健康检查信息
+        val consulInstanceStatusList = consulInstanceHealth.consulInstanceChecks.filter { it.serviceName.isNotEmpty() }
+        // 应至少有一条服务实例的健康检查信息
+        require(consulInstanceStatusList.isNotEmpty())
+
+        val consulInstanceId =
+            ConsulInstanceId.create(consulNode.datacenter, consulNode.nodeName, consulInstance.id)
+        return InstanceInfo(
+            id = consulInstanceId.instanceIdStr(),
+            host = consulInstance.address,
+            port = consulInstance.port,
+            status = convertToInstanceStatus(consulInstanceStatusList)
+        )
     }
 
-    private fun convertToInstanceStatus(instanceStatus: String): InstanceStatus {
-        return when (instanceStatus) {
-            STATUS_FAILING, STATUS_WARNING -> InstanceStatus.OFFLINE
-            STATUS_PASSING -> InstanceStatus.RUNNING
-            else -> throw ConsulApiException("unknown consul instance status: $instanceStatus")
+    /**
+     * 服务的全部检查通过才算正常运行
+     */
+    private fun convertToInstanceStatus(instanceStatus: List<ConsulInstanceCheck>): InstanceStatus {
+        instanceStatus.forEach {
+            if (it.status != STATUS_PASSING) {
+                return InstanceStatus.OFFLINE
+            }
         }
+        return InstanceStatus.RUNNING
     }
 
     private fun urlBuilder() = HttpUrl.Builder()
         .scheme(consulProperties.scheme ?: CONSUL_DEFAULT_SCHEME)
         .host(consulProperties.host)
         .port(consulProperties.port)
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ConsulRegistryApi::class.java)
+
+        private const val CONSUL_DEFAULT_SCHEME = "http"
+
+        private const val CONSUL_QUERY_PARAM_FILTER = "filter"
+        private const val CONSUL_FILTER_SELECTOR_SERVICE_ID = "Service.ID"
+        private const val CONSUL_FILTER_SELECTOR_NODE_NAME = "Node.Node"
+
+        private const val CONSUL_LIST_SERVICES_PATH = "/v1/catalog/services"
+        private const val CONSUL_LIST_SERVICE_HEALTH_PATH = "/v1/health/service"
+        private const val CONSUL_DEREGISTER_PATH = "/v1/agent/service/deregister"
+    }
 }

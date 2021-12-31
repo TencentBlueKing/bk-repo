@@ -71,7 +71,7 @@ class OpServiceController @Autowired constructor(
     /**
      * 下线服务节点
      */
-    @PostMapping("/{serviceName}/nodes/{instanceId}/down")
+    @PostMapping("/{serviceName}/instances/{instanceId}/down")
     fun downInstance(
         @PathVariable serviceName: String,
         @PathVariable instanceId: String

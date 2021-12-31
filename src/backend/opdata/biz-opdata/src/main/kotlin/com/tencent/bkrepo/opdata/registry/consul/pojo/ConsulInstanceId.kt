@@ -40,13 +40,14 @@ data class ConsulInstanceId(
     val nodeName: String,
     val serviceId: String
 ) {
-    fun instanceIdStr() = "$datacenter:$nodeName:$serviceId"
+    fun instanceIdStr() = "$datacenter$INSTANCE_ID_DELIMITERS$nodeName$INSTANCE_ID_DELIMITERS$serviceId"
 
     companion object {
+        private const val INSTANCE_ID_DELIMITERS = "::"
         private const val INSTANCE_ID_PART_COUNT = 3
 
         fun create(instanceIdStr: String): ConsulInstanceId {
-            val instanceIdSplits = instanceIdStr.split(":")
+            val instanceIdSplits = instanceIdStr.split(INSTANCE_ID_DELIMITERS)
             if (instanceIdSplits.size != INSTANCE_ID_PART_COUNT) {
                 throw ConsulApiException("invalid instanceId: $instanceIdStr")
             }
