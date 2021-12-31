@@ -62,4 +62,25 @@ object HelmUtils {
             generated = TimeFormatUtil.getUtcTime()
         )
     }
+
+    /**
+     * remote仓库下载index.yaml时使用的是index.yaml, 需要做个转换
+     */
+    fun convertIndexYamlPath(path: String): String {
+        return when (path) {
+            "/" -> getIndexYamlFullPath()
+            getIndexCacheYamlFullPath() -> getIndexYamlFullPath()
+            else -> path
+        }
+    }
+
+    /**
+     * index.yaml存储时使用的是index-cache.yaml, 需要做个转换
+     */
+    fun convertIndexYamlPathToCache(path: String): String {
+        return when (path) {
+            "/" -> getIndexCacheYamlFullPath()
+            else -> path
+        }
+    }
 }
