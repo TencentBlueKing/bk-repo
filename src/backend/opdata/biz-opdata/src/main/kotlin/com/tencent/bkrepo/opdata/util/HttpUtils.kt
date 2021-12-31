@@ -34,8 +34,13 @@
 package com.tencent.bkrepo.opdata.util
 
 import com.tencent.bkrepo.opdata.exception.HttpRequestException
+import okhttp3.HttpUrl
+import okhttp3.Request
 import okhttp3.Response
 
+fun throwExceptionOnRequestFailed(res: Response) {
+    parseResAndThrowExceptionOnRequestFailed(res) {}
+}
 
 fun <T> parseResAndThrowExceptionOnRequestFailed(res: Response, block: (res: Response) -> T): T {
     if (res.isSuccessful) {
@@ -47,3 +52,5 @@ fun <T> parseResAndThrowExceptionOnRequestFailed(res: Response, block: (res: Res
             " error message: ${res.message()}"
     )
 }
+
+fun HttpUrl.requestBuilder(): Request.Builder = Request.Builder().url(this)

@@ -36,18 +36,25 @@ package com.tencent.bkrepo.opdata.registry.consul.pojo
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 
+/**
+ * 在Consul中注册的微服务实例
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class ConsulServiceHealth(
-    @JsonProperty("Node")
-    val consulNode: ConsulNode,
+data class ConsulInstance(
+    /**
+     * 服务id
+     */
+    @JsonProperty("ID")
+    val id: String,
+    /**
+     * 服务名
+     */
     @JsonProperty("Service")
-    val consulInstance: ConsulInstance,
-    @JsonProperty("Checks")
-    val consulInstanceStatuses: List<ConsulInstanceStatus>
-) {
-    companion object {
-        const val STATUS_PASSING = "passing"
-        const val STATUS_WARNING = "warning"
-        const val STATUS_FAILING = "failing"
-    }
-}
+    val service: String,
+    @JsonProperty("Tags")
+    val tags: List<String>,
+    @JsonProperty("Address")
+    val address: String,
+    @JsonProperty("Port")
+    val port: Int
+)

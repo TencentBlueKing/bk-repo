@@ -36,17 +36,17 @@ import com.tencent.bkrepo.opdata.pojo.enums.InstanceStatus
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("服务节点信息")
+@ApiModel("服务实例信息")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class InstanceInfo(
-    @ApiModelProperty("节点id", required = true)
+    @ApiModelProperty("实例id", required = true)
     val id: String,
-    @ApiModelProperty("节点ip或域名", required = true)
+    @ApiModelProperty("实例ip或域名", required = true)
     val host: String,
-    @ApiModelProperty("节点端口", required = true)
+    @ApiModelProperty("实例端口", required = true)
     val port: Int,
-    @ApiModelProperty("节点状态", required = true)
+    @ApiModelProperty("实例状态", required = true)
     val status: InstanceStatus,
-    @ApiModelProperty("节点详情")
+    @ApiModelProperty("实例详情")
     val detail: InstanceDetail? = null
 )

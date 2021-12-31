@@ -46,12 +46,26 @@ import org.springframework.stereotype.Service
 class OpServiceService @Autowired constructor(
     private val registryApi: RegistryApi
 ) {
-
+    /**
+     * 获取服务列表
+     */
     fun listServices(): List<ServiceInfo> {
         return registryApi.services()
     }
 
+    /**
+     * 获取服务的所有实例
+     */
     fun instances(serviceName: String): List<InstanceInfo> {
         return registryApi.instances(serviceName)
+    }
+
+    /**
+     * 下线服务实例
+     */
+    fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
+        val instanceInfo = registryApi.instanceInfo(serviceName, instanceId)
+        registryApi.deregister(serviceName, instanceId)
+        return instanceInfo
     }
 }

@@ -42,5 +42,6 @@ import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 interface RegistryApi {
     fun services(): List<ServiceInfo>
     fun instances(serviceName: String): List<InstanceInfo>
-    fun deregister(nodeId: String)
+    fun deregister(serviceName: String, instanceId: String)
+    fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo
 }

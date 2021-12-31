@@ -33,21 +33,28 @@
 
 package com.tencent.bkrepo.opdata.registry.consul.pojo
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.opdata.registry.consul.exception.ConsulApiException
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class ConsulServiceHealth(
-    @JsonProperty("Node")
-    val consulNode: ConsulNode,
-    @JsonProperty("Service")
-    val consulInstance: ConsulInstance,
-    @JsonProperty("Checks")
-    val consulInstanceStatuses: List<ConsulInstanceStatus>
+data class ConsulInstanceId(
+    val datacenter: String,
+    val nodeName: String,
+    val serviceId: String
 ) {
+    fun instanceIdStr() = "$datacenter:$nodeName:$serviceId"
+
     companion object {
-        const val STATUS_PASSING = "passing"
-        const val STATUS_WARNING = "warning"
-        const val STATUS_FAILING = "failing"
+        private const val INSTANCE_ID_PART_COUNT = 3
+
+        fun create(instanceIdStr: String): ConsulInstanceId {
+            val instanceIdSplits = instanceIdStr.split(":")
+            if (instanceIdSplits.size != INSTANCE_ID_PART_COUNT) {
+                throw ConsulApiException("invalid instanceId: $instanceIdStr")
+            }
+            return ConsulInstanceId(instanceIdSplits[0], instanceIdSplits[1], instanceIdSplits[2])
+        }
+
+        fun create(datacenter: String, nodeName: String, serviceId: String): ConsulInstanceId {
+            return ConsulInstanceId(datacenter, nodeName, serviceId)
+        }
     }
 }

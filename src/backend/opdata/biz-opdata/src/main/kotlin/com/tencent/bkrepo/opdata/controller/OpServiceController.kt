@@ -71,11 +71,11 @@ class OpServiceController @Autowired constructor(
     /**
      * 下线服务节点
      */
-    @PostMapping("/{serviceName}/nodes/{instanceId}/deregistry")
-    fun deregisterInstance(
+    @PostMapping("/{serviceName}/nodes/{instanceId}/down")
+    fun downInstance(
         @PathVariable serviceName: String,
         @PathVariable instanceId: String
     ): Response<InstanceInfo> {
-        TODO()
+        return success(opServiceService.downInstance(serviceName, instanceId))
     }
 }
