@@ -41,10 +41,10 @@ Your release is named {{ .Release.Name }}.
 
         echo "127.0.0.1  {{ .Values.gateway.host }}" >> /etc/hosts
         {{- if .Values.docker.enabled }}
-        echo "127.0.0.1  docker.{{ .Values.gateway.host }}" >> /etc/hosts
+        echo "127.0.0.1  {{ .Values.gateway.dockerHost }}" >> /etc/hosts
         {{- end }}
         {{- if .Values.helm.enabled }}
-        echo "127.0.0.1  helm.{{ .Values.gateway.host }}" >> /etc/hosts
+        echo "127.0.0.1  helm.{{ .Values.gateway.helmHost }}" >> /etc/hosts
         {{- end }}
     {{- end }}
 

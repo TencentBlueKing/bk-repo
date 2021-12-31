@@ -24,7 +24,7 @@ spec:
             pathType: Prefix
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
-    - host: helm.{{ .Values.gateway.host }}
+    - host: {{ .Values.gateway.helmHost }}
       http:
         paths:
           - path: /
