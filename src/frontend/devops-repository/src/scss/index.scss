@@ -150,13 +150,12 @@ label {
 
 .repo-tag {
     display: inline-block;
-    padding: 0 10px;
-    font-size: 12px;
-    line-height: 22px;
-    border-radius: 10px;
+    padding: 0 6px;
+    border-radius: 2px;
     white-space: nowrap;
-    background-color: var(--bgHoverColor);
-    transform: scale(1);
+    color: var(--primaryColor);
+    background-color: var(--bgHoverLighterColor);
+    border: 1px solid transparent;
 }
 
 .break-all {

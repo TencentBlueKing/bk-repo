@@ -213,19 +213,19 @@
     }
     &:before {
         position: absolute;
-        top: -30px;
-        left: 20px;
+        top: -28px;
+        left: 0;
         content: '';
         width: 3px;
-        height: 16px;
+        height: 12px;
         background-color: var(--primaryColor);
     }
     &:after {
         position: absolute;
-        top: -35px;
-        left: 30px;
+        top: -33px;
+        left: 10px;
         content: attr(data-title);
-        font-size: 16px;
+        font-size: 14px;
         font-weight: bold;
     }
 }

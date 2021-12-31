@@ -30,9 +30,9 @@
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
-                Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(() => {
+                Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     if (!this.iframeMode && !this.projectList.length) {
-                        if (this.userInfo.admin) {
+                        if (userInfo.admin) {
                             // TODO: 管理员创建项目引导页
                             this.$bkMessage({
                                 message: '无项目数据',
@@ -77,8 +77,8 @@
 
                         projectId && this.checkPM({ projectId })
                     }
-
-                    this.userInfo.admin && this.getClusterList()
+                    
+                    userInfo.admin && this.getClusterList()
                 })
             }
         },

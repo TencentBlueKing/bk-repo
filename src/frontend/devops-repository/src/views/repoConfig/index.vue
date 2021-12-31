@@ -51,8 +51,7 @@
                         </bk-input>
                     </bk-form-item>
                     <bk-form-item>
-                        <bk-button @click.stop.prevent="toRepoList">{{$t('cancel')}}</bk-button>
-                        <bk-button class="ml10" :loading="repoBaseInfo.loading" theme="primary" @click="saveBaseInfo">{{$t('confirm')}}</bk-button>
+                        <bk-button :loading="repoBaseInfo.loading" theme="primary" @click="saveBaseInfo">{{$t('save')}}</bk-button>
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>

@@ -34,7 +34,7 @@ const storeObject = {
             name: '',
             email: '',
             phone: '',
-            admin: true,
+            admin: false,
             manage: false
         },
         domain: {

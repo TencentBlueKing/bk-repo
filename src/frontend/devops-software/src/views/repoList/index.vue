@@ -46,7 +46,14 @@
             size="small"
             @row-click="toPackageList">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
+                <empty-data
+                    :is-loading="isLoading"
+                    :search="Boolean(query.name || query.type)"
+                    :config="{
+                        imgSrc: '/ui/no-repo.png',
+                        title: '暂无仓库数据'
+                    }">
+                </empty-data>
             </template>
             <bk-table-column label="所属项目" width="200">
                 <template #default="{ row }">

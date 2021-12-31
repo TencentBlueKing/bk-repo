@@ -196,8 +196,14 @@
                 background-color: var(--warningColor);
             }
         }
+        &:hover {
+            background-color: var(--bgLightColor);
+            .devops-icon {
+                color: var(--primaryColor);
+            }
+        }
         &.selected {
-            background-color: var(--bgHoverColor);
+            background-color: var(--bgHoverLighterColor);
             color: var(--primaryColor);
             .devops-icon {
                 color: var(--primaryColor);

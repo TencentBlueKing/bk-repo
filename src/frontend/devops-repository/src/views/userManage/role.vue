@@ -302,16 +302,5 @@
         flex: 1;
         justify-content: flex-end;
     }
-    .role-table {
-        .icon-edit {
-            font-size: 14px;
-        }
-        .icon-delete {
-            font-size: 16px;
-        }
-        .icon-arrows-up {
-            border-bottom: 1px solid;
-        }
-    }
 }
 </style>

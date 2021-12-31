@@ -35,7 +35,7 @@ export default {
                     title: '设置凭证',
                     main: [
                         {
-                            subTitle: '配置个人凭证',
+                            subTitle: '在命令行执行以下命令登陆仓库',
                             codeList: [`docker login -u ${this.userName} -p <PERSONAL_ACCESS_TOKEN> ${this.domain.docker}`]
                         }
                     ]
@@ -44,11 +44,11 @@ export default {
                     title: '推送',
                     main: [
                         {
-                            subTitle: '1、给本地的镜像打标签',
+                            subTitle: '1、在命令行执行以下命令给本地镜像打标签',
                             codeList: [`docker tag <LOCAL_IMAGE_TAG> ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         },
                         {
-                            subTitle: '2、推送docker 镜像',
+                            subTitle: '2、在命令行执行以下命令进行推送',
                             codeList: [`docker push ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
@@ -57,6 +57,7 @@ export default {
                     title: '下载',
                     main: [
                         {
+                            subTitle: '在命令行执行以下命令进行拉取',
                             codeList: [`docker pull ${this.domain.docker}/${this.projectId}/${this.repoName}/${this.packageName}`]
                         }
                     ]
@@ -86,7 +87,7 @@ export default {
                             subTitle: '方式一、使用个人令牌'
                         },
                         {
-                            subTitle: '在项目根目录下（与package.json同级），添加文件.npmrc，拷贝如下信息',
+                            subTitle: '将下列配置添加到项目的 package.json 文件同一级目录下的 .npmrc 文件中',
                             codeList: [
                                 `registry=${this.domain.npm}/${this.projectId}/${this.repoName}/`,
                                 'always-auth=true',
@@ -111,15 +112,16 @@ export default {
                             subTitle: '3、复制编码后的token，替换<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
                         },
                         {
-                            subTitle: '方式二、使用命令行'
+                            subTitle: '方式二：使用交互式命令行设置凭证'
                         },
                         {
-                            subTitle: '设置 npm registry为当前制品库仓库，进入command/shell命令行窗口根据用户凭证登录',
+                            subTitle: '使用命令行窗口，设置 npm registry 为当前制品库仓库',
                             codeList: [
                                 `npm config set registry ${this.domain.npm}/${this.projectId}/${this.repoName}/`
                             ]
                         },
                         {
+                            subTitle: '进入命令行窗口根据用户凭证登录',
                             codeList: [
                                 'npm login'
                             ]
@@ -130,6 +132,7 @@ export default {
                     title: '推送',
                     main: [
                         {
+                            subTitle: '在命令行执行以下命令推送制品',
                             codeList: ['npm publish']
                         }
                     ]
@@ -172,31 +175,6 @@ export default {
         mavenGuide () {
             return [
                 {
-                    title: '配置依赖源下载地址',
-                    main: [
-                        {
-                            subTitle: '1、全局配置，conf/setting.xml中添加源地址',
-                            codeList: [
-                                '<mirror>',
-                                `       <id>${this.projectId}-${this.repoName}</id>`,
-                                `       <name>${this.repoName}</name>`,
-                                `       <url>${this.repoUrl}/</url>`,
-                                '       <mirrorOf>central</mirrorOf>',
-                                '</mirror>'
-                            ]
-                        },
-                        {
-                            subTitle: '2、项目设置，项目pom.xml中添加源地址',
-                            codeList: [
-                                '<repository>',
-                                `       <id>${this.projectId}-${this.repoName}</id>`,
-                                `       <url>${this.repoUrl}/</url>`,
-                                '</repository>'
-                            ]
-                        }
-                    ]
-                },
-                {
                     title: '设置凭证',
                     main: [
                         {
@@ -214,10 +192,35 @@ export default {
                     ]
                 },
                 {
+                    title: '配置依赖源下载地址',
+                    main: [
+                        {
+                            subTitle: '1、全局配置，将下列配置添加到conf/setting.xml文件中',
+                            codeList: [
+                                '<mirror>',
+                                `       <id>${this.projectId}-${this.repoName}</id>`,
+                                `       <name>${this.repoName}</name>`,
+                                `       <url>${this.repoUrl}/</url>`,
+                                '       <mirrorOf>central</mirrorOf>',
+                                '</mirror>'
+                            ]
+                        },
+                        {
+                            subTitle: '2、项目设置，将下列配置添加到项目的pom.xml文件中',
+                            codeList: [
+                                '<repository>',
+                                `       <id>${this.projectId}-${this.repoName}</id>`,
+                                `       <url>${this.repoUrl}/</url>`,
+                                '</repository>'
+                            ]
+                        }
+                    ]
+                },
+                {
                     title: '推送',
                     main: [
                         {
-                            subTitle: '配置 pom.xml',
+                            subTitle: '将下列配置添加到 pom.xml 文件中',
                             codeList: [
                                 '<distributionManagement>',
                                 '       <repository>',
@@ -230,7 +233,7 @@ export default {
                             ]
                         },
                         {
-                            subTitle: '推送制品',
+                            subTitle: '在命令行执行以下命令推送制品',
                             codeList: [
                                 'mvn deploy'
                             ]
@@ -241,7 +244,7 @@ export default {
                     title: '拉取',
                     main: [
                         {
-                            subTitle: '在maven配置文件 conf/settings.xml配置',
+                            subTitle: '将下列配置添加到 conf/settings.xml 文件中',
                             codeList: [
                                 '<profiles>',
                                 '       <profile>',
@@ -267,7 +270,7 @@ export default {
                             ]
                         },
                         {
-                            subTitle: '拉取maven制品',
+                            subTitle: '在命令行执行以下命令拉取制品',
                             codeList: [
                                 'mvn package'
                             ]
@@ -309,27 +312,10 @@ export default {
         helmGuide () {
             return [
                 {
-                    title: '推送',
+                    title: '设置凭证',
                     main: [
                         {
-                            subTitle: '1、推送Chart',
-                            codeList: [
-                                `curl -F "chart=@<FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
-                            ]
-                        },
-                        {
-                            subTitle: '2、推送Chart Provenance',
-                            codeList: [
-                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
-                            ]
-                        }
-                    ]
-                },
-                {
-                    title: '下载',
-                    main: [
-                        {
-                            subTitle: '1、配置',
+                            subTitle: '1、在命令行执行以下命令配置制品仓库凭据',
                             codeList: [
                                 `helm repo add --username ${this.userName} --password <PERSONAL_ACCESS_TOKEN> ${this.repoName} "${this.repoUrl}"`
                             ]
@@ -339,7 +325,29 @@ export default {
                             codeList: [
                                 'helm repo update'
                             ]
+                        }
+                    ]
+                },
+                {
+                    title: '推送',
+                    main: [
+                        {
+                            subTitle: '使用 cURL 命令推送Chart',
+                            codeList: [
+                                `curl -F "chart=@<FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
+                            ]
                         },
+                        {
+                            subTitle: '使用 cURL 命令推送Chart Provenance',
+                            codeList: [
+                                `curl -F "prov=@<PROV_FILE_NAME>" -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/${this.repoType}/api/${this.projectId}/${this.repoName}/charts`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '拉取',
+                    main: [
                         {
                             subTitle: '3、拉取',
                             codeList: [
@@ -382,7 +390,7 @@ export default {
                     title: '设置凭证',
                     main: [
                         {
-                            subTitle: `请将下列配置添加到 /etc/yum.repos.d/${this.repoName}.repo 文件中`,
+                            subTitle: `将下列配置添加到 /etc/yum.repos.d/${this.repoName}.repo 文件中`,
                             codeList: [
                                 `[${this.repoName}]`,
                                 `name=${this.repoName}`,
@@ -399,6 +407,7 @@ export default {
                     title: '推送',
                     main: [
                         {
+                            subTitle: '在命令行执行以下命令推送制品',
                             codeList: [
                                 `curl -u ${this.userName}:<PERSONAL_ACCESS_TOKEN> -X PUT ${this.repoUrl}/ -T <RPM_FILE_NAME>`
                             ]
@@ -409,16 +418,13 @@ export default {
                     title: '下载',
                     main: [
                         {
-                            subTitle: '使用RPM或者yum方式拉取制品'
-                        },
-                        {
-                            subTitle: 'RPM',
+                            subTitle: '使用 rpm 命令拉取',
                             codeList: [
                                 `rpm -i ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/<RPM_FILE_NAME>`
                             ]
                         },
                         {
-                            subTitle: 'yum',
+                            subTitle: '使用 yum 命令拉取',
                             codeList: [
                                 `yum install ${this.packageName}`
                             ]
@@ -453,10 +459,13 @@ export default {
         pypiGuide () {
             return [
                 {
-                    title: '发布',
+                    title: '设置凭证',
                     main: [
                         {
-                            subTitle: '配置文件目录：$HOME/.pypirc',
+                            subTitle: '设置推送凭证'
+                        },
+                        {
+                            subTitle: '将下列配置添加到 $HOME/.pypirc 文件中',
                             codeList: [
                                 '[distutils]',
                                 `index-servers = ${this.repoName}`,
@@ -467,7 +476,29 @@ export default {
                             ]
                         },
                         {
-                            subTitle: '执行下面命令',
+                            subTitle: '设置拉取凭证'
+                        },
+                        {
+                            subTitle: 'MacOS / Linux系统：将配置添加到 $HOME/.pip/pip.conf 文件中',
+                            codeList: [
+                                '[global]',
+                                `index-url = ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
+                            ]
+                        },
+                        {
+                            subTitle: 'Windows系统：将配置添加到 %HOME%/pip/pip.ini 文件中',
+                            codeList: [
+                                '[global]',
+                                `index-url = ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: '推送',
+                    main: [
+                        {
+                            subTitle: '进入 Python 项目目录，在命令行执行以下命令进行推送',
                             codeList: [
                                 `python3 -m twine upload -r ${this.repoName} dist/*`
                             ]
@@ -478,20 +509,7 @@ export default {
                     title: '拉取',
                     main: [
                         {
-                            subTitle: '替换默认依赖源地址'
-                        },
-                        {
-                            subTitle: 'MacOS/Liunx配置目录 :  $HOME/.pip/pip.conf'
-                        },
-                        {
-                            subTitle: 'Windows配置目录 :  %HOME%/pip/pip.ini',
-                            codeList: [
-                                '[global]',
-                                `index-url = ${location.protocol}//${this.userName}:<PERSONAL_ACCESS_TOKEN>@${location.host}/${this.repoType}/${this.projectId}/${this.repoName}/simple`
-                            ]
-                        },
-                        {
-                            subTitle: '执行下面命令',
+                            subTitle: '在命令行执行以下命令进行拉取',
                             codeList: [
                                 `pip3 install ${this.packageName}==${this.versionLabel}`
                             ]
@@ -517,6 +535,30 @@ export default {
         composerGuide () {
             return [
                 {
+                    title: '设置凭证',
+                    main: [
+                        {
+                            subTitle: '1、在 Composer 制品的文件目录，用命令行执行以下命令配置制品仓库凭据',
+                            codeList: [
+                                `composer config repo.packagist composer ${this.repoUrl}`
+                            ]
+                        },
+                        {
+                            subTitle: '2、 在 Composer 制品的文件目录添加 auth.json，配置仓库认证信息',
+                            codeList: [
+                                '{',
+                                '       "http-basic": {',
+                                `               "${location.host}": {`,
+                                `                       "username": "${this.userName}",`,
+                                '                       "password": "<PERSONAL_ACCESS_TOKEN>"',
+                                '               }',
+                                '       }',
+                                '}'
+                            ]
+                        }
+                    ]
+                },
+                {
                     title: '推送',
                     main: [
                         {
@@ -531,26 +573,7 @@ export default {
                     title: '拉取',
                     main: [
                         {
-                            subTitle: '1、在 Composer 制品的文件目录，设置仓库地址',
-                            codeList: [
-                                `composer config repo.packagist composer ${this.repoUrl}`
-                            ]
-                        },
-                        {
-                            subTitle: '2、在 Composer 制品的文件目录添加 auth.json，配置仓库认证信息',
-                            codeList: [
-                                '{',
-                                '       "http-basic": {',
-                                `               "${location.host}": {`,
-                                `                       "username": "${this.userName}",`,
-                                '                       "password": "<PERSONAL_ACCESS_TOKEN>"',
-                                '               }',
-                                '       }',
-                                '}'
-                            ]
-                        },
-                        {
-                            subTitle: '3、使用如下命令去拉取制品',
+                            subTitle: '在命令行执行以下命令进行拉取',
                             codeList: [
                                 `composer require ${this.packageName} ${this.versionLabel}`
                             ]

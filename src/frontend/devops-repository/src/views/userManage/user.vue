@@ -421,11 +421,5 @@
 .user-container {
     height: 100%;
     overflow: hidden;
-    .icon-edit {
-        font-size: 14px;
-    }
-    .icon-delete {
-        font-size: 16px;
-    }
 }
 </style>

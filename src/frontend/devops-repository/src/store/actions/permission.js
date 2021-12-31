@@ -8,10 +8,10 @@ export default {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/info`
         ).then(({ userId }) => {
-            dispatch('getUserInfo', { userId })
+            return dispatch('getUserInfo', { userId })
         })
     },
-    getUserInfo ({ commit }, { userId }) {
+    getUserInfo ({ state, commit }, { userId }) {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/userinfo/${userId}`
         ).then(res => {
@@ -19,6 +19,7 @@ export default {
                 ...res,
                 username: res.userId
             })
+            return state.userInfo
         })
     },
     // 用户是否指定项目下管理员
@@ -211,7 +212,7 @@ export default {
     // 审计日志
     getAuditList (_, { projectId, startTime, endTime, user, current, limit }) {
         return Vue.prototype.$ajax.get(
-            'repository/api/operate/log/page',
+            'repository/api/log/page',
             {
                 params: {
                     pageNumber: current,

@@ -35,11 +35,13 @@
             size="small"
             @row-click="toPackageList">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)">
-                    <template v-if="!Boolean(query.name || query.type)">
-                        <span class="ml10">暂无仓库数据，</span>
-                        <bk-button text @click="createRepo">即刻创建</bk-button>
-                    </template>
+                <empty-data
+                    :is-loading="isLoading"
+                    :search="Boolean(query.name || query.type)"
+                    :config="{
+                        imgSrc: '/ui/no-repo.png',
+                        title: '暂无仓库数据'
+                    }">
                 </empty-data>
             </template>
             <bk-table-column :label="$t('repoName')">

@@ -1,7 +1,7 @@
 <template>
     <div class="common-package-container" v-bkloading="{ isLoading }">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
-            <Icon class="p10 package-img" size="80" :name="repoType" />
+            <Icon class="package-img" size="70" :name="repoType" />
             <div class="ml20 common-package-title flex-column">
                 <span class="mb5 repo-title text-overflow" :title="repoName">
                     {{ repoName }}
@@ -208,21 +208,19 @@
         color: var(--fontPrimaryColor);
         background-color: white;
         .package-img {
-            width: 78px;
-            height: 68px;
+            padding: 15px;
             border-radius: 4px;
             box-shadow: 0px 3px 5px 0px rgba(217, 217, 217, 0.5);
         }
         .common-package-title {
             .repo-title {
-                margin-top: -5px;
                 max-width: 500px;
-                font-size: 20px;
+                font-size: 16px;
                 font-weight: bold;
             }
             .repo-description {
                 max-width: 70vw;
-                padding: 6px 10px;
+                padding-left: 6px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
             }
