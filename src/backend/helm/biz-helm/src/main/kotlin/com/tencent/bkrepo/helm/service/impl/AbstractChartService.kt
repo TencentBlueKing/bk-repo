@@ -196,9 +196,9 @@ open class AbstractChartService : ArtifactService() {
     }
 
     /**
-     * 查询仓库是否存在
+     * 查询仓库是否存在，以及仓库类型
      */
-    fun checkRepositoryExist(artifactInfo: ArtifactInfo) {
+    fun checkRepositoryExistAndCategory(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
                 logger.error("check repository [$repoName] in projectId [$projectId] failed!")

@@ -63,7 +63,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
     @Transactional(rollbackFor = [Throwable::class])
     override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
         val keys = artifactFileMap.keys
-        checkRepositoryExist(artifactInfo)
+        checkRepositoryExistAndCategory(artifactInfo)
         check(keys.contains(CHART) || keys.contains(PROV)) {
             throw HelmFileNotFoundException(
                 "no package or provenance file found in form fields chart and prov"
@@ -84,7 +84,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun uploadProv(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
-        checkRepositoryExist(artifactInfo)
+        checkRepositoryExistAndCategory(artifactInfo)
         check(artifactFileMap.keys.contains(PROV)) {
             throw HelmFileNotFoundException("no provenance file found in form fields prov")
         }
