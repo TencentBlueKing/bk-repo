@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -154,4 +155,7 @@ interface RepositoryService {
      * 删除仓库前，需要保证仓库下的文件已经被删除
      */
     fun deleteRepo(repoDeleteRequest: RepoDeleteRequest)
+
+
+    fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?>
 }
