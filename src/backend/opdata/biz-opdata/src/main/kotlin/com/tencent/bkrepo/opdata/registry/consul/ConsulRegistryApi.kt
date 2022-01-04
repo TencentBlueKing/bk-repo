@@ -133,20 +133,36 @@ class ConsulRegistryApi @Autowired constructor(
         serviceName: String,
         instanceId: String? = null
     ): List<ConsulInstanceHealth> {
+        val consulInstanceId = instanceId?.let { ConsulInstanceId.create(it) }
+
+        // 创建请求
         val urlBuilder = urlBuilder().addPathSegments(CONSUL_LIST_SERVICE_HEALTH_PATH).addPathSegment(serviceName)
-        val url = if (instanceId.isNullOrEmpty()) {
-            urlBuilder.build()
-        } else {
-            val consulInstanceId = ConsulInstanceId.create(instanceId)
-            val filterExpression = "$CONSUL_FILTER_SELECTOR_SERVICE_ID == ${consulInstanceId.serviceId} and" +
-                " $CONSUL_FILTER_SELECTOR_NODE_NAME == ${consulInstanceId.nodeName}"
+        val url = consulInstanceId?.let {
+            val filterExpression = buildFilterExpression(it.serviceId, it.nodeName)
             urlBuilder.addQueryParameter(CONSUL_QUERY_PARAM_FILTER, filterExpression).build()
-        }
+        } ?: urlBuilder.build()
         val req = url.requestBuilder().build()
         val res = httpClient.newCall(req).execute()
-        return res.use {
-            parseResAndThrowExceptionOnRequestFailed(res) { res -> res.body()!!.string().readJsonString() }
+
+        // 解析请求结果
+        res.use {
+            val consulInstances = parseResAndThrowExceptionOnRequestFailed<List<ConsulInstanceHealth>>(res) { res ->
+                res.body()!!.string().readJsonString()
+            }
+            if (consulInstanceId == null) {
+                return consulInstances
+            }
+            // 低版本consul不支持filter表达式过滤，请求到结果后手动过滤
+            return consulInstances.filter {
+                it.consulInstance.id == consulInstanceId.serviceId &&
+                    it.consulNode.nodeName == consulInstanceId.nodeName
+            }
         }
+    }
+
+    private fun buildFilterExpression(serviceId: String, nodeName: String): String {
+        return "$CONSUL_FILTER_SELECTOR_SERVICE_ID == \"$serviceId\" and" +
+            " $CONSUL_FILTER_SELECTOR_NODE_NAME == \"$nodeName\""
     }
 
     private fun convertToInstanceInfo(consulInstanceHealth: ConsulInstanceHealth): InstanceInfo {
