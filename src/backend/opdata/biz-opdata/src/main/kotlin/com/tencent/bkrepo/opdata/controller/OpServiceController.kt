@@ -79,6 +79,17 @@ class OpServiceController @Autowired constructor(
         return success(opServiceService.downInstance(serviceName, instanceId))
     }
 
+    /**
+     * 上线服务节点
+     */
+    @PostMapping("/{serviceName}/instances/{instanceId}/up")
+    fun upInstance(
+        @PathVariable serviceName: String,
+        @PathVariable instanceId: String
+    ): Response<InstanceInfo> {
+        return success(opServiceService.upInstance(serviceName, instanceId))
+    }
+
     @DeleteMapping("/{serviceName}/instances/{instanceId}/down")
     fun deleteDownInstance(
         @PathVariable serviceName: String,

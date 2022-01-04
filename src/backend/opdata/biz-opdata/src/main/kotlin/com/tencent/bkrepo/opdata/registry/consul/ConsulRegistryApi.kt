@@ -78,44 +78,44 @@ class ConsulRegistryApi @Autowired constructor(
     }
 
     override fun deregister(serviceName: String, instanceId: String): InstanceInfo {
-        val consulInstanceId = ConsulInstanceId.create(instanceId)
-
-        // 获取服务所在节点，必须在服务所在节点上注销，服务实例才不会再次自动注册
-        val consulInstanceHealth = consulInstanceHealth(serviceName, instanceId)
-
-        // 确定注销后服务实例状态
-        var instanceStatus = InstanceStatus.DEREGISTER
-        consulInstanceHealth.consulInstanceChecks
-            // 过滤非服务实例的健康检查
-            .filter { it.serviceName.isNotEmpty() }
-            // 服务实例可能会存在多个健康检查项，有一个不通过说明服务实例存在异常，注销后设置为OFFLINE状态
-            .forEach {
-                if (it.status != STATUS_PASSING) {
-                    logger.warn("consul instance status: ${it.status}, node: ${it.node}, serviceId: ${it.serviceId}")
-                    instanceStatus = InstanceStatus.OFFLINE
-                }
-            }
-
         // 注销服务实例
-        val consulNode = consulInstanceHealth.consulNode
-        val url = HttpUrl.Builder()
-            .scheme(consulProperties.scheme ?: CONSUL_DEFAULT_SCHEME)
-            .host(consulNode.address)
-            .port(consulProperties.port)
-            .addPathSegments(CONSUL_DEREGISTER_PATH)
-            .addPathSegment(consulInstanceId.serviceId)
-            .build()
-        val req = url.requestBuilder().put(EMPTY_REQUEST).build()
-        val res = httpClient.newCall(req).execute()
-        throwExceptionOnRequestFailed(res)
-
-        // 返回服务实例信息
-        return convertToInstanceInfo(consulInstanceHealth).copy(status = instanceStatus)
+        val urlBuilder = HttpUrl.Builder().addPathSegments(CONSUL_DEREGISTER_PATH)
+        return changeInstanceStatus(urlBuilder, serviceName, instanceId)
     }
 
     override fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo {
         val consulInstanceHealth = consulInstanceHealth(serviceName, instanceId)
         return convertToInstanceInfo(consulInstanceHealth)
+    }
+
+    override fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo {
+        // 获取服务所在节点
+        val urlBuilder = HttpUrl.Builder()
+            .addPathSegments(CONSUL_MAINTENANCE_PATH)
+            .addQueryParameter(CONSUL_QUERY_PARAM_ENABLE, enable.toString())
+        return changeInstanceStatus(urlBuilder, serviceName, instanceId)
+    }
+
+    private fun changeInstanceStatus(
+        urlBuilder: HttpUrl.Builder,
+        serviceName: String,
+        instanceId: String
+    ): InstanceInfo {
+        val consulInstanceId = ConsulInstanceId.create(instanceId)
+
+        // 获取服务所在节点
+        val consulInstanceHealth = consulInstanceHealth(serviceName, instanceId)
+        val url = urlBuilder
+            .scheme(consulProperties.scheme ?: CONSUL_DEFAULT_SCHEME)
+            .host(consulInstanceHealth.consulNode.address)
+            .port(consulProperties.port)
+            .addPathSegment(consulInstanceId.serviceId)
+            .build()
+        val req = url.requestBuilder().put(EMPTY_REQUEST).build()
+        val res = httpClient.newCall(req).execute()
+        res.use { throwExceptionOnRequestFailed(it) }
+
+        return convertToInstanceInfo(consulInstanceHealth).copy(status = InstanceStatus.DEREGISTER)
     }
 
     private fun consulInstanceHealth(serviceName: String, instanceId: String): ConsulInstanceHealth {
@@ -206,6 +206,7 @@ class ConsulRegistryApi @Autowired constructor(
 
         private const val CONSUL_DEFAULT_SCHEME = "http"
 
+        private const val CONSUL_QUERY_PARAM_ENABLE = "enable"
         private const val CONSUL_QUERY_PARAM_FILTER = "filter"
         private const val CONSUL_FILTER_SELECTOR_SERVICE_ID = "Service.ID"
         private const val CONSUL_FILTER_SELECTOR_NODE_NAME = "Node.Node"
@@ -213,5 +214,6 @@ class ConsulRegistryApi @Autowired constructor(
         private const val CONSUL_LIST_SERVICES_PATH = "v1/catalog/services"
         private const val CONSUL_LIST_SERVICE_HEALTH_PATH = "v1/health/service"
         private const val CONSUL_DEREGISTER_PATH = "v1/agent/service/deregister"
+        private const val CONSUL_MAINTENANCE_PATH = "v1/agent/service/maintenance"
     }
 }

@@ -72,8 +72,20 @@ class OpServiceService @Autowired constructor(
     /**
      * 下线服务实例
      */
-    @Transactional(rollbackFor = [Exception::class])
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
+        return registryApi.maintenance(serviceName, instanceId, true)
+    }
+
+    fun upInstance(serviceName: String, instanceId: String): InstanceInfo {
+        registryApi.maintenance(serviceName, instanceId, false)
+        return instance(serviceName, instanceId)
+    }
+
+    /**
+     * 注销服务实例，会从注册中心移除实例
+     */
+    @Transactional(rollbackFor = [Exception::class])
+    fun deregisterInstance(serviceName: String, instanceId: String): InstanceInfo {
         if (!opDeregisterServiceInstanceDao.existsById(instanceId)) {
             val instanceInfo = instance(serviceName, instanceId)
             opDeregisterServiceInstanceDao.insert(convert(instanceInfo))

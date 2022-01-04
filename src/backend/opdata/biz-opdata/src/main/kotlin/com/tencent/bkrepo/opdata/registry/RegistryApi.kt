@@ -38,4 +38,11 @@ interface RegistryApi {
     fun instances(serviceName: String): List<InstanceInfo>
     fun deregister(serviceName: String, instanceId: String): InstanceInfo
     fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo
+
+    /**
+     * 是否开启维护模式，开启维护模式后服务仍处于注册状态，但不对外提供服务
+     *
+     * @param enable true: 开启维护模式，实例不再对外提供服务， false: 关闭维护模式，实例恢复正常
+     */
+    fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo
 }
