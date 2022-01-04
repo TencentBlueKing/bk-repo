@@ -27,18 +27,27 @@
 
 package com.tencent.bkrepo.opdata.service
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus.CONFLICT
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceDeregisterConflict
+import com.tencent.bkrepo.opdata.model.TOpDeregisterServiceInstance
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus.DEREGISTER
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryApi
+import com.tencent.bkrepo.opdata.repository.OpDeregisterServiceInstanceRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /**
  * 微服务运营管理
  */
 @Service
 class OpServiceService @Autowired constructor(
-    private val registryApi: RegistryApi
+    private val registryApi: RegistryApi,
+    private val opDeregisterServiceInstanceRepository: OpDeregisterServiceInstanceRepository
 ) {
     /**
      * 获取服务列表
@@ -54,10 +63,30 @@ class OpServiceService @Autowired constructor(
         return registryApi.instances(serviceName)
     }
 
+    fun instance(serviceName: String, instanceId: String): InstanceInfo {
+        return registryApi.instanceInfo(serviceName, instanceId)
+    }
+
     /**
      * 下线服务实例
      */
+    @Transactional(rollbackFor = [Exception::class])
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
-        return registryApi.deregister(serviceName, instanceId)
+        if (!opDeregisterServiceInstanceRepository.existsById(instanceId)) {
+            val instanceInfo = instance(serviceName, instanceId)
+            opDeregisterServiceInstanceRepository.insert(toModel(instanceInfo, DEREGISTER))
+            return registryApi.deregister(serviceName, instanceId)
+        } else {
+            throw ErrorCodeException(CONFLICT, ServiceInstanceDeregisterConflict, arrayOf(serviceName, instanceId))
+        }
+    }
+
+    private fun toModel(instanceInfo: InstanceInfo, status: InstanceStatus): TOpDeregisterServiceInstance {
+        return TOpDeregisterServiceInstance(
+            instanceInfo.id,
+            instanceInfo.host,
+            instanceInfo.port,
+            status
+        )
     }
 }

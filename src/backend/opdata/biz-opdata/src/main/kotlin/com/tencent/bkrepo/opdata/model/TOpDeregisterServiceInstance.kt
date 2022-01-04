@@ -25,16 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
+import org.springframework.data.mongodb.core.mapping.Document
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
-
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
-}
+/**
+ * 注销状态的服务实例
+ */
+@Document("op_deregister_service_instance")
+data class TOpDeregisterServiceInstance(
+    val id: String,
+    val host: String,
+    val port: Int,
+    val status: InstanceStatus
+)
