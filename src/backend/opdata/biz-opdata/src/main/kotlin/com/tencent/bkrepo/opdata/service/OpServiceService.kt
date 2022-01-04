@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceDeregisterConflict
 import com.tencent.bkrepo.opdata.model.TOpDeregisterServiceInstance
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryApi
 import com.tencent.bkrepo.opdata.repository.OpDeregisterServiceInstanceRepository
@@ -58,7 +59,8 @@ class OpServiceService @Autowired constructor(
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        return registryApi.instances(serviceName)
+        val deregisterInstanceInfoList = opDeregisterServiceInstanceRepository.findAll().map { convert(it) }
+        return registryApi.instances(serviceName) + deregisterInstanceInfoList
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
@@ -72,7 +74,7 @@ class OpServiceService @Autowired constructor(
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
         if (!opDeregisterServiceInstanceRepository.existsById(instanceId)) {
             val instanceInfo = instance(serviceName, instanceId)
-            opDeregisterServiceInstanceRepository.insert(toModel(instanceInfo))
+            opDeregisterServiceInstanceRepository.insert(convert(instanceInfo))
             return registryApi.deregister(serviceName, instanceId)
         } else {
             throw ErrorCodeException(CONFLICT, ServiceInstanceDeregisterConflict, arrayOf(serviceName, instanceId))
@@ -86,11 +88,11 @@ class OpServiceService @Autowired constructor(
         opDeregisterServiceInstanceRepository.deleteById(instanceId)
     }
 
-    private fun toModel(instanceInfo: InstanceInfo): TOpDeregisterServiceInstance {
-        return TOpDeregisterServiceInstance(
-            instanceInfo.id,
-            instanceInfo.host,
-            instanceInfo.port
-        )
+    private fun convert(instanceInfo: InstanceInfo): TOpDeregisterServiceInstance {
+        return TOpDeregisterServiceInstance(instanceInfo.id, instanceInfo.host, instanceInfo.port)
+    }
+
+    private fun convert(serviceInstance: TOpDeregisterServiceInstance): InstanceInfo {
+        return InstanceInfo(serviceInstance.id, serviceInstance.host, serviceInstance.port, InstanceStatus.DEREGISTER)
     }
 }
