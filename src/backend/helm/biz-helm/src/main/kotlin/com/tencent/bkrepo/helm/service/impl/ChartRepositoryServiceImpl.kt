@@ -43,18 +43,21 @@ import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
+import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
+import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
@@ -196,16 +199,57 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun installTgz(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        when (context.repositoryDetail.category) {
+            RepositoryCategory.REMOTE -> context.putAttribute(
+                FULL_PATH,
+                findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
+            )
+            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        }
         context.putAttribute(FILE_TYPE, CHART)
         ArtifactContextHolder.getRepository().download(context)
+    }
+
+    /**
+     * 通过chart包名以及版本号查出对应remote仓库下载地址
+     */
+    private fun findRemoteArtifactFullPath(name: String): String {
+        logger.info("get remote url for downloading...")
+        val helmIndexYamlMetadata = queryOriginalIndexYaml()
+        val chartName = ChartParserUtil.parseNameAndVersion(name)[NAME]
+        val chartVersion = ChartParserUtil.parseNameAndVersion(name)[VERSION]
+        val chartList =
+            helmIndexYamlMetadata.entries[chartName]
+                ?: throw HelmFileNotFoundException("File [$name] can not be found.")
+        val helmChartMetadataList = chartList.filter {
+            chartVersion == it.version
+        }.toList()
+        return if (helmChartMetadataList.isNotEmpty()) {
+            require(helmChartMetadataList.size == 1) {
+                "find more than one version [$chartVersion] in package [$chartName]."
+            }
+            val urls = helmChartMetadataList.first().urls
+            if (urls.isNotEmpty()) {
+                "/" + urls.first()
+            } else {
+                throw HelmFileNotFoundException("File [$name] can not be found.")
+            }
+        } else {
+            throw HelmFileNotFoundException("File [$name] can not be found.")
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun installProv(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        when (context.repositoryDetail.category) {
+            RepositoryCategory.REMOTE -> context.putAttribute(
+                FULL_PATH,
+                findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
+            )
+            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        }
         context.putAttribute(FILE_TYPE, PROV)
         ArtifactContextHolder.getRepository().download(context)
     }
