@@ -32,8 +32,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceDeregisterConflict
 import com.tencent.bkrepo.opdata.model.TOpDeregisterServiceInstance
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus.DEREGISTER
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryApi
 import com.tencent.bkrepo.opdata.repository.OpDeregisterServiceInstanceRepository
@@ -74,19 +72,25 @@ class OpServiceService @Autowired constructor(
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
         if (!opDeregisterServiceInstanceRepository.existsById(instanceId)) {
             val instanceInfo = instance(serviceName, instanceId)
-            opDeregisterServiceInstanceRepository.insert(toModel(instanceInfo, DEREGISTER))
+            opDeregisterServiceInstanceRepository.insert(toModel(instanceInfo))
             return registryApi.deregister(serviceName, instanceId)
         } else {
             throw ErrorCodeException(CONFLICT, ServiceInstanceDeregisterConflict, arrayOf(serviceName, instanceId))
         }
     }
 
-    private fun toModel(instanceInfo: InstanceInfo, status: InstanceStatus): TOpDeregisterServiceInstance {
+    /**
+     * 删除注销的服务实例记录
+     */
+    fun deleteDownServiceInstance(serviceName: String, instanceId: String) {
+        opDeregisterServiceInstanceRepository.deleteById(instanceId)
+    }
+
+    private fun toModel(instanceInfo: InstanceInfo): TOpDeregisterServiceInstance {
         return TOpDeregisterServiceInstance(
             instanceInfo.id,
             instanceInfo.host,
-            instanceInfo.port,
-            status
+            instanceInfo.port
         )
     }
 }

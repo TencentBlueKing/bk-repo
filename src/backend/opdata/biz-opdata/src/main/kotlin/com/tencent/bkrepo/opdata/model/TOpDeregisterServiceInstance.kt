@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import org.springframework.data.mongodb.core.mapping.Document
 
 /**
@@ -37,6 +36,5 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class TOpDeregisterServiceInstance(
     val id: String,
     val host: String,
-    val port: Int,
-    val status: InstanceStatus
+    val port: Int
 )
