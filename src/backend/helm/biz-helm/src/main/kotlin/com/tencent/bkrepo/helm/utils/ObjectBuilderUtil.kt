@@ -32,8 +32,14 @@
 package com.tencent.bkrepo.helm.utils
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.helm.constants.NAME
+import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -92,5 +98,31 @@ object ObjectBuilderUtil {
             overwrite = isOverwrite,
             createdBy = userId
         )
+    }
+
+    fun buildDownloadRecordRequest(
+        context: ArtifactDownloadContext
+    ): PackageDownloadRecord? {
+        val name = context.getStringAttribute(NAME).orEmpty()
+        val version = context.getStringAttribute(VERSION).orEmpty()
+        // 下载index.yaml不进行下载次数统计
+        if (name.isEmpty() && version.isEmpty()) return null
+        with(context) {
+            return PackageDownloadRecord(projectId, repoName, PackageKeys.ofHelm(name), version)
+        }
+    }
+    fun buildIndexYamlRequest(): ArtifactInfo {
+        val artifactInfo = HttpContextHolder.getRequest().getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
+        return buildIndexYamlRequest(artifactInfo)
+    }
+
+    fun buildIndexYamlRequest(projectId: String, repoName: String): ArtifactInfo {
+        val artifactInfo = ArtifactInfo(projectId, repoName, "/")
+        return buildIndexYamlRequest(artifactInfo)
+    }
+
+    fun buildIndexYamlRequest(artifactInfo: ArtifactInfo): ArtifactInfo {
+        val path = HelmUtils.getIndexCacheYamlFullPath()
+        return ArtifactInfo(artifactInfo.projectId, artifactInfo.repoName, path)
     }
 }

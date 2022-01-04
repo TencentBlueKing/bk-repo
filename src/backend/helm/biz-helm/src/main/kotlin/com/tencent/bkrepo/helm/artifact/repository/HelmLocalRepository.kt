@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
-import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -41,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FORCE
@@ -54,21 +52,21 @@ import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
-import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.service.impl.HelmOperationService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
-class HelmLocalRepository : LocalRepository() {
+class HelmLocalRepository(
+    private val helmOperationService: HelmOperationService
+) : LocalRepository() {
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
         with(context) {
@@ -146,13 +144,7 @@ class HelmLocalRepository : LocalRepository() {
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
-        val name = context.getStringAttribute(NAME).orEmpty()
-        val version = context.getStringAttribute(VERSION).orEmpty()
-        // 下载index.yaml不进行下载次数统计
-        if (name.isEmpty() && version.isEmpty()) return null
-        with(context) {
-            return PackageDownloadRecord(projectId, repoName, PackageKeys.ofHelm(name), version)
-        }
+        return ObjectBuilderUtil.buildDownloadRecordRequest(context)
     }
 
     override fun query(context: ArtifactQueryContext): ArtifactInputStream? {
@@ -176,62 +168,7 @@ class HelmLocalRepository : LocalRepository() {
      * 版本不存在时 status code 404
      */
     override fun remove(context: ArtifactRemoveContext) {
-        with(context.artifactInfo as HelmDeleteArtifactInfo) {
-            if (version.isNotBlank()) {
-                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
-                    removeVersion(this, it, context.userId)
-                } ?: throw VersionNotFoundException(version)
-            } else {
-                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
-                    removeVersion(this, it, context.userId)
-                }
-            }
-            updatePackageExtension(context)
-        }
-    }
-
-    /**
-     * 节点删除后，将package extension信息更新
-     */
-    private fun updatePackageExtension(context: ArtifactRemoveContext) {
-        with(context.artifactInfo as HelmDeleteArtifactInfo) {
-            val version = packageClient.findPackageByKey(projectId, repoName, packageName).data?.latest
-            try {
-                val chartPath = HelmUtils.getChartFileFullPath(getArtifactName(), version!!)
-                val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
-                val chartInfo = map?.let { it1 -> HelmMetadataUtils.convertToObject(it1) }
-                chartInfo?.appVersion?.let {
-                    val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
-                        context.artifactInfo,
-                        PackageKeys.resolveHelm(packageName),
-                        chartInfo.appVersion!!,
-                        chartInfo.description
-                    )
-                    packageClient.updatePackage(packageUpdateRequest)
-                }
-            } catch (e: Exception) {
-                logger.warn("can not convert meta data")
-            }
-        }
-    }
-
-    /**
-     * 删除[version] 对应的node节点也会一起删除
-     */
-    private fun removeVersion(artifactInfo: HelmDeleteArtifactInfo, version: PackageVersion, userId: String) {
-        with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageName, version.name)
-            val chartPath = HelmUtils.getChartFileFullPath(getArtifactName(), version.name)
-            val provPath = HelmUtils.getProvFileFullPath(getArtifactName(), version.name)
-            if (chartPath.isNotBlank()) {
-                val request = NodeDeleteRequest(projectId, repoName, chartPath, userId)
-                nodeClient.deleteNode(request)
-                // 节点删除后，将package信息更新
-            }
-            if (provPath.isNotBlank()) {
-                nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, provPath, userId))
-            }
-        }
+        helmOperationService.removeChartOrProv(context)
     }
 
     private fun parseMetaData(context: ArtifactUploadContext): Map<String, Any>? {
@@ -242,7 +179,7 @@ class HelmLocalRepository : LocalRepository() {
             var result: Map<String, Any>? = emptyMap()
             if (!isOverwrite(fullPath!!, forceUpdate!!)) {
                 when (fileType) {
-                    CHART -> result = getAttribute<Map<String, Any>?>(META_DETAIL)
+                    CHART -> result = getAttribute(META_DETAIL)
                     PROV -> result = ChartParserUtil.parseNameAndVersion(fullPath)
                 }
             }

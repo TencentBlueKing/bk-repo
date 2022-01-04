@@ -30,6 +30,7 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.readYamlString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -38,27 +39,34 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.config.HelmProperties
+import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
+import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
+import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
+import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
+import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
+import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Service
 class ChartRepositoryServiceImpl(
@@ -67,15 +75,9 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
-        // val lockKey = "${artifactInfo.projectId}_${artifactInfo.repoName}"
-        // try {
-        //     if (mongoLock.tryLock(lockKey, LOCK_VALUE)) {
-        //         freshIndexFile(artifactInfo)
-        //     }
-        // } finally {
-        //     mongoLock.releaseLock(lockKey, LOCK_VALUE)
-        // }
-        freshIndexFile(artifactInfo)
+        when (getRepositoryInfo(artifactInfo).category) {
+            RepositoryCategory.LOCAL -> freshIndexFile(artifactInfo)
+        }
         downloadIndexYaml()
     }
 
@@ -197,33 +199,89 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun installTgz(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        when (context.repositoryDetail.category) {
+            RepositoryCategory.REMOTE -> context.putAttribute(
+                FULL_PATH,
+                findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
+            )
+            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        }
+        context.putAttribute(FILE_TYPE, CHART)
         ArtifactContextHolder.getRepository().download(context)
+    }
+
+    /**
+     * 通过chart包名以及版本号查出对应remote仓库下载地址
+     */
+    private fun findRemoteArtifactFullPath(name: String): String {
+        logger.info("get remote url for downloading...")
+        val helmIndexYamlMetadata = queryOriginalIndexYaml()
+        val chartName = ChartParserUtil.parseNameAndVersion(name)[NAME]
+        val chartVersion = ChartParserUtil.parseNameAndVersion(name)[VERSION]
+        val chartList =
+            helmIndexYamlMetadata.entries[chartName]
+                ?: throw HelmFileNotFoundException("File [$name] can not be found.")
+        val helmChartMetadataList = chartList.filter {
+            chartVersion == it.version
+        }.toList()
+        return if (helmChartMetadataList.isNotEmpty()) {
+            require(helmChartMetadataList.size == 1) {
+                "find more than one version [$chartVersion] in package [$chartName]."
+            }
+            val urls = helmChartMetadataList.first().urls
+            if (urls.isNotEmpty()) {
+                urls.first()
+            } else {
+                throw HelmFileNotFoundException("File [$name] can not be found.")
+            }
+        } else {
+            throw HelmFileNotFoundException("File [$name] can not be found.")
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun installProv(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        when (context.repositoryDetail.category) {
+            RepositoryCategory.REMOTE -> context.putAttribute(
+                FULL_PATH,
+                findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
+            )
+            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+        }
+        context.putAttribute(FILE_TYPE, PROV)
         ArtifactContextHolder.getRepository().download(context)
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
-        val nodeList = queryNodeList(artifactInfo, false)
-        logger.info(
-            "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
-                ", size [${nodeList.size}], starting full refresh index.yaml ... "
-        )
-        val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
-        uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
+        when (getRepositoryInfo(artifactInfo).category) {
+            RepositoryCategory.LOCAL -> {
+                val nodeList = queryNodeList(artifactInfo, false)
+                logger.info(
+                    "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
+                        ", size [${nodeList.size}], starting full refresh index.yaml ... "
+                )
+                val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
+                uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
+            }
+            else -> initIndexYaml(artifactInfo.projectId, artifactInfo.repoName)
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
+        val context = ArtifactQueryContext()
+        when (context.repositoryDetail.category) {
+            RepositoryCategory.LOCAL -> batchInstallLocalTgz(artifactInfo, startTime)
+            RepositoryCategory.REMOTE -> throw HelmBadRequestException("illegal request")
+        }
+    }
+
+    private fun batchInstallLocalTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
         val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
         if (nodeList.isEmpty()) {
             throw HelmFileNotFoundException(

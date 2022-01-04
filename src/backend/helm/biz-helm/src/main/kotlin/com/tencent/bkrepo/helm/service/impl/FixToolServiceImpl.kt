@@ -55,6 +55,7 @@ import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
+import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
@@ -396,6 +397,14 @@ class FixToolServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo) {
         logger.info("handling meta data regenerate request: [$artifactInfo]")
+        when (getRepositoryInfo(artifactInfo).category) {
+            RepositoryCategory.REMOTE -> {
+                val message = "Unable to regenerate metadata for remote repository " +
+                    "[${artifactInfo.projectId}/${artifactInfo.repoName}]"
+                logger.warn(message)
+                throw HelmBadRequestException(message)
+            }
+        }
         val nodeList = queryNodeList(artifactInfo, false)
         logger.info(
             "query node list for regenerating meta data in repo [${artifactInfo.getRepoIdentify()}]" +
