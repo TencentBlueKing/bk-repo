@@ -125,8 +125,12 @@ class HelmRemoteRepository(
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         logger.info("create remote download url...")
         val remoteConfiguration = context.getRemoteConfiguration()
-        return remoteConfiguration.url.trimEnd('/') +
-            context.getStringAttribute(FULL_PATH)?.let { HelmUtils.convertIndexYamlPath(it) }
+        val fullPath = context.getStringAttribute(FULL_PATH)!!.let { HelmUtils.convertIndexYamlPath(it) }
+        return if (fullPath.contains(remoteConfiguration.url)) {
+            fullPath
+        } else {
+            remoteConfiguration.url + fullPath
+        }
     }
 
     /**

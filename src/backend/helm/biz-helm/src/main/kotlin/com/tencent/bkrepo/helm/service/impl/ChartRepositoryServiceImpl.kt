@@ -230,7 +230,7 @@ class ChartRepositoryServiceImpl(
             }
             val urls = helmChartMetadataList.first().urls
             if (urls.isNotEmpty()) {
-                "/" + urls.first()
+                urls.first()
             } else {
                 throw HelmFileNotFoundException("File [$name] can not be found.")
             }
