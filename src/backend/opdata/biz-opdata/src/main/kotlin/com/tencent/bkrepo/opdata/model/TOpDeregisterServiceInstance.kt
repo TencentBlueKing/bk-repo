@@ -35,6 +35,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("op_deregister_service_instance")
 data class TOpDeregisterServiceInstance(
     val id: String,
+    val serviceName: String,
     val host: String,
     val port: Int
 )

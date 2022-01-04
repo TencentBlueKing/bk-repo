@@ -35,7 +35,7 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryApi
-import com.tencent.bkrepo.opdata.repository.OpDeregisterServiceInstanceRepository
+import com.tencent.bkrepo.opdata.repository.OpDeregisterServiceInstanceDao
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -46,7 +46,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class OpServiceService @Autowired constructor(
     private val registryApi: RegistryApi,
-    private val opDeregisterServiceInstanceRepository: OpDeregisterServiceInstanceRepository
+    private val opDeregisterServiceInstanceDao: OpDeregisterServiceInstanceDao
 ) {
     /**
      * 获取服务列表
@@ -59,7 +59,9 @@ class OpServiceService @Autowired constructor(
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        val deregisterInstanceInfoList = opDeregisterServiceInstanceRepository.findAll().map { convert(it) }
+        val deregisterInstanceInfoList = opDeregisterServiceInstanceDao
+            .findAllByServiceName(serviceName)
+            .map { convert(it) }
         return registryApi.instances(serviceName) + deregisterInstanceInfoList
     }
 
@@ -72,9 +74,9 @@ class OpServiceService @Autowired constructor(
      */
     @Transactional(rollbackFor = [Exception::class])
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
-        if (!opDeregisterServiceInstanceRepository.existsById(instanceId)) {
+        if (!opDeregisterServiceInstanceDao.existsById(instanceId)) {
             val instanceInfo = instance(serviceName, instanceId)
-            opDeregisterServiceInstanceRepository.insert(convert(instanceInfo))
+            opDeregisterServiceInstanceDao.insert(convert(instanceInfo))
             return registryApi.deregister(serviceName, instanceId)
         } else {
             throw ErrorCodeException(CONFLICT, ServiceInstanceDeregisterConflict, arrayOf(serviceName, instanceId))
@@ -85,14 +87,18 @@ class OpServiceService @Autowired constructor(
      * 删除注销的服务实例记录
      */
     fun deleteDownServiceInstance(serviceName: String, instanceId: String) {
-        opDeregisterServiceInstanceRepository.deleteById(instanceId)
+        opDeregisterServiceInstanceDao.removeById(instanceId)
     }
 
     private fun convert(instanceInfo: InstanceInfo): TOpDeregisterServiceInstance {
-        return TOpDeregisterServiceInstance(instanceInfo.id, instanceInfo.host, instanceInfo.port)
+        return with(instanceInfo) {
+            TOpDeregisterServiceInstance(id, serviceName, host, port)
+        }
     }
 
     private fun convert(serviceInstance: TOpDeregisterServiceInstance): InstanceInfo {
-        return InstanceInfo(serviceInstance.id, serviceInstance.host, serviceInstance.port, InstanceStatus.DEREGISTER)
+        return with(serviceInstance) {
+            InstanceInfo(id, serviceName, host, port, InstanceStatus.DEREGISTER)
+        }
     }
 }

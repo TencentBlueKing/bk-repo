@@ -36,6 +36,8 @@ import io.swagger.annotations.ApiModelProperty
 data class InstanceInfo(
     @ApiModelProperty("实例id", required = true)
     val id: String,
+    @ApiModelProperty("所属服务", required = true)
+    val serviceName: String,
     @ApiModelProperty("实例ip或域名", required = true)
     val host: String,
     @ApiModelProperty("实例端口", required = true)

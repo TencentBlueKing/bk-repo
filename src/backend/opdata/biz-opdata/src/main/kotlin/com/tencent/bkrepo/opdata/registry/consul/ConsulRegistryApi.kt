@@ -175,6 +175,7 @@ class ConsulRegistryApi @Autowired constructor(
             ConsulInstanceId.create(consulNode.datacenter, consulNode.nodeName, consulInstance.id)
         return InstanceInfo(
             id = consulInstanceId.instanceIdStr(),
+            serviceName = consulInstance.service,
             host = consulInstance.address,
             port = consulInstance.port,
             status = convertToInstanceStatus(consulInstanceStatusList)

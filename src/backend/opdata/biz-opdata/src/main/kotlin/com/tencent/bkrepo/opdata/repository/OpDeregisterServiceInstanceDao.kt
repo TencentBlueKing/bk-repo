@@ -27,7 +27,30 @@
 
 package com.tencent.bkrepo.opdata.repository
 
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.opdata.model.TOpDeregisterServiceInstance
-import org.springframework.data.mongodb.repository.MongoRepository
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-interface OpDeregisterServiceInstanceRepository : MongoRepository<TOpDeregisterServiceInstance, String>
+@Repository
+class OpDeregisterServiceInstanceDao : SimpleMongoDao<TOpDeregisterServiceInstance>() {
+
+    fun existsById(id: String): Boolean {
+        return exists(
+            Query.query(
+                Criteria.where(ID).isEqualTo(id)
+            )
+        )
+    }
+
+    fun findAllByServiceName(serviceName: String): List<TOpDeregisterServiceInstance> {
+        return find(
+            Query(
+                TOpDeregisterServiceInstance::serviceName.isEqualTo(serviceName)
+            )
+        )
+    }
+}
+
