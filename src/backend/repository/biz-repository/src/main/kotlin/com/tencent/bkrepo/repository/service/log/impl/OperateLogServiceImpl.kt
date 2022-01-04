@@ -27,10 +27,19 @@
 
 package com.tencent.bkrepo.repository.service.log.impl
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.repository.dao.repository.OperateLogRepository
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.repository.dao.OperateLogDao
 import com.tencent.bkrepo.repository.model.TOperateLog
+import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
+import com.tencent.bkrepo.repository.pojo.log.OperateLog
 import com.tencent.bkrepo.repository.service.log.OperateLogService
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 
@@ -39,7 +48,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class OperateLogServiceImpl(
-    private val operateLogRepository: OperateLogRepository
+    private val operateLogDao: OperateLogDao
 ) : OperateLogService {
 
     @Async
@@ -53,6 +62,63 @@ class OperateLogServiceImpl(
             userId = event.userId,
             clientAddress = address
         )
-        operateLogRepository.save(log)
+        operateLogDao.insert(log)
+    }
+
+    @Async
+    override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
+        val logs = eventList.map {
+            TOperateLog(
+                type = it.type,
+                resourceKey = it.resourceKey,
+                projectId = it.projectId,
+                repoName = it.repoName,
+                description = it.data,
+                userId = it.userId,
+                clientAddress = address
+            )
+        }
+        operateLogDao.insert(logs)
+    }
+
+    override fun listPage(option: OpLogListOption): Page<OperateLog> {
+        with(option) {
+            val criteria = where(TOperateLog::projectId).isEqualTo(projectId)
+                .and(TOperateLog::repoName).isEqualTo(repoName)
+                .and(TOperateLog::type).isEqualTo(eventType)
+                .and(TOperateLog::createdDate).gte(startTime).lte(endTime)
+                .apply {
+                    userId?.run { and(TOperateLog::userId).isEqualTo(userId) }
+                    sha256?.run { and("${TOperateLog::description.name}.sha256").isEqualTo(sha256) }
+                    pipelineId?.run { and("${TOperateLog::description.name}.pipelineId").isEqualTo(pipelineId) }
+                    buildId?.run { and("${TOperateLog::description.name}.buildId").isEqualTo(buildId) }
+                }
+            if (prefixSearch) {
+                criteria.and(TOperateLog::resourceKey).regex("^$resourceKey")
+            } else {
+                criteria.and(TOperateLog::resourceKey).isEqualTo(resourceKey)
+            }
+            val query = Query(criteria)
+            val totalCount = operateLogDao.count(query)
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val sort = Sort.by(Sort.Direction.valueOf(direction.toString()), TOperateLog::createdDate.name)
+            val records = operateLogDao.find(query.with(pageRequest).with(sort)).map { transfer(it) }
+            return Pages.ofResponse(pageRequest, totalCount, records)
+        }
+    }
+
+    private fun transfer(tOperateLog: TOperateLog) : OperateLog {
+        with(tOperateLog) {
+            return OperateLog(
+                createdDate = createdDate,
+                type = type,
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = resourceKey,
+                userId = userId,
+                clientAddress = clientAddress,
+                description = description
+            )
+        }
     }
 }

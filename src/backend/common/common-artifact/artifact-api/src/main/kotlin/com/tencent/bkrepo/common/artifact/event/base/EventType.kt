@@ -45,6 +45,7 @@ enum class EventType {
     NODE_MOVED,
     NODE_COPIED,
     NODE_DELETED,
+    NODE_DOWNLOADED,
 
     // METADATA
     METADATA_DELETED,
