@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.opdata.registry.consul
 
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration.Companion.OP_OKHTTP_CLIENT_NAME
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
+import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceNotFound
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryApi
+import com.tencent.bkrepo.opdata.registry.consul.exception.ConsulApiException
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck.Companion.STATUS_PASSING
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceHealth
@@ -117,7 +120,12 @@ class ConsulRegistryApi @Autowired constructor(
 
     private fun consulInstanceHealth(serviceName: String, instanceId: String): ConsulInstanceHealth {
         val consulInstances = listConsulInstanceHealth(serviceName, instanceId)
-        require(consulInstances.size == 1)
+        if (consulInstances.size > 1) {
+            throw ConsulApiException("more than 1 instance found, serviceName: $serviceName, instanceId: $instanceId")
+        }
+        if (consulInstances.isEmpty()) {
+            throw NotFoundException(ServiceInstanceNotFound, serviceName, instanceId)
+        }
         return consulInstances[0]
     }
 
@@ -146,8 +154,6 @@ class ConsulRegistryApi @Autowired constructor(
         val consulNode = consulInstanceHealth.consulNode
         // 过滤非服务实例的健康检查信息
         val consulInstanceStatusList = consulInstanceHealth.consulInstanceChecks.filter { it.serviceName.isNotEmpty() }
-        // 应至少有一条服务实例的健康检查信息
-        require(consulInstanceStatusList.isNotEmpty())
 
         val consulInstanceId =
             ConsulInstanceId.create(consulNode.datacenter, consulNode.nodeName, consulInstance.id)
@@ -161,6 +167,8 @@ class ConsulRegistryApi @Autowired constructor(
 
     /**
      * 服务的全部检查通过才算正常运行
+     *
+     * @param instanceStatus 服务checks列表，列表为空时返回为RUNNING状态
      */
     private fun convertToInstanceStatus(instanceStatus: List<ConsulInstanceCheck>): InstanceStatus {
         instanceStatus.forEach {
