@@ -35,7 +35,6 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.service.OpServiceService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -68,6 +67,14 @@ class OpServiceController @Autowired constructor(
         return success(opServiceService.instances(serviceName))
     }
 
+    @GetMapping("/{serviceName}/instances/{instanceId}")
+    fun instance(
+        @PathVariable serviceName: String,
+        @PathVariable instanceId: String
+    ): Response<InstanceInfo> {
+        return success(opServiceService.instance(serviceName, instanceId))
+    }
+
     /**
      * 下线服务节点
      */
@@ -88,14 +95,5 @@ class OpServiceController @Autowired constructor(
         @PathVariable instanceId: String
     ): Response<InstanceInfo> {
         return success(opServiceService.upInstance(serviceName, instanceId))
-    }
-
-    @DeleteMapping("/{serviceName}/instances/{instanceId}/down")
-    fun deleteDownInstance(
-        @PathVariable serviceName: String,
-        @PathVariable instanceId: String
-    ): Response<Void> {
-        opServiceService.deleteDownServiceInstance(serviceName, instanceId)
-        return success()
     }
 }
