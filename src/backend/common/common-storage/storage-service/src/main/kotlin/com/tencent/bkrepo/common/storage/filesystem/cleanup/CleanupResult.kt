@@ -35,10 +35,11 @@ data class CleanupResult(
     var totalSize: Long = 0,
     var cleanupFile: Long = 0,
     var cleanupFolder: Long = 0,
-    var cleanupSize: Long = 0
+    var cleanupSize: Long = 0,
+    var errorCount: Long = 0
 ) {
     override fun toString(): String {
         return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
-                "files deleted, $cleanupFolder/$totalFolder dirs deleted."
+            "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."
     }
 }

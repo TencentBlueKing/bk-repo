@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.mongo.dao.sharding
 import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.dao.util.ShardingUtils
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
 import org.apache.commons.lang3.reflect.FieldUtils
 import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
 import org.bson.Document
@@ -65,15 +65,24 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     /**
      * 分表Field
      */
-    private val shardingField: Field
+    protected val shardingField: Field
+
     /**
      * 分表列名
      */
     private val shardingColumn: String
+
     /**
      * 分表数
      */
-    private var shardingCount: Int = 1
+    protected var shardingCount: Int = 1
+
+    /**
+     * 分表工具类
+     */
+    protected val shardingUtils by lazy {
+        determineShardingUtils()
+    }
 
     init {
         @Suppress("LeakingThis")
@@ -94,6 +103,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     private fun ensureIndex() {
+        if (shardingCount < 0) {
+            return
+        }
         val start = System.currentTimeMillis()
         val indexDefinitions = MongoIndexResolver.resolveIndexFor(classType)
         val nonexistentIndexDefinitions = filterExistedIndex(indexDefinitions)
@@ -126,7 +138,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     private fun shardingKeyToCollectionName(shardValue: Any): String {
-        val shardingSequence = ShardingUtils.shardingSequenceFor(shardValue, shardingCount)
+        val shardingSequence = shardingUtils.shardingSequenceFor(shardValue, shardingCount)
         return parseSequenceToCollectionName(shardingSequence)
     }
 
@@ -142,7 +154,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     private fun determineShardingCount(): Int {
         val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        return ShardingUtils.shardingCountFor(shardingKey.count)
+        return shardingUtils.shardingCountFor(shardingKey.count)
     }
 
     private fun determineShardingColumn(): String {
@@ -200,7 +212,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return shardingKeyToCollectionName(shardingValue)
     }
 
-    private fun determineCollectionName(document: Document): Any? {
+    fun determineCollectionName(document: Document): Any? {
         for ((key, value) in document) {
             if (key == shardingColumn) return value
             if (key == "\$and") {
@@ -222,6 +234,21 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     override fun <T> findAll(clazz: Class<T>): List<T> {
         throw UnsupportedOperationException()
     }
+
+    override fun insert(entityCollection: Collection<E>): Collection<E> {
+        if (AbstractMongoDao.logger.isDebugEnabled) {
+            AbstractMongoDao.logger.debug("Mongo Dao insert many: [$entityCollection]")
+        }
+        checkCollectionConsistency(entityCollection)
+        return determineMongoTemplate().insert(entityCollection, determineCollectionName(entityCollection.first()))
+    }
+
+    private fun checkCollectionConsistency(entityCollection: Collection<E>) {
+        val sequences = entityCollection.map { determineCollectionName(it) }.distinct()
+        require(sequences.size == 1)
+    }
+
+    abstract fun determineShardingUtils(): ShardingUtils
 
     companion object {
 

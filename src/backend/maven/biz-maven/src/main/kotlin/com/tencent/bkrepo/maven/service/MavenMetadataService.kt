@@ -7,10 +7,14 @@ import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class MavenMetadataService(
@@ -33,8 +37,10 @@ class MavenMetadataService(
         }
         val query = Query(criteria)
         val update = Update().set(TMavenMetadataRecord::timestamp.name, mavenVersion.timestamp)
-            .set(TMavenMetadataRecord::buildNo.name, mavenVersion.buildNo)
-        mavenMetadataDao.upsert(query, update)
+            .set(TMavenMetadataRecord::buildNo.name, mavenVersion.buildNo?.toInt())
+        val options = FindAndModifyOptions().apply { this.upsert(true).returnNew(false) }
+        mavenMetadataDao.determineMongoTemplate()
+            .findAndModify(query, update, options, TMavenMetadataRecord::class.java)
     }
 
     fun search(mavenArtifactInfo: MavenArtifactInfo, mavenGavc: MavenGAVC): List<TMavenMetadataRecord> {
@@ -47,7 +53,7 @@ class MavenMetadataService(
         return mavenMetadataDao.find(query)
     }
 
-    fun searchOne(mavenMetadataSearchPojo: MavenMetadataSearchPojo): TMavenMetadataRecord? {
+    fun findAndModify(mavenMetadataSearchPojo: MavenMetadataSearchPojo): TMavenMetadataRecord {
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(mavenMetadataSearchPojo.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(mavenMetadataSearchPojo.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(mavenMetadataSearchPojo.groupId)
@@ -56,6 +62,15 @@ class MavenMetadataService(
             .and(TMavenMetadataRecord::extension.name).`is`(mavenMetadataSearchPojo.extension)
         mavenMetadataSearchPojo.classifier?.let { criteria.and(TMavenMetadataRecord::classifier.name).`is`(it) }
         val query = Query(criteria)
-        return mavenMetadataDao.findOne(query)
+        val update = Update().apply {
+            this.set(TMavenMetadataRecord::timestamp.name, ZonedDateTime.now(ZoneId.of("UTC")).format(formatter))
+            .inc(TMavenMetadataRecord::buildNo.name) }
+        val options = FindAndModifyOptions().upsert(true).returnNew(true)
+        return mavenMetadataDao.determineMongoTemplate()
+            .findAndModify(query, update, options, TMavenMetadataRecord::class.java)!!
+    }
+
+    companion object {
+        private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss")
     }
 }

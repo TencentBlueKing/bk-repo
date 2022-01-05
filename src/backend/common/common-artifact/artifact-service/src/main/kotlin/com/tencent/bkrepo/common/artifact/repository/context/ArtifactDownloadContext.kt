@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 
 /**
@@ -40,5 +41,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 open class ArtifactDownloadContext(
     repo: RepositoryDetail? = null,
     artifact: ArtifactInfo? = null,
+    userId: String = SecurityUtils.getUserId(),
     var useDisposition: Boolean = false
-) : ArtifactContext(repo, artifact)
+) : ArtifactContext(repo, artifact, userId)

@@ -45,6 +45,7 @@ enum class EventType(val nick: String) {
     NODE_MOVED("移动节点"),
     NODE_COPIED("复制节点"),
     NODE_DELETED("删除节点"),
+    NODE_DOWNLOADED("下载节点"),
 
     // METADATA
     METADATA_DELETED("删除元数据"),

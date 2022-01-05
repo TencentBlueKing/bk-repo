@@ -72,7 +72,7 @@ class ChunkedArtifactFile(
             storageProperties.receive,
             storageProperties.monitor,
             path,
-            randomFilePath = true
+            randomPath = true
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

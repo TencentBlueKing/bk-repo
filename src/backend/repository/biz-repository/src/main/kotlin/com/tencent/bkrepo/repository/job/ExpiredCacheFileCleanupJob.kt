@@ -74,7 +74,7 @@ class ExpiredCacheFileCleanupJob(
         executeAndMeasureTime {
             storageService.cleanUp(storage)
         }.apply {
-            logger.info("Clean up on storage[$key] completed, elapse [${second.seconds}] s.")
+            logger.info("Clean up on storage[$key] completed, summary: $first, elapse [${second.seconds}] s.")
         }
     }
 
