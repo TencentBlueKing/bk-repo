@@ -38,6 +38,7 @@
     cursor: pointer;
     .bk-tooltip-ref,
     .icon-more {
+        font-size: 18px;
         width: 100%;
         height: 100%;
     }

@@ -26,7 +26,7 @@
         <div class="mt10 path-list" v-show="pathConstraints.length">
             <div class="pl20 path-item flex-align-center" v-for="(path, ind) in pathConstraints" :key="path">
                 <span class="path-name text-overflow" :title="path">{{ path }}</span>
-                <i v-show="!disabled" class="devops-icon icon-delete flex-center hover-btn hover-danger" @click="pathConstraints.splice(ind, 1)"></i>
+                <Icon v-show="!disabled" class="mr20 hover-btn" size="14" name="icon-delete" @click.native="pathConstraints.splice(ind, 1)" />
             </div>
         </div>
         <path-dialog :show="showAddDialog" :path-constraints="pathConstraints" @confirm="confirm" @cancel="showAddDialog = false"></path-dialog>
@@ -114,11 +114,6 @@
             .path-name {
                 flex: 1;
                 margin: 0 5px;
-            }
-            .icon-delete {
-                width: 50px;
-                height: 100%;
-                background-color: var(--bgHoverColor);
             }
         }
     }

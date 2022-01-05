@@ -61,12 +61,15 @@
             <bk-table-column :label="$t('createdDate')" width="200">
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('operation')" width="100">
+            <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
-                    <div v-if="row.type !== 'CENTER'" class="flex-align-center">
-                        <!-- <i class="mr20 devops-icon icon-edit hover-btn" @click="showEditNode(row)"></i> -->
-                        <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteClusterHandler(row)"></i>
-                    </div>
+                    <operation-list
+                        v-if="row.type !== 'CENTER'"
+                        :list="[
+                            // { label: '编辑', clickEvent: () => showEditNode(row) },
+                            { label: '删除', clickEvent: () => deleteClusterHandler(row) }
+                        ].filter(Boolean)">
+                    </operation-list>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -116,10 +119,12 @@
     </div>
 </template>
 <script>
+    import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     export default {
-        name: 'node',
+        name: 'nodeManage',
+        components: { OperationList },
         data () {
             return {
                 isLoading: false,

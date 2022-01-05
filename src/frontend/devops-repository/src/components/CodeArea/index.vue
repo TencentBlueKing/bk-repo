@@ -3,8 +3,7 @@
         :style="{
             '--bgColor': bgColor,
             '--color': color
-        }"
-        @click="copyCode()">
+        }">
         <div v-for="code in codeList" :key="code + Math.random()"
             :class="{
                 'code-main': true,
@@ -12,7 +11,7 @@
             }">
             <pre class="code-pre">{{ code }}</pre>
         </div>
-        <Icon size="28" name="copy" class="code-copy" />
+        <bk-button class="code-copy" theme="primary" @click="copyCode">{{$t('copy')}}</bk-button>
     </div>
 </template>
 <script>
@@ -72,7 +71,8 @@
     word-break: break-all;
     counter-reset: row-num;
     color: var(--color);
-    background-color: var(--bgColor);
+    background-color: var(--bgHoverLighterColor);
+    border-radius: 2px;
     .code-main {
         position: relative;
         &.line-number:before {
@@ -90,17 +90,10 @@
     .code-copy {
         position: absolute;
         visibility: hidden;
-        top: 10px;
-        right: 10px;
-        padding: 5px;
-        border-radius: 2px;
-        color: var(--primaryColor);
-        background-color: white;
-        cursor: pointer;
+        top: 0;
+        right: 0;
     }
     &:hover {
-        color: white;
-        background-color: var(--fontPrimaryColor);
         .code-copy {
             visibility: visible;
         }

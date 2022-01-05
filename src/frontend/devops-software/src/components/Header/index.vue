@@ -76,6 +76,9 @@
             font-size: 12px;
             transform: rotate(90deg);
         }
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
     }
 }
 </style>

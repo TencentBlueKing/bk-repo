@@ -5,7 +5,7 @@
                 <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
                     <span>{{userInfo[item.key] || '--'}}</span>
                     <bk-button class="ml20 flex-align-center"
-                        v-if="MODE_CONFIG === 'standalone' && !editItem.key"
+                        v-if="!editItem.key"
                         text
                         @click="editUserInfo(item)">
                         {{$t('modify')}}
@@ -21,7 +21,7 @@
                 <div class="flex-align-center">
                     <span>********</span>
                     <bk-button class="ml20 flex-align-center"
-                        v-if="MODE_CONFIG === 'standalone' && !editItem.key"
+                        v-if="!editItem.key"
                         text
                         @click="showModifyPwd()">
                         {{$t('modify')}}
@@ -94,7 +94,6 @@
         },
         data () {
             return {
-                MODE_CONFIG,
                 formItem: [
                     { label: this.$t('chineseName'), key: 'name' },
                     { label: '联系电话', key: 'phone' },

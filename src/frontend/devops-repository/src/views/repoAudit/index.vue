@@ -75,7 +75,7 @@
                 <template #default="{ row }">
                     <div class="flex-align-center">
                         <Icon class="mr5" v-if="row.content.repoType" :name="row.content.repoType.toLowerCase()" size="16"></Icon>
-                        <span :class="row.content.repoType ? 'mr20' : 'mr5 repo-tag'" v-for="item in row.content.resKey.split('::').filter(Boolean)" :key="item">
+                        <span class="mr20" v-for="item in row.content.resKey.split('::').filter(Boolean)" :key="item">
                             {{ row.content.repoType ? item : (userList[item] ? userList[item].name : item) }}
                         </span>
                         <span>{{ row.content.des }}</span>

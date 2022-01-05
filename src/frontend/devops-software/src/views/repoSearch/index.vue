@@ -13,7 +13,7 @@
                 </bk-input>
                 <i class="name-search devops-icon icon-search flex-center" @click="changePackageName()"></i>
             </div>
-            <div v-if="pagination.count" class="mt20 flex-between-center">
+            <div v-if="pagination.count" class="mt20 flex-between-center" style="align-items:flex-end;">
                 <div class="result-count flex-align-center">
                     <span v-if="isSearching">搜索到相关结果</span>
                     <span v-else>全部制品共</span>
@@ -38,7 +38,7 @@
         <main class="repo-search-result flex-align-center">
             <template v-if="resultList.length">
                 <repo-tree
-                    class="mr20 repo-tree"
+                    class="repo-tree"
                     ref="dialogTree"
                     :tree="repoList"
                     :open-list="openList"
@@ -293,12 +293,12 @@
 .repo-search-container {
     position: relative;
     height: 100%;
-    padding: 20px 30px 0;
     background-color: white;
     .repo-search-tools {
-        padding-bottom: 10px;
+        padding: 20px 20px 10px;
         z-index: 1;
         background-color: white;
+        border-bottom: 1px solid var(--borderColor);
         .name-tool {
             height: 48px;
             ::v-deep .bk-input-large {
@@ -319,8 +319,7 @@
             }
         }
         .result-count {
-            font-size: 14px;
-            color: var(--fontColor);
+            color: var(--fontSubsidiaryColor);
         }
         .sort-tool {
             color: var(--boxShadowColor);
@@ -333,14 +332,15 @@
         }
     }
     .repo-search-result {
-        height: calc(100% - 110px);
+        height: calc(100% - 130px);
         .repo-tree {
             width: 200px;
             height: 100%;
             overflow: auto;
+            border-right: 1px solid var(--borderColor);
         }
         .package-list {
-            height: 100%;
+            padding: 10px 20px 0;
         }
     }
 }

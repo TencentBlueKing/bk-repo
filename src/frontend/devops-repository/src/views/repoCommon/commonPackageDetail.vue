@@ -1,7 +1,7 @@
 <template>
     <div class="common-package-detail">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
-            <Icon class="p10 package-img" size="80" :name="repoType" />
+            <Icon class="package-img" size="70" :name="repoType" />
             <div class="ml20 common-package-title flex-column">
                 <span class="mb5 repo-title text-overflow" :title="pkg.name">
                     {{ pkg.name }}
@@ -272,7 +272,7 @@
                 }).catch(e => {
                     this.$bkMessage({
                         theme: 'error',
-                        message: e.status !== 404 ? e.message : this.$t('fileNotExist')
+                        message: this.$t('fileError')
                     })
                 })
             },
@@ -308,21 +308,19 @@
         color: var(--fontPrimaryColor);
         background-color: white;
         .package-img {
-            width: 78px;
-            height: 68px;
+            padding: 15px;
             border-radius: 4px;
             box-shadow: 0px 3px 5px 0px rgba(217, 217, 217, 0.5);
         }
         .common-package-title {
             .repo-title {
-                margin-top: -5px;
                 max-width: 500px;
-                font-size: 20px;
+                font-size: 16px;
                 font-weight: bold;
             }
             .repo-description {
                 max-width: 70vw;
-                padding: 6px 10px;
+                padding-left: 6px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
             }
@@ -356,17 +354,27 @@
                     position: relative;
                     height: 42px;
                     border-radius: 2px;
-                    background-color: var(--bgLighterColor);
+                    background-color: var(--bgLightColor);
                     cursor: pointer;
                     .version-operation {
                         position: absolute;
                         right: 10px;
+                        visibility: hidden;
+                    }
+                    &:hover {
+                        background-color: var(--bgHoverLighterColor);
+                        .version-operation {
+                            visibility: visible;
+                        }
                     }
                     &.selected {
                         color: white;
                         background-color: var(--primaryColor);
-                        .version-operation:hover {
-                            background-color: var(--primaryHoverColor);
+                        .version-operation {
+                            visibility: visible;
+                            &:hover {
+                                background-color: var(--primaryColor);
+                            }
                         }
                     }
                 }
