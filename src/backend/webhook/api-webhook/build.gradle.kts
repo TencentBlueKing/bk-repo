@@ -29,50 +29,10 @@
  * SOFTWARE.
  */
 
-rootProject.name = "bk-repo-backend"
-
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
-    }
+dependencies {
+    api(project(":common:common-api"))
+    api(project(":common:common-artifact:artifact-api"))
+    api(project(":auth:api-auth"))
+    api(project(":repository:api-repository"))
+    compileOnly("org.springframework:spring-web")
 }
-
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
-
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
-
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":common:common-plugin")
-includeAll(":composer")
-includeAll(":docker")
-includeAll(":dockerapi")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":maven")
-includeAll(":monitor")
-includeAll(":npm")
-includeAll(":npm-registry")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
-includeAll(":git")
-includeAll(":executor")
-includeAll(":oci")
-includeAll(":webhook")

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.config
+
+import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * 事件类型
+ * WebHook配置项
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
-
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
-
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
-}
+@ConfigurationProperties("webhook")
+data class WebHookProperties(
+    var maxRequests: Int? = null,
+    var maxRequestsPerHost: Int? = null
+)

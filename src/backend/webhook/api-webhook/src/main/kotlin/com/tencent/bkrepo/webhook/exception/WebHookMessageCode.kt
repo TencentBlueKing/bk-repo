@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.exception
+
+import com.tencent.bkrepo.common.api.message.MessageCode
 
 /**
- * 事件类型
+ * WebHook错误信息码
  */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+enum class WebHookMessageCode(private val key: String) : MessageCode {
+    WEBHOOK_NOT_FOUND("webhook.notfound"),
+    WEBHOOK_LOG_NOT_FOUND("webhook.log.notfound"),
+    WEBHOOK_USER_NOT_FOUND("webhook.user.notfound"),
+    WEBHOOK_PROJECT_NOT_FOUND("webhook.project.notfound"),
+    WEBHOOK_REPO_NOT_FOUND("webhook.repo.notfound"),
+    WEBHOOK_NODE_NOT_FOUND("webhook.node.notfound"),
+    WEBHOOK_VERSION_NOT_FOUND("webhook.version.notfound"),
+    ;
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
-
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
+    override fun getKey() = key
+    override fun getBusinessCode() = ordinal + 1
+    override fun getModuleCode() = 14
 }

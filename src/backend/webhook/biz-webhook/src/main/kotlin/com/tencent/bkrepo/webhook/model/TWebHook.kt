@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,37 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.model
 
-/**
- * 事件类型
- */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.webhook.constant.AssociationType
+import com.tencent.bkrepo.webhook.model.TWebHook.Companion.ASSOCIATION_IDX
+import com.tencent.bkrepo.webhook.model.TWebHook.Companion.ASSOCIATION_IDX_DEF
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
-
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
-
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
+@Document("webhook")
+@CompoundIndexes(
+    CompoundIndex(name = ASSOCIATION_IDX, def = ASSOCIATION_IDX_DEF, background = true)
+)
+data class TWebHook(
+    var id: String? = null,
+    var url: String,
+    var token: String? = null,
+    var triggers: List<EventType>,
+    var associationType: AssociationType,
+    var associationId: String,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime
+) {
+    companion object {
+        const val ASSOCIATION_IDX = "association_idx"
+        const val ASSOCIATION_IDX_DEF = "{'associationType': 1, 'associationId': 1}"
+    }
 }

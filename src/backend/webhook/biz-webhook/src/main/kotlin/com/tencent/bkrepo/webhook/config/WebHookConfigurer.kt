@@ -25,37 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.config
 
-/**
- * 事件类型
- */
-enum class EventType {
-    // PROJECT
-    PROJECT_CREATED,
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
 
-    // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
+@Configuration
+@EnableConfigurationProperties(WebHookProperties::class)
+class WebHookConfigurer : ArtifactConfigurerSupport() {
 
-    // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
+    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
-    // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
-
-    // VERSION
-    VERSION_CREATED,
-
-    // WebHook
-    WEBHOOK_TEST,
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/webhook")
+        }
+    }
 }
