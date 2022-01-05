@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,43 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.payload.builder.node
 
-/**
- * 事件类型
- */
-enum class EventType(val nick: String) {
-    // PROJECT
-    PROJECT_CREATED("创建项目"),
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.webhook.pojo.payload.node.NodeCreatedEventPayload
+import org.springframework.stereotype.Component
 
-    // REPOSITORY
-    REPO_CREATED("创建仓库"),
-    REPO_UPDATED("更新仓库"),
-    REPO_DELETED("删除仓库"),
+@Component
+class NodeCreatedPayloadBuilder : NodePayloadBuilder(
+    eventType = EventType.NODE_CREATED
+) {
 
-    // NODE
-    NODE_CREATED("创建节点"),
-    NODE_RENAMED("重命名节点"),
-    NODE_MOVED("移动节点"),
-    NODE_COPIED("复制节点"),
-    NODE_DELETED("删除节点"),
-    NODE_DOWNLOADED("下载节点"),
-
-    // METADATA
-    METADATA_DELETED("删除元数据"),
-    METADATA_SAVED("添加元数据"),
-
-    // VERSION
-    VERSION_CREATED("创建制品"),
-    VERSION_DELETED("删除制品"),
-    VERSION_DOWNLOAD("下载制品"),
-    VERSION_UPDATED("更新制品"),
-    VERSION_STAGED("晋级制品"),
-
-    // ADMIN
-    ADMIN_ADD("添加管理员"),
-    ADMIN_DELETE("移除管理员"),
-
-    // WebHook
-    WEBHOOK_TEST("webhook测试")
+    override fun build(event: ArtifactEvent): NodeCreatedEventPayload {
+        return NodeCreatedEventPayload(
+            user = getUser(event.userId),
+            node = getNode(event.projectId, event.repoName, event.resourceKey)
+        )
+    }
 }

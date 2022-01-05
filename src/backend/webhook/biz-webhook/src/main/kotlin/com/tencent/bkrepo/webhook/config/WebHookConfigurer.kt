@@ -25,43 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.config
 
-/**
- * 事件类型
- */
-enum class EventType(val nick: String) {
-    // PROJECT
-    PROJECT_CREATED("创建项目"),
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
 
-    // REPOSITORY
-    REPO_CREATED("创建仓库"),
-    REPO_UPDATED("更新仓库"),
-    REPO_DELETED("删除仓库"),
+@Configuration
+@EnableConfigurationProperties(WebHookProperties::class)
+class WebHookConfigurer : ArtifactConfigurerSupport() {
 
-    // NODE
-    NODE_CREATED("创建节点"),
-    NODE_RENAMED("重命名节点"),
-    NODE_MOVED("移动节点"),
-    NODE_COPIED("复制节点"),
-    NODE_DELETED("删除节点"),
-    NODE_DOWNLOADED("下载节点"),
+    override fun getRepositoryType() = RepositoryType.NONE
+    override fun getLocalRepository(): LocalRepository = object : LocalRepository() {}
+    override fun getRemoteRepository(): RemoteRepository = object : RemoteRepository() {}
+    override fun getVirtualRepository(): VirtualRepository = object : VirtualRepository() {}
 
-    // METADATA
-    METADATA_DELETED("删除元数据"),
-    METADATA_SAVED("添加元数据"),
-
-    // VERSION
-    VERSION_CREATED("创建制品"),
-    VERSION_DELETED("删除制品"),
-    VERSION_DOWNLOAD("下载制品"),
-    VERSION_UPDATED("更新制品"),
-    VERSION_STAGED("晋级制品"),
-
-    // ADMIN
-    ADMIN_ADD("添加管理员"),
-    ADMIN_DELETE("移除管理员"),
-
-    // WebHook
-    WEBHOOK_TEST("webhook测试")
+    override fun getAuthSecurityCustomizer() = object : HttpAuthSecurityCustomizer {
+        override fun customize(httpAuthSecurity: HttpAuthSecurity) {
+            httpAuthSecurity.withPrefix("/webhook")
+        }
+    }
 }

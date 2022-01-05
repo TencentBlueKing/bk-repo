@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,43 +25,51 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.base
+package com.tencent.bkrepo.webhook.service
+
+import com.tencent.bkrepo.webhook.constant.AssociationType
+import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
+import com.tencent.bkrepo.webhook.pojo.UpdateWebHookRequest
+import com.tencent.bkrepo.webhook.pojo.WebHook
+import com.tencent.bkrepo.webhook.pojo.WebHookLog
 
 /**
- * 事件类型
+ * WebHook服务接口
  */
-enum class EventType(val nick: String) {
-    // PROJECT
-    PROJECT_CREATED("创建项目"),
+interface WebHookService {
 
-    // REPOSITORY
-    REPO_CREATED("创建仓库"),
-    REPO_UPDATED("更新仓库"),
-    REPO_DELETED("删除仓库"),
+    /**
+     * 创建WebHook
+     */
+    fun createWebHook(userId: String, request: CreateWebHookRequest)
 
-    // NODE
-    NODE_CREATED("创建节点"),
-    NODE_RENAMED("重命名节点"),
-    NODE_MOVED("移动节点"),
-    NODE_COPIED("复制节点"),
-    NODE_DELETED("删除节点"),
-    NODE_DOWNLOADED("下载节点"),
+    /**
+     * 更新WebHook
+     */
+    fun updateWebHook(userId: String, request: UpdateWebHookRequest)
 
-    // METADATA
-    METADATA_DELETED("删除元数据"),
-    METADATA_SAVED("添加元数据"),
+    /**
+     * 删除WebHook
+     */
+    fun deleteWebHook(userId: String, id: String)
 
-    // VERSION
-    VERSION_CREATED("创建制品"),
-    VERSION_DELETED("删除制品"),
-    VERSION_DOWNLOAD("下载制品"),
-    VERSION_UPDATED("更新制品"),
-    VERSION_STAGED("晋级制品"),
+    /**
+     * 获取WebHook
+     */
+    fun getWebHook(userId: String, id: String): WebHook
 
-    // ADMIN
-    ADMIN_ADD("添加管理员"),
-    ADMIN_DELETE("移除管理员"),
+    /**
+     * 根据关联对象类型[associationType]、关联对象id[associationId]获取WebHook列表
+     */
+    fun listWebHook(userId: String, associationType: AssociationType, associationId: String): List<WebHook>
 
-    // WebHook
-    WEBHOOK_TEST("webhook测试")
+    /**
+     * 测试WebHook
+     */
+    fun testWebHook(userId: String, id: String): WebHookLog
+
+    /**
+     * 重试WebHook请求
+     */
+    fun retryWebHookRequest(logId: String): WebHookLog
 }
