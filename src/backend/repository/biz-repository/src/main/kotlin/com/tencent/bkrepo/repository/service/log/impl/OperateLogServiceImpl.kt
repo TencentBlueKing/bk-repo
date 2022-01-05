@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.service.log.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -117,7 +116,7 @@ class OperateLogServiceImpl(
     }
 
     override fun page(
-        type: ResourceType?,
+        type: String?,
         projectId: String?,
         repoName: String?,
         operator: String?,
@@ -148,7 +147,7 @@ class OperateLogServiceImpl(
     }
 
     private fun buildOperateLogPageQuery(
-        type: ResourceType?,
+        type: String?,
         projectId: String?,
         repoName: String?,
         operator: String?,
@@ -166,28 +165,25 @@ class OperateLogServiceImpl(
         repoName?.let { criteria.and(TOperateLog::repoName.name).`is`(repoName) }
 
         operator?.let { criteria.and(TOperateLog::userId.name).`is`(operator) }
-        if (startTime != null && endTime != null) {
-            val localStart = LocalDateTime.parse(startTime, formatter)
-            val localEnd = LocalDateTime.parse(endTime, formatter)
-            criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
+        val localStart = if (startTime != null && startTime.isNotBlank()) {
+            LocalDateTime.parse(startTime, formatter)
+        } else {
+            LocalDateTime.now()
         }
-        if (startTime != null && endTime == null) {
-            val localStart = LocalDateTime.parse(startTime, formatter)
-            criteria.and(TOperateLog::createdDate.name).gte(localStart)
+        val localEnd = if (endTime != null && endTime.isNotBlank()) {
+            LocalDateTime.parse(endTime, formatter)
+        } else {
+            LocalDateTime.now().minusMonths(3L)
         }
-        if (startTime == null && endTime != null) {
-            val localEnd = LocalDateTime.parse(endTime, formatter)
-            criteria.and(TOperateLog::createdDate.name).lte(localEnd)
-        }
-
+        criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
         return Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())
     }
 
-    private fun getEventList(resourceType: ResourceType): List<EventType> {
+    private fun getEventList(resourceType: String): List<EventType> {
         return when (resourceType) {
-            ResourceType.PROJECT -> repositoryEvent
-            ResourceType.PACKAGE -> packageEvent
-            ResourceType.ADMIN -> adminEvent
+            "PROJECT" -> repositoryEvent
+            "PACKAGE" -> packageEvent
+            "ADMIN" -> adminEvent
             else -> listOf()
         }
     }
@@ -215,7 +211,10 @@ class OperateLogServiceImpl(
                 resKey = list.joinToString("::")
             )
         } else if (projectEvent.contains(tOperateLog.type)) {
-            OperateLogResponse.Content(resKey = tOperateLog.projectId!!)
+            OperateLogResponse.Content(
+                projectId = tOperateLog.projectId!!,
+                resKey = tOperateLog.projectId!!
+            )
         } else if (metadataEvent.contains(tOperateLog.type)) {
             OperateLogResponse.Content(
                 projectId = tOperateLog.projectId,
@@ -238,7 +237,7 @@ class OperateLogServiceImpl(
         }
     }
 
-    private fun transfer(tOperateLog: TOperateLog) : OperateLog {
+    private fun transfer(tOperateLog: TOperateLog): OperateLog {
         with(tOperateLog) {
             return OperateLog(
                 createdDate = createdDate,

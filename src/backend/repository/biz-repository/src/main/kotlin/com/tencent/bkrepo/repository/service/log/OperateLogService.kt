@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.service.log
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
@@ -49,7 +48,7 @@ interface OperateLogService {
     fun listPage(option: OpLogListOption): Page<OperateLog>
 
     fun page(
-        type: ResourceType?,
+        type: String?,
         projectId: String?,
         repoName: String?,
         operator: String?,

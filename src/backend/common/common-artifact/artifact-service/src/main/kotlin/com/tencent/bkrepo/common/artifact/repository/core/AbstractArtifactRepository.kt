@@ -221,30 +221,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
-                try {
-                    if (context.repositoryDetail.type != RepositoryType.GENERIC) {
-                        val packageType = context.repositoryDetail.type.name
-                        val packageName = PackageKeys.resolveName(packageType.toLowerCase(), it.packageKey)
-                        operateLogClient.saveEvent(
-                            EventCreateRequest(
-                                type = EventType.VERSION_DOWNLOAD,
-                                projectId = it.projectId,
-                                repoName = it.repoName,
-                                resourceKey = "${it.packageKey}-${it.packageVersion}",
-                                userId = SecurityUtils.getUserId(),
-                                address = HttpContextHolder.getClientAddress(),
-                                data = mapOf(
-                                    "packageKey" to it.packageKey,
-                                    "packageType" to packageType,
-                                    "packageName" to packageName,
-                                    "packageVersion" to it.packageVersion
-                                )
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    logger.warn("Event: download request: [$it] publish failed")
-                }
+                saveDownloadLog(context, it)
             }
         }
         if (throughput != Throughput.EMPTY) {
@@ -287,6 +264,37 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadFinished(context: ArtifactDownloadContext) {
         artifactMetrics.downloadingCount.decrementAndGet()
+    }
+
+    /**
+     * 记录依赖包的下载事件
+     */
+    @Suppress("SwallowedException")
+    private fun saveDownloadLog(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
+        try {
+            if (context.repositoryDetail.type != RepositoryType.GENERIC) {
+                val packageType = context.repositoryDetail.type.name
+                val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
+                operateLogClient.saveEvent(
+                    EventCreateRequest(
+                        type = EventType.VERSION_DOWNLOAD,
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        resourceKey = "${record.packageKey}-${record.packageVersion}",
+                        userId = SecurityUtils.getUserId(),
+                        address = HttpContextHolder.getClientAddress(),
+                        data = mapOf(
+                            "packageKey" to record.packageKey,
+                            "packageType" to packageType,
+                            "packageName" to packageName,
+                            "packageVersion" to record.packageVersion
+                        )
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            logger.warn("Event: download request: [$record] publish failed")
+        }
     }
 
     companion object {

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -55,7 +54,7 @@ class UserOperateLogController(
     @PostMapping("/list")
     fun list(
         @RequestBody option: OpLogListOption
-    ) : Response<Page<OperateLog>> {
+    ): Response<Page<OperateLog>> {
         return ResponseBuilder.success(operateLogService.listPage(option))
     }
 
@@ -63,7 +62,7 @@ class UserOperateLogController(
     @GetMapping("/page")
     fun page(
         @ApiParam("资源类型", required = false)
-        @RequestParam type: ResourceType?,
+        @RequestParam type: String?,
         @ApiParam("项目名", required = false)
         @RequestParam projectId: String?,
         @ApiParam("仓库名", required = false)
