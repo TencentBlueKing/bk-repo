@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.OperateLogDao
 import com.tencent.bkrepo.repository.model.TOperateLog
+import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
 import com.tencent.bkrepo.repository.pojo.log.OperateLogResponse
@@ -130,6 +131,20 @@ class OperateLogServiceImpl(
         val totalRecords = operateLogDao.count(query)
         val records = operateLogDao.find(query.with(pageRequest)).map { convert(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    @Async
+    override fun saveEventRequest(request: EventCreateRequest) {
+        val log = TOperateLog(
+            type = request.type,
+            resourceKey = request.resourceKey,
+            projectId = request.projectId,
+            repoName = request.repoName,
+            description = request.data,
+            userId = request.userId,
+            clientAddress = request.address
+        )
+        operateLogDao.save(log)
     }
 
     private fun buildOperateLogPageQuery(

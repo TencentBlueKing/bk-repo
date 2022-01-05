@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
 import io.swagger.annotations.Api
@@ -58,4 +59,9 @@ interface OperateLogClient {
     @ApiOperation("操作日志列表")
     @PostMapping("/list")
     fun list(@RequestBody option: OpLogListOption): Response<Page<OperateLog>>
+
+    @PostMapping("/event")
+    fun saveEvent(
+        @RequestBody request: EventCreateRequest
+    ): Response<Boolean>
 }

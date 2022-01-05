@@ -112,7 +112,13 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         val oldVersion = oldComposerArtifact.version
         return if (composerArtifact.name != oldName || composerArtifact.version != oldVersion) {
             with(context.artifactInfo) {
-                packageClient.deleteVersion(projectId, repoName, PackageKeys.ofComposer(oldName), oldVersion)
+                packageClient.deleteVersion(
+                    projectId,
+                    repoName,
+                    PackageKeys.ofComposer(oldName),
+                    oldVersion,
+                    HttpContextHolder.getClientAddress()
+                )
             }
             JsonUtil.deleteComposerVersion(jsonStr, oldName, oldVersion)
         } else {
@@ -253,7 +259,8 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
                 artifactPath = context.artifactInfo.getArtifactFullPath(),
                 overwrite = true,
                 createdBy = context.userId
-            )
+            ),
+            HttpContextHolder.getClientAddress()
         )
     }
 
@@ -363,9 +370,14 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
      * 删除版本后，检查该包下是否还有包。
      */
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version)
+        packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
         val page = packageClient.listVersionPage(projectId, repoName, packageKey).data ?: return
-        if (page.records.isEmpty()) packageClient.deletePackage(projectId, repoName, packageKey)
+        if (page.records.isEmpty()) packageClient.deletePackage(
+            projectId,
+            repoName,
+            packageKey,
+            HttpContextHolder.getClientAddress()
+        )
     }
 
     /**

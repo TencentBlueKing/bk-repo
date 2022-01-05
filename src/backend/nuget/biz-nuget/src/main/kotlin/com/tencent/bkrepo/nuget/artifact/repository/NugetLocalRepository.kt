@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.NUGET_V3_NOT_FOUND
 import com.tencent.bkrepo.nuget.constant.NugetMessageCode
@@ -247,7 +248,13 @@ class NugetLocalRepository(
      */
     private fun removeVersion(artifactInfo: NugetDeleteArtifactInfo, version: PackageVersion, userId: String) {
         with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageName, version.name)
+            packageClient.deleteVersion(
+                projectId,
+                repoName,
+                packageName,
+                version.name,
+                HttpContextHolder.getClientAddress()
+            )
             val nugetPath = version.contentPath.orEmpty()
             if (nugetPath.isNotBlank()) {
                 val request = NodeDeleteRequest(projectId, repoName, nugetPath, userId)

@@ -32,10 +32,12 @@ import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -46,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
@@ -57,6 +60,7 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -102,6 +106,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
+
+    @Autowired
+    lateinit var operateLogClient: OperateLogClient
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -214,6 +221,30 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
+                try {
+                    if (context.repositoryDetail.type != RepositoryType.GENERIC) {
+                        val packageType = context.repositoryDetail.type.name
+                        val packageName = PackageKeys.resolveName(packageType.toLowerCase(), it.packageKey)
+                        operateLogClient.saveEvent(
+                            EventCreateRequest(
+                                type = EventType.VERSION_DOWNLOAD,
+                                projectId = it.projectId,
+                                repoName = it.repoName,
+                                resourceKey = "${it.packageKey}-${it.packageVersion}",
+                                userId = SecurityUtils.getUserId(),
+                                address = HttpContextHolder.getClientAddress(),
+                                data = mapOf(
+                                    "packageKey" to it.packageKey,
+                                    "packageType" to packageType,
+                                    "packageName" to packageName,
+                                    "packageVersion" to it.packageVersion
+                                )
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    logger.warn("Event: download request: [$it] publish failed")
+                }
             }
         }
         if (throughput != Throughput.EMPTY) {

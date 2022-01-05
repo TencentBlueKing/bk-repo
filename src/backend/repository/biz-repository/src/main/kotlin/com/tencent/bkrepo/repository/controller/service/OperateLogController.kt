@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.OperateLogClient
+import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
 import com.tencent.bkrepo.repository.service.log.OperateLogService
@@ -54,5 +55,10 @@ class OperateLogController(
 
     override fun list(option: OpLogListOption): Response<Page<OperateLog>> {
         return ResponseBuilder.success(operateLogService.listPage(option))
+    }
+
+    override fun saveEvent(request: EventCreateRequest): Response<Boolean> {
+        operateLogService.saveEventRequest(request)
+        return ResponseBuilder.success()
     }
 }
