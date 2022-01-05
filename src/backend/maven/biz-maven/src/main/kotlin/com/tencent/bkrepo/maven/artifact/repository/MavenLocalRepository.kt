@@ -307,6 +307,9 @@ class MavenLocalRepository(
             mavenMetadataService.update(node)
         } else {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+            // -SNAPSHOT/** 路径下的构件和metadata.xml 文件的checksum 做拦截，
+            // metadata.xml.* 改由系统生成
+            // 构件名如果与仓库配置不符也改由系统生成
             if (artifactFullPath.isSnapshotUri() &&
                 (matedataUploadHandler(artifactFullPath) || artifactUploadHandler(artifactFullPath, context))
             ) {
@@ -329,18 +332,18 @@ class MavenLocalRepository(
         return false
     }
 
+    /**
+     * 当上传构件url 为 1.0-SNAPSHOT/xx-1.0-SNAPSHOT.jar
+     * 仓库属性  SnapshotVersionBehavior == [SnapshotBehaviorType.UNIQUE]
+     *
+     */
     private fun artifactUploadHandler(artifactFullPath: String, context: ArtifactContext): Boolean {
         val repoConf = getRepoConf(context)
-        var result = false
-        if (repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE &&
-            artifactFullPath.isSnapshotNonUniqueUri()
-        ) {
-            for (hashType in HashType.values()) {
-                val suffix = ".${hashType.ext}"
-                result = artifactFullPath.endsWith(suffix)
-            }
-        }
-        return result
+        return (
+            repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE &&
+                artifactFullPath.isSnapshotNonUniqueUri() &&
+                checksumType(context) != null
+            )
     }
 
     /**
@@ -398,7 +401,8 @@ class MavenLocalRepository(
             if (artifactFullPath.endsWith("maven-metadata.xml")) {
                 verifyMetadataContent(context)
             } else if (artifactFullPath.isSnapshotNonUniqueUri() &&
-                repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
+                repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE &&
+                checksumType(context) == null
             ) {
                 // 处理maven2 *1.0-SNAPSHOT/1.0-SNAPSHOT.jar 格式构件
                 verifyArtifact(context)
@@ -424,10 +428,23 @@ class MavenLocalRepository(
             context.artifactInfo.getArtifactFullPath()
         ).data ?: return
         (node.metadata[HashType.MD5.ext] as? String)?.let {
-            generateMetadataChecksum(node, HashType.MD5, it, context.storageCredentials)
+            generateChecksum(node, HashType.MD5, it, context.storageCredentials)
         }
         (node.metadata[HashType.SHA1.ext] as? String)?.let {
-            generateMetadataChecksum(node, HashType.SHA1, it, context.storageCredentials)
+            generateChecksum(node, HashType.SHA1, it, context.storageCredentials)
+        }
+    }
+
+    private fun verifyArtifactWithHashType(context: ArtifactContext, hashType: HashType) {
+        // 生成.md5 和 .sha1
+        val node = nodeClient.getNodeDetail(
+            context.projectId,
+            context.repoName,
+            context.artifactInfo.getArtifactFullPath().removeSuffix(".${hashType.ext}")
+        ).data ?: return
+        val checksum = node.metadata[hashType.ext] as? String
+        if (checksum != null) {
+            generateChecksum(node, hashType, checksum, context.storageCredentials)
         }
     }
 
@@ -439,7 +456,7 @@ class MavenLocalRepository(
         ).data ?: return
         val checksum = node.metadata[hashType.ext] as? String
         if (checksum != null) {
-            generateMetadataChecksum(node, hashType, checksum, context.storageCredentials)
+            generateChecksum(node, hashType, checksum, context.storageCredentials)
         }
     }
 
@@ -460,7 +477,7 @@ class MavenLocalRepository(
         }
     }
 
-    private fun generateMetadataChecksum(
+    private fun generateChecksum(
         node: NodeDetail,
         type: HashType,
         value: String,
@@ -559,9 +576,21 @@ class MavenLocalRepository(
         return snapshotVersionList
     }
 
+    /**
+     * checksum 文件不存在时，系统生成
+     */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        val checksumType = checksumType(context)
+        var node = nodeClient.getNodeDetail(
+            context.projectId,
+            context.repoName,
+            context.artifactInfo.getArtifactFullPath()
+        ).data
+        if (checksumType != null && node == null) {
+            verifyArtifactWithHashType(context, checksumType)
+        }
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             node?.metadata?.get(HashType.SHA1.ext)?.let {
                 response.addHeader(X_CHECKSUM_SHA1, it.toString())
             }
