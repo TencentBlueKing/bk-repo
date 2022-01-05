@@ -25,16 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.registry
+package com.tencent.bkrepo.opdata.registry
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 
 /**
- * 服务节点详细信息
+ * 微服务注册中心api接口
  */
-data class InstanceDetail(
-    @ApiModelProperty("正在下载的请求数量", required = true)
-    val downloadingCount:Long,
-    @ApiModelProperty("正在上传的请求数量", required = true)
-    val uploadingCount: Long
-)
+interface RegistryClient {
+    fun services(): List<ServiceInfo>
+    fun instances(serviceName: String): List<InstanceInfo>
+    fun deregister(serviceName: String, instanceId: String): InstanceInfo
+    fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo
+
+    /**
+     * 是否开启维护模式，开启维护模式后服务仍处于注册状态，但不对外提供服务
+     *
+     * @param enable true: 开启维护模式，实例不再对外提供服务， false: 关闭维护模式，实例恢复正常
+     */
+    fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo
+}

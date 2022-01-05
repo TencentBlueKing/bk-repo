@@ -34,7 +34,7 @@ import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceNotFou
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
-import com.tencent.bkrepo.opdata.registry.RegistryApi
+import com.tencent.bkrepo.opdata.registry.RegistryClient
 import com.tencent.bkrepo.opdata.registry.consul.exception.ConsulApiException
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck.Companion.STATUS_PASSING
@@ -55,10 +55,10 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConditionalOnConsulEnabled
-class ConsulRegistryApi @Autowired constructor(
+class ConsulRegistryClient @Autowired constructor(
     @Qualifier(OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient,
     private val consulProperties: ConsulProperties
-) : RegistryApi {
+) : RegistryClient {
 
     override fun services(): List<ServiceInfo> {
         val url = urlBuilder().addPathSegments(CONSUL_LIST_SERVICES_PATH).build()
@@ -202,7 +202,7 @@ class ConsulRegistryApi @Autowired constructor(
         .port(consulProperties.port)
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ConsulRegistryApi::class.java)
+        private val logger = LoggerFactory.getLogger(ConsulRegistryClient::class.java)
 
         private const val CONSUL_DEFAULT_SCHEME = "http"
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,24 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.registry
+package com.tencent.bkrepo.opdata.client.actuator
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
-import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 
-/**
- * 微服务注册中心api接口
- */
-interface RegistryApi {
-    fun services(): List<ServiceInfo>
-    fun instances(serviceName: String): List<InstanceInfo>
-    fun deregister(serviceName: String, instanceId: String): InstanceInfo
-    fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Metrics(
+    @JsonProperty("name")
+    val name: String,
+    @JsonProperty("description")
+    val description: String,
+    @JsonProperty("baseUnit")
+    val baseUnit: String? = null,
+    @JsonProperty("measurements")
+    val measurements: List<Measurement> = emptyList(),
+    @JsonProperty("availableTags")
+    val availableTags: List<Tag> = emptyList()
+)
 
-    /**
-     * 是否开启维护模式，开启维护模式后服务仍处于注册状态，但不对外提供服务
-     *
-     * @param enable true: 开启维护模式，实例不再对外提供服务， false: 关闭维护模式，实例恢复正常
-     */
-    fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo
-}
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Measurement(
+    @JsonProperty("statistic")
+    val statistic: String,
+    @JsonProperty("value")
+    val value: Double
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Tag(
+    @JsonProperty("tag")
+    val tag: String,
+    @JsonProperty("values")
+    val values: List<String>
+)

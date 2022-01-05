@@ -29,12 +29,14 @@ package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus.CONFLICT
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceDeregisterConflict
 import com.tencent.bkrepo.opdata.model.TOpDeregisterServiceInstance
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
-import com.tencent.bkrepo.opdata.registry.RegistryApi
+import com.tencent.bkrepo.opdata.registry.RegistryClient
 import com.tencent.bkrepo.opdata.repository.OpDeregisterServiceInstanceDao
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -45,14 +47,15 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class OpServiceService @Autowired constructor(
-    private val registryApi: RegistryApi,
+    private val registryClient: RegistryClient,
+    private val artifactMetricsClient: ArtifactMetricsClient,
     private val opDeregisterServiceInstanceDao: OpDeregisterServiceInstanceDao
 ) {
     /**
      * 获取服务列表
      */
     fun listServices(): List<ServiceInfo> {
-        return registryApi.services()
+        return registryClient.services()
     }
 
     /**
@@ -62,22 +65,29 @@ class OpServiceService @Autowired constructor(
         val deregisterInstanceInfoList = opDeregisterServiceInstanceDao
             .findAllByServiceName(serviceName)
             .map { convert(it) }
-        return registryApi.instances(serviceName) + deregisterInstanceInfoList
+        return registryClient.instances(serviceName) + deregisterInstanceInfoList
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
-        return registryApi.instanceInfo(serviceName, instanceId)
+        val instanceInfo = registryClient.instanceInfo(serviceName, instanceId)
+        return instanceInfo.copy(detail = instanceDetail(instanceInfo))
+    }
+
+    private fun instanceDetail(instanceInfo: InstanceInfo): InstanceDetail {
+        val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo)
+        val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo)
+        return InstanceDetail(downloadingCount, uploadingCount)
     }
 
     /**
      * 下线服务实例
      */
     fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
-        return registryApi.maintenance(serviceName, instanceId, true)
+        return registryClient.maintenance(serviceName, instanceId, true)
     }
 
     fun upInstance(serviceName: String, instanceId: String): InstanceInfo {
-        registryApi.maintenance(serviceName, instanceId, false)
+        registryClient.maintenance(serviceName, instanceId, false)
         return instance(serviceName, instanceId)
     }
 
@@ -89,7 +99,7 @@ class OpServiceService @Autowired constructor(
         if (!opDeregisterServiceInstanceDao.existsById(instanceId)) {
             val instanceInfo = instance(serviceName, instanceId)
             opDeregisterServiceInstanceDao.insert(convert(instanceInfo))
-            return registryApi.deregister(serviceName, instanceId)
+            return registryClient.deregister(serviceName, instanceId)
         } else {
             throw ErrorCodeException(CONFLICT, ServiceInstanceDeregisterConflict, arrayOf(serviceName, instanceId))
         }

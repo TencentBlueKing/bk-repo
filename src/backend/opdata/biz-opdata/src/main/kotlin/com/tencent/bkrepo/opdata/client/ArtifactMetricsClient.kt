@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.pojo.registry
+package com.tencent.bkrepo.opdata.client
 
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 
 /**
- * 服务节点详细信息
+ * 制品服务统计数据客户端
  */
-data class InstanceDetail(
-    @ApiModelProperty("正在下载的请求数量", required = true)
-    val downloadingCount:Long,
-    @ApiModelProperty("正在上传的请求数量", required = true)
-    val uploadingCount: Long
-)
+interface ArtifactMetricsClient {
+    /**
+     * 获取目标服务实例正在上传的请求数量
+     *
+     * @param instanceInfo 目标服务实例信息
+     * @return 返回正在上传的请求数量，获取失败时返回-1
+     */
+    fun uploadingCount(instanceInfo: InstanceInfo): Long
+
+    /**
+     * 获取目标服务实例正在下载的请求数量
+     *
+     * @param instanceInfo 目标服务实例信息
+     * @return 返回正在下载的请求数量，获取失败时返回-1
+     */
+    fun downloadingCount(instanceInfo: InstanceInfo): Long
+}
