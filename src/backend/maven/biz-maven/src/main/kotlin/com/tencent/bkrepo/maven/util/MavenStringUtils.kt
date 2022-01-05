@@ -68,10 +68,17 @@ object MavenStringUtils {
         } else HttpStatus.SC_CREATED
     }
 
+    /**
+     * e.g. *1.0-SNAPSHOT/1.0-*.jar   [Boolean] = true
+     */
     fun String.isSnapshotUri(): Boolean {
         return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX)
     }
 
+    /**
+     * e.g. *1.0-SNAPSHOT/1.0-SNAPSHOT.jar   [Boolean] = true
+     * e.g. *1.0-SNAPSHOT/1.0-20211228172345.jar   [Boolean] = false
+     */
     fun String.isSnapshotNonUniqueUri(): Boolean {
         return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX) &&
             this.substringAfterLast("/").contains(SNAPSHOT_SUFFIX)
