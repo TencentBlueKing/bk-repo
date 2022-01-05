@@ -8,20 +8,20 @@
         <bk-tab-panel v-if="detail.basic" name="versionBaseInfo" :label="$t('baseInfo')">
             <div class="version-base-info base-info" :data-title="$t('baseInfo')">
                 <div class="package-name grid-item">
-                    <label>制品名称：</label>
+                    <label>制品名称</label>
                     <span>
                         <span>{{ packageName }}</span>
-                        <span v-if="detail.basic.groupId" class="mr5 repo-tag"> {{ detail.basic.groupId }} </span>
+                        <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
                     </span>
                 </div>
                 <div class="grid-item"
                     v-for="{ name, label, value } in detailInfoMap"
                     :key="name">
-                    <label>{{ label }}：</label>
+                    <label>{{ label }}</label>
                     <span class="flex-1 text-overflow" :title="value">
                         <span>{{ value }}</span>
                         <template v-if="name === 'version'">
-                            <span class="mr5 repo-tag"
+                            <span class="ml5 repo-tag"
                                 v-for="tag in detail.basic.stageTag"
                                 :key="tag">
                                 {{ tag }}
@@ -30,7 +30,7 @@
                     </span>
                 </div>
                 <div class="package-description grid-item">
-                    <label>描述：</label>
+                    <label>描述</label>
                     <span class="flex-1 text-overflow" :title="detail.basic.description">{{ detail.basic.description || '--' }}</span>
                 </div>
             </div>
@@ -42,11 +42,11 @@
             </div>
             <div class="version-base-info base-info-checksums" data-title="Checksums">
                 <div v-if="detail.basic.sha256" class="grid-item">
-                    <label>SHA256：</label>
+                    <label>SHA256</label>
                     <span class="flex-1 text-overflow" :title="detail.basic.sha256">{{ detail.basic.sha256 }}</span>
                 </div>
                 <div v-if="detail.basic.md5" class="grid-item">
-                    <label>MD5：</label>
+                    <label>MD5</label>
                     <span class="flex-1 text-overflow" :title="detail.basic.md5">{{ detail.basic.md5 }}</span>
                 </div>
             </div>
@@ -107,8 +107,8 @@
             <div class="version-history">
                 <div class="version-history-left">
                     <div class="version-history-code hover-btn"
-                        v-for="code in detail.history"
-                        :key="code.created_by"
+                        v-for="(code, index) in detail.history"
+                        :key="index"
                         :class="{ select: selectedHistory.created_by === code.created_by }"
                         @click="selectedHistory = code">
                         {{code.created_by}}
@@ -327,19 +327,19 @@
     }
     &:before {
         position: absolute;
-        top: -30px;
-        left: 20px;
+        top: -28px;
+        left: 0;
         content: '';
         width: 3px;
-        height: 16px;
+        height: 12px;
         background-color: var(--primaryColor);
     }
     &:after {
         position: absolute;
-        top: -35px;
-        left: 30px;
+        top: -33px;
+        left: 10px;
         content: attr(data-title);
-        font-size: 16px;
+        font-size: 14px;
         font-weight: bold;
     }
 }
@@ -350,24 +350,41 @@
         overflow-y: auto;
     }
     .version-base-info {
+        .grid-item {
+            display: flex;
+            align-items: center;
+            height: 40px;
+            overflow: hidden;
+            > * {
+                padding-left: 10px;
+            }
+            > label {
+                line-height: 40px;
+                flex-basis: 80px;
+                background-color: var(--bgColor);
+            }
+        }
         &.base-info,
         &.base-info-guide,
         &.base-info-checksums {
             @include display-block;
         }
         &.base-info {
-            padding: 20px;
             display: grid;
             grid-template: auto / repeat(3, 1fr);
-            grid-gap: 20px;
-            background-color: var(--bgLighterColor);
+            border: solid var(--borderColor);
+            border-width: 1px 0 0 1px;
+            .grid-item {
+                border: solid var(--borderColor);
+                border-width: 0 1px 1px 0;
+                > label {
+                    color: var(--fontSubsidiaryColor);
+                    border-right: 1px solid var(--borderColor);
+                }
+            }
             .package-name,
             .package-description {
                 grid-column: 1 / 4;
-            }
-            .repo-tag {
-                color: white;
-                background-color: var(--primaryHoverColor);
             }
         }
         &.base-info-guide {
@@ -378,16 +395,7 @@
         &.base-info-checksums {
             padding: 20px;
             display: grid;
-            grid-gap: 20px;
             background-color: var(--bgLighterColor);
-        }
-        .grid-item {
-            display: flex;
-            overflow: hidden;
-            label {
-                flex-basis: 100px;
-                text-align: right;
-            }
         }
     }
     .version-metadata {

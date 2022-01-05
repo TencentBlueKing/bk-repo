@@ -35,11 +35,13 @@
             size="small"
             @row-click="toPackageList">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)">
-                    <template v-if="!Boolean(query.name || query.type)">
-                        <span class="ml10">暂无仓库数据，</span>
-                        <bk-button text @click="createRepo">即刻创建</bk-button>
-                    </template>
+                <empty-data
+                    :is-loading="isLoading"
+                    :search="Boolean(query.name || query.type)"
+                    :config="{
+                        imgSrc: '/ui/no-repo.png',
+                        title: '暂无仓库数据'
+                    }">
                 </empty-data>
             </template>
             <bk-table-column :label="$t('repoName')">
@@ -47,7 +49,7 @@
                     <div class="flex-align-center" :title="replaceRepoName(row.name)">
                         <Icon size="20" :name="row.repoType" />
                         <span class="ml10 text-overflow hover-btn" style="max-width:400px">{{replaceRepoName(row.name)}}</span>
-                        <bk-tag v-if="MODE_CONFIG === 'ci' && (row.name === 'custom' || row.name === 'pipeline' || row.name === 'docker-local')"
+                        <bk-tag v-if="MODE_CONFIG === 'ci' && (row.name === 'custom' || row.name === 'pipeline')"
                             class="ml10" type="filled" style="background-color: var(--successColor);">内置</bk-tag>
                         <bk-tag v-if="row.configuration.settings.system"
                             class="ml10" type="filled" style="background-color: var(--primaryHoverColor);">系统</bk-tag>
@@ -71,7 +73,7 @@
                     <operation-list
                         :list="[
                             { label: '设置', clickEvent: () => toRepoConfig(row) },
-                            row.repoType !== 'generic' && (MODE_CONFIG !== 'ci' || row.name !== 'docker-local') && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
+                            row.repoType !== 'generic' && { label: $t('delete'), clickEvent: () => deleteRepo(row) }
                         ].filter(Boolean)">
                     </operation-list>
                 </template>

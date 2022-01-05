@@ -102,14 +102,14 @@ export default {
         })
     },
     logout () {
-        if (MODE_CONFIG === 'standalone') {
-            cookie.remove('bkrepo_ticket')
-            location.reload()
-        } else {
+        if (MODE_CONFIG === 'ci') {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')
             location.href = window.getLoginUrl()
+        } else {
+            cookie.remove('bkrepo_ticket')
+            location.reload()
         }
     }
 }

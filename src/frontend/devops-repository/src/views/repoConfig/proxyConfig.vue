@@ -20,8 +20,8 @@
                 <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
                 <div class="proxy-address">{{proxy.url}}</div>
                 <div class="flex-align-center proxy-operation">
-                    <i v-if="!proxy.public" class="mr10 devops-icon icon-edit hover-btn" @click.stop.prevent="editProxy(proxy)"></i>
-                    <i class="devops-icon icon-delete hover-btn hover-danger" @click.stop.prevent="deleteProxy(proxy)"></i>
+                    <i v-if="!proxy.public" class="mr10 devops-icon icon-edit hover-btn" @click.stop="editProxy(proxy)"></i>
+                    <Icon class="hover-btn" size="14" name="icon-delete" @click.native.stop="deleteProxy(proxy)" />
                 </div>
             </div>
         </draggable>

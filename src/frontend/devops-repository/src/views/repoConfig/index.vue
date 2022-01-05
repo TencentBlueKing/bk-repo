@@ -51,28 +51,27 @@
                         </bk-input>
                     </bk-form-item>
                     <bk-form-item>
-                        <bk-button @click.stop.prevent="toRepoList">{{$t('cancel')}}</bk-button>
-                        <bk-button class="ml10" :loading="repoBaseInfo.loading" theme="primary" @click="saveBaseInfo">{{$t('confirm')}}</bk-button>
+                        <bk-button :loading="repoBaseInfo.loading" theme="primary" @click="saveBaseInfo">{{$t('save')}}</bk-button>
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
             <bk-tab-panel v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
                 <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
+            <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
                 <permission-config></permission-config>
-            </bk-tab-panel>
+            </bk-tab-panel> -->
         </bk-tab>
     </div>
 </template>
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
-    import permissionConfig from './permissionConfig'
+    // import permissionConfig from './permissionConfig'
     import { mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
-        components: { CardRadioGroup, proxyConfig, permissionConfig },
+        components: { CardRadioGroup, proxyConfig },
         data () {
             return {
                 tabName: 'baseInfo',

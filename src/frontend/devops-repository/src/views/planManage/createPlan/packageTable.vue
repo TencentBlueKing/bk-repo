@@ -28,7 +28,7 @@
                 <Icon size="16" :name="pkg.type.toLowerCase()" />
                 <span class="package-meta text-overflow" :title="pkg.key">{{ pkg.key }}</span>
                 <span class="package-meta text-overflow" :title="pkg.versions.join(',')">{{ pkg.versions.join(',') }}</span>
-                <i v-show="!disabled" class="devops-icon icon-delete flex-center hover-btn hover-danger" @click="packageConstraints.splice(ind, 1)"></i>
+                <Icon v-show="!disabled" class="mr20 hover-btn" size="14" name="icon-delete" @click.native="packageConstraints.splice(ind, 1)" />
             </div>
         </div>
         <package-dialog
@@ -128,11 +128,6 @@
             .package-meta  {
                 flex: 1;
                 margin: 0 5px;
-            }
-            .icon-delete {
-                width: 50px;
-                height: 100%;
-                background-color: var(--bgHoverColor);
             }
         }
     }

@@ -36,7 +36,7 @@
     </div>
 </template>
 <script>
-    import User from '../User'
+    import User from '@repository/components/User'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'bkrepoHeader',
@@ -79,6 +79,9 @@
         color: white;
         border-color: #FFFFFF33;
         background-color: #FFFFFF1A;
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
     }
     .bkrepo-logo {
         color: white;
@@ -97,6 +100,9 @@
             display:inline-block;
             font-size: 12px;
             transform: rotate(90deg);
+        }
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.4);
         }
     }
 }

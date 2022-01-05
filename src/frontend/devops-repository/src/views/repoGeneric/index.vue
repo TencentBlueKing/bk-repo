@@ -1,7 +1,7 @@
 <template>
     <div class="repo-generic-container" @click="() => selectRow(selectedTreeNode)">
         <header class="mb10 pl20 pr20 generic-header flex-align-center">
-            <Icon class="p10 generic-img" size="80" name="generic" />
+            <Icon class="generic-img" size="70" name="generic" />
             <div class="ml20 generic-title flex-column">
                 <span class="mb10 repo-title text-overflow" :title="replaceRepoName(repoName)">
                     {{ replaceRepoName(repoName) }}
@@ -576,7 +576,7 @@
                 }).catch(e => {
                     this.$bkMessage({
                         theme: 'error',
-                        message: e.status !== 404 ? e.message : this.$t('fileNotExist')
+                        message: this.$t('fileError')
                     })
                 })
             },
@@ -603,21 +603,19 @@
         height: 90px;
         background-color: white;
         .generic-img {
-            width: 78px;
-            height: 68px;
+            padding: 15px;
             border-radius: 4px;
             box-shadow: 0px 3px 5px 0px rgba(217, 217, 217, 0.5);
         }
         .generic-title {
             .repo-title {
-                margin-top: -5px;
                 max-width: 500px;
-                font-size: 20px;
+                font-size: 16px;
                 font-weight: bold;
             }
             .repo-description {
                 max-width: 70vw;
-                padding: 6px 10px;
+                padding-left: 6px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
             }

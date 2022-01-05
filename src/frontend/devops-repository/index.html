@@ -8,7 +8,6 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
 </head>
 <body>
-    <div id="app"></div>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/ui/sw.js');
@@ -27,7 +26,6 @@
             : '__BK_REPO_PAAS_LOGIN_URL__'
         // standalone: 独立部署模式
         // ci: ci模式
-        // saas: saas模式
         var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
     </script>
     <script>
@@ -47,64 +45,70 @@
             }
         }
 
-        const search = new URL(location.href).searchParams
+        const search = new URL(location.href).searchParams // redirect/token/download/?preview
         const redirect = search.get('redirect')
-        search.delete('redirect')
-        const redirectUrl = new URL(/^https?/.test(redirect) ? redirect : location.origin + redirect)
-        search.forEach((val, key) => {
-            redirectUrl.searchParams.set(key, val)
-        })
-        // 兼容之前的预览链接格式
-        if (!search.toString()) {
-            redirectUrl.searchParams.set('preview', true)
-        }
-
         if (redirect) {
-            if (MODE_CONFIG === 'standalone') {
-                // 内部登录逻辑
-                // 直接登录
-                window.login = true
+            search.delete('redirect')
+
+            const redirectUrl = new URL(/^https?/.test(redirect) ? redirect : location.origin + redirect)
+            if (!search.toString()) {
+                // 兼容之前的预览链接格式
+                redirectUrl.searchParams.set('preview', true)
             } else {
-                // 跳转外部登录所以阻止加载页面
-                document.body.removeChild(document.querySelector('#app'))
+                search.forEach((val, key) => {
+                    redirectUrl.searchParams.set(key, val)
+                })
             }
+            
             const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = function (e) {
                 const { readyState, status } = e.currentTarget
                 // 已登录
                 if (readyState === 4) {
                     if (status === 200) {
-                        location.href = redirectUrl.href
+                        window.open(redirectUrl.href, '_self')
+                        mountApp()
                     } else if (status === 401) {
-                        if (MODE_CONFIG === 'standalone') {
+                        if (MODE_CONFIG === 'ci') {
+                            // ci登录逻辑
+                            location.href = window.getLoginUrl(location.href)
+                        } else {
                             // 保存操作链接，登陆后调用
                             sessionStorage.setItem('afterLogin', redirectUrl.href)
-                        } else {
-                            // ci登录逻辑
-                            location.href = window.getLoginUrl(redirectUrl.href)
+                            window.login = true
+                            mountApp()
                         }
                     } else {
-                        printError(status)
+                        let message
+                        switch (status) {
+                            case 403:
+                                message = '未获得文件访问权限或链接已失效'
+                                break
+                            case 404:
+                                message = '文件不存在'
+                                break
+                            default:
+                                message = '服务异常，请稍后重试'
+                        }
+                        printError(status, message)
                     }
                 }
             }
             xhr.withCredentials = true
             xhr.open('HEAD', redirectUrl.href)
             xhr.send()
+        } else {
+            mountApp()
         }
 
-        function printError (status) {
-            let message
-            switch (status) {
-                case 403:
-                    message = '未获得文件访问权限或链接已失效'
-                    break
-                case 404:
-                    message = '文件不存在'
-                    break
-                default:
-                    message = '服务异常，请稍后重试'
-            }
+        function  mountApp () {
+            const app = document.createElement('div')
+            app.setAttribute('id', 'app')
+            document.body.append(app)
+            if (window.repositoryVue) window.repositoryVue.$mount('#app')
+        }
+
+        function printError (status, message) {
             document.writeln(
                 '<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">'
                 + '<img src="/ui/'

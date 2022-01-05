@@ -1,12 +1,10 @@
 <template>
     <div class="package-card-container flex-align-center">
-        <div class="mr20 card-icon flex-center">
-            <Icon size="48" :name="cardData.type ? cardData.type.toLowerCase() : getIconName(cardData.name)" />
-        </div>
+        <Icon class="mr20 card-icon" size="70" :name="cardData.type ? cardData.type.toLowerCase() : getIconName(cardData.name)" />
         <div class="mr20 package-card-main flex-column">
             <div class="flex-align-center">
                 <span class="pr10 card-name text-overflow" :title="cardData.name">{{ cardData.name }}</span>
-                <span class="card-tag" v-if="cardData.type === 'MAVEN'">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
+                <span class="repo-tag" v-if="cardData.type === 'MAVEN'">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
             </div>
             <span class="package-card-description text-overflow" :title="cardData.description">{{ cardData.description }}</span>
             <div class="package-card-data flex-align-center">
@@ -23,13 +21,12 @@
             </div>
         </div>
         <div class="card-operation flex-center">
-            <i v-if="!readonly" class="devops-icon icon-delete flex-center operation-btn" @click.stop="deleteCard"></i>
+            <Icon v-if="!readonly" size="14" name="icon-delete" @click.native.stop="deleteCard" />
             <operation-list
-                v-if="!cardData.type"
                 :list="[
-                    { label: '下载', clickEvent: () => download() },
-                    { label: '共享', clickEvent: () => share() }
-                ]"></operation-list>
+                    !cardData.type && { label: '下载', clickEvent: () => download() },
+                    !cardData.type && { label: '共享', clickEvent: () => share() }
+                ].filter(Boolean)"></operation-list>
         </div>
     </div>
 </template>
@@ -67,7 +64,7 @@
                 }).catch(e => {
                     this.$bkMessage({
                         theme: 'error',
-                        message: e.status !== 404 ? e.message : this.$t('fileNotExist')
+                        message: this.$t('fileError')
                     })
                 })
             },
@@ -80,18 +77,12 @@
 <style lang="scss" scoped>
 .package-card-container {
     height: 100px;
-    margin: 3px;
     padding: 16px 20px;
     border-radius: 5px;
     background-color: var(--bgLighterColor);
     cursor: pointer;
-    &:hover {
-        background-color: var(--bgHoverLighterColor);
-        box-shadow: 0px 0px 6px 0px var(--primaryBoxShadowColor);
-    }
     .card-icon {
-        width: 68px;
-        height: 68px;
+        padding: 15px;
         background-color: white;
         border: 1px solid var(--borderColor);
         border-radius: 4px;
@@ -109,15 +100,6 @@
                 color: var(--primaryColor);
             }
         }
-        .card-tag {
-            display: inline-block;
-            padding: 0 10px;
-            line-height: 22px;
-            white-space: nowrap;
-            border-radius: 2px;
-            color: white;
-            background-color: var(--primaryHoverColor);
-        }
         .package-card-description {
             font-size: 12px;
             color: var(--fontSubsidiaryColor);
@@ -134,16 +116,17 @@
         }
     }
     .card-operation {
+        visibility: hidden;
         flex-basis: 50px;
-        .operation-btn {
-            width: 24px;
-            height: 24px;
-            font-size: 16px;
-            &.icon-delete:hover:hover {
-                color: white;
-                background-color: var(--dangerColor);
-                border-radius: 4px;
-            }
+    }
+    &:hover {
+        background-color: var(--bgHoverLighterColor);
+        // box-shadow: 0px 0px 6px 0px var(--primaryBoxShadowColor);
+        .repo-tag {
+            border-color: var(--primaryBoxShadowColor);
+        }
+        .card-operation {
+            visibility: visible;
         }
     }
 }
