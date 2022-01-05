@@ -27,21 +27,29 @@
 
 package com.tencent.bkrepo.repository.service.log.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.OperateLogDao
 import com.tencent.bkrepo.repository.model.TOperateLog
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
+import com.tencent.bkrepo.repository.pojo.log.OperateLogResponse
 import com.tencent.bkrepo.repository.service.log.OperateLogService
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * OperateLogService 实现类
@@ -107,6 +115,114 @@ class OperateLogServiceImpl(
         }
     }
 
+    override fun page(
+        type: ResourceType?,
+        projectId: String?,
+        repoName: String?,
+        operator: String?,
+        startTime: String?,
+        endTime: String?,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<OperateLogResponse?> {
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val query = buildOperateLogPageQuery(type, projectId, repoName, operator, startTime, endTime)
+        val totalRecords = operateLogDao.count(query)
+        val records = operateLogDao.find(query.with(pageRequest)).map { convert(it) }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    private fun buildOperateLogPageQuery(
+        type: ResourceType?,
+        projectId: String?,
+        repoName: String?,
+        operator: String?,
+        startTime: String?,
+        endTime: String?
+    ): Query {
+        val criteria = if (type != null) {
+            Criteria.where(TOperateLog::type.name).`in`(getEventList(type))
+        } else {
+            Criteria.where(TOperateLog::type.name).nin(nodeEvent)
+        }
+
+        projectId?.let { criteria.and(TOperateLog::projectId.name).`is`(projectId) }
+
+        repoName?.let { criteria.and(TOperateLog::repoName.name).`is`(repoName) }
+
+        operator?.let { criteria.and(TOperateLog::userId.name).`is`(operator) }
+        if (startTime != null && endTime != null) {
+            val localStart = LocalDateTime.parse(startTime, formatter)
+            val localEnd = LocalDateTime.parse(endTime, formatter)
+            criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
+        }
+        if (startTime != null && endTime == null) {
+            val localStart = LocalDateTime.parse(startTime, formatter)
+            criteria.and(TOperateLog::createdDate.name).gte(localStart)
+        }
+        if (startTime == null && endTime != null) {
+            val localEnd = LocalDateTime.parse(endTime, formatter)
+            criteria.and(TOperateLog::createdDate.name).lte(localEnd)
+        }
+
+        return Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())
+    }
+
+    private fun getEventList(resourceType: ResourceType): List<EventType> {
+        return when (resourceType) {
+            ResourceType.PROJECT -> repositoryEvent
+            ResourceType.PACKAGE -> packageEvent
+            ResourceType.ADMIN -> adminEvent
+            else -> listOf()
+        }
+    }
+
+    private fun convert(tOperateLog: TOperateLog): OperateLogResponse? {
+        val content = if (packageEvent.contains(tOperateLog.type)) {
+            val packageName = tOperateLog.description["packageName"] as? String
+            val version = tOperateLog.description["packageVersion"] as? String
+            val repoType = tOperateLog.description["packageType"] as? String
+            OperateLogResponse.Content(
+                projectId = tOperateLog.projectId,
+                repoType = repoType,
+                resKey = "${tOperateLog.repoName}::$packageName::$version"
+            )
+        } else if (repositoryEvent.contains(tOperateLog.type)) {
+            val repoType = tOperateLog.description["repoType"] as? String
+            OperateLogResponse.Content(
+                projectId = tOperateLog.projectId,
+                repoType = repoType,
+                resKey = tOperateLog.repoName!!
+            )
+        } else if (adminEvent.contains(tOperateLog.type)) {
+            val list = tOperateLog.resourceKey.readJsonString<List<String>>()
+            OperateLogResponse.Content(
+                resKey = list.joinToString("::")
+            )
+        } else if (projectEvent.contains(tOperateLog.type)) {
+            OperateLogResponse.Content(resKey = tOperateLog.projectId!!)
+        } else if (metadataEvent.contains(tOperateLog.type)) {
+            OperateLogResponse.Content(
+                projectId = tOperateLog.projectId,
+                repoType = "GENERIC",
+                resKey = "${tOperateLog.repoName}::${tOperateLog.resourceKey}",
+                des = tOperateLog.description.toJsonString()
+            )
+        } else {
+            null
+        }
+        return content?.let {
+            OperateLogResponse(
+                createdDate = tOperateLog.createdDate,
+                operate = tOperateLog.type.nick,
+                userId = tOperateLog.userId,
+                clientAddress = tOperateLog.clientAddress,
+                result = true,
+                content = it
+            )
+        }
+    }
+
     private fun transfer(tOperateLog: TOperateLog) : OperateLog {
         with(tOperateLog) {
             return OperateLog(
@@ -120,5 +236,21 @@ class OperateLogServiceImpl(
                 description = description
             )
         }
+    }
+
+    companion object {
+        private val repositoryEvent = listOf(EventType.REPO_CREATED, EventType.REPO_UPDATED, EventType.REPO_DELETED)
+        private val packageEvent = listOf(
+            EventType.VERSION_CREATED, EventType.VERSION_DELETED,
+            EventType.VERSION_DOWNLOAD, EventType.VERSION_UPDATED, EventType.VERSION_STAGED
+        )
+        private val nodeEvent = listOf(
+            EventType.NODE_CREATED, EventType.NODE_DELETED, EventType.NODE_MOVED,
+            EventType.NODE_RENAMED, EventType.NODE_COPIED
+        )
+        private val adminEvent = listOf(EventType.ADMIN_ADD, EventType.ADMIN_DELETE)
+        private val projectEvent = listOf(EventType.PROJECT_CREATED)
+        private val metadataEvent = listOf(EventType.METADATA_SAVED, EventType.METADATA_DELETED)
+        private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSz")
     }
 }

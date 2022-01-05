@@ -35,7 +35,11 @@ enum class ResourceType {
     SYSTEM,
     PROJECT,
     REPO,
-    NODE;
+    NODE,
+    METADATA,
+    PACKAGE,
+    USER,
+    ADMIN;
 
     fun id() = this.name.toLowerCase()
 }
