@@ -34,6 +34,7 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -62,7 +63,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
     @Transactional(rollbackFor = [Throwable::class])
     override fun upload(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
         val keys = artifactFileMap.keys
-        checkRepositoryExist(artifactInfo)
+        checkRepositoryExistAndCategory(artifactInfo)
         check(keys.contains(CHART) || keys.contains(PROV)) {
             throw HelmFileNotFoundException(
                 "no package or provenance file found in form fields chart and prov"
@@ -83,7 +84,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @Transactional(rollbackFor = [Throwable::class])
     override fun uploadProv(artifactInfo: HelmArtifactInfo, artifactFileMap: ArtifactFileMap) {
-        checkRepositoryExist(artifactInfo)
+        checkRepositoryExistAndCategory(artifactInfo)
         check(artifactFileMap.keys.contains(PROV)) {
             throw HelmFileNotFoundException("no provenance file found in form fields prov")
         }
@@ -102,14 +103,19 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
                     "remove package $packageName for version [$version] failed: no such file or directory"
                 )
             }
-            repository.remove(ArtifactRemoveContext())
-            publishEvent(
-                ChartVersionDeleteEvent(
-                    ChartVersionDeleteRequest(
-                        projectId, repoName, PackageKeys.resolveHelm(packageName), version, userId
+            val context = ArtifactRemoveContext()
+            repository.remove(context)
+            when (context.repositoryDetail.category) {
+                RepositoryCategory.LOCAL -> {
+                    publishEvent(
+                        ChartVersionDeleteEvent(
+                            ChartVersionDeleteRequest(
+                                projectId, repoName, PackageKeys.resolveHelm(packageName), version, userId
+                            )
+                        )
                     )
-                )
-            )
+                }
+            }
         }
     }
 
@@ -121,12 +127,17 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
             if (!packageExist(projectId, repoName, packageName)) {
                 throw HelmFileNotFoundException("remove package $packageName failed: no such file or directory")
             }
-            repository.remove(ArtifactRemoveContext())
-            publishEvent(
-                ChartDeleteEvent(
-                    ChartPackageDeleteRequest(projectId, repoName, PackageKeys.resolveHelm(packageName), userId)
-                )
-            )
+            val context = ArtifactRemoveContext()
+            repository.remove(context)
+            when (context.repositoryDetail.category) {
+                RepositoryCategory.LOCAL -> {
+                    publishEvent(
+                        ChartDeleteEvent(
+                            ChartPackageDeleteRequest(projectId, repoName, PackageKeys.resolveHelm(packageName), userId)
+                        )
+                    )
+                }
+            }
         }
     }
 

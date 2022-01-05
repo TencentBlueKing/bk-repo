@@ -33,6 +33,7 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -77,14 +78,27 @@ class ChartInfoServiceImpl(
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
-        if (startTime != null) {
+        when (getRepositoryInfo(artifactInfo).category) {
+            RepositoryCategory.LOCAL -> {
+                val result = getAllLocalChartsList(artifactInfo, startTime)
+                result?.let { return@allChartsList result }
+            }
+        }
+        val indexYamlMetadata = queryOriginalIndexYaml()
+        return searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath())
+    }
+
+    /**
+     * 仓库类型为local时，获取或者生成对应的chartlist列表
+     */
+    private fun getAllLocalChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any>? {
+        startTime?.let {
             val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
             val indexYamlMetadata = chartRepositoryService.buildIndexYamlMetadata(nodeList, artifactInfo, true)
             return ResponseEntity.ok().body(convertUtcTime(indexYamlMetadata).entries)
         }
         chartRepositoryService.freshIndexFile(artifactInfo)
-        val indexYamlMetadata = queryOriginalIndexYaml()
-        return searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath())
+        return null
     }
 
     private fun searchJson(indexYamlMetadata: HelmIndexYamlMetadata, urls: String): ResponseEntity<Any> {

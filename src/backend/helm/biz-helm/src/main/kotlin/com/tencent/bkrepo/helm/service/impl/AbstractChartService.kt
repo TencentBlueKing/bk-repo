@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -64,6 +65,7 @@ import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.TGZ_SUFFIX
+import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
@@ -81,6 +83,7 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
@@ -122,7 +125,10 @@ open class AbstractChartService : ArtifactService() {
     fun queryOriginalIndexYaml(): HelmIndexYamlMetadata {
         val context = ArtifactQueryContext()
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
-        return (ArtifactContextHolder.getRepository().query(context) as ArtifactInputStream).use { it.readYamlString() }
+        val inputStream = ArtifactContextHolder.getRepository().query(context) ?: throw HelmFileNotFoundException(
+            "Error occurred when querying the index.yaml file.. "
+        )
+        return (inputStream as ArtifactInputStream).use { it.readYamlString() }
     }
 
     /**
@@ -136,8 +142,11 @@ open class AbstractChartService : ArtifactService() {
         return inputStream.use { it.readYamlString() }
     }
 
+    /**
+     * 下载index.yaml （local类型仓库index.yaml存储时使用的name时index-cache.yaml，remote需要转换）
+     */
     fun downloadIndexYaml() {
-        val context = ArtifactDownloadContext()
+        val context = ArtifactDownloadContext(null, ObjectBuilderUtil.buildIndexYamlRequest())
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
         ArtifactContextHolder.getRepository().download(context)
     }
@@ -187,13 +196,19 @@ open class AbstractChartService : ArtifactService() {
     }
 
     /**
-     * 查询仓库是否存在
+     * 查询仓库是否存在，以及仓库类型
      */
-    fun checkRepositoryExist(artifactInfo: ArtifactInfo) {
+    fun checkRepositoryExistAndCategory(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
-            repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            val repo = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
                 logger.error("check repository [$repoName] in projectId [$projectId] failed!")
                 throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+            }
+            when (repo.category) {
+                RepositoryCategory.REMOTE -> throw HelmBadRequestException(
+                    "Unable to upload chart into a remote repository [$projectId/$repoName]"
+                )
+                else -> return
             }
         }
     }
@@ -328,31 +343,32 @@ open class AbstractChartService : ArtifactService() {
             throw HelmFileAlreadyExistsException("$contentPath already exists")
         }
     }
-    /**
-     * 删除包
-     */
-    fun deletePackage(userId: String, name: String, artifactInfo: ArtifactInfo) {
-        val packageKey = PackageKeys.ofHelm(name)
-        with(artifactInfo) {
-            packageClient.deletePackage(projectId, repoName, packageKey).apply {
-                logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
-            }
-        }
-    }
 
     /**
-     * 删除版本
+     * 下载index.yaml文件到本地存储
      */
-    fun deleteVersion(userId: String, name: String, version: String, artifactInfo: ArtifactInfo) {
-        val packageKey = PackageKeys.ofHelm(name)
-        with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
-                logger.info(
-                    "user: [$userId] delete package [$name] with version [$version] " +
-                        "in repo [$projectId/$repoName] success!"
-                )
-            }
+    fun initIndexYaml(projectId: String, repoName: String) {
+        logger.info("repo [$projectId/$repoName] has been created, will download index.yaml...")
+        val repoDetail = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+            throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
         }
+        if (RepositoryCategory.REMOTE != repoDetail.category) {
+            logger.warn("repo [$projectId/$repoName] does not need to download index.yaml")
+            return
+        }
+        val fullPath = HelmUtils.getIndexCacheYamlFullPath()
+        val context = ArtifactDownloadContext(repoDetail, ObjectBuilderUtil.buildIndexYamlRequest(projectId, repoName))
+        nodeClient.deleteNode(
+            NodeDeleteRequest(
+                projectId,
+                repoName,
+                fullPath,
+                context.userId
+            )
+        )
+        context.putAttribute(FULL_PATH, fullPath)
+        ArtifactContextHolder.getRepository().download(context)
     }
 
     companion object {
