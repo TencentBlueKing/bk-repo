@@ -60,6 +60,7 @@ import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import java.net.URL
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -126,11 +127,22 @@ class HelmRemoteRepository(
         logger.info("create remote download url...")
         val remoteConfiguration = context.getRemoteConfiguration()
         val fullPath = context.getStringAttribute(FULL_PATH)!!.let { HelmUtils.convertIndexYamlPath(it) }
-        return if (fullPath.contains(remoteConfiguration.url)) {
+        return if (checkUrl(fullPath, remoteConfiguration.url)) {
             fullPath
         } else {
             remoteConfiguration.url + fullPath
         }
+    }
+
+    /**
+     * 剔除https/http头后比较url是否包含
+     */
+    private fun checkUrl(fullPath: String, remoteAddress: String): Boolean {
+        val fullPathURL = URL(fullPath)
+        val remoteURL = URL(remoteAddress)
+        val fullPathUrl = fullPathURL.authority + fullPathURL.path
+        val remoteUrl = remoteURL.authority + remoteURL.path
+        return fullPathUrl.contains(remoteUrl)
     }
 
     /**
