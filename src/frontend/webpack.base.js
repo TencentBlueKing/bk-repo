@@ -71,14 +71,6 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                         fix: true,
                         formatter: require('eslint-friendly-formatter')
                     }
-                },
-                {
-                    test: /\.svg$/,
-                    loader: 'svg-sprite-loader',
-                    include: [
-                        path.resolve(__dirname, 'devops-repository/src/images'),
-                        path.resolve('src/images')
-                    ]
                 }
             ]
         },
@@ -99,14 +91,18 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
             moduleIds: 'deterministic',
             minimize: !isDev
         },
+        externals: {
+            vue: 'Vue',
+            'vue-router': 'VueRouter',
+            vuex: 'Vuex'
+        },
         resolve: {
             extensions: ['.js', '.vue', '.json', '.ts', '.scss', '.css'],
             fallback: { path: false },
             alias: {
                 '@': path.resolve('src'),
                 '@repository': path.resolve(__dirname, 'devops-repository/src'),
-                '@locale': path.resolve(__dirname, 'locale'),
-                'vue$': 'vue/dist/vue.esm.js'
+                '@locale': path.resolve(__dirname, 'locale')
             }
         },
         devServer: {

@@ -5,9 +5,26 @@
     <meta name=viewport content="width=device-width,initial-scale=1">
     <link rel="icon" href="/ui/favicon.ico" type="image/x-icon" />
     <link rel="manifest" href="/ui/CPack.webmanifest" />
+    <script src="/ui/libs/vue.min.js"></script>
+    <script src="/ui/libs/vuex.min.js"></script>
+    <script src="/ui/libs/vue-router.min.js"></script>
+    <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
+    <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
     <title><%= htmlWebpackPlugin.options.title %></title>
 </head>
 <body>
+    <script>
+        // 请求svg图标
+        const ajax = new XMLHttpRequest()
+        ajax.open('GET', '/ui/sprite.svg', true)
+        ajax.onload = function (e) {
+            const div = document.createElement('div')
+            div.setAttribute('style', 'position: absolute; width: 0; height: 0; overflow: hidden;')
+            div.innerHTML = e.target.responseText
+            document.body.prepend(div)
+        }
+        ajax.send()
+    </script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/ui/sw.js');
@@ -16,6 +33,16 @@
             return ["fullscreen", "standalone", "minimal-ui"].some(
                 (displayMode) => window.matchMedia('(display-mode: ' + displayMode + ')').matches
             )
+        }
+        function loadLibScript (src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script')
+                script.setAttribute('type', 'text/javascript')
+                script.setAttribute('src', src)
+                document.head.append(script)
+                script.onload = () => resolve()
+                script.onerror = () => reject()
+            })
         }
     </script>
     <script>
@@ -121,5 +148,6 @@
             )
         }
     </script>
+    <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
 </body>
 </html>
