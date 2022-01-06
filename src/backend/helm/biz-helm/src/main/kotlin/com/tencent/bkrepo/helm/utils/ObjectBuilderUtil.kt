@@ -31,15 +31,22 @@
 
 package com.tencent.bkrepo.helm.utils
 
+import com.tencent.bkrepo.common.api.util.toYamlString
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
+import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -125,4 +132,42 @@ object ObjectBuilderUtil {
         val path = HelmUtils.getIndexCacheYamlFullPath()
         return ArtifactInfo(artifactInfo.projectId, artifactInfo.repoName, path)
     }
+
+
+    fun buildFileAndNodeCreateRequest(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        request: ChartOperationRequest
+    ): Pair<ArtifactFile, NodeCreateRequest> {
+        val artifactFile = ArtifactFileFactory.build(indexYamlMetadata.toYamlString().byteInputStream())
+        val nodeCreateRequest = with(request) {
+            NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = HelmUtils.getIndexCacheYamlFullPath(),
+                size = artifactFile.getSize(),
+                sha256 = artifactFile.getFileSha256(),
+                md5 = artifactFile.getFileMd5(),
+                overwrite = true,
+                operator = operator
+            )
+        }
+        return Pair(artifactFile, nodeCreateRequest)
+    }
+
+    fun buildChartUploadRequest(
+        userId: String,
+        artifactInfo: ArtifactInfo,
+        helmChartMetadata: HelmChartMetadata
+    ): ChartUploadRequest {
+        return ChartUploadRequest(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            helmChartMetadata.name,
+            helmChartMetadata.version,
+            userId,
+            artifactInfo.getArtifactFullPath()
+        )
+    }
+
 }
