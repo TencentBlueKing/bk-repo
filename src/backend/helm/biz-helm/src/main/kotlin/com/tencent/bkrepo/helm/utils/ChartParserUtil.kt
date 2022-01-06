@@ -45,6 +45,7 @@ import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmErrorInvalidProvenanceFileException
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import java.io.InputStream
 
@@ -98,5 +99,30 @@ object ChartParserUtil {
         val name = substring.substringBeforeLast('-')
         val version = substring.substringAfterLast('-')
         return mapOf("name" to name, "version" to version)
+    }
+
+    /**
+     * 将新增加的Chart包信息加入到index.yaml中
+     */
+    fun addIndexEntries(indexYamlMetadata: HelmIndexYamlMetadata, chartMetadata: HelmChartMetadata) {
+        val chartName = chartMetadata.name
+        val chartVersion = chartMetadata.version
+        val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.name)
+        indexYamlMetadata.entries.let {
+            if (isFirstChart) {
+                it[chartMetadata.name] = sortedSetOf(chartMetadata)
+            } else {
+                // force upload
+                run stop@{
+                    it[chartName]?.forEachIndexed { _, helmChartMetadata ->
+                        if (chartVersion == helmChartMetadata.version) {
+                            it[chartName]?.remove(helmChartMetadata)
+                            return@stop
+                        }
+                    }
+                }
+                it[chartName]?.add(chartMetadata)
+            }
+        }
     }
 }

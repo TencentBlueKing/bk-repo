@@ -46,4 +46,4 @@ data class ChartVersionDeleteRequest(
     val version: String,
     @ApiModelProperty("操作用户id", required = true)
     override val operator: String
-) : ChartDeleteRequest
+) : ChartOperationRequest

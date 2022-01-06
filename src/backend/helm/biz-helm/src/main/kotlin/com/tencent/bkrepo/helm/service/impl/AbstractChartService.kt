@@ -78,6 +78,7 @@ import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -90,12 +91,13 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import java.time.LocalDateTime
-import java.util.concurrent.ThreadPoolExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.ThreadPoolExecutor
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -146,6 +148,7 @@ open class AbstractChartService : ArtifactService() {
             ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
         return inputStream.use { it.readYamlString() }
     }
+
 
     /**
      * 下载index.yaml （local类型仓库index.yaml存储时使用的name时index-cache.yaml，remote需要转换）
@@ -383,5 +386,11 @@ open class AbstractChartService : ArtifactService() {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
         val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
+
+
+        fun convertDateTime(timeStr: String): String {
+            val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
+            return TimeFormatUtil.convertToUtcTime(localDateTime)
+        }
     }
 }
