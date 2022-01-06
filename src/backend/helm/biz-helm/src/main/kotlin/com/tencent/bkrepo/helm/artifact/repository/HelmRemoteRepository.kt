@@ -60,11 +60,12 @@ import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import java.net.URL
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.MalformedURLException
+import java.net.URL
 
 @Component
 class HelmRemoteRepository(
@@ -138,11 +139,16 @@ class HelmRemoteRepository(
      * 剔除https/http头后比较url是否包含
      */
     private fun checkUrl(fullPath: String, remoteAddress: String): Boolean {
-        val fullPathURL = URL(fullPath)
-        val remoteURL = URL(remoteAddress)
-        val fullPathUrl = fullPathURL.authority + fullPathURL.path
-        val remoteUrl = remoteURL.authority + remoteURL.path
-        return fullPathUrl.contains(remoteUrl)
+        try {
+            val fullPathURL = URL(fullPath)
+            val remoteURL = URL(remoteAddress)
+            val fullPathUrl = fullPathURL.authority + fullPathURL.path
+            val remoteUrl = remoteURL.authority + remoteURL.path
+            return fullPathUrl.contains(remoteUrl)
+        } catch (e: MalformedURLException){
+            logger.info("Error occurred while converting url, ignore it")
+        }
+        return false
     }
 
     /**
