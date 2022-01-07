@@ -3,6 +3,7 @@ package com.tencent.bkrepo.nuget.handler
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.nuget.artifact.NugetArtifactInfo
 import com.tencent.bkrepo.nuget.constant.DEPENDENCY
 import com.tencent.bkrepo.nuget.constant.FRAMEWORKS
@@ -10,12 +11,12 @@ import com.tencent.bkrepo.nuget.constant.ID
 import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.REFERENCE
 import com.tencent.bkrepo.nuget.constant.VERSION
+import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.pojo.nuspec.Dependency
 import com.tencent.bkrepo.nuget.pojo.nuspec.DependencyGroup
 import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
 import com.tencent.bkrepo.nuget.pojo.nuspec.Reference
 import com.tencent.bkrepo.nuget.pojo.nuspec.ReferenceGroup
-import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.util.StringJoiner
+import kotlin.collections.HashSet
 
 @Component
 class NugetPackageHandler {
@@ -75,7 +77,7 @@ class NugetPackageHandler {
                     overwrite = true,
                     createdBy = context.userId
                 )
-                packageClient.createVersion(packageVersionCreateRequest)
+                packageClient.createVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress())
                 if (logger.isDebugEnabled) {
                     logger.info(
                         "user: [${context.userId}] create package version [$packageVersionCreateRequest] success!"
@@ -210,12 +212,13 @@ class NugetPackageHandler {
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NugetArtifactInfo) {
         val packageKey = PackageKeys.ofNuget(name)
         with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageKey, version).apply {
-                logger.info(
-                    "user: [$userId] delete package [$name] with version [$version] " +
-                        "in repo [${artifactInfo.getRepoIdentify()}] success!"
-                )
-            }
+            packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+                .apply {
+                    logger.info(
+                        "user: [$userId] delete package [$name] with version [$version] " +
+                                "in repo [${artifactInfo.getRepoIdentify()}] success!"
+                    )
+                }
         }
     }
 

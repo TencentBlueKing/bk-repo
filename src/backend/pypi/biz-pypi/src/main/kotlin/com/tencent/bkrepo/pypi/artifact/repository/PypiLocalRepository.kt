@@ -155,7 +155,8 @@ class PypiLocalRepository(
                 artifactPath = nodeCreateRequest.fullPath,
                 overwrite = true,
                 createdBy = context.userId
-            )
+            ),
+            HttpContextHolder.getClientAddress()
         )
         store(nodeCreateRequest, artifactFile, context.storageCredentials)
     }
@@ -250,7 +251,8 @@ class PypiLocalRepository(
             packageClient.deletePackage(
                 context.projectId,
                 context.repoName,
-                packageKey
+                packageKey,
+                HttpContextHolder.getClientAddress()
             )
         } else {
             // 删除版本
@@ -262,7 +264,13 @@ class PypiLocalRepository(
                     context.userId
                 )
             )
-            packageClient.deleteVersion(context.projectId, context.repoName, packageKey, version)
+            packageClient.deleteVersion(
+                context.projectId,
+                context.repoName,
+                packageKey,
+                version,
+                HttpContextHolder.getClientAddress()
+            )
         }
     }
 

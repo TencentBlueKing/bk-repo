@@ -582,14 +582,16 @@ class MavenLocalRepository(
                 packageClient.deletePackage(
                     projectId,
                     repoName,
-                    packageKey
+                    packageKey,
+                    HttpContextHolder.getClientAddress()
                 )
             } else {
                 packageClient.deleteVersion(
                     projectId,
                     repoName,
                     packageKey,
-                    version
+                    version,
+                    HttpContextHolder.getClientAddress()
                 )
             }
             logger.info("Success to delete $packageKey:$version")
