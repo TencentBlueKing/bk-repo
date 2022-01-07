@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -92,6 +93,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var packageDownloadsClient: PackageDownloadsClient
+
+    @Autowired
+    lateinit var nodeDownloadsClient: OperateLogClient
 
     @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
@@ -214,9 +218,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         }
         if (throughput != Throughput.EMPTY) {
             publisher.publishEvent(ArtifactResponseEvent(artifactResource, throughput, context.storageCredentials))
+            publisher.publishEvent(ArtifactDownloadedEvent(context))
+            logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
         }
-        publisher.publishEvent(ArtifactDownloadedEvent(context))
-        logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
     }
 
     /**

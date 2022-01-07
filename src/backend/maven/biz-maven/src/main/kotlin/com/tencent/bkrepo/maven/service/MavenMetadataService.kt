@@ -64,7 +64,8 @@ class MavenMetadataService(
         val query = Query(criteria)
         val update = Update().apply {
             this.set(TMavenMetadataRecord::timestamp.name, ZonedDateTime.now(ZoneId.of("UTC")).format(formatter))
-            .inc(TMavenMetadataRecord::buildNo.name) }
+                .inc(TMavenMetadataRecord::buildNo.name)
+        }
         val options = FindAndModifyOptions().upsert(true).returnNew(true)
         return mavenMetadataDao.determineMongoTemplate()
             .findAndModify(query, update, options, TMavenMetadataRecord::class.java)!!

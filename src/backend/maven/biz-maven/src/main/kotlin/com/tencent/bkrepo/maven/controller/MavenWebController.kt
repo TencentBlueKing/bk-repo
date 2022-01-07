@@ -79,6 +79,6 @@ class MavenWebController(
         c: String?,
         repos: String?
     ): Response<Page<MavenGAVCResponse.UriResult>> {
-        return mavenExtService.gavc(projectId,pageNumber, pageSize, g, a, v, c, repos)
+        return mavenExtService.gavc(projectId, pageNumber, pageSize, g, a, v, c, repos)
     }
 }

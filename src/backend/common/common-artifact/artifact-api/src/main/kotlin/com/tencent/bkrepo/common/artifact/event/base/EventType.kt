@@ -45,6 +45,7 @@ enum class EventType {
     NODE_MOVED,
     NODE_COPIED,
     NODE_DELETED,
+    NODE_DOWNLOADED,
 
     // METADATA
     METADATA_DELETED,
@@ -53,5 +54,8 @@ enum class EventType {
     // PACKAGE
 
     // VERSION
-    VERSION_CREATED
+    VERSION_CREATED,
+
+    // WebHook
+    WEBHOOK_TEST,
 }

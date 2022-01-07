@@ -33,6 +33,7 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -69,6 +70,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.SortedSet
 
 @Service
 class ChartInfoServiceImpl(
@@ -77,14 +79,27 @@ class ChartInfoServiceImpl(
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
-        if (startTime != null) {
+        when (getRepositoryInfo(artifactInfo).category) {
+            RepositoryCategory.LOCAL -> {
+                val result = getAllLocalChartsList(artifactInfo, startTime)
+                result?.let { return@allChartsList result }
+            }
+        }
+        val indexYamlMetadata = queryOriginalIndexYaml()
+        return searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath())
+    }
+
+    /**
+     * 仓库类型为local时，获取或者生成对应的chartlist列表
+     */
+    private fun getAllLocalChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any>? {
+        startTime?.let {
             val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
             val indexYamlMetadata = chartRepositoryService.buildIndexYamlMetadata(nodeList, artifactInfo, true)
             return ResponseEntity.ok().body(convertUtcTime(indexYamlMetadata).entries)
         }
         chartRepositoryService.freshIndexFile(artifactInfo)
-        val indexYamlMetadata = queryOriginalIndexYaml()
-        return searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath())
+        return null
     }
 
     private fun searchJson(indexYamlMetadata: HelmIndexYamlMetadata, urls: String): ResponseEntity<Any> {
@@ -97,12 +112,12 @@ class ChartInfoServiceImpl(
             // query with name
             1 -> {
                 val chartName = urlList[0]
-                val chartList = indexYamlMetadata.entries[chartName]
-                chartList?.forEach { convertUtcTime(it) }
-                return if (chartList == null) {
+                val chartEntries = indexYamlMetadata.parseMapForFilter(chartName)
+                convertUtcTime(chartEntries)
+                return if (chartEntries.isEmpty()) {
                     ResponseEntity.status(HttpStatus.NOT_FOUND).body(CHART_NOT_FOUND)
                 } else {
-                    ResponseEntity.ok().body(chartList)
+                    ResponseEntity.ok().body(chartEntries)
                 }
             }
             // query with name and version
@@ -203,12 +218,7 @@ class ChartInfoServiceImpl(
         val logger: Logger = LoggerFactory.getLogger(ChartInfoServiceImpl::class.java)
 
         fun convertUtcTime(indexYamlMetadata: HelmIndexYamlMetadata): HelmIndexYamlMetadata {
-            indexYamlMetadata.entries.forEach { it ->
-                val chartMetadataSet = it.value
-                chartMetadataSet.forEach { chartMetadata ->
-                    convertUtcTime(chartMetadata)
-                }
-            }
+            convertUtcTime(indexYamlMetadata.entries)
             return indexYamlMetadata
         }
 
@@ -217,6 +227,17 @@ class ChartInfoServiceImpl(
                 helmChartMetadata.created = TimeFormatUtil.formatLocalTime(TimeFormatUtil.convertToLocalTime(it))
             }
             return helmChartMetadata
+        }
+
+        fun convertUtcTime(entries: Map<String, SortedSet<HelmChartMetadata>>):
+            Map<String, SortedSet<HelmChartMetadata>> {
+            entries.forEach {
+                val chartMetadataSet = it.value
+                chartMetadataSet.forEach { chartMetadata ->
+                    convertUtcTime(chartMetadata)
+                }
+            }
+            return entries
         }
 
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
