@@ -413,7 +413,7 @@ class MavenLocalRepository(
                 val suffix = "maven-metadata.xml.${hashType.ext}"
                 val isDigestFile = artifactFullPath.endsWith(suffix)
                 if (isDigestFile) {
-                    verifyMetadataChecksumType(context, hashType)
+                    verifyPathWithHashType(context, hashType)
                 }
             }
         }
@@ -435,8 +435,7 @@ class MavenLocalRepository(
         }
     }
 
-    private fun verifyArtifactWithHashType(context: ArtifactContext, hashType: HashType) {
-        // 生成.md5 和 .sha1
+    private fun verifyPathWithHashType(context: ArtifactContext, hashType: HashType) {
         val node = nodeClient.getNodeDetail(
             context.projectId,
             context.repoName,
@@ -448,18 +447,23 @@ class MavenLocalRepository(
         }
     }
 
-    private fun verifyMetadataChecksumType(context: ArtifactUploadContext, hashType: HashType) {
+    private fun verifyPath(context: ArtifactUploadContext) {
         val node = nodeClient.getNodeDetail(
             context.projectId,
             context.repoName,
-            context.artifactInfo.getArtifactFullPath().removeSuffix(".${hashType.ext}")
+            context.artifactInfo.getArtifactFullPath()
         ).data ?: return
-        val checksum = node.metadata[hashType.ext] as? String
-        if (checksum != null) {
-            generateChecksum(node, hashType, checksum, context.storageCredentials)
+        for (hashType in HashType.values()) {
+            val checksum = node.metadata[hashType.ext] as? String
+            checksum?.let {
+                generateChecksum(node, hashType, checksum, context.storageCredentials)
+            }
         }
     }
 
+    /**
+     * 服务生成 快照版本下的maven-metadata.xml
+     */
     private fun verifyMetadataContent(context: ArtifactUploadContext) {
         val mavenGavc = context.artifactInfo.getArtifactFullPath().mavenGAVC()
         val repoConf = getRepoConf(context)
@@ -471,6 +475,7 @@ class MavenLocalRepository(
             val artifactFile = ArtifactFileFactory.build(bos.toByteArray().inputStream())
             try {
                 updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
+                verifyPath(context)
             } finally {
                 artifactFile.delete()
             }
@@ -587,7 +592,7 @@ class MavenLocalRepository(
             context.artifactInfo.getArtifactFullPath()
         ).data
         if (checksumType != null && node == null) {
-            verifyArtifactWithHashType(context, checksumType)
+            verifyPathWithHashType(context, checksumType)
         }
         with(context) {
             node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
