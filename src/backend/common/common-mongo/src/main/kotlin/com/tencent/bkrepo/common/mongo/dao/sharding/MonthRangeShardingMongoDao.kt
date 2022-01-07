@@ -61,7 +61,7 @@ abstract class MonthRangeShardingMongoDao<E> : RangeShardingMongoDao<E>() {
     }
 
     private fun getIndexCacheKey(collectionName: String, indexDefinition: IndexDefinition): String {
-        return collectionName + indexDefinition.hashCode()
+        return collectionName + indexDefinition.indexKeys.keys
     }
 
     private fun ensureIndex(entity: E) {
