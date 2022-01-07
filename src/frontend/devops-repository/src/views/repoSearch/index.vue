@@ -165,7 +165,7 @@
                         roadMap: '0',
                         children: item.repos.map((child, i) => {
                             return {
-                                name: child.repoName,
+                                name: this.replaceRepoName(child.repoName),
                                 repoName: child.repoName,
                                 roadMap: '0,' + i,
                                 leaf: true,

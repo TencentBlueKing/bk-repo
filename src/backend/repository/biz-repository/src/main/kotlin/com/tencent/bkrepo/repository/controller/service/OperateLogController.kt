@@ -55,4 +55,5 @@ class OperateLogController(
     override fun list(option: OpLogListOption): Response<Page<OperateLog>> {
         return ResponseBuilder.success(operateLogService.listPage(option))
     }
+
 }

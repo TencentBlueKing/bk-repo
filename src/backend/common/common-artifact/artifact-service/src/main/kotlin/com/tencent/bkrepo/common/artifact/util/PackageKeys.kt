@@ -228,7 +228,7 @@ object PackageKeys {
      *
      * 例子: {schema}://test  ->  test
      */
-    private fun resolveName(schema: String, nameKey: String): String {
+    fun resolveName(schema: String, nameKey: String): String {
         val prefix = StringBuilder(schema).append(SEPARATOR).toString()
         return nameKey.substringAfter(prefix)
     }

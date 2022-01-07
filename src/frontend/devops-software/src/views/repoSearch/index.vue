@@ -169,7 +169,7 @@
                                 roadMap: '0,' + i,
                                 children: node.repos.map((child, j) => {
                                     return {
-                                        name: child.repoName,
+                                        name: this.replaceRepoName(child.repoName),
                                         projectId: node.projectId,
                                         repoName: child.repoName,
                                         roadMap: '0,' + i + ',' + j,

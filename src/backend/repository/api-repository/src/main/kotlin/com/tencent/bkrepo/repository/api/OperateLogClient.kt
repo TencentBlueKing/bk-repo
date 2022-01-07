@@ -58,4 +58,5 @@ interface OperateLogClient {
     @ApiOperation("操作日志列表")
     @PostMapping("/list")
     fun list(@RequestBody option: OpLogListOption): Response<Page<OperateLog>>
+
 }

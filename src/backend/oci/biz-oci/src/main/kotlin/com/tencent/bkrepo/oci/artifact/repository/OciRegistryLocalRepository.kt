@@ -16,6 +16,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
@@ -98,7 +99,7 @@ class OciRegistryLocalRepository(
 					overwrite = true,
 					createdBy = context.userId
 				)
-			packageClient.createVersion(request)
+			packageClient.createVersion(request, HttpContextHolder.getClientAddress())
 		}
 	}
 
