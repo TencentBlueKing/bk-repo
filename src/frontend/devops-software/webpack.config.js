@@ -23,7 +23,7 @@ module.exports = (env, argv) => {
             filename: isProd ? `${dist}/frontend#software#index.html` : `${dist}/index.html`,
             template: path.resolve('../devops-repository/index.html'),
             inject: true,
-            title: '软件源CPack'
+            title: '软件源'
         })
     ]
 
