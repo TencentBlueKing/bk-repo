@@ -407,15 +407,6 @@ class MavenLocalRepository(
                 // 处理maven2 *1.0-SNAPSHOT/1.0-SNAPSHOT.jar 格式构件
                 verifyArtifact(context)
             }
-        } else {
-            // 当有`maven-metadata.xml.checksum` 再去生成对应checksum文件
-            for (hashType in HashType.values()) {
-                val suffix = "maven-metadata.xml.${hashType.ext}"
-                val isDigestFile = artifactFullPath.endsWith(suffix)
-                if (isDigestFile) {
-                    verifyMetadataChecksumType(context, hashType)
-                }
-            }
         }
         super.onUploadFinished(context)
     }
@@ -471,6 +462,9 @@ class MavenLocalRepository(
             val artifactFile = ArtifactFileFactory.build(bos.toByteArray().inputStream())
             try {
                 updateMetadata(context.artifactInfo.getArtifactFullPath(), artifactFile)
+                for (hashType in HashType.values()) {
+                    verifyMetadataChecksumType(context, hashType)
+                }
             } finally {
                 artifactFile.delete()
             }
