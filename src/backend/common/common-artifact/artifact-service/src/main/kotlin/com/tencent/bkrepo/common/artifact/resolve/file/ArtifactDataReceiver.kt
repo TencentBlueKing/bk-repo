@@ -1,5 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ * 
  *
  * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -39,6 +40,7 @@ import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
+import com.tencent.bkrepo.common.storage.util.delete
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -46,6 +48,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.SecureRandom
@@ -65,8 +68,9 @@ class ArtifactDataReceiver(
     private val monitorProperties: MonitorProperties,
     private var path: Path,
     private val filename: String = generateRandomName(),
-    private val randomPath: Boolean = false
-) : StorageHealthMonitor.Observer {
+    private val randomPath: Boolean = false,
+    private val originPath: Path = path
+) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -257,7 +261,7 @@ class ArtifactDataReceiver(
     /**
      * 关闭原始输出流
      */
-    fun cleanOriginalOutputStream() {
+    private fun cleanOriginalOutputStream() {
         try {
             outputStream.flush()
         } catch (ignored: IOException) {
@@ -289,8 +293,7 @@ class ArtifactDataReceiver(
     private fun handleIOException(exception: IOException) {
         finished = true
         endTime = System.nanoTime()
-        cleanOriginalOutputStream()
-        cleanTempFile()
+        close()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
         } else throw exception
@@ -364,14 +367,31 @@ class ArtifactDataReceiver(
     }
 
     /**
-     * 清理临时文件
-     */
-    private fun cleanTempFile() {
+     * 删除临时文件，如果使用了随机目录，则会删除生成的随机目录
+     * */
+    private fun deleteTempFile() {
         if (!inMemory) {
-            try {
-                Files.deleteIfExists(this.filePath)
-            } catch (ignored: IOException) {
+            var tempPath = filePath
+            while (tempPath != originPath) {
+                if (!tempPath.delete()) {
+                    // 说明当前目录下还有目录或者文件，则不继续清理
+                    return
+                }
+                logger.debug("delete path $tempPath")
+                tempPath = tempPath.parent
             }
+        }
+    }
+
+    /**
+     * 关闭接收器，清理资源
+     * */
+    override fun close() {
+        try {
+            cleanOriginalOutputStream()
+            deleteTempFile()
+        } catch (ignored: NoSuchFileException) {
+            // already deleted
         }
     }
 
