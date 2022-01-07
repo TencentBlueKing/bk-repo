@@ -70,6 +70,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.SortedSet
 
 @Service
 class ChartInfoServiceImpl(
@@ -111,12 +112,12 @@ class ChartInfoServiceImpl(
             // query with name
             1 -> {
                 val chartName = urlList[0]
-                val chartList = indexYamlMetadata.entries[chartName]
-                chartList?.forEach { convertUtcTime(it) }
-                return if (chartList == null) {
+                val chartEntries = indexYamlMetadata.parseMapForFilter(chartName)
+                convertUtcTime(chartEntries)
+                return if (chartEntries.isEmpty()) {
                     ResponseEntity.status(HttpStatus.NOT_FOUND).body(CHART_NOT_FOUND)
                 } else {
-                    ResponseEntity.ok().body(chartList)
+                    ResponseEntity.ok().body(chartEntries)
                 }
             }
             // query with name and version
@@ -217,12 +218,7 @@ class ChartInfoServiceImpl(
         val logger: Logger = LoggerFactory.getLogger(ChartInfoServiceImpl::class.java)
 
         fun convertUtcTime(indexYamlMetadata: HelmIndexYamlMetadata): HelmIndexYamlMetadata {
-            indexYamlMetadata.entries.forEach { it ->
-                val chartMetadataSet = it.value
-                chartMetadataSet.forEach { chartMetadata ->
-                    convertUtcTime(chartMetadata)
-                }
-            }
+            convertUtcTime(indexYamlMetadata.entries)
             return indexYamlMetadata
         }
 
@@ -231,6 +227,17 @@ class ChartInfoServiceImpl(
                 helmChartMetadata.created = TimeFormatUtil.formatLocalTime(TimeFormatUtil.convertToLocalTime(it))
             }
             return helmChartMetadata
+        }
+
+        fun convertUtcTime(entries: Map<String, SortedSet<HelmChartMetadata>>):
+            Map<String, SortedSet<HelmChartMetadata>> {
+            entries.forEach {
+                val chartMetadataSet = it.value
+                chartMetadataSet.forEach { chartMetadata ->
+                    convertUtcTime(chartMetadata)
+                }
+            }
+            return entries
         }
 
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {

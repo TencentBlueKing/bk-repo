@@ -64,6 +64,8 @@ import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.MalformedURLException
+import java.net.URL
 
 @Component
 class HelmRemoteRepository(
@@ -126,11 +128,27 @@ class HelmRemoteRepository(
         logger.info("create remote download url...")
         val remoteConfiguration = context.getRemoteConfiguration()
         val fullPath = context.getStringAttribute(FULL_PATH)!!.let { HelmUtils.convertIndexYamlPath(it) }
-        return if (fullPath.contains(remoteConfiguration.url)) {
+        return if (checkUrl(fullPath, remoteConfiguration.url)) {
             fullPath
         } else {
             remoteConfiguration.url + fullPath
         }
+    }
+
+    /**
+     * 剔除https/http头后比较url是否包含
+     */
+    private fun checkUrl(fullPath: String, remoteAddress: String): Boolean {
+        try {
+            val fullPathURL = URL(fullPath)
+            val remoteURL = URL(remoteAddress)
+            val fullPathUrl = fullPathURL.authority + fullPathURL.path
+            val remoteUrl = remoteURL.authority + remoteURL.path
+            return fullPathUrl.contains(remoteUrl)
+        } catch (e: MalformedURLException){
+            logger.info("Error occurred while converting url, ignore it")
+        }
+        return false
     }
 
     /**

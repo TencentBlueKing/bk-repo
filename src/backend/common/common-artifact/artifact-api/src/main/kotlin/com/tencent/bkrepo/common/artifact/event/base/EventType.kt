@@ -54,5 +54,8 @@ enum class EventType {
     // PACKAGE
 
     // VERSION
-    VERSION_CREATED
+    VERSION_CREATED,
+
+    // WebHook
+    WEBHOOK_TEST,
 }

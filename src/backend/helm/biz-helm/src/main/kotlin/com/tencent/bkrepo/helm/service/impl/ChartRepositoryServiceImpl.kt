@@ -52,6 +52,7 @@ import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
+import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
@@ -207,7 +208,11 @@ class ChartRepositoryServiceImpl(
             RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
         }
         context.putAttribute(FILE_TYPE, CHART)
-        ArtifactContextHolder.getRepository().download(context)
+        try {
+            ArtifactContextHolder.getRepository().download(context)
+        } catch (e: Exception) {
+            throw HelmException(e.message.toString())
+        }
     }
 
     /**
@@ -251,7 +256,11 @@ class ChartRepositoryServiceImpl(
             RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
         }
         context.putAttribute(FILE_TYPE, PROV)
-        ArtifactContextHolder.getRepository().download(context)
+        try {
+            ArtifactContextHolder.getRepository().download(context)
+        } catch (e: Exception) {
+            throw HelmException(e.message.toString())
+        }
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
