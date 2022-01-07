@@ -394,6 +394,7 @@ class MavenLocalRepository(
     }
 
     override fun onUploadFinished(context: ArtifactUploadContext) {
+        super.onUploadFinished(context)
         val repoConf = getRepoConf(context)
         val artifactFullPath = context.artifactInfo.getArtifactFullPath()
         if (artifactFullPath.isSnapshotUri()) {
@@ -408,7 +409,6 @@ class MavenLocalRepository(
                 verifyArtifact(context)
             }
         }
-        super.onUploadFinished(context)
     }
 
     private fun verifyArtifact(context: ArtifactUploadContext) {
