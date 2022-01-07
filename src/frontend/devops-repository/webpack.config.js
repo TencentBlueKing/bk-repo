@@ -24,7 +24,7 @@ module.exports = (env, argv) => {
             filename: isProd ? `${dist}/frontend#ui#index.html` : `${dist}/index.html`,
             template: 'index.html',
             inject: true,
-            title: '制品管理CPack'
+            title: '制品管理'
         }),
         new CopyWebpackPlugin({
             patterns: [{ from: path.join(__dirname, './static'), to: dist }]
