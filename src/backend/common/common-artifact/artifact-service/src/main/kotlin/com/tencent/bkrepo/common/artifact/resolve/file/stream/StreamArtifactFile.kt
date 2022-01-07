@@ -38,8 +38,6 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
 import java.io.File
 import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
 
 /**
  * 基于数据流的ArtifactFile
@@ -132,10 +130,7 @@ open class StreamArtifactFile(
 
     override fun delete() {
         if (initialized && !isInMemory()) {
-            try {
-                Files.deleteIfExists(receiver.filePath)
-            } catch (ignored: NoSuchFileException) { // already deleted
-            }
+            receiver.close()
         }
     }
 

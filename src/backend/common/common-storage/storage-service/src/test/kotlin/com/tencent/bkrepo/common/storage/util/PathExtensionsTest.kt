@@ -39,4 +39,16 @@ class PathExtensionsTest {
         Assertions.assertEquals(1, create.get())
         Assertions.assertEquals(count - 1, failed.get())
     }
+
+    @DisplayName("测试删除路径")
+    @Test
+    fun deleteTest() {
+        Assertions.assertEquals(true, Files.exists(dirPath))
+        val filePath = dirPath.resolve("tmp")
+        filePath.createFile()
+        Assertions.assertEquals(false, dirPath.delete())
+        Assertions.assertEquals(true, filePath.delete())
+        Assertions.assertEquals(true, dirPath.delete())
+        Assertions.assertEquals(false, Files.exists(dirPath))
+    }
 }

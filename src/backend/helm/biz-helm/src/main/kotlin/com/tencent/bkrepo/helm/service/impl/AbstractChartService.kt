@@ -66,6 +66,7 @@ import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.TGZ_SUFFIX
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
+import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
@@ -125,10 +126,14 @@ open class AbstractChartService : ArtifactService() {
     fun queryOriginalIndexYaml(): HelmIndexYamlMetadata {
         val context = ArtifactQueryContext()
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
-        val inputStream = ArtifactContextHolder.getRepository().query(context) ?: throw HelmFileNotFoundException(
-            "Error occurred when querying the index.yaml file.. "
-        )
-        return (inputStream as ArtifactInputStream).use { it.readYamlString() }
+        try {
+            val inputStream = ArtifactContextHolder.getRepository().query(context) ?: throw HelmFileNotFoundException(
+                "Error occurred when querying the index.yaml file.. "
+            )
+            return (inputStream as ArtifactInputStream).use { it.readYamlString() }
+        } catch (e: Exception) {
+            throw HelmException(e.message.toString())
+        }
     }
 
     /**
@@ -148,7 +153,11 @@ open class AbstractChartService : ArtifactService() {
     fun downloadIndexYaml() {
         val context = ArtifactDownloadContext(null, ObjectBuilderUtil.buildIndexYamlRequest())
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
-        ArtifactContextHolder.getRepository().download(context)
+        try {
+            ArtifactContextHolder.getRepository().download(context)
+        } catch (e: Exception) {
+            throw HelmException(e.message.toString())
+        }
     }
     /**
      * upload index.yaml file
@@ -191,7 +200,6 @@ open class AbstractChartService : ArtifactService() {
         val content = artifactInputStream.use {
             it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION)
         }
-
         return content.byteInputStream().readYamlString()
     }
 

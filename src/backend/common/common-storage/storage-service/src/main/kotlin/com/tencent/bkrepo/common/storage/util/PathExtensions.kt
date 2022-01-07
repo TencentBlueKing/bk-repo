@@ -63,3 +63,21 @@ fun Path.createNewOutputStream(): OutputStream {
         StandardOpenOption.CREATE_NEW
     )
 }
+
+/**
+ * 删除路径，如果路径为文件或者空目录则删除
+ * */
+fun Path.delete(): Boolean {
+    // 文件
+    if (this.toFile().isFile) {
+        return Files.deleteIfExists(this)
+    }
+    // 删除空目录
+    Files.newDirectoryStream(this).use {
+        if (!it.iterator().hasNext()) {
+            return Files.deleteIfExists(this)
+        }
+    }
+    // 目录还存在内容
+    return false
+}
