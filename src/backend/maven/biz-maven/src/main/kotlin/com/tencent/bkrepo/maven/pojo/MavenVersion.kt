@@ -12,7 +12,7 @@ data class MavenVersion(
     val packaging: String
 ) {
     /**
-     * e.g. test-1.0-20211206.112233.jar
+     * e.g. test-1.0-20211206.112233.jar  >> test-1.0-SNAPSHOT.jar
      */
     fun combineToNonUnique(): String {
         val list = mutableListOf(artifactId, version)
