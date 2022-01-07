@@ -57,7 +57,7 @@ class CacheStorageService(
             artifactFile.isInMemory() -> {
                 fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
             }
-            artifactFile.isFallback() -> {
+            artifactFile.isFallback() || artifactFile.isInLocalDisk() -> {
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {

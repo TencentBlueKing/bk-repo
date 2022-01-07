@@ -38,6 +38,8 @@ class MultipartArtifactFile(
     monitor: StorageHealthMonitor,
     storageProperties: StorageProperties,
     storageCredentials: StorageCredentials
-) : StreamArtifactFile(multipartFile.inputStream, monitor, storageProperties, storageCredentials) {
+) : StreamArtifactFile(
+    multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size
+) {
     fun getOriginalFilename() = multipartFile.originalFilename.orEmpty()
 }

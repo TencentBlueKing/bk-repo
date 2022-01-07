@@ -58,6 +58,8 @@ class FileSystemArtifactFile(private val file: File) : ArtifactFile {
 
     override fun isFallback() = false
 
+    override fun isInLocalDisk() = false
+
     override fun getFileMd5(): String {
         return md5 ?: run { file.md5().apply { md5 = this } }
     }
