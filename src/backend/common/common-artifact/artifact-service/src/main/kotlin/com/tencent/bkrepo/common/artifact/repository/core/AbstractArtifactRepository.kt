@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.event.packages.VersionDownloadEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
@@ -60,7 +60,6 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
-import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -221,7 +220,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
-                saveDownloadLog(context, it)
+                publishDownloadEvent(context, it)
             }
         }
         if (throughput != Throughput.EMPTY) {
@@ -266,34 +265,20 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         artifactMetrics.downloadingCount.decrementAndGet()
     }
 
-    /**
-     * 记录依赖包的下载事件
-     */
-    @Suppress("SwallowedException")
-    private fun saveDownloadLog(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
-        try {
-            if (context.repositoryDetail.type != RepositoryType.GENERIC) {
-                val packageType = context.repositoryDetail.type.name
-                val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
-                operateLogClient.saveEvent(
-                    EventCreateRequest(
-                        type = EventType.VERSION_DOWNLOAD,
-                        projectId = record.projectId,
-                        repoName = record.repoName,
-                        resourceKey = "${record.packageKey}-${record.packageVersion}",
-                        userId = SecurityUtils.getUserId(),
-                        address = HttpContextHolder.getClientAddress(),
-                        data = mapOf(
-                            "packageKey" to record.packageKey,
-                            "packageType" to packageType,
-                            "packageName" to packageName,
-                            "packageVersion" to record.packageVersion
-                        )
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            logger.warn("Event: download request: [$record] publish failed")
+    private fun publishDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
+        if (context.repositoryDetail.type != RepositoryType.GENERIC) {
+            val packageType = context.repositoryDetail.type.name
+            val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
+            publisher.publishEvent(VersionDownloadEvent(
+                projectId = record.projectId,
+                repoName = record.repoName,
+                userId = SecurityUtils.getUserId(),
+                packageKey = record.packageKey,
+                packageVersion = record.packageVersion,
+                packageName = packageName,
+                packageType = packageType,
+                realIpAddress = HttpContextHolder.getClientAddress()
+            ))
         }
     }
 

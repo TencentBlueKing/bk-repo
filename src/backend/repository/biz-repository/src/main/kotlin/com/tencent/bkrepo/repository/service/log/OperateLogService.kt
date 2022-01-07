@@ -29,7 +29,6 @@ package com.tencent.bkrepo.repository.service.log
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.repository.pojo.event.EventCreateRequest
 import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
 import com.tencent.bkrepo.repository.pojo.log.OperateLog
 import com.tencent.bkrepo.repository.pojo.log.OperateLogResponse
@@ -58,5 +57,4 @@ interface OperateLogService {
         pageSize: Int
     ): Page<OperateLogResponse?>
 
-    fun saveEventRequest(request: EventCreateRequest)
 }
