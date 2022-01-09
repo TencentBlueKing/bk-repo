@@ -96,7 +96,11 @@ class ChartEventListener(
     @EventListener(ArtifactUploadedEvent::class)
     fun handle(event: ArtifactUploadedEvent) {
         with(event) {
-            initPackageInfo(context)
+            try {
+                initPackageInfo(context)
+            } catch (e: Exception) {
+                logger.warn("init package info: ${e.message}")
+            }
             handleChartUploadEvent(context)
         }
     }
