@@ -31,11 +31,13 @@ import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 
 class ChartPackageDeleteOperation(
     private val request: ChartOperationRequest,
-    redisOperation: RedisOperation
-) : AbstractChartOperation(request, redisOperation) {
+    redisOperation: RedisOperation,
+    chartService: AbstractChartService
+) : AbstractChartOperation(request, redisOperation, chartService) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to delete metadata list from index's metadata..")

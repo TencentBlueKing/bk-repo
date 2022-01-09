@@ -52,7 +52,6 @@ import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
-import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
@@ -62,11 +61,11 @@ import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
+import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 class ChartRepositoryServiceImpl(
@@ -75,9 +74,6 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
-        when (getRepositoryInfo(artifactInfo).category) {
-            RepositoryCategory.LOCAL -> freshIndexFile(artifactInfo)
-        }
         downloadIndexYaml()
     }
 
@@ -188,7 +184,8 @@ class ChartRepositoryServiceImpl(
         try {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
-            throw HelmException(e.message.toString())
+            logger.error("Error occurred while installing chart, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
         }
     }
 
@@ -236,7 +233,8 @@ class ChartRepositoryServiceImpl(
         try {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
-            throw HelmException(e.message.toString())
+            logger.error("Error occurred while installing prov, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
         }
     }
 

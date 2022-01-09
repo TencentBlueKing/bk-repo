@@ -33,7 +33,6 @@ package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -43,107 +42,38 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.config.HelmProperties
-import com.tencent.bkrepo.helm.constants.CHART_NOT_FOUND
 import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_METADATA
 import com.tencent.bkrepo.helm.constants.NODE_METADATA_NAME
 import com.tencent.bkrepo.helm.constants.NODE_METADATA_VERSION
-import com.tencent.bkrepo.helm.constants.NO_CHART_NAME_FOUND
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
-import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
-import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.pojo.user.BasicInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartInfoService
-import com.tencent.bkrepo.helm.service.ChartRepositoryService
-import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.helm.utils.ChartParserUtil
+import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.util.SortedSet
 
 @Service
 class ChartInfoServiceImpl(
-    private val chartRepositoryService: ChartRepositoryService,
     private val helmProperties: HelmProperties
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
-        when (getRepositoryInfo(artifactInfo).category) {
-            RepositoryCategory.LOCAL -> {
-                val result = getAllLocalChartsList(artifactInfo, startTime)
-                result?.let { return@allChartsList result }
-            }
-        }
         val indexYamlMetadata = queryOriginalIndexYaml()
-        return searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath())
-    }
-
-    /**
-     * 仓库类型为local时，获取或者生成对应的chartlist列表
-     */
-    private fun getAllLocalChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any>? {
-        startTime?.let {
-            val nodeList = queryNodeList(artifactInfo, lastModifyTime = startTime)
-            val indexYamlMetadata = chartRepositoryService.buildIndexYamlMetadata(nodeList, artifactInfo, true)
-            return ResponseEntity.ok().body(convertUtcTime(indexYamlMetadata).entries)
-        }
-        chartRepositoryService.freshIndexFile(artifactInfo)
-        return null
-    }
-
-    private fun searchJson(indexYamlMetadata: HelmIndexYamlMetadata, urls: String): ResponseEntity<Any> {
-        val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
-        when (urlList.size) {
-            // Without name and version
-            0 -> {
-                return ResponseEntity.ok().body(convertUtcTime(indexYamlMetadata).entries)
-            }
-            // query with name
-            1 -> {
-                val chartName = urlList[0]
-                val chartEntries = indexYamlMetadata.parseMapForFilter(chartName)
-                convertUtcTime(chartEntries)
-                return if (chartEntries.isEmpty()) {
-                    ResponseEntity.status(HttpStatus.NOT_FOUND).body(CHART_NOT_FOUND)
-                } else {
-                    ResponseEntity.ok().body(chartEntries)
-                }
-            }
-            // query with name and version
-            2 -> {
-                val chartName = urlList[0]
-                val chartVersion = urlList[1]
-                val chartList =
-                    indexYamlMetadata.entries[chartName] ?: return ResponseEntity.ok().body(NO_CHART_NAME_FOUND)
-                val helmChartMetadataList = chartList.filter {
-                    chartVersion == it.version
-                }.toList()
-                return if (helmChartMetadataList.isNotEmpty()) {
-                    require(helmChartMetadataList.size == 1) {
-                        "find more than one version [$chartVersion] in package [$chartName]."
-                    }
-                    ResponseEntity.ok().body(convertUtcTime(helmChartMetadataList.first()))
-                } else {
-                    ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(mapOf("error" to "no chart version found for $chartName-$chartVersion"))
-                }
-            }
-            else -> {
-                // ERROR_NOT_FOUND
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(CHART_NOT_FOUND)
-            }
-        }
+        val startDate = startTime ?: LocalDateTime.MIN
+        return ResponseEntity.ok().body(
+            ChartParserUtil.searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath(), startDate)
+        )
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -202,7 +132,7 @@ class ChartInfoServiceImpl(
                 logger.warn("packageKey [$packageKey] don't found.")
                 throw HelmFileNotFoundException("packageKey [$packageKey] don't found.")
             }
-            val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
+            val basicInfo = ObjectBuilderUtil.buildBasicInfo(nodeDetail, packageVersion)
             return PackageVersionInfo(basicInfo, emptyMap())
         }
     }
@@ -214,50 +144,6 @@ class ChartInfoServiceImpl(
     companion object {
         const val CURRENT_PAGE = 0
         const val SIZE = 5
-
         val logger: Logger = LoggerFactory.getLogger(ChartInfoServiceImpl::class.java)
-
-        fun convertUtcTime(indexYamlMetadata: HelmIndexYamlMetadata): HelmIndexYamlMetadata {
-            convertUtcTime(indexYamlMetadata.entries)
-            return indexYamlMetadata
-        }
-
-        fun convertUtcTime(helmChartMetadata: HelmChartMetadata): HelmChartMetadata {
-            helmChartMetadata.created?.let {
-                helmChartMetadata.created = TimeFormatUtil.formatLocalTime(TimeFormatUtil.convertToLocalTime(it))
-            }
-            return helmChartMetadata
-        }
-
-        fun convertUtcTime(entries: Map<String, SortedSet<HelmChartMetadata>>):
-            Map<String, SortedSet<HelmChartMetadata>> {
-            entries.forEach {
-                val chartMetadataSet = it.value
-                chartMetadataSet.forEach { chartMetadata ->
-                    convertUtcTime(chartMetadata)
-                }
-            }
-            return entries
-        }
-
-        fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
-            with(nodeDetail) {
-                return BasicInfo(
-                    packageVersion.name,
-                    fullPath,
-                    size,
-                    sha256.orEmpty(),
-                    md5.orEmpty(),
-                    packageVersion.stageTag,
-                    projectId,
-                    repoName,
-                    packageVersion.downloads,
-                    createdBy,
-                    createdDate,
-                    lastModifiedBy,
-                    lastModifiedDate
-                )
-            }
-        }
     }
 }

@@ -44,10 +44,13 @@ import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmErrorInvalidProvenanceFileException
+import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import java.io.InputStream
+import java.time.LocalDateTime
+import java.util.SortedSet
 
 object ChartParserUtil {
 
@@ -124,5 +127,146 @@ object ChartParserUtil {
                 it[chartName]?.add(chartMetadata)
             }
         }
+    }
+
+    /**
+     * 根据创建时间过滤chart信息
+     */
+    fun filterByCreateTime(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        startTime: LocalDateTime = LocalDateTime.MIN
+    ): Any {
+        with(indexYamlMetadata) {
+            when (startTime) {
+                LocalDateTime.MIN -> entries
+                else -> {
+                    val nonMatchingPredicate: (Int, HelmChartMetadata) -> Boolean =
+                        { _, it -> compareTime(startTime, it.created) }
+                    entries.values.forEachIndexed { _, list ->
+                        list.removeAll(list.filterIndexed(nonMatchingPredicate))
+                    }
+                }
+            }
+            return convertUtcTime(entries)
+        }
+    }
+
+    /**
+     * 比较两个时间大小
+     */
+    private fun compareTime(startTime: LocalDateTime, createTime: String?): Boolean {
+        createTime?.let {
+            return startTime.isAfter(TimeFormatUtil.convertToLocalTime(it))
+        }
+        return false
+    }
+
+    /**
+     * 根据名字从index.yaml中找出对应chart信息，可能会包含多个版本
+     */
+    fun filterChart(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        startTime: LocalDateTime = LocalDateTime.MIN,
+        name: String,
+        version: String? = null
+    ): Any {
+        val chartList = indexYamlMetadata.entries[name]
+        chartList?.let {
+            when (startTime) {
+                LocalDateTime.MIN -> chartList
+                else -> {
+                    val nonMatchingPredicate: (Int, HelmChartMetadata) -> Boolean =
+                        { _, chart -> compareTime(startTime, chart.created) }
+                    chartList.removeAll(chartList.filterIndexed(nonMatchingPredicate))
+                }
+            }
+            version?.let {
+                return filterByVersion(chartList, version, startTime)
+            }
+            chartList.forEach { convertUtcTime(it) }
+        }
+        return chartList ?: throw HelmFileNotFoundException("chart not found")
+    }
+
+    /**
+     * 根据名字-版本从index.yaml中找出对应chart信息
+     */
+    private fun filterByVersion(
+        chartList: SortedSet<HelmChartMetadata>,
+        chartVersion: String,
+        startTime: LocalDateTime = LocalDateTime.MIN
+    ): HelmChartMetadata {
+        val helmChartMetadataList = chartList.filter {
+            chartVersion == it.version
+        }.toList()
+        return if (helmChartMetadataList.isNotEmpty()) {
+            require(helmChartMetadataList.size == 1) {
+                "find more than one version [$chartVersion] in package."
+            }
+            when (startTime) {
+                LocalDateTime.MIN -> convertUtcTime(helmChartMetadataList.first())
+                else -> {
+                    if (!compareTime(startTime, helmChartMetadataList.first().created)) {
+                        convertUtcTime(helmChartMetadataList.first())
+                    } else {
+                        throw HelmFileNotFoundException("chart version:[$chartVersion] can not be found")
+                    }
+                }
+            }
+        } else {
+            throw HelmFileNotFoundException("chart version:[$chartVersion] can not be found")
+        }
+    }
+
+    /**
+     * 查询对应的chart信息
+     */
+    fun searchJson(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        urls: String,
+        startTime: LocalDateTime = LocalDateTime.MIN
+    ): Any {
+        val urlList = urls.removePrefix("/").split("/").filter { it.isNotBlank() }
+        when (urlList.size) {
+            // Without name and version
+            0 -> {
+                return filterByCreateTime(indexYamlMetadata, startTime)
+            }
+            // query with name
+            1 -> {
+                return filterChart(indexYamlMetadata, startTime, urlList[0])
+            }
+            // query with name and version
+            2 -> {
+                return filterChart(indexYamlMetadata, startTime, urlList[0], urlList[1])
+            }
+            else -> {
+                // ERROR_NOT_FOUND
+                throw HelmFileNotFoundException("chart not found")
+            }
+        }
+    }
+
+    fun convertUtcTime(indexYamlMetadata: HelmIndexYamlMetadata): HelmIndexYamlMetadata {
+        convertUtcTime(indexYamlMetadata.entries)
+        return indexYamlMetadata
+    }
+
+    fun convertUtcTime(helmChartMetadata: HelmChartMetadata): HelmChartMetadata {
+        helmChartMetadata.created?.let {
+            helmChartMetadata.created = TimeFormatUtil.formatLocalTime(TimeFormatUtil.convertToLocalTime(it))
+        }
+        return helmChartMetadata
+    }
+
+    fun convertUtcTime(entries: Map<String, SortedSet<HelmChartMetadata>>):
+        Map<String, SortedSet<HelmChartMetadata>> {
+        entries.forEach {
+            val chartMetadataSet = it.value
+            chartMetadataSet.forEach { chartMetadata ->
+                convertUtcTime(chartMetadata)
+            }
+        }
+        return entries
     }
 }

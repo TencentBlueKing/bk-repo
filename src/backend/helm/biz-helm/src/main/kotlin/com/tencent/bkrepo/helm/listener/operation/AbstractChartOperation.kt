@@ -40,8 +40,9 @@ import org.springframework.util.StopWatch
 
 abstract class AbstractChartOperation(
     private val request: ChartOperationRequest,
-    private val redisOperation: RedisOperation
- ) : AbstractChartService(), Runnable {
+    private val redisOperation: RedisOperation,
+    private val chartService: AbstractChartService
+) : Runnable {
     override fun run() {
         with(request) {
             val lock = initRedisLock(projectId, repoName)
@@ -66,20 +67,20 @@ abstract class AbstractChartOperation(
                     "getOriginalIndexYamlFile for refreshing index.yaml in repo [$projectId/$repoName]"
                 )
                 stopWatch.start()
-                val originalIndexYamlMetadata = getOriginalIndexYaml(projectId, repoName)
+                val originalIndexYamlMetadata = chartService.getOriginalIndexYaml(projectId, repoName)
                 stopWatch.stop()
-                logger.info("query index file metadata : $stopWatch")
+                logger.info("query index file metadata cost: ${stopWatch.totalTimeSeconds}s")
                 handleEvent(originalIndexYamlMetadata)
                 logger.info("index.yaml is ready to upload...")
                 val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
                     originalIndexYamlMetadata, this
                 )
-                uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
+                chartService.uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
                 logger.info(
                     "Index.yaml has been refreshed by User [$operator] " +
                         "in repo [$projectId/$repoName] !"
                 )
-            }catch (e: Exception) {
+            } catch (e: Exception) {
                 logger.error(
                     "Error [${e.message}] occurred while refreshing index.yaml by" +
                         " User [$operator] in repo [$projectId/$repoName] !"
@@ -93,8 +94,6 @@ abstract class AbstractChartOperation(
      * 处理对应的事件用于更新index.yaml中的meta data
      */
     open fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {}
-
-
 
     /**
      * 自旋获取redis锁
@@ -128,14 +127,14 @@ abstract class AbstractChartOperation(
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AbstractChartOperation::class.java)
+        val logger: Logger = LoggerFactory.getLogger(AbstractChartOperation::class.java)
 
         /**
          * 定义Redis过期时间
          */
         private const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
-        private const val SPIN_SLEEP_TIME: Long = 50L
-        private const val RETRY_TIMES: Int = 100
+        private const val SPIN_SLEEP_TIME: Long = 30L
+        private const val RETRY_TIMES: Int = 10000
 
         fun buildRedisKey(projectId: String, repoName: String): String = "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
     }

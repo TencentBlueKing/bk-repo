@@ -45,9 +45,12 @@ import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.pojo.user.BasicInfo
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 
@@ -133,7 +136,6 @@ object ObjectBuilderUtil {
         return ArtifactInfo(artifactInfo.projectId, artifactInfo.repoName, path)
     }
 
-
     fun buildFileAndNodeCreateRequest(
         indexYamlMetadata: HelmIndexYamlMetadata,
         request: ChartOperationRequest
@@ -170,4 +172,23 @@ object ObjectBuilderUtil {
         )
     }
 
+    fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
+        with(nodeDetail) {
+            return BasicInfo(
+                packageVersion.name,
+                fullPath,
+                size,
+                sha256.orEmpty(),
+                md5.orEmpty(),
+                packageVersion.stageTag,
+                projectId,
+                repoName,
+                packageVersion.downloads,
+                createdBy,
+                createdDate,
+                lastModifiedBy,
+                lastModifiedDate
+            )
+        }
+    }
 }

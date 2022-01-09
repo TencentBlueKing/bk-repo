@@ -33,34 +33,34 @@ import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 class ChartUploadOperation(
     private val request: ChartOperationRequest,
     redisOperation: RedisOperation,
     private val helmChartMetadata: HelmChartMetadata,
-    private val domain: String
-) : AbstractChartOperation(request, redisOperation) {
-
+    private val domain: String,
+    private val nodeDetail: NodeDetail,
+    chartService: AbstractChartService
+) : AbstractChartOperation(request, redisOperation, chartService) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to add metadata to index's metadata..")
         val uploadRequest = request as ChartUploadRequest
-        with(uploadRequest){
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-            nodeDetail?.let {
-                logger.info("Adding chart info to index.yaml...")
-                val chartName = helmChartMetadata.name
-                val chartVersion = helmChartMetadata.version
-                helmChartMetadata.urls = listOf(
-                    UrlFormatter.format(
-                        domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
-                    )
+        with(uploadRequest) {
+            logger.info("Adding chart info to index.yaml...")
+            val chartName = helmChartMetadata.name
+            val chartVersion = helmChartMetadata.version
+            helmChartMetadata.urls = listOf(
+                UrlFormatter.format(
+                    domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                 )
-                helmChartMetadata.created = convertDateTime(nodeDetail.createdDate)
-                helmChartMetadata.digest = nodeDetail.sha256
-                ChartParserUtil.addIndexEntries(helmIndexYamlMetadata, helmChartMetadata)
-            }
+            )
+            helmChartMetadata.created = AbstractChartService.convertDateTime(nodeDetail.createdDate)
+            helmChartMetadata.digest = nodeDetail.sha256
+            ChartParserUtil.addIndexEntries(helmIndexYamlMetadata, helmChartMetadata)
         }
     }
 }
