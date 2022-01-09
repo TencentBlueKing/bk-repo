@@ -67,11 +67,10 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
-            val task = ChartDeleteOperation(event.request, redisOperation)
+            val task = ChartDeleteOperation(event.request, redisOperation, this@ChartEventListener)
             threadPoolExecutor.submit(task)
         }
     }
-
 
     /**
      * 删除chart的package，更新index.yaml文件
@@ -86,12 +85,10 @@ class ChartEventListener(
                 )
                 return
             }
-            val task = ChartPackageDeleteOperation(event.requestPackage, redisOperation)
+            val task = ChartPackageDeleteOperation(event.requestPackage, redisOperation, this@ChartEventListener)
             threadPoolExecutor.submit(task)
         }
     }
-
-
 
     /**
      * Chart文件上传成功后，进行后续操作，如创建package/packageVersion
@@ -113,11 +110,21 @@ class ChartEventListener(
             val helmChartMetadataMap = getAttribute<Map<String, Any>?>(META_DETAIL)
             helmChartMetadataMap?.let {
                 val helmChartMetadata = HelmMetadataUtils.convertToObject(helmChartMetadataMap)
-                val request = ObjectBuilderUtil.buildChartUploadRequest(userId, artifactInfo, helmChartMetadata)
-                val task = ChartUploadOperation(request, redisOperation, helmChartMetadata, helmProperties.domain)
-                threadPoolExecutor.submit(task)
+                val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+                nodeDetail?.let {
+                    logger.info("Creating upload event request....")
+                    val request = ObjectBuilderUtil.buildChartUploadRequest(userId, artifactInfo, helmChartMetadata)
+                    val task = ChartUploadOperation(
+                        request,
+                        redisOperation,
+                        helmChartMetadata,
+                        helmProperties.domain,
+                        nodeDetail,
+                        this@ChartEventListener
+                    )
+                    threadPoolExecutor.submit(task)
+                }
             }
-
         }
     }
 

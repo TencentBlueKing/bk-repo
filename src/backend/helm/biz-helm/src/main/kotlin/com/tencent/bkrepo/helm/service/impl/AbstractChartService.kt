@@ -66,7 +66,6 @@ import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.TGZ_SUFFIX
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
-import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
@@ -91,13 +90,13 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.ThreadPoolExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.ThreadPoolExecutor
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -134,7 +133,8 @@ open class AbstractChartService : ArtifactService() {
             )
             return (inputStream as ArtifactInputStream).use { it.readYamlString() }
         } catch (e: Exception) {
-            throw HelmException(e.message.toString())
+            logger.error("Error occurred while querying index.yaml, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
         }
     }
 
@@ -149,7 +149,6 @@ open class AbstractChartService : ArtifactService() {
         return inputStream.use { it.readYamlString() }
     }
 
-
     /**
      * 下载index.yaml （local类型仓库index.yaml存储时使用的name时index-cache.yaml，remote需要转换）
      */
@@ -159,7 +158,8 @@ open class AbstractChartService : ArtifactService() {
         try {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
-            throw HelmException(e.message.toString())
+            logger.error("Error occurred while downloading index.yaml, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
         }
     }
     /**
@@ -386,7 +386,6 @@ open class AbstractChartService : ArtifactService() {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
         val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
-
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)

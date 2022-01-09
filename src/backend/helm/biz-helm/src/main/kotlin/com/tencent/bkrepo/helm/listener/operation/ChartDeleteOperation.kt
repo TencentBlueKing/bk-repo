@@ -32,12 +32,14 @@ import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
+import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import java.util.SortedSet
 
 class ChartDeleteOperation(
     private val request: ChartOperationRequest,
-    redisOperation: RedisOperation
-) : AbstractChartOperation(request, redisOperation) {
+    redisOperation: RedisOperation,
+    chartService: AbstractChartService
+) : AbstractChartOperation(request, redisOperation, chartService) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to delete metadata from index's metadata..")
@@ -77,5 +79,4 @@ class ChartDeleteOperation(
             }
         }
     }
-
 }
