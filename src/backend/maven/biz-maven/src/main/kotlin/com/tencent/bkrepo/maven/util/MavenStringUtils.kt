@@ -31,8 +31,10 @@
 
 package com.tencent.bkrepo.maven.util
 
+import com.tencent.bkrepo.maven.ARTIFACT_FORMAT
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.TIMESTAMP_FORMAT
 import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import org.apache.commons.lang3.StringUtils
@@ -98,20 +100,40 @@ object MavenStringUtils {
     fun String.resolverName(artifactId: String, version: String): MavenVersion {
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(this)
         if (matcher.matches()) {
-            val artifactName = matcher.group(1)
             val packaging = matcher.group(2)
             val mavenVersion = MavenVersion(
                 artifactId = artifactId,
                 version = version,
                 packaging = packaging
             )
-            val suffix = artifactName.removePrefix("$artifactId-${version.removeSuffix(SNAPSHOT_SUFFIX)}").trim('-')
-            mavenVersion.setMavenVersion(suffix)
+            mavenVersion.setVersion(this)
             return mavenVersion
         }
         throw MavenArtifactFormatException(this)
     }
 
+    fun MavenVersion.setVersion(artifactName: String) {
+        val artifactNameRegex = String.format(
+            ARTIFACT_FORMAT,
+            this.artifactId,
+            this.version.removeSuffix(SNAPSHOT_SUFFIX),
+            this.packaging
+        )
+        val matcher = Pattern.compile(artifactNameRegex).matcher(artifactName)
+        if (matcher.matches()) {
+            val timestampStr = matcher.group(1)
+            if (timestampStr != null && timestampStr != SNAPSHOT_SUFFIX.trim('-')) {
+                val timeMatch = Pattern.compile(TIMESTAMP_FORMAT).matcher(timestampStr)
+                if (timeMatch.matches()) {
+                    this.timestamp = timeMatch.group(1)
+                    this.buildNo = timeMatch.group(2)
+                }
+            }
+            this.classifier = matcher.group(2)
+        }
+    }
+
+    @Deprecated("")
     private fun MavenVersion.setMavenVersion(suffix: String) {
         if (suffix.isNotBlank() && version.endsWith(SNAPSHOT_SUFFIX)) {
             val strList = suffix.split('-')
