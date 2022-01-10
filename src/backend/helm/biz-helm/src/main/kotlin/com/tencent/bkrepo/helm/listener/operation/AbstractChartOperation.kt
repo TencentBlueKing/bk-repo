@@ -33,6 +33,7 @@ import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
+import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -67,7 +68,12 @@ abstract class AbstractChartOperation(
                     "getOriginalIndexYamlFile for refreshing index.yaml in repo [$projectId/$repoName]"
                 )
                 stopWatch.start()
-                val originalIndexYamlMetadata = chartService.getOriginalIndexYaml(projectId, repoName)
+                val originalIndexYamlMetadata =
+                    if (!chartService.exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+                        HelmUtils.initIndexYamlMetadata()
+                    } else {
+                        chartService.getOriginalIndexYaml(projectId, repoName)
+                    }
                 stopWatch.stop()
                 logger.info("query index file metadata cost: ${stopWatch.totalTimeSeconds}s")
                 handleEvent(originalIndexYamlMetadata)
