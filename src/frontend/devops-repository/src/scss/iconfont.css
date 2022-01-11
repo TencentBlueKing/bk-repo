@@ -19,7 +19,8 @@
 @charset 'utf-8';
 @font-face {
   font-family: 'bk-icons-linear';
-  src:  url('/ui/fonts/bk_icons_linear.eot') format('embedded-opentype'),
+  src:  url('/ui/fonts/bk_icons_linear.eot');
+  src:  url('/ui/fonts/bk_icons_linear.eot?#iefix') format('embedded-opentype'),
     url('/ui/fonts/bk_icons_linear.ttf') format('truetype'),
     url('/ui/fonts/bk_icons_linear.woff') format('woff');
   font-weight: normal;

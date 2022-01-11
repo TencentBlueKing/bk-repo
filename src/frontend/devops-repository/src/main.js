@@ -8,25 +8,13 @@ import Icon from '@repository/components/Icon'
 import CanwayDialog from '@repository/components/CanwayDialog'
 import EmptyData from '@repository/components/EmptyData'
 import createLocale from '@locale'
-import '@icon-cool/bk-icon-devops/src/index'
 import { throttleMessage } from '@repository/utils'
-
-import bkMagic from 'bk-magic-vue'
-// 全量引入 bk-magic-vue 样式
-import 'bk-magic-vue/dist/bk-magic-vue.min.css'
-
-// 打包svg文件
-const requireAll = requireContext => requireContext.keys().map(requireContext)
-const req = require.context('@repository/images', false, /\.svg$/)
-requireAll(req)
 
 const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 Vue.component('Icon', Icon)
 Vue.component('CanwayDialog', CanwayDialog)
 Vue.component('EmptyData', EmptyData)
-
-Vue.use(bkMagic)
 
 Vue.prototype.$setLocale = setLocale
 Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)

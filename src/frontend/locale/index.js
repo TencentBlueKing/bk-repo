@@ -1,8 +1,8 @@
 import VueI18n from 'vue-i18n'
 import Vue from 'vue'
-import { lang, locale } from 'bk-magic-vue'
 import axios from 'axios'
 import cookies from 'js-cookie'
+const { lang, locale } = window.bkMagicVue
 const DEFAULT_LOCALE = 'zh-CN'
 const LS_KEY = 'blueking_language'
 const loadedModule = {}

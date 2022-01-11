@@ -79,7 +79,7 @@
             </bk-table-column>
         </bk-table>
         <bk-pagination
-            class="m10"
+            class="p10"
             size="small"
             align="right"
             show-total-count
@@ -125,7 +125,6 @@
     import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    import XLSX from 'xlsx'
     export default {
         name: 'user',
         components: { OperationList },
@@ -271,12 +270,15 @@
                 const reader = new FileReader()
                 reader.onload = (f) => {
                     const ab = f.target.result
-                    const wb = XLSX.read(new Uint8Array(ab), { type: 'array' })
-                    const wsname = wb.SheetNames[0]
-                    const ws = wb.Sheets[wsname]
-                    const data = XLSX.utils.sheet_to_json(ws, { header: ['userId', 'name', 'email', 'phone'], range: 1 })
-                    this.requestImportUsers(data).finally(() => {
-                        e.target.value = ''
+                    const promise = window.XLSX ? Promise.resolve() : window.loadLibScript('/ui/libs/xlsx.mini.js')
+                    promise.then(() => {
+                        const wb = window.XLSX.read(new Uint8Array(ab), { type: 'array' })
+                        const wsname = wb.SheetNames[0]
+                        const ws = wb.Sheets[wsname]
+                        const data = window.XLSX.utils.sheet_to_json(ws, { header: ['userId', 'name', 'email', 'phone'], range: 1 })
+                        this.requestImportUsers(data).finally(() => {
+                            e.target.value = ''
+                        })
                     })
                 }
                 reader.readAsArrayBuffer(file)
@@ -329,12 +331,7 @@
                 }
             },
             downloadTemplate () {
-                const ws = XLSX.utils.aoa_to_sheet([[
-                    `${this.$t('account')}(仅支持${this.$t('userIdPlacehodler')}，最长不超过32位)`, '中文名', '邮箱', '电话'
-                ]])
-                const wb = XLSX.utils.book_new()
-                XLSX.utils.book_append_sheet(wb, ws, '用户数据')
-                XLSX.writeFile(wb, '制品管理-用户导入模板.xlsx')
+                window.open('/ui/users_import.xlsx', '_self')
             },
             async confirm () {
                 await this.$refs.editUserDialog.validate()
