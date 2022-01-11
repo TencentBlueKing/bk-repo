@@ -164,29 +164,33 @@ object ObjectBuilderUtil {
         context: ArtifactUploadContext
     ): ChartUploadRequest {
         return ChartUploadRequest(
-            context.projectId, context.repoName, context.getStringAttribute(NAME)!!,
-            context.getStringAttribute(VERSION)!!,
-            context.userId, context.getStringAttribute(FULL_PATH)!!,
-            context.getAttribute(META_DETAIL), context.artifactInfo
+            projectId = context.projectId,
+            repoName = context.repoName,
+            name = context.getStringAttribute(NAME)!!,
+            version = context.getStringAttribute(VERSION)!!,
+            operator = context.userId,
+            fullPath = context.getStringAttribute(FULL_PATH)!!,
+            metadataMap = context.getAttribute(META_DETAIL),
+            artifactInfo = context.artifactInfo
         )
     }
 
     fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
         with(nodeDetail) {
             return BasicInfo(
-                packageVersion.name,
-                fullPath,
-                size,
-                sha256.orEmpty(),
-                md5.orEmpty(),
-                packageVersion.stageTag,
-                projectId,
-                repoName,
-                packageVersion.downloads,
-                createdBy,
-                createdDate,
-                lastModifiedBy,
-                lastModifiedDate
+                version = packageVersion.name,
+                fullPath = fullPath,
+                size = size,
+                sha256 = sha256.orEmpty(),
+                md5 = md5.orEmpty(),
+                stageTag = packageVersion.stageTag,
+                projectId = projectId,
+                repoName = repoName,
+                downloadCount = packageVersion.downloads,
+                createdBy = createdBy,
+                createdDate = createdDate,
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate
             )
         }
     }

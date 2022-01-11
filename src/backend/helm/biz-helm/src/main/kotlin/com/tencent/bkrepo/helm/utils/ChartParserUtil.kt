@@ -135,7 +135,7 @@ object ChartParserUtil {
     fun filterByCreateTime(
         indexYamlMetadata: HelmIndexYamlMetadata,
         startTime: LocalDateTime = LocalDateTime.MIN
-    ): Any {
+    ): Map<String, SortedSet<HelmChartMetadata>> {
         with(indexYamlMetadata) {
             when (startTime) {
                 LocalDateTime.MIN -> entries
