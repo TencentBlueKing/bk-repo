@@ -81,7 +81,7 @@ const actions = {
         commit('SET_ADMIN', admin)
         commit('SET_ROLES', roles)
         commit('SET_AVATAR', avatar)
-        resolve(data)
+        resolve({ name, userId, roles })
       }).catch(error => {
         reject(error)
       })
