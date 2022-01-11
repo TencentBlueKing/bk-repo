@@ -47,7 +47,6 @@ class MavenArtifactInfoResolverTest {
             version = "4.0-SNAPSHOT",
             packaging = "jar"
         )
-        //mavenVersion.setVersion()
+        // mavenVersion.setVersion()
     }
-
 }

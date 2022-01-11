@@ -83,11 +83,23 @@ object MavenStringUtils {
 
     /**
      * e.g. *1.0-SNAPSHOT/1.0-SNAPSHOT.jar   [Boolean] = true
-     * e.g. *1.0-SNAPSHOT/1.0-20211228172345.jar   [Boolean] = false
+     * e.g. *1.0-SNAPSHOT/1.0-20211228.172345.jar   [Boolean] = false
      */
     fun String.isSnapshotNonUniqueUri(): Boolean {
-        return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX) &&
+        return this.isSnapshotUri() &&
             this.substringAfterLast("/").contains(SNAPSHOT_SUFFIX)
+    }
+
+    /**
+     * e.g. *1.0-SNAPSHOT/1.0-SNAPSHOT.jar   [Boolean] = false
+     * e.g. *1.0-SNAPSHOT/xxx   [Boolean] = true
+     */
+    fun String.isSnapshotUniqueUri(): Boolean {
+        if (this.isSnapshotUri()) {
+            val suffix = this.substringAfterLast("/")
+            return !suffix.contains(SNAPSHOT_SUFFIX) && !suffix.startsWith("maven-metadata.xml")
+        }
+        return false
     }
 
     /**
