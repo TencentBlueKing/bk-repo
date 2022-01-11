@@ -69,7 +69,7 @@ abstract class AbstractChartOperation(
                 )
                 stopWatch.start()
                 val originalIndexYamlMetadata =
-                    if (!chartService.exist(projectId, repoName, HelmUtils.getIndexYamlFullPath())) {
+                    if (!chartService.exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
                         HelmUtils.initIndexYamlMetadata()
                     } else {
                         chartService.getOriginalIndexYaml(projectId, repoName)

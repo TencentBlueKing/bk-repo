@@ -27,22 +27,18 @@
 
 package com.tencent.bkrepo.helm.listener
 
-import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.helm.config.HelmProperties
-import com.tencent.bkrepo.helm.constants.CHART
-import com.tencent.bkrepo.helm.constants.FILE_TYPE
-import com.tencent.bkrepo.helm.constants.META_DETAIL
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
+import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.listener.operation.ChartDeleteOperation
 import com.tencent.bkrepo.helm.listener.operation.ChartPackageDeleteOperation
 import com.tencent.bkrepo.helm.listener.operation.ChartUploadOperation
+import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
-import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -93,33 +89,24 @@ class ChartEventListener(
     /**
      * Chart文件上传成功后，进行后续操作，如创建package/packageVersion
      */
-    @EventListener(ArtifactUploadedEvent::class)
-    fun handle(event: ArtifactUploadedEvent) {
-        with(event) {
-            try {
-                initPackageInfo(context)
-            } catch (e: Exception) {
-                logger.warn("init package info: ${e.message}")
-            }
-            handleChartUploadEvent(context)
-        }
+    @EventListener(ChartUploadEvent::class)
+    fun handle(event: ChartUploadEvent) {
+        handleChartUploadEvent(event.uploadRequest)
     }
 
     /**
      * 当chart新上传成功后，更新index.yaml
      */
-    private fun handleChartUploadEvent(context: ArtifactUploadContext) {
-        with(context) {
-            if (CHART != getStringAttribute(FILE_TYPE)) return
-            val helmChartMetadataMap = getAttribute<Map<String, Any>?>(META_DETAIL)
-            helmChartMetadataMap?.let {
-                val helmChartMetadata = HelmMetadataUtils.convertToObject(helmChartMetadataMap)
-                val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+    private fun handleChartUploadEvent(uploadRequest: ChartUploadRequest) {
+        with(uploadRequest) {
+            logger.info("Handling package upload event for [$name] in repo [$projectId/$repoName]")
+            metadataMap?.let {
+                val helmChartMetadata = HelmMetadataUtils.convertToObject(metadataMap!!)
+                val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
                 nodeDetail?.let {
                     logger.info("Creating upload event request....")
-                    val request = ObjectBuilderUtil.buildChartUploadRequest(userId, artifactInfo, helmChartMetadata)
                     val task = ChartUploadOperation(
-                        request,
+                        uploadRequest,
                         redisOperation,
                         helmChartMetadata,
                         helmProperties.domain,

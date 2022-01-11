@@ -25,28 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.pojo.chart
+package com.tencent.bkrepo.helm.listener.event
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 
-@ApiModel("chart包上传请求")
-data class ChartUploadRequest(
-    @ApiModelProperty("所属项目id", required = true)
-    override val projectId: String,
-    @ApiModelProperty("所属仓库id", required = true)
-    override val repoName: String,
-    @ApiModelProperty("chart名称", required = true)
-    val name: String,
-    @ApiModelProperty("chart版本", required = true)
-    val version: String,
-    @ApiModelProperty("操作用户id", required = true)
-    override val operator: String,
-    @ApiModelProperty("chart路径", required = true)
-    val fullPath: String,
-    @ApiModelProperty("chart元属性信息", required = false)
-    val metadataMap: Map<String, Any>?,
-    @ApiModelProperty("chart包相关信息", required = false)
-    val artifactInfo: ArtifactInfo
-) : ChartOperationRequest
+data class ChartUploadEvent(val uploadRequest: ChartUploadRequest)
