@@ -5,143 +5,145 @@
             <bk-button v-if="repoType !== 'docker'" outline class="mr10" @click="$emit('download')">下载</bk-button>
             <bk-button v-if="permission.delete" outline class="mr20" @click="$emit('delete')">删除</bk-button>
         </template>
-        <bk-tab-panel v-if="detail.basic" name="versionBaseInfo" :label="$t('baseInfo')">
-            <div class="version-base-info base-info" :data-title="$t('baseInfo')">
-                <div class="package-name grid-item">
-                    <label>制品名称</label>
-                    <span>
-                        <span>{{ packageName }}</span>
-                        <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
-                    </span>
-                </div>
-                <div class="grid-item"
-                    v-for="{ name, label, value } in detailInfoMap"
-                    :key="name">
-                    <label>{{ label }}</label>
-                    <span class="flex-1 text-overflow" :title="value">
-                        <span>{{ value }}</span>
-                        <template v-if="name === 'version'">
-                            <span class="ml5 repo-tag"
-                                v-for="tag in detail.basic.stageTag"
-                                :key="tag">
-                                {{ tag }}
-                            </span>
-                        </template>
-                    </span>
-                </div>
-                <div class="package-description grid-item">
-                    <label>描述</label>
-                    <span class="flex-1 text-overflow" :title="detail.basic.description">{{ detail.basic.description || '--' }}</span>
-                </div>
-            </div>
-            <div class="version-base-info base-info-guide" :data-title="$t('useTips')">
-                <div class="sub-section" v-for="block in articleInstall[0].main" :key="block.subTitle">
-                    <div class="mb10">{{ block.subTitle }}</div>
-                    <code-area class="mb20" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
-                </div>
-            </div>
-            <div class="version-base-info base-info-checksums" data-title="Checksums">
-                <div v-if="detail.basic.sha256" class="grid-item">
-                    <label>SHA256</label>
-                    <span class="flex-1 text-overflow" :title="detail.basic.sha256">{{ detail.basic.sha256 }}</span>
-                </div>
-                <div v-if="detail.basic.md5" class="grid-item">
-                    <label>MD5</label>
-                    <span class="flex-1 text-overflow" :title="detail.basic.md5">{{ detail.basic.md5 }}</span>
-                </div>
-            </div>
-        </bk-tab-panel>
-        <bk-tab-panel v-if="detail.metadata" name="versionMetaData" :label="$t('metaData')">
-            <div class="version-metadata" data-title="元数据">
-                <!-- <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
-                    <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
-                    <div class="version-metadata-add-board"
-                        :style="{ height: metadata.show ? '180px' : '0' }">
-                        <bk-form class="p20" :label-width="80" :model="metadata" :rules="rules" ref="metadatForm">
-                            <bk-form-item :label="$t('key')" :required="true" property="key">
-                                <bk-input size="small" v-model="metadata.key" :placeholder="$t('key')"></bk-input>
-                            </bk-form-item>
-                            <bk-form-item :label="$t('value')" :required="true" property="value">
-                                <bk-input size="small" v-model="metadata.value" :placeholder="$t('value')"></bk-input>
-                            </bk-form-item>
-                            <bk-form-item>
-                                <bk-button size="small" theme="default" @click.stop="hiddenAddMetadata">{{$t('cancel')}}</bk-button>
-                                <bk-button class="ml5" size="small" :loading="metadata.loading" theme="primary" @click="addMetadataHandler">{{$t('confirm')}}</bk-button>
-                            </bk-form-item>
-                        </bk-form>
+        <bk-tab-panel v-for="[tab, obj] in Object.entries(detail)" :key="tab" :name="tab" :label="getTabLabel(tab)">
+            <template v-if="tab === 'basic'">
+                <div class="version-base-info base-info" :data-title="$t('baseInfo')">
+                    <div class="package-name grid-item">
+                        <label>制品名称</label>
+                        <span>
+                            <span>{{ packageName }}</span>
+                            <span v-if="obj.groupId" class="ml5 repo-tag"> {{ obj.groupId }} </span>
+                        </span>
                     </div>
-                </div> -->
-                <bk-table
-                    :data="Object.entries(detail.metadata || {})"
-                    :outer-border="false"
-                    :row-border="false"
-                    size="small">
-                    <template #empty>
-                        <empty-data ex-style="margin-top:80px;"
-                            :config="{
-                                imgSrc: '/ui/no-metadata.png',
-                                title: '暂无元数据',
-                                subTitle: '给制品添加任意自定义的属性，来跟踪整个制品的生产过程'
-                            }">
-                        </empty-data>
-                    </template>
-                    <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
-                    <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
-                    <bk-table-column label="" width="60"></bk-table-column>
-                </bk-table>
-            </div>
-        </bk-tab-panel>
-        <bk-tab-panel v-if="detail.layers" name="versionLayers" label="Layers">
-            <div class="version-layers" data-title="Layers">
-                <div class="block-header grid-item">
-                    <label>ID</label>
-                    <span class="pl40">{{ $t('size') }}</span>
-                </div>
-                <div class="grid-item" v-for="layer in detail.layers" :key="layer.digest">
-                    <label class="text-overflow" :title="layer.digest">{{ layer.digest }}</label>
-                    <span class="pl40">{{ convertFileSize(layer.size) }}</span>
-                </div>
-            </div>
-        </bk-tab-panel>
-        <bk-tab-panel v-if="detail.history" name="versionImageHistory" label="IMAGE HISTORY">
-            <div class="version-history">
-                <div class="version-history-left">
-                    <div class="version-history-code hover-btn"
-                        v-for="(code, index) in detail.history"
-                        :key="index"
-                        :class="{ select: selectedHistory.created_by === code.created_by }"
-                        @click="selectedHistory = code">
-                        {{code.created_by}}
+                    <div class="grid-item"
+                        v-for="{ name, label, value } in detailInfoMap"
+                        :key="name">
+                        <label>{{ label }}</label>
+                        <span class="flex-1 text-overflow" :title="value">
+                            <span>{{ value }}</span>
+                            <template v-if="name === 'version'">
+                                <span class="ml5 repo-tag"
+                                    v-for="tag in obj.stageTag"
+                                    :key="tag">
+                                    {{ tag }}
+                                </span>
+                            </template>
+                        </span>
+                    </div>
+                    <div class="package-description grid-item">
+                        <label>描述</label>
+                        <span class="flex-1 text-overflow" :title="obj.description">{{ obj.description || '--' }}</span>
                     </div>
                 </div>
-                <div class="version-history-right">
-                    <header class="version-history-header">Command</header>
-                    <code-area class="mt20"
-                        :show-line-number="false"
-                        :code-list="[selectedHistory.created_by]">
-                    </code-area>
+                <div class="version-base-info base-info-guide" :data-title="$t('useTips')">
+                    <div class="sub-section" v-for="block in articleInstall[0].main" :key="block.subTitle">
+                        <div class="mb10">{{ block.subTitle }}</div>
+                        <code-area class="mb20" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                    </div>
                 </div>
-            </div>
-        </bk-tab-panel>
-        <bk-tab-panel v-if="detail.dependencyInfo" name="versionDependencies" :label="$t('dependencies')">
-            <article class="version-dependencies">
-                <section class="version-dependencies-main"
-                    v-for="type in ['dependencies', 'devDependencies', 'dependents']"
-                    :key="type"
-                    :data-title="type">
-                    <template v-if="detail.dependencyInfo[type].length">
-                        <template
-                            v-for="{ name, version } in detail.dependencyInfo[type]">
-                            <div class="version-dependencies-key text-overflow" :key="name" :title="name">{{ name }}</div>
-                            <div v-if="type !== 'dependents'" class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
-                        </template>
-                        <div class="version-dependencies-more" v-if="type === 'dependents' && dependentsPage">
-                            <bk-button text title="primary" @click="loadMore">{{ $t('loadMore') }}</bk-button>
+                <div class="version-base-info base-info-checksums" data-title="Checksums">
+                    <div v-if="obj.sha256" class="grid-item">
+                        <label>SHA256</label>
+                        <span class="flex-1 text-overflow" :title="obj.sha256">{{ obj.sha256 }}</span>
+                    </div>
+                    <div v-if="obj.md5" class="grid-item">
+                        <label>MD5</label>
+                        <span class="flex-1 text-overflow" :title="obj.md5">{{ obj.md5 }}</span>
+                    </div>
+                </div>
+            </template>
+            <template v-else-if="tab === 'metadata' || tab === 'manifest'">
+                <div class="version-metadata" :data-title="getTabLabel(tab)">
+                    <!-- <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
+                        <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
+                        <div class="version-metadata-add-board"
+                            :style="{ height: metadata.show ? '180px' : '0' }">
+                            <bk-form class="p20" :label-width="80" :model="metadata" :rules="rules" ref="metadatForm">
+                                <bk-form-item :label="$t('key')" :required="true" property="key">
+                                    <bk-input size="small" v-model="metadata.key" :placeholder="$t('key')"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('value')" :required="true" property="value">
+                                    <bk-input size="small" v-model="metadata.value" :placeholder="$t('value')"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item>
+                                    <bk-button size="small" theme="default" @click.stop="hiddenAddMetadata">{{$t('cancel')}}</bk-button>
+                                    <bk-button class="ml5" size="small" :loading="metadata.loading" theme="primary" @click="addMetadataHandler">{{$t('confirm')}}</bk-button>
+                                </bk-form-item>
+                            </bk-form>
                         </div>
-                    </template>
-                    <empty-data v-else class="version-dependencies-empty"></empty-data>
-                </section>
-            </article>
+                    </div> -->
+                    <bk-table
+                        :data="Object.entries(obj || {})"
+                        :outer-border="false"
+                        :row-border="false"
+                        size="small">
+                        <template #empty>
+                            <empty-data ex-style="margin-top:80px;"
+                                :config="{
+                                    imgSrc: '/ui/no-metadata.png',
+                                    title: '暂无元数据',
+                                    subTitle: '给制品添加任意自定义的属性，来跟踪整个制品的生产过程'
+                                }">
+                            </empty-data>
+                        </template>
+                        <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
+                        <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
+                        <bk-table-column label="" width="60"></bk-table-column>
+                    </bk-table>
+                </div>
+            </template>
+            <template v-else-if="tab === 'layers'">
+                <div class="version-layers" data-title="Layers">
+                    <div class="block-header grid-item">
+                        <label>ID</label>
+                        <span class="pl40">{{ $t('size') }}</span>
+                    </div>
+                    <div class="grid-item" v-for="layer in obj" :key="layer.digest">
+                        <label class="text-overflow" :title="layer.digest">{{ layer.digest }}</label>
+                        <span class="pl40">{{ convertFileSize(layer.size) }}</span>
+                    </div>
+                </div>
+            </template>
+            <template v-else-if="tab === 'history'">
+                <div class="version-history">
+                    <div class="version-history-left">
+                        <div class="version-history-code hover-btn"
+                            v-for="(code, index) in obj"
+                            :key="index"
+                            :class="{ select: selectedHistory.created_by === code.created_by }"
+                            @click="selectedHistory = code">
+                            {{code.created_by}}
+                        </div>
+                    </div>
+                    <div class="version-history-right">
+                        <header class="version-history-header">Command</header>
+                        <code-area class="mt20"
+                            :show-line-number="false"
+                            :code-list="[selectedHistory.created_by]">
+                        </code-area>
+                    </div>
+                </div>
+            </template>
+            <template v-else-if="tab === 'dependencyInfo'">
+                <article class="version-dependencies">
+                    <section class="version-dependencies-main"
+                        v-for="type in ['dependencies', 'devDependencies', 'dependents']"
+                        :key="type"
+                        :data-title="type">
+                        <template v-if="obj[type].length">
+                            <template
+                                v-for="{ name, version } in obj[type]">
+                                <div class="version-dependencies-key text-overflow" :key="name" :title="name">{{ name }}</div>
+                                <div v-if="type !== 'dependents'" class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
+                            </template>
+                            <div class="version-dependencies-more" v-if="type === 'dependents' && dependentsPage">
+                                <bk-button text title="primary" @click="loadMore">{{ $t('loadMore') }}</bk-button>
+                            </div>
+                        </template>
+                        <empty-data v-else class="version-dependencies-empty"></empty-data>
+                    </section>
+                </article>
+            </template>
         </bk-tab-panel>
     </bk-tab>
 </template>
@@ -156,7 +158,7 @@
         mixins: [repoGuideMixin],
         data () {
             return {
-                tabName: 'versionBaseInfo',
+                tabName: 'basic',
                 isLoading: false,
                 detail: {
                     basic: {}
@@ -227,6 +229,22 @@
                 'getNpmDependents',
                 'addPackageMetadata'
             ]),
+            getTabLabel (tab) {
+                switch (tab) {
+                    case 'basic':
+                        return this.$t('baseInfo')
+                    case 'metadata':
+                        return this.$t('metaData')
+                    case 'manifest':
+                        return 'Manifest'
+                    case 'layers':
+                        return 'Layers'
+                    case 'history':
+                        return 'IMAGE HISTORY'
+                    case 'dependencyInfo':
+                        return this.$t('dependencies')
+                }
+            },
             getDetail () {
                 this.isLoading = true
                 this.getVersionDetail({

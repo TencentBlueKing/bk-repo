@@ -24,7 +24,7 @@ export default {
                 if (instance.content) {
                     // bk-form表单校验
                 } else {
-                    this.$bkMessage({
+                    instance.message && this.$bkMessage({
                         message: instance.message,
                         theme: 'error'
                     })
