@@ -37,7 +37,7 @@ class MavenMetadataService(
         }
         val query = Query(criteria)
         val update = Update().set(TMavenMetadataRecord::timestamp.name, mavenVersion.timestamp)
-            .set(TMavenMetadataRecord::buildNo.name, mavenVersion.buildNo?.toInt())
+            .set(TMavenMetadataRecord::buildNo.name, mavenVersion.buildNo ?: 0)
         val options = FindAndModifyOptions().apply { this.upsert(true).returnNew(false) }
         mavenMetadataDao.determineMongoTemplate()
             .findAndModify(query, update, options, TMavenMetadataRecord::class.java)

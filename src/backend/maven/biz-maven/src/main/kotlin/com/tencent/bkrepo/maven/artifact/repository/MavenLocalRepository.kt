@@ -162,6 +162,7 @@ class MavenLocalRepository(
 
     /**
      * 对请求参数和仓库SnapshotVersionBehavior的设置做判断，如果行为不一致生成新的url
+     * 当[SnapshotBehaviorType.UNIQUE] 或 [SnapshotBehaviorType.NON_UNIQUE] 服务器才介入生成构件路径的过程
      */
     private fun combineUrl(
         context: ArtifactUploadContext,
@@ -195,7 +196,7 @@ class MavenLocalRepository(
                     )
                 ).apply {
                     mavenVersion.timestamp = this.timestamp
-                    mavenVersion.buildNo = this.buildNo.toString()
+                    mavenVersion.buildNo = this.buildNo
                 }
                 val nonUniqueName = mavenVersion.combineToUnique()
                 result = request.fullPath.replace(name, nonUniqueName)
@@ -257,7 +258,7 @@ class MavenLocalRepository(
             val repoConf = getRepoConf(context)
             if (artifactFilePath.isSnapshotUri() &&
                 (artifactFilePath.endsWith("maven-metadata.xml") ||
-                        repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE)
+                    repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE)
             ) {
                 return
             }
@@ -309,7 +310,7 @@ class MavenLocalRepository(
             // metadata.xml.* 改由系统生成
             // 构件名如果与仓库配置不符也改由系统生成
             if (artifactFullPath.isSnapshotUri() &&
-                (matedataUploadHandler(artifactFullPath) || artifactUploadHandler(artifactFullPath, context))
+                (matedataUploadHandler(artifactFullPath, context) || artifactUploadHandler(artifactFullPath, context))
             ) {
                 return
             } else {
@@ -318,7 +319,11 @@ class MavenLocalRepository(
         }
     }
 
-    private fun matedataUploadHandler(artifactFullPath: String): Boolean {
+    private fun matedataUploadHandler(artifactFullPath: String, context: ArtifactContext): Boolean {
+        val repoConf = getRepoConf(context)
+        if (repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.DEPLOYER) {
+            return false
+        }
         for (hashType in HashType.values()) {
             val suffix = ".${hashType.ext}"
             val isDigestFile = artifactFullPath.endsWith(suffix)
@@ -536,6 +541,7 @@ class MavenLocalRepository(
         pom: TMavenMetadataRecord,
         records: List<TMavenMetadataRecord>
     ): org.apache.maven.artifact.repository.metadata.Metadata {
+        val buildNo = if (pom.buildNo == 0) 1 else pom.buildNo
         return org.apache.maven.artifact.repository.metadata.Metadata().apply {
             modelVersion = "1.1.0"
             groupId = mavenGavc.groupId
@@ -544,7 +550,7 @@ class MavenLocalRepository(
             versioning = Versioning().apply {
                 snapshot = Snapshot().apply {
                     timestamp = pom.timestamp
-                    buildNumber = pom.buildNo ?: 1
+                    buildNumber = buildNo
                 }
                 lastUpdated = pomLastUpdated
                 snapshotVersions = generateSnapshotVersions(mavenGavc, records)

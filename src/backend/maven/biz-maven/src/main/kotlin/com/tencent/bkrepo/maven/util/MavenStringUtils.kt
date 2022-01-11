@@ -130,30 +130,10 @@ object MavenStringUtils {
                 val timeMatch = Pattern.compile(TIMESTAMP_FORMAT).matcher(timestampStr)
                 if (timeMatch.matches()) {
                     this.timestamp = timeMatch.group(1)
-                    this.buildNo = timeMatch.group(2)
+                    this.buildNo = timeMatch.group(2).toInt()
                 }
             }
             this.classifier = matcher.group(2)
-        }
-    }
-
-    @Deprecated("")
-    private fun MavenVersion.setMavenVersion(suffix: String) {
-        if (suffix.isNotBlank() && version.endsWith(SNAPSHOT_SUFFIX)) {
-            val strList = suffix.split('-')
-            if ((strList.isNotEmpty() && strList[0] == "SNAPSHOT")) {
-                this.classifier = if (strList.size > 1) strList[1] else null
-            } else {
-                val timestamp = if (strList.isNotEmpty()) strList[0] else null
-                val buildNo = if (strList.size > 1) strList[1] else null
-                val classifier =
-                    if (strList.size > 2) StringUtils.join(strList.subList(2, strList.size), "-") else null
-                this.timestamp = timestamp
-                this.buildNo = buildNo
-                this.classifier = classifier
-            }
-        } else {
-            this.classifier = suffix
         }
     }
 }
