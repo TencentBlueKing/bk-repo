@@ -101,7 +101,7 @@ export default {
             commit('SET_PROJECT_LIST', res)
         })
     },
-    logout () {
+    logout ({ commit }) {
         if (MODE_CONFIG === 'ci') {
             window.postMessage({
                 action: 'toggleLoginDialog'
@@ -109,7 +109,7 @@ export default {
             location.href = window.getLoginUrl()
         } else {
             cookie.remove('bkrepo_ticket')
-            location.reload()
+            commit('SHOW_LOGIN_DIALOG', true)
         }
     }
 }

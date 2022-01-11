@@ -1,15 +1,20 @@
-export const repoEnum = [
-    'generic',
-    'docker',
-    'maven',
-    'pypi',
-    'npm',
-    'helm',
-    'composer',
-    'rpm'
-    // 'git',
-    // 'nuget'
-]
+export const repoEnum = MODE_CONFIG === 'ci'
+    ? [
+        'generic',
+        'helm'
+    ]
+    : [
+        'generic',
+        'docker',
+        'maven',
+        'pypi',
+        'npm',
+        'helm',
+        'composer',
+        'rpm'
+        // 'git',
+        // 'nuget'
+    ]
 
 export const repoTypeEnum = {
     LOCAL: 'local', // 本地仓库。普通仓库，上传/下载构件都在本地进行
