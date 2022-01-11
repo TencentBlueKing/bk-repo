@@ -2,11 +2,11 @@ import request from '@/utils/request'
 
 const prefix = 'auth/api'
 
-export function login(data) {
+export function login(formData) {
   return request({
     url: `/${prefix}/user/login`,
     method: 'post',
-    data,
+    data: formData,
     config: { headers: { 'Content-Type': 'multipart/form-data' }}
   })
 }

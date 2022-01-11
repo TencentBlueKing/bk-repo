@@ -1,5 +1,5 @@
 import { login, userInfo, userInfoById } from '@/api/user'
-import { getToken, setToken, removeToken, TokenKey } from '@/utils/auth'
+import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
 
 export const ROLE_ADMIN = 'ADMIN'
@@ -46,9 +46,12 @@ const actions = {
   // user login
   login({ commit }, userInfo) {
     const { username, password } = userInfo
+    const formData = new FormData()
+    formData.append('uid', username)
+    formData.append('token', password)
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password }).then(response => {
-        const token = response.headers[TokenKey]
+      login(formData).then(() => {
+        const token = getToken()
         commit('SET_TOKEN', token)
         setToken(token)
         resolve()
