@@ -1,2 +1,4 @@
-node_modules/
-assets/
+build/*.js
+src/assets
+public
+dist
