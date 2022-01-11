@@ -119,7 +119,8 @@ class BkciAuthService @Autowired constructor(
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
-            logger.debug("validateProjectSuperAdmin , requestUrl: [$url], result : [${apiResponse.content.replace("\n", "")}]")
+            logger.debug("validateProjectSuperAdmin , requestUrl: [$url]," +
+                " result : [${apiResponse.content.replace("\n", "")}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
