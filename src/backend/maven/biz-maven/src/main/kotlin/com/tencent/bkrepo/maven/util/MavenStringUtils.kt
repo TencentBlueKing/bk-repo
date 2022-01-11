@@ -35,7 +35,9 @@ import com.tencent.bkrepo.maven.ARTIFACT_FORMAT
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.TIMESTAMP_FORMAT
+import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
+import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.HttpStatus
@@ -62,8 +64,10 @@ object MavenStringUtils {
         } else null
     }
 
-    fun String.httpStatusCode(): Int {
-        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri()) {
+    fun String.httpStatusCode(repoConf: MavenRepoConf): Int {
+        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri() &&
+            repoConf.mavenSnapshotVersionBehavior != SnapshotBehaviorType.DEPLOYER
+        ) {
             HttpStatus.SC_ACCEPTED
         } else if (this.endsWith("maven-metadata.xml.md5") || this.endsWith("maven-metadata.xml.sha1")) {
             HttpStatus.SC_OK

@@ -256,10 +256,8 @@ class MavenLocalRepository(
             // *-SNAPSHOT/*-SNAPSHOT.jar 的构件上传后，如果仓库设置为`unique` 服务端生成时间戳，无法找到对应节点
             val repoConf = getRepoConf(context)
             if (artifactFilePath.isSnapshotUri() &&
-                (
-                    artifactFilePath.endsWith("maven-metadata.xml") ||
-                        repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE
-                    )
+                (artifactFilePath.endsWith("maven-metadata.xml") ||
+                        repoConf.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE)
             ) {
                 return
             }
@@ -364,6 +362,7 @@ class MavenLocalRepository(
      */
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
+        val repoConf = getRepoConf(context)
         with(context) {
             val mimeType = artifactInfo.getArtifactFullPath().fileMimeType()
             if (mimeType != null) {
@@ -386,7 +385,7 @@ class MavenLocalRepository(
                     originalChecksums = MavenArtifactResponse.OriginalChecksums(node.sha256),
                     uri = uri
                 )
-                response.status = artifactInfo.getArtifactFullPath().httpStatusCode()
+                response.status = artifactInfo.getArtifactFullPath().httpStatusCode(repoConf)
                 response.writer.println(mavenArtifactResponse.toJsonString())
                 response.writer.flush()
             }
@@ -397,7 +396,7 @@ class MavenLocalRepository(
         super.onUploadFinished(context)
         val repoConf = getRepoConf(context)
         val artifactFullPath = context.artifactInfo.getArtifactFullPath()
-        if (artifactFullPath.isSnapshotUri()) {
+        if (artifactFullPath.isSnapshotUri() && repoConf.mavenSnapshotVersionBehavior != SnapshotBehaviorType.DEPLOYER) {
             // 生成`maven-metadata.xml`
             if (artifactFullPath.endsWith("maven-metadata.xml")) {
                 verifyMetadataContent(context)

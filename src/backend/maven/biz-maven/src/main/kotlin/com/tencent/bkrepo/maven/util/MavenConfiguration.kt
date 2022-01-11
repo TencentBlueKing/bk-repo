@@ -44,9 +44,10 @@ object MavenConfiguration {
         val snapshotBehavior = (
             this.getIntegerSetting(SNAPSHOT_BEHAVIOR)?.let {
                 when (it) {
-                    0 -> SnapshotBehaviorType.UNIQUE
                     1 -> SnapshotBehaviorType.NON_UNIQUE
-                    else -> SnapshotBehaviorType.DEPLOYER
+                    2 -> SnapshotBehaviorType.DEPLOYER
+                    // 建议配置为 0 
+                    else -> SnapshotBehaviorType.UNIQUE
                 }
             }
             ) ?: SnapshotBehaviorType.UNIQUE
