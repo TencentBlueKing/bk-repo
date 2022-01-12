@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service.node.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
@@ -51,7 +52,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
+import java.util.Date
 
 /**
  * 节点自定义查询服务实现类
@@ -81,13 +82,13 @@ class NodeSearchServiceImpl(
                 userId = userId,
                 projectId = projectId,
                 option = RepoListOption(
-                    type = "GENERIC"
+                    type = RepositoryType.GENERIC.name
                 )
             ).map { it.name }
         } else {
             repositoryService.listRepo(
                 projectId = projectId,
-                type = "GENERIC"
+                type = RepositoryType.GENERIC.name
             ).map { it.name }
         }
         val genericRepos = if (exRepo != null && exRepo.isNotBlank()) {
@@ -167,6 +168,5 @@ class NodeSearchServiceImpl(
                 LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault())
             } else null
         }
-        private val filterRepo = arrayOf("report", "log")
     }
 }
