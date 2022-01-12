@@ -11,10 +11,10 @@
                 </svg>
                 <header class="ml10 bkrepo-title">{{ title }}</header>
             </router-link>
-            <a class="ml20 link" target="_self" href="/software/repoList">
+            <!-- <a class="ml20 link" target="_self" href="/software/repoList">
                 <i class="devops-icon icon-sort"></i>
                 <span class="ml5">软件源</span>
-            </a>
+            </a> -->
             <bk-select
                 class="ml20 bkre-project-select"
                 :value="projectId"
