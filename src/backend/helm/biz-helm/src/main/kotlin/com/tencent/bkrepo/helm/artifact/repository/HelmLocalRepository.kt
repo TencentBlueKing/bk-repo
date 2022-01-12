@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FORCE
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
@@ -78,6 +80,8 @@ class HelmLocalRepository(
                     val chartMetadata = ChartParserUtil.parseChartFileInfo(context.getArtifactFile())
                     putAttribute(FULL_PATH, HelmUtils.getChartFileFullPath(chartMetadata.name, chartMetadata.version))
                     putAttribute(META_DETAIL, HelmMetadataUtils.convertToMap(chartMetadata))
+                    putAttribute(NAME, chartMetadata.name)
+                    putAttribute(VERSION, chartMetadata.version)
                 }
                 PROV -> {
                     val provFileInfo = ChartParserUtil.parseProvFileInfo(context.getArtifactFile())
@@ -97,6 +101,21 @@ class HelmLocalRepository(
             if (isExist && !isOverwrite) {
                 throw HelmFileAlreadyExistsException("${fullPath.trimStart('/')} already exists")
             }
+        }
+    }
+
+    /**
+     * 上传成功回调
+     */
+    override fun onUploadSuccess(context: ArtifactUploadContext) {
+        super.onUploadSuccess(context)
+        helmOperationService.initPackageInfo(context)
+        if (CHART == context.getStringAttribute(FILE_TYPE)) {
+            publishEvent(
+                ChartUploadEvent(
+                    ObjectBuilderUtil.buildChartUploadRequest(context)
+                )
+            )
         }
     }
 
