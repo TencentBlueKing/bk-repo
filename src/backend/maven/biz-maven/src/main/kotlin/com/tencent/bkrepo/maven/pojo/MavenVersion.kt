@@ -7,7 +7,7 @@ data class MavenVersion(
     val artifactId: String,
     val version: String,
     var timestamp: String? = null,
-    var buildNo: String? = null,
+    var buildNo: Int? = null,
     var classifier: String? = null,
     val packaging: String
 ) {
