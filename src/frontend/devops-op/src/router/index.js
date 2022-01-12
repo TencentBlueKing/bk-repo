@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
+export const TITLE_HOME = 'Home'
 
 Vue.use(Router)
 
@@ -38,21 +39,15 @@ export const constantRoutes = [
   },
 
   {
-    path: '/404',
-    component: () => import('@/views/404'),
-    hidden: true
+    path: '/',
+    redirect: '/services',
+    meta: { title: TITLE_HOME, icon: 'bk' }
   },
 
   {
-    path: '/',
-    component: Layout,
-    redirect: '/dashboard',
-    children: [{
-      path: 'dashboard',
-      name: 'Dashboard',
-      component: () => import('@/views/dashboard/index'),
-      meta: { title: 'Dashboard', icon: 'dashboard' }
-    }]
+    path: '/404',
+    component: () => import('@/views/404'),
+    hidden: true
   }
 ]
 
@@ -61,6 +56,28 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  {
+    path: '/services',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: 'Service',
+        meta: { title: 'Service', icon: 'service' },
+        component: () => import('@/views/service/index'),
+        children: [
+          {
+            path: ':serviceName/instances',
+            name: 'Instance',
+            hidden: true,
+            component: () => import('@/views/service/Instance'),
+            meta: { title: 'Instance' }
+          }
+        ]
+      }
+    ]
+  },
+
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

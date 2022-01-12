@@ -13,6 +13,7 @@
 
 <script>
 import pathToRegexp from 'path-to-regexp'
+import { TITLE_HOME } from '@/router'
 
 export default {
   data() {
@@ -34,18 +35,18 @@ export default {
       let matched = this.$route.matched.filter(item => item.meta && item.meta.title)
       const first = matched[0]
 
-      if (!this.isDashboard(first)) {
-        matched = [{ path: '/dashboard', meta: { title: 'Dashboard' }}].concat(matched)
+      if (!this.isHome(first)) {
+        matched = [{ path: '/', meta: { title: TITLE_HOME }}].concat(matched)
       }
 
       this.levelList = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
     },
-    isDashboard(route) {
-      const name = route && route.name
-      if (!name) {
+    isHome(route) {
+      const path = route && route.path
+      if (!path) {
         return false
       }
-      return name.trim().toLocaleLowerCase() === 'Dashboard'.toLocaleLowerCase()
+      return path.trim() === '/'
     },
     pathCompile(path) {
       // To solve this problem https://github.com/PanJiaChen/vue-element-admin/issues/561

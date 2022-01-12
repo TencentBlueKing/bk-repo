@@ -1,13 +1,11 @@
 <template>
   <div>
-    <p>test</p>
+    <p>instance</p>
   </div>
 </template>
-
 <script>
-
 export default {
-  name: 'ServiceManager'
+  name: 'Instance'
 }
 </script>
 
