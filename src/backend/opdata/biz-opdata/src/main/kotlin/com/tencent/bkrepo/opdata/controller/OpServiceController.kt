@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController
  * 服务管理
  */
 @RestController
-@RequestMapping("/api/op/services")
+@RequestMapping("/api/services")
 @Principal(PrincipalType.ADMIN)
 class OpServiceController @Autowired constructor(
     private val opServiceService: OpServiceService
@@ -62,7 +62,7 @@ class OpServiceController @Autowired constructor(
     /**
      * 获取服务实例信息
      */
-    @GetMapping("/{serviceName}")
+    @GetMapping("/{serviceName}/instances")
     fun instances(@PathVariable("serviceName") serviceName: String): Response<List<InstanceInfo>> {
         return success(opServiceService.instances(serviceName))
     }
