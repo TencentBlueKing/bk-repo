@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
@@ -71,7 +72,12 @@ class RepoNameRuleInterceptor(
                     require(listValue is List<*>)
                     handleRepoNameIn(projectId, listValue, context)
                 }
-                else -> throw IllegalArgumentException("RepoName only support EQ and IN operation type.")
+                OperationType.NIN -> {
+                    val listValue = value
+                    require(listValue is List<*>)
+                    handleRepoNameNin(projectId, listValue, context)
+                }
+                else -> throw IllegalArgumentException("RepoName only support EQ IN and NIN operation type.")
             }.toFixed()
             return context.interpreter.resolveRule(queryRule, context)
         }
@@ -98,6 +104,32 @@ class RepoNameRuleInterceptor(
             value.filter { hasRepoPermission(projectId, it.toString()) }.map { it.toString() }
         }
         return if (repoNameList.size == 1) {
+            Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
+        } else {
+            Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
+        }
+    }
+
+    private fun handleRepoNameNin(
+        projectId: String,
+        value: List<*>,
+        context: CommonQueryContext
+    ): Rule.QueryRule {
+        val repoNameList = if (permissionManager.enableAuth()) {
+            val userId = SecurityUtils.getUserId()
+            permissionManager.listPermissionRepo(
+                userId = userId,
+                projectId = projectId,
+                option = RepoListOption()
+            )
+        } else {
+            permissionManager.listRepo(projectId = projectId)
+        }.data?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
+        return if (repoNameList.isNullOrEmpty()) {
+            throw PermissionException(
+                "${SecurityUtils.getUserId()} hasn't any PermissionRepo in project [$projectId], " +
+                    "or project [$projectId] hasn't any repo")
+        } else if (repoNameList.size == 1) {
             Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
         } else {
             Rule.QueryRule(NodeInfo::repoName.name, repoNameList, OperationType.IN)
