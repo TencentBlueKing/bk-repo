@@ -44,5 +44,10 @@ interface NodeSearchService {
      */
     fun search(queryModel: QueryModel): Page<Map<String, Any?>>
 
-    fun nodeOverview(projectId: String, name: String): List<ProjectPackageOverview>
+    fun nodeOverview(
+        userId: String,
+        projectId: String,
+        name: String,
+        exRepo: String?
+    ): List<ProjectPackageOverview>
 }

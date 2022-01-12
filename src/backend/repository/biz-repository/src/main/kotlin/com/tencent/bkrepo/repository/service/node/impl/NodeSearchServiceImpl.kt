@@ -35,9 +35,11 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
+import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.software.CountResult
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.repository.search.node.NodeQueryContext
@@ -60,7 +62,8 @@ import java.util.Date
 class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+    private val httpAuthProperties: HttpAuthProperties
 ) : NodeSearchService {
 
     override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
@@ -68,9 +71,31 @@ class NodeSearchServiceImpl(
         return doQuery(context)
     }
 
-    override fun nodeOverview(projectId: String, name: String): List<ProjectPackageOverview> {
-        val genericRepos = repositoryService.allRepos(projectId, null, RepositoryType.GENERIC).map { it?.name }
-        if(genericRepos.isEmpty()) return listOf()
+    override fun nodeOverview(
+        userId: String,
+        projectId: String,
+        name: String,
+        exRepo: String?
+    ): List<ProjectPackageOverview> {
+        val repos = if (httpAuthProperties.enabled) {
+            repositoryService.listPermissionRepo(
+                userId = userId,
+                projectId = projectId,
+                option = RepoListOption(
+                    type = RepositoryType.GENERIC.name
+                )
+            ).map { it.name }
+        } else {
+            repositoryService.listRepo(
+                projectId = projectId,
+                type = RepositoryType.GENERIC.name
+            ).map { it.name }
+        }
+        val genericRepos = if (exRepo != null && exRepo.isNotBlank()) {
+            repos.filter { it !in (exRepo.split(',')) }
+        } else repos
+
+        if (genericRepos.isEmpty()) return listOf()
         val criteria = Criteria.where(TNode::repoName.name).`in`(genericRepos)
         criteria.and(TNode::projectId.name).`is`(projectId)
             .and(TNode::deleted.name).`is`(null)
@@ -97,7 +122,7 @@ class NodeSearchServiceImpl(
                 sum = 0L
             )
         )
-        list.map { pojo ->
+        list.sortedByDescending { it.count }.map { pojo ->
             val repoOverview = ProjectPackageOverview.RepoPackageOverview(
                 repoName = pojo.id,
                 packages = pojo.count
