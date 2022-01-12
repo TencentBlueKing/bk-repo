@@ -1,6 +1,8 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 export const TITLE_HOME = 'Home'
+export const ROUTER_NAME_SERVICE = 'Service'
+export const ROUTER_NAME_INSTANCE = 'Instance'
 
 Vue.use(Router)
 
@@ -62,18 +64,17 @@ export const asyncRoutes = [
     children: [
       {
         path: '/',
-        name: 'Service',
-        meta: { title: 'Service', icon: 'service' },
-        component: () => import('@/views/service/index'),
-        children: [
-          {
-            path: ':serviceName/instances',
-            name: 'Instance',
-            hidden: true,
-            component: () => import('@/views/service/Instance'),
-            meta: { title: 'Instance' }
-          }
-        ]
+        name: ROUTER_NAME_SERVICE,
+        meta: { title: '服务管理', icon: 'service' },
+        component: () => import('@/views/service/index')
+      },
+      {
+        path: ':serviceName/instances',
+        name: ROUTER_NAME_INSTANCE,
+        hidden: true,
+        component: () => import('@/views/service/Instance'),
+        props: { default: true },
+        meta: { title: ROUTER_NAME_INSTANCE }
       }
     ]
   },
