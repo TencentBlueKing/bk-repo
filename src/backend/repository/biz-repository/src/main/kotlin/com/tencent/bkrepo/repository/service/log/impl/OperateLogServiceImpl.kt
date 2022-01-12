@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.OperateLogDao
 import com.tencent.bkrepo.repository.model.TOperateLog
@@ -203,23 +204,25 @@ class OperateLogServiceImpl(
         } else if (metadataEvent.contains(tOperateLog.type)) {
             OperateLogResponse.Content(
                 projectId = tOperateLog.projectId,
-                repoType = "GENERIC",
+                repoType = RepositoryType.GENERIC.name,
                 resKey = "${tOperateLog.repoName}::${tOperateLog.resourceKey}",
                 des = tOperateLog.description.toJsonString()
             )
         } else {
-            null
-        }
-        return content?.let {
-            OperateLogResponse(
-                createdDate = tOperateLog.createdDate,
-                operate = tOperateLog.type.nick,
-                userId = tOperateLog.userId,
-                clientAddress = tOperateLog.clientAddress,
-                result = true,
-                content = it
+            OperateLogResponse.Content(
+                projectId = tOperateLog.projectId,
+                resKey = tOperateLog.resourceKey,
+                des = tOperateLog.description.toJsonString()
             )
         }
+        return OperateLogResponse(
+            createdDate = tOperateLog.createdDate,
+            operate = tOperateLog.type.nick,
+            userId = tOperateLog.userId,
+            clientAddress = tOperateLog.clientAddress,
+            result = true,
+            content = content
+        )
     }
 
     private fun transfer(tOperateLog: TOperateLog): OperateLog {

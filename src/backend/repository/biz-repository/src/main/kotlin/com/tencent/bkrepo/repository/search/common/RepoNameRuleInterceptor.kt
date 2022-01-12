@@ -128,7 +128,8 @@ class RepoNameRuleInterceptor(
         return if (repoNameList.isNullOrEmpty()) {
             throw PermissionException(
                 "${SecurityUtils.getUserId()} hasn't any PermissionRepo in project [$projectId], " +
-                    "or project [$projectId] hasn't any repo")
+                    "or project [$projectId] hasn't any repo"
+            )
         } else if (repoNameList.size == 1) {
             Rule.QueryRule(NodeInfo::repoName.name, repoNameList.first(), OperationType.EQ)
         } else {

@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.query.handler.MongoQueryRuleHandler
 import com.tencent.bkrepo.common.query.model.Rule
 import org.springframework.data.mongodb.core.query.Criteria
 
-class NinHandler: MongoQueryRuleHandler {
+class NinHandler : MongoQueryRuleHandler {
 
     override fun match(rule: Rule.QueryRule): Boolean {
         return rule.operation == OperationType.NIN
