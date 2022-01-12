@@ -37,6 +37,8 @@ import com.tencent.bkrepo.maven.MAX_UNIQUE_SNAPSHOTS
 import com.tencent.bkrepo.maven.SNAPSHOT_BEHAVIOR
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
+import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotNonUniqueUri
+import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotUniqueUri
 
 object MavenConfiguration {
     fun RepositoryConfiguration.toMavenRepoConf(): MavenRepoConf {
@@ -44,13 +46,34 @@ object MavenConfiguration {
         val snapshotBehavior = (
             this.getIntegerSetting(SNAPSHOT_BEHAVIOR)?.let {
                 when (it) {
-                    0 -> SnapshotBehaviorType.UNIQUE
                     1 -> SnapshotBehaviorType.NON_UNIQUE
-                    else -> SnapshotBehaviorType.DEPLOYER
+                    2 -> SnapshotBehaviorType.DEPLOYER
+                    // 建议配置为 0 
+                    else -> SnapshotBehaviorType.UNIQUE
                 }
             }
             ) ?: SnapshotBehaviorType.UNIQUE
         val maxUniqueSnapshots = this.getIntegerSetting(MAX_UNIQUE_SNAPSHOTS)
         return MavenRepoConf(checksumPolicy, snapshotBehavior, maxUniqueSnapshots)
+    }
+
+    /**
+     * 检查构件路径是否与仓库 [SnapshotBehaviorType] 冲突
+     * [SnapshotBehaviorType.DEPLOYER] 不做处理
+     */
+    fun MavenRepoConf.versionBehaviorConflict(artifactUrl: String): Boolean {
+        if (this.mavenSnapshotVersionBehavior == SnapshotBehaviorType.DEPLOYER) {
+            return false
+        }
+        return (
+            (
+                this.mavenSnapshotVersionBehavior == SnapshotBehaviorType.UNIQUE &&
+                    artifactUrl.isSnapshotNonUniqueUri()
+                ) ||
+                (
+                    this.mavenSnapshotVersionBehavior == SnapshotBehaviorType.NON_UNIQUE &&
+                        artifactUrl.isSnapshotUniqueUri()
+                    )
+            )
     }
 }

@@ -31,9 +31,13 @@
 
 package com.tencent.bkrepo.maven.util
 
+import com.tencent.bkrepo.maven.ARTIFACT_FORMAT
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.TIMESTAMP_FORMAT
+import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
+import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import org.apache.commons.lang3.StringUtils
 import org.apache.http.HttpStatus
@@ -60,8 +64,10 @@ object MavenStringUtils {
         } else null
     }
 
-    fun String.httpStatusCode(): Int {
-        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri()) {
+    fun String.httpStatusCode(repoConf: MavenRepoConf): Int {
+        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri() &&
+            repoConf.mavenSnapshotVersionBehavior != SnapshotBehaviorType.DEPLOYER
+        ) {
             HttpStatus.SC_ACCEPTED
         } else if (this.endsWith("maven-metadata.xml.md5") || this.endsWith("maven-metadata.xml.sha1")) {
             HttpStatus.SC_OK
@@ -77,11 +83,23 @@ object MavenStringUtils {
 
     /**
      * e.g. *1.0-SNAPSHOT/1.0-SNAPSHOT.jar   [Boolean] = true
-     * e.g. *1.0-SNAPSHOT/1.0-20211228172345.jar   [Boolean] = false
+     * e.g. *1.0-SNAPSHOT/1.0-20211228.172345.jar   [Boolean] = false
      */
     fun String.isSnapshotNonUniqueUri(): Boolean {
-        return this.substringBeforeLast('/').endsWith(SNAPSHOT_SUFFIX) &&
+        return this.isSnapshotUri() &&
             this.substringAfterLast("/").contains(SNAPSHOT_SUFFIX)
+    }
+
+    /**
+     * e.g. *1.0-SNAPSHOT/1.0-SNAPSHOT.jar   [Boolean] = false
+     * e.g. *1.0-SNAPSHOT/xxx   [Boolean] = true
+     */
+    fun String.isSnapshotUniqueUri(): Boolean {
+        if (this.isSnapshotUri()) {
+            val suffix = this.substringAfterLast("/")
+            return !suffix.contains(SNAPSHOT_SUFFIX) && !suffix.startsWith("maven-metadata.xml")
+        }
+        return false
     }
 
     /**
@@ -98,36 +116,36 @@ object MavenStringUtils {
     fun String.resolverName(artifactId: String, version: String): MavenVersion {
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(this)
         if (matcher.matches()) {
-            val artifactName = matcher.group(1)
             val packaging = matcher.group(2)
             val mavenVersion = MavenVersion(
                 artifactId = artifactId,
                 version = version,
                 packaging = packaging
             )
-            val suffix = artifactName.removePrefix("$artifactId-${version.removeSuffix(SNAPSHOT_SUFFIX)}").trim('-')
-            mavenVersion.setMavenVersion(suffix)
+            mavenVersion.setVersion(this)
             return mavenVersion
         }
         throw MavenArtifactFormatException(this)
     }
 
-    private fun MavenVersion.setMavenVersion(suffix: String) {
-        if (suffix.isNotBlank() && version.endsWith(SNAPSHOT_SUFFIX)) {
-            val strList = suffix.split('-')
-            if ((strList.isNotEmpty() && strList[0] == "SNAPSHOT")) {
-                this.classifier = if (strList.size > 1) strList[1] else null
-            } else {
-                val timestamp = if (strList.isNotEmpty()) strList[0] else null
-                val buildNo = if (strList.size > 1) strList[1] else null
-                val classifier =
-                    if (strList.size > 2) StringUtils.join(strList.subList(2, strList.size), "-") else null
-                this.timestamp = timestamp
-                this.buildNo = buildNo
-                this.classifier = classifier
+    fun MavenVersion.setVersion(artifactName: String) {
+        val artifactNameRegex = String.format(
+            ARTIFACT_FORMAT,
+            this.artifactId,
+            this.version.removeSuffix(SNAPSHOT_SUFFIX),
+            this.packaging
+        )
+        val matcher = Pattern.compile(artifactNameRegex).matcher(artifactName)
+        if (matcher.matches()) {
+            val timestampStr = matcher.group(1)
+            if (timestampStr != null && timestampStr != SNAPSHOT_SUFFIX.trim('-')) {
+                val timeMatch = Pattern.compile(TIMESTAMP_FORMAT).matcher(timestampStr)
+                if (timeMatch.matches()) {
+                    this.timestamp = timeMatch.group(1)
+                    this.buildNo = timeMatch.group(2).toInt()
+                }
             }
-        } else {
-            this.classifier = suffix
+            this.classifier = matcher.group(2)
         }
     }
 }
