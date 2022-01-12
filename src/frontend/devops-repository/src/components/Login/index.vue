@@ -8,7 +8,7 @@
                     <bk-input
                         style="width: 320px"
                         v-model.trim="loginForm.username"
-                        placeholder="请输入用户名/邮箱/手机号">
+                        placeholder="请输入用户名">
                     </bk-input>
                 </bk-form-item>
                 <bk-form-item>

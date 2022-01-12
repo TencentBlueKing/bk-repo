@@ -1,14 +1,17 @@
 <template>
     <canway-dialog
-        :value="show"
-        :title="title"
+        :value="uploadDialog.show"
+        :title="uploadDialog.title"
         width="620"
         height-num="267"
-        @cancel="$emit('cancel')">
-        <artifactory-upload ref="artifactoryUpload" :upload-status="uploadStatus" :upload-progress="uploadProgress"></artifactory-upload>
+        @cancel="uploadDialog.show = false">
+        <artifactory-upload ref="artifactoryUpload"
+            :upload-status="uploadDialog.uploadStatus"
+            :upload-progress="uploadDialog.uploadProgress">
+        </artifactory-upload>
         <template #footer>
-            <bk-button @click="loading ? abortUpload() : $emit('cancel')">{{ $t('cancel') }}</bk-button>
-            <bk-button class="ml10" :loading="loading" theme="primary" @click="submitUpload">{{ $t('confirm') }}</bk-button>
+            <bk-button @click="uploadDialog.loading ? abortUpload() : $emit('cancel')">{{ $t('cancel') }}</bk-button>
+            <bk-button class="ml10" :loading="uploadDialog.loading" theme="primary" @click="submitUpload">{{ $t('confirm') }}</bk-button>
         </template>
     </canway-dialog>
 </template>
@@ -18,26 +21,16 @@
     export default {
         name: 'genericUpload',
         components: { ArtifactoryUpload },
-        props: {
-            show: Boolean,
-            title: String,
-            fullPath: String
-        },
         data () {
             return {
-                loading: false,
-                uploadXHR: null,
-                uploadStatus: 'primary',
-                uploadProgress: 0
-            }
-        },
-        watch: {
-            show (val) {
-                if (val) {
-                    this.$refs.artifactoryUpload.reset()
-                    this.loading = false
-                    this.uploadStatus = 'primary'
-                    this.uploadProgress = 0
+                uploadDialog: {
+                    show: false,
+                    title: '',
+                    fullPath: '',
+                    loading: false,
+                    uploadXHR: null,
+                    uploadStatus: 'primary',
+                    uploadProgress: 0
                 }
             }
         },
@@ -45,16 +38,30 @@
             ...mapActions([
                 'uploadArtifactory'
             ]),
+            setData (data) {
+                this.uploadDialog = {
+                    ...this.uploadDialog,
+                    loading: false,
+                    uploadXHR: null,
+                    uploadStatus: 'primary',
+                    uploadProgress: 0,
+                    ...data
+                }
+                this.$refs.artifactoryUpload && this.$refs.artifactoryUpload.reset()
+            },
             uploadFile (file) {
-                this.loading = true
-                this.uploadXHR = new XMLHttpRequest()
-                this.uploadStatus = 'primary'
-                this.uploadProgress = 0
+                this.uploadDialog = {
+                    ...this.uploadDialog,
+                    loading: true,
+                    uploadXHR: new XMLHttpRequest(),
+                    uploadStatus: 'primary',
+                    uploadProgress: 0
+                }
                 this.uploadArtifactory({
-                    xhr: this.uploadXHR,
+                    xhr: this.uploadDialog.uploadXHR,
                     projectId: this.$route.params.projectId,
                     repoName: this.$route.query.repoName,
-                    fullPath: `${this.fullPath}/${file.name}`,
+                    fullPath: `${this.uploadDialog.fullPath}/${file.name}`,
                     body: file.blob,
                     progressHandler: this.progressHandler,
                     headers: {
@@ -64,33 +71,33 @@
                     }
                 }).then(() => {
                     this.$emit('update')
-                    this.$emit('cancel')
+                    this.uploadDialog.show = false
                     this.$bkMessage({
                         theme: 'success',
                         message: `${this.$t('upload')} ${file.name} ${this.$t('success')}`
                     })
                 }).catch(e => {
-                    this.uploadStatus = 'primary'
-                    this.uploadProgress = 0
+                    this.uploadDialog.uploadStatus = 'primary'
+                    this.uploadDialog.uploadProgress = 0
                     e && this.$bkMessage({
                         theme: 'error',
                         message: e.message || e
                     })
                 }).finally(() => {
-                    this.loading = false
+                    this.uploadDialog.loading = false
                 })
             },
             async submitUpload () {
                 const file = await this.$refs.artifactoryUpload.getFiles()
                 if (!file.overwrite) {
-                    this.loading = true
-                    const url = `/generic/${this.$route.params.projectId}/${this.$route.query.repoName}/${encodeURIComponent(`${this.fullPath}/${file.name}`)}`
+                    this.uploadDialog.loading = true
+                    const url = `/generic/${this.$route.params.projectId}/${this.$route.query.repoName}/${encodeURIComponent(`${this.uploadDialog.fullPath}/${file.name}`)}`
                     this.$ajax.head(url).then(() => {
                         this.$bkMessage({
                             theme: 'error',
                             message: this.$t('fileExist')
                         })
-                        this.loading = false
+                        this.uploadDialog.loading = false
                     }).catch(e => {
                         if (e.status === 404) {
                             this.uploadFile(file)
@@ -99,7 +106,7 @@
                                 theme: 'error',
                                 message: e.message
                             })
-                            this.loading = false
+                            this.uploadDialog.loading = false
                         }
                     })
                 } else {
@@ -107,13 +114,13 @@
                 }
             },
             abortUpload () {
-                this.loading = false
-                this.uploadXHR && this.uploadXHR.abort()
-                this.uploadXHR = null
+                this.uploadDialog.loading = false
+                this.uploadDialog.uploadXHR && this.uploadDialog.uploadXHR.abort()
+                this.uploadDialog.uploadXHR = null
             },
             progressHandler ($event) {
                 console.log('upload', $event.loaded + '/' + $event.total)
-                this.uploadProgress = $event.loaded / $event.total
+                this.uploadDialog.uploadProgress = $event.loaded / $event.total
             }
         }
     }

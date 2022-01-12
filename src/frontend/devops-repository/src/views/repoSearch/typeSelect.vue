@@ -3,7 +3,10 @@
         :class="{ 'active': showDropdown }"
         @click="showDropdown = !showDropdown"
         v-bk-clickoutside="hiddenDropdown">
-        <Icon size="40" :name="repoType" />
+        <div class="flex-column flex-center">
+            <Icon size="24" :name="repoType" />
+            <span style="margin-top: -5px;">{{repoType}}</span>
+        </div>
         <i class="ml10 devops-icon" :class="showDropdown ? 'icon-up-shape' : 'icon-down-shape'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
             <bk-radio-group :value="repoType" class="repo-type-radio-group" @change="changeType">
