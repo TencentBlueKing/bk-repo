@@ -98,7 +98,12 @@ export default {
                 params: {
                     projectId,
                     repoType: repoType.toUpperCase(),
-                    [isGeneric ? 'name' : 'packageName']: '*' + packageName + '*'
+                    [isGeneric ? 'name' : 'packageName']: '*' + packageName + '*',
+                    ...(MODE_CONFIG === 'ci' && isGeneric
+                        ? {
+                            exRepo: 'report,log'
+                        }
+                        : {})
                 }
             }
         )
