@@ -66,7 +66,6 @@ import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.TGZ_SUFFIX
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
-import com.tencent.bkrepo.helm.exception.HelmException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.exception.HelmRepoNotFoundException
@@ -78,6 +77,7 @@ import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -91,6 +91,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersi
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.ThreadPoolExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -132,7 +133,8 @@ open class AbstractChartService : ArtifactService() {
             )
             return (inputStream as ArtifactInputStream).use { it.readYamlString() }
         } catch (e: Exception) {
-            throw HelmException(e.message.toString())
+            logger.error("Error occurred while querying index.yaml, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
         }
     }
 
@@ -156,7 +158,8 @@ open class AbstractChartService : ArtifactService() {
         try {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
-            throw HelmException(e.message.toString())
+            logger.error("Error occurred while downloading index.yaml, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
         }
     }
     /**
@@ -383,5 +386,10 @@ open class AbstractChartService : ArtifactService() {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
         val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
+
+        fun convertDateTime(timeStr: String): String {
+            val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
+            return TimeFormatUtil.convertToUtcTime(localDateTime)
+        }
     }
 }
