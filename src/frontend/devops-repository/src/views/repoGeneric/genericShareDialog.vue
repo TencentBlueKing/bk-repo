@@ -3,9 +3,9 @@
         v-model="genericShare.show"
         :title="genericShare.title"
         width="520"
-        :height-num="shareUrl ? 352 : 282"
+        :height-num="shareUrl ? 352 : 426"
         @cancel="cancel">
-        <div v-if="shareUrl" class="share-result">
+        <!-- <div v-if="shareUrl" class="share-result">
             <bk-form class="flex-1" form-type="vertical">
                 <bk-form-item label="共享链接地址">
                     <bk-input :value="shareUrl" readonly></bk-input>
@@ -29,9 +29,9 @@
                 <span class="qrcode-label">移动端二维码下载</span>
                 <QRCode class="share-qrcode" :text="shareUrl" :size="150" />
             </div>
-        </div>
-        <bk-form v-else style="margin-top:-15px" ref="genericShareForm" :label-width="90" form-type="vertical">
-            <!-- <bk-form-item label="授权用户" property="user">
+        </div> -->
+        <bk-form style="margin-top:-15px" ref="genericShareForm" :label-width="90" form-type="vertical">
+            <bk-form-item label="授权用户">
                 <bk-tag-input
                     v-model="genericShare.user"
                     :list="Object.values(userList).filter(user => user.id !== 'anonymous')"
@@ -41,15 +41,15 @@
                     allow-create
                     has-delete-icon>
                 </bk-tag-input>
-            </bk-form-item> -->
-            <!-- <bk-form-item label="授权IP" property="ip">
+            </bk-form-item>
+            <bk-form-item label="授权IP">
                 <bk-tag-input
                     v-model="genericShare.ip"
                     placeholder="授权访问IP，为空则任意IP可访问，按Enter键确认"
                     trigger="focus"
                     allow-create>
                 </bk-tag-input>
-            </bk-form-item> -->
+            </bk-form-item>
             <bk-form-item label="访问次数">
                 <bk-input v-model="genericShare.permits" placeholder="请输入访问次数，为空则不限制"></bk-input>
             </bk-form-item>
@@ -74,10 +74,10 @@
 <script>
     import Clipboard from 'clipboard'
     import { mapActions, mapState } from 'vuex'
-    import QRCode from '@repository/components/QRCode'
+    // import QRCode from '@repository/components/QRCode'
     export default {
         name: 'genericShare',
-        components: { QRCode },
+        // components: { QRCode },
         data () {
             return {
                 shareUrl: '',
@@ -119,7 +119,7 @@
                 this.genericShare.show = false
             },
             submitShare () {
-                const { projectId, repoName, path, time, permits } = this.genericShare
+                const { projectId, repoName, path, ip, user, time, permits } = this.genericShare
                 this.genericShare.loading = true
                 this.shareArtifactory({
                     projectId,
@@ -128,12 +128,17 @@
                     type: 'DOWNLOAD',
                     host: location.origin,
                     needsNotify: true,
-                    // ...(data.ip.length ? { authorizedIpSet: data.ip } : {}),
-                    // ...(user.length ? { authorizedUserSet: user } : {}),
+                    ...(ip.length ? { authorizedIpSet: ip } : {}),
+                    ...(user.length ? { authorizedUserSet: user } : {}),
                     ...(Number(time) > 0 ? { expireSeconds: Number(time) * 86400 } : {}),
                     ...(Number(permits) > 0 ? { permits: Number(permits) } : {})
                 }).then(([{ url }]) => {
-                    this.shareUrl = url
+                    // this.shareUrl = url
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: '共享成功'
+                    })
+                    this.cancel()
                 }).finally(() => {
                     this.genericShare.loading = false
                 })
