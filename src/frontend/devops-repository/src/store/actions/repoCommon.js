@@ -119,6 +119,13 @@ export default {
                 },
                 rule: {
                     rules: [
+                        ...(MODE_CONFIG === 'ci'
+                            ? [{
+                                field: 'repoName',
+                                value: ['report', 'log'],
+                                operation: 'NIN'
+                            }]
+                            : []),
                         ...(projectId
                             ? [{
                                 field: 'projectId',
