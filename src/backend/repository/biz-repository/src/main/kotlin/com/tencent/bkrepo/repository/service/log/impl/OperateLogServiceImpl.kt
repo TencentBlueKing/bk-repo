@@ -127,7 +127,7 @@ class OperateLogServiceImpl(
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val query = buildOperateLogPageQuery(type, projectId, repoName, operator, startTime, endTime)
         val totalRecords = operateLogDao.count(query)
-        val records = operateLogDao.find(query.with(pageRequest)).map { convert(it) }
+        val records = operateLogDao.find(query.with(pageRequest)).mapNotNull { convert(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
