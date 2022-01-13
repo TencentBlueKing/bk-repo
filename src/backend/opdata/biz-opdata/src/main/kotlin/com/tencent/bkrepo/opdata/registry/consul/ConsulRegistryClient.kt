@@ -80,7 +80,7 @@ class ConsulRegistryClient @Autowired constructor(
     override fun deregister(serviceName: String, instanceId: String): InstanceInfo {
         // 注销服务实例
         val urlBuilder = HttpUrl.Builder().addPathSegments(CONSUL_DEREGISTER_PATH)
-        return changeInstanceStatus(urlBuilder, serviceName, instanceId)
+        return changeInstanceStatus(urlBuilder, serviceName, instanceId, InstanceStatus.DEREGISTER)
     }
 
     override fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo {
@@ -93,13 +93,19 @@ class ConsulRegistryClient @Autowired constructor(
         val urlBuilder = HttpUrl.Builder()
             .addPathSegments(CONSUL_MAINTENANCE_PATH)
             .addQueryParameter(CONSUL_QUERY_PARAM_ENABLE, enable.toString())
-        return changeInstanceStatus(urlBuilder, serviceName, instanceId)
+        val targetStatus = if (enable) {
+            InstanceStatus.DEREGISTER
+        } else {
+            InstanceStatus.RUNNING
+        }
+        return changeInstanceStatus(urlBuilder, serviceName, instanceId, targetStatus)
     }
 
     private fun changeInstanceStatus(
         urlBuilder: HttpUrl.Builder,
         serviceName: String,
-        instanceId: String
+        instanceId: String,
+        targetStatus: InstanceStatus
     ): InstanceInfo {
         val consulInstanceId = ConsulInstanceId.create(instanceId)
 
@@ -115,7 +121,7 @@ class ConsulRegistryClient @Autowired constructor(
         val res = httpClient.newCall(req).execute()
         res.use { throwExceptionOnRequestFailed(it) }
 
-        return convertToInstanceInfo(consulInstanceHealth).copy(status = InstanceStatus.DEREGISTER)
+        return convertToInstanceInfo(consulInstanceHealth).copy(status = targetStatus)
     }
 
     private fun consulInstanceHealth(serviceName: String, instanceId: String): ConsulInstanceHealth {

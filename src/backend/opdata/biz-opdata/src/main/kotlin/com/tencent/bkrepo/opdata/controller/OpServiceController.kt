@@ -83,7 +83,7 @@ class OpServiceController @Autowired constructor(
         @PathVariable serviceName: String,
         @PathVariable instanceId: String
     ): Response<InstanceInfo> {
-        return success(opServiceService.downInstance(serviceName, instanceId))
+        return success(opServiceService.changeInstanceStatus(serviceName, instanceId, true))
     }
 
     /**
@@ -94,6 +94,6 @@ class OpServiceController @Autowired constructor(
         @PathVariable serviceName: String,
         @PathVariable instanceId: String
     ): Response<InstanceInfo> {
-        return success(opServiceService.upInstance(serviceName, instanceId))
+        return success(opServiceService.changeInstanceStatus(serviceName, instanceId, false))
     }
 }

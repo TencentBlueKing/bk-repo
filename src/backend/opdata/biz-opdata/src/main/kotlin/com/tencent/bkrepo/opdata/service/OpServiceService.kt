@@ -77,14 +77,12 @@ class OpServiceService @Autowired constructor(
     }
 
     /**
-     * 下线服务实例
+     * 变更服务实例状态
+     *
+     * @param down true: 下线， false: 上线
      */
-    fun downInstance(serviceName: String, instanceId: String): InstanceInfo {
-        return registryClient.maintenance(serviceName, instanceId, true)
-    }
-
-    fun upInstance(serviceName: String, instanceId: String): InstanceInfo {
-        registryClient.maintenance(serviceName, instanceId, false)
-        return instance(serviceName, instanceId)
+    fun changeInstanceStatus(serviceName: String, instanceId: String, down: Boolean): InstanceInfo {
+        val instanceInfo = registryClient.maintenance(serviceName, instanceId, down)
+        return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }
 }
