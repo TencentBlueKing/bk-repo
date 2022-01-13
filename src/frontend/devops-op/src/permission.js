@@ -3,7 +3,8 @@ import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-import { getToken } from '@/utils/auth' // get token from cookie
+import { getToken } from '@/utils/auth'
+import { toLoginPage } from '@/utils/login' // get token from cookie
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -48,7 +49,7 @@ router.beforeEach(async(to, from, next) => {
           // remove token and go to login page to re-login
           await store.dispatch('user/resetToken')
           Message.error(error || 'Has Error')
-          next(`/login?redirect=${to.path}`)
+          toLoginPage(to.path)
           NProgress.done()
         }
       }
@@ -61,7 +62,7 @@ router.beforeEach(async(to, from, next) => {
       next()
     } else {
       // other pages that do not have permission to access are redirected to the login page.
-      next(`/login?redirect=${to.path}`)
+      toLoginPage(to.path)
       NProgress.done()
     }
   }

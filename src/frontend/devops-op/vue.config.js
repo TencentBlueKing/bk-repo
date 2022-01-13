@@ -19,6 +19,7 @@ module.exports = {
       errors: true
     },
     proxy: {
+      // 用于处理本地开发时跨域问题
       '/web': {
         target: 'http://bkrepo.example.com', // 接口域名
         secure: false, // 如果是https接口，需要配置这个参数
