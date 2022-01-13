@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
@@ -58,10 +56,9 @@ class OpServiceService @Autowired constructor(
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        val authorization = HttpContextHolder.getRequest().getHeader(AUTHORIZATION) ?: ""
         return registryClient.instances(serviceName).map { instance ->
             executor.submit<InstanceInfo> {
-                instance.copy(detail = instanceDetail(instance, authorization))
+                instance.copy(detail = instanceDetail(instance))
             }
         }.map {
             it.get()
@@ -69,14 +66,13 @@ class OpServiceService @Autowired constructor(
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
-        val authorization = HttpContextHolder.getRequest().getHeader(AUTHORIZATION) ?: ""
         val instanceInfo = registryClient.instanceInfo(serviceName, instanceId)
-        return instanceInfo.copy(detail = instanceDetail(instanceInfo, authorization))
+        return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }
 
-    private fun instanceDetail(instanceInfo: InstanceInfo, authorization: String): InstanceDetail {
-        val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo, authorization)
-        val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo, authorization)
+    private fun instanceDetail(instanceInfo: InstanceInfo): InstanceDetail {
+        val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo)
+        val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo)
         return InstanceDetail(downloadingCount, uploadingCount)
     }
 

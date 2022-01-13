@@ -34,8 +34,10 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus.UNAUTHORIZED
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_COUNT
+import com.tencent.bkrepo.common.security.util.BasicAuthUtils
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
+import com.tencent.bkrepo.opdata.config.OpProperties
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
@@ -47,30 +49,33 @@ import org.springframework.stereotype.Component
 
 @Component
 class ActuatorArtifactMetricsClient @Autowired constructor(
-    @Qualifier(OkHttpConfiguration.OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient
+    @Qualifier(OkHttpConfiguration.OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient,
+    opProperties: OpProperties
 ) : ArtifactMetricsClient {
     private val logger = LoggerFactory.getLogger(ActuatorArtifactMetricsClient::class.java)
+    private val adminUsername = opProperties.adminUsername
+    private val adminPassword = opProperties.adminPassword
 
-    override fun uploadingCount(instanceInfo: InstanceInfo, authorization: String): Long {
+    override fun uploadingCount(instanceInfo: InstanceInfo): Long {
         try {
-            return count(instanceInfo, ARTIFACT_UPLOADING_COUNT, authorization)
+            return count(instanceInfo, ARTIFACT_UPLOADING_COUNT)
         } catch (e: Exception) {
             logger.error("get uploading count failed: $e")
         }
         return -1L
     }
 
-    override fun downloadingCount(instanceInfo: InstanceInfo, authorization: String): Long {
+    override fun downloadingCount(instanceInfo: InstanceInfo): Long {
         try {
-            return count(instanceInfo, ARTIFACT_DOWNLOADING_COUNT, authorization)
+            return count(instanceInfo, ARTIFACT_DOWNLOADING_COUNT)
         } catch (e: Exception) {
             logger.error("get downloading count failed: $e")
         }
         return -1L
     }
 
-    private fun count(instanceInfo: InstanceInfo, metricsName: String, authorization: String): Long {
-        val req = buildRequest(instanceInfo, metricsName, authorization)
+    private fun count(instanceInfo: InstanceInfo, metricsName: String): Long {
+        val req = buildRequest(instanceInfo, metricsName)
         httpClient.newCall(req).execute().use { res ->
             if (res.isSuccessful) {
                 val metrics = res.body()!!.string().readJsonString<Metrics>()
@@ -90,7 +95,7 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
         }
     }
 
-    private fun buildRequest(instanceInfo: InstanceInfo, metricsName: String, authorization: String): Request {
+    private fun buildRequest(instanceInfo: InstanceInfo, metricsName: String): Request {
         val url = HttpUrl.Builder()
             .scheme(ACTUATOR_SCHEME)
             .host(instanceInfo.host)
@@ -102,9 +107,8 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
         val reqBuilder = Request.Builder()
             .url(url)
 
-        if (!authorization.isEmpty()) {
-            reqBuilder.addHeader(AUTHORIZATION, authorization)
-        }
+        require(adminUsername.isNotEmpty() && adminPassword.isNotEmpty())
+        reqBuilder.addHeader(AUTHORIZATION, BasicAuthUtils.encode(adminUsername, adminPassword))
 
         return reqBuilder.build()
     }

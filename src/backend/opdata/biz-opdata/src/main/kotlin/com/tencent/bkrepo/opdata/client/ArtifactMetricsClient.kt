@@ -37,17 +37,15 @@ interface ArtifactMetricsClient {
      * 获取目标服务实例正在上传的请求数量
      *
      * @param instanceInfo 目标服务实例信息
-     * @param authorization 当前请求用户的认证信息
      * @return 返回正在上传的请求数量，获取失败时返回-1
      */
-    fun uploadingCount(instanceInfo: InstanceInfo, authorization: String): Long
+    fun uploadingCount(instanceInfo: InstanceInfo): Long
 
     /**
      * 获取目标服务实例正在下载的请求数量
      *
      * @param instanceInfo 目标服务实例信息
-     * @param authorization 当前请求用户的认证信息
      * @return 返回正在下载的请求数量，获取失败时返回-1
      */
-    fun downloadingCount(instanceInfo: InstanceInfo, authorization: String): Long
+    fun downloadingCount(instanceInfo: InstanceInfo): Long
 }
