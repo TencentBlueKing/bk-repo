@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.opdata.service
 
+import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 
 /**
@@ -41,7 +44,8 @@ import org.springframework.stereotype.Service
 @Service
 class OpServiceService @Autowired constructor(
     private val registryClient: RegistryClient,
-    private val artifactMetricsClient: ArtifactMetricsClient
+    private val artifactMetricsClient: ArtifactMetricsClient,
+    private val executor: ThreadPoolTaskExecutor
 ) {
     /**
      * 获取服务列表
@@ -54,17 +58,25 @@ class OpServiceService @Autowired constructor(
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        return registryClient.instances(serviceName)
+        val authorization = HttpContextHolder.getRequest().getHeader(AUTHORIZATION) ?: ""
+        return registryClient.instances(serviceName).map { instance ->
+            executor.submit<InstanceInfo> {
+                instance.copy(detail = instanceDetail(instance, authorization))
+            }
+        }.map {
+            it.get()
+        }
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
+        val authorization = HttpContextHolder.getRequest().getHeader(AUTHORIZATION) ?: ""
         val instanceInfo = registryClient.instanceInfo(serviceName, instanceId)
-        return instanceInfo.copy(detail = instanceDetail(instanceInfo))
+        return instanceInfo.copy(detail = instanceDetail(instanceInfo, authorization))
     }
 
-    private fun instanceDetail(instanceInfo: InstanceInfo): InstanceDetail {
-        val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo)
-        val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo)
+    private fun instanceDetail(instanceInfo: InstanceInfo, authorization: String): InstanceDetail {
+        val downloadingCount = artifactMetricsClient.downloadingCount(instanceInfo, authorization)
+        val uploadingCount = artifactMetricsClient.uploadingCount(instanceInfo, authorization)
         return InstanceDetail(downloadingCount, uploadingCount)
     }
 

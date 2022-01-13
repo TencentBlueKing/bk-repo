@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus.UNAUTHORIZED
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_COUNT
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_COUNT
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
@@ -52,26 +51,26 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
 ) : ArtifactMetricsClient {
     private val logger = LoggerFactory.getLogger(ActuatorArtifactMetricsClient::class.java)
 
-    override fun uploadingCount(instanceInfo: InstanceInfo): Long {
+    override fun uploadingCount(instanceInfo: InstanceInfo, authorization: String): Long {
         try {
-            return count(instanceInfo, ARTIFACT_UPLOADING_COUNT)
+            return count(instanceInfo, ARTIFACT_UPLOADING_COUNT, authorization)
         } catch (e: Exception) {
             logger.error("get uploading count failed: $e")
         }
         return -1L
     }
 
-    override fun downloadingCount(instanceInfo: InstanceInfo): Long {
+    override fun downloadingCount(instanceInfo: InstanceInfo, authorization: String): Long {
         try {
-            return count(instanceInfo, ARTIFACT_DOWNLOADING_COUNT)
+            return count(instanceInfo, ARTIFACT_DOWNLOADING_COUNT, authorization)
         } catch (e: Exception) {
             logger.error("get downloading count failed: $e")
         }
         return -1L
     }
 
-    private fun count(instanceInfo: InstanceInfo, metricsName: String): Long {
-        val req = buildRequest(instanceInfo, metricsName)
+    private fun count(instanceInfo: InstanceInfo, metricsName: String, authorization: String): Long {
+        val req = buildRequest(instanceInfo, metricsName, authorization)
         httpClient.newCall(req).execute().use { res ->
             if (res.isSuccessful) {
                 val metrics = res.body()!!.string().readJsonString<Metrics>()
@@ -91,7 +90,7 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
         }
     }
 
-    private fun buildRequest(instanceInfo: InstanceInfo, metricsName: String): Request {
+    private fun buildRequest(instanceInfo: InstanceInfo, metricsName: String, authorization: String): Request {
         val url = HttpUrl.Builder()
             .scheme(ACTUATOR_SCHEME)
             .host(instanceInfo.host)
@@ -103,9 +102,7 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
         val reqBuilder = Request.Builder()
             .url(url)
 
-        // 获取当前发起请求的用户认证信息用于请求actuator endpoint数据
-        val authorization = HttpContextHolder.getRequest().getHeader(AUTHORIZATION)
-        if (!authorization.isNullOrEmpty()) {
+        if (!authorization.isEmpty()) {
             reqBuilder.addHeader(AUTHORIZATION, authorization)
         }
 
