@@ -10,7 +10,7 @@
                 <bk-input v-model.trim="editProjectDialog.id"
                     :disabled="!editProjectDialog.add" maxlength="32"
                     show-word-limit
-                    placeholder="请输入2-32字符的小写字母+数字组合，以字母开头">
+                    placeholder="请输入2-32字符的小写字母、数字、-、_组合，以字母开头">
                 </bk-input>
             </bk-form-item>
             <bk-form-item label="项目名称" :required="true" property="name" error-display-type="normal">
@@ -48,8 +48,8 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-z][a-z0-9]{1,31}$/,
-                            message: '请输入2-32字符的小写字母+数字组合，以字母开头',
+                            regex: /^[a-z][a-z0-9_-]{1,31}$/,
+                            message: '请输入2-32字符的小写字母、数字、-、_组合，以字母开头',
                             trigger: 'blur'
                         },
                         {

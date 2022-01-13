@@ -17,7 +17,8 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <bk-tab-panel v-for="tab in [manage, user, role]" :key="tab.name" :name="tab.name" :label="tab.name">
+            <!-- <bk-tab-panel v-for="tab in [manage, user, role]" :key="tab.name" :name="tab.name" :label="tab.name"> -->
+            <bk-tab-panel v-for="tab in [manage, user]" :key="tab.name" :name="tab.name" :label="tab.name">
                 <div class="flex-align-center">
                     <bk-select class="w250 select-user"
                         v-model="tab.add"
