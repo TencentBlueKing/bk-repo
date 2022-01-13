@@ -40,6 +40,8 @@ data class ConsulInstanceCheck(
      */
     @JsonProperty("Node")
     val node: String,
+    @JsonProperty("CheckID")
+    val checkId: String,
     /**
      * 检查id格式为service:${serviceId}
      */

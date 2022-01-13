@@ -189,11 +189,18 @@ class ConsulRegistryClient @Autowired constructor(
      */
     private fun convertToInstanceStatus(instanceStatus: List<ConsulInstanceCheck>): InstanceStatus {
         instanceStatus.forEach {
+            if (it.checkId == maintenanceModeCheckId(it.serviceId)) {
+                return InstanceStatus.DEREGISTER
+            }
             if (it.status != STATUS_PASSING) {
                 return InstanceStatus.OFFLINE
             }
         }
         return InstanceStatus.RUNNING
+    }
+
+    private fun maintenanceModeCheckId(serviceId: String): String {
+        return "_service_maintenance:$serviceId"
     }
 
     private fun urlBuilder() = HttpUrl.Builder()
