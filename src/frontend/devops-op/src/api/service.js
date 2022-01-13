@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-const prefix = 'opdata/api/op/services'
+const prefix = 'opdata/api/services'
 
 export function services() {
   return request({

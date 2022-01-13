@@ -73,7 +73,7 @@ export const asyncRoutes = [
         name: ROUTER_NAME_INSTANCE,
         hidden: true,
         component: () => import('@/views/service/Instance'),
-        props: { default: true },
+        props: true,
         meta: { title: ROUTER_NAME_INSTANCE }
       }
     ]

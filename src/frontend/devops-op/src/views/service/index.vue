@@ -37,7 +37,6 @@ export default {
   },
   methods: {
     toInstance(serviceName) {
-      console.log(serviceName)
       this.$router.push({ name: ROUTER_NAME_INSTANCE, params: { serviceName: serviceName }})
     }
   }
