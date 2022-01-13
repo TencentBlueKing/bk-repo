@@ -139,7 +139,7 @@
             availableList () {
                 return [
                     { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
-                    { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
+                    // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
                     { label: '对外公开', value: 'public', tip: '所有用户都可以使用' }
                 ]
             }
