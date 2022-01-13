@@ -4,18 +4,19 @@
             <bk-tab-panel name="user" :label="$t('user')">
                 <User />
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" name="userGroup" :label="$t('userGroup')">
+            <!-- <bk-tab-panel render-directive="if" name="userGroup" :label="$t('userGroup')">
                 <Role />
-            </bk-tab-panel>
+            </bk-tab-panel> -->
         </bk-tab>
     </div>
 </template>
 <script>
     import User from './user'
-    import Role from './role'
+    // import Role from './role'
     export default {
         name: 'userManage',
-        components: { User, Role },
+        components: { User },
+        // components: { User, Role },
         data () {
             return { tabName: 'user' }
         }
