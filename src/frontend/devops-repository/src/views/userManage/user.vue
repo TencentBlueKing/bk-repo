@@ -94,9 +94,15 @@
             v-model="editUserDialog.show"
             :title="editUserDialog.add ? '创建用户' : '编辑用户'"
             width="500"
-            height-num="350"
+            height-num="400"
             @cancel="editUserDialog.show = false">
             <bk-form class="mr30" :label-width="90" :model="editUserDialog" :rules="rules" ref="editUserDialog">
+                <bk-form-item label="类型" :required="true">
+                    <bk-radio-group v-model="editUserDialog.group">
+                        <bk-radio :value="false" :disabled="!editUserDialog.add">实体用户</bk-radio>
+                        <bk-radio class="ml20" :value="true" :disabled="!editUserDialog.add">虚拟用户</bk-radio>
+                    </bk-radio-group>
+                </bk-form-item>
                 <bk-form-item :label="$t('account')" :required="true" property="userId" error-display-type="normal">
                     <bk-input v-model.trim="editUserDialog.userId"
                         :disabled="!editUserDialog.add"
@@ -112,6 +118,14 @@
                 </bk-form-item>
                 <bk-form-item label="电话">
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
+                </bk-form-item>
+                <bk-form-item v-if="editUserDialog.group" label="关联用户">
+                    <bk-tag-input
+                        v-model="editUserDialog.asstUsers"
+                        placeholder="请输入，按Enter键确认"
+                        trigger="focus"
+                        allow-create>
+                    </bk-tag-input>
                 </bk-form-item>
             </bk-form>
             <template #footer>
@@ -147,7 +161,9 @@
                     userId: '',
                     name: '',
                     email: '',
-                    phone: ''
+                    phone: '',
+                    group: false,
+                    asstUsers: []
                 },
                 rules: {
                     userId: [
@@ -254,7 +270,9 @@
                     userId: '',
                     name: '',
                     email: '',
-                    phone: ''
+                    phone: '',
+                    group: false,
+                    asstUsers: []
                 }
             },
             importUsersHandler (e) {
@@ -336,14 +354,16 @@
             async confirm () {
                 await this.$refs.editUserDialog.validate()
                 this.editUserDialog.loading = true
-                const { userId, name, email, phone } = this.editUserDialog
+                const { userId, name, email, phone, group, asstUsers } = this.editUserDialog
                 const fn = this.editUserDialog.add ? this.createUser : this.editUser
                 fn({
                     body: {
                         userId,
                         name,
                         email,
-                        phone
+                        phone,
+                        group,
+                        asstUsers
                     }
                 }).then(res => {
                     this.$bkMessage({
@@ -363,6 +383,12 @@
                     show: true,
                     loading: false,
                     add: false,
+                    userId: '',
+                    name: '',
+                    email: '',
+                    phone: '',
+                    group: false,
+                    asstUsers: [],
                     ...row
                 }
             },
