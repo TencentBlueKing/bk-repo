@@ -29,31 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.repository.pojo.project
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.model.TProject
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 项目数据访问层
- */
-@Repository
-class ProjectDao : SimpleMongoDao<TProject>() {
-
-    /**
-     * 根据名称[name]查找项目
-     */
-    fun findByName(name: String): TProject? {
-        return this.findOne(Query(TProject::name.isEqualTo(name)))
-    }
-
-    /**
-     * 根据名称[displayName]查找项目
-     */
-    fun findByDisplayName(displayName: String): TProject? {
-        return this.findOne(Query(TProject::displayName.isEqualTo(displayName)))
-    }
-}
+@ApiModel("编辑项目请求")
+data class ProjectUpdateRequest(
+    @ApiModelProperty("显示名", required = false)
+    val displayName: String? = null,
+    @ApiModelProperty("描述", required = false)
+    val description: String? = null
+)

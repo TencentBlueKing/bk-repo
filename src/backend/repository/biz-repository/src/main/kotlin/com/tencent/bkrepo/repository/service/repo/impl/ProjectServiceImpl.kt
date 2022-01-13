@@ -42,11 +42,14 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.util.ProjectEventFactory.buildCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.where
@@ -66,6 +69,10 @@ class ProjectServiceImpl(
 
     override fun getProjectInfo(name: String): ProjectInfo? {
         return convert(projectDao.findByName(name))
+    }
+
+    override fun getProjectInfoByDisplayName(displayName: String): ProjectInfo? {
+        return convert(projectDao.findByDisplayName(displayName))
     }
 
     override fun listProject(): List<ProjectInfo> {
@@ -135,6 +142,39 @@ class ProjectServiceImpl(
                 logger.warn("Insert project[$name] error: [${exception.message}]")
                 getProjectInfo(name)!!
             }
+        }
+    }
+
+    /**
+     * true:资源已存在, false: 资源不存在
+     */
+    override fun checkProjectExist(name: String?, displayName: String?): Boolean {
+        val nameResult = name?.let { getProjectInfo(it) != null } ?: false
+        val displayNameResult = displayName?.let { getProjectInfoByDisplayName(it) != null } ?: false
+        return nameResult || displayNameResult
+    }
+
+    override fun updateProject(name: String, request: ProjectUpdateRequest): Boolean {
+        if (!checkExist(name)) {
+            throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+        }
+        request.displayName?.let {
+            if (it.length < DISPLAY_NAME_LENGTH_MIN || it.length > DISPLAY_NAME_LENGTH_MAX) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request::displayName.name)
+            }
+        }
+        val query = Query.query(Criteria.where(TProject::name.name).`is`(name))
+        val update = Update().apply {
+            request.displayName?.let { this.set(TProject::displayName.name, it) }
+            request.description?.let { this.set(TProject::description.name, it) }
+        }
+        val updateResult = projectDao.updateFirst(query, update)
+        return if (updateResult.modifiedCount == 1L) {
+            logger.info("Update project [$name] success.")
+            true
+        } else {
+            logger.error("Update project fail : $request")
+            false
         }
     }
 
