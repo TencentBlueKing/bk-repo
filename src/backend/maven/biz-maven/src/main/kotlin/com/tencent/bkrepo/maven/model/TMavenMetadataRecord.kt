@@ -34,7 +34,8 @@ data class TMavenMetadataRecord(
     val artifactId: String,
     val version: String,
     val timestamp: String?,
-    val buildNo: Int?,
+    // 为空会导致inc 报错，以0代替null。
+    val buildNo: Int,
     val classifier: String?,
     val extension: String
 )

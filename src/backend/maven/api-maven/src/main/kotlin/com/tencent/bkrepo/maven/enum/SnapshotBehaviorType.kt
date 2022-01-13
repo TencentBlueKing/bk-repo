@@ -14,5 +14,6 @@ enum class SnapshotBehaviorType(val nick: Int) {
 
     // 无视接受client 传过来的时间戳，强制为-SNAPSHOT.jar。
     NON_UNIQUE(1),
+    // 服务器完全信任客户端的请求, 不对任何请求做处理
     DEPLOYER(2)
 }
