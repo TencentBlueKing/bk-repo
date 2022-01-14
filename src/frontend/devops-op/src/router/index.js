@@ -85,6 +85,7 @@ export const asyncRoutes = [
 
 const createRouter = () => new Router({
   mode: 'history', // require service support
+  base: `/${process.env.VUE_APP_BASE_DIR}`,
   scrollBehavior: () => ({ y: 0 }),
   routes: constantRoutes
 })

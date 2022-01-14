@@ -6,7 +6,7 @@ function resolve(dir) {
 }
 
 module.exports = {
-  publicPath: '/',
+  publicPath: `/${process.env.VUE_APP_BASE_DIR}`,
   outputDir: 'dist',
   assetsDir: 'static',
   lintOnSave: process.env.NODE_ENV === 'development',
