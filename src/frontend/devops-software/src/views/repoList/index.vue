@@ -103,7 +103,6 @@
         name: 'repoList',
         data () {
             return {
-                MODE_CONFIG,
                 repoEnum,
                 isLoading: false,
                 repoList: [],
