@@ -3,7 +3,7 @@ import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-import { getBkTicket, getBkUid, getToken } from '@/utils/auth'
+import { getToken } from '@/utils/auth'
 import { toLoginPage } from '@/utils/login' // get token from cookie
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
@@ -18,10 +18,13 @@ router.beforeEach(async(to, from, next) => {
   document.title = 'BkRepoOp'
 
   // determine whether the user has logged in
-  const bkTicket = getBkTicket()
-  const bkUid = getBkUid()
+  // const bkTicket = getBkTicket()
+  // const bkUid = getBkUid()
+  // const token = getToken()
+  // const hasToken = token || bkTicket || bkUid
+
   const hasToken = getToken()
-  if (hasToken || bkTicket || bkUid) {
+  if (hasToken) {
     if (to.path === '/login') {
       // if is logged in, redirect to the home page
       next({ path: '/' })
