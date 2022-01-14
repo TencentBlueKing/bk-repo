@@ -55,8 +55,7 @@
             },
             calcNeedScroll () {
                 const target = this.$el.querySelector('.infinite-scroll-list')
-                if (target.scrollHeight > target.offsetHeight) this.needScroll = true
-                else this.needScroll = false
+                this.needScroll = target.scrollHeight > target.offsetHeight
             }
         }
     }

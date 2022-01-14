@@ -136,7 +136,7 @@
         <generic-form-dialog ref="genericFormDialog" @refresh="refreshNodeChange"></generic-form-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @submit="submitGenericTree"></generic-tree-dialog>
-        <generic-upload-dialog v-bind="uploadDialog" @update="getArtifactories" @cancel="uploadDialog.show = false"></generic-upload-dialog>
+        <generic-upload-dialog ref="genericUploadDialog" @update="getArtifactories"></generic-upload-dialog>
     </div>
 </template>
 <script>
@@ -192,13 +192,7 @@
                 // table单击事件，debounce
                 rowClickCallback: null,
                 // table选中的行
-                selectedRow: {},
-                // 上传制品
-                uploadDialog: {
-                    show: false,
-                    title: '',
-                    fullPath: ''
-                }
+                selectedRow: {}
             }
         },
         computed: {
@@ -233,6 +227,7 @@
                 ].filter(Boolean)
             },
             breadcrumb () {
+                if (!this.selectedTreeNode.roadMap) return
                 const breadcrumb = []
                 let node = this.genericTree
                 const road = this.selectedTreeNode.roadMap.split(',')
@@ -254,7 +249,7 @@
         },
         beforeRouteEnter (to, from, next) {
             // 前端隐藏report仓库/log仓库
-            if (MODE_CONFIG === 'ci' && (to.query.name === 'report' || to.query.name === 'log')) {
+            if (MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log')) {
                 next({
                     name: 'repoList',
                     params: {
@@ -264,7 +259,7 @@
             } else next()
         },
         created () {
-            this.getRepoListAll({ projectId: this.projectId })
+            !this.repoListAll.length && this.getRepoListAll({ projectId: this.projectId })
             this.initPage()
         },
         methods: {
@@ -277,8 +272,6 @@
                 'getFolderList',
                 'getArtifactoryList',
                 'deleteArtifactory',
-                'moveNode',
-                'copyNode',
                 'getFolderSize',
                 'getFileNumOfFolder'
             ]),
@@ -314,7 +307,25 @@
                     children: [],
                     roadMap: '0'
                 }])
-                this.itemClickHandler(this.genericTree[0])
+
+                const paths = (this.$route.query.path || '').split('/').filter(Boolean)
+                paths.pop() // 定位到文件/文件夹的上级目录
+                paths.reduce(async (node, path) => {
+                    if (!node) return
+                    await this.updateGenericTreeNode(node)
+                    const child = node.children.find(child => child.name === path)
+                    if (!child) {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: '文件路径不存在'
+                        })
+                        return
+                    }
+                    this.sideTreeOpenList.push(child.roadMap)
+                    return child
+                }, this.genericTree[0]).then(node => {
+                    this.itemClickHandler(node || this.genericTree[0])
+                })
             },
             // 获取中间列表数据
             getArtifactories () {
@@ -396,7 +407,7 @@
             },
             updateGenericTreeNode (item) {
                 this.$set(item, 'loading', true)
-                this.getFolderList({
+                return this.getFolderList({
                     projectId: this.projectId,
                     repoName: this.repoName,
                     fullPath: item.fullPath,
@@ -560,11 +571,11 @@
                 })
             },
             handlerUpload () {
-                this.uploadDialog = {
+                this.$refs.genericUploadDialog.setData({
                     show: true,
                     title: `${this.$t('upload')} (${this.selectedTreeNode.fullPath || '/'})`,
                     fullPath: this.selectedTreeNode.fullPath
-                }
+                })
             },
             handlerDownload () {
                 const url = `/generic/${this.projectId}/${this.repoName}/${this.selectedRow.fullPath}?download=true`

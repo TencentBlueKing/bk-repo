@@ -120,7 +120,7 @@
             }
         },
         created () {
-            this.getRepoListAll({ projectId: this.projectId })
+            !this.repoListAll.length && this.getRepoListAll({ projectId: this.projectId })
             this.handlerPaginationChange()
         },
         methods: {
