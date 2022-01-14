@@ -6,7 +6,7 @@
         <h1 v-else class="sidebar-title">{{ title }} </h1>
       </router-link>
       <router-link v-else key="expand" class="sidebar-logo-link" to="/">
-        <img v-if="logo" :src="logo" class="sidebar-logo" alt="logo">
+        <svg-icon icon-class="bk" class="sidebar-logo" />
         <h1 class="sidebar-title">{{ title }} </h1>
       </router-link>
     </transition>
@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import { sidebarLogoUrl, sidebarTitle } from '@/settings'
+import { sidebarTitle } from '@/settings'
 
 export default {
   name: 'SidebarLogo',
@@ -26,8 +26,7 @@ export default {
   },
   data() {
     return {
-      title: sidebarTitle,
-      logo: sidebarLogoUrl
+      title: sidebarTitle
     }
   }
 }

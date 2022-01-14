@@ -12,14 +12,8 @@ module.exports = {
   sidebarLogo: false,
 
   /**
-   * @type {string}
-   * @description Url of sidebar logo
-   */
-  sidebarLogoUrl: '',
-
-  /**
    * @type {string} true | false
    * @description Title of sidebar
    */
-  sidebarTitle: 'BkRepoOp'
+  sidebarTitle: '制品库管理后台'
 }

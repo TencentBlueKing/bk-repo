@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-export const TITLE_HOME = 'Home'
+export const TITLE_HOME = sidebarTitle
 export const ROUTER_NAME_SERVICE = 'Service'
 export const ROUTER_NAME_INSTANCE = 'Instance'
 
@@ -8,6 +8,7 @@ Vue.use(Router)
 
 /* Layout */
 import Layout from '@/layout'
+import { sidebarTitle } from '@/settings'
 
 /**
  * Note: sub-menu only appear when route children.length >= 1
