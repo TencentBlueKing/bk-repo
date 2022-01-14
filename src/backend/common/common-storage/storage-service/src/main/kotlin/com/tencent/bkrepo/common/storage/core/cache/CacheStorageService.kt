@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.stream.bound
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
@@ -83,7 +82,7 @@ class CacheStorageService(
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
-            cacheClient.load(path, filename)?.bound(range)?.artifactStream(range)?.let { return it }
+            cacheClient.load(path, filename)?.artifactStream(range)?.let { return it }
         }
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
@@ -93,7 +92,7 @@ class CacheStorageService(
             artifactInputStream.addListener(readListener)
         }
         return if (artifactInputStream == null && !loadCacheFirst) {
-            cacheClient.load(path, filename)?.bound(range)?.artifactStream(range)
+            cacheClient.load(path, filename)?.artifactStream(range)
         } else {
             artifactInputStream
         }

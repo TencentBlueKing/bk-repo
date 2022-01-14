@@ -127,7 +127,7 @@ class ChunkedArtifactFile(
 
     override fun delete() {
         if (initialized && !isInMemory()) {
-            receiver.close()
+            this.close()
         }
     }
 
@@ -152,6 +152,7 @@ class ChunkedArtifactFile(
      * 触发后，后续不能再接收数据
      */
     fun finish(): Throughput {
+        initialized = true
         val throughput = receiver.finish()
         monitor.remove(receiver)
         SpringContextUtils.publishEvent(ArtifactReceivedEvent(this, throughput, storageCredentials))
@@ -164,5 +165,9 @@ class ChunkedArtifactFile(
     fun close() {
         receiver.close()
         monitor.remove(receiver)
+    }
+
+    fun write(b: Int) {
+        receiver.receive(b)
     }
 }
