@@ -7,14 +7,16 @@ import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 @Service
 class MavenMetadataService(
@@ -24,6 +26,8 @@ class MavenMetadataService(
         val groupId = node.metadata?.get("groupId") as String
         val artifactId = node.metadata?.get("artifactId") as String
         val version = node.metadata?.get("version") as String
+        logger.info("Node info: groupId[$groupId], artifactId[$artifactId], version[$version]")
+        logger.info("Node fullPath: ${node.fullPath}")
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(node.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(node.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(groupId)
@@ -35,12 +39,28 @@ class MavenMetadataService(
         mavenVersion.classifier?.let {
             criteria.and(TMavenMetadataRecord::classifier.name).`is`(it)
         }
+        logger.info(
+            "Node info: extension[${mavenVersion.packaging}]," +
+                " classifier[${mavenVersion.classifier}]," +
+                " timestamp[${mavenVersion.timestamp}]"
+        )
+
         val query = Query(criteria)
         val update = Update().set(TMavenMetadataRecord::timestamp.name, mavenVersion.timestamp)
             .set(TMavenMetadataRecord::buildNo.name, mavenVersion.buildNo ?: 0)
         val options = FindAndModifyOptions().apply { this.upsert(true).returnNew(false) }
-        mavenMetadataDao.determineMongoTemplate()
+        val returnData = mavenMetadataDao.determineMongoTemplate()
             .findAndModify(query, update, options, TMavenMetadataRecord::class.java)
+        returnData?.let {
+            logger.info(
+                "Old meta data info: extension[${returnData.extension}]," +
+                    " groupId[${returnData.groupId}], " +
+                    " artifactId[${returnData.artifactId}], " +
+                    " version[$version]" +
+                    " classifier[${returnData.classifier}]," +
+                    " timestamp[${returnData.timestamp}]"
+            )
+        }
     }
 
     fun search(mavenArtifactInfo: MavenArtifactInfo, mavenGavc: MavenGAVC): List<TMavenMetadataRecord> {
@@ -54,6 +74,13 @@ class MavenMetadataService(
     }
 
     fun findAndModify(mavenMetadataSearchPojo: MavenMetadataSearchPojo): TMavenMetadataRecord {
+        logger.info(
+            "findAndModify metadata groupId[${mavenMetadataSearchPojo.groupId}], " +
+                "artifactId[${mavenMetadataSearchPojo.artifactId}], " +
+                "version[${mavenMetadataSearchPojo.version}," +
+                "extension[${mavenMetadataSearchPojo.extension}," +
+                "classifier[${mavenMetadataSearchPojo.classifier}"
+        )
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(mavenMetadataSearchPojo.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(mavenMetadataSearchPojo.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(mavenMetadataSearchPojo.groupId)
@@ -73,5 +100,6 @@ class MavenMetadataService(
 
     companion object {
         private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss")
+        private val logger: Logger = LoggerFactory.getLogger(MavenMetadataService::class.java)
     }
 }
