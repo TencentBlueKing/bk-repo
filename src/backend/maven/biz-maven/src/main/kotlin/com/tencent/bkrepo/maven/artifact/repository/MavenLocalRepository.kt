@@ -305,18 +305,12 @@ class MavenLocalRepository(
             }
             val isArtifact = (packaging == fileSuffix)
             val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
-            try {
-                val node = buildMavenArtifactNode(context, packaging, mavenGavc)
-                storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
-                if (isArtifact) createMavenVersion(context, mavenGavc)
-                // 更新包各模块版本最新记录
-                logger.info("Prepare to create maven metadata....")
-                mavenMetadataService.update(node)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                logger.error("Error occurred during generating meta data: ${e.message}")
-                throw e
-            }
+            val node = buildMavenArtifactNode(context, packaging, mavenGavc)
+            storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
+            if (isArtifact) createMavenVersion(context, mavenGavc)
+            // 更新包各模块版本最新记录
+            logger.info("Prepare to create maven metadata....")
+            mavenMetadataService.update(node)
         } else {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
             // -SNAPSHOT/** 路径下的构件和metadata.xml 文件的checksum 做拦截，

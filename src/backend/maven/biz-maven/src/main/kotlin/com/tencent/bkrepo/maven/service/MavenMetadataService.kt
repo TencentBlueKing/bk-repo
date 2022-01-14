@@ -36,8 +36,10 @@ class MavenMetadataService(
         val mavenVersion =
             node.fullPath.substringAfterLast("/").resolverName(artifactId, version)
         criteria.and(TMavenMetadataRecord::extension.name).`is`(mavenVersion.packaging)
-        mavenVersion.classifier?.let {
-            criteria.and(TMavenMetadataRecord::classifier.name).`is`(it)
+        if (mavenVersion.classifier == null) {
+            criteria.and(TMavenMetadataRecord::classifier.name).exists(false)
+        } else {
+            criteria.and(TMavenMetadataRecord::classifier.name).`is`(mavenVersion.classifier)
         }
         logger.info(
             "Node info: extension[${mavenVersion.packaging}]," +
@@ -87,7 +89,11 @@ class MavenMetadataService(
             .and(TMavenMetadataRecord::artifactId.name).`is`(mavenMetadataSearchPojo.artifactId)
             .and(TMavenMetadataRecord::version.name).`is`(mavenMetadataSearchPojo.version)
             .and(TMavenMetadataRecord::extension.name).`is`(mavenMetadataSearchPojo.extension)
-        mavenMetadataSearchPojo.classifier?.let { criteria.and(TMavenMetadataRecord::classifier.name).`is`(it) }
+        if (mavenMetadataSearchPojo.classifier == null) {
+            criteria.and(TMavenMetadataRecord::classifier.name).exists(false)
+        } else {
+            criteria.and(TMavenMetadataRecord::classifier.name).`is`(mavenMetadataSearchPojo.classifier)
+        }
         val query = Query(criteria)
         val update = Update().apply {
             this.set(TMavenMetadataRecord::timestamp.name, ZonedDateTime.now(ZoneId.of("UTC")).format(formatter))
