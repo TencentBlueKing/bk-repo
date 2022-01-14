@@ -310,7 +310,8 @@
 
                 const paths = (this.$route.query.path || '').split('/').filter(Boolean)
                 paths.pop() // 定位到文件/文件夹的上级目录
-                paths.reduce(async (node, path) => {
+                paths.reduce(async (chain, path) => {
+                    const node = await chain
                     if (!node) return
                     await this.updateGenericTreeNode(node)
                     const child = node.children.find(child => child.name === path)
@@ -323,7 +324,7 @@
                     }
                     this.sideTreeOpenList.push(child.roadMap)
                     return child
-                }, this.genericTree[0]).then(node => {
+                }, Promise.resolve(this.genericTree[0])).then(node => {
                     this.itemClickHandler(node || this.genericTree[0])
                 })
             },
