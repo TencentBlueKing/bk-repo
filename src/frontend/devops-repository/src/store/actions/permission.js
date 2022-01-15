@@ -8,16 +8,29 @@ export default {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/info`
         ).then(({ userId }) => {
-            dispatch('getUserInfo', { userId })
+            return dispatch('getUserInfo', { userId })
         })
     },
-    getUserInfo ({ commit }, { userId }) {
+    getUserInfo ({ state, commit }, { userId }) {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/userinfo/${userId}`
         ).then(res => {
             res && commit('SET_USER_INFO', {
                 ...res,
                 username: res.userId
+            })
+            return state.userInfo
+        })
+    },
+    // 用户是否指定项目下管理员
+    checkPM ({ commit }, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/admin/${projectId}`
+        ).then(res => {
+            commit('SET_USER_INFO', {
+                ...res,
+                projectId,
+                manage: res
             })
         })
     },
@@ -33,6 +46,27 @@ export default {
             }
         )
     },
+    // 查询所有用户
+    getRepoUserList ({ commit }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/list`
+        ).then(res => {
+            const data = res.reduce((target, item) => {
+                target[item.userId] = {
+                    id: item.userId,
+                    name: item.name
+                }
+                return target
+            }, {})
+            commit('SET_USER_LIST', data)
+        })
+    },
+    // 项目下用户列表
+    getProjectUserList (_, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/list/${projectId}`
+        )
+    },
     // 校验userId是否重复
     checkUserId (_, { userId }) {
         return Vue.prototype.$ajax.get(
@@ -43,6 +77,13 @@ export default {
     createUser (_, { body }) {
         return Vue.prototype.$ajax.post(
             `${authPrefix}/user/create`,
+            body
+        )
+    },
+    // 批量创建用户
+    importUsers (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/batch`,
             body
         )
     },
@@ -67,21 +108,6 @@ export default {
             `${authPrefix}/user/${userId}`
         )
     },
-    // 查询所有用户
-    getRepoUserList ({ commit }) {
-        return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/list`
-        ).then(res => {
-            const data = res.reduce((target, item) => {
-                target[item.userId] = {
-                    id: item.userId,
-                    name: item.name
-                }
-                return target
-            }, {})
-            commit('SET_USER_LIST', data)
-        })
-    },
     // 新建角色
     createRole (_, { body }) {
         return Vue.prototype.$ajax.post(
@@ -103,15 +129,15 @@ export default {
         )
     },
     // 查询所有角色
-    getRepoRoleList (_, { projectId, repoName }) {
+    getRoleList () {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/role/list`,
-            {
-                params: {
-                    projectId,
-                    repoName
-                }
-            }
+            `${authPrefix}/sys/role/list`
+        )
+    },
+    // 查询项目下角色
+    getProjectRoleList (_, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/sys/role/list/${projectId}`
         )
     },
     // 查询所有部门
@@ -133,6 +159,17 @@ export default {
                 params: {
                     projectId,
                     repoName
+                }
+            }
+        )
+    },
+    // 获取项目权限配置
+    getProjectPermission (_, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/permission/list/inproject`,
+            {
+                params: {
+                    projectId
                 }
             }
         )
@@ -170,6 +207,22 @@ export default {
         return Vue.prototype.$ajax.post(
             `${authPrefix}/department/listByIds`,
             body
+        )
+    },
+    // 审计日志
+    getAuditList (_, { projectId, startTime, endTime, user, current, limit }) {
+        return Vue.prototype.$ajax.get(
+            'repository/api/log/page',
+            {
+                params: {
+                    pageNumber: current,
+                    pageSize: limit,
+                    projectId,
+                    startTime,
+                    endTime,
+                    operator: user
+                }
+            }
         )
     }
 }

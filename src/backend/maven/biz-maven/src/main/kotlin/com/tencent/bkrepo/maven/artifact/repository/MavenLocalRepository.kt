@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
@@ -634,7 +635,8 @@ class MavenLocalRepository(
                 overwrite = true,
                 createdBy = context.userId,
                 metadata = metadata
-            )
+            ),
+            HttpContextHolder.getClientAddress()
         )
     }
 
@@ -654,14 +656,16 @@ class MavenLocalRepository(
                 packageClient.deletePackage(
                     projectId,
                     repoName,
-                    packageKey
+                    packageKey,
+                    HttpContextHolder.getClientAddress()
                 )
             } else {
                 packageClient.deleteVersion(
                     projectId,
                     repoName,
                     packageKey,
-                    version
+                    version,
+                    HttpContextHolder.getClientAddress()
                 )
             }
             logger.info("Success to delete $packageKey:$version")

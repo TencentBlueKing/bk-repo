@@ -1,7 +1,7 @@
 <template>
     <div class="repo-select-container" v-bk-clickoutside="handleClickOutSide">
         <div class="repo-select-title hover-btn flex-align-center" @click="handleClick">
-            <icon size="24" :name="selectedItem.type"></icon>
+            <icon size="20" :name="selectedItem.type"></icon>
             <span class="ml10">{{replaceRepoName(selectedItem.name)}}</span>
             <i class="ml10 devops-icon icon-angle-right" :class="{ 'angle-down': showList }"></i>
         </div>
@@ -18,7 +18,7 @@
                 <li class="hover-btn" v-for="repo in filterRepoList" :key="repo.name">
                     <div class="repo-item flex-align-center" :class="repo.name === selectedItem.name ? 'selected' : ''"
                         @click="handlerRepoClick(repo)">
-                        <icon size="24" :name="repo.type"></icon>
+                        <icon size="20" :name="repo.type"></icon>
                         <div class="ml10 repo-item-title" :title="replaceRepoName(repo.name)">{{replaceRepoName(repo.name)}}</div>
                     </div>
                 </li>
@@ -83,7 +83,6 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .repo-select-container {
     position: relative;
     height: 50px;
@@ -101,19 +100,19 @@
         margin-top: 50px;
         width: 250px;
         overflow: hidden;
-        border: solid $borderWeightColor;
+        border: solid var(--borderWeightColor);
         border-width: 0 1px;
         background-color: white;
         z-index: 1;
         transition: all .3s;
-        box-shadow: 6px 6px 5px $boxShadowColor;
+        box-shadow: 6px 6px 5px var(--boxShadowColor);
         .repo-select-search {
             padding: 10px;
-            border-top: 1px solid $borderWeightColor;
+            border-top: 1px solid var(--borderWeightColor);
         }
         .repo-select-list {
             height: calc(100% - 98px);
-            border-top: 1px solid $borderWeightColor;
+            border-top: 1px solid var(--borderWeightColor);
             overflow: auto;
             .repo-item {
                 height: 45px;
@@ -125,24 +124,24 @@
                     white-space: nowrap;
                 }
                 &.selected, &:hover {
-                    background-color: $bgHoverColor;
+                    background-color: var(--bgHoverColor);
                 }
             }
         }
         .repo-select-link {
             height: 45px;
-            border: solid $borderWeightColor;
+            border: solid var(--borderWeightColor);
             border-width: 1px 0;
             a {
                 height: 100%;
                 flex: 1;
-                color: $fontWeightColor;
+                color: var(--fontPrimaryColor);
                 & + a {
-                    border-left: 1px solid $borderWeightColor;
+                    border-left: 1px solid var(--borderWeightColor);
                 }
                 &:hover {
-                    color: $primaryColor;
-                    background-color: $bgHoverColor;
+                    color: var(--primaryColor);
+                    background-color: var(--bgHoverColor);
                 }
             }
         }
