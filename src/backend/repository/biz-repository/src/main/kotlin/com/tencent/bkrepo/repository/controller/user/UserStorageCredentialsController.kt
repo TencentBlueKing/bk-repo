@@ -31,16 +31,23 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Principal(PrincipalType.ADMIN)
@@ -57,5 +64,17 @@ class UserStorageCredentialsController(
     ): Response<Void> {
         storageCredentialService.create(userId, storageCredentialsCreateRequest)
         return ResponseBuilder.success()
+    }
+
+    @GetMapping
+    fun list(@RequestParam("region", required = false) region: String?): Response<List<StorageCredentials>> {
+        val storageCredentialsList = storageCredentialService.list(region).map {
+            when (it) {
+                is FileSystemCredentials, is HDFSCredentials -> it
+                is InnerCosCredentials -> it.copy(secretId = "*", secretKey = "*")
+                else -> throw SystemErrorException()
+            }
+        }
+        return ResponseBuilder.success(storageCredentialsList)
     }
 }
