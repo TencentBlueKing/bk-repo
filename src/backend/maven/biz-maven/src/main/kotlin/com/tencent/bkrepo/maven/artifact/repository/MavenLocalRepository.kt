@@ -228,6 +228,7 @@ class MavenLocalRepository(
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
         val noOverwrite = HeaderUtils.getBooleanHeader("X-BKREPO-NO-OVERWRITE")
+        logger.info("Do not want to overwrite: $noOverwrite")
         if (noOverwrite) {
             with(context.artifactInfo) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
@@ -292,6 +293,8 @@ class MavenLocalRepository(
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(context.artifactInfo.getArtifactFullPath())
         if (matcher.matches()) {
             var packaging = matcher.group(2)
+            logger.info("File's package is $packaging")
+
             val fileSuffix = packaging
             if (packaging == "pom") {
                 val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
@@ -307,6 +310,7 @@ class MavenLocalRepository(
             storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
             if (isArtifact) createMavenVersion(context, mavenGavc)
             // 更新包各模块版本最新记录
+            logger.info("Prepare to create maven metadata....")
             mavenMetadataService.update(node)
         } else {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
