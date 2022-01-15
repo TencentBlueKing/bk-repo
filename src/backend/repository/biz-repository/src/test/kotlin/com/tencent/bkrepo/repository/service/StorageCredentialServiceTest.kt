@@ -55,7 +55,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
 
     @BeforeEach
     fun beforeEach() {
-        storageCredentialService.delete(UT_STORAGE_CREDENTIALS_KEY)
+        storageCredentialService.forceDelete(UT_STORAGE_CREDENTIALS_KEY)
     }
 
     @Test
@@ -146,7 +146,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         list = storageCredentialService.list(region = UT_REGION + "2")
         Assertions.assertEquals(1, list.size)
 
-        storageCredentialService.delete(UT_STORAGE_CREDENTIALS_KEY + "2")
+        storageCredentialService.forceDelete(UT_STORAGE_CREDENTIALS_KEY + "2")
 
         list = storageCredentialService.list(region = UT_REGION)
         Assertions.assertEquals(1, list.size)

@@ -64,4 +64,10 @@ interface StorageCredentialService {
      * 根据[key]删除存储凭证
      */
     fun delete(key: String)
+
+    /**
+     * 强制删除存储凭证
+     * @param key 要删除的存储凭证key
+     */
+    fun forceDelete(key: String)
 }

@@ -41,9 +41,12 @@ import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
@@ -74,7 +77,7 @@ class UserStorageCredentialsController(
                 is FileSystemCredentials, is HDFSCredentials -> it
                 is InnerCosCredentials -> it.copy(secretId = "*", secretKey = "*")
                 is S3Credentials -> it.copy(accessKey = "*", secretKey = "*")
-                else -> throw SystemErrorException()
+                else -> throw SystemErrorException(RepositoryMessageCode.UNKNOWN_STORAGE_CREDENTIALS_TYPE)
             }
         }
         return ResponseBuilder.success(storageCredentialsList)
@@ -83,5 +86,10 @@ class UserStorageCredentialsController(
     @GetMapping("/default")
     fun default(): Response<StorageCredentials> {
         return ResponseBuilder.success(storageCredentialService.default())
+    }
+
+    @DeleteMapping("/{credentialKey}")
+    fun delete(@PathVariable("credentialKey") credentialKey: String) {
+        storageCredentialService.delete(credentialKey)
     }
 }

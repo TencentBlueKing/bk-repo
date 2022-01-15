@@ -31,13 +31,17 @@
 
 package com.tencent.bkrepo.repository.service.repo.impl
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -51,6 +55,7 @@ import java.time.LocalDateTime
  */
 @Service
 class StorageCredentialServiceImpl(
+    private val repositoryDao: RepositoryDao,
     private val storageCredentialsRepository: StorageCredentialsRepository,
     private val storageProperties: StorageProperties
 ) : StorageCredentialService {
@@ -95,6 +100,18 @@ class StorageCredentialServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun delete(key: String) {
+        if (!storageCredentialsRepository.existsById(key)) {
+            throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
+        }
+        val credentialsCount = storageCredentialsRepository.count()
+        if (repositoryDao.existsByCredentialsKey(key) || credentialsCount <= 1) {
+            throw BadRequestException(RepositoryMessageCode.STORAGE_CREDENTIALS_IN_USE)
+        }
+        // 可能判断完凭证未被使用后，删除凭证前，又有新增的仓库使用凭证，出现这种情况后需要修改新增仓库的凭证
+        return storageCredentialsRepository.deleteById(key)
+    }
+
+    override fun forceDelete(key: String) {
         return storageCredentialsRepository.deleteById(key)
     }
 }
