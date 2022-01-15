@@ -44,6 +44,7 @@ import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TStorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -82,6 +83,22 @@ class StorageCredentialServiceImpl(
         storageCredentialsRepository.save(storageCredential)
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials {
+        requireNotNull(request.key)
+        val tStorageCredentials = storageCredentialsRepository.findByIdOrNull(request.key!!)
+            ?: throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
+        val storageCredentials = tStorageCredentials.credentials.readJsonString<StorageCredentials>()
+
+        storageCredentials.apply {
+            cache = cache.copy(loadCacheFirst = request.loadCacheFirst, expireDays = request.expireDays)
+        }
+
+        tStorageCredentials.credentials = storageCredentials.toJsonString()
+        storageCredentialsRepository.save(tStorageCredentials)
+        return storageCredentials.apply { key = tStorageCredentials.id }
+    }
+
     override fun findByKey(key: String): StorageCredentials? {
         val tStorageCredentials = storageCredentialsRepository.findByIdOrNull(key)
         val storageCredentials = tStorageCredentials?.credentials?.readJsonString<StorageCredentials>()
@@ -111,6 +128,7 @@ class StorageCredentialServiceImpl(
         return storageCredentialsRepository.deleteById(key)
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
     override fun forceDelete(key: String) {
         return storageCredentialsRepository.deleteById(key)
     }

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 
 /**
  * 存储凭证服务接口
@@ -43,6 +44,8 @@ interface StorageCredentialService {
      * 根据[request]创建存储凭证
      */
     fun create(userId: String, request: StorageCredentialsCreateRequest)
+
+    fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials
 
     /**
      * 根据[key]查询存储凭证[StorageCredentials]，不存在则返回`null`

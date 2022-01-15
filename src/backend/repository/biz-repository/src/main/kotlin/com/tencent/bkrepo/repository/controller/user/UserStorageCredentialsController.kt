@@ -43,11 +43,13 @@ import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -68,6 +70,16 @@ class UserStorageCredentialsController(
     ): Response<Void> {
         storageCredentialService.create(userId, storageCredentialsCreateRequest)
         return ResponseBuilder.success()
+    }
+
+    @PutMapping("/{credentialsKey}")
+    fun update(
+        @RequestAttribute userId: String,
+        @PathVariable("credentialsKey") credentialKey: String,
+        @RequestBody storageCredentialsUpdateRequest: StorageCredentialsUpdateRequest
+    ): Response<StorageCredentials> {
+        val updateReq = storageCredentialsUpdateRequest.apply { key = credentialKey }
+        return ResponseBuilder.success(storageCredentialService.update(userId, updateReq))
     }
 
     @GetMapping
