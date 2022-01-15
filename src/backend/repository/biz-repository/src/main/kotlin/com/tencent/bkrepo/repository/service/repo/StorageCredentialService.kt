@@ -56,6 +56,11 @@ interface StorageCredentialService {
     fun list(region: String? = null): List<StorageCredentials>
 
     /**
+     * 获取默认存储凭证
+     */
+    fun default(): StorageCredentials
+
+    /**
      * 根据[key]删除存储凭证
      */
     fun delete(key: String)

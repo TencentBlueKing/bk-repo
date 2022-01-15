@@ -89,6 +89,10 @@ class StorageCredentialServiceImpl(
             .map { it.credentials.readJsonString<StorageCredentials>().apply { this.key = it.id } }
     }
 
+    override fun default(): StorageCredentials {
+        return storageProperties.defaultStorageCredentials()
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun delete(key: String) {
         return storageCredentialsRepository.deleteById(key)

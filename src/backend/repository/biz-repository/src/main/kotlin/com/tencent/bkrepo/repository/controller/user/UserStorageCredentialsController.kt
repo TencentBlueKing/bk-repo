@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
@@ -72,9 +73,15 @@ class UserStorageCredentialsController(
             when (it) {
                 is FileSystemCredentials, is HDFSCredentials -> it
                 is InnerCosCredentials -> it.copy(secretId = "*", secretKey = "*")
+                is S3Credentials -> it.copy(accessKey = "*", secretKey = "*")
                 else -> throw SystemErrorException()
             }
         }
         return ResponseBuilder.success(storageCredentialsList)
+    }
+
+    @GetMapping("/default")
+    fun default(): Response<StorageCredentials> {
+        return ResponseBuilder.success(storageCredentialService.default())
     }
 }
