@@ -53,6 +53,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
@@ -60,6 +61,9 @@ class MavenService(
     private val nodeClient: NodeClient,
     private val viewModelService: ViewModelService
 ) : ArtifactService() {
+
+    @Value("\${service.name}")
+    private var applicationName: String = "maven"
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(
@@ -94,7 +98,7 @@ class MavenService(
      */
     private fun renderListView(node: NodeDetail, artifactInfo: MavenArtifactInfo) {
         with(artifactInfo) {
-            viewModelService.trailingSlash()
+            viewModelService.trailingSlash(applicationName)
             // listNodePage 接口没办法满足当前情况
             val nodeList = nodeClient.listNode(
                 projectId = projectId,

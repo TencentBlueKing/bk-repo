@@ -48,9 +48,9 @@ class ViewModelService(
     private val viewModelProperties: ViewModelProperties
 ) {
 
-    fun trailingSlash() {
+    fun trailingSlash(serviceName: String) {
         val host = viewModelProperties.domain
-        val builder = StringBuilder(UrlFormatter.formatHost(host))
+        val builder = StringBuilder(UrlFormatter.format(host, serviceName))
         val url = builder.append(HttpContextHolder.getRequest().requestURI).toString()
         if (!url.endsWith(UNIX_SEPARATOR)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
