@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.service.file.ListViewService
 import com.tencent.bkrepo.repository.service.node.NodeService
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 /**
@@ -59,13 +60,16 @@ class ListViewServiceImpl(
     private val viewModelService: ViewModelService
 ) : ListViewService {
 
+    @Value("\${service.name}")
+    private var applicationName: String = "repository"
+
     override fun listNodeView(artifactInfo: ArtifactInfo) {
         val node = nodeService.getNodeDetail(artifactInfo)
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
         val response = HttpContextHolder.getResponse()
         response.contentType = MediaTypes.TEXT_HTML
         if (node.folder) {
-            viewModelService.trailingSlash()
+            viewModelService.trailingSlash(applicationName)
             val listOption = NodeListOption(
                 includeFolder = true,
                 includeMetadata = false,
@@ -90,7 +94,7 @@ class ListViewServiceImpl(
     }
 
     override fun listRepoView(projectId: String) {
-        viewModelService.trailingSlash()
+        viewModelService.trailingSlash(applicationName)
         val itemList = repositoryService.listRepo(projectId).map { RepoListViewItem.from(it) }
         val title = "Repository[$projectId]"
         val headerList = listOf(
@@ -109,7 +113,7 @@ class ListViewServiceImpl(
     }
 
     override fun listProjectView() {
-        viewModelService.trailingSlash()
+        viewModelService.trailingSlash(applicationName)
         val itemList = projectService.listPermissionProject(SecurityUtils.getUserId(), null)
             .map { ProjectListViewItem.from(it) }
         val headerList = listOf(
