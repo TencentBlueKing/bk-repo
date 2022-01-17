@@ -309,7 +309,7 @@ class ServiceUserResourceImpl @Autowired constructor(
     }
 
     private fun checkUserId(userId: String?, uid: String) {
-        if (userId != null && userId.isNullOrEmpty() && userId != uid) {
+        if (!userId.isNullOrEmpty() && userId != uid) {
             logger.warn("use not match [$userId, $uid]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
         }
