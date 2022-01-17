@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
 import com.tencent.bkrepo.repository.service.repo.ProjectService
 import io.swagger.annotations.Api
@@ -44,6 +45,7 @@ import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -85,6 +87,29 @@ class UserProjectController(
     ): Response<Boolean> {
         permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(projectService.checkExist(projectId))
+    }
+
+    @ApiOperation("校验项目参数是否存在")
+    @GetMapping("/exist")
+    fun checkProjectExist(
+            @RequestAttribute userId: String,
+            @ApiParam(value = "项目ID", required = false)
+            @RequestParam name: String?,
+            @ApiParam(value = "项目ID", required = false)
+            @RequestParam displayName: String?
+    ): Response<Boolean> {
+        return ResponseBuilder.success(projectService.checkProjectExist(name, displayName))
+    }
+
+    @ApiOperation("编辑项目")
+    @PutMapping("/{name}")
+    fun updateProject(
+            @RequestAttribute userId: String,
+            @ApiParam(value = "项目ID", required = true)
+            @PathVariable name: String,
+            @RequestBody projectUpdateRequest: ProjectUpdateRequest
+    ): Response<Boolean> {
+        return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }
 
     @ApiOperation("项目列表")

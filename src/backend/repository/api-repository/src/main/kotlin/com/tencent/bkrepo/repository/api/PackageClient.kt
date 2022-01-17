@@ -96,7 +96,8 @@ interface PackageClient {
     @ApiOperation("创建包版本")
     @PostMapping("/version/create")
     fun createVersion(
-        @RequestBody request: PackageVersionCreateRequest
+        @RequestBody request: PackageVersionCreateRequest,
+        @RequestParam realIpAddress: String? = null
     ): Response<Void>
 
     @ApiOperation("删除包")
@@ -104,7 +105,8 @@ interface PackageClient {
     fun deletePackage(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam packageKey: String
+        @RequestParam packageKey: String,
+        @RequestParam realIpAddress: String? = null
     ): Response<Void>
 
     @ApiOperation("删除版本")
@@ -113,19 +115,22 @@ interface PackageClient {
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
-        @RequestParam version: String
+        @RequestParam version: String,
+        @RequestParam realIpAddress: String? = null
     ): Response<Void>
 
     @ApiOperation("更新包")
     @PostMapping("/package/update")
     fun updatePackage(
-        @RequestBody request: PackageUpdateRequest
+        @RequestBody request: PackageUpdateRequest,
+        @RequestParam realIpAddress: String? = null
     ): Response<Void>
 
     @ApiOperation("更新版本")
     @PostMapping("/version/update")
     fun updateVersion(
-        @RequestBody request: PackageVersionUpdateRequest
+        @RequestBody request: PackageVersionUpdateRequest,
+        @RequestParam realIpAddress: String? = null
     ): Response<Void>
 
     @ApiOperation("搜索包")
