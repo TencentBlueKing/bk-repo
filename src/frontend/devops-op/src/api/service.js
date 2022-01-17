@@ -1,31 +1,31 @@
 import request from '@/utils/request'
 
-const prefix = 'opdata/api/services'
+const PREFIX_SERVICES = '/opdata/api/services'
 
 export function services() {
   return request({
-    url: `/${prefix}`,
+    url: `${PREFIX_SERVICES}`,
     method: 'get'
   })
 }
 
 export function instances(serviceName) {
   return request({
-    url: `${prefix}/${serviceName}/instances`,
+    url: `${PREFIX_SERVICES}/${serviceName}/instances`,
     method: 'get'
   })
 }
 
 export function up(serviceName, instanceId) {
   return request({
-    url: `${prefix}/${serviceName}/instances/${instanceId}/up`,
+    url: `${PREFIX_SERVICES}/${serviceName}/instances/${instanceId}/up`,
     method: 'post'
   })
 }
 
 export function down(serviceName, instanceId) {
   return request({
-    url: `${prefix}/${serviceName}/instances/${instanceId}/down`,
+    url: `${PREFIX_SERVICES}/${serviceName}/instances/${instanceId}/down`,
     method: 'post'
   })
 }

@@ -1,10 +1,10 @@
 import request from '@/utils/request'
 
-const prefix = 'auth/api'
+const PREFIX_USER = '/auth/api/user'
 
 export function login(formData) {
   return request({
-    url: `/${prefix}/user/login`,
+    url: `${PREFIX_USER}/login`,
     method: 'post',
     data: formData,
     config: { headers: { 'Content-Type': 'multipart/form-data' }}
@@ -13,21 +13,21 @@ export function login(formData) {
 
 export function userInfo() {
   return request({
-    url: `/${prefix}/user/info`,
+    url: `${PREFIX_USER}/info`,
     method: 'get'
   })
 }
 
 export function userInfoById(userId) {
   return request({
-    url: `/${prefix}/user/userinfo/${userId}`,
+    url: `${PREFIX_USER}/userinfo/${userId}`,
     method: 'get'
   })
 }
 
 export function userDetail(userId) {
   return request({
-    url: `/${prefix}/user/detail/${userId}`,
+    url: `${PREFIX_USER}/detail/${userId}`,
     method: 'get'
   })
 }

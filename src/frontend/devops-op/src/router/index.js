@@ -90,8 +90,8 @@ export const asyncRoutes = [
       {
         path: 'credentials',
         name: ROUTER_NAME_STORAGE_CREDENTIALS,
-        component: () => import('@/views/storage/Credentials'),
-        meta: { title: '凭证', icon: 'credentials' }
+        component: () => import('@/views/storage/Credential'),
+        meta: { title: '凭据', icon: 'credentials' }
       }
     ]
   },
