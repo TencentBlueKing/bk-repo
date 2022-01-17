@@ -43,7 +43,7 @@ interface StorageCredentialService {
     /**
      * 根据[request]创建存储凭证
      */
-    fun create(userId: String, request: StorageCredentialsCreateRequest)
+    fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials
 
     fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials
 

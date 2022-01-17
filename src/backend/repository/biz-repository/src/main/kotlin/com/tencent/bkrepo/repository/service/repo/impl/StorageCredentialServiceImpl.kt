@@ -62,7 +62,7 @@ class StorageCredentialServiceImpl(
 ) : StorageCredentialService {
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun create(userId: String, request: StorageCredentialsCreateRequest) {
+    override fun create(userId: String, request: StorageCredentialsCreateRequest): StorageCredentials {
         takeIf { request.key.isNotBlank() } ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "key")
         // 目前的实现方式有个限制：新增的存储方式和默认的存储方式必须相同
         if (storageProperties.defaultStorageCredentials()::class != request.credentials::class) {
@@ -80,7 +80,10 @@ class StorageCredentialServiceImpl(
             credentials = request.credentials.toJsonString(),
             region = request.region
         )
-        storageCredentialsRepository.save(storageCredential)
+        val savedCredentials = storageCredentialsRepository.save(storageCredential)
+        return savedCredentials.credentials
+            .readJsonString<StorageCredentials>()
+            .apply { this.key = savedCredentials.id }
     }
 
     @Transactional(rollbackFor = [Throwable::class])

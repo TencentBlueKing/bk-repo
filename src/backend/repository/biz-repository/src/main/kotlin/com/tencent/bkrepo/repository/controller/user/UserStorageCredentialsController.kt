@@ -67,9 +67,9 @@ class UserStorageCredentialsController(
     fun create(
         @RequestAttribute userId: String,
         @RequestBody storageCredentialsCreateRequest: StorageCredentialsCreateRequest
-    ): Response<Void> {
-        storageCredentialService.create(userId, storageCredentialsCreateRequest)
-        return ResponseBuilder.success()
+    ): Response<StorageCredentials> {
+        val createdCredential = mask(storageCredentialService.create(userId, storageCredentialsCreateRequest))
+        return ResponseBuilder.success(createdCredential)
     }
 
     @PutMapping("/{credentialsKey}")
@@ -79,7 +79,8 @@ class UserStorageCredentialsController(
         @RequestBody storageCredentialsUpdateRequest: StorageCredentialsUpdateRequest
     ): Response<StorageCredentials> {
         val updateReq = storageCredentialsUpdateRequest.apply { key = credentialKey }
-        return ResponseBuilder.success(storageCredentialService.update(userId, updateReq))
+        val updatedCredentials = mask(storageCredentialService.update(userId, updateReq))
+        return ResponseBuilder.success(updatedCredentials)
     }
 
     @GetMapping
@@ -87,8 +88,7 @@ class UserStorageCredentialsController(
         val storageCredentialsList = storageCredentialService.list(region).map {
             when (it) {
                 is FileSystemCredentials, is HDFSCredentials -> it
-                is InnerCosCredentials -> it.copy(secretId = "*", secretKey = "*")
-                is S3Credentials -> it.copy(accessKey = "*", secretKey = "*")
+                is InnerCosCredentials, is S3Credentials -> mask(it)
                 else -> throw SystemErrorException(RepositoryMessageCode.UNKNOWN_STORAGE_CREDENTIALS_TYPE)
             }
         }
@@ -97,11 +97,21 @@ class UserStorageCredentialsController(
 
     @GetMapping("/default")
     fun default(): Response<StorageCredentials> {
-        return ResponseBuilder.success(storageCredentialService.default())
+        return ResponseBuilder.success(mask(storageCredentialService.default()))
     }
 
     @DeleteMapping("/{credentialKey}")
     fun delete(@PathVariable("credentialKey") credentialKey: String) {
         storageCredentialService.delete(credentialKey)
+    }
+
+    private fun mask(storageCredentials: StorageCredentials): StorageCredentials {
+        if (storageCredentials is InnerCosCredentials) {
+            return storageCredentials.copy(secretId = "*", secretKey = "*")
+        }
+        if (storageCredentials is S3Credentials) {
+            return storageCredentials.copy(accessKey = "*", secretKey = "*")
+        }
+        return storageCredentials
     }
 }
