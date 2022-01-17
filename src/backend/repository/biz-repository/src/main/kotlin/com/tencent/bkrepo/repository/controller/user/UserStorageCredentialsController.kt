@@ -101,8 +101,9 @@ class UserStorageCredentialsController(
     }
 
     @DeleteMapping("/{credentialKey}")
-    fun delete(@PathVariable("credentialKey") credentialKey: String) {
+    fun delete(@PathVariable("credentialKey") credentialKey: String): Response<Void> {
         storageCredentialService.delete(credentialKey)
+        return ResponseBuilder.success()
     }
 
     private fun mask(storageCredentials: StorageCredentials): StorageCredentials {
