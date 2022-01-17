@@ -3,8 +3,8 @@ import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress' // progress bar
 import 'nprogress/nprogress.css' // progress bar style
-import { getToken } from '@/utils/auth'
-import { toLoginPage } from '@/utils/login' // get token from cookie
+import { getToken } from '@/utils/auth' // get token from cookie
+import { toLoginPage } from '@/utils/login'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
@@ -15,7 +15,7 @@ router.beforeEach(async(to, from, next) => {
   NProgress.start()
 
   // set page title
-  document.title = 'BkRepoOp'
+  document.title = process.env.VUE_APP_TITLE
 
   // determine whether the user has logged in
   // const bkTicket = getBkTicket()

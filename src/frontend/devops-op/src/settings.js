@@ -15,5 +15,5 @@ module.exports = {
    * @type {string} true | false
    * @description Title of sidebar
    */
-  sidebarTitle: '制品库管理后台'
+  sidebarTitle: process.env.VUE_APP_TITLE
 }
