@@ -229,24 +229,6 @@
                 ]
             }
         },
-        watch: {
-            'repoBaseInfo.mobileDownload': {
-                handler (newVal) {
-                    if (!newVal) {
-                        const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'MOBILE')
-                        this.repoBaseInfo.interceptors.splice(index, 1)
-                    }
-                }
-            },
-            'repoBaseInfo.webDownload': {
-                handler (newVal) {
-                    if (!newVal) {
-                        const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'WEB')
-                        this.repoBaseInfo.interceptors.splice(index, 1)
-                    }
-                }
-            }
-        },
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
