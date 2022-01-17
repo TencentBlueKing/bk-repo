@@ -191,12 +191,20 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    override fun createToken(uid: String): Response<Token?> {
+    override fun createToken(userId: String?, uid: String): Response<Token?> {
+        checkUserId(userId, uid)
         val result = userService.createToken(uid)
         return ResponseBuilder.success(result)
     }
 
-    override fun addUserToken(uid: String, name: String, expiredAt: String?, projectId: String?): Response<Token?> {
+    override fun addUserToken(
+        userId: String?,
+        uid: String,
+        name: String,
+        expiredAt: String?,
+        projectId: String?
+    ): Response<Token?> {
+        checkUserId(userId, uid)
         // add user to project first
         projectId?.let {
             val createRoleRequest = CreateRoleRequest(
@@ -215,19 +223,16 @@ class ServiceUserResourceImpl @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    override fun listUserToken(uid: String): Response<List<TokenResult>> {
+    override fun listUserToken(userId: String?, uid: String): Response<List<TokenResult>> {
+        checkUserId(userId, uid)
         val result = userService.listUserToken(uid)
         return ResponseBuilder.success(result)
     }
 
-    override fun deleteToken(uid: String, name: String): Response<Boolean> {
+    override fun deleteToken(userId: String?, uid: String, name: String): Response<Boolean> {
+        checkUserId(userId, uid)
         val result = userService.removeToken(uid, name)
         return ResponseBuilder.success(result)
-    }
-
-    override fun checkUserToken(uid: String, token: String): Response<Boolean> {
-        userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
-        return ResponseBuilder.success(true)
     }
 
     override fun checkToken(uid: String, token: String): Response<Boolean> {
@@ -301,6 +306,13 @@ class ServiceUserResourceImpl @Autowired constructor(
 
     override fun repeatUid(uid: String): Response<Boolean> {
         return ResponseBuilder.success(userService.repeatUid(uid))
+    }
+
+    private fun checkUserId(userId: String?, uid: String) {
+        if (userId != null && userId.isNullOrEmpty() && userId != uid) {
+            logger.warn("use not match [$userId, $uid]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
+        }
     }
 
     companion object {

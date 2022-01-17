@@ -160,8 +160,10 @@ class AccountServiceImpl constructor(
         logger.info("upload account request : [$request]")
         val userId = SecurityUtils.getUserId()
         with(request) {
-            Preconditions.checkArgument(authorizationGrantTypes.isNotEmpty(),
-                UpdateAccountRequest::authorizationGrantTypes.name)
+            Preconditions.checkArgument(
+                authorizationGrantTypes.isNotEmpty(),
+                UpdateAccountRequest::authorizationGrantTypes.name
+            )
 
             val account = findAccountAndCheckOwner(appId, userId)
             setCredentials(account, this)
@@ -304,15 +306,17 @@ class AccountServiceImpl constructor(
                     val oldTypes = account.authorizationGrantTypes ?: setOf(AuthorizationGrantType.PLATFORM)
                     val newTypes = authorizationGrantTypes.filterNot { oldTypes.contains(it) }
                     val newCredentials = account.credentials.toMutableList()
-                    newCredentials.addAll(newTypes.map {
-                        CredentialSet(
-                            accessKey = StringPool.uniqueId(),
-                            secretKey = OauthUtils.generateSecretKey(),
-                            createdAt = LocalDateTime.now(),
-                            status = CredentialStatus.ENABLE,
-                            authorizationGrantType = it
-                        )
-                    })
+                    newCredentials.addAll(
+                        newTypes.map {
+                            CredentialSet(
+                                accessKey = StringPool.uniqueId(),
+                                secretKey = OauthUtils.generateSecretKey(),
+                                createdAt = LocalDateTime.now(),
+                                status = CredentialStatus.ENABLE,
+                                authorizationGrantType = it
+                            )
+                        }
+                    )
                     account.credentials = newCredentials
                 }
                 typeChange < 0 -> {

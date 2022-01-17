@@ -42,7 +42,6 @@ import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
