@@ -167,7 +167,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[^\s]:[^\s]/,
+                            regex: /^[^\s]+:[^\s]+/,
                             message: this.$t('metadataRule'),
                             trigger: 'blur'
                         }
@@ -186,7 +186,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[^\s]:[^\s]/,
+                            regex: /^[^\s]+:[^\s]+/,
                             message: this.$t('metadataRule'),
                             trigger: 'blur'
                         }
@@ -293,29 +293,18 @@
             },
             async saveBaseInfo () {
                 ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
-                if (this.repoType === 'generic' && this.repoBaseInfo.mobileDownload) {
-                    const mobile = {
-                        type: 'MOBILE',
-                        rules: {
-                            filename: this.repoBaseInfo.interceptorsRulesMap.mobile.filename,
-                            metadata: this.repoBaseInfo.interceptorsRulesMap.mobile.metadata
+                const { mobileDownload, webDownload, interceptorsRulesMap } = this.repoBaseInfo
+                let { interceptors } = this.repoBaseInfo
+                interceptors = []
+                if (this.repoType === 'generic') {
+                    for (const [key, val] of Object.entries(interceptorsRulesMap)) {
+                        if ((key === 'mobile' && mobileDownload) || (key === 'web' && webDownload)) {
+                            interceptors.push({
+                                type: key.toLocaleUpperCase(),
+                                rules: val
+                            })
                         }
                     }
-                    const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'MOBILE')
-                    this.repoBaseInfo.interceptors.splice(index, 1)
-                    this.repoBaseInfo.interceptors.push(mobile)
-                }
-                if (this.repoType === 'generic' && this.repoBaseInfo.webDownload) {
-                    const web = {
-                        type: 'WEB',
-                        rules: {
-                            filename: this.repoBaseInfo.interceptorsRulesMap.web.filename,
-                            metadata: this.repoBaseInfo.interceptorsRulesMap.web.metadata
-                        }
-                    }
-                    const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'WEB')
-                    this.repoBaseInfo.interceptors.splice(index, 1)
-                    this.repoBaseInfo.interceptors.push(web)
                 }
                 const body = {
                     public: this.repoBaseInfo.public,
@@ -324,13 +313,7 @@
                         ...this.repoBaseInfo.configuration,
                         settings: {
                             system: this.repoBaseInfo.system,
-                            ...(
-                                this.repoType === 'generic'
-                                    ? {
-                                        interceptors: this.repoBaseInfo.interceptors
-                                    }
-                                    : []
-                            ),
+                            interceptors: this.repoType === 'generic' && interceptors.length ? interceptors : undefined,
                             ...(
                                 this.repoType === 'rpm'
                                     ? {
