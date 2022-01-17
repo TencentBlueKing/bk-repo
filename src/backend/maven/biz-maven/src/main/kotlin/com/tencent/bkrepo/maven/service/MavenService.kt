@@ -51,6 +51,8 @@ import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -77,8 +79,10 @@ class MavenService(
                 ?: throw NodeNotFoundException(getArtifactFullPath())
             val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
             if (node.folder && !download) {
+                logger.info("The folder: ${getArtifactFullPath()} will be displayed...")
                 renderListView(node, this)
             } else {
+                logger.info("The dependency file: ${getArtifactFullPath()} will be downloaded... ")
                 val context = ArtifactDownloadContext()
                 ArtifactContextHolder.getRepository().download(context)
             }
@@ -127,5 +131,9 @@ class MavenService(
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(MavenService::class.java)
     }
 }
