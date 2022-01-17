@@ -18,6 +18,40 @@
                             :list="availableList">
                         </card-radio-group>
                     </bk-form-item>
+                    <template v-if="repoType === 'generic'">
+                        <bk-form-item :label="$t('mobileDownload')" property="mobileDownload">
+                            <bk-radio-group v-model="repoBaseInfo.mobileDownload">
+                                <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                                <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                            </bk-radio-group>
+                            <template v-if="repoBaseInfo.mobileDownload">
+                                <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
+                                    property="interceptorsRulesMap.mobile.filename" error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.mobile.filename"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('metadata')" :label-width="60"
+                                    property="interceptorsRulesMap.mobile.metadata" error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.mobile.metadata"></bk-input>
+                                </bk-form-item>
+                            </template>
+                        </bk-form-item>
+                        <bk-form-item :label="$t('webDownload')" property="webDownload">
+                            <bk-radio-group v-model="repoBaseInfo.webDownload">
+                                <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
+                                <bk-radio :value="false">{{ $t('close') }}</bk-radio>
+                            </bk-radio-group>
+                            <template v-if="repoBaseInfo.webDownload">
+                                <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
+                                    property="interceptorsRulesMap.web.filename" error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.web.filename"></bk-input>
+                                </bk-form-item>
+                                <bk-form-item :label="$t('metadata')" :label-width="60"
+                                    property="interceptorsRulesMap.web.metadata" error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.web.metadata"></bk-input>
+                                </bk-form-item>
+                            </template>
+                        </bk-form-item>
+                    </template>
                     <template v-if="repoType === 'rpm'">
                         <bk-form-item :label="$t('enabledFileLists')">
                             <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -85,7 +119,20 @@
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
-                    description: ''
+                    description: '',
+                    mobileDownload: false,
+                    webDownload: false,
+                    interceptors: [],
+                    interceptorsRulesMap: {
+                        mobile: {
+                            filename: '',
+                            metadata: ''
+                        },
+                        web: {
+                            filename: '',
+                            metadata: ''
+                        }
+                    }
                 },
                 rules: {
                     repodataDepth: [
@@ -104,6 +151,44 @@
                             },
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
+                        }
+                    ],
+                    'interceptorsRulesMap.mobile.filename': [
+                        {
+                            required: true,
+                            message: this.$t('pleaseFileName'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    'interceptorsRulesMap.mobile.metadata': [
+                        {
+                            required: true,
+                            message: this.$t('pleaseMetadata'),
+                            trigger: 'blur'
+                        },
+                        {
+                            regex: /^[^\s]:[^\s]/,
+                            message: this.$t('metadataRule'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    'interceptorsRulesMap.web.filename': [
+                        {
+                            required: true,
+                            message: this.$t('pleaseFileName'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    'interceptorsRulesMap.web.metadata': [
+                        {
+                            required: true,
+                            message: this.$t('pleaseMetadata'),
+                            trigger: 'blur'
+                        },
+                        {
+                            regex: /^[^\s]:[^\s]/,
+                            message: this.$t('metadataRule'),
+                            trigger: 'blur'
                         }
                     ]
                 }
@@ -144,6 +229,24 @@
                 ]
             }
         },
+        watch: {
+            'repoBaseInfo.mobileDownload': {
+                handler (newVal) {
+                    if (!newVal) {
+                        const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'MOBILE')
+                        this.repoBaseInfo.interceptors.splice(index, 1)
+                    }
+                }
+            },
+            'repoBaseInfo.webDownload': {
+                handler (newVal) {
+                    if (!newVal) {
+                        const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'WEB')
+                        this.repoBaseInfo.interceptors.splice(index, 1)
+                    }
+                }
+            }
+        },
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
@@ -168,12 +271,52 @@
                         ...res.configuration.settings,
                         repoType: res.type.toLowerCase()
                     }
+                    
+                    const { interceptors } = res.configuration.settings
+                    if (interceptors) {
+                        interceptors.forEach(i => {
+                            if (i.type === 'MOBILE') {
+                                this.repoBaseInfo.mobileDownload = true
+                                this.repoBaseInfo.interceptorsRulesMap.mobile.filename = i.rules.filename
+                                this.repoBaseInfo.interceptorsRulesMap.mobile.metadata = i.rules.metadata
+                            }
+                            if (i.type === 'WEB') {
+                                this.repoBaseInfo.webDownload = true
+                                this.repoBaseInfo.interceptorsRulesMap.web.filename = i.rules.filename
+                                this.repoBaseInfo.interceptorsRulesMap.web.metadata = i.rules.metadata
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
             },
             async saveBaseInfo () {
-                this.repoType === 'rpm' && await this.$refs.repoBaseInfo.validate()
+                ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
+                if (this.repoType === 'generic' && this.repoBaseInfo.mobileDownload) {
+                    const mobile = {
+                        type: 'MOBILE',
+                        rules: {
+                            filename: this.repoBaseInfo.interceptorsRulesMap.mobile.filename,
+                            metadata: this.repoBaseInfo.interceptorsRulesMap.mobile.metadata
+                        }
+                    }
+                    const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'MOBILE')
+                    this.repoBaseInfo.interceptors.splice(index, 1)
+                    this.repoBaseInfo.interceptors.push(mobile)
+                }
+                if (this.repoType === 'generic' && this.repoBaseInfo.webDownload) {
+                    const web = {
+                        type: 'WEB',
+                        rules: {
+                            filename: this.repoBaseInfo.interceptorsRulesMap.web.filename,
+                            metadata: this.repoBaseInfo.interceptorsRulesMap.web.metadata
+                        }
+                    }
+                    const index = this.repoBaseInfo.interceptors.findIndex(cur => cur.type === 'WEB')
+                    this.repoBaseInfo.interceptors.splice(index, 1)
+                    this.repoBaseInfo.interceptors.push(web)
+                }
                 const body = {
                     public: this.repoBaseInfo.public,
                     description: this.repoBaseInfo.description,
@@ -181,6 +324,13 @@
                         ...this.repoBaseInfo.configuration,
                         settings: {
                             system: this.repoBaseInfo.system,
+                            ...(
+                                this.repoType === 'generic'
+                                    ? {
+                                        interceptors: this.repoBaseInfo.interceptors
+                                    }
+                                    : []
+                            ),
                             ...(
                                 this.repoType === 'rpm'
                                     ? {

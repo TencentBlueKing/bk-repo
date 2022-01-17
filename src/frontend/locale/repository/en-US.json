@@ -176,5 +176,13 @@
         "5": "四",
         "6": "五",
         "7": "六"
-    }
+    },
+    "mobileDownload": "移动端下载",
+    "webDownload": "Web端下载",
+    "open": "开启",
+    "close": "关闭",
+    "pleaseFileName": "请输入文件名",
+    "pleaseMetadata": "请输入元数据",
+    "metadata": "元数据",
+    "metadataRule": "请输入格式为 'key: value' 的数据"
 }
