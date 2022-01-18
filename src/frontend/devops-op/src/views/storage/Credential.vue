@@ -51,6 +51,7 @@
             编辑
           </el-button>
           <el-button
+            v-if="!scope.row.default"
             size="mini"
             type="danger"
             @click="handleDelete(scope.$index, scope.row)"
@@ -60,11 +61,15 @@
         </template>
       </el-table-column>
     </el-table>
-    <create-credential-dialog :visible.sync="showCreateCredentialDialog" @created="handleCreated($event)" />
+    <create-credential-dialog
+      :storage-type="defaultCredential.type"
+      :visible.sync="showCreateCredentialDialog"
+      @created="handleCreated($event)"
+    />
   </div>
 </template>
 <script>
-import { credentials, deleteCredential } from '@/api/storage'
+import { credentials, defaultCredential, deleteCredential } from '@/api/storage'
 import CreateCredentialDialog from '@/views/storage/components/CreateCredentialDialog'
 
 export default {
@@ -74,13 +79,21 @@ export default {
     return {
       showCreateCredentialDialog: false,
       loading: true,
-      credentials: []
+      credentials: [],
+      defaultCredential: undefined
     }
   },
   created() {
     this.loading = true
+    this.credentials = []
+    defaultCredential().then(res => {
+      this.defaultCredential = res.data
+      this.defaultCredential.key = 'default'
+      this.defaultCredential.default = true
+      this.credentials.push(this.defaultCredential)
+    })
     credentials().then(res => {
-      this.credentials = res.data
+      this.credentials.push(...res.data)
     })
   },
   methods: {

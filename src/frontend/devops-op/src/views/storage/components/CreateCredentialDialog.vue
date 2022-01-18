@@ -6,10 +6,7 @@
       </el-form-item>
       <el-form-item label="存储类型" prop="type">
         <el-select v-model="credential.type" placeholder="请选择存储类型">
-          <el-option label="filesystem" :value="STORAGE_TYPE_FILESYSTEM" />
-          <el-option label="inner-cos" :value="STORAGE_TYPE_INNER_COS" />
-          <el-option label="hdfs" :value="STORAGE_TYPE_HDFS" />
-          <el-option label="s3" :value="STORAGE_TYPE_S3" />
+          <el-option :label="storageType" :value="storageType" />
         </el-select>
       </el-form-item>
 
@@ -117,7 +114,11 @@ import {
 export default {
   name: 'CreateCredentialDialog',
   props: {
-    visible: Boolean
+    visible: Boolean,
+    storageType: {
+      type: String,
+      default: STORAGE_TYPE_INNER_COS
+    }
   },
   data() {
     return {
@@ -214,7 +215,7 @@ export default {
     isObjectStorage(type) {
       return type === STORAGE_TYPE_S3 || type === STORAGE_TYPE_INNER_COS
     },
-    newCredential(type = STORAGE_TYPE_INNER_COS) {
+    newCredential(type = this.storageType) {
       const credential = {
         type: type,
         cache: {

@@ -14,6 +14,13 @@ export function credentials() {
   })
 }
 
+export function defaultCredential() {
+  return request({
+    url: `${PREFIX_STORAGE_CREDENTIALS}/default`,
+    method: 'get'
+  })
+}
+
 export function createCredential(credential) {
   if (credential.upload && (!credential.upload.location || credential.upload.location.length === 0)) {
     credential.upload.location = undefined
