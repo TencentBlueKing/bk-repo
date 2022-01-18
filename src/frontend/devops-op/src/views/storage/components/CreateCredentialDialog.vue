@@ -127,7 +127,7 @@ export default {
       STORAGE_TYPE_S3: STORAGE_TYPE_S3,
       rules: {
         'upload.location': [
-          { validator: this.validateFilePath, trigger: 'change' }
+          { validator: this.validateFilePathAllowEmpty, trigger: 'change' }
         ],
         'cache.path': [
           { validator: this.validateRelativeFilePath, trigger: 'change' }
@@ -166,15 +166,18 @@ export default {
     validateFilePath(rule, value, callback) {
       this.validateUri(rule, value, callback, /^((\/[\w-]+)+)$/)
     },
+    validateFilePathAllowEmpty(rule, value, callback) {
+      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)$/, true)
+    },
     validateRelativeFilePath(rule, value, callback) {
       this.validateUri(rule, value, callback, /^[\w-]+(\/[\w-]+)*$/)
     },
     validateHdfsUrl(rule, value, callback) {
       this.validateUri(rule, value, callback, /^hdfs:\/\/[\w-]+(\.[\w-]+)*(:\d{1,5})?$/)
     },
-    validateUri(rule, value, callback, regex) {
-      if (!value || value.length === 0) {
-        callback(new Error('路径不能为空'))
+    validateUri(rule, value, callback, regex, allowEmpty = false) {
+      if (allowEmpty && (!value || value.length === 0)) {
+        callback()
       }
       if (regex.test(value)) {
         callback()
