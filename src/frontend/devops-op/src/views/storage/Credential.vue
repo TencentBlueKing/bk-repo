@@ -26,7 +26,7 @@
         label="缓存天数"
         width="180"
       >
-        <template slot-scope="scope">
+        <template v-if="scope.row.cache.enabled" slot-scope="scope">
           <span>{{ expireDays(scope.row.cache.expireDays) }}</span>
         </template>
       </el-table-column>
@@ -34,7 +34,7 @@
         label="优先读缓存"
         width="180"
       >
-        <template slot-scope="scope">
+        <template v-if="scope.row.cache.enabled" slot-scope="scope">
           <span>{{ scope.row.cache.loadCacheFirst ? '是' : '否' }}</span>
         </template>
       </el-table-column>
