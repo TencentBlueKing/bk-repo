@@ -152,7 +152,7 @@ export default {
           { validator: this.validateRelativeFilePath, trigger: 'change' }
         ],
         path: [
-          { validator: this.validateRelativeFilePath, trigger: 'change' }
+          { validator: this.validateFilePath, trigger: 'change' }
         ],
         url: [
           { validator: this.validateHdfsUrl, trigger: 'change' }
