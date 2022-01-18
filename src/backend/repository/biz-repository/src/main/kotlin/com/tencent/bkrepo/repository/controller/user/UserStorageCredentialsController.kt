@@ -69,7 +69,7 @@ class UserStorageCredentialsController(
         @RequestBody storageCredentialsCreateRequest: StorageCredentialsCreateRequest
     ): Response<StorageCredentials> {
         val createdCredential = mask(storageCredentialService.create(userId, storageCredentialsCreateRequest))
-        return ResponseBuilder.success(createdCredential)
+        return ResponseBuilder.buildTyped(createdCredential)
     }
 
     @PutMapping("/{credentialsKey}")
@@ -80,7 +80,7 @@ class UserStorageCredentialsController(
     ): Response<StorageCredentials> {
         val updateReq = storageCredentialsUpdateRequest.apply { key = credentialKey }
         val updatedCredentials = mask(storageCredentialService.update(userId, updateReq))
-        return ResponseBuilder.success(updatedCredentials)
+        return ResponseBuilder.buildTyped(updatedCredentials)
     }
 
     @GetMapping
@@ -92,12 +92,12 @@ class UserStorageCredentialsController(
                 else -> throw SystemErrorException(RepositoryMessageCode.UNKNOWN_STORAGE_CREDENTIALS_TYPE)
             }
         }
-        return ResponseBuilder.success(storageCredentialsList)
+        return ResponseBuilder.buildTyped(storageCredentialsList)
     }
 
     @GetMapping("/default")
     fun default(): Response<StorageCredentials> {
-        return ResponseBuilder.success(mask(storageCredentialService.default()))
+        return ResponseBuilder.buildTyped(mask(storageCredentialService.default()))
     }
 
     @DeleteMapping("/{credentialKey}")
