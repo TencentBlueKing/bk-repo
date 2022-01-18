@@ -37,7 +37,11 @@ export function createCredential(credential) {
   })
 }
 
-export function updateCredential(key, data) {
+export function updateCredential(key, credential) {
+  const data = {
+    loadCacheFirst: credential.cache.loadCacheFirst,
+    expireDays: credential.cache.expireDays
+  }
   return request({
     url: `${PREFIX_STORAGE_CREDENTIALS}/${key}`,
     method: 'put',

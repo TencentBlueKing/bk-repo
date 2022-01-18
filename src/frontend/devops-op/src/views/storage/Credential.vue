@@ -40,13 +40,13 @@
       </el-table-column>
       <el-table-column align="right">
         <template slot="header">
-          <el-button type="primary" @click="showCreateDialog">创建</el-button>
+          <el-button type="primary" @click="showCreateOrUpdateDialog(true)">创建</el-button>
         </template>
         <template slot-scope="scope">
           <el-button
             size="mini"
             type="primary"
-            @click="handleEdit(scope.$index, scope.row)"
+            @click="showCreateOrUpdateDialog(false, scope.$index, scope.row)"
           >
             编辑
           </el-button>
@@ -61,26 +61,40 @@
         </template>
       </el-table-column>
     </el-table>
-    <create-credential-dialog
+    <create-or-update-credential-dialog
+      :create-mode="createMode"
+      :updating-credentials="updatingCredential"
       :storage-type="defaultCredential.type"
-      :visible.sync="showCreateCredentialDialog"
+      :visible.sync="showDialog"
       @created="handleCreated($event)"
+      @updated="handleUpdated($event)"
     />
   </div>
 </template>
 <script>
 import { credentials, defaultCredential, deleteCredential } from '@/api/storage'
-import CreateCredentialDialog from '@/views/storage/components/CreateCredentialDialog'
+import CreateOrUpdateCredentialDialog from '@/views/storage/components/CreateOrUpdateCredentialDialog'
 
 export default {
   name: 'Credential',
-  components: { CreateCredentialDialog },
+  components: { CreateOrUpdateCredentialDialog },
   data() {
     return {
-      showCreateCredentialDialog: false,
+      showDialog: false,
+      createMode: true,
+      /**
+       * 正在更新的凭据索引
+       */
+      updatingIndex: undefined,
+      updatingCredential: undefined,
       loading: true,
       credentials: [],
-      defaultCredential: undefined
+      defaultCredential: {}
+    }
+  },
+  computed: {
+    defaultCredentialType() {
+      return this.defaultCredential.type
     }
   },
   created() {
@@ -100,11 +114,14 @@ export default {
     handleCreated(credential) {
       this.credentials.splice(this.credentials.length, 0, credential)
     },
-    showCreateDialog() {
-      this.showCreateCredentialDialog = true
+    handleUpdated(credential) {
+      this.credentials.splice(this.updatingIndex, 1, credential)
     },
-    handleEdit(index, credential) {
-      console.log('edit')
+    showCreateOrUpdateDialog(create, index, credential) {
+      this.showDialog = true
+      this.createMode = create
+      this.updatingIndex = index
+      this.updatingCredential = credential
     },
     handleDelete(index, credential) {
       this.$confirm(`是否确定删除${credential.key}`, '提示', {

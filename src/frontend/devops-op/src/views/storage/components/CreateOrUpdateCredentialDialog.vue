@@ -2,26 +2,29 @@
   <el-dialog title="创建凭据" :visible.sync="showDialog" :before-close="beforeClose">
     <el-form ref="form" :rules="rules" :model="credential" status-icon>
       <el-form-item label="Key" prop="key" required>
-        <el-input v-model="credential.key" />
+        <el-input v-model="credential.key" :disabled="!createMode" />
       </el-form-item>
       <el-form-item label="存储类型" prop="type">
-        <el-select v-model="credential.type" placeholder="请选择存储类型">
+        <el-select v-model="credential.type" placeholder="请选择存储类型" :disabled="!createMode">
           <el-option :label="storageType" :value="storageType" />
         </el-select>
+        <el-tooltip effect="dark" content="仅支持创建和和当前系统同类型的存储凭据" placement="top-start">
+          <svg-icon style="width: 20px; height: 20px; margin-left: 5px; padding-top: 3px" icon-class="question" />
+        </el-tooltip>
       </el-form-item>
 
       <!-- filesystem -->
       <el-form-item v-if="credential.type === STORAGE_TYPE_FILESYSTEM" label="存储路径" prop="path">
-        <el-input v-model="credential.path" placeholder="请输入缓存路径，默认为data/store" />
+        <el-input v-model="credential.path" placeholder="请输入缓存路径，默认为data/store" :disabled="!createMode" />
       </el-form-item>
 
       <!-- s3 and inner-cos -->
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="AccessKey" prop="accessKey" required>
-        <el-input v-model="credential.accessKey" />
+        <el-input v-model="credential.accessKey" :disabled="!createMode" />
       </el-form-item>
 
       <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="SecretId" prop="secretId" required>
-        <el-input v-model="credential.secretId" />
+        <el-input v-model="credential.secretId" :disabled="!createMode" />
       </el-form-item>
       <el-form-item
         v-if="isObjectStorage(credential.type)"
@@ -29,7 +32,7 @@
         prop="secretKey"
         required
       >
-        <el-input v-model="credential.secretKey" />
+        <el-input v-model="credential.secretKey" :disabled="!createMode" />
       </el-form-item>
       <el-form-item
         v-if="isObjectStorage(credential.type)"
@@ -37,7 +40,7 @@
         prop="bucket"
         required
       >
-        <el-input v-model="credential.bucket" />
+        <el-input v-model="credential.bucket" :disabled="!createMode" />
       </el-form-item>
       <el-form-item
         v-if="isObjectStorage(credential.type)"
@@ -45,48 +48,49 @@
         label="Region"
         prop="region"
       >
-        <el-input v-model="credential.region" />
+        <el-input v-model="credential.region" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
-        <el-input v-model="credential.endpoint" />
+        <el-input v-model="credential.endpoint" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="公开类型" prop="public">
-        <el-switch v-model="credential.public" />
+        <el-switch v-model="credential.public" :disabled="!createMode" />
       </el-form-item>
 
       <!-- hdfs -->
       <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="集群模式" prop="clusterMode">
-        <el-switch v-model="credential.clusterMode" />
+        <el-switch v-model="credential.clusterMode" :disabled="!createMode" />
       </el-form-item>
       <el-form-item
         v-if="credential.type === STORAGE_TYPE_HDFS && credential.clusterMode"
         label="集群名"
         prop="clusterName"
         required
+        :disabled="!createMode"
       >
         <el-input v-model="credential.clusterName" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="Url" prop="url" required>
-        <el-input v-model="credential.url" placeholder="请输入Url，比如: hdfs://hdfs.example.com:9000" />
+        <el-input v-model="credential.url" placeholder="请输入Url，比如: hdfs://hdfs.example.com:9000" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="用户名" prop="user" required>
-        <el-input v-model="credential.user" />
+        <el-input v-model="credential.user" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="工作目录" prop="workingDirectory" required>
-        <el-input v-model="credential.workingDirectory" placeholder="请输入工作目录，比如/example" />
+        <el-input v-model="credential.workingDirectory" placeholder="请输入工作目录，比如/example" :disabled="!createMode" />
       </el-form-item>
 
       <!-- upload config -->
       <el-form-item label="上传路径" prop="upload.location">
-        <el-input v-model="credential.upload.location" placeholder="请输入文件上传路径，默认为系统临时文件目录" />
+        <el-input v-model="credential.upload.location" placeholder="请输入文件上传路径，默认为系统临时文件目录" :disabled="!createMode" />
       </el-form-item>
 
       <!-- cache config -->
       <el-form-item label="开启缓存" prop="cache.enabled">
-        <el-switch v-model="credential.cache.enabled" />
+        <el-switch v-model="credential.cache.enabled" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.cache.enabled" label="缓存路径" prop="cache.path">
-        <el-input v-model="credential.cache.path" placeholder="请输入缓存路径，默认为data/cached" />
+        <el-input v-model="credential.cache.path" placeholder="请输入缓存路径，默认为data/cached" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.cache.enabled" label="优先加载缓存" prop="cache.loadCacheFirst">
         <el-switch v-model="credential.cache.loadCacheFirst" />
@@ -97,7 +101,7 @@
     </el-form>
     <div slot="footer">
       <el-button @click="beforeClose">取 消</el-button>
-      <el-button type="primary" @click="handleCreate(credential)">确 定</el-button>
+      <el-button type="primary" @click="handleCreateOrUpdate(credential)">确 定</el-button>
     </div>
   </el-dialog>
 </template>
@@ -108,13 +112,27 @@ import {
   STORAGE_TYPE_FILESYSTEM,
   STORAGE_TYPE_HDFS,
   STORAGE_TYPE_INNER_COS,
-  STORAGE_TYPE_S3
+  STORAGE_TYPE_S3,
+  updateCredential
 } from '@/api/storage'
-
 export default {
-  name: 'CreateCredentialDialog',
+  name: 'CreateOrUpdateCredentialDialog',
   props: {
     visible: Boolean,
+    /**
+     * 仅在更新模式时有值
+     */
+    updatingCredentials: {
+      type: Object,
+      default: undefined
+    },
+    /**
+     * 是否为创建模式，true时为创建对象，false时为更新对象
+     */
+    createMode: Boolean,
+    /**
+     * 当前默认存储凭据的类型，目前仅支持新增和默认凭据同类型的存储凭据
+     */
     storageType: {
       type: String,
       default: STORAGE_TYPE_INNER_COS
@@ -144,31 +162,28 @@ export default {
         ]
       },
       showDialog: this.visible,
-      credential: {}
+      credential: this.newCredential()
     }
   },
   watch: {
     visible: function(newVal) {
       if (newVal) {
+        this.resetCredential()
         this.showDialog = true
       } else {
         this.close()
       }
     },
     'credential.type': function(newVal) {
-      this.credential = this.newCredential(newVal)
-      this.$refs['form'].clearValidate()
+      this.resetCredential(newVal)
     }
-  },
-  created() {
-    this.credential = this.newCredential()
   },
   methods: {
     validateFilePath(rule, value, callback) {
-      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)$/)
+      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)|([A-Za-z]:(\\[\w-~]+)+)\\?$/)
     },
     validateFilePathAllowEmpty(rule, value, callback) {
-      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)$/, true)
+      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)|([A-Za-z]:(\\[\w-~]+)+)\\?$/, true)
     },
     validateRelativeFilePath(rule, value, callback) {
       this.validateUri(rule, value, callback, /^[\w-]+(\/[\w-]+)*$/)
@@ -196,15 +211,28 @@ export default {
     close() {
       this.showDialog = false
       this.$emit('update:visible', false)
-      this.credential = this.newCredential()
-      this.$refs['form'].clearValidate()
     },
-    handleCreate(credential) {
+    handleCreateOrUpdate(credential) {
       this.$refs['form'].validate((valid) => {
         if (valid) {
-          createCredential(credential).then(res => {
-            this.$message.success('创建凭据成功')
-            this.$emit('created', res.data)
+          // 根据是否为创建模式发起不同请求
+          let reqPromise
+          let msg
+          let eventName
+          if (this.createMode) {
+            reqPromise = createCredential(credential)
+            msg = '创建凭据成功'
+            eventName = 'created'
+          } else {
+            reqPromise = updateCredential(credential.key, credential)
+            msg = '更新凭据成功'
+            eventName = 'updated'
+          }
+
+          // 发起请求
+          reqPromise.then(res => {
+            this.$message.success(msg)
+            this.$emit(eventName, res.data)
             this.close()
           })
         } else {
@@ -214,6 +242,16 @@ export default {
     },
     isObjectStorage(type) {
       return type === STORAGE_TYPE_S3 || type === STORAGE_TYPE_INNER_COS
+    },
+    resetCredential(type) {
+      if (this.createMode) {
+        this.credential = this.newCredential(type)
+      } else {
+        this.credential = _.cloneDeep(this.updatingCredentials)
+      }
+      this.$nextTick(() => {
+        this.$refs['form'].clearValidate()
+      })
     },
     newCredential(type = this.storageType) {
       const credential = {
@@ -255,6 +293,8 @@ export default {
     }
   }
 }
+
+import _ from 'lodash'
 </script>
 
 <style scoped>
