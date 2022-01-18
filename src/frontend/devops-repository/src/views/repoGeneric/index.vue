@@ -272,6 +272,8 @@
                 'getFolderList',
                 'getArtifactoryList',
                 'deleteArtifactory',
+                'moveNode',
+                'copyNode',
                 'getFolderSize',
                 'getFileNumOfFolder'
             ]),
