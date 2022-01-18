@@ -81,9 +81,7 @@ class StorageCredentialServiceImpl(
             region = request.region
         )
         val savedCredentials = storageCredentialsRepository.save(storageCredential)
-        return savedCredentials.credentials
-            .readJsonString<StorageCredentials>()
-            .apply { this.key = savedCredentials.id }
+        return convert(savedCredentials)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -98,20 +96,18 @@ class StorageCredentialServiceImpl(
         }
 
         tStorageCredentials.credentials = storageCredentials.toJsonString()
-        storageCredentialsRepository.save(tStorageCredentials)
-        return storageCredentials.apply { key = tStorageCredentials.id }
+        val updatedCredentials = storageCredentialsRepository.save(tStorageCredentials)
+        return convert(updatedCredentials)
     }
 
     override fun findByKey(key: String): StorageCredentials? {
-        val tStorageCredentials = storageCredentialsRepository.findByIdOrNull(key)
-        val storageCredentials = tStorageCredentials?.credentials?.readJsonString<StorageCredentials>()
-        return storageCredentials?.apply { this.key = tStorageCredentials.id }
+        return storageCredentialsRepository.findByIdOrNull(key)?.let { convert(it) }
     }
 
     override fun list(region: String?): List<StorageCredentials> {
         return storageCredentialsRepository.findAll()
             .filter { region.isNullOrBlank() || it.region == region }
-            .map { it.credentials.readJsonString<StorageCredentials>().apply { this.key = it.id } }
+            .map { convert(it) }
     }
 
     override fun default(): StorageCredentials {
@@ -134,5 +130,9 @@ class StorageCredentialServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun forceDelete(key: String) {
         return storageCredentialsRepository.deleteById(key)
+    }
+
+    private fun convert(credentials: TStorageCredentials): StorageCredentials {
+        return credentials.credentials.readJsonString<StorageCredentials>().apply { this.key = credentials.id }
     }
 }
