@@ -210,13 +210,5 @@
 .audit-container {
     height: 100%;
     background-color: white;
-    .SUCCESS {
-        color: var(--successColor);
-        background-color: #DCFFE2;
-    }
-    .FAILED {
-        color: var(--dangerColor);
-        background-color: #FFDDDD;
-    }
 }
 </style>

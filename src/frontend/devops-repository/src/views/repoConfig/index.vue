@@ -198,7 +198,7 @@
                     projectId: this.projectId,
                     name: this.repoName,
                     body
-                }).then(res => {
+                }).then(() => {
                     this.getRepoInfoHandler()
                     this.$bkMessage({
                         theme: 'success',

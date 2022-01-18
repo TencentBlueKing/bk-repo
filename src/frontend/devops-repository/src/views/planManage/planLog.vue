@@ -24,7 +24,7 @@
                     <bk-table-column type="index" label="编号" width="60"></bk-table-column>
                     <bk-table-column label="运行状态" width="100">
                         <template #default="{ row }">
-                            <span class="repo-tag" :class="row.status">{{statusMap[row.status] || '未执行'}}</span>
+                            <span class="repo-tag" :class="row.status">{{asyncPlanStatusEnum[row.status] || '未执行'}}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column label="开始执行时间" width="150">
@@ -62,11 +62,7 @@
 <script>
     import { formatDate } from '@repository/utils'
     import { mapActions } from 'vuex'
-    const statusMap = {
-        RUNNING: '执行中',
-        SUCCESS: '成功',
-        FAILED: '失败'
-    }
+    import { asyncPlanStatusEnum } from '@repository/store/publicEnum'
     export default {
         name: 'planLog',
         model: {
@@ -82,8 +78,8 @@
         },
         data () {
             return {
+                asyncPlanStatusEnum,
                 isLoading: false,
-                statusMap,
                 status: '',
                 logList: [],
                 pagination: {
@@ -149,17 +145,5 @@
 <style lang="scss" scoped>
 .plan-detail-container {
     height: 100%;
-    .SUCCESS {
-        color: var(--successColor);
-        background-color: #DCFFE2;
-    }
-    .FAILED {
-        color: var(--dangerColor);
-        background-color: #FFDDDD;
-    }
-    .RUNNING {
-        color: var(--warningColor);
-        background-color: #FFE8C3;
-    }
 }
 </style>

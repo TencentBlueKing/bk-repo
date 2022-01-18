@@ -7,7 +7,7 @@
         :width="720">
         <template #content><bk-tab class="detail-container" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="detailInfo" :label="$t('baseInfo')">
-                <div class="version-base-info base-info" :data-title="$t('baseInfo')" v-bkloading="{ isLoading: detailSlider.loading }">
+                <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')" v-bkloading="{ isLoading: detailSlider.loading }">
                     <div class="grid-item"
                         v-for="{ name, label, value } in detailInfoMap"
                         :key="name">
@@ -15,7 +15,7 @@
                         <span class="flex-1 text-overflow" :title="value">{{ value }}</span>
                     </div>
                 </div>
-                <div v-if="!detailSlider.folder" class="version-base-info base-info-checksums" data-title="Checksums" v-bkloading="{ isLoading: detailSlider.loading }">
+                <div v-if="!detailSlider.folder" class="version-base-info base-info-checksums display-block" data-title="Checksums" v-bkloading="{ isLoading: detailSlider.loading }">
                     <div v-if="detailSlider.data.sha256" class="grid-item">
                         <label>SHA256：</label>
                         <span class="flex-1 text-overflow" :title="detailSlider.data.sha256">{{ detailSlider.data.sha256 }}</span>
@@ -27,7 +27,7 @@
                 </div>
             </bk-tab-panel>
             <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
-                <div class="version-metadata" data-title="元数据">
+                <div class="version-metadata display-block" data-title="元数据">
                     <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
@@ -205,30 +205,6 @@
     }
 </script>
 <style lang="scss" scoped>
-@mixin display-block {
-    position: relative;
-    margin-top: 55px;
-    &:first-child {
-        margin-top: 35px;
-    }
-    &:before {
-        position: absolute;
-        top: -28px;
-        left: 0;
-        content: '';
-        width: 3px;
-        height: 12px;
-        background-color: var(--primaryColor);
-    }
-    &:after {
-        position: absolute;
-        top: -33px;
-        left: 10px;
-        content: attr(data-title);
-        font-size: 14px;
-        font-weight: bold;
-    }
-}
 .detail-container {
     height: 100%;
     ::v-deep .bk-tab-section {
@@ -236,33 +212,28 @@
         overflow-y: auto;
     }
     .version-base-info {
-        &.base-info,
-        &.base-info-checksums {
-            @include display-block;
-        }
         &.base-info {
             padding: 20px;
             display: grid;
-            grid-gap: 20px;
+            gap: 20px;
             background-color: var(--bgHoverColor);
         }
         &.base-info-checksums {
             padding: 20px;
             display: grid;
-            grid-gap: 20px;
+            gap: 20px;
             background-color: var(--bgHoverColor);
         }
         .grid-item {
             display: flex;
             overflow: hidden;
             label {
-                flex-basis: 100px;
+                flex-basis: 80px;
                 text-align: right;
             }
         }
     }
     .version-metadata {
-        @include display-block;
         .version-metadata-add {
             position: absolute;
             display: flex;
