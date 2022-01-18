@@ -156,6 +156,7 @@ export default {
     },
     'credential.type': function(newVal) {
       this.credential = this.newCredential(newVal)
+      this.$refs['form'].clearValidate()
     }
   },
   created() {
