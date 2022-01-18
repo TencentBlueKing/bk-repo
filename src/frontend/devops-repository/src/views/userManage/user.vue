@@ -306,20 +306,16 @@
                 const errMessage = {
                     userId: [],
                     name: [],
-                    email: [],
-                    repeat: new Set()
+                    email: []
                 }
                 const catchUser = new Set()
                 data.forEach(({ userId, name, email }, index) => {
-                    if (catchUser.has(userId) || !(/^[a-zA-Z][a-zA-Z0-9_-]{1,31}$/.test(userId))) {
-                        errMessage.repeat.add(userId)
+                    if (userId in this.userList || catchUser.has(userId) || userId.lengt > 32 || !(/^[a-zA-Z][a-zA-Z0-9_-]{1,31}$/.test(userId))) {
+                        errMessage.userId.push(index + 2)
                     } else {
                         catchUser.add(userId)
                     }
-                    if (userId in this.userList) {
-                        errMessage.userId.push(index + 2)
-                    }
-                    if (!name) {
+                    if (!name || name.lengt > 32) {
                         errMessage.name.push(index + 2)
                     }
                     if (!(/^\w[-_.\w]*@\w[-_\w]*\.\w[-_.\w]*$/.test(email))) {
@@ -327,9 +323,8 @@
                     }
                 })
                 if (errMessage.userId.length || errMessage.name.length || errMessage.email.length) {
-                    const message = (errMessage.repeat.length ? `${Array.from(errMessage.repeat)}重复导入` : '')
-                        + (errMessage.userId.length ? `第${errMessage.userId}行账号已被占用或格式错误` : '')
-                        + (errMessage.name.length ? `第${errMessage.name}行中文名未填写` : '')
+                    const message = (errMessage.userId.length ? `第${errMessage.userId}行账号已存在或格式错误` : '')
+                        + (errMessage.name.length ? `第${errMessage.name}行中文名格式错误` : '')
                         + (errMessage.email.length ? `第${errMessage.email}行邮箱格式错误` : '')
                     this.$bkMessage({
                         theme: 'error',
