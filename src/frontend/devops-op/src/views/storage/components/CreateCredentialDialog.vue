@@ -164,28 +164,19 @@ export default {
   },
   methods: {
     validateFilePath(rule, value, callback) {
-      if (!value || value.length === 0 || /^((\/[\w-]+)+)$/.test(value)) {
-        callback()
-      } else {
-        callback(new Error('路径格式错误'))
-      }
+      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)$/)
     },
     validateRelativeFilePath(rule, value, callback) {
-      if (!value || value.length === 0) {
-        callback()
-      }
-      if (value[0] === '/') {
-        callback(new Error('路径不能以/开头'))
-      }
-      // 不以/开头和结尾的文件路径
-      if (/^[\w-]+(\/[\w-]+)*$/.test(value)) {
-        callback()
-      } else {
-        callback(new Error('路径格式错误'))
-      }
+      this.validateUri(rule, value, callback, /^[\w-]+(\/[\w-]+)*$/)
     },
     validateHdfsUrl(rule, value, callback) {
-      if (value && value.length > 0 && /^hdfs:\/\/[\w-]+(\.[\w-]+)*(:\d{1,5})?$/.test(value)) {
+      this.validateUri(rule, value, callback, /^hdfs:\/\/[\w-]+(\.[\w-]+)*(:\d{1,5})?$/)
+    },
+    validateUri(rule, value, callback, regex) {
+      if (!value || value.length === 0) {
+        callback(new Error('路径不能为空'))
+      }
+      if (regex.test(value)) {
         callback()
       } else {
         callback(new Error('路径格式错误'))
@@ -235,10 +226,11 @@ export default {
       }
       switch (type) {
         case STORAGE_TYPE_FILESYSTEM: {
-          credential.path = ''
+          credential.path = 'data/store'
           break
         }
         case STORAGE_TYPE_HDFS: {
+          credential.workingDirectory = '/'
           break
         }
         default: {

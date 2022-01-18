@@ -15,6 +15,9 @@ export function credentials() {
 }
 
 export function createCredential(credential) {
+  if (credential.upload && (!credential.upload.location || credential.upload.location.length === 0)) {
+    credential.upload.location = undefined
+  }
   const createReq = {
     key: credential.key,
     credentials: credential,
