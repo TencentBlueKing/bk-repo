@@ -43,6 +43,7 @@ import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 /**
@@ -53,6 +54,9 @@ class DownloadService(
     private val nodeClient: NodeClient,
     private val viewModelService: ViewModelService
 ) : ArtifactService() {
+
+    @Value("\${service.name}")
+    private var applicationName: String = "generic"
 
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
@@ -69,7 +73,7 @@ class DownloadService(
     }
 
     private fun renderListView(node: NodeDetail, artifactInfo: GenericArtifactInfo) {
-        viewModelService.trailingSlash()
+        viewModelService.trailingSlash(applicationName)
         val nodeList = nodeClient.listNode(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,

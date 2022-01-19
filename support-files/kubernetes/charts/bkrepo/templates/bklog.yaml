@@ -15,7 +15,7 @@ spec:
   path:
     - /data/workspace/logs/*.log
   encoding: 'utf-8'
-  ext_meta:
+  extMeta:
     logSourceType: "service"
 
 ---
@@ -33,7 +33,7 @@ spec:
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.gateway" . }}
   path:
     - /data/workspace/logs/nginx/bkrepo.access.*.log
-  ext_meta:
+  extMeta:
     logSourceType: "gateway-access"
 
 ---
@@ -52,7 +52,7 @@ spec:
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.gateway" . }}
   path:
     - /data/workspace/logs/nginx/*.error.log
-  ext_meta:
+  extMeta:
     logSourceType: "gateway-error"
 
 {{- end }}

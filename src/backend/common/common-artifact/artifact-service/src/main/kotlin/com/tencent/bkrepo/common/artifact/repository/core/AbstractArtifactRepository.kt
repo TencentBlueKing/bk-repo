@@ -32,10 +32,12 @@ import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
+import com.tencent.bkrepo.common.artifact.event.packages.VersionDownloadEvent
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -46,12 +48,14 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -94,10 +98,16 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var packageDownloadsClient: PackageDownloadsClient
 
     @Autowired
+    lateinit var nodeDownloadsClient: OperateLogClient
+
+    @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
 
     @Autowired
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
+
+    @Autowired
+    lateinit var operateLogClient: OperateLogClient
 
     override fun upload(context: ArtifactUploadContext) {
         try {
@@ -210,13 +220,14 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
+                publishDownloadEvent(context, it)
             }
         }
         if (throughput != Throughput.EMPTY) {
             publisher.publishEvent(ArtifactResponseEvent(artifactResource, throughput, context.storageCredentials))
+            publisher.publishEvent(ArtifactDownloadedEvent(context))
+            logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
         }
-        publisher.publishEvent(ArtifactDownloadedEvent(context))
-        logger.info("User[${SecurityUtils.getPrincipal()}] download artifact[${context.artifactInfo}] success")
     }
 
     /**
@@ -252,6 +263,23 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
      */
     open fun onDownloadFinished(context: ArtifactDownloadContext) {
         artifactMetrics.downloadingCount.decrementAndGet()
+    }
+
+    private fun publishDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
+        if (context.repositoryDetail.type != RepositoryType.GENERIC) {
+            val packageType = context.repositoryDetail.type.name
+            val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
+            publisher.publishEvent(VersionDownloadEvent(
+                projectId = record.projectId,
+                repoName = record.repoName,
+                userId = SecurityUtils.getUserId(),
+                packageKey = record.packageKey,
+                packageVersion = record.packageVersion,
+                packageName = packageName,
+                packageType = packageType,
+                realIpAddress = HttpContextHolder.getClientAddress()
+            ))
+        }
     }
 
     companion object {

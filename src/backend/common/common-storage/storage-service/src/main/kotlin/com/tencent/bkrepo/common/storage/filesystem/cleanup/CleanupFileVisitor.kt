@@ -60,17 +60,23 @@ class CleanupFileVisitor(
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
-        if (isExpired(attributes, expireDays)) {
-            if (isTempFile(filePath) || existInStorage(filePath)) {
-                rateLimiter.acquire()
-                Files.delete(filePath)
-                result.cleanupFile += 1
-                result.cleanupSize += size
-                logger.info("Clean up file[$filePath], size[$size], summary: $result")
+        try {
+            if (isExpired(attributes, expireDays)) {
+                if (isTempFile(filePath) || existInStorage(filePath)) {
+                    rateLimiter.acquire()
+                    Files.delete(filePath)
+                    result.cleanupFile += 1
+                    result.cleanupSize += size
+                    logger.info("Clean up file[$filePath], size[$size], summary: $result")
+                }
             }
+        } catch (ignored: Exception) {
+            logger.error("Clean file[${filePath.fileName}] error.", ignored)
+            result.errorCount++
+        } finally {
+            result.totalFile += 1
+            result.totalSize += size
         }
-        result.totalFile += 1
-        result.totalSize += size
         return FileVisitResult.CONTINUE
     }
 

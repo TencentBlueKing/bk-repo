@@ -33,7 +33,7 @@ package com.tencent.bkrepo.repository.dao
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingMongoDao
+import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
 import org.springframework.stereotype.Repository
@@ -43,7 +43,7 @@ import java.time.LocalDateTime
  * 节点 Dao
  */
 @Repository
-class NodeDao : ShardingMongoDao<TNode>() {
+class NodeDao : HashShardingMongoDao<TNode>() {
     /**
      * 查询节点
      */

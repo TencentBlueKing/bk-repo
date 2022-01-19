@@ -22,6 +22,8 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
+    auth:
+      url: http://{{ .Values.gateway.host }}/docker/v2/auth
     cluster:
       region: {{ .Values.common.region }}
       self:

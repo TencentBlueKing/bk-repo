@@ -41,12 +41,18 @@
           "type" : "MAVEN",
           "latest" : "0.0.9",
           "downloads" : 101,
-          "versions": 9,
+          "versions" : 9,
           "description": null,
           "createdBy" : "admin",
           "createdDate" : "2020-07-27T16:02:31.394",
           "lastModifiedBy" : "admin",
-          "lastModifiedDate" : "2020-07-27T16:02:31.394"
+          "lastModifiedDate" : "2020-07-27T16:02:31.394",
+          "extension" : {
+              "appVersion": "4.2.4"
+          },
+          "historyVersion" : [
+              "7.8.10"
+          ]
         }
       ]
     },
@@ -70,7 +76,13 @@
   |createdBy|string|创建者|create user|
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
-  |lastModifiedDate|string|上次修改时间|last modify time|
+  |extension|object|扩展信息，key-value键值对|extension|
+  |historyVersion|list[string]|历史版本|history version|
+  
+- extension字段说明
+  |字段|类型|说明|Description|
+  |---|---|---|---|
+  |appVersion|string|软件版本|app version|
 
 ## 查询包信息
 
@@ -109,7 +121,13 @@
         "createdBy" : "admin",
         "createdDate" : "2020-07-27T16:02:31.394",
         "lastModifiedBy" : "admin",
-        "lastModifiedDate" : "2020-07-27T16:02:31.394"
+        "lastModifiedDate" : "2020-07-27T16:02:31.394",
+        "extension" : {
+            "appVersion": "4.2.4"
+        },
+        "historyVersion" : [
+            "7.8.10"
+        ]
       }
     },
     "traceId":  null
@@ -133,6 +151,13 @@
   |createdDate|string|创建时间|create time|
   |lastModifiedBy|string|上次修改者|last modify user|
   |lastModifiedDate|string|上次修改时间|last modify time|
+  |extension|object|扩展信息，key-value键值对|extension|
+  |historyVersion|list[string]|历史版本|history version|
+
+- extension字段说明
+  |字段|类型|说明|Description|
+  |---|---|---|---|
+  |appVersion|string|软件版本|app version|
 
 ## 删除包
 
@@ -201,13 +226,28 @@
           "size" : 1024,
           "downloads" : 18,
           "stageTag" : ["@prerelease", "@release"],
-          "metadata" : {
-            "key": "value"
-          },
           "createdBy" : "admin",
           "createdDate" : "2020-07-27T16:02:31.394",
           "lastModifiedBy" : "admin",
-          "lastModifiedDate" : "2020-07-27T16:02:31.394"
+          "lastModifiedDate" : "2020-07-27T16:02:31.394",
+          "metadata": {
+                  "apiVersion": "v1",
+                  "appVersion": "7.0",
+                  "description": "Deploy a basic tomcat application server with sidecar as web archive container",
+                  "home": "https://github.com/yahavb",
+                  "icon": "http://tomcat.apache.org/res/images/tomcat.png",
+                  "keywords": [],
+                  "maintainers": [
+                      {
+                          "name": "yahavb",
+                          "email": "ybiran@ananware.systems"
+                      }
+                  ],
+                  "name": "tomcat",
+                  "sources": [],
+                  "urls": [],
+                  "version": "0.4.2"
+              },
         }
       ]
     },

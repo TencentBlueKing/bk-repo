@@ -61,6 +61,13 @@ class HelmExceptionHandler {
         helmResponse(responseObject, exception)
     }
 
+    @ExceptionHandler(HelmBadRequestException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handlerBadRequestException(exception: HelmBadRequestException) {
+        val responseObject = HelmErrorResponse(exception.message)
+        helmResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerClientAuthException(exception: AuthenticationException) {

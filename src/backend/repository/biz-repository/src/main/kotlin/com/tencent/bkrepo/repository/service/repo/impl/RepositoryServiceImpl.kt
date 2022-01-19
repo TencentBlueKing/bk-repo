@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.repository.service.repo.impl
 
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -40,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
@@ -73,6 +75,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
@@ -192,6 +195,7 @@ class RepositoryServiceImpl(
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::description.name)
             // 确保项目一定存在
             if (!projectService.checkExist(projectId)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
@@ -247,6 +251,7 @@ class RepositoryServiceImpl(
     override fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
             Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument(checkInterceptorConfig(configuration), this::description.name)
             val repository = checkRepository(projectId, name)
             quota?.let {
                 Preconditions.checkArgument(it >= (repository.used ?: 0), this::quota.name)
@@ -291,6 +296,15 @@ class RepositoryServiceImpl(
         }
         publishEvent(buildDeletedEvent(repoDeleteRequest))
         logger.info("Delete repository [$repoDeleteRequest] success.")
+    }
+
+    override fun allRepos(projectId: String?, repoName: String?, repoType: RepositoryType?): List<RepositoryInfo?> {
+        val criteria = Criteria()
+        projectId?.let { criteria.and(TRepository::projectId.name).`is`(projectId) }
+        repoName?.let { criteria.and(TRepository::name.name).`is`(repoName) }
+        repoType?.let { criteria.and(TRepository::type.name).`is`(repoType) }
+        val result = repositoryDao.find(Query(criteria))
+        return result.map { convertToInfo(it) }
     }
 
     /**
@@ -476,10 +490,37 @@ class RepositoryServiceImpl(
         }
     }
 
+    /**
+     * 检查下载拦截器配置
+     * 规则：
+     *  filename不为空字符串
+     *  metadata是键值对形式
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun checkInterceptorConfig(configuration: RepositoryConfiguration?): Boolean {
+        val config = configuration?.getSetting<List<Map<String, Any>>>(INTERCEPTORS)
+        config?.forEach {
+            val rules = it[RULES] as Map<String, String>
+            val filename = rules[FILENAME]
+            if (filename != null && filename.isBlank()) {
+                return false
+            }
+            val metadata = rules[METADATA]
+            if (metadata != null && metadata.split(StringPool.COLON).size != 2) {
+                return false
+            }
+        }
+        return true
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RepositoryServiceImpl::class.java)
         private const val REPO_NAME_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\.\\-_]{1,63}"
         private const val REPO_DESC_MAX_LENGTH = 200
+        private const val INTERCEPTORS = "interceptors"
+        private const val RULES = "rules"
+        private const val FILENAME = "filename"
+        private const val METADATA = "metadata"
 
         private fun convertToDetail(
             tRepository: TRepository?,

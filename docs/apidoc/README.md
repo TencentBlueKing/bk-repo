@@ -30,3 +30,5 @@
   - [npm扩展接口](/apidoc/registry/npm.md)
   - [rpm扩展接口](/apidoc/registry/rpm.md)
   - [git扩展接口](/apidoc/registry/git.md)
+- **仓库操作指引**
+  - [oci仓库](/repository/oci.md)

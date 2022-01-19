@@ -99,7 +99,11 @@ spec:
               mountPath: {{ .Values.common.mountPath }}
       volumes:
         - name: storage
-          {{- if .Values.persistence.enabled }}
+          {{- if .Values.common.config.storage.nfs.enabled }}
+          nfs:
+            path: {{ .Values.common.config.storage.nfs.path }}
+            server: {{ .Values.common.config.storage.nfs.server }}
+          {{- else if .Values.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.existingClaim }}{{ .Values.persistence.existingClaim }}{{- else }}{{ template "common.names.fullname" . }}-storage{{- end }}
           {{- else }}

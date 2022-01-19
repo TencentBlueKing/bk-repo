@@ -509,10 +509,10 @@ class JobService(
         limit: Int
     ): Page<NodeInfo> {
         logger.debug("listMarkNodes: [$repo|$repodataPath|$indexType|$limit])")
-        val indexMarkFolder = "$repodataPath/${indexType.value}/"
-        val pathList = mutableListOf<Rule>(Rule.QueryRule("path", indexMarkFolder, OperationType.EQ))
+        val indexMarkFolder = "$repodataPath/${indexType.value}/*"
+        val pathList = mutableListOf<Rule>(Rule.QueryRule("path", indexMarkFolder, OperationType.MATCH))
         if (indexType == IndexType.OTHER) {
-            pathList.add(Rule.QueryRule("path", "$repodataPath/${indexType.value}s/", OperationType.EQ))
+            pathList.add(Rule.QueryRule("path", "$repodataPath/${indexType.value}s/*", OperationType.MATCH))
         }
         val pathRule = Rule.NestedRule(pathList, Rule.NestedRule.RelationType.OR)
         val ruleList = mutableListOf<Rule>(

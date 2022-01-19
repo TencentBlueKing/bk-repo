@@ -1,5 +1,6 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ * 
  *
  * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -28,15 +29,18 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
+import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
+import com.tencent.bkrepo.common.storage.util.delete
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -44,7 +48,9 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.security.SecureRandom
 import kotlin.math.abs
 
@@ -61,8 +67,10 @@ class ArtifactDataReceiver(
     private val receiveProperties: ReceiveProperties,
     private val monitorProperties: MonitorProperties,
     private var path: Path,
-    private val filename: String = generateRandomName()
-) : StorageHealthMonitor.Observer {
+    private val filename: String = generateRandomName(),
+    private val randomPath: Boolean = false,
+    private val originPath: Path = path
+) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -146,6 +154,12 @@ class ArtifactDataReceiver(
      */
     var finished = false
 
+    init {
+        if (randomPath) {
+            path = generateRandomPath(path, filename)
+        }
+    }
+
     override fun unhealthy(fallbackPath: Path?, reason: String?) {
         if (!finished && !fallback) {
             fallBackPath = fallbackPath
@@ -220,7 +234,7 @@ class ArtifactDataReceiver(
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
         if (inMemory) {
-            val filePath = path.resolve(filename).apply { this.createFile() }
+            val filePath = this.filePath.apply { this.createFile() }
             val fileOutputStream = Files.newOutputStream(filePath)
             contentBytes.writeTo(fileOutputStream)
             outputStream = fileOutputStream
@@ -247,7 +261,7 @@ class ArtifactDataReceiver(
     /**
      * 关闭原始输出流
      */
-    fun cleanOriginalOutputStream() {
+    private fun cleanOriginalOutputStream() {
         try {
             outputStream.flush()
         } catch (ignored: IOException) {
@@ -279,8 +293,7 @@ class ArtifactDataReceiver(
     private fun handleIOException(exception: IOException) {
         finished = true
         endTime = System.nanoTime()
-        cleanOriginalOutputStream()
-        cleanTempFile()
+        close()
         if (IOExceptionUtils.isClientBroken(exception)) {
             throw ArtifactReceiveException(exception.message.orEmpty())
         } else throw exception
@@ -309,7 +322,7 @@ class ArtifactDataReceiver(
                 // 开Transfer功能时，从NFS转移到本地盘
                 cleanOriginalOutputStream()
                 val originalFile = originalPath.resolve(filename)
-                val filePath = path.resolve(filename).apply { this.createFile() }
+                val filePath = this.filePath.apply { this.createFile() }
                 originalFile.toFile().inputStream().use {
                     outputStream = filePath.toFile().outputStream()
                     it.copyTo(outputStream, bufferSize)
@@ -345,7 +358,7 @@ class ArtifactDataReceiver(
             }
         } else {
             retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
-                val actualSize = Files.size(path.resolve(filename))
+                val actualSize = Files.size(this.filePath)
                 require(received == actualSize) {
                     "$received bytes received, but $actualSize bytes saved in file."
                 }
@@ -354,15 +367,41 @@ class ArtifactDataReceiver(
     }
 
     /**
-     * 清理临时文件
-     */
-    private fun cleanTempFile() {
+     * 删除临时文件，如果使用了随机目录，则会删除生成的随机目录
+     * */
+    private fun deleteTempFile() {
         if (!inMemory) {
-            try {
-                Files.deleteIfExists(path.resolve(filename))
-            } catch (ignored: IOException) {
+            var tempPath = filePath
+            while (tempPath != originPath) {
+                if (!tempPath.delete()) {
+                    // 说明当前目录下还有目录或者文件，则不继续清理
+                    return
+                }
+                logger.debug("delete path $tempPath")
+                tempPath = tempPath.parent
             }
         }
+    }
+
+    /**
+     * 关闭接收器，清理资源
+     * */
+    override fun close() {
+        try {
+            cleanOriginalOutputStream()
+            deleteTempFile()
+        } catch (ignored: NoSuchFileException) {
+            // already deleted
+        }
+    }
+
+    /**
+     * 生成随机文件路径
+     * */
+    private fun generateRandomPath(root: Path, filename: String): Path {
+        val fileLocator = HashFileLocator()
+        val dir = fileLocator.locate(filename.sha256())
+        return Paths.get(root.toFile().path, dir)
     }
 
     companion object {

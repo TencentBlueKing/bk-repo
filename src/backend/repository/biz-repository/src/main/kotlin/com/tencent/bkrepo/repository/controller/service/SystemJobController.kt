@@ -36,14 +36,15 @@ import com.tencent.bkrepo.repository.job.FileReferenceCleanupJob
 import com.tencent.bkrepo.repository.job.NodeDeletedCorrectionJob
 import com.tencent.bkrepo.repository.job.PackageDownloadsMigrationJob
 import com.tencent.bkrepo.repository.job.PackageVersionCorrectionJob
+import com.tencent.bkrepo.repository.job.RepoUsedVolumeSynJob
 import com.tencent.bkrepo.repository.job.RootNodeCleanupJob
 import com.tencent.bkrepo.repository.job.StorageInstanceMigrationJob
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.PathVariable
 import java.time.LocalDateTime
 
 @Principal(type = PrincipalType.ADMIN)
@@ -56,7 +57,8 @@ class SystemJobController(
     private val fileReferenceCleanupJob: FileReferenceCleanupJob,
     private val nodeDeletedCorrectionJob: NodeDeletedCorrectionJob,
     private val packageDownloadsMigrationJob: PackageDownloadsMigrationJob,
-    private val packageVersionCorrectionJob: PackageVersionCorrectionJob
+    private val packageVersionCorrectionJob: PackageVersionCorrectionJob,
+    private val repoUsedVolumeSynJob: RepoUsedVolumeSynJob
 ) {
 
     /**
@@ -118,5 +120,13 @@ class SystemJobController(
     fun cleanupFileReference(): Response<Void> {
         fileReferenceCleanupJob.start()
         return ResponseBuilder.success()
+    }
+
+    @PostMapping("/volume/{projectId}/{repoName}")
+    fun synRepoUsedVolume(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Long> {
+        return ResponseBuilder.success(repoUsedVolumeSynJob.syn(projectId, repoName))
     }
 }

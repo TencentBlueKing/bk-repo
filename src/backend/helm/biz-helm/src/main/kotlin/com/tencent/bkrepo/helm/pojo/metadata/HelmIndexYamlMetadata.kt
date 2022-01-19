@@ -46,4 +46,19 @@ data class HelmIndexYamlMetadata(
         }
         return count
     }
+
+    fun parseMapForFilter(filter: String): Map<String, SortedSet<HelmChartMetadata>> {
+        return if (this.entries.isEmpty()) {
+            mutableMapOf()
+        } else {
+            entries.filterKeys { filterKey(it, filter) }
+        }
+    }
+
+    /**
+     * 通过indexof匹配想要查询的字符
+     */
+    fun filterKey(key: String, filters: String): Boolean {
+        return key.indexOf(filters)> -1
+    }
 }

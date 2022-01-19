@@ -39,8 +39,6 @@ import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
 import java.io.File
 import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.NoSuchFileException
 
 /**
  * 使用数据块构造的ArtifactFile
@@ -68,7 +66,12 @@ class ChunkedArtifactFile(
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
+        receiver = ArtifactDataReceiver(
+            storageProperties.receive,
+            storageProperties.monitor,
+            path,
+            randomPath = true
+        )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {
             receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
@@ -124,10 +127,7 @@ class ChunkedArtifactFile(
 
     override fun delete() {
         if (initialized && !isInMemory()) {
-            try {
-                Files.deleteIfExists(receiver.filePath)
-            } catch (ignored: NoSuchFileException) { // already deleted
-            }
+            receiver.close()
         }
     }
 
@@ -160,7 +160,7 @@ class ChunkedArtifactFile(
      * 关闭文件执行清理逻辑，因为是被动接收数据，所以需要手动关闭文件
      */
     fun close() {
-        receiver.cleanOriginalOutputStream()
+        receiver.close()
         monitor.remove(receiver)
     }
 }
