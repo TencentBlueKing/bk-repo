@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,11 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao
+package com.tencent.bkrepo.common.operate.api
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
-import com.tencent.bkrepo.repository.model.TOperateLog
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
 
-@Repository
-class OperateLogDao : MonthRangeShardingMongoDao<TOperateLog>()
+interface OperateLogService {
+
+    /**
+     * 异步保存事件
+     * @param event 事件
+     * @param address 客户端地址，需要提前传入，因为异步情况下无法获取request
+     */
+    fun saveEventAsync(event: ArtifactEvent, address: String)
+
+    fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String)
+
+    fun listPage(option: OpLogListOption): Page<OperateLog>
+
+    fun page(
+        type: String?,
+        projectId: String?,
+        repoName: String?,
+        operator: String?,
+        startTime: String?,
+        endTime: String?,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<OperateLogResponse?>
+
+}

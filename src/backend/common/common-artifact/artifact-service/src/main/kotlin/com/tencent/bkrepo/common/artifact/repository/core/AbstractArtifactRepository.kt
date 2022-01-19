@@ -55,7 +55,6 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.OperateLogClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -98,16 +97,10 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var packageDownloadsClient: PackageDownloadsClient
 
     @Autowired
-    lateinit var nodeDownloadsClient: OperateLogClient
-
-    @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
 
     @Autowired
     private lateinit var taskAsyncExecutor: ThreadPoolTaskExecutor
-
-    @Autowired
-    lateinit var operateLogClient: OperateLogClient
 
     override fun upload(context: ArtifactUploadContext) {
         try {

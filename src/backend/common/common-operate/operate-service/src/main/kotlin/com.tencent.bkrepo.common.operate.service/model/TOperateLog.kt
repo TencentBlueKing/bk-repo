@@ -29,13 +29,13 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.operate.service.model
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
-import com.tencent.bkrepo.repository.model.TOperateLog.Companion.RESOURCE_KEY_IDX
-import com.tencent.bkrepo.repository.model.TOperateLog.Companion.RESOURCE_KEY_IDX_DEF
+import com.tencent.bkrepo.common.operate.service.model.TOperateLog.Companion.RESOURCE_KEY_IDX
+import com.tencent.bkrepo.common.operate.service.model.TOperateLog.Companion.RESOURCE_KEY_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
