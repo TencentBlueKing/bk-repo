@@ -1,7 +1,10 @@
 import request from '@/utils/request'
+import { updateConfig } from '@/api/config'
 
 const PREFIX_STORAGE = '/repository/api/storage'
 const PREFIX_STORAGE_CREDENTIALS = `${PREFIX_STORAGE}/credentials`
+const STORAGE_CONFIG_PREFIX = 'storage'
+const STORAGE_CACHE_CONFIG_PREFIX = 'cache'
 export const STORAGE_TYPE_FILESYSTEM = 'filesystem'
 export const STORAGE_TYPE_INNER_COS = 'innercos'
 export const STORAGE_TYPE_HDFS = 'hdfs'
@@ -37,16 +40,26 @@ export function createCredential(credential) {
   })
 }
 
-export function updateCredential(key, credential) {
-  const data = {
-    loadCacheFirst: credential.cache.loadCacheFirst,
-    expireDays: credential.cache.expireDays
+export function updateCredential(key, credential, defaultCredential = false) {
+  if (defaultCredential) {
+    const expireDaysKey = `${STORAGE_CONFIG_PREFIX}.${credential.type}.${STORAGE_CACHE_CONFIG_PREFIX}.expireDays`
+    const loadCacheFirstKey = `${STORAGE_CONFIG_PREFIX}.${credential.type}.${STORAGE_CACHE_CONFIG_PREFIX}.loadCacheFirst`
+    const values = {
+      [expireDaysKey]: credential.cache.expireDays,
+      [loadCacheFirstKey]: credential.cache.loadCacheFirst
+    }
+    return updateConfig(values)
+  } else {
+    const data = {
+      loadCacheFirst: credential.cache.loadCacheFirst,
+      expireDays: credential.cache.expireDays
+    }
+    return request({
+      url: `${PREFIX_STORAGE_CREDENTIALS}/${key}`,
+      method: 'put',
+      data
+    })
   }
-  return request({
-    url: `${PREFIX_STORAGE_CREDENTIALS}/${key}`,
-    method: 'put',
-    data
-  })
 }
 
 export function deleteCredential(key) {

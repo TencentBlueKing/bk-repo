@@ -224,7 +224,7 @@ export default {
             msg = '创建凭据成功'
             eventName = 'created'
           } else {
-            reqPromise = updateCredential(credential.key, credential)
+            reqPromise = updateCredential(credential.key, credential, credential.default)
             msg = '更新凭据成功'
             eventName = 'updated'
           }
@@ -232,7 +232,7 @@ export default {
           // 发起请求
           reqPromise.then(res => {
             this.$message.success(msg)
-            this.$emit(eventName, res.data)
+            this.$emit(eventName, credential.default ? credential : res.data)
             this.close()
           })
         } else {
