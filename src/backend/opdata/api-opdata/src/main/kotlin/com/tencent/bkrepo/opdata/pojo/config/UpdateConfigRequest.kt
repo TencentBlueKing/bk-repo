@@ -25,17 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.opdata.pojo.config
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.fasterxml.jackson.annotation.JsonInclude
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
-
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
-}
+@ApiModel("更新配置请求体")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class UpdateConfigRequest(
+    @ApiModelProperty("待更新的应用名")
+    val appName: String = "",
+    @ApiModelProperty("待更新的profile")
+    val profile: String = "",
+    @ApiModelProperty("需要更新的配置键值对", required = true)
+    val values: Map<String, Any?>
+)

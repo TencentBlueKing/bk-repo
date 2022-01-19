@@ -25,17 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.opdata.controller
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.opdata.config.client.ConfigClient
+import com.tencent.bkrepo.opdata.pojo.config.UpdateConfigRequest
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
-
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
+/**
+ * 配置管理
+ */
+@RestController
+@RequestMapping("/api/config")
+@Principal(PrincipalType.ADMIN)
+class ConfigController @Autowired constructor(
+    private val configClient: ConfigClient
+) {
+    /**
+     * 更新配置
+     */
+    @PatchMapping
+    fun update(@RequestBody updateConfigRequest: UpdateConfigRequest): Response<Void> {
+        updateConfigRequest.run {
+            val values = values.map { Pair(it.key, it.value) }
+            configClient.put(values, appName, profile)
+        }
+        return ResponseBuilder.success()
+    }
 }
