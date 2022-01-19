@@ -30,12 +30,12 @@ package com.tencent.bkrepo.repository.controller.service
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.OperateLogClient
-import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
-import com.tencent.bkrepo.repository.pojo.log.OperateLog
-import com.tencent.bkrepo.repository.service.log.OperateLogService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

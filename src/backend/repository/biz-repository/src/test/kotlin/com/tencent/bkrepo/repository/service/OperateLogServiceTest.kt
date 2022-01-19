@@ -30,11 +30,11 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
+import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
+import com.tencent.bkrepo.common.operate.service.model.TOperateLog
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.OperateLogDao
-import com.tencent.bkrepo.repository.model.TOperateLog
 import org.apache.commons.lang3.RandomStringUtils
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions

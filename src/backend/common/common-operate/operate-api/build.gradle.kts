@@ -29,18 +29,8 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
 
-import com.tencent.bkrepo.repository.model.TOperateLog
-import org.springframework.data.mongodb.repository.MongoRepository
-import org.springframework.data.mongodb.repository.Query
-import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
-
-@Repository
-interface OperateLogRepository : MongoRepository<TOperateLog, String> {
-    @Query(value = "{ 'createdDate': {\$gte : ?0, \$lt : ?1 }}")
-    fun findByCreatedDateBetween(fromTime: LocalDateTime, toTime: LocalDateTime): List<TOperateLog>
-
-    fun deleteByCreatedDateBefore(dateTime: LocalDateTime): Long
+dependencies {
+    api(project(":common:common-artifact:artifact-api"))
+    api(project(":common:common-query:query-api"))
 }
