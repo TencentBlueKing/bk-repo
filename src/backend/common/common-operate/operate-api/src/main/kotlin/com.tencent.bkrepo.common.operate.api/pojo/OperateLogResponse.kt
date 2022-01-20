@@ -25,18 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.log
+package com.tencent.bkrepo.common.operate.api.pojo
 
-import com.tencent.bkrepo.common.artifact.event.base.EventType
+import io.swagger.annotations.Api
 import java.time.LocalDateTime
 
-data class OperateLog(
+@Api("操作日志")
+data class OperateLogResponse(
     val createdDate: LocalDateTime,
-    val type: EventType,
-    val projectId: String?,
-    val repoName: String?,
-    val resourceKey: String,
+    val operate: String,
     val userId: String,
     val clientAddress: String,
-    val description: Map<String, Any>
-)
+    val result: Boolean,
+    val content: Content
+) {
+    open class Content(
+        val projectId: String? = null,
+        val repoType: String? = null,
+        val resKey: String,
+        val des: String? = null
+    )
+}

@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.log.impl
+package com.tencent.bkrepo.common.operate.service.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -34,12 +34,13 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.repository.dao.OperateLogDao
-import com.tencent.bkrepo.repository.model.TOperateLog
-import com.tencent.bkrepo.repository.pojo.log.OpLogListOption
-import com.tencent.bkrepo.repository.pojo.log.OperateLog
-import com.tencent.bkrepo.repository.pojo.log.OperateLogResponse
-import com.tencent.bkrepo.repository.service.log.OperateLogService
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
+import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
+import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
+import com.tencent.bkrepo.common.operate.service.model.TOperateLog
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -47,17 +48,17 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Async
-import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
  * OperateLogService 实现类
  */
-@Service
-class OperateLogServiceImpl(
-    private val operateLogDao: OperateLogDao
-) : OperateLogService {
+
+open class OperateLogServiceImpl : OperateLogService {
+
+    @Autowired
+    private lateinit var operateLogDao: OperateLogDao
 
     @Async
     override fun saveEventAsync(event: ArtifactEvent, address: String) {
@@ -128,7 +129,7 @@ class OperateLogServiceImpl(
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val query = buildOperateLogPageQuery(type, projectId, repoName, operator, startTime, endTime)
         val totalRecords = operateLogDao.count(query)
-        val records = operateLogDao.find(query.with(pageRequest)).mapNotNull { convert(it) }
+        val records = operateLogDao.find(query.with(pageRequest)).map { convert(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
@@ -174,7 +175,7 @@ class OperateLogServiceImpl(
         }
     }
 
-    private fun convert(tOperateLog: TOperateLog): OperateLogResponse? {
+    private fun convert(tOperateLog: TOperateLog): OperateLogResponse {
         val content = if (packageEvent.contains(tOperateLog.type)) {
             val packageName = tOperateLog.description["packageName"] as? String
             val version = tOperateLog.description["packageVersion"] as? String
