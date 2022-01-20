@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -144,7 +145,9 @@ open class AbstractChartService : ArtifactService() {
     fun getOriginalIndexYaml(projectId: String, repoName: String): HelmIndexYamlMetadata {
         val fullPath = HelmUtils.getIndexCacheYamlFullPath()
         val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-        val inputStream = storageManager.loadArtifactInputStream(nodeDetail, null)
+        val repository = repositoryClient.getRepoDetail(projectId, repoName, "HELM").data
+            ?: throw RepoNotFoundException("Repository[$repoName] does not exist")
+        val inputStream = storageManager.loadArtifactInputStream(nodeDetail, repository.storageCredentials)
             ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
         return inputStream.use { it.readYamlString() }
     }
