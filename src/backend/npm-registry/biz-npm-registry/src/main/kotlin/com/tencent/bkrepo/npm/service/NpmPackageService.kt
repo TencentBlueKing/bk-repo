@@ -141,7 +141,7 @@ class NpmPackageService(
                     tags = tags,
                     extension = extension
                 )
-                packageClient.updateVersion(updateRequest)
+                packageClient.updateVersion(updateRequest, HttpContextHolder.getClientAddress())
                 NpmResponse.success()
             }
         }
@@ -178,7 +178,7 @@ class NpmPackageService(
                 packageKey = packageName,
                 extension = newExtension
             )
-            packageClient.updatePackage(updateRequest)
+            packageClient.updatePackage(updateRequest, HttpContextHolder.getClientAddress())
         }
     }
 
@@ -225,7 +225,7 @@ class NpmPackageService(
                 packageKey = packageName,
                 versionTag = versionTag
             )
-            packageClient.updatePackage(updateRequest)
+            packageClient.updatePackage(updateRequest, HttpContextHolder.getClientAddress())
         }
     }
 

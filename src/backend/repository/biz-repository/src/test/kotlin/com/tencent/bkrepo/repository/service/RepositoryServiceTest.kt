@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -395,6 +396,16 @@ class RepositoryServiceTest @Autowired constructor(
     }
 
     private fun createRequest(name: String = UT_REPO_NAME, storageCredentialsKey: String? = null): RepoCreateRequest {
+        val configuration = LocalConfiguration()
+        val type = DownloadInterceptorType.WEB
+        val rules = mapOf(
+            "filename" to "*.apk",
+            "metadata" to "key: value"
+        )
+        configuration.settings["interceptors"] = listOf(mapOf(
+            "type" to type,
+            "rules" to rules
+        ))
         return RepoCreateRequest(
             projectId = UT_PROJECT_ID,
             name = name,
@@ -402,7 +413,7 @@ class RepositoryServiceTest @Autowired constructor(
             category = RepositoryCategory.LOCAL,
             public = true,
             description = "simple description",
-            configuration = LocalConfiguration(),
+            configuration = configuration,
             storageCredentialsKey = storageCredentialsKey,
             operator = UT_USER
         )

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="28px" height="28px" viewBox="0 0 28 28" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>代码仓库</title>
+    <defs>
+        <linearGradient x1="50%" y1="-5.71440509%" x2="50%" y2="103.068967%" id="linearGradient-1">
+            <stop stop-color="#2C70E1" offset="0%"></stop>
+            <stop stop-color="#3AB8FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="100%" x2="50%" y2="-3.60070036%" id="linearGradient-2">
+            <stop stop-color="#2C70E1" offset="0%"></stop>
+            <stop stop-color="#3AB8FF" offset="100%"></stop>
+        </linearGradient>
+        <linearGradient x1="50%" y1="-5.71440509%" x2="50%" y2="103.068967%" id="linearGradient-3">
+            <stop stop-color="#2C70E1" offset="0%"></stop>
+            <stop stop-color="#3AB8FF" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="框架" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="制品库" transform="translate(-20.000000, -11.000000)" fill-rule="nonzero">
+            <g id="编组" transform="translate(20.000000, 11.000000)">
+                <path d="M15.0140403,0.596494267 L25.9,7 L25.9,7 L14,14 L2.1,7 L12.9859597,0.596494267 C13.611858,0.22831884 14.388142,0.22831884 15.0140403,0.596494267 Z" id="多边形" fill="#ABE2FF"></path>
+                <path d="M14.5144958,3.10869745 L21,7 L21,7 L14,11.2 L7,7 L13.4855042,3.10869745 C13.8021866,2.91868802 14.1978134,2.91868802 14.5144958,3.10869745 Z" id="多边形" fill="url(#linearGradient-1)"></path>
+                <polygon id="矩形" fill="url(#linearGradient-2)" points="2.1 7 14 14 14 28 2.1 21"></polygon>
+                <path d="M6.2077702,12.2472973 L9.8922298,14.3527027 C10.2680596,14.5674626 10.5,14.9671376 10.5,15.4 C10.5,15.6243523 10.3181265,15.8062258 10.0937742,15.8062258 C10.02308,15.8062258 9.95360958,15.7877769 9.8922298,15.7527027 L6.2077702,13.6472973 C5.83194041,13.4325374 5.6,13.0328624 5.6,12.6 C5.6,12.3756477 5.78187347,12.1937742 6.00622577,12.1937742 C6.07692,12.1937742 6.14639042,12.2122231 6.2077702,12.2472973 Z" id="矩形" fill="#ABE2FF"></path>
+                <polygon id="矩形" fill="url(#linearGradient-3)" transform="translate(19.950000, 17.500000) scale(-1, 1) translate(-19.950000, -17.500000) " points="14 7 25.9 14 25.9 28 14 21"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

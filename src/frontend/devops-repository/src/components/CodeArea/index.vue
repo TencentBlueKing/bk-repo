@@ -1,17 +1,17 @@
 <template>
     <div class="code-area"
         :style="{
-            'background-color': bgColor,
-            'color': color
+            '--bgColor': bgColor,
+            '--color': color
         }">
         <div v-for="code in codeList" :key="code + Math.random()"
             :class="{
                 'code-main': true,
-                'line-number': lineNumber && codeList.length > 1
+                'line-number': showLineNumber && codeList.length > 1
             }">
             <pre class="code-pre">{{ code }}</pre>
         </div>
-        <i class="code-copy devops-icon icon-clipboard" @click="copyCode()"></i>
+        <bk-button class="code-copy" theme="primary" @click="copyCode">{{$t('copy')}}</bk-button>
     </div>
 </template>
 <script>
@@ -23,17 +23,17 @@
                 type: Array,
                 default: () => []
             },
-            lineNumber: {
+            showLineNumber: {
                 type: Boolean,
                 default: true
             },
             bgColor: {
                 type: String,
-                default: '#555e66'
+                default: '#E6EDF6'
             },
             color: {
                 type: String,
-                default: '#ffffff'
+                default: '#081E40'
             }
         },
         methods: {
@@ -63,19 +63,21 @@
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .code-area {
     position: relative;
     line-height: 2;
-    padding: 10px 40px;
-    min-height: 48px;
+    padding: 13px 45px 13px 30px;
+    min-height: 50px;
     word-break: break-all;
     counter-reset: row-num;
+    color: var(--color);
+    background-color: var(--bgHoverLighterColor);
+    border-radius: 2px;
     .code-main {
         position: relative;
         &.line-number:before {
             position: absolute;
-            margin-left: -30px;
+            margin-left: -20px;
             counter-increment: row-num;
             content: counter(row-num);
         }
@@ -88,15 +90,12 @@
     .code-copy {
         position: absolute;
         visibility: hidden;
-        top: 10px;
-        right: 10px;
-        font-size: 24px;
-        cursor: pointer;
+        top: 0;
+        right: 0;
     }
-    &:hover .code-copy {
-        visibility: visible;
-        &:hover {
-            color: $iconPrimaryColor;
+    &:hover {
+        .code-copy {
+            visibility: visible;
         }
     }
 }

@@ -47,6 +47,7 @@ enum class OperationType(val valueType: KClass<*>) {
     BEFORE(LocalDateTime::class),
     AFTER(LocalDateTime::class),
     IN(List::class),
+    NIN(List::class),
     PREFIX(String::class),
     SUFFIX(String::class),
     MATCH(String::class),

@@ -121,10 +121,12 @@ class GenericLocalRepository : LocalRepository() {
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            if (node?.folder == true) {
+            val node =
+                nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data ?: return null
+            if (node.folder) {
                 return downloadFolder(this, node)
             }
+            downloadIntercept(this, node)
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
 
@@ -154,6 +156,10 @@ class GenericLocalRepository : LocalRepository() {
         ).data.orEmpty()
         // 检查目录大小
         checkFolderSize(nodes)
+        nodes.forEach {
+            val nodeDetail = NodeDetail(it)
+            downloadIntercept(context, nodeDetail)
+        }
         // 构造name-node map
         val prefix = "${node.fullPath}/"
         val nodeMap = nodes.associate {
@@ -162,6 +168,11 @@ class GenericLocalRepository : LocalRepository() {
             name to inputStream
         }
         return ArtifactResource(nodeMap, node, useDisposition = true)
+    }
+
+    private fun downloadIntercept(context: ArtifactDownloadContext, nodeDetail: NodeDetail) {
+        val interceptors = context.getInterceptors()
+        interceptors.forEach { it.intercept(nodeDetail) }
     }
 
     /**

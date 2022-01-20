@@ -87,6 +87,9 @@ open class ServiceBaseTest {
     lateinit var userResource: ServiceUserResource
 
     @MockBean
+    lateinit var servicePermissionResource: ServicePermissionResource
+
+    @MockBean
     lateinit var permissionManager: PermissionManager
 
     @MockBean

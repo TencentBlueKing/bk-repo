@@ -1,60 +1,52 @@
 <template>
-    <bk-dialog
+    <canway-dialog
         v-model="show"
         width="600"
+        :height-num="editProxyData.proxyType === 'privateProxy' ? 463 : 328"
         :title="editProxyData.type === 'add' ? $t('addProxy') : $t('editProxy')"
-        :mask-close="false"
-        :close-icon="false"
-    >
-        <bk-tab
-            :active.sync="editProxyData.proxyType"
-            @tab-change="proxyTabChange"
-            type="unborder-card">
-            <bk-tab-panel v-if="editProxyData.type === 'add'" name="publicProxy" :label="$t('publicProxy')">
-                <bk-form ref="publicProxy" :label-width="100" :model="editProxyData" :rules="rules">
-                    <bk-form-item :label="$t('name')" :required="true" property="channelId">
-                        <bk-select v-model="editProxyData.channelId" :clear="false">
-                            <bk-option
-                                v-for="option in publicProxy"
-                                :key="option.channelId"
-                                :id="option.channelId"
-                                :name="option.name">
-                            </bk-option>
-                        </bk-select>
-                    </bk-form-item>
-                    <bk-form-item :label="$t('address')">
-                        <span>{{ selectedPublicProxy.url || '' }}</span>
-                    </bk-form-item>
-                </bk-form>
-            </bk-tab-panel>
-            <bk-tab-panel name="privateProxy" :label="$t('privateProxy')">
-                <bk-form ref="privateProxy" :label-width="100" :model="editProxyData" :rules="rules">
-                    <bk-form-item :label="$t('privateProxy') + $t('name')" :required="true" property="name">
-                        <bk-input v-model.trim="editProxyData.name"></bk-input>
-                    </bk-form-item>
-                    <bk-form-item :label="$t('privateProxy') + $t('address')" :required="true" property="url">
-                        <bk-input v-model.trim="editProxyData.url"></bk-input>
-                    </bk-form-item>
-                    <bk-form-item :label="$t('ticket')" property="ticket">
-                        <bk-checkbox v-model.trim="editProxyData.ticket"></bk-checkbox>
-                    </bk-form-item>
-                    <bk-form-item v-if="editProxyData.ticket" :label="$t('account')" :required="true" property="username">
-                        <bk-input v-model.trim="editProxyData.username"></bk-input>
-                    </bk-form-item>
-                    <bk-form-item v-if="editProxyData.ticket" :label="$t('password')" :required="true" property="password">
-                        <bk-input type="password" v-model.trim="editProxyData.password"></bk-input>
-                    </bk-form-item>
-                    <!-- <bk-form-item>
-                        <bk-button text theme="primary" @click="testPrivateProxy">{{$t('test') + $t('privateProxy')}}</bk-button>
-                    </bk-form-item> -->
-                </bk-form>
-            </bk-tab-panel>
-        </bk-tab>
-        <div slot="footer">
-            <bk-button theme="primary" @click="confirmProxyData">{{$t('submit')}}</bk-button>
-            <bk-button @click="$emit('cancel')">{{$t('cancel')}}</bk-button>
-        </div>
-    </bk-dialog>
+        @cancel="$emit('cancel')"
+        @confirm="confirmProxyData">
+        <label class="ml20 mr20 mb10 form-label">{{ $t('baseInfo') }}</label>
+        <bk-form class="ml20 mr20" ref="proxyOrigin" :label-width="85" :model="editProxyData" :rules="rules">
+            <bk-form-item :label="$t('type')" property="proxyType">
+                <bk-radio-group v-model="editProxyData.proxyType" @change="proxyTypeChange">
+                    <bk-radio :disabled="editProxyData.type === 'edit'" value="publicProxy">{{ $t('publicProxy') }}</bk-radio>
+                    <bk-radio :disabled="editProxyData.type === 'edit'" class="ml20" value="privateProxy">{{ $t('privateProxy') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
+            <template v-if="editProxyData.proxyType === 'privateProxy'">
+                <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
+                    <bk-input v-model.trim="editProxyData.name" maxlength="32" show-word-limit></bk-input>
+                </bk-form-item>
+            </template>
+            <template v-else>
+                <bk-form-item :label="$t('name')" :required="true" property="channelId" error-display-type="normal">
+                    <bk-select v-model="editProxyData.channelId" @change="changeChannelId" :clear="false">
+                        <bk-option
+                            v-for="option in publicProxy"
+                            :key="option.channelId"
+                            :id="option.channelId"
+                            :name="option.name">
+                        </bk-option>
+                    </bk-select>
+                </bk-form-item>
+            </template>
+            <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
+                <bk-input :disabled="editProxyData.proxyType === 'publicProxy'" v-model.trim="editProxyData.url"></bk-input>
+            </bk-form-item>
+        </bk-form>
+        <template v-if="editProxyData.proxyType === 'privateProxy'">
+            <label class="ml20 mr20 mt20 mb10 form-label">凭证信息</label>
+            <bk-form class="ml20 mr20" :label-width="85">
+                <bk-form-item :label="$t('account')" property="username">
+                    <bk-input v-model.trim="editProxyData.username"></bk-input>
+                </bk-form-item>
+                <bk-form-item :label="$t('password')" property="password">
+                    <bk-input type="password" v-model.trim="editProxyData.password"></bk-input>
+                </bk-form-item>
+            </bk-form>
+        </template>
+    </canway-dialog>
 </template>
 <script>
     export default {
@@ -72,7 +64,6 @@
                     channelId: '',
                     name: '',
                     url: '',
-                    ticket: false,
                     username: '',
                     password: ''
                 },
@@ -97,32 +88,13 @@
                             message: this.$t('pleaseInput') + this.$t('privateProxy') + this.$t('address'),
                             trigger: 'blur'
                         }
-                    ],
-                    username: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseInput') + this.$t('account'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    password: [
-                        {
-                            required: true,
-                            message: this.$t('pleaseInput') + this.$t('password'),
-                            trigger: 'blur'
-                        }
                     ]
                 }
             }
         },
-        computed: {
-            selectedPublicProxy () {
-                return this.publicProxy.find(v => v.channelId === this.editProxyData.channelId) || {}
-            }
-        },
         watch: {
             proxyData () {
-                this.proxyTabChange(this.proxyData.type === 'add' ? 'publicProxy' : 'privateProxy')
+                this.proxyTypeChange(this.proxyData.type === 'add' ? 'publicProxy' : 'privateProxy')
                 this.editProxyData = {
                     ...this.editProxyData,
                     ...this.proxyData
@@ -130,31 +102,32 @@
             }
         },
         methods: {
-            proxyTabChange (name = 'publicProxy') {
+            proxyTypeChange (name = 'publicProxy') {
                 this.editProxyData = {
                     ...this.editProxyData,
                     proxyType: name,
                     channelId: '',
                     name: '',
                     url: '',
-                    ticket: false,
                     username: '',
                     password: ''
                 }
-                this.$refs.publicProxy && this.$refs.publicProxy.clearError()
-                this.$refs.privateProxy && this.$refs.privateProxy.clearError()
+                this.$refs.proxyOrigin && this.$refs.proxyOrigin.clearError()
+            },
+            changeChannelId (channelId) {
+                const selectedPublicProxy = this.publicProxy.find(v => v.channelId === channelId) || {}
+                this.editProxyData.url = selectedPublicProxy.url
             },
             async confirmProxyData () {
-                if (this.editProxyData.proxyType === 'publicProxy') {
-                    await this.$refs.publicProxy.validate()
-                } else {
-                    await this.$refs.privateProxy.validate()
-                }
+                await this.$refs.proxyOrigin.validate()
                 this.$emit('confirm', { name: this.proxyData.name, data: this.editProxyData })
             }
         }
     }
 </script>
 <style lang="scss" scoped>
-
+.form-label {
+    display: block;
+    font-weight: bold;
+}
 </style>

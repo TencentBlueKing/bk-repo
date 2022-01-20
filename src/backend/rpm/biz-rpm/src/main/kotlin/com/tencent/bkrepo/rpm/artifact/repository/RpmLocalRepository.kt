@@ -460,7 +460,8 @@ class RpmLocalRepository(
                                 artifactPath = context.artifactInfo.getArtifactFullPath(),
                                 overwrite = true,
                                 createdBy = context.userId
-                            )
+                            ),
+                            HttpContextHolder.getClientAddress()
                         )
                         rpmNodeCreateRequest(context, metadata)
                     }
@@ -622,7 +623,7 @@ class RpmLocalRepository(
     }
 
     fun deleteVersion(projectId: String, repoName: String, packageKey: String, version: String) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version)
+        packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
     }
 
     /**
