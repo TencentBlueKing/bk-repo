@@ -29,13 +29,14 @@ package com.tencent.bkrepo.common.artifact.event.listener
 
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
+import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.OperateLogClient
 import org.springframework.context.event.EventListener
 
 class ArtifactDownloadListener(
     private val nodeClient: NodeClient,
-    private val operateLogClient: OperateLogClient
+    private val operateLogService: OperateLogService
 ) {
 
     @EventListener(ArtifactDownloadedEvent::class)
@@ -60,7 +61,7 @@ class ArtifactDownloadListener(
                     data = data
                 )
             }
-            operateLogClient.batchRecord(eventList)
+            operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
         } else {
             val data = node.metadata.toMutableMap()
             data[MD5] = node.md5 ?: ""
@@ -72,7 +73,7 @@ class ArtifactDownloadListener(
                 userId = userId,
                 data = data
             )
-            operateLogClient.record(downloadedEvent)
+            operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
         }
     }
 
