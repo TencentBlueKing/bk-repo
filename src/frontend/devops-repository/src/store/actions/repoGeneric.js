@@ -6,7 +6,7 @@ export default {
     // 查询文件夹下的所有文件数量（递归）
     getFileNumOfFolder ({ commit }, { projectId, repoName, fullPath = '/' }) {
         return Vue.prototype.$ajax.post(
-            `${prefix}/node/query`,
+            `${prefix}/node/search`,
             {
                 page: {
                     pageNumber: 1,
@@ -44,15 +44,14 @@ export default {
     },
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
-        const path = `${fullPath === '/' ? '' : fullPath}/`
         let request
-        if (isPipeline && path === '/') {
+        if (isPipeline && !fullPath) {
             request = Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
             ).then(records => ({ records }))
         } else {
             request = Vue.prototype.$ajax.post(
-                `${prefix}/node/query`,
+                `${prefix}/node/search`,
                 {
                     page: {
                         pageNumber: 1,
@@ -76,7 +75,7 @@ export default {
                             },
                             {
                                 field: 'path',
-                                value: path,
+                                value: `${fullPath === '/' ? '' : fullPath}/`,
                                 operation: 'EQ'
                             },
                             {
@@ -106,18 +105,15 @@ export default {
             `${prefix}/node/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
         )
     },
-    // 请求文件夹下的文件夹及制品
-    getArtifactoryList (_, { projectId, repoName, fullPath, current, limit, isPipeline = false, sortType = 'lastModifiedDate' }) {
-        const path = `${fullPath === '/' ? '' : fullPath}/`
-        if (isPipeline && path === '/') {
-            if (path === '/') {
-                return Vue.prototype.$ajax.get(
-                    `${prefix}/pipeline/list/${projectId}`
-                ).then(records => ({ records, totalRecords: 0 }))
-            }
+    // 仓库内自定义查询
+    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType = 'lastModifiedDate' }) {
+        if (isPipeline && !fullPath && !name) {
+            return Vue.prototype.$ajax.get(
+                `${prefix}/pipeline/list/${projectId}`
+            ).then(records => ({ records, totalRecords: 0 }))
         } else {
             return Vue.prototype.$ajax.post(
-                `${prefix}/node/query`,
+                `${prefix}/node/search`,
                 {
                     page: {
                         pageNumber: current,
@@ -139,60 +135,27 @@ export default {
                                 value: repoName,
                                 operation: 'EQ'
                             },
-                            {
-                                field: 'path',
-                                value: path,
-                                operation: 'EQ'
-                            }
+                            ...(name
+                                ? [
+                                    {
+                                        field: 'name',
+                                        value: `\*${name}\*`,
+                                        operation: 'MATCH'
+                                    }
+                                ]
+                                : [
+                                    {
+                                        field: 'path',
+                                        value: `${fullPath === '/' ? '' : fullPath}/`,
+                                        operation: 'EQ'
+                                    }
+                                ])
                         ],
                         relation: 'AND'
                     }
                 }
             )
         }
-    },
-    // 仓库内自定义查询
-    getArtifactoryListByQuery (_, { projectId, repoName, name, current = 1, limit = 15 }) {
-        return Vue.prototype.$ajax.post(
-            `${prefix}/node/query`,
-            {
-                page: {
-                    pageNumber: current,
-                    pageSize: limit
-                },
-                sort: {
-                    properties: ['lastModifiedDate'],
-                    direction: 'DESC'
-                },
-                rule: {
-                    rules: [
-                        {
-                            field: 'projectId',
-                            value: projectId,
-                            operation: 'EQ'
-                        },
-                        {
-                            field: 'repoName',
-                            value: repoName,
-                            operation: 'EQ'
-                        },
-                        {
-                            field: 'folder',
-                            value: false,
-                            operation: 'EQ'
-                        },
-                        ...(name ? [
-                            {
-                                field: 'name',
-                                value: `\*${name}\*`,
-                                operation: 'MATCH'
-                            }
-                        ] : [])
-                    ],
-                    relation: 'AND'
-                }
-            }
-        )
     },
     // 创建目录
     createFolder (_, { projectId, repoName, fullPath = '' }) {
@@ -251,7 +214,14 @@ export default {
     // 分享文件
     shareArtifactory (_, body) {
         return Vue.prototype.$ajax.post(
-            `/generic/temporary/url/create`,
+            '/generic/temporary/url/create',
+            body
+        )
+    },
+    // 发送邮件
+    sendEmail (_, body) {
+        return Vue.prototype.$ajax.post(
+            '/generic/notify/mail/user',
             body
         )
     },
@@ -259,6 +229,20 @@ export default {
     getFolderSize (_, { projectId, repoName, fullPath }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/node/size/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
+        )
+    },
+    // 添加元数据
+    addMetadata (_, { projectId, repoName, fullPath, body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/metadata/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            body
+        )
+    },
+    // 删除元数据
+    deleteMetadata (_, { projectId, repoName, fullPath, body }) {
+        return Vue.prototype.$ajax.delete(
+            `${prefix}/metadata/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
+            { data: body }
         )
     }
 }

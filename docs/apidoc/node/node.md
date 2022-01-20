@@ -563,6 +563,66 @@
   }
   ```
 
+
+
+## 查询节点总览
+
+- API: GET /repository/api/node/search/overview?projectId={projectId}&name={name}&exRepo={reponames}
+
+- API 名称: query_node_overview
+
+- 功能说明：
+
+  - 中文：查询节点总览
+    - English：query node overview
+
+- 请求体
+  此接口请求体为空
+
+- 请求字段说明
+
+  | 字段      | 类型   | 是否必须 | 默认值 | 说明                             | Description  |
+  | --------- | ------ | -------- | ------ | -------------------------------- | ------------ |
+  | projectId | string | 是       | 无     | 项目名称                         | project name |
+  | name      | string | 是       | 无     | 查询文件名                       | file name    |
+  | exRepo    | string | 否       | null   | 排除的仓库，多个仓库以 `,` 分隔" | repo name    |
+
+- 响应体
+
+  ```json
+  {
+      "code": 0,
+      "message": null,
+      "data": [
+          {
+              "projectId": "test",
+              "repos": [
+                  {
+                      "repoName": "custom",
+                      "packages": 10
+                  },
+                  {
+                      "repoName": "scan_test",
+                      "packages": 2
+                  }
+              ],
+              "sum": 20
+          }
+      ],
+      "traceId": ""
+  }
+  ```
+
+- data字段说明
+
+  | 字段      | 类型   | 说明         | Description          |
+  | --------- | ------ | ------------ | -------------------- |
+  | projectId | string | 节点所属项目 | node project id      |
+  | repoName  | string | 节点所属仓库 | node repository name |
+  | packages  | Int    | 节点数量     | node count           |
+
+## 
+
 ## 清理创建时间早于{date}的文件节点
 
 - API: DELETE /repository/api/node/clean/{projectId}/{repoName}?date=yyyy-MM-dd'T'HH:mm:ss.SSSXXX

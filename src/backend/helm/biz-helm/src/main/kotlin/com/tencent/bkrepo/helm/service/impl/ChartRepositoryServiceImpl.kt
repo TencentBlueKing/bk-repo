@@ -184,7 +184,7 @@ class ChartRepositoryServiceImpl(
         try {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
-            logger.error("Error occurred while installing chart, error: ${e.message}")
+            logger.warn("Error occurred while installing chart, error: ${e.message}")
             throw HelmFileNotFoundException(e.message.toString())
         }
     }
@@ -233,7 +233,7 @@ class ChartRepositoryServiceImpl(
         try {
             ArtifactContextHolder.getRepository().download(context)
         } catch (e: Exception) {
-            logger.error("Error occurred while installing prov, error: ${e.message}")
+            logger.warn("Error occurred while installing prov, error: ${e.message}")
             throw HelmFileNotFoundException(e.message.toString())
         }
     }

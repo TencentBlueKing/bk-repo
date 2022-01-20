@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
@@ -119,4 +120,12 @@ interface RepositoryClient {
         @ApiParam(value = "仓库类型", required = true)
         @PathVariable repoType: String
     ): Response<Page<RepositoryDetail>>
+
+    @ApiOperation("查询项目下的有权限的仓库列表")
+    @PostMapping("/permission/{userId}/{projectId}")
+    fun listPermissionRepo(
+        @PathVariable userId: String,
+        @PathVariable projectId: String,
+        @RequestBody option: RepoListOption
+    ): Response<List<RepositoryInfo>>
 }

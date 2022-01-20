@@ -8,9 +8,13 @@ yarn install
 yarn start
 
 # build for production with minification
-yarn run public
+yarn public
 
-# serve with hot reload at localhost:8006
+# build for production with mode
+yarn public -m standalone
+yarn public -m ci
+
+# serve with hot reload at localhost:xxxx
 cd ./devops-repository
-npm run dev
+yarn dev
 ```

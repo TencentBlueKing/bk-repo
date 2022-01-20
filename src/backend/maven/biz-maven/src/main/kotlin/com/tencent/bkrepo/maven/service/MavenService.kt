@@ -34,17 +34,36 @@ package com.tencent.bkrepo.maven.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.list.HeaderItem
+import com.tencent.bkrepo.repository.pojo.list.RowItem
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class MavenService {
+class MavenService(
+    private val nodeClient: NodeClient,
+    private val viewModelService: ViewModelService
+) : ArtifactService() {
+
+    @Value("\${service.name}")
+    private var applicationName: String = "maven"
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deploy(
@@ -58,9 +77,50 @@ class MavenService {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun dependency(mavenArtifactInfo: MavenArtifactInfo) {
-        val context = ArtifactDownloadContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
-        repository.download(context)
+        // 为了兼容jfrog，当查询到目录时，会展示当前目录下所有子项，而不是直接报错
+        with(mavenArtifactInfo) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+                ?: throw NodeNotFoundException(getArtifactFullPath())
+            val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
+            if (node.folder && !download) {
+                logger.info("The folder: ${getArtifactFullPath()} will be displayed...")
+                renderListView(node, this)
+            } else {
+                logger.info("The dependency file: ${getArtifactFullPath()} will be downloaded... ")
+                val context = ArtifactDownloadContext()
+                ArtifactContextHolder.getRepository().download(context)
+            }
+        }
+    }
+
+    /**
+     * 当查询节点为目录时，将其子节点以页面形式展示
+     */
+    private fun renderListView(node: NodeDetail, artifactInfo: MavenArtifactInfo) {
+        with(artifactInfo) {
+            viewModelService.trailingSlash(applicationName)
+            // listNodePage 接口没办法满足当前情况
+            val nodeList = nodeClient.listNode(
+                projectId = projectId,
+                repoName = repoName,
+                path = getArtifactFullPath(),
+                includeFolder = true,
+                deep = false
+            ).data
+            val currentPath = viewModelService.computeCurrentPath(node)
+            val headerList = listOf(
+                HeaderItem("Name"),
+                HeaderItem("Created by"),
+                HeaderItem("Last modified"),
+                HeaderItem("Size"),
+                HeaderItem("Sha256")
+            )
+            val itemList = nodeList?.map { NodeListViewItem.from(it) }?.sorted()
+            val rowList = itemList?.map {
+                RowItem(listOf(it.name, it.createdBy, it.lastModified, it.size, it.sha256))
+            } ?: listOf()
+            viewModelService.render(currentPath, headerList, rowList)
+        }
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
@@ -75,5 +135,9 @@ class MavenService {
         val context = ArtifactQueryContext()
         val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
+    }
+
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(MavenService::class.java)
     }
 }
