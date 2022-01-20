@@ -53,9 +53,9 @@ class ConfigController @Autowired constructor(
      */
     @PatchMapping
     fun update(@RequestBody updateConfigRequest: UpdateConfigRequest): Response<Void> {
+        updateConfigRequest.values.forEach { it.validateValueType() }
         updateConfigRequest.run {
-            val values = values.map { Pair(it.key, it.value) }
-            configClient.put(values, appName, profile)
+            configClient.put(updateConfigRequest.values, appName, profile)
         }
         return ResponseBuilder.success()
     }

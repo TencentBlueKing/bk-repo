@@ -39,5 +39,5 @@ data class UpdateConfigRequest(
     @ApiModelProperty("待更新的profile")
     val profile: String = "",
     @ApiModelProperty("需要更新的配置键值对", required = true)
-    val values: Map<String, Any?>
+    val values: List<ConfigItem>
 )

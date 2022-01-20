@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.opdata.config.client.ConfigClient
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
+import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.consul.ConditionalOnConsulEnabled
 import org.springframework.cloud.consul.config.ConsulConfigProperties
@@ -51,16 +52,15 @@ class ConsulConfigClient(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     override fun put(key: String, value: Any?, appName: String, targetProfile: String) {
-        put(listOf(Pair(key, value)), appName, targetProfile)
+        put(listOf(ConfigItem(key, value)), appName, targetProfile)
     }
 
-    override fun put(values: List<Pair<String, Any?>>, appName: String, targetProfile: String) {
+    override fun put(values: List<ConfigItem>, appName: String, targetProfile: String) {
         // 当前仅支持
         if (properties.format != ConsulConfigProperties.Format.YAML) {
             logger.error("consul config format: ${properties.format} not support")
             throw SystemErrorException()
         }
-        values.forEach { validateValueType(it.second) }
 
         // 读取配置index，用于更新时执行cas校验，避免覆盖其他更新
         val consulConfigKey = getConsulConfigKey(appName, targetProfile)
@@ -100,31 +100,6 @@ class ConsulConfigClient(
                 currentMap = currentVal as MutableMap<String, Any?>
             }
         }
-    }
-
-    /**
-     * 校验value类型是否为String, Number, Boolean
-     */
-    private fun validateValueType(value: Any?) {
-        if (value == null) {
-            return
-        }
-
-        if (value is String || value is Number || value is Boolean) {
-            return
-        }
-
-        if (value is Array<*>) {
-            value.forEach { validateValueType(it) }
-            return
-        }
-
-        if (value is List<*>) {
-            value.forEach { validateValueType(it) }
-            return
-        }
-
-        throw BadRequestException(OpDataMessageCode.ConfigValueTypeInvalid)
     }
 
     /**
