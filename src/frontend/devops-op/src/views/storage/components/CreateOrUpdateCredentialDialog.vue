@@ -149,7 +149,7 @@ export default {
           { validator: this.validateFilePathAllowEmpty, trigger: 'change' }
         ],
         'cache.path': [
-          { validator: this.validateRelativeFilePath, trigger: 'change' }
+          { validator: this.validateFilePath, trigger: 'change' }
         ],
         path: [
           { validator: this.validateFilePath, trigger: 'change' }
@@ -180,13 +180,10 @@ export default {
   },
   methods: {
     validateFilePath(rule, value, callback) {
-      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)|([A-Za-z]:(\\[\w-~]+)+)\\?$/)
+      this.validateUri(rule, value, callback, FILE_PATH_REGEX)
     },
     validateFilePathAllowEmpty(rule, value, callback) {
-      this.validateUri(rule, value, callback, /^((\/[\w-]+)+)|([A-Za-z]:(\\[\w-~]+)+)\\?$/, true)
-    },
-    validateRelativeFilePath(rule, value, callback) {
-      this.validateUri(rule, value, callback, /^[\w-]+(\/[\w-]+)*$/)
+      this.validateUri(rule, value, callback, FILE_PATH_REGEX, true)
     },
     validateHdfsUrl(rule, value, callback) {
       this.validateUri(rule, value, callback, /^hdfs:\/\/[\w-]+(\.[\w-]+)*(:\d{1,5})?$/)
@@ -295,6 +292,7 @@ export default {
 }
 
 import _ from 'lodash'
+import { FILE_PATH_REGEX } from '@/utils/validate'
 </script>
 
 <style scoped>
