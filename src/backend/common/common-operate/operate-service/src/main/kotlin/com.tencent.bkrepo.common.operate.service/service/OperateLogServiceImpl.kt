@@ -38,9 +38,9 @@ import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
 import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
+import com.tencent.bkrepo.common.operate.service.config.OperateProperties
 import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
 import com.tencent.bkrepo.common.operate.service.model.TOperateLog
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -48,6 +48,7 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Async
+import org.springframework.util.AntPathMatcher
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -55,13 +56,16 @@ import java.time.format.DateTimeFormatter
  * OperateLogService 实现类
  */
 
-open class OperateLogServiceImpl : OperateLogService {
-
-    @Autowired
-    private lateinit var operateLogDao: OperateLogDao
+open class OperateLogServiceImpl(
+    private val operateProperties: OperateProperties,
+    private val operateLogDao: OperateLogDao
+) : OperateLogService {
 
     @Async
     override fun saveEventAsync(event: ArtifactEvent, address: String) {
+        if (notNeedRecord(event)) {
+            return
+        }
         val log = TOperateLog(
             type = event.type,
             resourceKey = event.resourceKey,
@@ -76,18 +80,26 @@ open class OperateLogServiceImpl : OperateLogService {
 
     @Async
     override fun saveEventsAsync(eventList: List<ArtifactEvent>, address: String) {
-        val logs = eventList.map {
-            TOperateLog(
-                type = it.type,
-                resourceKey = it.resourceKey,
-                projectId = it.projectId,
-                repoName = it.repoName,
-                description = it.data,
-                userId = it.userId,
-                clientAddress = address
+        val logs = mutableListOf<TOperateLog>()
+        eventList.forEach {
+            if (notNeedRecord(it)) {
+                return@forEach
+            }
+            logs.add(
+                TOperateLog(
+                    type = it.type,
+                    resourceKey = it.resourceKey,
+                    projectId = it.projectId,
+                    repoName = it.repoName,
+                    description = it.data,
+                    userId = it.userId,
+                    clientAddress = address
+                )
             )
         }
-        operateLogDao.insert(logs)
+        if (logs.isNotEmpty()) {
+            operateLogDao.insert(logs)
+        }
     }
 
     override fun listPage(option: OpLogListOption): Page<OperateLog> {
@@ -131,6 +143,35 @@ open class OperateLogServiceImpl : OperateLogService {
         val totalRecords = operateLogDao.count(query)
         val records = operateLogDao.find(query.with(pageRequest)).map { convert(it) }
         return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
+    private fun notNeedRecord(event: ArtifactEvent): Boolean {
+        val eventType = event.type.name
+        val projectRepoKey = "${event.projectId}/${event.repoName}"
+        if (match(operateProperties.eventType, eventType)) {
+            return true
+        }
+        if (match(operateProperties.projectRepoKey, projectRepoKey)) {
+            return true
+        }
+        return false
+    }
+
+    private fun match(
+        rule: List<String>,
+        value: String
+    ): Boolean {
+        rule.forEach {
+            val match = if (it.contains("*")) {
+                antPathMatcher.match(it, value)
+            } else {
+                it == value
+            }
+            if (match) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun buildOperateLogPageQuery(
@@ -255,5 +296,6 @@ open class OperateLogServiceImpl : OperateLogService {
         private val projectEvent = listOf(EventType.PROJECT_CREATED)
         private val metadataEvent = listOf(EventType.METADATA_SAVED, EventType.METADATA_DELETED)
         private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSz")
+        private val antPathMatcher = AntPathMatcher()
     }
 }
