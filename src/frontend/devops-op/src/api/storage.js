@@ -44,10 +44,16 @@ export function updateCredential(key, credential, defaultCredential = false) {
   if (defaultCredential) {
     const expireDaysKey = `${STORAGE_CONFIG_PREFIX}.${credential.type}.${STORAGE_CACHE_CONFIG_PREFIX}.expireDays`
     const loadCacheFirstKey = `${STORAGE_CONFIG_PREFIX}.${credential.type}.${STORAGE_CACHE_CONFIG_PREFIX}.loadCacheFirst`
-    const values = {
-      [expireDaysKey]: credential.cache.expireDays,
-      [loadCacheFirstKey]: credential.cache.loadCacheFirst
-    }
+    const values = [
+      {
+        'key': expireDaysKey,
+        'value': credential.cache.expireDays
+      },
+      {
+        'key': loadCacheFirstKey,
+        'value': credential.cache.loadCacheFirst
+      }
+    ]
     return updateConfig(values)
   } else {
     const data = {
