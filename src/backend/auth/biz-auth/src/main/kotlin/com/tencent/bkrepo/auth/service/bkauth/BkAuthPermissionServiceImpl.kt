@@ -221,7 +221,11 @@ class BkAuthPermissionServiceImpl constructor(
         // devops实名访问请求处理
         if (matchDevopsCond(request.appId)) {
             // 优先校验本地权限
-            if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
+            if (matchBcsCond(request.appId)) {
+                logger.debug("check bcs appId")
+                return super.checkPermission(request) || checkDevopsPermission(request)
+            }
+
 
             return checkDevopsPermission(request)
         }
