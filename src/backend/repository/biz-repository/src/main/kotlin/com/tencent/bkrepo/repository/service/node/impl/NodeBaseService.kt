@@ -106,6 +106,15 @@ abstract class NodeBaseService(
         }
     }
 
+    override fun listNodePageBySha256(sha256: String, option: NodeListOption): Page<NodeInfo> {
+        val nodes = nodeDao.pageBySha256(sha256, option)
+        return Pages.ofResponse(
+            Pages.ofRequest(option.pageNumber, option.pageSize),
+            nodes.totalRecords,
+            nodes.records.map { convert(it)!! }
+        )
+    }
+
     override fun checkExist(artifact: ArtifactInfo): Boolean {
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
