@@ -25,26 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.operate.service
+package com.tencent.bkrepo.common.operate.service.config
 
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.service.config.OperateProperties
-import com.tencent.bkrepo.common.operate.service.dao.OperateLogDao
-import com.tencent.bkrepo.common.operate.service.service.OperateLogServiceImpl
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Configuration
-@EnableConfigurationProperties(OperateProperties::class)
-@ConditionalOnWebApplication
-@Import(OperateLogDao::class)
-class OperateAutoConfiguration {
-
-    @Bean
-    fun operateLogService(operateProperties: OperateProperties, operateLogDao: OperateLogDao): OperateLogService {
-        return OperateLogServiceImpl(operateProperties, operateLogDao)
-    }
-}
+/**
+ * 操作日志配置项
+ */
+@ConfigurationProperties(prefix = "operate")
+data class OperateProperties(
+    // 不需要记录日志的事件类型，支持*通配符
+    val eventType: MutableList<String> = mutableListOf(),
+    // 不需要记录日志的项目仓库，支持*通配符, 格式projectId/repoName
+    val projectRepoKey: MutableList<String> = mutableListOf()
+)
