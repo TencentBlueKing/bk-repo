@@ -6,7 +6,7 @@ const val MAX_UNIQUE_SNAPSHOTS = "MAX_UNIQUE_SNAPSHOTS"
 const val SNAPSHOT_SUFFIX = "-SNAPSHOT"
 
 const val PACKAGE_SUFFIX_REGEX =
-    "(.+)\\.(jar|war|tar|ear|ejb|rar|msi|aar|module|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"
+    "(.+)\\.(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"
 
 const val ARTIFACT_FORMAT = "^%s-%s-?(SNAPSHOT|[0-9]{8}\\.[0-9]{6}-[0-9]+)?-?(.+)?.%s\$"
 
