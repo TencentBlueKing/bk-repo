@@ -25,17 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.repository.pojo.credendials
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.repository.pojo.UserRequest
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
-
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
-}
+data class StorageCredentialsUpdateRequest(
+    val loadCacheFirst: Boolean,
+    val expireDays: Int,
+    var key: String? = null
+) : UserRequest

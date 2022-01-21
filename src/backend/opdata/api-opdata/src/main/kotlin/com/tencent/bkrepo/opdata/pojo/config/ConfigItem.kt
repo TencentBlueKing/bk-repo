@@ -25,17 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.opdata.pojo.config
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
+/**
+ * 配置项
+ */
+data class ConfigItem(
+    val key: String,
+    val value: Any?
+) {
+    /**
+     * 校验value类型是否为String, Number, Boolean
+     */
+    fun validateValueType() {
+        if (value == null) {
+            return
+        }
 
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid");
+        if (value is String || value is Number || value is Boolean) {
+            return
+        }
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
+        throw BadRequestException(OpDataMessageCode.ConfigValueTypeInvalid)
+    }
 }

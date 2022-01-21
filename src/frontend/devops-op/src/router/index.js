@@ -3,6 +3,7 @@ import Router from 'vue-router'
 export const TITLE_HOME = sidebarTitle
 export const ROUTER_NAME_SERVICE = 'Service'
 export const ROUTER_NAME_INSTANCE = 'Instance'
+export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
 
 Vue.use(Router)
 
@@ -75,11 +76,25 @@ export const asyncRoutes = [
         hidden: true,
         component: () => import('@/views/service/Instance'),
         props: true,
-        meta: { title: ROUTER_NAME_INSTANCE }
+        meta: { title: '服务实例' }
       }
     ]
   },
-
+  {
+    path: '/storage',
+    alwaysShow: true,
+    redirect: '/storage/credentials',
+    component: Layout,
+    meta: { title: '存储管理', icon: 'storage' },
+    children: [
+      {
+        path: 'credentials',
+        name: ROUTER_NAME_STORAGE_CREDENTIALS,
+        component: () => import('@/views/storage/Credential'),
+        meta: { title: '凭据', icon: 'credentials' }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

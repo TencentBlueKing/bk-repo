@@ -9,3 +9,5 @@
 export function isExternal(path) {
   return /^(https?:|mailto:|tel:)/.test(path)
 }
+
+export const FILE_PATH_REGEX = /^((\/?[\w-]+)+\/?)|([A-Za-z]:(\\[\w-~]+)+)\\?$/
