@@ -92,7 +92,8 @@ class ServiceUserResourceImpl @Autowired constructor(
                 uid = userId,
                 resourceType = ResourceType.PROJECT.toString(),
                 action = PermissionAction.WRITE.toString(),
-                projectId = request.projectId
+                projectId = request.projectId,
+                appId = SecurityUtils.getPlatformId()
             )
             if (!permissionService.checkPermission(checkRequest)) {
                 logger.warn("check user permission error [$checkRequest]")
@@ -102,12 +103,11 @@ class ServiceUserResourceImpl @Autowired constructor(
 
         userService.createUserToProject(request)
         val createRoleRequest = CreateRoleRequest(
-            PROJECT_MANAGE_ID,
-            PROJECT_MANAGE_NAME,
-            RoleType.PROJECT,
-            request.projectId,
-            null,
-            true
+            roleId = PROJECT_MANAGE_ID,
+            name = PROJECT_MANAGE_NAME,
+            type = RoleType.PROJECT,
+            projectId = request.projectId,
+            admin = true
         )
         val roleId = roleService.createRole(createRoleRequest)
         userService.addUserToRole(request.userId, roleId!!)
@@ -122,7 +122,8 @@ class ServiceUserResourceImpl @Autowired constructor(
                 uid = userId,
                 resourceType = ResourceType.PROJECT.toString(),
                 action = PermissionAction.WRITE.toString(),
-                projectId = request.projectId
+                projectId = request.projectId,
+                appId = SecurityUtils.getPlatformId()
             )
             if (!permissionService.checkPermission(checkRequest)) {
                 logger.warn("check user permission error [$checkRequest]")
@@ -131,12 +132,12 @@ class ServiceUserResourceImpl @Autowired constructor(
         }
         userService.createUserToRepo(request)
         val createRoleRequest = CreateRoleRequest(
-            REPO_MANAGE_ID,
-            REPO_MANAGE_NAME,
-            RoleType.REPO,
-            request.projectId,
-            request.repoName,
-            true
+            roleId = REPO_MANAGE_ID,
+            name = REPO_MANAGE_NAME,
+            type = RoleType.REPO,
+            projectId = request.projectId,
+            repoName = request.repoName,
+            admin = true
         )
         val roleId = roleService.createRole(createRoleRequest)
         userService.addUserToRole(request.userId, roleId!!)
