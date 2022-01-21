@@ -92,9 +92,6 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var permissionManager: PermissionManager
 
-    @MockBean
-    lateinit var servicePermissionResource: ServicePermissionResource
-
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
