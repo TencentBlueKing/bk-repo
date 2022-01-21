@@ -58,6 +58,22 @@
                     </div>
                 </template>
             </bk-table-column>
+            <bk-table-column :label="$t('repoQuota')" width="250">
+                <template #default="{ row }">
+                    <div class="repoQuota" v-if="row.quota">
+                        <bk-popover placement="top">
+                            <bk-progress size="large" :percent="((row.used || 0) / (row.quota || 1))" :show-text="false"></bk-progress>
+                            <div slot="content">
+                                <div>{{ $t('totalQuota') }}: {{ row.quota }}GB</div>
+                                <div>{{ $t('usedQuotaCapacity') }}: {{ row.used }}GB</div>
+                            </div>
+                        </bk-popover>
+                    </div>
+                    <div v-else>
+                        --
+                    </div>
+                </template>
+            </bk-table-column>
             <bk-table-column :label="$t('createdDate')" width="250">
                 <template #default="{ row }">
                     {{ formatDate(row.createdDate) }}
@@ -113,6 +129,7 @@
                     name: this.$route.query.name,
                     type: this.$route.query.type
                 },
+                value: 20,
                 pagination: {
                     count: 0,
                     current: 1,
@@ -211,6 +228,19 @@
     }
 </script>
 <style lang="scss" scoped>
+.repoQuota {
+    // display: flex;
+    width: 80%;
+    ::v-deep .bk-tooltip,
+    ::v-deep .bk-tooltip-ref {
+        display: block;
+    }
+}
+.quota-slider {
+    ::v-deep .bk-slider-bar {
+        background-color: #3a84ff;
+    }
+}
 .repo-list-container {
     height: 100%;
     background-color: white;
