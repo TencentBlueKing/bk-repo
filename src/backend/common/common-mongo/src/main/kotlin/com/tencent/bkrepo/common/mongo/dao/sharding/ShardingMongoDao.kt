@@ -256,8 +256,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         // 遍历所有分表进行查询
         val template = determineMongoTemplate()
         for (sequence in 0 until shardingCount) {
-            // 重置需要跳过的记录数量
+            // 重置需要跳过的记录数量和limit
             query.skip(0L)
+            query.limit(0)
 
             val collectionName = parseSequenceToCollectionName(sequence)
 
