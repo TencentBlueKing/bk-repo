@@ -86,6 +86,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         val startIndex = pageRequest.pageNumber * pageRequest.pageSize
         var limit = pageRequest.pageSize
 
+        var preIndex = -1L
         var curIndex: Long
         var total = 0L
         val result = ArrayList<TNode>()
@@ -106,6 +107,9 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         // 遍历所有分表进行查询
         val template = determineMongoTemplate()
         for (sequence in 0 until shardingCount) {
+            // 重置需要跳过的记录数量
+            query.skip(0L)
+
             val collectionName = parseSequenceToCollectionName(sequence)
 
             // 统计总数
@@ -118,13 +122,9 @@ class NodeDao : HashShardingMongoDao<TNode>() {
 
             // 当到达目标分页时才进行查询
             if (curIndex >= startIndex && limit > 0) {
-                val preIndex = curIndex - count
                 if (preIndex < startIndex) {
-                    // 跳过当前表中属于前一个分页的数据
+                    // 跳过属于前一个分页的数据
                     query.skip(startIndex - preIndex - 1)
-                } else {
-                    // 重置需要跳过的记录数量
-                    query.skip(0L)
                 }
                 query.limit(limit)
                 val nodes = template.find(query, TNode::class.java, collectionName)
@@ -132,6 +132,7 @@ class NodeDao : HashShardingMongoDao<TNode>() {
                 limit -= nodes.size
                 result.addAll(nodes)
             }
+            preIndex = curIndex
         }
 
         return Pages.ofResponse(pageRequest, total, result)
