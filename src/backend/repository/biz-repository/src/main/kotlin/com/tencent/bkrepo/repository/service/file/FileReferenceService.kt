@@ -81,9 +81,8 @@ interface FileReferenceService {
     /**
      * 获取文件文件引用信息
      *
-     * @param projectId 文件所属项目
-     * @param repoName 文件所属仓库
+     * @param credentialsKey 文件所在存储实例
      * @param sha256 所引用文件的sha256
      */
-    fun get(projectId: String, repoName: String, sha256: String): FileReference
+    fun get(credentialsKey: String?, sha256: String): FileReference
 }
