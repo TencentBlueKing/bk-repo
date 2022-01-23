@@ -83,8 +83,10 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         includeDeleted: Boolean = false
     ): Page<TNode> {
         val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
-        val startIndex = (pageRequest.pageNumber - 1) * pageRequest.pageSize
+        val startIndex = pageRequest.pageNumber * pageRequest.pageSize
         var limit = pageRequest.pageSize
+
+        var curIndex: Long
         var total = 0L
         val result = ArrayList<TNode>()
 
@@ -112,13 +114,16 @@ class NodeDao : HashShardingMongoDao<TNode>() {
                 continue
             }
             total += count
+            curIndex = total - 1
 
             // 当到达目标分页时才进行查询
-            if (total > startIndex && limit > 0) {
-                if (total - count < startIndex) {
+            if (curIndex >= startIndex && limit > 0) {
+                val preIndex = curIndex - count
+                if (preIndex < startIndex) {
                     // 跳过当前表中属于前一个分页的数据
-                    query.skip(startIndex - total)
+                    query.skip(startIndex - preIndex - 1)
                 } else {
+                    // 重置需要跳过的记录数量
                     query.skip(0L)
                 }
                 query.limit(limit)

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -251,6 +252,52 @@ class NodeServiceTest @Autowired constructor(
         assertEquals(6, page.totalPages)
         assertEquals(10, page.pageSize)
         assertEquals(7, page.pageNumber)
+    }
+
+    @Test
+    fun testListNodePageBySha256() {
+        // 创建测试数据sha256为sha256-0,sha256-1...sha256-8,sha256-9
+        // sha256-0有11条数据，其余sha256各有10条数据
+        val size = 101
+        val mod = 10
+        val generateSha256Func = { i: Int -> "sha256-${i % mod}" }
+        repeat(size) { i -> createNode("/a/b/c/$i.txt", false, sha256 = generateSha256Func(i)) }
+
+        val option = NodeListOption(1, 5, includeMetadata = true, sort = true)
+        // 测试获取不存在的Node列表
+        nodeService.listNodePageBySha256("notExistsSha256", option).apply {
+            assertEquals(0L, totalRecords)
+            assertEquals(0L, totalPages)
+            assertTrue(records.isEmpty())
+        }
+
+        // 测试数据量小于pageSize的情况
+        nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 20)).apply {
+            assertEquals(10, totalRecords)
+            assertEquals(1, totalPages)
+            assertEquals(10, records.size)
+        }
+
+        // 测试获取第一页，数据量等于pageSize的情况
+        nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 4)).apply {
+            assertEquals(10, totalRecords)
+            assertEquals(3, totalPages)
+            assertEquals(4, records.size)
+        }
+
+        // 测试获取第三页，数据量小于pageSize的情况
+        nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 4, pageNumber = 3)).apply {
+            assertEquals(10, totalRecords)
+            assertEquals(3, totalPages)
+            assertEquals(2, records.size)
+        }
+
+        // 测试获取第三页，数据为空的情况
+        nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 4, pageNumber = 4)).apply {
+            assertEquals(10, totalRecords)
+            assertEquals(3, totalPages)
+            assertEquals(0, records.size)
+        }
     }
 
     @Test
@@ -743,21 +790,36 @@ class NodeServiceTest @Autowired constructor(
         fullPath: String = "/a/b/c",
         folder: Boolean = true,
         size: Long = 1,
-        metadata: Map<String, String>? = null
+        metadata: Map<String, String>? = null,
+        sha256: String? = "sha256",
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME
     ): NodeCreateRequest {
         return NodeCreateRequest(
-            projectId = UT_PROJECT_ID,
-            repoName = UT_REPO_NAME,
+            projectId = projectId,
+            repoName = repoName,
             folder = folder,
             fullPath = fullPath,
             expires = 0,
             overwrite = false,
             size = size,
-            sha256 = "sha256",
+            sha256 = sha256,
             md5 = "md5",
             operator = UT_USER,
             metadata = metadata
         )
+    }
+
+    private fun createNode(
+        fullPath: String,
+        folder: Boolean = true,
+        metadata: Map<String, String>? = null,
+        sha256: String? = null,
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME
+    ): NodeDetail {
+        val request = createRequest(fullPath, folder, 1L, metadata, sha256, projectId, repoName)
+        return nodeService.createNode(request)
     }
 
     private fun node(fullPath: String = ROOT): ArtifactInfo {
