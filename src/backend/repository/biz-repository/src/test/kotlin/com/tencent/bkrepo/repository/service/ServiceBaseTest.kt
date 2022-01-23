@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -56,6 +57,8 @@ import com.tencent.bkrepo.repository.service.repo.ProjectService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
@@ -84,7 +87,13 @@ open class ServiceBaseTest {
     lateinit var userResource: ServiceUserResource
 
     @MockBean
+    lateinit var servicePermissionResource: ServicePermissionResource
+
+    @MockBean
     lateinit var permissionManager: PermissionManager
+
+    @MockBean
+    lateinit var servicePermissionResource: ServicePermissionResource
 
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
@@ -99,6 +108,17 @@ open class ServiceBaseTest {
         )
 
         Mockito.`when`(userResource.addUserRole(anyString(), anyString())).thenReturn(
+            ResponseBuilder.success()
+        )
+
+        whenever(servicePermissionResource.listPermissionProject(anyString())).thenReturn(
+            ResponseBuilder.success()
+        )
+
+        whenever(servicePermissionResource.checkPermission(any())).thenReturn(
+            ResponseBuilder.success()
+        )
+        whenever(servicePermissionResource.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success()
         )
     }

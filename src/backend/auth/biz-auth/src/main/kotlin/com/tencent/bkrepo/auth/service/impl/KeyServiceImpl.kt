@@ -131,8 +131,10 @@ class KeyServiceImpl(
     }
 
     companion object {
-        private val KEY_TYPES = listOf("ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp521",
-            "ssh-ed25519", "ssh-dss", "ssh-rsa")
+        private val KEY_TYPES = listOf(
+            "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp521",
+            "ssh-ed25519", "ssh-dss", "ssh-rsa"
+        )
 
         private const val DATA_LENGTH_HEADER_SIZE = 4
     }

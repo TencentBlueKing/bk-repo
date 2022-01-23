@@ -106,15 +106,16 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
+    const nowTime = new Date()
     export default {
         name: 'audit',
         data () {
             return {
                 isLoading: false,
                 query: {
-                    projectId: '',
+                    projectId: this.$route.params.projectId,
                     user: [],
-                    time: []
+                    time: [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 7), nowTime]
                 },
                 auditList: [],
                 pagination: {
@@ -128,28 +129,19 @@
                     {
                         text: '近7天',
                         value () {
-                            const end = new Date()
-                            const start = new Date()
-                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
-                            return [start, end]
+                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 7), nowTime]
                         }
                     },
                     {
                         text: '近15天',
                         value () {
-                            const end = new Date()
-                            const start = new Date()
-                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 15)
-                            return [start, end]
+                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 15), nowTime]
                         }
                     },
                     {
                         text: '近30天',
                         value () {
-                            const end = new Date()
-                            const start = new Date()
-                            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
-                            return [start, end]
+                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 30), nowTime]
                         }
                     }
                 ]

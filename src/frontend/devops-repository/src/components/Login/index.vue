@@ -25,7 +25,7 @@
                 <bk-form-item>
                     <div v-show="loginFailed" class="flex-align-center login-error-tip">
                         <i class="mr5 bk-icon icon-exclamation-circle"></i>
-                        {{ disableLogin ? `登录失败次数过多，请${wait}s后重试` : $t('loginErrorTip') }}
+                        {{ disableLogin ? `登录失败次数过多，请${wait}s后重试` : loginFailedTip }}
                     </div>
                     <bk-button
                         class="login-button"
@@ -47,6 +47,7 @@
         data () {
             return {
                 disableLogin: false,
+                loginFailedTip: this.$t('loginErrorTip'),
                 loginFailCounter: 0,
                 wait: 0,
                 loginFailed: false,
@@ -102,9 +103,14 @@
                         location.href = ''
                         this.loginFailCounter = 0
                     } else {
+                        this.loginFailedTip = this.$t('loginErrorTip')
                         this.loginFailed = true
                         this.loginFailCounter++
                     }
+                }).catch(e => {
+                    this.loginFailedTip = e.message
+                    this.loginFailed = true
+                    this.loginFailCounter++
                 })
             },
             enterEvent (e) {

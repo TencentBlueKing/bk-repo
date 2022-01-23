@@ -62,9 +62,10 @@
                         '_self'
                     )
                 }).catch(e => {
+                    const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
                     this.$bkMessage({
                         theme: 'error',
-                        message: this.$t('fileError')
+                        message
                     })
                 })
             },
