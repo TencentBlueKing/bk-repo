@@ -42,6 +42,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.annotation.AnnotationUtils
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.index.IndexDefinition
@@ -233,6 +236,55 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     override fun <T> findAll(clazz: Class<T>): List<T> {
         throw UnsupportedOperationException()
+    }
+
+    /**
+     * 支持查询条件不包含sharding key的分页查询
+     *
+     * @param pageRequest 分页信息
+     * @param query 查询条件，不要在其中包含分页查询条件
+     */
+    fun pageWithoutShardingKey(pageRequest: PageRequest, query: Query): Page<E> {
+        val startIndex = pageRequest.pageNumber * pageRequest.pageSize
+        var limit = pageRequest.pageSize
+
+        var preIndex = -1L
+        var curIndex: Long
+        var total = 0L
+        val result = ArrayList<E>()
+
+        // 遍历所有分表进行查询
+        val template = determineMongoTemplate()
+        for (sequence in 0 until shardingCount) {
+            // 重置需要跳过的记录数量
+            query.skip(0L)
+
+            val collectionName = parseSequenceToCollectionName(sequence)
+
+            // 统计总数
+            val count = template.count(query, classType, collectionName)
+            if (count == 0L) {
+                continue
+            }
+            total += count
+            curIndex = total - 1
+
+            // 当到达目标分页时才进行查询
+            if (curIndex >= startIndex && limit > 0) {
+                if (preIndex < startIndex) {
+                    // 跳过属于前一个分页的数据
+                    query.skip(startIndex - preIndex - 1)
+                }
+                query.limit(limit)
+                val nodes = template.find(query, classType, collectionName)
+                // 更新还需要的数据数
+                limit -= nodes.size
+                result.addAll(nodes)
+            }
+            preIndex = curIndex
+        }
+
+        return PageImpl(result, pageRequest, total)
     }
 
     override fun insert(entityCollection: Collection<E>): Collection<E> {

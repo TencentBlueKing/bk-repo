@@ -110,8 +110,8 @@ abstract class NodeBaseService(
         val nodes = nodeDao.pageBySha256(sha256, option)
         return Pages.ofResponse(
             Pages.ofRequest(option.pageNumber, option.pageSize),
-            nodes.totalRecords,
-            nodes.records.map { convert(it)!! }
+            nodes.totalElements,
+            nodes.content.map { convert(it)!! }
         )
     }
 

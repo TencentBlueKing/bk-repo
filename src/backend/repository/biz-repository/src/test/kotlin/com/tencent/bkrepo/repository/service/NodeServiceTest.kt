@@ -255,6 +255,7 @@ class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("测试按SHA256分页查询")
     fun testListNodePageBySha256() {
         // 创建测试数据sha256为sha256-0,sha256-1...sha256-8,sha256-9
         // sha256-0有11条数据，其余sha256各有10条数据

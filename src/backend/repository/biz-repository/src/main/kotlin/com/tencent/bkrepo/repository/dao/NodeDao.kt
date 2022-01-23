@@ -32,14 +32,13 @@
 package com.tencent.bkrepo.repository.dao
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.util.NodeQueryHelper
-import org.springframework.data.domain.Sort
+import org.springframework.data.domain.Page
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -83,13 +82,6 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         includeDeleted: Boolean = false
     ): Page<TNode> {
         val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
-        val startIndex = pageRequest.pageNumber * pageRequest.pageSize
-        var limit = pageRequest.pageSize
-
-        var preIndex = -1L
-        var curIndex: Long
-        var total = 0L
-        val result = ArrayList<TNode>()
 
         // 构造查询条件
         val criteria = where(TNode::sha256).isEqualTo(sha256).and(TNode::folder).isEqualTo(false)
@@ -97,45 +89,11 @@ class NodeDao : HashShardingMongoDao<TNode>() {
             criteria.and(TNode::deleted).isEqualTo(null)
         }
         val query = Query(criteria)
-        if (option.sort) {
-            query.with(Sort.by(Sort.Direction.ASC, TNode::fullPath.name))
-        }
         if (!option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
         }
 
-        // 遍历所有分表进行查询
-        val template = determineMongoTemplate()
-        for (sequence in 0 until shardingCount) {
-            // 重置需要跳过的记录数量
-            query.skip(0L)
-
-            val collectionName = parseSequenceToCollectionName(sequence)
-
-            // 统计总数
-            val count = template.count(query, TNode::class.java, collectionName)
-            if (count == 0L) {
-                continue
-            }
-            total += count
-            curIndex = total - 1
-
-            // 当到达目标分页时才进行查询
-            if (curIndex >= startIndex && limit > 0) {
-                if (preIndex < startIndex) {
-                    // 跳过属于前一个分页的数据
-                    query.skip(startIndex - preIndex - 1)
-                }
-                query.limit(limit)
-                val nodes = template.find(query, TNode::class.java, collectionName)
-                // 更新还需要的数据数
-                limit -= nodes.size
-                result.addAll(nodes)
-            }
-            preIndex = curIndex
-        }
-
-        return Pages.ofResponse(pageRequest, total, result)
+        return pageWithoutShardingKey(pageRequest, query)
     }
 
     companion object {
