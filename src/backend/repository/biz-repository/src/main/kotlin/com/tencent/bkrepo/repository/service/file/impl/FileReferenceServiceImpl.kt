@@ -120,7 +120,17 @@ class FileReferenceServiceImpl(
     override fun get(projectId: String, repoName: String, sha256: String): FileReference {
         val repo = repositoryDao.findByNameAndType(projectId, repoName)
             ?: throw NotFoundException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, projectId, repoName)
-        val query = buildQuery(sha256, repo.credentialsKey)
+        return get(repo.credentialsKey, sha256)
+    }
+
+    /**
+     * 获取文件引用
+     *
+     * @param credentialsKey null时表示是默认存储实例
+     * @param sha256 所引用文件的sha256
+     */
+    private fun get(credentialsKey: String?, sha256: String): FileReference {
+        val query = buildQuery(sha256, credentialsKey)
         val tFileReference = fileReferenceDao.findOne(query)
             ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND)
         return convert(tFileReference)
