@@ -2,7 +2,13 @@
   <div class="app-container">
     <el-form ref="form" :rules="rules" :inline="true" :model="nodeQuery">
       <el-form-item label="查询模式">
-        <el-select v-model="nodeQuery.useSha256" size="mini" style="width: 110px" placeholder="请选择查询模式">
+        <el-select
+          v-model="nodeQuery.useSha256"
+          size="mini"
+          style="width: 110px"
+          placeholder="请选择查询模式"
+          @change="queryModeChanged"
+        >
           <el-option :key="true" :value="true" label="SHA256" />
           <el-option :key="false" :value="false" label="文件路径" />
         </el-select>
@@ -12,16 +18,34 @@
         <el-input v-model="nodeQuery.projectId" size="mini" placeholder="请输入项目ID" />
       </el-form-item>
       <el-form-item v-if="!nodeQuery.useSha256" label="仓库" prop="repoName">
-        <el-input v-model="nodeQuery.repoName" size="mini" placeholder="请输入仓库名" />
+        <el-input v-model="nodeQuery.repoName" :disabled="!nodeQuery.projectId" size="mini" placeholder="请输入仓库名" />
       </el-form-item>
       <el-form-item v-if="!nodeQuery.useSha256" label="路径" prop="path">
-        <el-input v-model="nodeQuery.path" style="width: 500px;" size="mini" placeholder="请输入文件或目录路径" />
+        <el-input
+          v-model="nodeQuery.path"
+          :disabled="!nodeQuery.repoName"
+          style="width: 500px;"
+          size="mini"
+          placeholder="请输入文件或目录路径"
+          @keyup.enter.native="queryNodes(nodeQuery, true)"
+        />
       </el-form-item>
       <el-form-item v-if="nodeQuery.useSha256" label="SHA256" prop="sha256">
-        <el-input v-model="nodeQuery.sha256" style="width: 500px" size="mini" placeholder="请输入所查节点的SHA256" />
+        <el-input
+          v-model="nodeQuery.sha256"
+          style="width: 500px"
+          size="mini"
+          placeholder="请输入所查节点的SHA256"
+          @keyup.enter.native="queryNodes(nodeQuery, true)"
+        />
       </el-form-item>
       <el-form-item>
-        <el-button size="mini" type="primary" @click="queryNodes(nodeQuery, true)">查询</el-button>
+        <el-button
+          size="mini"
+          :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
+          type="primary"
+          @click="queryNodes(nodeQuery, true)"
+        >查询</el-button>
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
@@ -63,10 +87,15 @@ export default {
   name: 'Node',
   data() {
     return {
-      rules: {},
+      rules: {
+        sha256: [{ validator: this.validateSha256, trigger: 'blur' }],
+        projectId: [{ validator: this.validateName, trigger: 'blur' }],
+        repoName: [{ validator: this.validateName, trigger: 'blur' }],
+        path: [{ validator: this.validatePath, trigger: 'blur' }]
+      },
       loading: false,
       nodeQuery: {
-        useSha256: true,
+        useSha256: false,
         projectId: '',
         repoName: '',
         path: '',
@@ -79,16 +108,53 @@ export default {
     }
   },
   methods: {
+    validateSha256(rule, value, callback) {
+      if (this.nodeQuery.useSha256) {
+        this.regexValidate(value, /^\w{64}$/, callback)
+      }
+      callback()
+    },
+    validateName(rule, value, callback) {
+      if (!this.nodeQuery.useSha256) {
+        this.regexValidate(value, /^[\w-]+$/, callback)
+      }
+      callback()
+    },
+    validatePath(rule, value, callback) {
+      if (!this.nodes.useSha256) {
+        this.regexValidate(value, /^(\/[\w-]+)+$/, callback)
+      }
+      callback()
+    },
+    regexValidate(value, regex, callback) {
+      if (regex.test(value)) {
+        callback()
+      } else {
+        callback(new Error('格式错误'))
+      }
+    },
+    queryModeChanged(value) {
+      this.$refs['form'].clearValidate()
+    },
     queryNodes(nodeQuery, resetPage = false) {
+      this.$refs['form'].validate((valid) => {
+        if (valid) {
+          this.doQueryNodes(nodeQuery, resetPage)
+        } else {
+          return false
+        }
+      })
+    },
+    doQueryNodes(nodeQuery, resetPage = false) {
       this.loading = true
       let promise = null
       if (nodeQuery.useSha256) {
-        if (resetPage) {
-          nodeQuery.pageNumber = 1
-        }
         promise = pageNodesBySha256(nodeQuery.sha256, nodeQuery.pageNumber, nodeQuery.pageSize)
       } else {
         promise = pageNodes(nodeQuery.projectId, nodeQuery.repoName, nodeQuery.path, nodeQuery.pageNumber, nodeQuery.pageSize)
+      }
+      if (resetPage) {
+        nodeQuery.pageNumber = 1
       }
       promise.then(res => {
         this.nodes = res.data.records

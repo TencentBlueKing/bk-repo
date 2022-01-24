@@ -2,10 +2,10 @@ import request from '@/utils/request'
 
 const PREFIX_NODE = '/repository/api/node'
 
-export function searchNodes(projectId, repoName, fullPath, page, size) {
+export function pageNodes(projectId, repoName, fullPath, page, size) {
   return request({
     url: `${PREFIX_NODE}/page/${projectId}/${repoName}${fullPath}`,
-    method: 'post',
+    method: 'get',
     params: {
       pageNumber: page,
       pageSize: size,
