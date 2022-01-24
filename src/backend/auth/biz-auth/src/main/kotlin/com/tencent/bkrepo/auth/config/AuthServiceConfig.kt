@@ -142,8 +142,7 @@ class AuthServiceConfig {
             projectClient,
             bkAuthConfig,
             bkAuthPipelineService,
-            bkAuthProjectService,
-            pluginManager
+            bkAuthProjectService
         )
     }
 
