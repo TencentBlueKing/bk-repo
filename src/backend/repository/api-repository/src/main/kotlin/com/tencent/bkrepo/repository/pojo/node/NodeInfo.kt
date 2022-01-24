@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.node
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -71,5 +72,8 @@ data class NodeInfo(
     @ApiModelProperty("拷贝的源存储key")
     val copyFromCredentialsKey: String? = null,
     @ApiModelProperty("拷贝的目标存储key")
-    val copyIntoCredentialsKey: String? = null
+    val copyIntoCredentialsKey: String? = null,
+    @ApiModelProperty("删除时间")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    val deletedDate: String? = null
 )

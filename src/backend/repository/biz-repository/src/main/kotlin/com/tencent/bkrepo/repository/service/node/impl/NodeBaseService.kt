@@ -107,7 +107,7 @@ abstract class NodeBaseService(
     }
 
     override fun listNodePageBySha256(sha256: String, option: NodeListOption): Page<NodeInfo> {
-        val nodes = nodeDao.pageBySha256(sha256, option)
+        val nodes = nodeDao.pageBySha256(sha256, option, true)
         return Pages.ofResponse(
             Pages.ofRequest(option.pageNumber, option.pageSize),
             nodes.totalElements,
@@ -282,7 +282,8 @@ abstract class NodeBaseService(
                     md5 = it.md5,
                     metadata = metadata,
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
-                    copyIntoCredentialsKey = it.copyIntoCredentialsKey
+                    copyIntoCredentialsKey = it.copyIntoCredentialsKey,
+                    deletedDate = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }
