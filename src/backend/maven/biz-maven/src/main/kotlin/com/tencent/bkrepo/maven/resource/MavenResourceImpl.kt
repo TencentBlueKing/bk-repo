@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.service.MavenService
+import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RestController
@@ -44,7 +45,7 @@ class MavenResourceImpl(
     private val mavenService: MavenService
 ) {
 
-    @PutMapping(MavenArtifactInfo.MAVEN_MAPPING_URI)
+    @PutMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deploy(
         @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
         file: ArtifactFile
@@ -52,7 +53,7 @@ class MavenResourceImpl(
         return mavenService.deploy(mavenArtifactInfo, file)
     }
 
-    @GetMapping(MavenArtifactInfo.MAVEN_MAPPING_URI)
+    @GetMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun dependency(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo) {
         mavenService.dependency(mavenArtifactInfo)
     }
