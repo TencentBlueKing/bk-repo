@@ -50,7 +50,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.user.UserNodeListBySha256Request
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
@@ -288,13 +287,13 @@ class UserNodeController(
 
     @ApiOperation("按sha256分页查询节点")
     @Principal(PrincipalType.ADMIN)
-    @GetMapping("/page/$DEFAULT_MAPPING_URI")
+    @GetMapping("/page", params = ["sha256"])
     fun listPageNodeBySha256(
-        artifactInfo: ArtifactInfo,
-        nodeListBySha256Request: UserNodeListBySha256Request
+        @RequestParam("sha256", required = true) sha256: String,
+        nodeListOption: NodeListOption
     ): Response<Page<NodeInfo>> {
         return nodeService
-            .listNodePageBySha256(nodeListBySha256Request.sha256, nodeListBySha256Request.nodeListOption)
+            .listNodePageBySha256(sha256, nodeListOption)
             .let { ResponseBuilder.success(it) }
     }
 
