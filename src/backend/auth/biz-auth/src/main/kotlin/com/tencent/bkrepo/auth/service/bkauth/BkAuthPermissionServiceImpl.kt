@@ -189,7 +189,6 @@ class BkAuthPermissionServiceImpl constructor(
         if (matchDevopsCond(request.appId)) {
             // 优先校验本地权限
             if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
-
             return checkDevopsPermission(request)
         }
 
