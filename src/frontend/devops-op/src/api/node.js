@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 const PREFIX_NODE = '/repository/api/node'
 
-export function pageNodes(projectId, repoName, path, page, size) {
+export function searchNodes(projectId, repoName, path, page, size, detail = false) {
   const dir = path.endsWith('/')
   let pathRule
   if (dir) {
@@ -17,6 +17,16 @@ export function pageNodes(projectId, repoName, path, page, size) {
       'value': path,
       'operation': 'EQ'
     }
+  }
+  const select = [
+    'lastModifiedBy', 'lastModifiedDate', 'folder', 'name', 'size',
+    'sha256', 'projectId', 'repoName', 'deleted', 'fullPath'
+  ]
+  if (detail) {
+    select.push(...[
+      'createdBy', 'createdDate', 'path', 'fullPath', 'expireDate', 'md5',
+      'copyFromCredentialsKey', 'copyIntoCredentialsKey', 'metadata'
+    ])
   }
   return request({
     url: `${PREFIX_NODE}/search`,
@@ -40,7 +50,7 @@ export function pageNodes(projectId, repoName, path, page, size) {
         ],
         'relation': 'AND'
       },
-      select: ['lastModifiedBy', 'lastModifiedDate', 'folder', 'name', 'size', 'sha256', 'metadata', 'projectId', 'repoName', 'deleted']
+      select: select
     }
   })
 }

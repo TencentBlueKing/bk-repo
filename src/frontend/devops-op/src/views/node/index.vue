@@ -92,16 +92,18 @@
       @current-change="queryNodes(nodeQuery)"
     />
     <file-reference-dialog :visible.sync="showFileReferenceDialog" :node="nodeOfFileReference" />
+    <file-detail-dialog :visible.sync="showNodeDetailDialog" :node="nodeOfDetailDialog" />
   </div>
 </template>
 <script>
-import { pageNodes, pageNodesBySha256 } from '@/api/node'
+import { searchNodes, pageNodesBySha256 } from '@/api/node'
 import { convertFileSize, formatDate } from '@/utils/file'
 import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
+import FileDetailDialog from '@/views/node/components/FileDetailDialog'
 
 export default {
   name: 'Node',
-  components: { FileReferenceDialog },
+  components: { FileDetailDialog, FileReferenceDialog },
   data() {
     return {
       rules: {
@@ -123,7 +125,9 @@ export default {
       nodes: [],
       total: 0,
       showFileReferenceDialog: false,
-      nodeOfFileReference: {}
+      nodeOfFileReference: {},
+      showNodeDetailDialog: false,
+      nodeOfDetailDialog: {}
     }
   },
   methods: {
@@ -165,7 +169,7 @@ export default {
         return 'file-blue'
       }
     },
-    queryModeChanged(value) {
+    queryModeChanged() {
       this.$refs['form'].clearValidate()
     },
     queryNodes(nodeQuery, resetPage = false) {
@@ -183,7 +187,7 @@ export default {
       if (nodeQuery.useSha256) {
         promise = pageNodesBySha256(nodeQuery.sha256, nodeQuery.pageNumber, nodeQuery.pageSize)
       } else {
-        promise = pageNodes(nodeQuery.projectId, nodeQuery.repoName, nodeQuery.path, nodeQuery.pageNumber, nodeQuery.pageSize)
+        promise = searchNodes(nodeQuery.projectId, nodeQuery.repoName, nodeQuery.path, nodeQuery.pageNumber, nodeQuery.pageSize)
       }
       if (resetPage) {
         nodeQuery.pageNumber = 1
@@ -205,7 +209,8 @@ export default {
       return ''
     },
     showNodeDetail(node) {
-      console.log(node)
+      this.nodeOfDetailDialog = node
+      this.showNodeDetailDialog = true
     },
     showFileReferenceDetail(node) {
       this.nodeOfFileReference = node
