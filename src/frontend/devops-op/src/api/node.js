@@ -3,16 +3,44 @@ import request from '@/utils/request'
 const PREFIX_NODE = '/repository/api/node'
 
 export function pageNodes(projectId, repoName, fullPath, page, size) {
+  const deep = fullPath.endsWith('/')
+  let pathRule
+  if (deep) {
+    pathRule = {
+      'field': 'fullPath',
+      'value': fullPath,
+      'operation': 'PREFIX'
+    }
+  } else {
+    pathRule = {
+      'field': 'fullPath',
+      'value': fullPath,
+      'operation': 'EQ'
+    }
+  }
   return request({
-    url: `${PREFIX_NODE}/page/${projectId}/${repoName}${fullPath}`,
-    method: 'get',
-    params: {
-      pageNumber: page,
-      pageSize: size,
-      includeFolder: true,
-      includeMetadata: true,
-      deep: false,
-      sort: true
+    url: `${PREFIX_NODE}/search`,
+    method: 'post',
+    data: {
+      'page': { 'pageNumber': page, 'pageSize': size },
+      'sort': { 'properties': ['folder', 'lastModifiedDate'], 'direction': 'DESC' },
+      'rule': {
+        'rules': [
+          {
+            'field': 'projectId',
+            'value': projectId,
+            'operation': 'EQ'
+          },
+          {
+            'field': 'repoName',
+            'value': repoName,
+            'operation': 'EQ'
+          },
+          pathRule
+        ],
+        'relation': 'AND'
+      },
+      select: ['lastModifiedBy', 'lastModifiedDate', 'folder', 'name', 'size', 'sha256', 'metadata', 'projectId', 'repoName', 'deleted']
     }
   })
 }

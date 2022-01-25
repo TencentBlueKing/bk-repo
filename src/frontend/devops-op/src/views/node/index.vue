@@ -53,7 +53,7 @@
       <el-table-column prop="size" label="大小" width="120px" />
       <el-table-column prop="lastModifiedBy" label="修改人" width="120px" />
       <el-table-column prop="lastModifiedDate" label="修改时间" width="200px" />
-      <el-table-column prop="deletedDate" label="删除时间" width="200px" />
+      <el-table-column prop="deleted" label="删除时间" width="200px" />
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-dropdown size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
@@ -101,7 +101,7 @@ export default {
         path: '',
         sha256: '',
         pageNumber: 1,
-        pageSize: 2
+        pageSize: 20
       },
       nodes: [],
       total: 0
@@ -122,7 +122,7 @@ export default {
     },
     validatePath(rule, value, callback) {
       if (!this.nodes.useSha256) {
-        this.regexValidate(value, /^(\/[\w-]+)+$/, callback)
+        this.regexValidate(value, /^(\/|(\/[\w-~#\\.]+)+\/?)$/, callback)
       }
       callback()
     },
@@ -167,7 +167,7 @@ export default {
       })
     },
     tableRowClassName({ row }) {
-      if (row.deletedDate) {
+      if (row.deleted) {
         return 'danger-row'
       }
       return ''
