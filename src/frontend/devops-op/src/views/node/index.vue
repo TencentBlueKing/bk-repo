@@ -80,8 +80,15 @@
             style="margin-left: 10px"
             size="mini"
             type="primary"
-            @click="showNodeRestore(scope.row)"
+            @click="showNodeRestore(scope.$index, scope.row)"
           >恢复</el-button>
+          <el-button
+            v-if="!scope.row.deleted"
+            style="margin-left: 10px"
+            size="mini"
+            type="danger"
+            @click="showNodeDelete(scope.$index, scope.row)"
+          >删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -97,7 +104,8 @@
     />
     <file-reference-dialog :visible.sync="showFileReferenceDialog" :node="nodeOfFileReference" />
     <file-detail-dialog :visible.sync="showNodeDetailDialog" :node="nodeOfDetailDialog" />
-    <file-restore-dialog :visible.sync="showNodeRestoreDialog" :node="nodeOfRestoreDialog" @restore-success="onRestoreSuccess" />
+    <file-restore-dialog :visible.sync="showNodeRestoreDialog" :node="nodeToRestore" @restore-success="onRestoreSuccess" />
+    <file-delete-dialog :visible.sync="showNodeDeleteDialog" :node="nodeToDelete" @delete-success="onDeleteSuccess" />
   </div>
 </template>
 <script>
@@ -106,10 +114,11 @@ import { convertFileSize, formatDate } from '@/utils/file'
 import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 import FileDetailDialog from '@/views/node/components/FileDetailDialog'
 import FileRestoreDialog from '@/views/node/components/FileRestoreDialog'
+import FileDeleteDialog from '@/views/node/components/FileDeleteDialog'
 
 export default {
   name: 'Node',
-  components: { FileRestoreDialog, FileDetailDialog, FileReferenceDialog },
+  components: { FileDeleteDialog, FileRestoreDialog, FileDetailDialog, FileReferenceDialog },
   data() {
     return {
       rules: {
@@ -135,7 +144,10 @@ export default {
       showNodeDetailDialog: false,
       nodeOfDetailDialog: {},
       showNodeRestoreDialog: false,
-      nodeOfRestoreDialog: {}
+      nodeToRestore: {},
+      showNodeDeleteDialog: false,
+      nodeToDelete: {},
+      indexOfNodeToDelete: -1
     }
   },
   methods: {
@@ -229,15 +241,25 @@ export default {
       this.nodeQuery.sha256 = sha256
       this.queryNodes(this.nodeQuery)
     },
-    showNodeRestore(node) {
-      this.nodeOfRestoreDialog = node
+    showNodeRestore(index, node) {
+      this.nodeToRestore = node
       this.showNodeRestoreDialog = true
     },
     onRestoreSuccess(node) {
       node.deleted = undefined
     },
-    deleteNode(node) {
-      console.log('delete')
+    showNodeDelete(index, node) {
+      this.nodeToDelete = node
+      this.showNodeDeleteDialog = true
+      this.indexOfNodeToDelete = index
+    },
+    onDeleteSuccess() {
+      const projectId = this.nodeToDelete.projectId
+      const repoName = this.nodeToDelete.repoName
+      const fullPath = this.nodeToDelete.fullPath
+      searchNodes(projectId, repoName, fullPath, 1, 1).then(res => {
+        this.nodes.splice(this.indexOfNodeToDelete, 1, res.data.records[0])
+      })
     }
   }
 }
