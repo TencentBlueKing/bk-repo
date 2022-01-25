@@ -75,5 +75,5 @@ data class NodeInfo(
     val copyIntoCredentialsKey: String? = null,
     @ApiModelProperty("删除时间")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    val deletedDate: String? = null
+    val deleted: String? = null
 )

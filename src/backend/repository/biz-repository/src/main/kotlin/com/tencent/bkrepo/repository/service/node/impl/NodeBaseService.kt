@@ -283,7 +283,7 @@ abstract class NodeBaseService(
                     metadata = metadata,
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
-                    deletedDate = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)
+                    deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }
