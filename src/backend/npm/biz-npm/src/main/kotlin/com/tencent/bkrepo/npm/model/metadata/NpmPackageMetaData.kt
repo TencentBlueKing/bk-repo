@@ -115,6 +115,8 @@ class NpmPackageMetaData : Serializable {
         }
     }
 
+	// 暂时忽略unpublished字段
+	@JsonIgnoreProperties("unpublished")
     class Time : Serializable {
         private var versions: MutableMap<String, String> = mutableMapOf()
 
