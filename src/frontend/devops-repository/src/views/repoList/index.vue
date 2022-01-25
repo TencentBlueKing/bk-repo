@@ -158,7 +158,7 @@
                 'getRepoList',
                 'deleteRepoList'
             ]),
-            convertBytesToGb (bytes, decimals) {
+            convertBytesToGb (bytes, decimals = 2) {
                 if (bytes === 0) return 0
                 return parseFloat((bytes / Math.pow(1024, 3)).toFixed(decimals))
             },
