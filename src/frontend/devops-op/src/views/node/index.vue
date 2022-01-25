@@ -75,7 +75,7 @@
               <el-dropdown-item @click="showNodesOfFile(scope.row.sha256)">同引用节点</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
-          <el-popconfirm title="确定恢复文件吗" @onConfirm="restore(scope.row)">
+          <el-popconfirm title="确定恢复文件吗" @onConfirm="restore(scope.row)" v-if="scope.row.deleted">
             <el-button slot="reference" style="margin-left: 10px" size="mini" type="primary">恢复</el-button>
           </el-popconfirm>
         </template>
