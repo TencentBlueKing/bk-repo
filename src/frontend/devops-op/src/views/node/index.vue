@@ -17,10 +17,10 @@
       <el-form-item v-if="!nodeQuery.useSha256" label="项目ID" prop="projectId">
         <el-input v-model="nodeQuery.projectId" size="mini" placeholder="请输入项目ID" />
       </el-form-item>
-      <el-form-item v-if="!nodeQuery.useSha256" label="仓库" prop="repoName">
+      <el-form-item v-if="!nodeQuery.useSha256" style="margin-left: 15px" label="仓库" prop="repoName">
         <el-input v-model="nodeQuery.repoName" :disabled="!nodeQuery.projectId" size="mini" placeholder="请输入仓库名" />
       </el-form-item>
-      <el-form-item v-if="!nodeQuery.useSha256" label="路径" prop="path">
+      <el-form-item v-if="!nodeQuery.useSha256" style="margin-left: 15px" label="路径" prop="path">
         <el-input
           v-model="nodeQuery.path"
           :disabled="!nodeQuery.repoName"
@@ -49,11 +49,23 @@
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
-      <el-table-column prop="name" label="文件名" width="200px" />
-      <el-table-column prop="size" label="大小" width="120px" />
+      <el-table-column prop="name" label="文件名" width="200px">
+        <template slot-scope="scope">
+          <svg-icon :icon-class="fileIcon(scope.row)" style="margin-right: 6px" /><span>{{ scope.row.name }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="size" label="大小" width="120px">
+        <template slot-scope="scope">
+          {{ fileSize(scope.row.size) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="lastModifiedBy" label="修改人" width="120px" />
-      <el-table-column prop="lastModifiedDate" label="修改时间" width="200px" />
-      <el-table-column prop="deleted" label="删除时间" width="200px" />
+      <el-table-column prop="lastModifiedDate" label="修改时间" width="200px">
+        <template slot-scope="scope">{{ formatDate(scope.row.lastModifiedDate) }}</template>
+      </el-table-column>
+      <el-table-column prop="deleted" label="删除时间" width="200px">
+        <template slot-scope="scope">{{ formatDate(scope.row.deleted) }}</template>
+      </el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-dropdown size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
@@ -70,6 +82,7 @@
       </el-table-column>
     </el-table>
     <el-pagination
+      style="margin-top: 15px"
       background
       layout="prev, pager, next"
       :current-page.sync="nodeQuery.pageNumber"
@@ -82,6 +95,7 @@
 </template>
 <script>
 import { pageNodes, pageNodesBySha256 } from '@/api/node'
+import { convertFileSize, formatDate } from '@/utils/file'
 
 export default {
   name: 'Node',
@@ -131,6 +145,19 @@ export default {
         callback()
       } else {
         callback(new Error('格式错误'))
+      }
+    },
+    fileSize(size) {
+      return convertFileSize(size)
+    },
+    formatDate(date) {
+      return formatDate(date)
+    },
+    fileIcon(node) {
+      if (node.folder) {
+        return 'folder-yellow'
+      } else {
+        return 'file-blue'
       }
     },
     queryModeChanged(value) {
