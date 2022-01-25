@@ -56,7 +56,7 @@
       </el-table-column>
       <el-table-column prop="size" label="大小" width="120px">
         <template slot-scope="scope">
-          {{ fileSize(scope.row.size) }}
+          {{ scope.row.folder ? '--' : fileSize(scope.row.size) }}
         </template>
       </el-table-column>
       <el-table-column prop="lastModifiedBy" label="修改人" width="120px" />
