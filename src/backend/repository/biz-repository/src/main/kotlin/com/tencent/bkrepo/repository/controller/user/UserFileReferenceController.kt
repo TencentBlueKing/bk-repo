@@ -61,8 +61,9 @@ class UserFileReferenceController(
         @PathVariable("sha256") sha256: String
     ): Response<FileReference> {
         val storageCredentialsKeyOfReference = if (projectId != null && repoName != null) {
-            repositoryService.getRepoInfo(projectId, repoName)?.storageCredentialsKey
+            val repo = repositoryService.getRepoInfo(projectId, repoName)
                 ?: throw NotFoundException(ArtifactMessageCode.REPOSITORY_NOT_FOUND)
+            repo.storageCredentialsKey
         } else {
             credentialsKey
         }
