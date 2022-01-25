@@ -64,8 +64,8 @@
                         <bk-popover placement="top">
                             <bk-progress size="large" :percent="((row.used || 0) / (row.quota || 1))" :show-text="false"></bk-progress>
                             <div slot="content">
-                                <div>{{ $t('totalQuota') }}: {{ row.quota }}GB</div>
-                                <div>{{ $t('usedQuotaCapacity') }}: {{ row.used }}GB</div>
+                                <div>{{ $t('totalQuota') }}: {{ convertBytesToGb(row.quota) }}GB</div>
+                                <div>{{ $t('usedQuotaCapacity') }}: {{ convertBytesToGb(row.used) }}GB</div>
                             </div>
                         </bk-popover>
                     </div>
@@ -158,6 +158,10 @@
                 'getRepoList',
                 'deleteRepoList'
             ]),
+            convertBytesToGb (bytes, decimals) {
+                if (bytes === 0) return 0
+                return parseFloat((bytes / Math.pow(1024, 3)).toFixed(decimals))
+            },
             getListData () {
                 this.isLoading = true
                 this.getRepoList({
@@ -229,7 +233,6 @@
 </script>
 <style lang="scss" scoped>
 .repoQuota {
-    // display: flex;
     width: 80%;
     ::v-deep .bk-tooltip,
     ::v-deep .bk-tooltip-ref {
