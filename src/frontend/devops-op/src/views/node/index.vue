@@ -35,7 +35,7 @@
           v-model="nodeQuery.sha256"
           style="width: 500px"
           size="mini"
-          placeholder="请输入所查节点的SHA256"
+          placeholder="请输入所查文件的SHA256"
           @keyup.enter.native="queryNodes(nodeQuery, true)"
         />
       </el-form-item>
@@ -71,8 +71,8 @@
           <el-dropdown size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
             详情
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item @click="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
-              <el-dropdown-item @click="showNodesOfFile(scope.row.sha256)">同引用节点</el-dropdown-item>
+              <el-dropdown-item @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
+              <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
           <el-popconfirm title="确定恢复文件吗" @onConfirm="restore(scope.row)" v-if="scope.row.deleted">
@@ -205,8 +205,10 @@ export default {
     showFileReferenceDetail(node) {
       console.log('showFileReferenceDetail')
     },
-    showNodesOfFile(sha256) {
-      console.log(sha256)
+    showNodesOfSha256(sha256) {
+      this.nodeQuery.useSha256 = true
+      this.nodeQuery.sha256 = sha256
+      this.queryNodes(this.nodeQuery)
     },
     restore(node) {
       console.log('restore')

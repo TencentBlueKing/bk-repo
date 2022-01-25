@@ -88,7 +88,7 @@ export const asyncRoutes = [
       {
         path: '/',
         name: ROUTER_NAME_NODE,
-        meta: { title: '文件节点', icon: 'file' },
+        meta: { title: '文件管理', icon: 'file' },
         component: () => import('@/views/node/index')
       }
     ]
