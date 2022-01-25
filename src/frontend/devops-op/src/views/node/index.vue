@@ -70,12 +70,12 @@
         <template slot-scope="scope">
           <el-dropdown size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
             详情
-            <el-dropdown-menu slot="dropdown">
+            <el-dropdown-menu v-if="!scope.row.folder" slot="dropdown">
               <el-dropdown-item @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
               <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
-          <el-popconfirm title="确定恢复文件吗" @onConfirm="restore(scope.row)" v-if="scope.row.deleted">
+          <el-popconfirm v-if="scope.row.deleted" title="确定恢复文件吗" @onConfirm="restore(scope.row)">
             <el-button slot="reference" style="margin-left: 10px" size="mini" type="primary">恢复</el-button>
           </el-popconfirm>
         </template>
@@ -91,14 +91,17 @@
       :total="total"
       @current-change="queryNodes(nodeQuery)"
     />
+    <file-reference-dialog :visible.sync="showFileReferenceDialog" :node="nodeOfFileReference" />
   </div>
 </template>
 <script>
 import { pageNodes, pageNodesBySha256 } from '@/api/node'
 import { convertFileSize, formatDate } from '@/utils/file'
+import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 
 export default {
   name: 'Node',
+  components: { FileReferenceDialog },
   data() {
     return {
       rules: {
@@ -118,7 +121,9 @@ export default {
         pageSize: 20
       },
       nodes: [],
-      total: 0
+      total: 0,
+      showFileReferenceDialog: false,
+      nodeOfFileReference: {}
     }
   },
   methods: {
@@ -195,7 +200,7 @@ export default {
     },
     tableRowClassName({ row }) {
       if (row.deleted) {
-        return 'danger-row'
+        return 'deleted-row'
       }
       return ''
     },
@@ -203,7 +208,8 @@ export default {
       console.log(node)
     },
     showFileReferenceDetail(node) {
-      console.log('showFileReferenceDetail')
+      this.nodeOfFileReference = node
+      this.showFileReferenceDialog = true
     },
     showNodesOfSha256(sha256) {
       this.nodeQuery.useSha256 = true
@@ -222,4 +228,10 @@ export default {
 
 <style scoped>
 
+</style>
+
+<style>
+.el-table .deleted-row {
+  background: #e9e9e9;
+}
 </style>

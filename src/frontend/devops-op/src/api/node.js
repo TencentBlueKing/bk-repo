@@ -2,19 +2,19 @@ import request from '@/utils/request'
 
 const PREFIX_NODE = '/repository/api/node'
 
-export function pageNodes(projectId, repoName, fullPath, page, size) {
-  const deep = fullPath.endsWith('/')
+export function pageNodes(projectId, repoName, path, page, size) {
+  const dir = path.endsWith('/')
   let pathRule
-  if (deep) {
+  if (dir) {
     pathRule = {
-      'field': 'fullPath',
-      'value': fullPath,
-      'operation': 'PREFIX'
+      'field': 'path',
+      'value': path,
+      'operation': 'EQ'
     }
   } else {
     pathRule = {
       'field': 'fullPath',
-      'value': fullPath,
+      'value': path,
       'operation': 'EQ'
     }
   }
