@@ -53,17 +53,15 @@ export default {
     visible: function(newVal) {
       if (newVal) {
         this.showDialog = true
+        this.loading = true
+        searchNodes(this.node.projectId, this.node.repoName, this.node.fullPath, 1, 1, true).then(res => {
+          this.nodeDetail = res.data.records[0]
+        }).finally(_ => {
+          this.loading = false
+        })
       } else {
         this.close()
       }
-    },
-    node: function() {
-      this.loading = true
-      searchNodes(this.node.projectId, this.node.repoName, this.node.fullPath, 1, 1, true).then(res => {
-        this.nodeDetail = res.data.records[0]
-      }).finally(_ => {
-        this.loading = false
-      })
     }
   },
   methods: {

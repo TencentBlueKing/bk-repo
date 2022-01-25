@@ -57,9 +57,6 @@ export default {
       } else {
         this.close()
       }
-    },
-    node: function() {
-      this.deleteResult = undefined
     }
   },
   methods: {

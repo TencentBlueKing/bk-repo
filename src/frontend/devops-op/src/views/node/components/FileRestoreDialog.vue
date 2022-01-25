@@ -62,9 +62,6 @@ export default {
       } else {
         this.close()
       }
-    },
-    node: function() {
-      this.restoreResult = undefined
     }
   },
   methods: {

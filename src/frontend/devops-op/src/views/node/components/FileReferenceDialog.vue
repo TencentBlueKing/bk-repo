@@ -30,14 +30,12 @@ export default {
     visible: function(newVal) {
       if (newVal) {
         this.showDialog = true
+        reference(this.node.sha256, this.node.projectId, this.node.repoName).then(res => {
+          this.fileReference = res.data
+        })
       } else {
         this.close()
       }
-    },
-    node: function() {
-      reference(this.node.sha256, this.node.projectId, this.node.repoName).then(res => {
-        this.fileReference = res.data
-      })
     }
   },
   methods: {
