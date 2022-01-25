@@ -102,39 +102,24 @@ class FileReferenceServiceTest @Autowired constructor(
         assertEquals(0, fileReferenceService.count(sha256, null))
     }
 
-    // --- test get method
     @Test
-    fun `Throw exception when project or repository not exists`() {
+    fun testGetFileReference() {
         assertThrows(NotFoundException::class.java) {
-            fileReferenceService.get("notExistsProject", "notExistsRepo", "notExistsSha256")
+            fileReferenceService.get(null, "notExistsSha256")
         }
-        assertThrows(NotFoundException::class.java) {
-            fileReferenceService.get(UT_PROJECT_ID, "notExistsRepo", "notExistsSha256")
-        }
-    }
 
-    @Test
-    fun `Throw exception when file reference not exists`() {
-        assertThrows(NotFoundException::class.java) {
-            fileReferenceService.get(UT_PROJECT_ID, UT_REPO_NAME, "notExistsSha256")
-        }
-    }
-
-    @Test
-    fun `Get file reference of default storage credential`() {
+        // 测试获取默认存储中的引用
         createReference()
-        fileReferenceService.get(UT_PROJECT_ID, UT_REPO_NAME, TEST_SHA_256).apply {
+        fileReferenceService.get(null, TEST_SHA_256).apply {
             assertEquals(sha256, TEST_SHA_256)
             assertEquals(credentialsKey, null)
             assertEquals(count, 1L)
         }
-    }
 
-    @Test
-    fun `Get file reference of specific storage credential`() {
+        // 测试获取特定存储中的引用
         createRepoUseSpecificCredential()
         createReference(USED_SPECIFIC_CREDENTIAL_REPO_NAME)
-        fileReferenceService.get(UT_PROJECT_ID, USED_SPECIFIC_CREDENTIAL_REPO_NAME, TEST_SHA_256).apply {
+        fileReferenceService.get(UT_STORAGE_CREDENTIALS_KEY, TEST_SHA_256).apply {
             assertEquals(sha256, TEST_SHA_256)
             assertEquals(credentialsKey, UT_STORAGE_CREDENTIALS_KEY)
             assertEquals(count, 1L)
