@@ -68,6 +68,7 @@ export default {
   },
   methods: {
     close() {
+      this.nodeDetail = {}
       this.showDialog = false
       this.$emit('update:visible', false)
     },

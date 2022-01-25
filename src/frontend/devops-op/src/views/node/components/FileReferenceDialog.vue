@@ -42,6 +42,7 @@ export default {
   },
   methods: {
     close() {
+      this.fileReference = {}
       this.showDialog = false
       this.$emit('update:visible', false)
     }
