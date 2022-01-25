@@ -68,9 +68,12 @@
       </el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
-          <el-dropdown size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
+          <el-button v-if="scope.row.folder" size="mini" type="primary" @click="showNodeDetail(scope.row)">
             详情
-            <el-dropdown-menu v-if="!scope.row.folder" slot="dropdown">
+          </el-button>
+          <el-dropdown v-else size="mini" split-button type="primary" @click="showNodeDetail(scope.row)">
+            详情
+            <el-dropdown-menu slot="dropdown">
               <el-dropdown-item @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
               <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
             </el-dropdown-menu>
