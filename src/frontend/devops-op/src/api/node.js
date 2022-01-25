@@ -72,7 +72,7 @@ export function restoreNode(projectId, repoName, path, deletedTimestamp) {
   return request({
     url: `${PREFIX_NODE}/restore/${projectId}/${repoName}/${path}`,
     method: 'post',
-    data: {
+    params: {
       deletedId: deletedTimestamp,
       conflictStrategy: 'SKIP'
     }

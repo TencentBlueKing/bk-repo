@@ -75,9 +75,13 @@
               <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
-          <el-popconfirm v-if="scope.row.deleted" title="确定恢复文件吗" @onConfirm="restore(scope.row)">
-            <el-button slot="reference" style="margin-left: 10px" size="mini" type="primary">恢复</el-button>
-          </el-popconfirm>
+          <el-button
+            v-if="scope.row.deleted"
+            style="margin-left: 10px"
+            size="mini"
+            type="primary"
+            @click="showNodeRestore(scope.row)"
+          >恢复</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -93,6 +97,7 @@
     />
     <file-reference-dialog :visible.sync="showFileReferenceDialog" :node="nodeOfFileReference" />
     <file-detail-dialog :visible.sync="showNodeDetailDialog" :node="nodeOfDetailDialog" />
+    <file-restore-dialog :visible.sync="showNodeRestoreDialog" :node="nodeOfRestoreDialog" @restore-success="onRestoreSuccess" />
   </div>
 </template>
 <script>
@@ -100,10 +105,11 @@ import { searchNodes, pageNodesBySha256 } from '@/api/node'
 import { convertFileSize, formatDate } from '@/utils/file'
 import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 import FileDetailDialog from '@/views/node/components/FileDetailDialog'
+import FileRestoreDialog from '@/views/node/components/FileRestoreDialog'
 
 export default {
   name: 'Node',
-  components: { FileDetailDialog, FileReferenceDialog },
+  components: { FileRestoreDialog, FileDetailDialog, FileReferenceDialog },
   data() {
     return {
       rules: {
@@ -127,7 +133,9 @@ export default {
       showFileReferenceDialog: false,
       nodeOfFileReference: {},
       showNodeDetailDialog: false,
-      nodeOfDetailDialog: {}
+      nodeOfDetailDialog: {},
+      showNodeRestoreDialog: false,
+      nodeOfRestoreDialog: {}
     }
   },
   methods: {
@@ -221,8 +229,12 @@ export default {
       this.nodeQuery.sha256 = sha256
       this.queryNodes(this.nodeQuery)
     },
-    restore(node) {
-      console.log('restore')
+    showNodeRestore(node) {
+      this.nodeOfRestoreDialog = node
+      this.showNodeRestoreDialog = true
+    },
+    onRestoreSuccess(node) {
+      node.deleted = undefined
     },
     deleteNode(node) {
       console.log('delete')
