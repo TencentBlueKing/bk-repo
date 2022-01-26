@@ -1,31 +1,53 @@
 <template>
-    <div class="empty-data-container flex-column flex-center" :style="exStyle">
-        <i class="devops-icon icon-empty"></i>
-        <span class="empty-tip">{{ $t('noData') }}</span>
+    <div class="empty-data-container flex-center" :class="{ 'hidden': isLoading }" :style="exStyle">
+        <template v-if="config">
+            <div class="flex-column flex-center">
+                <img :src="config.imgSrc" width="250" />
+                <span class="mt5 empty-data-title">{{ config.title }}</span>
+                <span class="mt5 empty-data-subtitle">{{ config.subTitle }}</span>
+            </div>
+        </template>
+        <template v-else>
+            <Icon :name="search ? 'empty-search' : 'empty-data'" size="30"></Icon>
+            <slot>
+                <span class="ml10 empty-tip">{{ search ? $t('noSearchData') : $t('noData') }}</span>
+            </slot>
+        </template>
     </div>
 </template>
 <script>
     export default {
         name: 'emptyData',
         props: {
+            search: {
+                type: Boolean,
+                default: false
+            },
             exStyle: {
                 type: String,
-                default: 'margin-top: 100px;'
+                default: ''
+            },
+            config: {
+                type: Object
+            },
+            isLoading: {
+                type: Boolean,
+                default: false
             }
         }
     }
 </script>
 <style lang="scss" scoped>
-@import '@/scss/conf';
 .empty-data-container {
-    .icon-empty {
-        font-size: 65px;
-        color: $borderLightColor;
+    &.hidden {
+        visibility: hidden;
     }
-    .empty-tip {
-        margin-top: 10px;
-        font-size: 12px;
-        color: $fontBoldColor;
+    .empty-data-title {
+        font-size: 14px;
+        font-weight: bold;
+    }
+    .empty-data-subtitle {
+        color: var(--fontSubsidiaryColor);
     }
 }
 </style>

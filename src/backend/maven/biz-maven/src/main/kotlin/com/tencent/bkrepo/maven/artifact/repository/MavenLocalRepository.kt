@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
@@ -227,6 +228,7 @@ class MavenLocalRepository(
     override fun onUploadBefore(context: ArtifactUploadContext) {
         super.onUploadBefore(context)
         val noOverwrite = HeaderUtils.getBooleanHeader("X-BKREPO-NO-OVERWRITE")
+        logger.info("Do not want to overwrite: $noOverwrite")
         if (noOverwrite) {
             with(context.artifactInfo) {
                 val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
@@ -291,6 +293,8 @@ class MavenLocalRepository(
         val matcher = Pattern.compile(PACKAGE_SUFFIX_REGEX).matcher(context.artifactInfo.getArtifactFullPath())
         if (matcher.matches()) {
             var packaging = matcher.group(2)
+            logger.info("File's package is $packaging")
+
             val fileSuffix = packaging
             if (packaging == "pom") {
                 val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
@@ -306,6 +310,7 @@ class MavenLocalRepository(
             storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
             if (isArtifact) createMavenVersion(context, mavenGavc)
             // 更新包各模块版本最新记录
+            logger.info("Prepare to create maven metadata....")
             mavenMetadataService.update(node)
         } else {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
@@ -634,7 +639,8 @@ class MavenLocalRepository(
                 overwrite = true,
                 createdBy = context.userId,
                 metadata = metadata
-            )
+            ),
+            HttpContextHolder.getClientAddress()
         )
     }
 
@@ -654,14 +660,16 @@ class MavenLocalRepository(
                 packageClient.deletePackage(
                     projectId,
                     repoName,
-                    packageKey
+                    packageKey,
+                    HttpContextHolder.getClientAddress()
                 )
             } else {
                 packageClient.deleteVersion(
                     projectId,
                     repoName,
                     packageKey,
-                    version
+                    version,
+                    HttpContextHolder.getClientAddress()
                 )
             }
             logger.info("Success to delete $packageKey:$version")

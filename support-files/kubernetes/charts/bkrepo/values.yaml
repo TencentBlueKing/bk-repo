@@ -31,7 +31,7 @@ serviceAccount:
   name:
 
 # metrics采集配置
-bkMonitorConfig:
+serviceMonitor:
   enabled: false
 
 
@@ -105,9 +105,9 @@ init:
   mongodb:
     enabled: true
     image:
-      registry: mirrors.tencent.com/bkrepo
-      repository: bkrepo-init
-      tag: 1.0.36
+      registry: mirrors.tencent.com
+      repository: blueking/bkrepo-init
+      tag: 1.0.42
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
@@ -153,6 +153,10 @@ common:
 gateway:
   ## bkrepo 地址
   host: bkrepo.example.com
+  ## bkrepo docker仓库地址
+  dockerHost: docker.bkrepo.example.com
+  ## bkrepo helm仓库地址
+  helmHost: helm.bkrepo.example.com
   ## dns服务器地址，用于配置nginx resolver。local=on为openrestry语法，取本机/etc/resolv.conf配置
   dnsServer: local=on
   ## 网关访问微服务认证信息
@@ -168,9 +172,9 @@ gateway:
     nodePort: 30025
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-gateway
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-gateway
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -209,9 +213,9 @@ repository:
     deletedNodeReserveDays: 15
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-repository
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-repository
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -250,9 +254,9 @@ auth:
     realm: local
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-auth
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-auth
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -290,9 +294,9 @@ generic:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-generic
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-generic
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -330,9 +334,9 @@ docker:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-docker
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-docker
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -370,9 +374,9 @@ npm:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-npm
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-npm
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -410,9 +414,9 @@ pypi:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-pypi
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-pypi
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -450,9 +454,9 @@ helm:
   config: {}
   ## Kubernetes 通用配置
   image:
-    registry: mirrors.tencent.com/bkrepo
-    repository: bkrepo-helm
-    tag: 1.0.36
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-helm
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1

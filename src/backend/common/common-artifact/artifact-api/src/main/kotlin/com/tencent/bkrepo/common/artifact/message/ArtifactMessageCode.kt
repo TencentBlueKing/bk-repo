@@ -62,6 +62,7 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     PIPELINE_BANNED("artifact.pipeline.banned"),
     ARTIFACT_DATA_NOT_FOUND("artifact.data.not-found"),
     REPOSITORY_OVER_QUOTA("artifact.repository.over-quota"),
+    ARTIFACT_DOWNLOAD_FORBIDDEN("artifact.download.forbidden"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

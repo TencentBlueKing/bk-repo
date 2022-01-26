@@ -1,28 +1,62 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset=UTF-8>
-        <meta name=viewport content="width=device-width,initial-scale=1">
-        <meta http-equiv=X-UA-Compatible content="ie=edge">
-        <meta http-equiv="Pragma" content="no-cache" />
-        <link rel="icon" href="/ui/favicon.ico" type="image/x-icon" />
-        <title>制品库管理</title>
-    </head>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name=viewport content="width=device-width,initial-scale=1">
+    <link rel="icon" href="/ui/favicon.ico" type="image/x-icon" />
+    <link rel="manifest" href="/ui/CPack.webmanifest" />
+    <script src="/ui/libs/vue.min.js"></script>
+    <script src="/ui/libs/vuex.min.js"></script>
+    <script src="/ui/libs/vue-router.min.js"></script>
+    <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
+    <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
+    <title><%= htmlWebpackPlugin.options.title %></title>
+</head>
 <body>
-    <div id="app"></div>
-    <script src="<%= htmlWebpackPlugin.options.VENDOR_LIBS%>"></script>
     <script>
-        // standalone: 独立部署模式
-        // ci: ci模式
-        // saas: saas模式
-        var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
-        var LOGIN_SERVICE_URL = '__BK_REPO_PAAS_LOGIN_URL__'
+        // 请求svg图标
+        const ajax = new XMLHttpRequest()
+        ajax.open('GET', '/ui/sprite.svg', true)
+        ajax.onload = function (e) {
+            const div = document.createElement('div')
+            div.setAttribute('style', 'position: absolute; width: 0; height: 0; overflow: hidden;')
+            div.innerHTML = e.target.responseText
+            document.body.prepend(div)
+        }
+        ajax.send()
     </script>
     <script>
-        const redirectUrl = location.href.split(/\?redirect=/)[1]
-
-        window.getLoginUrl = function () {
-            const cUrl = location.origin + (redirectUrl ? (redirectUrl + '?preview=true') : '')
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/ui/sw.js');
+        }
+        function isPWA() {
+            return ["fullscreen", "standalone", "minimal-ui"].some(
+                (displayMode) => window.matchMedia('(display-mode: ' + displayMode + ')').matches
+            )
+        }
+        function loadLibScript (src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script')
+                script.setAttribute('type', 'text/javascript')
+                script.setAttribute('src', src)
+                document.head.append(script)
+                script.onload = () => resolve()
+                script.onerror = () => reject()
+            })
+        }
+    </script>
+    <script>
+        var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
+        var DEVOPS_SITE_URL = '__BK_HTTP_SCHEMA__://__BK_CI_FQDN__'
+        var LOGIN_SERVICE_URL = /^https?/.test(PAAS_SERVICE_URL)
+            ? PAAS_SERVICE_URL + '/login/'
+            : '__BK_REPO_PAAS_LOGIN_URL__'
+        // standalone: 独立部署模式
+        // ci: ci模式
+        var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+    </script>
+    <script>
+        window.getLoginUrl = function (cUrl = location.href) {
             if (/\{+curl\}+/i.test(LOGIN_SERVICE_URL)) {
                 return LOGIN_SERVICE_URL.replace(/\{+curl\}+/i, encodeURIComponent(cUrl))
             } else if (/=%s/.test(LOGIN_SERVICE_URL)) {
@@ -31,43 +65,77 @@
                 const loginUrl = new URL(LOGIN_SERVICE_URL)
                 if (/=$/.test(loginUrl.search)) {
                     return LOGIN_SERVICE_URL + cUrl
-                    } else {
-                    loginUrl.searchParams.append('c_url', cUrl)
+                } else {
+                    loginUrl.searchParams.set('c_url', cUrl)
                     return loginUrl.href
                 }
             }
         }
 
-        if (redirectUrl) {
-            document.body.removeChild(document.querySelector('#app'))
+        const search = new URL(location.href).searchParams // redirect/token/download/?preview
+        const redirect = search.get('redirect')
+        if (redirect) {
+            search.delete('redirect')
+
+            const redirectUrl = new URL(/^https?/.test(redirect) ? redirect : location.origin + redirect)
+            if (!search.toString()) {
+                // 兼容之前的预览链接格式
+                redirectUrl.searchParams.set('preview', true)
+            } else {
+                search.forEach((val, key) => {
+                    redirectUrl.searchParams.set(key, val)
+                })
+            }
+            
             const xhr = new XMLHttpRequest()
             xhr.onreadystatechange = function (e) {
                 const { readyState, status } = e.currentTarget
-                if (readyState === 4 && status === 200) {
-                    location.href = location.origin + redirectUrl + '?preview=true'
-                } else if (status === 401) {
-                    location.href = window.getLoginUrl(location.origin + redirectUrl + '?preview=true')
-                } else if (status === 403 || status === 404) {
-                    printError(status)
+                // 已登录
+                if (readyState === 4) {
+                    if (status === 200) {
+                        window.open(redirectUrl.href, '_self')
+                        mountApp()
+                    } else if (status === 401) {
+                        if (MODE_CONFIG === 'ci') {
+                            // ci登录逻辑
+                            location.href = window.getLoginUrl()
+                        } else {
+                            // 保存操作链接，登陆后调用
+                            sessionStorage.setItem('afterLogin', redirectUrl.href)
+                            window.login = true
+                            mountApp()
+                        }
+                    } else {
+                        let message
+                        switch (status) {
+                            case 403:
+                                message = '未获得文件访问权限或链接已失效'
+                                break
+                            case 404:
+                                message = '文件不存在'
+                                break
+                            default:
+                                message = '服务异常，请稍后重试'
+                        }
+                        printError(status, message)
+                    }
                 }
             }
             xhr.withCredentials = true
-            xhr.open('HEAD', redirectUrl)
+            xhr.open('HEAD', redirectUrl.href)
             xhr.send()
+        } else {
+            mountApp()
         }
 
-        function printError (status) {
-            let message
-            switch (status) {
-                case 403:
-                    message = '未获得预览文件的访问权限'
-                    break
-                case 404:
-                    message = '预览文件不存在'
-                    break
-                default:
-                    message = '服务异常，请稍后重试'
-            }
+        function  mountApp () {
+            const app = document.createElement('div')
+            app.setAttribute('id', 'app')
+            document.body.append(app)
+            if (window.repositoryVue) window.repositoryVue.$mount('#app')
+        }
+
+        function printError (status, message) {
             document.writeln(
                 '<div style="height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column;">'
                 + '<img src="/ui/'
@@ -80,4 +148,6 @@
             )
         }
     </script>
+    <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
 </body>
+</html>

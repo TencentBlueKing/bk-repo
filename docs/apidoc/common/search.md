@@ -91,6 +91,7 @@
 |BEFORE|date|在某个时间之间，不包含等于|
 |AFTER|date|在某个时间之后，不包含等于|
 |IN|list|包含于|
+|NIN|list|不包含于|
 |PREFIX|string|以xxx为前缀|
 |SUFFIX|string|以xxx为后缀|
 |MATCH|string|通配符匹配，\*表示匹配任意字符。如\*test\*表示包含test的字符串|

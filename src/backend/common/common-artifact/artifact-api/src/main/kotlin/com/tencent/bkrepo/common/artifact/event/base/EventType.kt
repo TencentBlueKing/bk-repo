@@ -30,32 +30,38 @@ package com.tencent.bkrepo.common.artifact.event.base
 /**
  * 事件类型
  */
-enum class EventType {
+enum class EventType(val nick: String) {
     // PROJECT
-    PROJECT_CREATED,
+    PROJECT_CREATED("创建项目"),
 
     // REPOSITORY
-    REPO_CREATED,
-    REPO_UPDATED,
-    REPO_DELETED,
+    REPO_CREATED("创建仓库"),
+    REPO_UPDATED("更新仓库"),
+    REPO_DELETED("删除仓库"),
 
     // NODE
-    NODE_CREATED,
-    NODE_RENAMED,
-    NODE_MOVED,
-    NODE_COPIED,
-    NODE_DELETED,
-    NODE_DOWNLOADED,
+    NODE_CREATED("创建节点"),
+    NODE_RENAMED("重命名节点"),
+    NODE_MOVED("移动节点"),
+    NODE_COPIED("复制节点"),
+    NODE_DELETED("删除节点"),
+    NODE_DOWNLOADED("下载节点"),
 
     // METADATA
-    METADATA_DELETED,
-    METADATA_SAVED,
-
-    // PACKAGE
+    METADATA_DELETED("删除元数据"),
+    METADATA_SAVED("添加元数据"),
 
     // VERSION
-    VERSION_CREATED,
+    VERSION_CREATED("创建制品"),
+    VERSION_DELETED("删除制品"),
+    VERSION_DOWNLOAD("下载制品"),
+    VERSION_UPDATED("更新制品"),
+    VERSION_STAGED("晋级制品"),
+
+    // ADMIN
+    ADMIN_ADD("添加管理员"),
+    ADMIN_DELETE("移除管理员"),
 
     // WebHook
-    WEBHOOK_TEST,
+    WEBHOOK_TEST("webhook测试")
 }

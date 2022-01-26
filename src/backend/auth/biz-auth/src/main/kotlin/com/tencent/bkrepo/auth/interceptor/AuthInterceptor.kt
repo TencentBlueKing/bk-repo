@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool.COLON
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.security.constant.AUTH_HEADER_UID
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
@@ -66,13 +67,6 @@ class AuthInterceptor : HandlerInterceptor {
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, basicAuthHeader)
         try {
             // 项目内操作，优先使用项目管理员权限
-            val basicAuthApiList = listOf(
-                AUTH_REPO_SUFFIX,
-                AUTH_PROJECT_SUFFIX,
-                AUTH_API_ACCOUNT_PREFIX,
-                AUTH_API_KEY_PREFIX,
-                AUTH_API_OAUTH_PREFIX
-            )
             var isBasicAuthUri = false
             basicAuthApiList.forEach {
                 isBasicAuthUri = isBasicAuthUri || request.requestURI.contains(it)
@@ -100,6 +94,9 @@ class AuthInterceptor : HandlerInterceptor {
                 logger.warn("find no account [$parts[0]]")
                 throw IllegalArgumentException("check credential fail")
             }
+            val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
+            logger.debug("auth userId [$userId], platId [$appId]")
+            request.setAttribute(USER_KEY, userId)
             request.setAttribute(PLATFORM_KEY, appId)
             return true
         } catch (e: IllegalArgumentException) {
@@ -112,5 +109,13 @@ class AuthInterceptor : HandlerInterceptor {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
+
+        private val basicAuthApiList = listOf(
+            AUTH_REPO_SUFFIX,
+            AUTH_PROJECT_SUFFIX,
+            AUTH_API_ACCOUNT_PREFIX,
+            AUTH_API_KEY_PREFIX,
+            AUTH_API_OAUTH_PREFIX
+        )
     }
 }
