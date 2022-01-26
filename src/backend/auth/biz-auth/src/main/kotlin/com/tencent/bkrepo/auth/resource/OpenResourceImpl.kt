@@ -31,35 +31,46 @@
 
 package com.tencent.bkrepo.auth.resource
 
-import com.tencent.bkrepo.auth.api.ServicePermissionResource
-import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
+import com.tencent.bkrepo.auth.message.AuthMessageCode
+import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.PermissionService
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
 
-@RestController
-class ServicePermissionResourceImpl @Autowired constructor(
-    private val permissionService: PermissionService
-) : ServicePermissionResource, OpenPermissionImpl() {
+open class OpenResourceImpl @Autowired constructor(private val permissionService: PermissionService) {
 
-    override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
-        checkRequest(request)
-        return ResponseBuilder.success(permissionService.checkPermission(request))
+    fun checkUserId(pathUid: String) {
+        val userId = SecurityUtils.getUserId()
+        if (userId.isNotEmpty() && userId != pathUid) {
+            logger.warn("use not match [$userId, $pathUid]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
+        }
     }
 
-    override fun listPermissionRepo(projectId: String, userId: String, appId: String?): Response<List<String>> {
-        return ResponseBuilder.success(permissionService.listPermissionRepo(projectId, userId, appId))
+    fun checkUserPermission(type: AuthPermissionType, projectId: String, repoName: String?) {
+        val checkRequest = CheckPermissionRequest(
+            uid = SecurityUtils.getUserId(),
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.WRITE.toString(),
+            projectId = projectId,
+            appId = SecurityUtils.getPlatformId()
+        )
+        if (type == AuthPermissionType.REPO) {
+            checkRequest.repoName = repoName
+            checkRequest.resourceType = ResourceType.REPO.toString()
+        }
+        if (!permissionService.checkPermission(checkRequest)) {
+            logger.warn("check user permission error [$checkRequest]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
+        }
     }
 
-    override fun listPermissionProject(userId: String): Response<List<String>> {
-        return ResponseBuilder.success(permissionService.listPermissionProject(userId))
-    }
-
-    override fun registerResource(request: RegisterResourceRequest): Response<Boolean> {
-        permissionService.registerResource(request)
-        return ResponseBuilder.success()
+    companion object {
+        private val logger = LoggerFactory.getLogger(OpenResourceImpl::class.java)
     }
 }

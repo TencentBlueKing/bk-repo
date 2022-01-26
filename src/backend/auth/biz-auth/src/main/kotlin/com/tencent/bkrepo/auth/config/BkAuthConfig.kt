@@ -92,12 +92,6 @@ class BkAuthConfig {
     var bcsAppId: String = ""
 
     /**
-     * 是否开启蓝盾用户权限认证开关
-     */
-    @Value("\${auth.devops.authEnabled:true}")
-    var devopsAuthEnabled: Boolean = true
-
-    /**
      * 是否允许蓝盾匿名用户请求
      */
     @Value("\${auth.devops.allowAnonymous:true}")
@@ -127,7 +121,7 @@ class BkAuthConfig {
     }
 
     fun choseBkAuth(): Boolean {
-        return ciAuthServer.isNullOrBlank()
+        return ciAuthServer.isBlank()
     }
 
     fun setBkciAuthServer(authServer: String) {

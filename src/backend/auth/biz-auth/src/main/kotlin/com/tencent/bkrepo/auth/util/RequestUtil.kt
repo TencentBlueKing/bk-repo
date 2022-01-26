@@ -29,32 +29,41 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.util
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 
-@Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
-@Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceAccountResource")
-@RequestMapping(AUTH_SERVICE_ACCOUNT_PREFIX)
-interface ServiceAccountResource {
+object RequestUtil {
 
-    @ApiOperation("校验ak/sk")
-    @GetMapping("/credential/{accesskey}/{secretkey}")
-    fun checkCredential(
-        @ApiParam(value = "accesskey")
-        @PathVariable accesskey: String,
-        @ApiParam(value = "secretkey")
-        @PathVariable secretkey: String
-    ): Response<String?>
+    /**
+     * 构造创建项目管理员请求
+     */
+    fun buildProjectAdminRequest(projectId: String): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = PROJECT_MANAGE_ID,
+            name = PROJECT_MANAGE_NAME,
+            type = RoleType.PROJECT,
+            projectId = projectId,
+            admin = true
+        )
+    }
+
+    /**
+     * 构造仓库管理员请求
+     */
+    fun buildRepoAdminRequest(projectId: String, repoName: String): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = REPO_MANAGE_ID,
+            name = REPO_MANAGE_NAME,
+            type = RoleType.REPO,
+            projectId = projectId,
+            repoName = repoName,
+            admin = true
+        )
+    }
 }

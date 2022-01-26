@@ -29,20 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.permission
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 
-// 集群
-@Document("cluster")
-@CompoundIndexes(
-    CompoundIndex(name = "clusterId_idx", def = "{'clusterId': 1}", unique = true, background = true)
+@Configuration
+@Import(
+    AuthPrincipalAspect::class
 )
-data class TCluster(
-    var clusterId: String,
-    var cert: String = "",
-    var clusterAddr: String,
-    val credentialStatus: Boolean? = false
-)
+
+class PermissionConfiguration

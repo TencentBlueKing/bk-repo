@@ -33,17 +33,14 @@ package com.tencent.bkrepo.auth.resource
 
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.auth.pojo.permission.ListRepoPermissionRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 
-open class AbstractPermissionResourceImpl {
+open class OpenPermissionImpl {
 
     fun checkRequest(request: CheckPermissionRequest) {
         with(request) {
             when (resourceType) {
-                ResourceType.SYSTEM.toString() -> {
-                }
                 ResourceType.PROJECT.toString() -> {
                     if (projectId.isNullOrBlank()) {
                         throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
@@ -70,43 +67,5 @@ open class AbstractPermissionResourceImpl {
                 }
             }
         }
-    }
-
-    fun checkRequest(request: ListRepoPermissionRequest) {
-        with(request) {
-            when (resourceType) {
-                ResourceType.SYSTEM -> {
-                }
-                ResourceType.PROJECT -> {
-                    if (projectId.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                }
-                ResourceType.REPO -> {
-                    if (projectId.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                    if (repoNames.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNames")
-                    }
-                }
-                ResourceType.NODE -> {
-                    if (projectId.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                    if (repoNames.isEmpty()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoNames")
-                    }
-                    if (path.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "path")
-                    }
-                }
-            }
-        }
-    }
-
-    fun filterRepos(repos: List<String>, originRepoNames: List<String>): List<String> {
-        (repos as MutableList).retainAll(originRepoNames)
-        return repos
     }
 }

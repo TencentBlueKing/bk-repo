@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_KEY_PREFIX
 import com.tencent.bkrepo.auth.pojo.Key
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -44,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_KEY"], description = "服务-密钥接口")
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceKeyResource")
-@RequestMapping(AUTH_SERVICE_KEY_PREFIX, AUTH_API_KEY_PREFIX)
+@RequestMapping(AUTH_API_KEY_PREFIX)
 interface ServiceKeyResource {
 
     @ApiOperation("新增密钥")

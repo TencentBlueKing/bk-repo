@@ -165,7 +165,6 @@ class BkAuthPermissionServiceImpl constructor(
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         appId?.let {
             val request = buildProjectCheckRequest(projectId, userId, appId)
-
             // devops 体系
             if (matchDevopsCond(appId)) {
                 if (checkDevopsPermission(request)) {
@@ -178,17 +177,17 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-
         // devops匿名访问请求处理
         if (matchAnonymousCond(request.appId, request.uid)) {
             logger.warn("devops anonymous pass [$request] ")
             return true
         }
 
-        // devops实名访问请求处理
+        // bcs appId
+        if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
+
+        // devops appId
         if (matchDevopsCond(request.appId)) {
-            // 优先校验本地权限
-            if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
             return checkDevopsPermission(request)
         }
 
@@ -211,8 +210,7 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     private fun matchDevopsCond(appId: String?): Boolean {
-        val devopsAppIdList = bkAuthConfig.devopsAppIdSet.split(",")
-        return devopsAppIdList.contains(appId)
+        return bkAuthConfig.devopsAppIdSet.split(",").contains(appId)
     }
 
     private fun matchAnonymousCond(appId: String?, uid: String): Boolean {

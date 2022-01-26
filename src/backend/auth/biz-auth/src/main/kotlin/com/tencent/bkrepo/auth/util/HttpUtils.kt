@@ -36,6 +36,7 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 
 object HttpUtils {
+
     fun doRequest(
         okHttpClient: OkHttpClient,
         request: Request,

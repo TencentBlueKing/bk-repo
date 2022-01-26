@@ -29,32 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.permission
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
+import java.lang.annotation.Inherited
 
-@Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
-@Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceAccountResource")
-@RequestMapping(AUTH_SERVICE_ACCOUNT_PREFIX)
-interface ServiceAccountResource {
-
-    @ApiOperation("校验ak/sk")
-    @GetMapping("/credential/{accesskey}/{secretkey}")
-    fun checkCredential(
-        @ApiParam(value = "accesskey")
-        @PathVariable accesskey: String,
-        @ApiParam(value = "secretkey")
-        @PathVariable secretkey: String
-    ): Response<String?>
-}
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.RUNTIME)
+@Inherited
+@MustBeDocumented
+annotation class AuthPrincipal(
+    val type: AuthPrincipalType
+)
