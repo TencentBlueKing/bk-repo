@@ -15,7 +15,7 @@
   "dependencies": {
     "axios": "0.18.1",
     "core-js": "3.6.5",
-    "element-ui": "2.15.7",
+    "element-ui": "2.15.6",
     "js-cookie": "2.2.0",
     "lodash": "^4.17.21",
     "normalize.css": "7.0.0",

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container">
+  <div class="app-container node-container">
     <el-form ref="form" :rules="rules" :inline="true" :model="nodeQuery">
       <el-form-item label="查询模式">
         <el-select
@@ -273,7 +273,7 @@ export default {
 </style>
 
 <style>
-.el-table .deleted-row {
+.node-container .el-table .deleted-row {
   background: #e9e9e9;
 }
 </style>
