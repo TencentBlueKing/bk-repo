@@ -14,11 +14,40 @@
         </el-select>
         <el-divider direction="vertical" />
       </el-form-item>
-      <el-form-item v-if="!nodeQuery.useSha256" label="项目ID" prop="projectId">
-        <el-input v-model="nodeQuery.projectId" size="mini" placeholder="请输入项目ID" />
+      <el-form-item v-if="!nodeQuery.useSha256" ref="project-form-item" label="项目ID" prop="projectId">
+        <el-autocomplete
+          v-model="nodeQuery.projectId"
+          class="inline-input"
+          :fetch-suggestions="queryProjects"
+          placeholder="请输入项目ID"
+          size="mini"
+          @select="selectProject"
+        >
+          <template slot-scope="{ item }">
+            <div>{{ item.name }}</div>
+          </template>
+        </el-autocomplete>
       </el-form-item>
-      <el-form-item v-if="!nodeQuery.useSha256" style="margin-left: 15px" label="仓库" prop="repoName">
-        <el-input v-model="nodeQuery.repoName" :disabled="!nodeQuery.projectId" size="mini" placeholder="请输入仓库名" />
+      <el-form-item
+        v-if="!nodeQuery.useSha256"
+        ref="repo-form-item"
+        style="margin-left: 15px"
+        label="仓库"
+        prop="repoName"
+      >
+        <el-autocomplete
+          v-model="nodeQuery.repoName"
+          :disabled="!nodeQuery.projectId"
+          class="inline-input"
+          :fetch-suggestions="queryRepositories"
+          placeholder="请输入仓库名"
+          size="mini"
+          @select="selectRepo"
+        >
+          <template slot-scope="{ item }">
+            <div>{{ item.name }}</div>
+          </template>
+        </el-autocomplete>
       </el-form-item>
       <el-form-item v-if="!nodeQuery.useSha256" style="margin-left: 15px" label="路径" prop="path">
         <el-input
@@ -118,6 +147,8 @@ import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 import FileDetailDialog from '@/views/node/components/FileDetailDialog'
 import FileRestoreDialog from '@/views/node/components/FileRestoreDialog'
 import FileDeleteDialog from '@/views/node/components/FileDeleteDialog'
+import { listProjects } from '@/api/project'
+import { listRepositories } from '@/api/repository'
 
 export default {
   name: 'Node',
@@ -131,6 +162,8 @@ export default {
         path: [{ validator: this.validatePath, trigger: 'blur' }]
       },
       loading: false,
+      projects: undefined,
+      repoCache: {},
       nodeQuery: {
         useSha256: false,
         projectId: '',
@@ -194,6 +227,41 @@ export default {
     },
     queryModeChanged() {
       this.$refs['form'].clearValidate()
+    },
+    queryProjects(queryStr, cb) {
+      if (!this.projects) {
+        listProjects().then(res => {
+          this.projects = res.data
+          cb(this.doFilter(this.projects, queryStr))
+        })
+      } else {
+        cb(this.doFilter(this.projects, queryStr))
+      }
+    },
+    selectProject(project) {
+      this.$refs['project-form-item'].resetField()
+      this.nodeQuery.projectId = project.name
+    },
+    queryRepositories(queryStr, cb) {
+      let repositories = this.repoCache[this.nodeQuery.projectId]
+      if (!repositories) {
+        listRepositories(this.nodeQuery.projectId).then(res => {
+          repositories = res.data
+          this.repoCache[this.nodeQuery.projectId] = repositories
+          cb(this.doFilter(repositories, queryStr))
+        })
+      } else {
+        cb(this.doFilter(repositories, queryStr))
+      }
+    },
+    selectRepo(repo) {
+      this.$refs['repo-form-item'].resetField()
+      this.nodeQuery.repoName = repo.name
+    },
+    doFilter(arr, queryStr) {
+      return queryStr ? arr.filter(obj => {
+        return obj.name.toLowerCase().indexOf(queryStr.toLowerCase()) !== -1
+      }) : arr
     },
     queryNodes(nodeQuery, resetPage = false) {
       this.$refs['form'].validate((valid) => {
