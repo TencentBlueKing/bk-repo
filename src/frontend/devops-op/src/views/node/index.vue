@@ -78,7 +78,7 @@
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
-      <el-table-column prop="name" label="文件名" width="200px">
+      <el-table-column prop="name" label="文件名" width="430px">
         <template slot-scope="scope">
           <svg-icon :icon-class="fileIcon(scope.row)" style="margin-right: 6px" /><span>{{ scope.row.name }}</span>
         </template>
