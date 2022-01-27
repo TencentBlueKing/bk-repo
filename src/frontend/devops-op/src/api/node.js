@@ -1,6 +1,7 @@
 import request from '@/utils/request'
 
 const PREFIX_NODE = '/repository/api/node'
+export const DEFAULT_PAGE_SIZE = 20
 
 export function searchNodes(projectId, repoName, path, page, size, detail = false) {
   const dir = path.endsWith('/')
@@ -55,7 +56,7 @@ export function searchNodes(projectId, repoName, path, page, size, detail = fals
   })
 }
 
-export function pageNodesBySha256(sha256, page = 1, size = 10) {
+export function pageNodesBySha256(sha256, page = 1, size = DEFAULT_PAGE_SIZE) {
   return request({
     url: `${PREFIX_NODE}/page`,
     method: 'get',

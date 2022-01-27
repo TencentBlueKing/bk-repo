@@ -56,7 +56,7 @@
           style="width: 500px;"
           size="mini"
           placeholder="请输入文件或目录路径"
-          @keyup.enter.native="queryNodes(nodeQuery, true)"
+          @keyup.enter.native="changeRouteQueryParams(true)"
         />
       </el-form-item>
       <el-form-item v-if="nodeQuery.useSha256" label="SHA256" prop="sha256">
@@ -65,7 +65,7 @@
           style="width: 500px"
           size="mini"
           placeholder="请输入所查文件的SHA256"
-          @keyup.enter.native="queryNodes(nodeQuery, true)"
+          @keyup.enter.native="changeRouteQueryParams(true)"
         />
       </el-form-item>
       <el-form-item>
@@ -73,7 +73,7 @@
           size="mini"
           :disabled="!nodeQuery.useSha256 && !nodeQuery.path || nodeQuery.useSha256 && !nodeQuery.sha256"
           type="primary"
-          @click="queryNodes(nodeQuery, true)"
+          @click="changeRouteQueryParams(true)"
         >查询</el-button>
       </el-form-item>
     </el-form>
@@ -132,7 +132,7 @@
       :page-size="nodeQuery.pageSize"
       :hide-on-single-page="true"
       :total="total"
-      @current-change="queryNodes(nodeQuery)"
+      @current-change="changeRouteQueryParams(false)"
     />
     <file-reference-dialog :visible.sync="showFileReferenceDialog" :node="nodeOfFileReference" />
     <file-detail-dialog :visible.sync="showNodeDetailDialog" :node="nodeOfDetailDialog" />
@@ -141,7 +141,7 @@
   </div>
 </template>
 <script>
-import { searchNodes, pageNodesBySha256 } from '@/api/node'
+import { searchNodes, pageNodesBySha256, DEFAULT_PAGE_SIZE } from '@/api/node'
 import { convertFileSize, formatDate } from '@/utils/file'
 import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 import FileDetailDialog from '@/views/node/components/FileDetailDialog'
@@ -171,7 +171,7 @@ export default {
         path: '',
         sha256: '',
         pageNumber: 1,
-        pageSize: 20
+        pageSize: DEFAULT_PAGE_SIZE
       },
       nodes: [],
       total: 0,
@@ -185,6 +185,13 @@ export default {
       nodeToDelete: {},
       indexOfNodeToDelete: -1
     }
+  },
+  mounted() {
+    this.onRouteUpdate(this.$route)
+  },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
   },
   methods: {
     validateSha256(rule, value, callback) {
@@ -263,25 +270,53 @@ export default {
         return obj.name.toLowerCase().indexOf(queryStr.toLowerCase()) !== -1
       }) : arr
     },
-    queryNodes(nodeQuery, resetPage = false) {
+    changeRouteQueryParams(resetPage = false) {
+      const query = {
+        page: resetPage ? '1' : String(this.nodeQuery.pageNumber),
+        size: String(this.nodeQuery.pageSize)
+      }
+      if (this.nodeQuery.useSha256) {
+        query.sha256 = this.nodeQuery.sha256
+        this.$router.push({ path: '/nodes', query: query })
+      } else {
+        query.projectId = this.nodeQuery.projectId
+        query.repoName = this.nodeQuery.repoName
+        query.path = this.nodeQuery.path
+        this.$router.push({ path: '/nodes', query: query })
+      }
+    },
+    onRouteUpdate(route) {
+      const query = route.query
+      const nodeQuery = this.nodeQuery
+      nodeQuery.useSha256 = Boolean(query.sha256)
+      nodeQuery.sha256 = query.sha256 ? query.sha256 : ''
+      nodeQuery.projectId = query.projectId ? query.projectId : ''
+      nodeQuery.repoName = query.repoName ? query.repoName : ''
+      nodeQuery.path = query.path ? query.path : ''
+      nodeQuery.pageNumber = query.page ? Number(query.page) : 1
+      nodeQuery.pageSize = query.size ? Number(query.size) : DEFAULT_PAGE_SIZE
+      if (nodeQuery.sha256 || (nodeQuery.projectId && nodeQuery.repoName && nodeQuery.path)) {
+        this.$nextTick(() => {
+          this.queryNodes(nodeQuery)
+        })
+      }
+    },
+    queryNodes(nodeQuery) {
       this.$refs['form'].validate((valid) => {
         if (valid) {
-          this.doQueryNodes(nodeQuery, resetPage)
+          this.doQueryNodes(nodeQuery)
         } else {
           return false
         }
       })
     },
-    doQueryNodes(nodeQuery, resetPage = false) {
+    doQueryNodes(nodeQuery) {
       this.loading = true
       let promise = null
       if (nodeQuery.useSha256) {
         promise = pageNodesBySha256(nodeQuery.sha256, nodeQuery.pageNumber, nodeQuery.pageSize)
       } else {
         promise = searchNodes(nodeQuery.projectId, nodeQuery.repoName, nodeQuery.path, nodeQuery.pageNumber, nodeQuery.pageSize)
-      }
-      if (resetPage) {
-        nodeQuery.pageNumber = 1
       }
       promise.then(res => {
         this.nodes = res.data.records
@@ -310,7 +345,7 @@ export default {
     showNodesOfSha256(sha256) {
       this.nodeQuery.useSha256 = true
       this.nodeQuery.sha256 = sha256
-      this.queryNodes(this.nodeQuery)
+      this.changeRouteQueryParams(true)
     },
     showNodeRestore(index, node) {
       this.nodeToRestore = node
