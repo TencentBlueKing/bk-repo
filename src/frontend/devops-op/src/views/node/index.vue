@@ -80,7 +80,9 @@
     <el-table v-loading="loading" :data="nodes" style="width: 100%" :row-class-name="tableRowClassName">
       <el-table-column prop="name" label="文件名" width="430px">
         <template slot-scope="scope">
-          <svg-icon :icon-class="fileIcon(scope.row)" style="margin-right: 6px" /><span>{{ scope.row.name }}</span>
+          <svg-icon :icon-class="fileIcon(scope.row)" style="margin-right: 6px" />
+          <el-link v-if="scope.row.folder" @click="showNodesOfFolder(scope.row)">{{ scope.row.name }}</el-link>
+          <span v-else>{{ scope.row.name }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="size" label="大小" width="120px">
@@ -345,6 +347,14 @@ export default {
     showNodesOfSha256(sha256) {
       this.nodeQuery.useSha256 = true
       this.nodeQuery.sha256 = sha256
+      this.changeRouteQueryParams(true)
+    },
+    showNodesOfFolder(node) {
+      const nodeQuery = this.nodeQuery
+      nodeQuery.useSha256 = false
+      nodeQuery.projectId = node.projectId
+      nodeQuery.repoName = node.repoName
+      nodeQuery.path = node.fullPath + '/'
       this.changeRouteQueryParams(true)
     },
     showNodeRestore(index, node) {
