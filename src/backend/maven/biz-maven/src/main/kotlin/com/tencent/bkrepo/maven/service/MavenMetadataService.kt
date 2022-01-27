@@ -26,8 +26,9 @@ class MavenMetadataService(
         val groupId = node.metadata?.get("groupId") as String
         val artifactId = node.metadata?.get("artifactId") as String
         val version = node.metadata?.get("version") as String
-        logger.info("Node info: groupId[$groupId], artifactId[$artifactId], version[$version]")
-        logger.info("Node fullPath: ${node.fullPath}")
+        logger.info(
+            "Node info: groupId[$groupId], artifactId[$artifactId], version[$version], Node fullPath: ${node.fullPath}"
+        )
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(node.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(node.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(groupId)
@@ -43,8 +44,8 @@ class MavenMetadataService(
         }
         logger.info(
             "Node info: extension[${mavenVersion.packaging}]," +
-                " classifier[${mavenVersion.classifier}]," +
-                " timestamp[${mavenVersion.timestamp}]"
+                " classifier[${mavenVersion.classifier}], buildNo[${mavenVersion.buildNo}]" +
+                " timestamp[${mavenVersion.timestamp}] , Node fullPath: ${node.fullPath}"
         )
 
         val query = Query(criteria)
@@ -66,6 +67,11 @@ class MavenMetadataService(
     }
 
     fun search(mavenArtifactInfo: MavenArtifactInfo, mavenGavc: MavenGAVC): List<TMavenMetadataRecord> {
+        logger.info(
+            "Searching Node info: groupId[${mavenGavc.groupId}], artifactId[${mavenGavc.artifactId}], " +
+                "version[${mavenGavc.version}], repoName: ${mavenArtifactInfo.repoName}, " +
+                "projectId[${mavenArtifactInfo.projectId}]"
+        )
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(mavenArtifactInfo.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(mavenArtifactInfo.repoName)
             .and(TMavenMetadataRecord::groupId.name).`is`(mavenGavc.groupId)
@@ -79,9 +85,9 @@ class MavenMetadataService(
         logger.info(
             "findAndModify metadata groupId[${mavenMetadataSearchPojo.groupId}], " +
                 "artifactId[${mavenMetadataSearchPojo.artifactId}], " +
-                "version[${mavenMetadataSearchPojo.version}," +
-                "extension[${mavenMetadataSearchPojo.extension}," +
-                "classifier[${mavenMetadataSearchPojo.classifier}"
+                "version[${mavenMetadataSearchPojo.version}]," +
+                "extension[${mavenMetadataSearchPojo.extension}]," +
+                "classifier[${mavenMetadataSearchPojo.classifier}]"
         )
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(mavenMetadataSearchPojo.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(mavenMetadataSearchPojo.repoName)
