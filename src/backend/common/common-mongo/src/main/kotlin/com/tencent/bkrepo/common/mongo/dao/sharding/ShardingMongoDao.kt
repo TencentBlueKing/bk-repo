@@ -245,6 +245,10 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
      * @param query 查询条件，不要在其中包含分页查询条件
      */
     fun pageWithoutShardingKey(pageRequest: PageRequest, query: Query): Page<E> {
+        if (shardingCount <= 0 || shardingCount > MAX_SHARDING_COUNT_OF_PAGE_QUERY) {
+            throw UnsupportedOperationException()
+        }
+
         val startIndex = pageRequest.pageNumber * pageRequest.pageSize
         var limit = pageRequest.pageSize
 
@@ -306,5 +310,6 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     companion object {
 
         private val logger = LoggerFactory.getLogger(ShardingMongoDao::class.java)
+        private const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
     }
 }
