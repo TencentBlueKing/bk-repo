@@ -74,7 +74,7 @@ mongodb:
   persistence:
     subPath: mongodb
     size: 20Gi
-        
+
 ## 如果mongodb.enabled为false，bkrepo将使用下面的参数连接外部mongodb
 externalMongodb:
   ## mongodb 标准连接字符串
@@ -117,7 +117,7 @@ common:
   # bkrepo镜像tag全局配置, 具有最高优先级
   imageTag: ""
   ## 部署区域，可不填
-  region: 
+  region:
   ## jvm启动选项, 如-Xms1024M -Xmx1024M
   jvmOption: ""
   ## SpringBoot active profile
@@ -174,7 +174,7 @@ gateway:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-gateway
-    tag: 1.2.2
+    tag: 1.0.42
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
