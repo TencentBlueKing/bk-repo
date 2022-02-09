@@ -562,7 +562,8 @@ class MavenLocalRepository(
     ): org.apache.maven.artifact.repository.metadata.Metadata? {
         logger.info("Starting to create maven metadata and behavior type is $behaviorType...")
         val pom = records.firstOrNull { it.extension == "pom" } ?: return null
-        val pomLastUpdated = pom.timestamp ?: ZonedDateTime.now(ZoneId.of("UTC")).format(formatter)
+        val pomLastUpdated = (pom.timestamp ?: ZonedDateTime.now(ZoneId.of("UTC")).format(formatter))
+            .replace(".", "")
         return when (behaviorType) {
             SnapshotBehaviorType.NON_UNIQUE -> {
                 buildMetadata(mavenGavc, pomLastUpdated)
