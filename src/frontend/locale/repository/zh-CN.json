@@ -193,5 +193,9 @@
     "pleaseFileName": "请输入文件名",
     "pleaseMetadata": "请输入元数据",
     "metadata": "元数据",
-    "metadataRule": "请输入格式为 'key: value' 的数据"
+    "metadataRule": "请输入格式为 'key: value' 的数据",
+    "repoQuota": "仓库配额",
+    "unlimited": "无配额限制",
+    "totalQuota": "仓库配额总量",
+    "usedQuotaCapacity": "仓库已使用配额容量"
 }
