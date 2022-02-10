@@ -13,8 +13,7 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    repo-replication:
-      {{- if keys $.Values.replication.config }}
-        {{- toYaml .Values.replication.config | nindent 6 }}
-      {{- end}}
+    {{- if keys $.Values.replication.config }}
+      {{- toYaml .Values.replication.config | nindent 6 }}
+    {{- end}}
   {{- end }}
