@@ -13,7 +13,7 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    replication:
+    bkrepo-replication:
       {{- if keys $.Values.replication.config }}
         {{- toYaml .Values.replication.config | nindent 6 }}
       {{- end}}
