@@ -95,7 +95,7 @@ class UserController @Autowired constructor(
     }
 
     @ApiOperation("创建仓库用户")
-    @PostMapping("/create/repo")
+    @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
         checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToProject(request)
@@ -106,7 +106,7 @@ class UserController @Autowired constructor(
     }
 
     @ApiOperation("创建项目用户")
-    @PostMapping("/create/project")
+    @PostMapping("/create/repo")
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
         checkUserPermission(AuthPermissionType.PROJECT, request.projectId, null)
         userService.createUserToRepo(request)
@@ -126,7 +126,7 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("用户列表")
+    @ApiOperation("权限用户列表")
     @GetMapping("/listall")
     @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun listAllUser(@RequestBody rids: List<String>?): Response<List<User>> {
@@ -136,6 +136,7 @@ class UserController @Autowired constructor(
     @ApiOperation("删除用户")
     @DeleteMapping("/{uid}")
     @AuthPrincipal(AuthPrincipalType.ADMIN)
+//    @Principal(PrincipalType.ADMIN)
     fun deleteById(@PathVariable uid: String): Response<Boolean> {
         checkUserId(uid)
         userService.deleteById(uid)
@@ -152,7 +153,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("更新用户信息")
     @PutMapping("/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         checkUserId(uid)
         userService.updateUserById(uid, request)
@@ -189,15 +189,6 @@ class UserController @Autowired constructor(
     fun deleteUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
-    }
-
-    @ApiOperation("创建用户token")
-    @PostMapping("/token/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
-    fun createToken(@PathVariable uid: String): Response<Token?> {
-        checkUserId(uid)
-        val result = userService.createToken(uid)
-        return ResponseBuilder.success(result)
     }
 
     @ApiOperation("新加用户token")
