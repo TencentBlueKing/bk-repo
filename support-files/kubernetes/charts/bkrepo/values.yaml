@@ -331,7 +331,11 @@ generic:
 ## replication服务配置
 replication:
   enabled: true
-  config: {}
+  config:
+    # 应用版本
+    spring:
+      application:
+        version: 1.0.0
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
