@@ -43,6 +43,8 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
@@ -281,6 +283,18 @@ class UserNodeController(
         PipelineRepoUtils.checkPipeline(artifactInfo.repoName)
         val nodePage = nodeService.listNodePage(artifactInfo, nodeListOption)
         return ResponseBuilder.success(nodePage)
+    }
+
+    @ApiOperation("按sha256分页查询节点")
+    @Principal(PrincipalType.ADMIN)
+    @GetMapping("/page", params = ["sha256"])
+    fun listPageNodeBySha256(
+        @RequestParam("sha256", required = true) sha256: String,
+        nodeListOption: NodeListOption
+    ): Response<Page<NodeInfo>> {
+        return nodeService
+            .listNodePageBySha256(sha256, nodeListOption)
+            .let { ResponseBuilder.success(it) }
     }
 
     @ApiOperation("查询节点删除点")

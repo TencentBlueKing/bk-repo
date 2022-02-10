@@ -28,3 +28,4 @@ data/
 build.yml
 .temp/
 tmp/
+.codecc
