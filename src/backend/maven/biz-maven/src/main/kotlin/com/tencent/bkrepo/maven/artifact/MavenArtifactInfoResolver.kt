@@ -71,7 +71,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
 
             require(mavenArtifactInfo.isValid()) {
-                throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
+                throw MavenBadRequestException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
             }
         }
         return mavenArtifactInfo
