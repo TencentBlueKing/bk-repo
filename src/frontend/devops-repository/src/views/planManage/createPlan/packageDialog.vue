@@ -109,6 +109,7 @@
             changeSelect (sourceList, targetList) {
                 targetList.forEach(pkg => {
                     !this.versionStorage[pkg.fid] && this.handleVersionList(pkg)
+                    !(pkg.fid in this.checkedVersions) && (this.checkedVersions[pkg.fid] = [])
                 })
                 this.checkedPackage = targetList
             },
@@ -128,7 +129,7 @@
             },
             async confirmPackageData () {
                 const validate = this.checkedPackage.every(pkg => {
-                    return this.checkedVersions[pkg.fid].length
+                    return this.checkedVersions[pkg.fid]?.length
                 })
                 if (validate) {
                     this.$emit('confirm', this.checkedPackage.map(p => ({ ...p, versions: this.checkedVersions[p.fid] })))
