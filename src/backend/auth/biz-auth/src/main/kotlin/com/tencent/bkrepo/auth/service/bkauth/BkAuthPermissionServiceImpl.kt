@@ -186,6 +186,8 @@ class BkAuthPermissionServiceImpl constructor(
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         appId?.let {
             val request = buildProjectCheckRequest(projectId, userId, appId)
+            
+            logger.debug("list permission [$request]")
 
             // gitci
             if (matchGitCiCond(projectId)) {
