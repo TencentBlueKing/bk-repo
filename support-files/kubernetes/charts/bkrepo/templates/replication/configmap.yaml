@@ -13,6 +13,10 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    # 应用版本
+    spring:
+      application:
+        version: 1.0.0
     {{- if keys $.Values.replication.config }}
       {{- toYaml .Values.replication.config | nindent 6 }}
     {{- end}}
