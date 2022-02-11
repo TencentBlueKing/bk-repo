@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -82,6 +83,7 @@ abstract class NodeBaseService(
     }
 
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
+        checkNodeListOption(option)
         with(artifact) {
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
             if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
@@ -92,6 +94,7 @@ abstract class NodeBaseService(
     }
 
     override fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
+        checkNodeListOption(option)
         with(artifact) {
             val pageNumber = option.pageNumber
             val pageSize = option.pageSize
@@ -258,6 +261,17 @@ abstract class NodeBaseService(
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
             }
         }
+    }
+
+    private fun checkNodeListOption(option: NodeListOption) {
+        Preconditions.checkArgument(
+            option.sortProperty.none { !TNode::class.java.declaredFields.map { f -> f.name }.contains(it) },
+            "sortProperty"
+        )
+        Preconditions.checkArgument(
+            option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
+            "direction"
+        )
     }
 
     companion object {
