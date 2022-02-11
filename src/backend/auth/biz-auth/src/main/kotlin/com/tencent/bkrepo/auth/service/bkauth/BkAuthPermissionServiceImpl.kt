@@ -199,13 +199,16 @@ class BkAuthPermissionServiceImpl constructor(
 
             // devops 体系
             if (matchDevopsCond(appId)) {
+                logger.debug("not match devops1")
                 if (checkDevopsPermission(request)) {
+                    logger.debug("not match devops2")
                     return getAllRepoByProjectId(projectId)
                 }
+                logger.debug("not match devops3")
                 return emptyList()
             }
         }
-        logger.debug("not match deveops")
+        logger.debug("not match devops")
         return super.listPermissionRepo(projectId, userId, appId)
     }
 
