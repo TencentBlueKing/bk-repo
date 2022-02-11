@@ -46,11 +46,11 @@
                     </div>
                 </template>
             </bk-table-column>
-            <bk-table-column label="同步状态" align="center" width="80">
+            <bk-table-column label="同步状态" width="100">
                 <template #default="{ row }">
                     <div class="flex-align-center">
-                        <i class="status-icon" :class="row.status"></i>
-                        <span class="ml5" :class="row.status">{{ statusMap[row.status] || '未执行' }}</span>
+                        <i class="status-sign" :class="row.status"></i>
+                        <span class="ml5" :class="row.status">{{ asyncPlanStatusEnum[row.status] || '未执行' }}</span>
                     </div>
                 </template>
             </bk-table-column>
@@ -100,16 +100,12 @@
 <script>
     import { mapGetters, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    const statusMap = {
-        RUNNING: '执行中',
-        SUCCESS: '成功',
-        FAILED: '失败'
-    }
+    import { asyncPlanStatusEnum } from '@repository/store/publicEnum'
     export default {
         name: 'logDetail',
         data () {
             return {
-                statusMap,
+                asyncPlanStatusEnum,
                 isLoading: false,
                 logDetail: {},
                 pkgList: [],
@@ -225,20 +221,6 @@
     }
     .RUNNING {
         color: var(--primaryColor);
-    }
-    .status-icon {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        &.SUCCESS {
-            background-color: var(--successColor);
-        }
-        &.FAILED {
-            background-color: var(--dangerColor);
-        }
-        &.RUNNING {
-            background-color: var(--primaryColor);
-        }
     }
 }
 </style>
