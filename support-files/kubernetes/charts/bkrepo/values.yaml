@@ -376,7 +376,7 @@ docker:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-docker
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -416,7 +416,7 @@ npm:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-npm
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
