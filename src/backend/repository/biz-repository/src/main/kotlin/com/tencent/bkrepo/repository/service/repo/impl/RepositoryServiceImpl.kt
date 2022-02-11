@@ -143,7 +143,6 @@ class RepositoryServiceImpl(
         projectId: String,
         option: RepoListOption
     ): List<RepositoryInfo> {
-        logger.debug("aaaaaaaaaaaaaaaaaaa [${SecurityUtils.getPlatformId()}]")
         var names = servicePermissionResource.listPermissionRepo(
             projectId = projectId,
             userId = userId,

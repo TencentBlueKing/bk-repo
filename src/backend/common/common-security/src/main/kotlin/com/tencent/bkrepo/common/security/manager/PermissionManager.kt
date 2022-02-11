@@ -232,21 +232,6 @@ open class PermissionManager(
         return userResource.detail(userId).data?.admin == true
     }
 
-    fun listPermissionRepo(
-        userId: String,
-        projectId: String,
-        option: RepoListOption
-    ): Response<List<RepositoryInfo>> {
-        return repositoryClient.listPermissionRepo(userId, projectId, option)
-    }
-
-    fun listRepo(
-        projectId: String,
-        name: String? = null,
-        type: String? = null
-    ): Response<List<RepositoryInfo>> {
-        return repositoryClient.listRepo(projectId, name, type)
-    }
 
     fun enableAuth(): Boolean {
         return httpAuthProperties.enabled
