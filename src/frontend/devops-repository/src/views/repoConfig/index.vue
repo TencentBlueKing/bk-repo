@@ -225,7 +225,7 @@
                 return [
                     { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: '对外公开', value: 'public', tip: '所有用户都可以使用' }
+                    { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
                 ]
             }
         },
@@ -313,7 +313,7 @@
                     projectId: this.projectId,
                     name: this.repoName,
                     body
-                }).then(res => {
+                }).then(() => {
                     this.getRepoInfoHandler()
                     this.$bkMessage({
                         theme: 'success',

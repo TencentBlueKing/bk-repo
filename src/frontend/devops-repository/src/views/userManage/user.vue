@@ -222,6 +222,7 @@
         methods: {
             formatDate,
             ...mapActions([
+                'getRepoUserList',
                 'getUserList',
                 'createUser',
                 'editUser',
@@ -338,6 +339,7 @@
                             theme: 'success',
                             message: '用户导入' + this.$t('success')
                         })
+                        this.getRepoUserList()
                         this.handlerPaginationChange()
                     }).finally(() => {
                         this.isLoading = false
@@ -368,6 +370,7 @@
                     })
                     this.editUserDialog.show = false
                     this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
+                    this.getRepoUserList()
                     this.getUserListHandler()
                 }).finally(() => {
                     this.editUserDialog.loading = false
@@ -394,6 +397,7 @@
                     message: this.$t('deleteUserTitle', [row.name]),
                     confirmFn: () => {
                         return this.deleteUser(row.userId).then(() => {
+                            this.getRepoUserList()
                             this.getUserListHandler()
                             this.$bkMessage({
                                 theme: 'success',
