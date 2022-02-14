@@ -17,7 +17,7 @@
                     v-model="lastExecutionStatus"
                     placeholder="上次执行状态"
                     @change="handlerPaginationChange()">
-                    <bk-option v-for="(label, key) in statusMap" :key="key" :id="key" :name="label"></bk-option>
+                    <bk-option v-for="(label, key) in asyncPlanStatusEnum" :key="key" :id="key" :name="label"></bk-option>
                 </bk-select>
                 <bk-select
                     class="ml10 w250"
@@ -45,7 +45,7 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="计划名称" prop="name"></bk-table-column>
+            <bk-table-column label="计划名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="同步类型" width="100">
                 <template #default="{ row }">
                     {{ { 'REPOSITORY': '同步仓库', 'PACKAGE': '同步制品', 'PATH': '同步文件' }[row.replicaObjectType] }}
@@ -68,7 +68,7 @@
             </bk-table-column>
             <bk-table-column label="上次执行状态" width="100">
                 <template #default="{ row }">
-                    <span class="repo-tag" :class="row.lastExecutionStatus">{{statusMap[row.lastExecutionStatus] || '未执行'}}</span>
+                    <span class="repo-tag" :class="row.lastExecutionStatus">{{asyncPlanStatusEnum[row.lastExecutionStatus] || '未执行'}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column label="下次执行时间" prop="NEXT_EXECUTION_TIME" width="150" :render-header="renderHeader">
@@ -133,21 +133,17 @@
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
-    import { mapState, mapActions } from 'vuex'
-    import { formatDate } from '@repository/utils'
     import planLog from './planLog'
     import planCopyDialog from './planCopyDialog'
-    const statusMap = {
-        RUNNING: '执行中',
-        SUCCESS: '成功',
-        FAILED: '失败'
-    }
+    import { mapState, mapActions } from 'vuex'
+    import { formatDate } from '@repository/utils'
+    import { asyncPlanStatusEnum } from '@repository/store/publicEnum'
     export default {
         name: 'plan',
         components: { planLog, planCopyDialog, OperationList },
         data () {
             return {
-                statusMap,
+                asyncPlanStatusEnum,
                 isLoading: false,
                 showEnabled: undefined,
                 lastExecutionStatus: '',
@@ -326,18 +322,6 @@
     overflow: hidden;
     background-color: white;
     .plan-table {
-        .SUCCESS {
-            color: var(--successColor);
-            background-color: #DCFFE2;
-        }
-        .FAILED {
-            color: var(--dangerColor);
-            background-color: #FFDDDD;
-        }
-        .RUNNING {
-            color: var(--warningColor);
-            background-color: #FFE8C3;
-        }
         ::v-deep .selected-header {
             color: var(--primaryColor);
         }

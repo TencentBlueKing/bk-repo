@@ -85,7 +85,7 @@
     "noSearchData": "搜索结果为空",
     "refresh": "刷新",
     "download": "下载",
-    "downloads": "下载数",
+    "downloads": "下载量",
     "rename": "重命名",
     "copy": "复制",
     "move": "移动",
@@ -145,6 +145,7 @@
     "projectManage": "项目管理",
     "projectConfig": "项目设置",
     "nodeManage": "节点管理",
+    "repoScan": "制品扫描",
     "planManage": "制品分发",
     "repoAudit": "审计日志",
     "manage": "管理",
@@ -185,5 +186,7 @@
     "pleaseFileName": "请输入文件名",
     "pleaseMetadata": "请输入元数据",
     "metadata": "元数据",
-    "metadataRule": "请输入格式为 'key: value' 的数据"
+    "metadataRule": "请输入格式为 'key: value' 的数据",
+    "repoQuota": "仓库配额",
+    "unlimited": "无配额限制"
 }

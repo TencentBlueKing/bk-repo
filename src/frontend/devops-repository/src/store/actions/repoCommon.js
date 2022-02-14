@@ -124,7 +124,7 @@ export default {
                 },
                 rule: {
                     rules: [
-                        ...(MODE_CONFIG === 'ci'
+                        ...(MODE_CONFIG === 'ci' && isGeneric
                             ? [{
                                 field: 'repoName',
                                 value: ['report', 'log'],

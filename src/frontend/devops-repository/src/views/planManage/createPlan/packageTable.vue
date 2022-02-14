@@ -24,11 +24,13 @@
             添加制品
         </div>
         <div class="mt10 package-list" v-show="packageConstraints.length">
-            <div class="pl20 package-item flex-align-center" v-for="(pkg, ind) in packageConstraints" :key="pkg.fid">
-                <Icon size="16" :name="pkg.type.toLowerCase()" />
-                <span class="package-meta text-overflow" :title="pkg.key">{{ pkg.key }}</span>
-                <span class="package-meta text-overflow" :title="pkg.versions.join(',')">{{ pkg.versions.join(',') }}</span>
-                <Icon v-show="!disabled" class="mr20 hover-btn" size="14" name="icon-delete" @click.native="packageConstraints.splice(ind, 1)" />
+            <div class="pl10 pr10 package-item flex-between-center" v-for="(pkg, ind) in packageConstraints" :key="pkg.fid">
+                <div class="flex-align-center">
+                    <Icon size="16" :name="pkg.type.toLowerCase()" />
+                    <span class="ml5 package-meta text-overflow" :title="pkg.key">{{ pkg.key }}</span>
+                </div>
+                <span class="ml10 package-meta text-overflow flex-1" :title="pkg.versions.join(',')">{{ pkg.versions.join(',') }}</span>
+                <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="packageConstraints.splice(ind, 1)" />
             </div>
         </div>
         <package-dialog
@@ -79,7 +81,7 @@
         },
         watch: {
             initData: {
-                handler: function (data) {
+                handler (data) {
                     const { remoteRepoName, remoteProjectId, repoType, packageConstraints = [] } = JSON.parse(JSON.stringify(data))[0] || {}
                     this.selectedRepoName = remoteRepoName
                     this.packageConstraints = packageConstraints.map(pkg => ({
@@ -117,17 +119,15 @@
 <style lang="scss" scoped>
 .package-table-container {
     .package-list {
-        width: 600px;
-        border: 1px solid var(--borderWeightColor);
-        border-bottom-width: 0;
+        display: grid;
+        grid-template: auto / repeat(2, 1fr);
+        gap: 10px;
         .package-item {
-            justify-content: space-between;
             height: 32px;
-            border-bottom: 1px solid var(--borderWeightColor);
+            border: 1px solid var(--borderWeightColor);
             background-color: var(--bgLighterColor);
             .package-meta  {
-                flex: 1;
-                margin: 0 5px;
+                max-width: 250px;
             }
         }
     }

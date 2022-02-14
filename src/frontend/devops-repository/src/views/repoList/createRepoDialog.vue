@@ -262,7 +262,7 @@
                 return [
                     { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: '对外公开', value: 'public', tip: '所有用户都可以使用' }
+                    { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
                 ]
             }
         },
@@ -346,7 +346,7 @@
     .repo-type-radio-group {
         display: grid;
         grid-template: auto / repeat(6, 80px);
-        grid-gap: 20px;
+        gap: 20px;
         ::v-deep .bk-form-radio-button {
             .bk-radio-button-text {
                 height: auto;
