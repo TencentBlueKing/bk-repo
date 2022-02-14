@@ -72,9 +72,9 @@
     </canway-dialog>
 </template>
 <script>
-    import Clipboard from 'clipboard'
-    import { mapActions, mapState } from 'vuex'
     // import QRCode from '@repository/components/QRCode'
+    import { mapActions, mapState } from 'vuex'
+    import { copyToClipboard } from '@repository/utils'
     export default {
         name: 'genericShare',
         // components: { QRCode },
@@ -144,22 +144,16 @@
                 })
             },
             copyShareUrl (text) {
-                const clipboard = new Clipboard('body', {
-                    text: () => text
-                })
-                clipboard.on('success', (e) => {
+                copyToClipboard(text).then(() => {
                     this.$bkMessage({
                         theme: 'success',
                         message: this.$t('copy') + this.$t('success')
                     })
-                    clipboard.destroy()
-                })
-                clipboard.on('error', (e) => {
+                }).catch(() => {
                     this.$bkMessage({
                         theme: 'error',
                         message: this.$t('copy') + this.$t('fail')
                     })
-                    clipboard.destroy()
                 })
             },
             sendEmailHandler () {
