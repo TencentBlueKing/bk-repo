@@ -5,6 +5,7 @@ export const ROUTER_NAME_SERVICE = 'Service'
 export const ROUTER_NAME_NODE = 'Node'
 export const ROUTER_NAME_INSTANCE = 'Instance'
 export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
+export const ROUTER_NAME_EXT_PERMISSION = 'ExtPermission'
 export const ROUTER_NAME_WEBHOOK = 'Webhook'
 
 Vue.use(Router)
@@ -106,6 +107,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_STORAGE_CREDENTIALS,
         component: () => import('@/views/storage/Credential'),
         meta: { title: '凭据', icon: 'credentials' }
+      }
+    ]
+  },
+  {
+    path: '/ext-permission',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_EXT_PERMISSION,
+        meta: { title: '外部权限管理', icon: 'lock' },
+        component: () => import('@/views/ext-permission/index')
       }
     ]
   },
