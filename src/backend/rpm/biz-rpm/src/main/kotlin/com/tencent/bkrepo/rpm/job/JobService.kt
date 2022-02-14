@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -84,13 +83,13 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.util.concurrent.ConcurrentHashMap
 import javax.xml.parsers.SAXParserFactory
 
 @Component
 class JobService(
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
-    private val storageService: StorageService,
     private val storageManager: StorageManager
 ) {
 
@@ -545,31 +544,44 @@ class JobService(
         indexType: IndexType,
         maxCount: Int
     ) {
-        var nodeList: List<NodeInfo>? = mutableListOf()
+        var failNodeList: List<NodeInfo>? = mutableListOf()
         try {
-            nodeList = batchUpdateIndex(repo, repodataPath, indexType, maxCount)
+            failNodeList = batchUpdateIndex(repo, repodataPath, indexType, maxCount)
         } catch (e: Exception) {
-            logger.error("Batch update ${indexType.value} index: [${repo.projectId}|${repo.name}|$repodataPath] error")
-            logger.info("nodeList: ${nodeList?.toJsonString()}")
-            logger.error("msg", e)
+            // 此处报错为正常逻辑，交由下面单步处理
+            logger.warn("Batch update ${indexType.value} index: [${repo.projectId}|${repo.name}|$repodataPath] error")
+            logger.warn("nodeList: ${failNodeList?.toJsonString()}")
+            logger.warn("msg", e)
             try {
-                nodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
+                failNodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
             } catch (e: Exception) {
-                logger.error(
-                    "Single update ${indexType.value} " +
-                        "index: [${repo.projectId}|${repo.name}|$repodataPath] error"
+                if (!failNodeList.isNullOrEmpty() &&
+                        errorNodeMap.getOrDefault(failNodeList.first().fullPath, 0) > 2)
+                {
+                    logger.error("${failNodeList.first()}")
+                    logger.error(
+                            "Single update ${indexType.value}: [${repo.projectId}|${repo.name}|$repodataPath] error"
+                    )
+                    logger.error("msg", e)
+                    errorNodeMap.remove(failNodeList.first().fullPath)
+                    return
+                }
+                logger.warn(
+                    "Single update ${indexType.value}: [${repo.projectId}|${repo.name}|$repodataPath] error"
                 )
-                logger.info("nodeList: ${nodeList?.toJsonString()}")
-                logger.error("msg", e)
-                if (!nodeList.isNullOrEmpty()) { logger.warn("${nodeList.first()}") }
+                logger.warn("msg", e)
             } finally {
-                if (!nodeList.isNullOrEmpty()) { updateNodes(nodeList) }
+                if (!failNodeList.isNullOrEmpty()) {
+                    val count = errorNodeMap.getOrDefault(failNodeList.first().fullPath, 0)
+                    errorNodeMap[failNodeList.first().fullPath] = (count + 1)
+                    updateNodes(failNodeList)
+                }
             }
         }
     }
 
     /**
-     * 更新索引
+     * 更新索引， 返回没有成功处理的索引节点
      */
     @Suppress("TooGenericExceptionCaught")
     private fun batchUpdateIndex(
@@ -590,6 +602,7 @@ class JobService(
                 "${markNodePage.totalRecords} ${indexType.name} mark file to process"
         )
         val markNodes = markNodePage.records
+        val failNodes = mutableListOf<NodeInfo>().apply { addAll(markNodes) }
         val latestIndexNode = getLatestIndexNode(repo, repodataPath, "${indexType.value}.xml.gz")!!
         logger.info("latestIndexNode, fullPath: ${latestIndexNode.fullPath}")
         val unzipedIndexTempFile = storageManager.loadArtifactInputStream(
@@ -611,12 +624,13 @@ class JobService(
             storeXmlGZNode(repo, unzipedIndexTempFile, repodataPath, indexType)
             flushRepoMdXML(repo, repodataPath)
             deleteNodes(processedMarkNodes)
+            failNodes.removeAll(processedMarkNodes)
         } catch (e: Exception) {
             logger.error("batchUpdateIndex failed: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]", e)
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
-            return markNodes
+            return failNodes
         }
     }
 
@@ -734,5 +748,6 @@ class JobService(
     companion object {
         private const val MAX_REPO_PAGE_SIE = 1000
         private val logger: Logger = LoggerFactory.getLogger(JobService::class.java)
+        private val errorNodeMap: ConcurrentHashMap<String, Int> = ConcurrentHashMap()
     }
 }

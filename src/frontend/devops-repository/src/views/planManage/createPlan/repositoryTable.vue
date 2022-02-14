@@ -5,12 +5,12 @@
             添加仓库
         </div>
         <div v-show="replicaTaskObjects.length" class="mt10 repo-list">
-            <div class="pl20 repo-item flex-align-center" v-for="(repo, ind) in replicaTaskObjects" :key="repo.fid">
+            <div class="pl10 pr10 repo-item flex-between-center" v-for="(repo, ind) in replicaTaskObjects" :key="repo.fid">
                 <div class="flex-align-center">
                     <Icon size="16" :name="repo.type.toLowerCase()" />
                     <span class="repo-name text-overflow" :title="repo.name">{{ repo.name }}</span>
                 </div>
-                <Icon v-show="!disabled" class="mr20 hover-btn" size="14" name="icon-delete" @click.native="replicaTaskObjects.splice(ind, 1)" />
+                <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="replicaTaskObjects.splice(ind, 1)" />
             </div>
         </div>
         <repo-dialog :show="showAddDialog" :replica-task-objects="replicaTaskObjects" @confirm="confirm" @cancel="showAddDialog = false"></repo-dialog>
@@ -22,8 +22,14 @@
         name: 'repositoryTable',
         components: { repoDialog },
         props: {
-            initData: Array,
-            disabled: Boolean
+            initData: {
+                type: Array,
+                default: () => []
+            },
+            disabled: {
+                type: Boolean,
+                default: false
+            }
         },
         data () {
             return {
@@ -38,7 +44,7 @@
         },
         watch: {
             initData: {
-                handler: function (data) {
+                handler (data) {
                     this.replicaTaskObjects = JSON.parse(JSON.stringify(data)).map(repo => {
                         return {
                             ...repo,
@@ -77,17 +83,16 @@
 <style lang="scss" scoped>
 .repository-table-container {
     .repo-list {
-        width: 600px;
-        border: 1px solid var(--borderWeightColor);
-        border-bottom-width: 0;
+        display: grid;
+        grid-template: auto / repeat(4, 1fr);
+        gap: 10px;
         .repo-item {
-            justify-content: space-between;
             height: 32px;
-            border-bottom: 1px solid var(--borderWeightColor);
+            border: 1px solid var(--borderWeightColor);
             background-color: var(--bgLighterColor);
             .repo-name {
-                flex: 1;
-                margin: 0 5px;
+                max-width: 160px;
+                margin-left: 5px;
             }
         }
     }

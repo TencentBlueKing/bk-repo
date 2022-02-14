@@ -15,7 +15,7 @@
                     v-model="search.type"
                     placeholder="节点类型">
                     <bk-option
-                        v-for="(label, type) in typeMap"
+                        v-for="(label, type) in nodeTypeEnum"
                         :key="type"
                         :id="type"
                         :name="label">
@@ -41,7 +41,7 @@
             <bk-table-column label="状态" width="100">
                 <template #default="{ row }">
                     <div class="flex-align-center">
-                        <i class="status-icon" :class="row.status"></i>
+                        <i class="status-sign" :class="row.status"></i>
                         <span class="ml5" :class="row.status">{{ row.status === 'HEALTHY' ? '正常' : '异常' }}</span>
                     </div>
                 </template>
@@ -49,7 +49,7 @@
             <bk-table-column label="节点名称" prop="name" width="250"></bk-table-column>
             <bk-table-column label="节点类型" width="120">
                 <template #default="{ row }">
-                    {{ typeMap[row.type] }}
+                    {{ nodeTypeEnum[row.type] }}
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('address')">
@@ -87,7 +87,7 @@
         </bk-pagination>
         <canway-dialog
             v-model="editNodeDialog.show"
-            :title="editNodeDialog.add ? '新建节点' : '编辑节点'"
+            :title="editNodeDialog.add ? '创建节点' : '编辑节点'"
             width="600"
             height-num="402"
             @cancel="editNodeDialog.show = false">
@@ -122,11 +122,13 @@
     import OperationList from '@repository/components/OperationList'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
+    import { nodeTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'nodeManage',
         components: { OperationList },
         data () {
             return {
+                nodeTypeEnum,
                 isLoading: false,
                 search: {
                     name: '',
@@ -142,11 +144,6 @@
                     url: '',
                     username: '',
                     password: ''
-                },
-                typeMap: {
-                    STANDALONE: '独立节点',
-                    EDGE: '边缘节点',
-                    CENTER: '中心节点'
                 },
                 rules: {
                     name: [
@@ -308,17 +305,6 @@
         }
         .UNHEALTHY {
             color: var(--warningColor);
-        }
-        .status-icon {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            &.HEALTHY {
-                background-color: var(--successColor);
-            }
-            &.UNHEALTHY {
-                background-color: var(--warningColor);
-            }
         }
     }
 }

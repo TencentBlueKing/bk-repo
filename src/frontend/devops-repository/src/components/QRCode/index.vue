@@ -29,7 +29,7 @@
             }
         },
         watch: {
-            text: function () {
+            text () {
                 this.createQRCode()
             }
         },
