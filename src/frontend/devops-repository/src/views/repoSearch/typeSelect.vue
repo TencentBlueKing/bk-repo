@@ -76,7 +76,7 @@
         .repo-type-radio-group {
             display: grid;
             grid-template: auto / repeat(5, 88px);
-            grid-gap: 20px;
+            gap: 20px;
             ::v-deep .bk-form-radio-button {
                 .bk-radio-button-text {
                     height: auto;

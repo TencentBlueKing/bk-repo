@@ -36,7 +36,7 @@ export function throttle (func, interval = DEFAULT_TIME_INTERVAL) {
 
 export function throttleMessage (fn, delay = 1000) {
     let lastTime = 0
-    return function (messageBody) {
+    return messageBody => {
         // 设置默认配置
         const message = {
             offsetY: 80,

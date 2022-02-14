@@ -24,9 +24,9 @@
             添加文件路径
         </div>
         <div class="mt10 path-list" v-show="pathConstraints.length">
-            <div class="pl20 path-item flex-align-center" v-for="(path, ind) in pathConstraints" :key="path">
+            <div class="pl10 pr10 path-item flex-between-center" v-for="(path, ind) in pathConstraints" :key="path">
                 <span class="path-name text-overflow" :title="path">{{ path }}</span>
-                <Icon v-show="!disabled" class="mr20 hover-btn" size="14" name="icon-delete" @click.native="pathConstraints.splice(ind, 1)" />
+                <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="pathConstraints.splice(ind, 1)" />
             </div>
         </div>
         <path-dialog :show="showAddDialog" :path-constraints="pathConstraints" @confirm="confirm" @cancel="showAddDialog = false"></path-dialog>
@@ -71,7 +71,7 @@
         },
         watch: {
             initData: {
-                handler: function (data) {
+                handler (data) {
                     const { remoteRepoName, pathConstraints = [] } = JSON.parse(JSON.stringify(data))[0] || {}
                     this.selectedRepoName = remoteRepoName
                     this.pathConstraints = pathConstraints.map(v => v.path)
@@ -103,17 +103,16 @@
 <style lang="scss" scoped>
 .path-table-container {
     .path-list {
-        width: 600px;
-        border: 1px solid var(--borderWeightColor);
-        border-bottom-width: 0;
+        display: grid;
+        grid-template: auto / repeat(3, 1fr);
+        gap: 10px;
         .path-item {
-            justify-content: space-between;
             height: 32px;
-            border-bottom: 1px solid var(--borderWeightColor);
+            border: 1px solid var(--borderWeightColor);
             background-color: var(--bgLighterColor);
             .path-name {
-                flex: 1;
-                margin: 0 5px;
+                max-width: 240px;
+                margin-left: 5px;
             }
         }
     }
