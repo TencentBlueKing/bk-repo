@@ -1,5 +1,23 @@
 // cover some element-ui styles
 
+// theme
+$--color-primary:#1768EF;
+$--color-success:#45E35F;
+$--color-warning:#FFB848;
+$--color-danger:#FF5656;
+$--color-info:#979BA5;
+$--color-text-primary:#000000;
+$--color-text-regular:#313238;
+$--color-text-secondary:#979BA5;
+$--color-text-placeholder:#C4C6CC;
+$--border-color-base:#EAEBF0;
+$--border-color-light:#F0F1F5;
+$--border-color-lighter:#F5F7FA;
+$--border-color-extra-light:#FAFBFD;
+
+$--font-path: '~element-ui/lib/theme-chalk/fonts';
+@import "~element-ui/packages/theme-chalk/src/index";
+
 .el-breadcrumb__inner,
 .el-breadcrumb__inner a {
   font-weight: 400 !important;

@@ -145,6 +145,9 @@ class NodeSearchServiceImpl(
             it[NodeInfo::lastModifiedDate.name]?.let { lastModifiedDate ->
                 it[TNode::lastModifiedDate.name] = convertDateTime(lastModifiedDate)
             }
+            it[NodeInfo::deleted.name]?.let { deleted ->
+                it[TNode::deleted.name] = convertDateTime(deleted)
+            }
             it[NodeInfo::metadata.name]?.let { metadata ->
                 it[NodeInfo::metadata.name] = convert(metadata as List<Map<String, Any>>)
             }
