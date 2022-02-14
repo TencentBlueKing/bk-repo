@@ -25,15 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.pojo
 
-import io.swagger.annotations.ApiModel
+/**
+ * 扫描触发类型
+ */
+enum class ScanTriggerType {
+    /**
+     * 手动触发扫描
+     */
+    MANUAL,
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
+    /**
+     * 新构件上传时触发扫描
+     */
+    ON_NEW_ARTIFACT;
 }

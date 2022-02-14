@@ -25,15 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.task
 
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.scanner.pojo.ScanTask
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Component
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
+@Component
+class DefaultScanTaskScheduler @Autowired constructor(
+    private val nodeClient: NodeClient
+) : ScanTaskScheduler {
+    override fun schedule(scanTask: ScanTask) {
+        TODO("Not yet implemented")
+    }
+
+    override fun resume(scanTask: ScanTask) {
+        TODO("Not yet implemented")
+    }
+
+    override fun pause(scanTask: ScanTask) {
+        TODO("Not yet implemented")
+    }
+
+    override fun stop(scanTask: ScanTask) {
+        TODO("Not yet implemented")
     }
 }

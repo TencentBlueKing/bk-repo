@@ -25,66 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.model
+package com.tencent.bkrepo.scanner.pojo
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 文件扫描结果
- */
-@ShardingDocument("file_scan_result")
-@CompoundIndexes(
-    CompoundIndex(name = "sha256_idx", def = "{'sha256': 1}", background = true)
-)
-data class TFileScanResult(
-    val id: String,
-    /**
-     * 文件sha256
-     */
-    @ShardingKey(count = SHARDING_COUNT)
-    val sha256: String,
-    /**
-     * 各扫描器扫描报告
-     */
-    val scanResult: List<ScanResult>
-)
-
-/**
- * 扫描结果
- *
- * 不同扫描器有不同的扫描结果数据，不一定全部字段都有值
- */
-data class ScanResult(
-    /**
-     * 最后一次是在哪个扫描任务中扫描的
-     */
-    val taskId: String,
-    /**
-     * 文件开始扫描的时间戳
-     */
-    val startTime: Long,
-    /**
-     * 文件扫描结束的时间戳
-     */
-    val finishedTime: Long,
-    /**
-     * 扫描器
-     */
-    val scannerKey: String,
-    /**
-     * 扫描器类型
-     */
-    val scannerType: String,
-    /**
-     * 扫描器版本
-     */
-    val scannerVersion: String,
-    /**
-     * 扫描结果统计
-     */
-    val overview: ScanResultOverview
+@ApiModel("扫描结果统计信息")
+data class ScanResultOverview(
+    @ApiModelProperty("敏感信息数")
+    val sensitiveCount: Long = 0L,
+    @ApiModelProperty("高风险开源证书数量")
+    val licenseHighCount: Long = 0L,
+    @ApiModelProperty("中风险开源证书数量")
+    val licenseMediumCount: Long = 0L,
+    @ApiModelProperty("低风险开源证书数量")
+    val licenseLowCount: Long = 0L,
+    @ApiModelProperty("扫描器尚未支持扫描的开源证书数量")
+    val licenseNotAvailableCount: Long = 0L,
+    @ApiModelProperty("严重漏洞数")
+    val cveCriticalCount: Long = 0L,
+    @ApiModelProperty("高危漏洞数")
+    val cveHighCount: Long = 0L,
+    @ApiModelProperty("高危漏洞数")
+    val cveMediumCount: Long = 0L,
+    @ApiModelProperty("高危漏洞数")
+    val cveLowCount: Long = 0L,
+    @ApiModelProperty("敏感信息报告路径")
+    val sensitiveReportPath: String? = null,
+    @ApiModelProperty("证书审计报告路径")
+    val licenseReportPath: String? = null,
+    @ApiModelProperty("cve报告路径")
+    val cveReportPath: String? = null
 )

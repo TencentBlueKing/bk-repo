@@ -25,15 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.task
 
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import org.springframework.stereotype.Component
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
+@Component
+class MongoFileScanTaskQueue : FileScanTaskQueue {
+    override fun enqueue(subScanTask: SubScanTask) {
+        TODO("Not yet implemented")
     }
 }

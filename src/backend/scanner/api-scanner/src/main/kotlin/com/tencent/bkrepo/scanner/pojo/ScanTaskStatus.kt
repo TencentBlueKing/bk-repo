@@ -27,15 +27,28 @@
 
 package com.tencent.bkrepo.scanner.pojo
 
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.scanner.pojo.scanner.ScannerConfig
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-
-@ApiModel("扫描文件匹配请求")
-data class ScanQuery(
-    @ApiModelProperty("扫描器配置")
-    val scannerConfig: ScannerConfig,
-    @ApiModelProperty("扫描文件匹配规则")
-    val rule: Rule
-)
+/**
+ * 任务状态
+ */
+enum class ScanTaskStatus{
+    /**
+     * 排队中
+     */
+    PENDING,
+    /**
+     * 扫描中
+     */
+    SCANNING,
+    /**
+     * 扫描暂停
+     */
+    PAUSE,
+    /**
+     * 扫描中止
+     */
+    STOPPED,
+    /**
+     * 扫描结束
+     */
+    FINISHED
+}

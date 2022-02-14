@@ -33,5 +33,23 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("扫描任务信息")
 data class ScanTask(
     @ApiModelProperty("任务id")
-    val taskId: String
+    val taskId: String,
+    @ApiModelProperty("触发者")
+    val createdBy: String,
+    @ApiModelProperty("任务触发时间")
+    val triggerDateTime: String,
+    @ApiModelProperty("任务开始执行时间")
+    val startDateTime: String?,
+    @ApiModelProperty("任务执行结束时间")
+    val finishedDateTime: String?,
+    @ApiModelProperty("任务状态")
+    val status: String,
+    @ApiModelProperty("计划扫描文件总数")
+    val total: Long,
+    @ApiModelProperty("已扫描文件总数")
+    val scanned: Long,
+    @ApiModelProperty("使用的扫描器")
+    val scannerKey: String,
+    @ApiModelProperty("扫描结果统计数据")
+    val scanResultOverview: ScanResultOverview
 )

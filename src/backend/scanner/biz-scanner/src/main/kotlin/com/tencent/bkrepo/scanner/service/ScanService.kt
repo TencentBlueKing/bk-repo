@@ -27,13 +27,26 @@
 
 package com.tencent.bkrepo.scanner.service
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 
 /**
  * 扫描服务
  */
 interface ScanService {
-    fun scan(artifactInfo: ArtifactInfo, scanRequest: ScanRequest): ScanTask
+    /**
+     * 创建扫描任务，启动扫描
+     *
+     * @param scanRequest 扫描参数，指定使用的扫描器和需要扫描的文件
+     * @param triggerType 触发类型
+     */
+    fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask
+
+    /**
+     * 获取扫描任务
+     *
+     * @param taskId 任务id
+     */
+    fun task(taskId: String): ScanTask
 }

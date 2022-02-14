@@ -39,9 +39,9 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.pojo.ArtifactScanReport
 import com.tencent.bkrepo.scanner.pojo.ArtifactScanStatus
-import com.tencent.bkrepo.scanner.pojo.ScanQuery
 import com.tencent.bkrepo.scanner.pojo.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.service.ScanService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -59,28 +59,18 @@ import org.springframework.web.bind.annotation.RestController
 class UserScanController @Autowired constructor(
     private val scanService: ScanService
 ) {
-    @ApiOperation("扫描指定构件")
-    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
-    @PostMapping(DefaultArtifactInfo.DEFAULT_MAPPING_URI)
-    fun scan(
-        @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @RequestBody scanRequest: ScanRequest
-    ): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.scan(artifactInfo, scanRequest))
-    }
-
-    @ApiOperation("扫描匹配的构件")
-    @PostMapping
+    @ApiOperation("创建扫描任务")
     @Principal(PrincipalType.ADMIN)
-    fun scan(@RequestBody scanQuery: ScanQuery): Response<ScanTask> {
-        TODO()
+    @PostMapping
+    fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
+        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL))
     }
 
     @ApiOperation("获取扫描任务信息")
     @GetMapping("/tasks/{taskId}")
-    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @Principal(PrincipalType.ADMIN)
     fun task(@PathVariable("taskId") taskId: String): Response<ScanTask> {
-        TODO()
+        return ResponseBuilder.success(scanService.task(taskId))
     }
 
     @ApiOperation("获取文件扫描报告")

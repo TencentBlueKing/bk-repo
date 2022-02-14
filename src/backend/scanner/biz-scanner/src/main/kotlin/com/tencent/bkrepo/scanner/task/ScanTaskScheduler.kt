@@ -25,68 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.model
+package com.tencent.bkrepo.scanner.task
+
+import com.tencent.bkrepo.scanner.pojo.ScanTask
 
 /**
- * 扫描结果统计信息
+ * 扫描任务调度器
  */
-data class ScanResultOverview(
+interface ScanTaskScheduler {
     /**
-     * 敏感信息数
+     * 启动扫描任务
      */
-    val sensitiveCount: Long,
+    fun schedule(scanTask: ScanTask)
+
     /**
-     * 高风险开源证书数量
+     * 恢复执行扫描任务
      */
-    val licenseHighCount: Long,
+    fun resume(scanTask: ScanTask)
+
     /**
-     * 中风险开源证书数量
+     * 暂停扫描任务
      */
-    val licenseMediumCount: Long,
+    fun pause(scanTask: ScanTask)
+
     /**
-     * 低风险开源证书数量
+     * 停止扫描任务
      */
-    val licenseLowCount: Long,
-    /**
-     * 扫描器尚未支持扫描的开源证书数量
-     */
-    val licenseNotAvailableCount: Long,
-    // 各级别安全审计风险数，尚未支持
-//    val secHighCount: Long,
-//    val secMediumCount: Long,
-//    val secWarningCount: Long,
-//    val secPassCount: Long,
-//    val secNotAvailableCount: Long,
-    /**
-     * 严重漏洞数
-     */
-    val cveCriticalCount: Long,
-    /**
-     * 高危漏洞数
-     */
-    val cveHighCount: Long,
-    /**
-     * 高危漏洞数
-     */
-    val cveMediumCount: Long,
-    /**
-     * 高危漏洞数
-     */
-    val cveLowCount: Long,
-    /**
-     * 敏感信息报告路径
-     */
-    val sensitiveReportPath: String,
-    /**
-     * 证书审计报告路径
-     */
-    val licenseReportPath: String,
-    /**
-     * 安全审计报告路径
-     */
-    val secReportPath: String,
-    /**
-     * cve报告路径
-     */
-    val cveReportPath: String
-)
+    fun stop(scanTask: ScanTask)
+}

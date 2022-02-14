@@ -25,11 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.scanner.model.TScannerConfig
-import org.springframework.stereotype.Repository
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Repository
-class ScannerConfigDao : SimpleMongoDao<TScannerConfig>()
+@Document("scanner_config")
+@CompoundIndexes(
+    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
+)
+data class TScanner(
+    val id: String,
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    val lastModifiedBy: String,
+    val lastModifiedDate: LocalDateTime,
+    /**
+     * 扫描器名
+     */
+    val name: String,
+    /**
+     * 扫描器类型
+     */
+    val type: String,
+    /**
+     * 扫描器配置
+     */
+    val config: String
+)

@@ -25,15 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.task
 
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
+interface FileScanTaskQueue {
+    /**
+     * 提交扫描任务
+     */
+    fun enqueue(subScanTask: SubScanTask)
 }

@@ -27,44 +27,28 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("scanner_config")
+@Document("scan_task")
 data class TScanTask(
-    val id: String,
+    val id: String? = null,
     val createdBy: String,
+    /**
+     * 触发扫描时间
+     */
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
     /**
-     * 项目id
+     * 开始扫描时间
      */
-    val projectId: String? = null,
+    val startDateTime: LocalDateTime? = null,
     /**
-     * 仓库名
+     * 结束扫描时间
      */
-    val repoName: String? = null,
-    /**
-     * 扫描的目录或文件路径
-     */
-    val fullPath: String? = null,
-    /**
-     * 扫描文件匹配规则
-     */
-    val rule: String? = null,
-    /**
-     * 触发扫描时间戳
-     */
-    val triggerTime: Long,
-    /**
-     * 开始扫描时间戳
-     */
-    val startTime: Long,
-    /**
-     * 结束扫描时间戳
-     */
-    val finishedTime: Long,
+    val finishedDateTime: LocalDateTime? = null,
     /**
      * 触发类型，手动、新构件上传、定时扫描
      */
@@ -73,6 +57,10 @@ data class TScanTask(
      * 任务状态
      */
     val status: String,
+    /**
+     * 扫描文件匹配规则
+     */
+    val rule: String,
     /**
      * 需要扫描的文件数
      */
@@ -90,29 +78,3 @@ data class TScanTask(
      */
     val scanResultOverview: ScanResultOverview
 )
-
-/**
- * 任务状态
- */
-enum class TaskStatus{
-    /**
-     * 排队中
-     */
-    PENDING,
-    /**
-     * 扫描中
-     */
-    SCANNING,
-    /**
-     * 扫描暂停
-     */
-    PAUSE,
-    /**
-     * 扫描中止
-     */
-    STOPPED,
-    /**
-     * 扫描结束
-     */
-    FINISHED
-}

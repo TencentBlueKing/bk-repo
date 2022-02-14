@@ -25,21 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.exception
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.scanner.message.ScanMessageCode
 
-@ApiModel("扫描器配置")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes(
-    JsonSubTypes.Type(value = BinAuditorScannerConfig::class, name = BinAuditorScannerConfig.TYPE)
-)
-open class ScannerConfig(
-    @ApiModelProperty("扫描器唯一key")
-    open val key: String,
-    @ApiModelProperty("扫描器类型")
-    val type: String
-)
+class ScanTaskNotFoundException(
+    taskId: String
+) : NotFoundException(ScanMessageCode.SCAN_TASK_NOT_FOUND, taskId)

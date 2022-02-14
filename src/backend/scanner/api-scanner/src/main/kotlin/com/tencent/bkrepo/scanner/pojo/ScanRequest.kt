@@ -28,14 +28,13 @@
 package com.tencent.bkrepo.scanner.pojo
 
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.scanner.pojo.scanner.ScannerConfig
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("扫描请求")
 data class ScanRequest(
-    @ApiModelProperty("扫描器配置")
-    val scannerConfig: ScannerConfig,
+    @ApiModelProperty("扫描器名")
+    val scanner: String,
     @ApiModelProperty("扫描文件匹配规则")
-    val matchFileRule: Rule? = null
+    val rule: Rule
 )

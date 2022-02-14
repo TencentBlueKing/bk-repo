@@ -27,13 +27,19 @@
 
 package com.tencent.bkrepo.scanner.pojo.scanner
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
-}
+@ApiModel("扫描器配置")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = BinAuditorScannerConfig::class, name = BinAuditorScannerConfig.TYPE)
+)
+open class Scanner(
+    @ApiModelProperty("扫描器名")
+    open val name: String,
+    @ApiModelProperty("扫描器类型")
+    val type: String
+)

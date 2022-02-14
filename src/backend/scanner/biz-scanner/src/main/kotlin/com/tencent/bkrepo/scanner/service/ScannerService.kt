@@ -25,15 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.service
 
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
+/**
+ * 扫描器服务
+ */
+interface ScannerService {
+    /**
+     * 创建扫描器
+     *
+     * @param scanner 扫描器配置
+     */
+    fun create(scanner: Scanner): Scanner
+    /**
+     * 获取扫描器
+     *
+     * @param name 扫描器名
+     * @throws com.tencent.bkrepo.scanner.exception.ScannerNotFoundException 找不到指定扫描器时抛出异常
+     */
+    fun get(name: String): Scanner
+    /**
+     * 获取扫描器
+     * 
+     * @param name 扫描器名
+     */
+    fun find(name: String): Scanner?
 }

@@ -25,15 +25,65 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.model
 
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
+import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
-}
+/**
+ * 文件扫描结果
+ */
+@ShardingDocument("file_scan_result")
+@CompoundIndexes(
+    CompoundIndex(name = "sha256_idx", def = "{'sha256': 1}", background = true)
+)
+data class TFileScanResult(
+    val id: String,
+    /**
+     * 文件sha256
+     */
+    @ShardingKey(count = SHARDING_COUNT)
+    val sha256: String,
+    /**
+     * 文件使用不同扫描器的扫描结果列表
+     */
+    val scanResult: List<ScanResult>
+)
+
+/**
+ * 扫描结果
+ */
+data class ScanResult(
+    /**
+     * 最后一次是在哪个扫描任务中扫描的
+     */
+    val taskId: String,
+    /**
+     * 文件开始扫描的时间戳
+     */
+    val startTime: Long,
+    /**
+     * 文件扫描结束的时间戳
+     */
+    val finishedTime: Long,
+    /**
+     * 扫描器
+     */
+    val scannerKey: String,
+    /**
+     * 扫描器类型
+     */
+    val scannerType: String,
+    /**
+     * 扫描器版本
+     */
+    val scannerVersion: String,
+    /**
+     * 扫描结果统计
+     */
+    val overview: ScanResultOverview
+)

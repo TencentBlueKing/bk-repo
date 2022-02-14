@@ -25,15 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.message
 
-import io.swagger.annotations.ApiModel
+import com.tencent.bkrepo.common.api.message.MessageCode
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
+enum class ScanMessageCode(
+    private val key: String,
+    private val businessCode: Int
+) : MessageCode {
+    SCANNER_NOT_FOUND("scan.scanner.not-found", 0),
+    SCAN_TASK_NOT_FOUND("scan.task.not-found", 1);
+
+    override fun getBusinessCode() = businessCode
+    override fun getKey() = key
+    override fun getModuleCode() = 16
 }

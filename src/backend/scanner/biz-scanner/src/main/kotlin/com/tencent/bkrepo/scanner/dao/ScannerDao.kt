@@ -25,24 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.model
+package com.tencent.bkrepo.scanner.dao
 
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.scanner.model.TScanner
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-@Document("scanner_config")
-data class TScannerConfig(
-    val id: String,
-    val createdBy: String,
-    val createdDate: LocalDateTime,
-    val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime,
-    /**
-     * 扫描器类型
-     */
-    val type: String,
-    /**
-     * 扫描器配置
-     */
-    val config: String
-)
+@Repository
+class ScannerDao : SimpleMongoDao<TScanner>() {
+    fun existsByName(name: String): Boolean {
+        val query = Query(TScanner::name.isEqualTo(name))
+        return exists(query)
+    }
+}
