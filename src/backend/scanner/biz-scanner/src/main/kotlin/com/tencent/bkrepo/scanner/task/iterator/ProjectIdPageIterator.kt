@@ -25,10 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-query:query-api"))
-    api(project(":repository:api-repository"))
-    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
+package com.tencent.bkrepo.scanner.task.iterator
+
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.repository.api.ProjectClient
+import org.slf4j.LoggerFactory
+
+class ProjectIdPageIterator(
+    private val projectClient: ProjectClient,
+    page: Int = INITIAL_PAGE,
+    pageSize: Int = DEFAULT_PAGE_SIZE,
+    index: Int = INITIAL_INDEX,
+    resume: Boolean = false
+) : PageableIterator<String>(page, pageSize, index, resume) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
+    override fun nextPageData(page: Int, pageSize: Int): List<String> {
+        return if (page == FIRST_PAGE) {
+            val res = projectClient.listProject()
+            if (res.isNotOk()) {
+                logger.error("List projects failed: code[${res.code}], message[${res.message}]")
+                throw SystemErrorException()
+            }
+            return res.data!!.map { it.name }
+        } else {
+            emptyList()
+        }
+    }
+
+    companion object {
+        private const val FIRST_PAGE = 1
+    }
 }
