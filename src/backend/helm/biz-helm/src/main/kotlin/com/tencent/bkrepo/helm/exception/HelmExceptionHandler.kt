@@ -116,7 +116,7 @@ class HelmExceptionHandler {
         val userId = HttpContextHolder.getRequest().getAttribute(USER_KEY) ?: ANONYMOUS_USER
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
-            "User[$userId] access resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}"
+            "User[$userId] access helm resource[$uri] failed[${exception.javaClass.simpleName}]: ${exception.message}"
         )
     }
 
