@@ -556,14 +556,14 @@ class JobService(
                 failNodeList = batchUpdateIndex(repo, repodataPath, indexType, 1)
             } catch (e: Exception) {
                 if (!failNodeList.isNullOrEmpty() &&
-                        errorNodeMap.getOrDefault(failNodeList.first().fullPath, 0) > 2)
-                {
-                    logger.error("${failNodeList.first()}")
+                    errorNodeMap.getOrDefault(failNodeList.first().fullPath, 0) > 2
+                ) {
+                    logger.error("${failNodeList.first()}, " +
+                            "failed times: ${errorNodeMap[failNodeList.first().fullPath]}")
                     logger.error(
-                            "Single update ${indexType.value}: [${repo.projectId}|${repo.name}|$repodataPath] error"
+                        "Single update ${indexType.value}: [${repo.projectId}|${repo.name}|$repodataPath] error"
                     )
                     logger.error("msg", e)
-                    errorNodeMap.remove(failNodeList.first().fullPath)
                     return
                 }
                 logger.warn(
@@ -576,6 +576,10 @@ class JobService(
                     errorNodeMap[failNodeList.first().fullPath] = (count + 1)
                     updateNodes(failNodeList)
                 }
+            }
+        } finally {
+            if (failNodeList == null) {
+                errorNodeMap.clear()
             }
         }
     }
@@ -625,8 +629,6 @@ class JobService(
             flushRepoMdXML(repo, repodataPath)
             deleteNodes(processedMarkNodes)
             failNodes.removeAll(processedMarkNodes)
-        } catch (e: Exception) {
-            logger.error("batchUpdateIndex failed: [${repo.projectId}|${repo.name}|$repodataPath|$indexType]", e)
         } finally {
             unzipedIndexTempFile.delete()
             logger.info("temp index file ${unzipedIndexTempFile.absolutePath} ")
