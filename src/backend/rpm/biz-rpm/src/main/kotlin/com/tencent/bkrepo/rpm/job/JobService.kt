@@ -558,7 +558,8 @@ class JobService(
                 if (!failNodeList.isNullOrEmpty() &&
                     errorNodeMap.getOrDefault(failNodeList.first().fullPath, 0) > 2
                 ) {
-                    logger.error("${failNodeList.first()}, failed times: ${errorNodeMap[failNodeList.first().fullPath]}")
+                    logger.error("${failNodeList.first()}, " +
+                            "failed times: ${errorNodeMap[failNodeList.first().fullPath]}")
                     logger.error(
                         "Single update ${indexType.value}: [${repo.projectId}|${repo.name}|$repodataPath] error"
                     )
