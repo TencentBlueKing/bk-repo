@@ -35,8 +35,10 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -144,7 +146,9 @@ open class AbstractChartService : ArtifactService() {
     fun getOriginalIndexYaml(projectId: String, repoName: String): HelmIndexYamlMetadata {
         val fullPath = HelmUtils.getIndexCacheYamlFullPath()
         val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-        val inputStream = storageManager.loadArtifactInputStream(nodeDetail, null)
+        val repository = repositoryClient.getRepoDetail(projectId, repoName, RepositoryType.HELM.name).data
+            ?: throw RepoNotFoundException("Repository[$repoName] does not exist")
+        val inputStream = storageManager.loadArtifactInputStream(nodeDetail, repository.storageCredentials)
             ?: throw HelmFileNotFoundException("Artifact[$fullPath] does not exist")
         return inputStream.use { it.readYamlString() }
     }
@@ -176,7 +180,13 @@ open class AbstractChartService : ArtifactService() {
      * upload index.yaml file
      */
     fun uploadIndexYamlMetadata(artifactFile: ArtifactFile, nodeCreateRequest: NodeCreateRequest) {
-        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, null)
+        val repository = repositoryClient.getRepoDetail(
+            nodeCreateRequest.projectId,
+            nodeCreateRequest.repoName,
+            RepositoryType.HELM.name
+        ).data
+            ?: throw RepoNotFoundException("Repository[${nodeCreateRequest.repoName}] does not exist")
+        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, repository.storageCredentials)
     }
 
     /**

@@ -106,6 +106,15 @@ abstract class NodeBaseService(
         }
     }
 
+    override fun listNodePageBySha256(sha256: String, option: NodeListOption): Page<NodeInfo> {
+        val nodes = nodeDao.pageBySha256(sha256, option, true)
+        return Pages.ofResponse(
+            Pages.ofRequest(option.pageNumber, option.pageSize),
+            nodes.totalElements,
+            nodes.content.map { convert(it)!! }
+        )
+    }
+
     override fun checkExist(artifact: ArtifactInfo): Boolean {
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
@@ -273,7 +282,8 @@ abstract class NodeBaseService(
                     md5 = it.md5,
                     metadata = metadata,
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
-                    copyIntoCredentialsKey = it.copyIntoCredentialsKey
+                    copyIntoCredentialsKey = it.copyIntoCredentialsKey,
+                    deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }

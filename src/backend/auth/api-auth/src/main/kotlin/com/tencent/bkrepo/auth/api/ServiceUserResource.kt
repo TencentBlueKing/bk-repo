@@ -59,7 +59,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.CookieValue
 
 @Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
@@ -160,8 +159,6 @@ interface ServiceUserResource {
     @ApiOperation("创建用户token")
     @PostMapping("/token/{uid}")
     fun createToken(
-        @RequestAttribute
-        userId: String?,
         @ApiParam(value = "用户id")
         @PathVariable uid: String
     ): Response<Token?>
@@ -169,8 +166,6 @@ interface ServiceUserResource {
     @ApiOperation("新加用户token")
     @PostMapping("/token/{uid}/{name}")
     fun addUserToken(
-        @RequestAttribute
-        userId: String?,
         @ApiParam(value = "用户id")
         @PathVariable("uid") uid: String,
         @ApiParam(value = "name")
@@ -184,8 +179,6 @@ interface ServiceUserResource {
     @ApiOperation("查询用户token列表")
     @GetMapping("/list/token/{uid}")
     fun listUserToken(
-        @RequestAttribute
-        userId: String?,
         @ApiParam(value = "用户id")
         @PathVariable("uid") uid: String
     ): Response<List<TokenResult>>
@@ -193,8 +186,6 @@ interface ServiceUserResource {
     @ApiOperation("删除用户token")
     @DeleteMapping("/token/{uid}/{name}")
     fun deleteToken(
-        @RequestAttribute
-        userId: String?,
         @ApiParam(value = "用户id")
         @PathVariable uid: String,
         @ApiParam(value = "用户token")
