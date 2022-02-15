@@ -25,6 +25,10 @@
                         <span class="flex-1 text-overflow" :title="detailSlider.data.md5">{{ detailSlider.data.md5 }}</span>
                     </div>
                 </div>
+                <div v-if="!detailSlider.folder" class="display-block" data-title="命令行下载">
+                    <span class="ml30 code-tip">使用个人访问令牌替换&lt;PERSONAL_ACCESS_TOKEN&gt;</span>
+                    <code-area class="mt10" :code-list="codeList"></code-area>
+                </div>
             </bk-tab-panel>
             <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
                 <div class="version-metadata display-block" data-title="元数据">
@@ -71,10 +75,12 @@
     </bk-sideslider>
 </template>
 <script>
+    import CodeArea from '@repository/components/CodeArea'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     export default {
         name: 'genericDetail',
+        components: { CodeArea },
         data () {
             return {
                 tabName: 'detailInfo',
@@ -112,7 +118,7 @@
             }
         },
         computed: {
-            ...mapState(['userList']),
+            ...mapState(['userInfo', 'userList']),
             detailInfoMap () {
                 return [
                     { name: 'fullPath', label: this.$t('path') },
@@ -123,6 +129,11 @@
                     { name: 'lastModifiedDate', label: this.$t('lastModifiedDate') }
                 ].filter(({ name }) => name in this.detailSlider.data && (name !== 'size' || !this.detailSlider.data.folder))
                     .map(item => ({ ...item, value: this.detailSlider.data[item.name] }))
+            },
+            codeList () {
+                return [
+                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.host}/generic/${this.detailSlider.repoName}/${this.detailSlider.path}`
+                ]
             }
         },
         methods: {
@@ -264,6 +275,9 @@
                 }
             }
         }
+    }
+    .code-tip {
+        color: var(--fontSubsidiaryColor);
     }
 }
 </style>
