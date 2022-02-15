@@ -98,13 +98,7 @@ class BkAuthPermissionServiceImpl constructor(
                     checkProjectPermission(uid, projectId!!, action)
                 }
                 PIPELINE -> {
-                    var projectPass = false
-                    val pipelinePass = checkPipelinePermission(uid, projectId!!, path, resourceType, action)
-                    if (!pipelinePass) {
-                        logger.warn("devops pipeline permission check fail [$request]")
-                        projectPass = checkProjectPermission(uid, projectId!!, action)
-                    }
-                    pipelinePass || projectPass
+                    checkPipelineOrProjectPermission(request)
                 }
                 REPORT -> {
                     checkReportPermission(action)
@@ -123,6 +117,19 @@ class BkAuthPermissionServiceImpl constructor(
 
             logger.debug("devops pass [$request]")
             return pass
+        }
+    }
+
+    private fun checkPipelineOrProjectPermission(request: CheckPermissionRequest): Boolean {
+        with(request) {
+            var projectPass = false
+            val pipelinePass = checkPipelinePermission(uid, projectId!!, path, resourceType, action)
+            if (!pipelinePass) {
+                logger.warn("devops pipeline permission check fail [$request]")
+                projectPass = checkProjectPermission(uid, projectId!!, action)
+                if (projectPass) logger.warn("devops pipeline permission widen to project permission [$request]")
+            }
+            return pipelinePass || projectPass
         }
     }
 
