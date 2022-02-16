@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.helm.listener.operation
 
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
-import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
@@ -41,20 +38,30 @@ import org.springframework.util.StopWatch
 
 abstract class AbstractChartOperation(
     private val request: ChartOperationRequest,
-    private val redisOperation: RedisOperation,
     private val chartService: AbstractChartService
 ) : Runnable {
     override fun run() {
         with(request) {
-            val lock = initRedisLock(projectId, repoName)
-            if (getSpinLock(lock)) {
+            val lock = chartService.initRedisLock(projectId, repoName)
+            val stopWatch = StopWatch(
+                "Handling event for refreshing index.yaml " +
+                    "in repo [$projectId/$repoName] by User [$operator]"
+            )
+            stopWatch.start()
+            if (chartService.getSpinLock(lock)) {
                 logger.info(
-                    "Prepare to refresh index.yaml with redis distribute lock."
+                    "Prepare to refresh index.yaml with redis distribute lock " +
+                        "in repo [$projectId/$repoName] by User [$operator]."
                 )
                 lock.use {
                     handleOperation(this)
                 }
             }
+            stopWatch.stop()
+            logger.info(
+                "Total cost for refreshing index.yaml" +
+                    "in repo [$projectId/$repoName] is: ${stopWatch.totalTimeSeconds}s"
+            )
         }
     }
 
@@ -65,7 +72,8 @@ abstract class AbstractChartOperation(
         with(request) {
             try {
                 val stopWatch = StopWatch(
-                    "getOriginalIndexYamlFile for refreshing index.yaml in repo [$projectId/$repoName]"
+                    "getOriginalIndexYamlFile for refreshing index.yaml " +
+                        "in repo [$projectId/$repoName] by User [$operator]"
                 )
                 stopWatch.start()
                 val originalIndexYamlMetadata =
@@ -75,9 +83,12 @@ abstract class AbstractChartOperation(
                         chartService.getOriginalIndexYaml(projectId, repoName)
                     }
                 stopWatch.stop()
-                logger.info("query index file metadata cost: ${stopWatch.totalTimeSeconds}s")
+                logger.info(
+                    "query index.yaml file metadata " +
+                        "in repo [$projectId/$repoName] cost: ${stopWatch.totalTimeSeconds}s"
+                )
                 handleEvent(originalIndexYamlMetadata)
-                logger.info("index.yaml is ready to upload...")
+                logger.info("index.yaml in repo [$projectId/$repoName] is ready to upload...")
                 val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
                     originalIndexYamlMetadata, this
                 )
@@ -101,47 +112,7 @@ abstract class AbstractChartOperation(
      */
     open fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {}
 
-    /**
-     * 自旋获取redis锁
-     */
-    private fun getSpinLock(
-        lock: RedisLock,
-        sleepTime: Long = SPIN_SLEEP_TIME,
-        retryTimes: Int = RETRY_TIMES
-    ): Boolean {
-        logger.info("Start to get redis lock to fresh index.yaml..")
-        loop@ for (i in 0 until retryTimes) {
-            when {
-                lock.tryLock() -> return true
-                else -> try {
-                    Thread.sleep(sleepTime)
-                } catch (e: InterruptedException) {
-                    continue@loop
-                }
-            }
-        }
-        logger.info("Could not get redis lock after $retryTimes times...")
-        return false
-    }
-
-    /**
-     * 初始化redislock
-     */
-    private fun initRedisLock(projectId: String, repoName: String): RedisLock {
-        val lockKey = buildRedisKey(projectId, repoName)
-        return RedisLock(redisOperation, lockKey, EXPIRED_TIME_IN_SECONDS)
-    }
-
     companion object {
         val logger: Logger = LoggerFactory.getLogger(AbstractChartOperation::class.java)
-
-        /**
-         * 定义Redis过期时间
-         */
-        private const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
-        private const val SPIN_SLEEP_TIME: Long = 30L
-        private const val RETRY_TIMES: Int = 10000
-
-        fun buildRedisKey(projectId: String, repoName: String): String = "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
     }
 }

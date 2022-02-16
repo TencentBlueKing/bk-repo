@@ -51,6 +51,7 @@ import com.tencent.bkrepo.helm.constants.OVERWRITE
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
+import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
@@ -77,11 +78,18 @@ class HelmLocalRepository(
             putAttribute(SIZE, size)
             when (getStringAttribute(FILE_TYPE)) {
                 CHART -> {
-                    val chartMetadata = ChartParserUtil.parseChartFileInfo(context.getArtifactFile())
-                    putAttribute(FULL_PATH, HelmUtils.getChartFileFullPath(chartMetadata.name, chartMetadata.version))
-                    putAttribute(META_DETAIL, HelmMetadataUtils.convertToMap(chartMetadata))
-                    putAttribute(NAME, chartMetadata.name)
-                    putAttribute(VERSION, chartMetadata.version)
+                    try {
+                        val chartMetadata = ChartParserUtil.parseChartFileInfo(context.getArtifactFile())
+                        putAttribute(
+                            FULL_PATH,
+                            HelmUtils.getChartFileFullPath(chartMetadata.name, chartMetadata.version)
+                        )
+                        putAttribute(META_DETAIL, HelmMetadataUtils.convertToMap(chartMetadata))
+                        putAttribute(NAME, chartMetadata.name)
+                        putAttribute(VERSION, chartMetadata.version)
+                    } catch (e: Exception) {
+                        throw HelmBadRequestException("The chart is broken.....")
+                    }
                 }
                 PROV -> {
                     val provFileInfo = ChartParserUtil.parseProvFileInfo(context.getArtifactFile())

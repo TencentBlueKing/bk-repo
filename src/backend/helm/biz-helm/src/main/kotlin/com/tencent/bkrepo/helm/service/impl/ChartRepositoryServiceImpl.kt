@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -74,7 +75,20 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
-        downloadIndexYaml()
+        with(artifactInfo) {
+            val lock = initRedisLock(artifactInfo.projectId, repoName)
+            if (getSpinLock(lock, 1500)) {
+                ChartInfoServiceImpl.logger.info(
+                    "Handling download index.yaml request with redis distribute lock " +
+                        "in repo [$projectId/$repoName] by User [${SecurityUtils.getUserId()}]."
+                )
+                lock.use {
+                    downloadIndexYaml()
+                }
+            } else {
+                downloadIndexYaml()
+            }
+        }
     }
 
     @Synchronized
