@@ -132,7 +132,7 @@
             },
             codeList () {
                 return [
-                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/web/generic/${this.detailSlider.repoName}${this.detailSlider.path}`
+                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/generic/${this.detailSlider.repoName}${this.detailSlider.path}`
                 ]
             }
         },
