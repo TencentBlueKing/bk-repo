@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.NAME
@@ -69,6 +70,22 @@ class ChartInfoServiceImpl(
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
+        with(artifactInfo) {
+            val lock = initRedisLock(artifactInfo.projectId, repoName)
+            if (getSpinLock(lock, 1500)) {
+                logger.info(
+                    "Handling query index.yaml request with redis distribute lock " +
+                        "in repo [$projectId/$repoName] by User [${SecurityUtils.getUserId()}]."
+                )
+                lock.use {
+                    return chartListSearch(artifactInfo, startTime)
+                }
+            }
+            return chartListSearch(artifactInfo, startTime)
+        }
+    }
+
+    private fun chartListSearch(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
         val indexYamlMetadata = queryOriginalIndexYaml()
         val startDate = startTime ?: LocalDateTime.MIN
         return ResponseEntity.ok().body(

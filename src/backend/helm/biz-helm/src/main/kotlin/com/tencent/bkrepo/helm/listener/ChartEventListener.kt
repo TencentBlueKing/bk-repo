@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.helm.listener
 
-import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
@@ -46,7 +45,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class ChartEventListener(
-    private val redisOperation: RedisOperation,
     private val helmProperties: HelmProperties
 ) : AbstractChartService() {
 
@@ -63,7 +61,7 @@ class ChartEventListener(
                 logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
                 return
             }
-            val task = ChartDeleteOperation(event.request, redisOperation, this@ChartEventListener)
+            val task = ChartDeleteOperation(event.request, this@ChartEventListener)
             threadPoolExecutor.submit(task)
         }
     }
@@ -81,7 +79,7 @@ class ChartEventListener(
                 )
                 return
             }
-            val task = ChartPackageDeleteOperation(event.requestPackage, redisOperation, this@ChartEventListener)
+            val task = ChartPackageDeleteOperation(event.requestPackage, this@ChartEventListener)
             threadPoolExecutor.submit(task)
         }
     }
@@ -107,7 +105,6 @@ class ChartEventListener(
                     logger.info("Creating upload event request....")
                     val task = ChartUploadOperation(
                         uploadRequest,
-                        redisOperation,
                         helmChartMetadata,
                         helmProperties.domain,
                         nodeDetail,
