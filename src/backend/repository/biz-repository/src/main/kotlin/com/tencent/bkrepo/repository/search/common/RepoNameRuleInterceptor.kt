@@ -41,7 +41,6 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
-import com.tencent.bkrepo.repository.util.PipelineRepoUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -142,11 +141,9 @@ class RepoNameRuleInterceptor(
         repoName: String,
         repoPublic: Boolean? = null
     ): Boolean {
-        // 禁止查询pipeline仓库
         if (SecurityUtils.isServiceRequest()) {
             return true
         }
-        PipelineRepoUtils.checkPipeline(repoName)
         return try {
             permissionManager.checkRepoPermission(
                 action = PermissionAction.READ,
