@@ -27,18 +27,14 @@
 
 package com.tencent.bkrepo.scanner.task.iterator
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.repository.api.ProjectClient
 import org.slf4j.LoggerFactory
 
 class ProjectIdPageIterator(
     private val projectClient: ProjectClient,
-    page: Int = INITIAL_PAGE,
-    pageSize: Int = DEFAULT_PAGE_SIZE,
-    index: Int = INITIAL_INDEX,
-    resume: Boolean = false
-) : PageableIterator<String>(page, pageSize, index, resume) {
+    position: PageIteratePosition = PageIteratePosition()
+) : PageableIterator<String>(position) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     override fun nextPageData(page: Int, pageSize: Int): List<String> {

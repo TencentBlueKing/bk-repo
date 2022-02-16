@@ -44,21 +44,13 @@ import org.slf4j.LoggerFactory
  *
  * @param projectIdIterator 用于提供需要遍历的Node所属的项目
  * @param nodeClient nodeClient
- * @param rule 需要遍历的文件匹配规则，规则中的所有projectId相关条件会被移除
- * @param page 遍历开始的页
- * @param pageSize 遍历页大小
- * @param index 在当前页数据中开始的位置
- * @param resume 是否恢复进度
+ * @param position 当前文件遍历到的位置
  */
-open class NodeIterator(
+class NodeIterator(
     private val projectIdIterator: Iterator<String>,
     private val nodeClient: NodeClient,
-    rule: Rule.NestedRule? = null,
-    page: Int = INITIAL_PAGE,
-    pageSize: Int = DEFAULT_PAGE_SIZE,
-    index: Int = INITIAL_INDEX,
-    resume: Boolean = false
-) : PageableIterator<NodeIterator.Node>(page, pageSize, index, resume) {
+    override val position: NodeIteratePosition
+) : PageableIterator<NodeIterator.Node>(position) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     /**
@@ -66,35 +58,31 @@ open class NodeIterator(
      */
     private val rule: Rule?
 
-    /**
-     * 当前正在查询的projectId
-     */
-    private var projectId: String? = null
-
     init {
-        this.rule = removeProjectIdRule(rule)
+        this.rule = removeProjectIdRule(position.rule)
     }
 
     /**
      * 由于切换查询的projectId时page会变，因此不使用参数传入的page和pageSize
      */
     override fun nextPageData(page: Int, pageSize: Int): List<Node> {
-        var nodes: List<Node>
-        do {
-            nodes = requestNodes(projectId, rule, this.page + 1, this.pageSize)
+        with(position) {
+            var nodes: List<Node>
+            do {
+                nodes = requestNodes(projectId, rule, this.page + 1, this.pageSize)
 
-            // 当前project没有数据，且没有其他需要遍历的project时表示遍历完成
-            if (nodes.isNotEmpty() || !projectIdIterator.hasNext()) {
-                break
-            }
+                // 当前project没有数据，且没有其他需要遍历的project时表示遍历完成
+                if (nodes.isNotEmpty() || !projectIdIterator.hasNext()) {
+                    break
+                }
 
-            // 当前project不存在需要扫描的文件，获取下一个要扫描的project
-            projectId = projectIdIterator.next()
-            this.page = INITIAL_PAGE
-            this.index = INITIAL_INDEX
-        } while (nodes.isEmpty())
-
-        return nodes
+                // 当前project不存在需要扫描的文件，获取下一个要扫描的project
+                projectId = projectIdIterator.next()
+                this.page = INITIAL_PAGE
+                this.index = INITIAL_INDEX
+            } while (nodes.isEmpty())
+            return nodes
+        }
     }
 
     private fun requestNodes(projectId: String?, rule: Rule?, page: Int, pageSize: Int): List<Node> {
@@ -190,5 +178,22 @@ open class NodeIterator(
         val fullPath: String,
         val sha256: String
     )
+
+    /**
+     * 当前文件遍历到的位置
+     */
+    data class NodeIteratePosition(
+        /**
+         * 需要遍历的文件匹配规则，规则中的所有projectId相关条件会被移除
+         */
+        val rule: Rule? = null,
+        /**
+         * 当前正在查询的projectId
+         */
+        var projectId: String? = null,
+        override var page: Int = INITIAL_PAGE,
+        override var pageSize: Int = DEFAULT_PAGE_SIZE,
+        override var index: Int = INITIAL_INDEX
+    ) : PageIteratePosition(page = page, pageSize = pageSize, index = index)
 }
 

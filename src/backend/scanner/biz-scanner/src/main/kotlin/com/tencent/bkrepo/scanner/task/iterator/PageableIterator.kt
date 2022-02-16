@@ -34,22 +34,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
  * 分页数据迭代器
  */
 abstract class PageableIterator<T>(
-    /**
-     * 当前正在遍历的页
-     */
-    protected var page: Int = INITIAL_PAGE,
-    /**
-     * 遍历页大小
-     */
-    protected var pageSize: Int = DEFAULT_PAGE_SIZE,
-    /**
-     * 当前正在遍历的页数据下标
-     */
-    protected var index: Int = INITIAL_INDEX,
-    /**
-     * 是否从之前遍历的进度中恢复
-     */
-    private var resume: Boolean = false
+    open val position: PageIteratePosition = PageIteratePosition()
 ) : Iterator<T> {
 
     private var data: List<T> = emptyList()
@@ -64,7 +49,7 @@ abstract class PageableIterator<T>(
 
     override fun next(): T {
         try {
-            return pageData()[++index]
+            return pageData()[++position.index]
         } catch (e: IndexOutOfBoundsException) {
             throw NoSuchElementException()
         }
@@ -74,12 +59,11 @@ abstract class PageableIterator<T>(
      * 当前正在遍历的分页数据，如果已经遍历完了则拉取新的分页数据，没有新的分页数据则返回empty list
      */
     private fun pageData(): List<T> {
-        if (page == INITIAL_PAGE || index == data.size - 1) {
-            data = nextPageData(++page, pageSize)
-            index = INITIAL_INDEX
-        } else if (resume) {
-            data = nextPageData(page, pageSize)
-            resume = false
+        with(position) {
+            if (page == INITIAL_PAGE || index == data.size - 1) {
+                data = nextPageData(++page, pageSize)
+                index = INITIAL_INDEX
+            }
         }
 
         return data
@@ -94,15 +78,33 @@ abstract class PageableIterator<T>(
      */
     abstract fun nextPageData(page: Int, pageSize: Int): List<T>
 
+    /**
+     * 分页数据遍历位置
+     */
+    open class PageIteratePosition(
+        /**
+         * 当前正在遍历的页
+         */
+        open var page: Int = INITIAL_PAGE,
+        /**
+         * 遍历页大小
+         */
+        open var pageSize: Int = DEFAULT_PAGE_SIZE,
+        /**
+         * 当前正在遍历的页数据下标
+         */
+        open var index: Int = INITIAL_INDEX
+    )
+
     companion object {
         /**
          * 初始页DEFAULT_PAGE_NUMBER - 1表示没有已扫描的页
          */
-        val INITIAL_PAGE = DEFAULT_PAGE_NUMBER - 1
+        const val INITIAL_PAGE = DEFAULT_PAGE_NUMBER - 1
 
         /**
          * 初始-1表示没有已扫描的文件
          */
-        val INITIAL_INDEX = -1
+        const val INITIAL_INDEX = -1
     }
 }
