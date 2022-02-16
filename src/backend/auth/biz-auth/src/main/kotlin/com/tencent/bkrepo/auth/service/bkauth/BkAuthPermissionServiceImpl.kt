@@ -32,8 +32,6 @@
 package com.tencent.bkrepo.auth.service.bkauth
 
 import com.tencent.bkrepo.auth.config.BkAuthConfig
-import com.tencent.bkrepo.auth.extension.PermissionRequestContext
-import com.tencent.bkrepo.auth.extension.PermissionRequestExtension
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -42,14 +40,13 @@ import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.plugin.api.PluginManager
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 
 /**
- * 对接蓝鲸权限中心v0
+ * 对接devops权限
  */
 class BkAuthPermissionServiceImpl constructor(
     userRepository: UserRepository,
@@ -60,8 +57,7 @@ class BkAuthPermissionServiceImpl constructor(
     projectClient: ProjectClient,
     private val bkAuthConfig: BkAuthConfig,
     private val bkAuthPipelineService: BkAuthPipelineService,
-    private val bkAuthProjectService: BkAuthProjectService,
-    private val pluginManager: PluginManager
+    private val bkAuthProjectService: BkAuthProjectService
 ) : PermissionServiceImpl(
     userRepository,
     roleRepository,
@@ -112,7 +108,6 @@ class BkAuthPermissionServiceImpl constructor(
             // devops来源的账号，不做拦截
             if (!pass && appId == bkAuthConfig.devopsAppId) {
                 logger.warn("devops forbidden [$request]")
-                return false
             }
 
             logger.debug("devops pass [$request]")
@@ -150,57 +145,25 @@ class BkAuthPermissionServiceImpl constructor(
             ResourceType.REPO.toString() -> checkProjectPermission(uid, projectId, action)
             ResourceType.NODE.toString() -> {
                 val pipelineId = parsePipelineId(path ?: return false) ?: return false
-                checkPipelinePermission(uid, projectId, pipelineId, action)
+                pipelinePermission(uid, projectId, pipelineId, action)
             }
             else -> throw RuntimeException("resource type not supported: $resourceType")
         }
     }
 
-    private fun checkPipelinePermission(uid: String, projectId: String, pipelineId: String, action: String): Boolean {
-        logger.debug(
-            "checkPipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, " +
-                "permissionAction: $action"
-        )
-        return try {
-            return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, action)
-        } catch (e: Exception) {
-            // TODO 调用auth稳定后改为抛异常
-            logger.warn("checkPipelinePermission error:  ${e.message}")
-            true
-        }
+    private fun pipelinePermission(uid: String, projectId: String, pipelineId: String, action: String): Boolean {
+        logger.debug("pipelinePermission, uid: $uid, projectId: $projectId, pipelineId: $pipelineId, action: $action")
+        return bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, action)
     }
 
     private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
-        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, permissionAction: $action")
-        return try {
-            bkAuthProjectService.isProjectMember(uid, projectId, action, retryIfTokenInvalid = true)
-        } catch (e: Exception) {
-            // TODO 调用auth稳定后改为抛异常
-            logger.warn("checkPipelinePermission error:  ${e.message}")
-            true
-        }
-    }
-
-    private fun checkGitCiPermission(request: CheckPermissionRequest): Boolean {
-        val context = PermissionRequestContext(request.uid, request.projectId!!)
-        logger.debug("check git project permission [$context]")
-        pluginManager.findExtensionPoints(PermissionRequestExtension::class.java).forEach {
-            return it.check(context)
-        }
-        return true
+        logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
+        return bkAuthProjectService.isProjectMember(uid, projectId, action, retryIfTokenInvalid = true)
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         appId?.let {
             val request = buildProjectCheckRequest(projectId, userId, appId)
-
-            // gitci
-            if (matchGitCiCond(projectId)) {
-                if (checkGitCiPermission(request)) {
-                    return getAllRepoByProjectId(projectId)
-                }
-                return emptyList()
-            }
 
             // devops 体系
             if (matchDevopsCond(appId)) {
@@ -214,10 +177,6 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        // git ci项目校验单独权限
-        if (matchGitCiCond(request.projectId)) {
-            return checkGitCiPermission(request)
-        }
 
         // devops匿名访问请求处理
         if (matchAnonymousCond(request.appId, request.uid)) {
@@ -225,12 +184,11 @@ class BkAuthPermissionServiceImpl constructor(
             return true
         }
 
+        // bcs或bkrepo账号
+        if (matchBcsOrRepoCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
+
         // devops实名访问请求处理
-        if (matchDevopsCond(request.appId)) {
-            // 优先校验本地权限
-            if (matchBcsCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
-            return checkDevopsPermission(request)
-        }
+        if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)
 
         // 非devops体系
         return super.checkPermission(request)
@@ -246,12 +204,8 @@ class BkAuthPermissionServiceImpl constructor(
         )
     }
 
-    private fun matchGitCiCond(projectId: String?): Boolean {
-        return projectId != null && bkAuthConfig.choseBkAuth() && projectId.startsWith(GIT_PROJECT_PREFIX, true)
-    }
-
-    private fun matchBcsCond(projectId: String?): Boolean {
-        return projectId == bkAuthConfig.bcsAppId
+    private fun matchBcsOrRepoCond(projectId: String?): Boolean {
+        return projectId == bkAuthConfig.bcsAppId || projectId == bkAuthConfig.bkrepoAppId
     }
 
     private fun matchDevopsCond(appId: String?): Boolean {
@@ -269,6 +223,5 @@ class BkAuthPermissionServiceImpl constructor(
         private const val PIPELINE = "pipeline"
         private const val REPORT = "report"
         private const val LOG = "log"
-        private const val GIT_PROJECT_PREFIX = "git_"
     }
 }
