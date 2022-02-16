@@ -25,25 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.scanner.model.TSubScanTaskQueueItem
+import org.springframework.stereotype.Repository
 
-/**
- * 提交给扫描执行服务的子扫描任务
- */
-data class SubScanTask(
-    /**
-     * 所属扫描任务
-     */
-    val parentScanTaskId: String,
-    /**
-     * 使用的扫描器
-     */
-    val scanner: Scanner,
-    /**
-     * 待扫描节点
-     */
-    val node: NodeDetail
-)
+@Repository
+class SubScanTaskQueueItemDao : SimpleMongoDao<TSubScanTaskQueueItem>()

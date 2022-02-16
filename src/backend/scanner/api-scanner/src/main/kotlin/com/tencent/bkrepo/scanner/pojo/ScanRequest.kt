@@ -36,5 +36,5 @@ data class ScanRequest(
     @ApiModelProperty("扫描器名")
     val scanner: String,
     @ApiModelProperty("扫描文件匹配规则")
-    val rule: Rule
+    val rule: Rule? = null
 )

@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory
 class NodeIterator(
     private val projectIdIterator: Iterator<String>,
     private val nodeClient: NodeClient,
-    override val position: NodeIteratePosition
+    override val position: NodeIteratePosition = NodeIteratePosition()
 ) : PageableIterator<NodeIterator.Node>(position) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -147,29 +147,6 @@ class NodeIterator(
                 return rule
             }
         }
-    }
-
-    /**
-     * 如果指定要扫描的projectId，必须relation为AND，在nestedRule里面的第一层rule包含projectId的匹配条件
-     */
-    private fun projectIdsFromRule(rule: Rule.NestedRule): List<String> {
-        val projectIds = ArrayList<String>()
-        if (rule.relation != Rule.NestedRule.RelationType.AND) {
-            return emptyList()
-        } else {
-            rule.rules
-                .asSequence()
-                .filterIsInstance(Rule.QueryRule::class.java)
-                .filter { it.field == NodeDetail::projectId.name }
-                .forEach {
-                    if (it.operation == OperationType.EQ) {
-                        projectIds.add(it.value as String)
-                    } else if (it.operation == OperationType.IN) {
-                        projectIds.addAll(it.value as Collection<String>)
-                    }
-                }
-        }
-        return projectIds
     }
 
     data class Node(

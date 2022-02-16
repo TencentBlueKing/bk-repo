@@ -25,31 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task
+package com.tencent.bkrepo.scanner.pojo
 
-import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
 
 /**
- * 扫描任务调度器
+ * 提交给扫描执行服务的子扫描任务
  */
-interface ScanTaskScheduler {
+data class SubScanTask(
     /**
-     * 开始调度扫描任务
+     * 子扫描任务id
      */
-    fun schedule(scanTask: ScanTask)
+    val taskId: String,
+    /**
+     * 所属扫描任务
+     */
+    val parentScanTaskId: String,
+    /**
+     * 使用的扫描器
+     */
+    val scanner: Scanner,
+    /**
+     * 待扫描节点
+     */
+    val file: StorageFile
+)
 
-    /**
-     * 恢复执行扫描任务
-     */
-    fun resume(scanTask: ScanTask)
-
-    /**
-     * 暂停扫描任务
-     */
-    fun pause(scanTask: ScanTask)
-
-    /**
-     * 停止扫描任务
-     */
-    fun stop(scanTask: ScanTask)
-}
+data class StorageFile(
+    val sha256: String,
+    val storageCredentials: StorageCredentials?
+)

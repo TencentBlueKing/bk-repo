@@ -25,32 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task.iterator
+package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
-import com.tencent.bkrepo.repository.api.ProjectClient
-import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.mapping.Document
 
-class ProjectIdPageIterator(
-    private val projectClient: ProjectClient,
-    position: PageIteratePosition = PageIteratePosition()
-) : PageableIterator<String>(position) {
-    private val logger = LoggerFactory.getLogger(javaClass)
-
-    override fun nextPageData(page: Int, pageSize: Int): List<String> {
-        return if (page == FIRST_PAGE) {
-            val res = projectClient.listProject()
-            if (res.isNotOk()) {
-                logger.error("List projects failed: code[${res.code}], message[${res.message}]")
-                throw SystemErrorException()
-            }
-            return res.data!!.map { it.name }
-        } else {
-            emptyList()
-        }
-    }
-
-    companion object {
-        private const val FIRST_PAGE = 1
-    }
-}
+@Document("sub_scan_task_queue")
+data class TSubScanTaskQueueItem(
+    var id: String? = null,
+    /**
+     * 子任务id
+     */
+    var taskId: String,
+    /**
+     * 父任务id
+     */
+    var parentTaskId: String,
+    /**
+     * 任务详情
+     */
+    var taskDetail: String
+)

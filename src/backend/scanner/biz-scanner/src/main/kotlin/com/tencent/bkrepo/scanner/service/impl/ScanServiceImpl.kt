@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.service.impl
 
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScannerDao
@@ -65,12 +66,13 @@ class ScanServiceImpl @Autowired constructor(
                 createdDate = now,
                 lastModifiedBy = "",
                 lastModifiedDate = now,
-                rule = scanRequest.rule.toJsonString(),
+                rule = scanRequest.rule?.toJsonString(),
                 triggerType = triggerType.name,
                 status = ScanTaskStatus.PENDING.name,
                 total = 0L,
+                scanning = 0L,
                 scanned = 0L,
-                scannerKey = scanRequest.scanner,
+                scanner = scanRequest.scanner,
                 scanResultOverview = ScanResultOverview()
             )
         ).run { convert(this) }
@@ -87,16 +89,18 @@ class ScanServiceImpl @Autowired constructor(
 
     private fun convert(scanTask: TScanTask): ScanTask = with(scanTask) {
         ScanTask(
-            id!!,
-            createdBy,
-            createdDate.format(ISO_DATE_TIME),
-            startDateTime?.format(ISO_DATE_TIME),
-            finishedDateTime?.format(ISO_DATE_TIME),
-            status,
-            total,
-            scanned,
-            scannerKey,
-            scanResultOverview
+            taskId = id!!,
+            createdBy = createdBy,
+            triggerDateTime = createdDate.format(ISO_DATE_TIME),
+            startDateTime = startDateTime?.format(ISO_DATE_TIME),
+            finishedDateTime = finishedDateTime?.format(ISO_DATE_TIME),
+            status = status,
+            rule = scanTask.rule?.readJsonString(),
+            total = total,
+            scanning = scanning,
+            scanned = scanned,
+            scanner = scanner,
+            scanResultOverview = scanResultOverview
         )
     }
 }

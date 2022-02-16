@@ -25,31 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task
+package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.scanner.model.TSubScanTask
+import org.springframework.stereotype.Repository
 
-/**
- * 扫描任务调度器
- */
-interface ScanTaskScheduler {
-    /**
-     * 开始调度扫描任务
-     */
-    fun schedule(scanTask: ScanTask)
-
-    /**
-     * 恢复执行扫描任务
-     */
-    fun resume(scanTask: ScanTask)
-
-    /**
-     * 暂停扫描任务
-     */
-    fun pause(scanTask: ScanTask)
-
-    /**
-     * 停止扫描任务
-     */
-    fun stop(scanTask: ScanTask)
-}
+@Repository
+class SubScanTaskDao : SimpleMongoDao<TSubScanTask>()

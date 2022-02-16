@@ -60,11 +60,15 @@ data class TScanTask(
     /**
      * 扫描文件匹配规则
      */
-    val rule: String,
+    val rule: String?,
     /**
      * 需要扫描的文件数
      */
     val total: Long,
+    /**
+     * 扫描中的文件数
+     */
+    val scanning: Long,
     /**
      * 已扫描文件数
      */
@@ -72,7 +76,7 @@ data class TScanTask(
     /**
      * 使用的扫描器
      */
-    val scannerKey: String,
+    val scanner: String,
     /**
      * 扫描结果统计信息
      */

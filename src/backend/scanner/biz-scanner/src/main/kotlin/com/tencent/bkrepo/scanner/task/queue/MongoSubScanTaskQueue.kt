@@ -25,14 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task
+package com.tencent.bkrepo.scanner.task.queue
 
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.scanner.dao.SubScanTaskQueueItemDao
+import com.tencent.bkrepo.scanner.model.TSubScanTaskQueueItem
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import org.springframework.stereotype.Component
 
 @Component
-class MongoFileScanTaskQueue : FileScanTaskQueue {
+class MongoSubScanTaskQueue(private val subScanTaskQueueItemDao: SubScanTaskQueueItemDao) : SubScanTaskQueue {
     override fun enqueue(subScanTask: SubScanTask) {
-        TODO("Not yet implemented")
+        // TODO 实现任务数统计，并发送到influxdb
+        subScanTaskQueueItemDao.save(
+            TSubScanTaskQueueItem(
+                taskId = subScanTask.taskId,
+                parentTaskId = subScanTask.parentScanTaskId,
+                taskDetail = subScanTask.toJsonString()
+            )
+        )
     }
 }

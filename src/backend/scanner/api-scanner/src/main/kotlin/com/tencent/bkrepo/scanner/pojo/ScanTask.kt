@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.pojo
 
+import com.tencent.bkrepo.common.query.model.Rule
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -44,12 +45,16 @@ data class ScanTask(
     val finishedDateTime: String?,
     @ApiModelProperty("任务状态")
     val status: String,
+    @ApiModelProperty("扫描文件匹配规则")
+    val rule: Rule?,
     @ApiModelProperty("计划扫描文件总数")
     val total: Long,
+    @ApiModelProperty("扫描中的文件总数")
+    val scanning: Long,
     @ApiModelProperty("已扫描文件总数")
     val scanned: Long,
     @ApiModelProperty("使用的扫描器")
-    val scannerKey: String,
+    val scanner: String,
     @ApiModelProperty("扫描结果统计数据")
     val scanResultOverview: ScanResultOverview
 )

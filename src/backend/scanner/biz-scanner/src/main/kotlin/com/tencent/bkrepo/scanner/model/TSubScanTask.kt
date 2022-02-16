@@ -25,31 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task
+package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.scanner.pojo.ScanTask
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 扫描任务调度器
- */
-interface ScanTaskScheduler {
-    /**
-     * 开始调度扫描任务
-     */
-    fun schedule(scanTask: ScanTask)
-
-    /**
-     * 恢复执行扫描任务
-     */
-    fun resume(scanTask: ScanTask)
-
-    /**
-     * 暂停扫描任务
-     */
-    fun pause(scanTask: ScanTask)
-
-    /**
-     * 停止扫描任务
-     */
-    fun stop(scanTask: ScanTask)
-}
+@Document("scan_task")
+data class TSubScanTask(
+    var id: String? = null,
+    var createdDate: LocalDateTime,
+    var parentScanTaskId: String
+)
