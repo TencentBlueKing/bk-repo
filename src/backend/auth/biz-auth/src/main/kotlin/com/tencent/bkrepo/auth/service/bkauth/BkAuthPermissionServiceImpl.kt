@@ -81,9 +81,9 @@ class BkAuthPermissionServiceImpl constructor(
             logger.debug("check devops permission request [$request]")
 
             // project权限
-            if (request.resourceType == ResourceType.PROJECT.toString()) {
+            if (resourceType == ResourceType.PROJECT.toString()) {
                 // devops直接放过
-                if (request.appId == bkAuthConfig.devopsAppId) return true
+                if (appId == bkAuthConfig.devopsAppId) return true
                 // 其它请求校验项目权限
                 return checkProjectPermission(uid, projectId!!, action)
             }
@@ -100,8 +100,7 @@ class BkAuthPermissionServiceImpl constructor(
                     checkReportPermission(action)
                 }
                 else -> {
-                    // 有本地权限，或者蓝盾项目权限，放过
-                    super.checkPermission(request) || checkProjectPermission(uid, projectId!!, action)
+                    checkProjectPermission(uid, projectId!!, action)
                 }
             }
 
@@ -191,7 +190,7 @@ class BkAuthPermissionServiceImpl constructor(
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)
 
         // 非devops体系
-        return super.checkPermission(request)
+        return super.checkPermission(request) || checkDevopsPermission(request)
     }
 
     private fun buildProjectCheckRequest(projectId: String, userId: String, appId: String): CheckPermissionRequest {
