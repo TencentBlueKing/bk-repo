@@ -106,7 +106,8 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
             val context = ArtifactRemoveContext()
             repository.remove(context)
             when (context.repositoryDetail.category) {
-                RepositoryCategory.LOCAL -> {
+                RepositoryCategory.REMOTE -> return
+                else -> {
                     publishEvent(
                         ChartVersionDeleteEvent(
                             ChartVersionDeleteRequest(
@@ -130,7 +131,8 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
             val context = ArtifactRemoveContext()
             repository.remove(context)
             when (context.repositoryDetail.category) {
-                RepositoryCategory.LOCAL -> {
+                RepositoryCategory.REMOTE -> return
+                else -> {
                     publishEvent(
                         ChartDeleteEvent(
                             ChartPackageDeleteRequest(projectId, repoName, PackageKeys.resolveHelm(packageName), userId)
