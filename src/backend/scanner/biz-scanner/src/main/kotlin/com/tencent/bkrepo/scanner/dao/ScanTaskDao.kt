@@ -27,9 +27,72 @@
 
 package com.tencent.bkrepo.scanner.dao
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanTask
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
-class ScanTaskDao: SimpleMongoDao<TScanTask>()
+class ScanTaskDao : SimpleMongoDao<TScanTask>() {
+    fun updateStatus(
+        taskId: String,
+        status: ScanTaskStatus
+    ): UpdateResult {
+        val query = buildQuery(taskId)
+        val update = buildUpdate().set(TScanTask::status.name, status.name)
+        return updateFirst(query, update)
+    }
+
+    /**
+     * 将已提交所有子任务且都扫描完的任务设置为结束状态
+     */
+    fun taskFinished(
+        taskId: String,
+        status: ScanTaskStatus = ScanTaskStatus.FINISHED,
+        finishedTime: LocalDateTime = LocalDateTime.now()
+    ): UpdateResult {
+        val criteria = TScanTask::id.isEqualTo(taskId)
+            .and(TScanTask::status).isEqualTo(ScanTaskStatus.SCANNING_SUBMITTED)
+            .and(TScanTask::scanning).isEqualTo(0L)
+        val query = Query(criteria)
+        val update = buildUpdate(finishedTime)
+            .set(TScanTask::status.name, status)
+            .set(TScanTask::finishedDateTime.name, finishedTime)
+        return updateFirst(query, update)
+    }
+
+    fun updateScanningCount(taskId: String, count: Int): UpdateResult {
+        val query = buildQuery(taskId)
+        val update = buildUpdate()
+            .inc(TScanTask::scanning.name, count)
+            .inc(TScanTask::total.name, count)
+        return updateFirst(query, update)
+    }
+
+    fun updateScanResult(
+        taskId: String,
+        count: Int,
+        scanResultOverview: Map<String, Long>
+    ): UpdateResult {
+        val query = buildQuery(taskId)
+        val update = buildUpdate()
+            .inc(TScanTask::scanned.name, count)
+            .inc(TScanTask::scanning.name, -count)
+        scanResultOverview.forEach { (key, value) ->
+            update.inc("${TScanTask::scanResultOverview.name}.$key", value)
+        }
+
+        return updateFirst(query, update)
+    }
+
+    private fun buildQuery(taskId: String) = Query(TScanTask::id.isEqualTo(taskId))
+
+    private fun buildUpdate(lastModifiedDate: LocalDateTime = LocalDateTime.now()): Update =
+        Update.update(TScanTask::lastModifiedDate.name, lastModifiedDate)
+}

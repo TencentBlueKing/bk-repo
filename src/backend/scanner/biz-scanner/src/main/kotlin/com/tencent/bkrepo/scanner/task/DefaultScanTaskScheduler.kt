@@ -28,10 +28,11 @@
 package com.tencent.bkrepo.scanner.task
 
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.StorageFile
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
@@ -50,7 +51,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val subScanTaskQueue: SubScanTaskQueue,
     private val scannerService: ScannerService,
     private val repositoryClient: RepositoryClient,
-    private val subScanTaskDao: SubScanTaskDao
+    private val subScanTaskDao: SubScanTaskDao,
+    private val scanTaskDao: ScanTaskDao
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -67,22 +69,32 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val storageCredentialCache = LRUCache<String, String?>(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
         val scanner = scannerService.get(scanTask.scanner)
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
+        scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
         nodeIterator.forEach { node ->
             with(node) {
-                val storageCredentials = getStorageCredentialKey(storageCredentialCache, projectId, repoName)
+                val storageCredentialsKey = getStorageCredentialKey(storageCredentialCache, projectId, repoName)
                 // TODO 实现批量子任务提交
                 val savedSubTask = subScanTaskDao.save(
                     TSubScanTask(
                         createdDate = LocalDateTime.now(),
-                        parentScanTaskId = scanTask.taskId
+                        parentScanTaskId = scanTask.taskId,
+                        scanner = scanner.name,
+                        sha256 = sha256,
+                        storageCredentialsKey = storageCredentialsKey
                     )
                 )
                 val subTask = SubScanTask(
-                    savedSubTask.id!!, scanTask.taskId, scanner, StorageFile(node.sha256, storageCredentials)
+                    taskId = savedSubTask.id!!,
+                    parentScanTaskId = scanTask.taskId,
+                    scanner = scanner,
+                    sha256 = node.sha256,
+                    storageCredentialsKey = storageCredentialsKey
                 )
                 subScanTaskQueue.enqueue(subTask)
+                scanTaskDao.updateScanningCount(scanTask.taskId, 1)
             }
         }
+        scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
     }
 
     override fun resume(scanTask: ScanTask) {

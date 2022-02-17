@@ -25,35 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.scanner.pojo.request
 
-/**
- * 任务状态
- */
-enum class ScanTaskStatus{
-    /**
-     * 排队中
-     */
-    PENDING,
-    /**
-     * 扫描中，正在提交子任务
-     */
-    SCANNING_SUBMITTING,
+import com.tencent.bkrepo.scanner.pojo.Node
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-    /**
-     * 扫描中，所有子任务已提交
-     */
-    SCANNING_SUBMITTED,
-    /**
-     * 扫描暂停
-     */
-    PAUSE,
-    /**
-     * 扫描中止
-     */
-    STOPPED,
-    /**
-     * 扫描结束
-     */
-    FINISHED
-}
+@ApiModel("扫描结果上报请求")
+data class ReportResultRequest(
+    @ApiModelProperty("任务id")
+    val subTaskId: String,
+    @ApiModelProperty("扫描开始执行的时间")
+    val startDateTime: LocalDateTime,
+    @ApiModelProperty("扫描执行结束的时间")
+    val finishedDateTime: LocalDateTime,
+    @ApiModelProperty("父任务id")
+    val parentTaskId: String,
+    @ApiModelProperty("扫描结果预览")
+    val scanResultOverview: Map<String, Long>,
+    @ApiModelProperty("扫描报告存储路径")
+    val reportNode: Node
+)

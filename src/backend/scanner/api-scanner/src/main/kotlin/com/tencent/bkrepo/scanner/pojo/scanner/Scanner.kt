@@ -41,5 +41,7 @@ open class Scanner(
     @ApiModelProperty("扫描器名")
     open val name: String,
     @ApiModelProperty("扫描器类型")
-    val type: String
+    val type: String,
+    @ApiModelProperty("扫描器版本")
+    open val version: String
 )

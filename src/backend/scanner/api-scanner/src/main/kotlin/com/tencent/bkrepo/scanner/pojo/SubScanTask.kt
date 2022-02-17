@@ -46,8 +46,11 @@ data class SubScanTask(
      */
     val scanner: Scanner,
     /**
-     * 待扫描节点
+     * 文件sha256
      */
-    val file: StorageFile
+    val sha256: String,
+    /**
+     * 文件所在存储使用的凭据
+     */
+    val storageCredentialsKey: String?
 )
-

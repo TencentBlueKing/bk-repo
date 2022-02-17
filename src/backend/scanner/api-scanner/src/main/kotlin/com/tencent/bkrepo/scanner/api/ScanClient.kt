@@ -29,26 +29,20 @@ package com.tencent.bkrepo.scanner.api
 
 import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
-import com.tencent.bkrepo.scanner.pojo.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("扫描服务接口")
 @FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanClient")
 @RequestMapping("/service/scan")
 interface ScanClient {
-    @ApiOperation("扫描指定构件")
-    @PostMapping(DEFAULT_MAPPING_URI)
-    fun scan(
-        @ArtifactPathVariable artifactInfo: ArtifactInfo,
-        @RequestBody scanRequest: ScanRequest
-    ): Response<ScanTask>
+    /**
+     * 扫描结果上报
+     * @param reportResultRequest 扫描结果上报请求
+     */
+    @PostMapping("/report")
+    fun report(reportResultRequest: ReportResultRequest): Response<Void>
 }

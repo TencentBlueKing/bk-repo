@@ -30,9 +30,24 @@ package com.tencent.bkrepo.scanner.model
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("scan_task")
+@Document("sub_scan_task")
 data class TSubScanTask(
     val id: String? = null,
     val createdDate: LocalDateTime,
-    val parentScanTaskId: String
+    /**
+     * 所属扫描任务
+     */
+    val parentScanTaskId: String,
+    /**
+     * 使用的扫描器
+     */
+    val scanner: String,
+    /**
+     * 文件sha256
+     */
+    val sha256: String,
+    /**
+     * 文件所在存储使用的凭据
+     */
+    val storageCredentialsKey: String?
 )

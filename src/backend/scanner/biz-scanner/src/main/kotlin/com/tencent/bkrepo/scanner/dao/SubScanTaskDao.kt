@@ -27,9 +27,17 @@
 
 package com.tencent.bkrepo.scanner.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class SubScanTaskDao : SimpleMongoDao<TSubScanTask>()
+class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
+    fun deleteById(subTaskId: String): DeleteResult {
+        val query = Query(TSubScanTask::id.isEqualTo(subTaskId))
+        return remove(query)
+    }
+}

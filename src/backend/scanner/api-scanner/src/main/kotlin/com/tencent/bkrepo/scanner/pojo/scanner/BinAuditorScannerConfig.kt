@@ -31,8 +31,9 @@ import io.swagger.annotations.ApiModel
 
 @ApiModel("BinAuditor扫描器配置")
 class BinAuditorScannerConfig(
-    override val name: String
-): Scanner(name, TYPE) {
+    override val name: String,
+    override val version: String
+): Scanner(name, TYPE, version) {
     companion object{
         const val TYPE = "BinAuditor"
     }

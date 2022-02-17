@@ -51,6 +51,10 @@ data class TScanner(
      */
     val type: String,
     /**
+     * 扫描器版本
+     */
+    val version: String,
+    /**
      * 扫描器配置
      */
     val config: String

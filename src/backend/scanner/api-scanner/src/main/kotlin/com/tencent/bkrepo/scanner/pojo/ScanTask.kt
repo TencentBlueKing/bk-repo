@@ -55,6 +55,10 @@ data class ScanTask(
     val scanned: Long,
     @ApiModelProperty("使用的扫描器")
     val scanner: String,
+    @ApiModelProperty("扫描器类型")
+    val scannerType: String,
+    @ApiModelProperty("扫描器版本")
+    val scannerVersion: String,
     @ApiModelProperty("扫描结果统计数据")
-    val scanResultOverview: ScanResultOverview
+    val scanResultOverview: Map<String, Long>?
 )

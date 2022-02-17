@@ -25,18 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.scanner.controller
 
-/**
- * Storage中存储的文件
- */
-data class StorageFile(
-    /**
-     * 文件sha256
-     */
-    val sha256: String,
-    /**
-     * 文件所在存储使用的凭据
-     */
-    val storageCredentialKey: String?
-)
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.scanner.api.ScanClient
+import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.scanner.service.ScanService
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class ScanController @Autowired constructor(
+    private val scanService: ScanService
+) : ScanClient {
+    override fun report(reportResultRequest: ReportResultRequest): Response<Void> {
+        scanService.reportResult(reportResultRequest)
+        return ResponseBuilder.success()
+    }
+}

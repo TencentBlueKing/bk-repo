@@ -29,18 +29,20 @@ package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
-import com.tencent.bkrepo.scanner.dao.ScannerDao
+import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
-import com.tencent.bkrepo.scanner.exception.ScannerNotFoundException
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.service.ScanService
+import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -50,41 +52,78 @@ import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 @Service
 class ScanServiceImpl @Autowired constructor(
     private val scanTaskDao: ScanTaskDao,
-    private val scannerDao: ScannerDao,
+    private val subScanTaskDao: SubScanTaskDao,
+    private val fileScanResultDao: FileScanResultDao,
+    private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler
 ) : ScanService {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask {
-        if (scannerDao.existsByName(scanRequest.scanner)) {
-            throw ScannerNotFoundException(scanRequest.scanner)
-        }
-        val now = LocalDateTime.now()
-        val scanTask = scanTaskDao.save(
-            TScanTask(
-                createdBy = "",
-                createdDate = now,
-                lastModifiedBy = "",
-                lastModifiedDate = now,
-                rule = scanRequest.rule?.toJsonString(),
-                triggerType = triggerType.name,
-                status = ScanTaskStatus.PENDING.name,
-                total = 0L,
-                scanning = 0L,
-                scanned = 0L,
-                scanner = scanRequest.scanner,
-                scanResultOverview = ScanResultOverview()
-            )
-        ).run { convert(this) }
+        with(scanRequest) {
+            val scanner = scannerService.get(scanner)
+            val now = LocalDateTime.now()
+            val scanTask = scanTaskDao.save(
+                TScanTask(
+                    createdBy = "",
+                    createdDate = now,
+                    lastModifiedBy = "",
+                    lastModifiedDate = now,
+                    rule = rule?.toJsonString(),
+                    triggerType = triggerType.name,
+                    status = ScanTaskStatus.PENDING.name,
+                    total = 0L,
+                    scanning = 0L,
+                    scanned = 0L,
+                    scanner = scanner.name,
+                    scannerType = scanner.type,
+                    scannerVersion = scanner.version,
+                    scanResultOverview = null
+                )
+            ).run { convert(this) }
 
-        scanTaskScheduler.schedule(scanTask)
-        return scanTask
+            scanTaskScheduler.schedule(scanTask)
+            return scanTask
+        }
     }
 
     override fun task(taskId: String): ScanTask {
         return scanTaskDao.findById(taskId)?.let {
             convert(it)
         } ?: throw ScanTaskNotFoundException(taskId)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun reportResult(reportResultRequest: ReportResultRequest) {
+        with(reportResultRequest) {
+            // 任务已扫描过，重复上报直接返回
+            val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
+            if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
+                return
+            }
+            logger.info("Updating file[${reportNode.sha256}] scan result")
+
+            // 更新父任务扫描结果
+            scanTaskDao.updateScanResult(parentTaskId, 1, scanResultOverview)
+            if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
+                logger.info("Task[$parentTaskId] scan finished")
+            }
+
+            // 更新文件扫描结果
+            val scanner = scannerService.get(subScanTask.scanner)
+            fileScanResultDao.upsertResult(
+                subScanTask.storageCredentialsKey,
+                subScanTask.sha256,
+                parentTaskId,
+                scanner,
+                scanResultOverview,
+                reportNode,
+                startDateTime,
+                finishedDateTime
+            )
+        }
     }
 
     private fun convert(scanTask: TScanTask): ScanTask = with(scanTask) {
@@ -100,6 +139,8 @@ class ScanServiceImpl @Autowired constructor(
             scanning = scanning,
             scanned = scanned,
             scanner = scanner,
+            scannerType = scannerType,
+            scannerVersion = scannerVersion,
             scanResultOverview = scanResultOverview
         )
     }

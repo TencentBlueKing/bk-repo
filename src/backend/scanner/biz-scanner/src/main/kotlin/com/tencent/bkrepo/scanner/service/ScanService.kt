@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.service
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 
 /**
  * 扫描服务
@@ -49,4 +50,11 @@ interface ScanService {
      * @param taskId 任务id
      */
     fun task(taskId: String): ScanTask
+
+    /**
+     * 扫描结果上报
+     *
+     * @param reportResultRequest 扫描结果上报请求
+     */
+    fun reportResult(reportResultRequest: ReportResultRequest)
 }

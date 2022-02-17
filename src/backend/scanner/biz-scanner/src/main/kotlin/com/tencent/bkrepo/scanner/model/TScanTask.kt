@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -78,7 +77,15 @@ data class TScanTask(
      */
     val scanner: String,
     /**
+     * 扫描器类型
+     */
+    val scannerType: String,
+    /**
+     * 扫描器版本
+     */
+    val scannerVersion: String,
+    /**
      * 扫描结果统计信息
      */
-    val scanResultOverview: ScanResultOverview
+    val scanResultOverview: Map<String, Long>?
 )

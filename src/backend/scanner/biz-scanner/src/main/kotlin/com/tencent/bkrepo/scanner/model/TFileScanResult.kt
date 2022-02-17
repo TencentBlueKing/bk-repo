@@ -27,38 +27,45 @@
 
 package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
-import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.scanner.pojo.Node
-import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
  * 文件扫描结果
  */
-@ShardingDocument("file_scan_result")
+@Document("file_scan_result")
 @CompoundIndexes(
-    CompoundIndex(name = "sha256_idx", def = "{'sha256': 1}", background = true)
+    CompoundIndex(
+        name = "credentialsKey_sha256_idx",
+        def = "{'credentialsKey': 1, 'sha256': 1}",
+        background = true,
+        unique = true
+    )
 )
 data class TFileScanResult(
-    val id: String,
+    val id: String? = null,
+    val lastModifiedDate: LocalDateTime,
     /**
      * 文件sha256
      */
-    @ShardingKey(count = SHARDING_COUNT)
     val sha256: String,
+    /**
+     * 文件所在存储
+     */
+    var credentialsKey: String? = null,
     /**
      * 文件使用不同扫描器的扫描结果列表
      */
-    val scanResult: List<ScanResult>
+    val scanResult: Map<String, TScanResult>
 )
 
 /**
  * 扫描结果
  */
-data class ScanResult(
+data class TScanResult(
     /**
      * 最后一次是在哪个扫描任务中扫描的
      */
@@ -66,15 +73,15 @@ data class ScanResult(
     /**
      * 文件开始扫描的时间戳
      */
-    val startTime: Long,
+    val startDateTime: LocalDateTime,
     /**
      * 文件扫描结束的时间戳
      */
-    val finishedTime: Long,
+    val finishedDateTime: LocalDateTime,
     /**
      * 扫描器
      */
-    val scannerKey: String,
+    val scanner: String,
     /**
      * 扫描器类型
      */
@@ -90,5 +97,5 @@ data class ScanResult(
     /**
      * 扫描结果统计
      */
-    val overview: ScanResultOverview
+    val overview: Map<String, Long>
 )
