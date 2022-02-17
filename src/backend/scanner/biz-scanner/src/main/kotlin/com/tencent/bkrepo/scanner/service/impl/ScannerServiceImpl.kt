@@ -74,6 +74,16 @@ class ScannerServiceImpl @Autowired constructor(
         return scannerDao.findByName(name)?.run { convert(this) }
     }
 
+    override fun list(): List<Scanner> {
+        return scannerDao.findAll().map { convert(it) }
+    }
+
+    override fun delete(name: String) {
+        if (scannerDao.deleteByName(name).deletedCount == 0L) {
+            throw ScannerNotFoundException(name)
+        }
+    }
+
     private fun convert(scanner: TScanner): Scanner {
         with(scanner) {
             return Scanner(

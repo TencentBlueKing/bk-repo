@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanner
 import org.springframework.data.mongodb.core.query.Query
@@ -36,12 +37,19 @@ import org.springframework.stereotype.Repository
 @Repository
 class ScannerDao : SimpleMongoDao<TScanner>() {
     fun existsByName(name: String): Boolean {
-        val query = Query(TScanner::name.isEqualTo(name))
+        val query = buildQuery(name)
         return exists(query)
     }
 
     fun findByName(name: String): TScanner? {
-        val query = Query(TScanner::name.isEqualTo(name))
+        val query = buildQuery(name)
         return findOne(query)
     }
+
+    fun deleteByName(name: String): DeleteResult {
+        val query = buildQuery(name)
+        return remove(query)
+    }
+
+    private fun buildQuery(name: String) = Query(TScanner::name.isEqualTo(name))
 }

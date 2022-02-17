@@ -52,4 +52,14 @@ interface ScannerService {
      * @param name 扫描器名
      */
     fun find(name: String): Scanner?
+
+    /**
+     * 获取所有扫描器
+     */
+    fun list(): List<Scanner>
+
+    /**
+     * 删除扫描器
+     */
+    fun delete(name: String)
 }
