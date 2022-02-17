@@ -56,7 +56,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             if (paths.size < pathMinLimit) {
                 val message = "Cannot build MavenArtifactInfo from '$artifactUri'. " +
                     "The groupId, artifactId and version are unreadable."
-                logger.error(artifactUri)
+                logger.warn(message)
                 throw MavenBadRequestException(message)
             }
             var pos = paths.size - groupMark
