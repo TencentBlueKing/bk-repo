@@ -143,20 +143,32 @@ object ObjectBuilderUtil {
         indexYamlMetadata: HelmIndexYamlMetadata,
         request: ChartOperationRequest
     ): Pair<ArtifactFile, NodeCreateRequest> {
+        return buildFileAndNodeCreateRequest(
+            indexYamlMetadata = indexYamlMetadata,
+            projectId = request.projectId,
+            repoName = request.repoName,
+            operator = request.operator
+        )
+    }
+
+    fun buildFileAndNodeCreateRequest(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        projectId: String,
+        repoName: String,
+        operator: String
+    ): Pair<ArtifactFile, NodeCreateRequest> {
         val artifactFile = ArtifactFileFactory.build(indexYamlMetadata.toYamlString().byteInputStream())
-        val nodeCreateRequest = with(request) {
-            NodeCreateRequest(
-                projectId = projectId,
-                repoName = repoName,
-                folder = false,
-                fullPath = HelmUtils.getIndexCacheYamlFullPath(),
-                size = artifactFile.getSize(),
-                sha256 = artifactFile.getFileSha256(),
-                md5 = artifactFile.getFileMd5(),
-                overwrite = true,
-                operator = operator
-            )
-        }
+        val nodeCreateRequest = NodeCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            folder = false,
+            fullPath = HelmUtils.getIndexCacheYamlFullPath(),
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            overwrite = true,
+            operator = operator
+        )
         return Pair(artifactFile, nodeCreateRequest)
     }
 
