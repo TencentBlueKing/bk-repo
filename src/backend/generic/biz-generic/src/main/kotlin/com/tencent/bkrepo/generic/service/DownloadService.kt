@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.artifact.configuration.AutoIndexRepositorySettings
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
@@ -63,10 +64,17 @@ class DownloadService(
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
                 ?: throw NodeNotFoundException(getArtifactFullPath())
             val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
+            val context = ArtifactDownloadContext()
+
+            // 仓库未开启自动创建目录索引时不允许访问目录
+            val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
+            if (node.folder && autoIndexSettings?.enabled == false) {
+                throw NodeNotFoundException(getArtifactFullPath())
+            }
+
             if (node.folder && !download) {
                 renderListView(node, this)
             } else {
-                val context = ArtifactDownloadContext()
                 repository.download(context)
             }
         }
