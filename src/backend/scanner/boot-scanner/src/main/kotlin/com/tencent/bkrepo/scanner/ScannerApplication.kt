@@ -25,7 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:biz-scanner"))
-    implementation(project(":common:common-service"))
+package com.tencent.bkrepo.scanner
+
+import com.tencent.bkrepo.common.service.condition.MicroService
+import org.springframework.boot.runApplication
+
+
+@MicroService
+class ScannerApplication
+
+fun main(args: Array<String>) {
+    runApplication<ScannerApplication>(*args)
 }

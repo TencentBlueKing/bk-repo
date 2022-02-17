@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.scanner.exception
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.scanner.message.ScanMessageCode
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 
 class ScanTaskNotFoundException(
     taskId: String
-) : NotFoundException(ScanMessageCode.SCAN_TASK_NOT_FOUND, taskId)
+) : NotFoundException(ScannerMessageCode.SCAN_TASK_NOT_FOUND, taskId)

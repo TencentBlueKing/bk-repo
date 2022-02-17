@@ -39,4 +39,9 @@ class ScannerDao : SimpleMongoDao<TScanner>() {
         val query = Query(TScanner::name.isEqualTo(name))
         return exists(query)
     }
+
+    fun findByName(name: String): TScanner? {
+        val query = Query(TScanner::name.isEqualTo(name))
+        return findOne(query)
+    }
 }

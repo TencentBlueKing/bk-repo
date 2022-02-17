@@ -29,12 +29,13 @@ package com.tencent.bkrepo.scanner.message
 
 import com.tencent.bkrepo.common.api.message.MessageCode
 
-enum class ScanMessageCode(
+enum class ScannerMessageCode(
     private val key: String,
     private val businessCode: Int
 ) : MessageCode {
-    SCANNER_NOT_FOUND("scan.scanner.not-found", 0),
-    SCAN_TASK_NOT_FOUND("scan.task.not-found", 1);
+    SCANNER_NOT_FOUND("scanner.scanner.not-found", 0),
+    SCANNER_EXISTS("scanner.scanner.exists", 1),
+    SCAN_TASK_NOT_FOUND("scanner.task.not-found", 2);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

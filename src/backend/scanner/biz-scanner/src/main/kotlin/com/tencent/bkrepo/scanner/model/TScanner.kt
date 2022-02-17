@@ -37,7 +37,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
 )
 data class TScanner(
-    val id: String,
+    val id: String? = null,
     val createdBy: String,
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
