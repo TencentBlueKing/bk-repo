@@ -1,5 +1,4 @@
 const gulp = require('gulp')
-const svgSprite = require('gulp-svg-sprite')
 const Ora = require('ora')
 const yargs = require('yargs')
 const argv = yargs.alias({
@@ -20,18 +19,6 @@ const argv = yargs.alias({
 }).argv
 
 const { dist, env, lsVersion, mode } = argv
-
-gulp.src('./devops-repository/src/images/*.svg')
-    .pipe(svgSprite({
-        dest: '.',
-        mode: {
-            symbol: {
-                dest: '.',
-                sprite: 'sprite.svg'
-            }
-        }
-    }))
-    .pipe(gulp.dest('./devops-repository/static'))
 
 gulp.task('build', cb => {
     const spinner = new Ora(`building bkrepo frontend project, mode: ${mode}`).start()

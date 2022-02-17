@@ -50,6 +50,8 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWrite
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -63,6 +65,7 @@ import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
 import com.tencent.bkrepo.helm.constants.OVERWRITE
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
+import com.tencent.bkrepo.helm.constants.REDIS_LOCK_KEY_PREFIX
 import com.tencent.bkrepo.helm.constants.REPO_NAME
 import com.tencent.bkrepo.helm.constants.REPO_TYPE
 import com.tencent.bkrepo.helm.constants.SIZE
@@ -123,6 +126,9 @@ open class AbstractChartService : ArtifactService() {
 
     @Autowired
     lateinit var storageManager: StorageManager
+
+    @Autowired
+    lateinit var redisOperation: RedisOperation
 
     val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
 
@@ -392,10 +398,50 @@ open class AbstractChartService : ArtifactService() {
         ArtifactContextHolder.getRepository().download(context)
     }
 
+    /**
+     * 自旋获取redis锁
+     */
+    fun getSpinLock(
+        lock: RedisLock,
+        retryTimes: Int = RETRY_TIMES,
+        sleepTime: Long = SPIN_SLEEP_TIME
+    ): Boolean {
+        logger.info("Start to get redis lock to fresh index.yaml..")
+        loop@ for (i in 0 until retryTimes) {
+            when {
+                lock.tryLock() -> return true
+                else -> try {
+                    Thread.sleep(sleepTime)
+                } catch (e: InterruptedException) {
+                    continue@loop
+                }
+            }
+        }
+        logger.info("Could not get redis lock after $retryTimes times...")
+        return false
+    }
+
+    /**
+     * 初始化redislock
+     */
+    fun initRedisLock(projectId: String, repoName: String): RedisLock {
+        val lockKey = buildRedisKey(projectId, repoName)
+        return RedisLock(redisOperation, lockKey, EXPIRED_TIME_IN_SECONDS)
+    }
+
     companion object {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
         val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
+
+        /**
+         * 定义Redis过期时间
+         */
+        private const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
+        private const val SPIN_SLEEP_TIME: Long = 30L
+        private const val RETRY_TIMES: Int = 10000
+
+        fun buildRedisKey(projectId: String, repoName: String): String = "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
