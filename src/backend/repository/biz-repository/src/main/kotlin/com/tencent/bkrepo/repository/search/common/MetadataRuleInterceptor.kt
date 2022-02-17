@@ -57,8 +57,21 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
         val keyRule = Rule.QueryRule(TMetadata::key.name, key, OperationType.EQ).toFixed()
         val valueRule = Rule.QueryRule(TMetadata::value.name, rule.value, rule.operation).toFixed()
         val nestedAndRule = Rule.NestedRule(mutableListOf(keyRule, valueRule))
-        val criteria = context.interpreter.resolveRule(nestedAndRule, context)
 
+        // 历史数据以X-BKREPO-META-{key}设置元数据时未忽略大小写，查询时需要同时查询大小写key
+        val criteria = if (key.contains(Regex(ALPHA_PATTERN))) {
+            val lowerKeyRule = Rule.QueryRule(TMetadata::key.name, key.toLowerCase(), OperationType.EQ).toFixed()
+            val lowerKeyNestedAndRule = Rule.NestedRule(mutableListOf(lowerKeyRule, valueRule))
+            val nestedOrRule =
+                Rule.NestedRule(mutableListOf(nestedAndRule, lowerKeyNestedAndRule), Rule.NestedRule.RelationType.OR)
+            context.interpreter.resolveRule(nestedOrRule, context)
+        } else {
+            context.interpreter.resolveRule(nestedAndRule, context)
+        }
         return Criteria.where(TNode::metadata.name).elemMatch(criteria)
+    }
+
+    companion object {
+        const val ALPHA_PATTERN = "[A-Z]"
     }
 }
