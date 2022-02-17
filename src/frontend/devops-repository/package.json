@@ -4,10 +4,11 @@
   "description": "devops-repository",
   "scripts": {
     "dev": "webpack-dev-server --mode development --progress",
+    "sprite": "webpack --mode production --config sprite.webpack.config.js",
     "public": "webpack --mode production",
     "public:dev": "cross-env NODE_ENV=dev  npm run public --",
     "public:test": "cross-env NODE_ENV=test  npm run public --",
-    "public:master": "cross-env NODE_ENV=master  npm run public --",
+    "public:master": "yarn sprite && cross-env NODE_ENV=master  npm run public --",
     "public:external": "cross-env NODE_ENV=external npm run public --"
   },
   "dependencies": {
