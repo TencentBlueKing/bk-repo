@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.pojo
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
 
 /**
@@ -52,7 +51,3 @@ data class SubScanTask(
     val file: StorageFile
 )
 
-data class StorageFile(
-    val sha256: String,
-    val storageCredentials: StorageCredentials?
-)

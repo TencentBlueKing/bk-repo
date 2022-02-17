@@ -32,7 +32,7 @@ import java.time.LocalDateTime
 
 @Document("scan_task")
 data class TSubScanTask(
-    var id: String? = null,
-    var createdDate: LocalDateTime,
-    var parentScanTaskId: String
+    val id: String? = null,
+    val createdDate: LocalDateTime,
+    val parentScanTaskId: String
 )

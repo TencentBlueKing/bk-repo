@@ -27,9 +27,7 @@
 
 package com.tencent.bkrepo.scanner.task
 
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -52,7 +50,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val subScanTaskQueue: SubScanTaskQueue,
     private val scannerService: ScannerService,
     private val repositoryClient: RepositoryClient,
-    private val storageCredentialsClient: StorageCredentialsClient,
     private val subScanTaskDao: SubScanTaskDao
 ) : ScanTaskScheduler {
 
@@ -67,15 +64,12 @@ class DefaultScanTaskScheduler @Autowired constructor(
      * 创建扫描子任务，并提交到扫描队列
      */
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
-        val storageCredentialCache = LRUCache<String, StorageCredentials?>(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
+        val storageCredentialCache = LRUCache<String, String?>(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
         val scanner = scannerService.get(scanTask.scanner)
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         nodeIterator.forEach { node ->
             with(node) {
-                val cacheKey = generateKey(projectId, repoName)
-                val storageCredentials = storageCredentialCache.getOrPut(cacheKey) {
-                    requestStorageCredential(projectId, repoName)
-                }
+                val storageCredentials = getStorageCredentialKey(storageCredentialCache, projectId, repoName)
                 // TODO 实现批量子任务提交
                 val savedSubTask = subScanTaskDao.save(
                     TSubScanTask(
@@ -103,23 +97,22 @@ class DefaultScanTaskScheduler @Autowired constructor(
         TODO("Not yet implemented")
     }
 
-    private fun requestStorageCredential(projectId: String, repoName: String): StorageCredentials? {
-        val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
-        if (repoRes.isNotOk()) {
-            logger.error(
-                "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                    " projectId[$projectId], repoName[$repoName]"
-            )
+    private fun getStorageCredentialKey(
+        storageCredentialCache: MutableMap<String, String?>,
+        projectId: String,
+        repoName: String
+    ): String? {
+        val cacheKey = generateKey(projectId, repoName)
+        return storageCredentialCache.getOrPut(cacheKey) {
+            val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
+            if (repoRes.isNotOk()) {
+                logger.error(
+                    "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
+                        " projectId[$projectId], repoName[$repoName]"
+                )
+            }
+            repoRes.data!!.storageCredentialsKey
         }
-        val repo = repoRes.data!!
-        if (repo.storageCredentialsKey == null) {
-            return null
-        }
-        val storageCredentialsRes = storageCredentialsClient.findByKey(repo.storageCredentialsKey)
-        if (storageCredentialsRes.isNotOk()) {
-            logger.error("Get storage credential failed: key[${repo.storageCredentialsKey}]")
-        }
-        return storageCredentialsRes.data
     }
 
     private fun generateKey(projectId: String, repoName: String) = "prj:$projectId:repo:$repoName"

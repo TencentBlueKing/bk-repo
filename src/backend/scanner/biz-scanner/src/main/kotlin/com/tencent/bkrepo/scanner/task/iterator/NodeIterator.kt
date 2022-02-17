@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.scanner.pojo.Node
 import org.slf4j.LoggerFactory
 
 /**
@@ -50,7 +51,7 @@ class NodeIterator(
     private val projectIdIterator: Iterator<String>,
     private val nodeClient: NodeClient,
     override val position: NodeIteratePosition = NodeIteratePosition()
-) : PageableIterator<NodeIterator.Node>(position) {
+) : PageableIterator<Node>(position) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     /**
@@ -148,13 +149,6 @@ class NodeIterator(
             }
         }
     }
-
-    data class Node(
-        val projectId: String,
-        val repoName: String,
-        val fullPath: String,
-        val sha256: String
-    )
 
     /**
      * 当前文件遍历到的位置

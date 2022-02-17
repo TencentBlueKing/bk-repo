@@ -25,28 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.service
-
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+package com.tencent.bkrepo.scanner.pojo
 
 /**
- * 扫描服务
+ * Storage中存储的文件
  */
-interface ScanService {
+data class StorageFile(
     /**
-     * 创建扫描任务，启动扫描
-     *
-     * @param scanRequest 扫描参数，指定使用的扫描器和需要扫描的文件
-     * @param triggerType 触发类型
+     * 文件sha256
      */
-    fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask
-
+    val sha256: String,
     /**
-     * 获取扫描任务
-     *
-     * @param taskId 任务id
+     * 文件所在存储使用的凭据
      */
-    fun task(taskId: String): ScanTask
-}
+    val storageCredentialKey: String?
+)

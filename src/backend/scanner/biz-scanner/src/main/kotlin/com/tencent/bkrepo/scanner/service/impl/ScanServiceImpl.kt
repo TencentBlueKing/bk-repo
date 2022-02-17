@@ -34,7 +34,7 @@ import com.tencent.bkrepo.scanner.dao.ScannerDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.exception.ScannerNotFoundException
 import com.tencent.bkrepo.scanner.model.TScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus

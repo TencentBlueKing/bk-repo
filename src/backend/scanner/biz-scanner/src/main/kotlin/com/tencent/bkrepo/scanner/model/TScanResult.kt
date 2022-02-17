@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.model
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingDocument
 import com.tencent.bkrepo.common.mongo.dao.sharding.ShardingKey
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanResultOverview
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -82,6 +83,10 @@ data class ScanResult(
      * 扫描器版本
      */
     val scannerVersion: String,
+    /**
+     * 文件扫描路径
+     */
+    val reportNode: Node,
     /**
      * 扫描结果统计
      */

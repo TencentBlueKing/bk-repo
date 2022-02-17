@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.pojo.ArtifactScanReport
 import com.tencent.bkrepo.scanner.pojo.ArtifactScanStatus
-import com.tencent.bkrepo.scanner.pojo.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.service.ScanService

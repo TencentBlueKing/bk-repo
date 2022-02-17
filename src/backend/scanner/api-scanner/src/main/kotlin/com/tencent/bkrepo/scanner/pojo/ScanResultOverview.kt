@@ -49,11 +49,5 @@ data class ScanResultOverview(
     @ApiModelProperty("高危漏洞数")
     val cveMediumCount: Long = 0L,
     @ApiModelProperty("高危漏洞数")
-    val cveLowCount: Long = 0L,
-    @ApiModelProperty("敏感信息报告路径")
-    val sensitiveReportPath: String? = null,
-    @ApiModelProperty("证书审计报告路径")
-    val licenseReportPath: String? = null,
-    @ApiModelProperty("cve报告路径")
-    val cveReportPath: String? = null
+    val cveLowCount: Long = 0L
 )
