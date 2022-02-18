@@ -47,13 +47,13 @@ import org.springframework.web.bind.annotation.RestController
 @Api("扫描器配置接口")
 @RestController
 @RequestMapping("/api/scanners")
+@Principal(PrincipalType.ADMIN)
 class UserScannerController @Autowired constructor(
     private val scannerService: ScannerService
 ) {
 
     @ApiOperation("创建扫描器接口")
     @PostMapping
-    @Principal(PrincipalType.ADMIN)
     fun create(
         @RequestBody scanner: Scanner
     ): Response<Scanner> {
@@ -62,14 +62,12 @@ class UserScannerController @Autowired constructor(
 
     @ApiOperation("获取扫描器列表")
     @GetMapping
-    @Principal(PrincipalType.ADMIN)
     fun list(): Response<List<Scanner>> {
         return ResponseBuilder.success()
     }
 
     @ApiOperation("删除扫描器")
     @DeleteMapping("/{name}")
-    @Principal(PrincipalType.ADMIN)
     fun delete(@PathVariable("name") name: String): Response<Void> {
         scannerService.delete(name)
         return ResponseBuilder.success()
