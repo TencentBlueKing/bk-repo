@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -39,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
@@ -69,7 +72,11 @@ class DownloadService(
             // 仓库未开启自动创建目录索引时不允许访问目录
             val autoIndexSettings = AutoIndexRepositorySettings.from(context.repositoryDetail.configuration)
             if (node.folder && autoIndexSettings?.enabled == false) {
-                throw NodeNotFoundException(getArtifactFullPath())
+                throw ErrorCodeException(
+                    messageCode = GenericMessageCode.LIST_DIR_NOT_ALLOWED,
+                    params = arrayOf(context.repoName, getArtifactFullPath()),
+                    status = HttpStatus.FORBIDDEN
+                )
             }
 
             if (node.folder && !download) {
