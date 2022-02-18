@@ -25,16 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.executor.pojo
 
-import io.swagger.annotations.ApiModel
+import java.io.File
+import java.time.LocalDateTime
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScannerConfig(
-    override val name: String,
-    override val version: String
-): Scanner(name, TYPE, version) {
-    companion object{
-        const val TYPE = "BinAuditor"
-    }
-}
+/**
+ * 通用扫描结果
+ */
+data class CommonScanExecutorResult(
+    override val startDateTime: LocalDateTime,
+    override val finishedDateTime: LocalDateTime,
+    val reportFile: File,
+    val reportOverview: Map<String, Long>
+) : ScanExecutorResult(startDateTime, finishedDateTime)

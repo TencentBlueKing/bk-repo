@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("扫描器配置")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = BinAuditorScannerConfig::class, name = BinAuditorScannerConfig.TYPE)
+    JsonSubTypes.Type(value = BinAuditorScanner::class, name = BinAuditorScanner.TYPE)
 )
 open class Scanner(
     @ApiModelProperty("扫描器名")

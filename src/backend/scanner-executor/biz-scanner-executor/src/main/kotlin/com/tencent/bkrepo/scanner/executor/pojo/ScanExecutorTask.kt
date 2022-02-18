@@ -25,11 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner-executor:api-scanner-executor"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation("com.github.docker-java:docker-java:3.2.5")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.5")
-}
+package com.tencent.bkrepo.scanner.executor.pojo
+
+import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
+import java.io.InputStream
+
+/**
+ * 扫描执行器扫描任务
+ */
+data class ScanExecutorTask<S : Scanner>(
+    /**
+     * 任务id
+     */
+    val taskId: String,
+    /**
+     * 所属扫描父任务id
+     */
+    val parentTaskId: String,
+    /**
+     * 扫描执行器
+     */
+    val scanner: S,
+    /**
+     * 待扫描文件
+     */
+    val inputStream: InputStream,
+    /**
+     * 待扫描文件sha256
+     */
+    val sha256: String,
+    /**
+     * 扫描执行器需要的额外信息，用于扩展
+     */
+    val extra: Map<String, Any>? = null
+)

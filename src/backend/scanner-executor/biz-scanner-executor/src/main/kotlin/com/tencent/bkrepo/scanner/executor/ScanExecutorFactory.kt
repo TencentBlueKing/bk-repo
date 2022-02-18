@@ -25,11 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner-executor:api-scanner-executor"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation("com.github.docker-java:docker-java:3.2.5")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.5")
+package com.tencent.bkrepo.scanner.executor
+
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode
+import org.springframework.stereotype.Component
+
+@Component
+class ScanExecutorFactory(
+    private val scanExecutors: Map<String, ScanExecutor<*>>
+) {
+    fun get(type: String): ScanExecutor<*> {
+        return scanExecutors[type]
+            ?: throw NotFoundException(ScannerMessageCode.SCANNER_NOT_FOUND, type)
+    }
 }

@@ -25,29 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.scanner.executor.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-@ApiModel("扫描结果统计信息")
-data class ScanResultOverview(
-    @ApiModelProperty("敏感信息数")
-    val sensitiveCount: Long = 0L,
-    @ApiModelProperty("高风险开源证书数量")
-    val licenseHighCount: Long = 0L,
-    @ApiModelProperty("中风险开源证书数量")
-    val licenseMediumCount: Long = 0L,
-    @ApiModelProperty("低风险开源证书数量")
-    val licenseLowCount: Long = 0L,
-    @ApiModelProperty("扫描器尚未支持扫描的开源证书数量")
-    val licenseNotAvailableCount: Long = 0L,
-    @ApiModelProperty("严重漏洞数")
-    val cveCriticalCount: Long = 0L,
-    @ApiModelProperty("高危漏洞数")
-    val cveHighCount: Long = 0L,
-    @ApiModelProperty("高危漏洞数")
-    val cveMediumCount: Long = 0L,
-    @ApiModelProperty("高危漏洞数")
-    val cveLowCount: Long = 0L
+/**
+ * 扫描结果
+ */
+open class ScanExecutorResult(
+    /**
+     * 扫描开始时间
+     */
+    open val startDateTime: LocalDateTime,
+    /**
+     * 扫描结束时间
+     */
+    open val finishedDateTime: LocalDateTime
 )

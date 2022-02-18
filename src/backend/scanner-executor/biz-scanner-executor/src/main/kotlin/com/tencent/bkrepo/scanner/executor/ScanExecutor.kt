@@ -25,11 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner-executor:api-scanner-executor"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation("com.github.docker-java:docker-java:3.2.5")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.5")
+package com.tencent.bkrepo.scanner.executor
+
+import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorResult
+import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
+
+interface ScanExecutor<S : Scanner> {
+    fun scan(task: ScanExecutorTask<S>): ScanExecutorResult
 }

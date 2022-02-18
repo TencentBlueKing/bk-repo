@@ -25,11 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner-executor:api-scanner-executor"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation("com.github.docker-java:docker-java:3.2.5")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.5")
-}
+package com.tencent.bkrepo.scanner.executor.binauditor
+
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("扫描结果统计信息")
+data class ScanResultOverview(
+    @ApiModelProperty("敏感信息数")
+    val sensitiveCount: Long = 0L,
+    @ApiModelProperty("高风险开源证书数量")
+    val licenseHighCount: Long = 0L,
+    @ApiModelProperty("中风险开源证书数量")
+    val licenseMediumCount: Long = 0L,
+    @ApiModelProperty("低风险开源证书数量")
+    val licenseLowCount: Long = 0L,
+    @ApiModelProperty("扫描器尚未支持扫描的开源证书数量")
+    val licenseNotAvailableCount: Long = 0L,
+    @ApiModelProperty("严重漏洞数")
+    val cveCriticalCount: Long = 0L,
+    @ApiModelProperty("高危漏洞数")
+    val cveHighCount: Long = 0L,
+    @ApiModelProperty("高危漏洞数")
+    val cveMediumCount: Long = 0L,
+    @ApiModelProperty("高危漏洞数")
+    val cveLowCount: Long = 0L
+)

@@ -25,11 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner-executor:api-scanner-executor"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation("com.github.docker-java:docker-java:3.2.5")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.5")
-}
+package com.tencent.bkrepo.scanner.executor.configuration
+
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("scanner.executor.docker")
+data class DockerProperties(
+    val host: String = "unix:///var/run/docker.sock",
+    val version: String = "1.23",
+    val connectTimeout: Int = 5000,
+    val readTimeout: Int = 300000
+)
