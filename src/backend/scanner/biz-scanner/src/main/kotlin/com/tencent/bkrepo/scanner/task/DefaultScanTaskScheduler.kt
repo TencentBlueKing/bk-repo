@@ -34,12 +34,14 @@ import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
 import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -56,6 +58,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    @Autowired
+    private lateinit var self: DefaultScanTaskScheduler
 
     override fun schedule(scanTask: ScanTask) {
         // TODO 实现调度策略
@@ -74,27 +79,39 @@ class DefaultScanTaskScheduler @Autowired constructor(
             with(node) {
                 val storageCredentialsKey = getStorageCredentialKey(storageCredentialCache, projectId, repoName)
                 // TODO 实现批量子任务提交
-                val savedSubTask = subScanTaskDao.save(
-                    TSubScanTask(
-                        createdDate = LocalDateTime.now(),
-                        parentScanTaskId = scanTask.taskId,
-                        scanner = scanner.name,
-                        sha256 = sha256,
-                        storageCredentialsKey = storageCredentialsKey
-                    )
-                )
+
+                val savedSubTask = self.createSubTask(scanTask, sha256, storageCredentialsKey)
                 val subTask = SubScanTask(
                     taskId = savedSubTask.id!!,
                     parentScanTaskId = scanTask.taskId,
                     scanner = scanner,
                     sha256 = node.sha256,
-                    storageCredentialsKey = storageCredentialsKey
+                    credentialsKey = storageCredentialsKey
                 )
+                // TODO 实现任务数统计，并发送到influxdb
                 subScanTaskQueue.enqueue(subTask)
-                scanTaskDao.updateScanningCount(scanTask.taskId, 1)
+                subScanTaskDao.updateStatus(savedSubTask.id, SubScanTaskStatus.ENQUEUED)
             }
         }
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun createSubTask(scanTask: ScanTask, sha256: String, credentialKey: String? = null): TSubScanTask {
+        val now = LocalDateTime.now()
+        val savedSubScanTask = subScanTaskDao.save(
+            TSubScanTask(
+                createdDate = now,
+                lastModifiedDate = now,
+                parentScanTaskId = scanTask.taskId,
+                status = SubScanTaskStatus.CREATED.name,
+                scanner = scanTask.scanner,
+                sha256 = sha256,
+                credentialsKey = credentialKey
+            )
+        )
+        scanTaskDao.updateScanningCount(scanTask.taskId, 1)
+        return savedSubScanTask
     }
 
     override fun resume(scanTask: ScanTask) {
@@ -120,7 +137,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             if (repoRes.isNotOk()) {
                 logger.error(
                     "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                        " projectId[$projectId], repoName[$repoName]"
+                            " projectId[$projectId], repoName[$repoName]"
                 )
             }
             repoRes.data!!.storageCredentialsKey

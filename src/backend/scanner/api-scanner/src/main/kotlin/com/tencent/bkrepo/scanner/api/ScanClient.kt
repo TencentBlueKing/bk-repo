@@ -29,9 +29,11 @@ package com.tencent.bkrepo.scanner.api
 
 import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import io.swagger.annotations.Api
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
@@ -45,4 +47,10 @@ interface ScanClient {
      */
     @PostMapping("/report")
     fun report(reportResultRequest: ReportResultRequest): Response<Void>
+
+    /**
+     * 拉取任务，没有待扫描的任务时返回null
+     */
+    @GetMapping("/subtask")
+    fun pullSubTask(): Response<SubScanTask?>
 }

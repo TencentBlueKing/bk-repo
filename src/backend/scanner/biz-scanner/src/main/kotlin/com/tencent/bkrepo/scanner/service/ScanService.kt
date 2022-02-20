@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.service
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 
 /**
@@ -57,4 +58,11 @@ interface ScanService {
      * @param reportResultRequest 扫描结果上报请求
      */
     fun reportResult(reportResultRequest: ReportResultRequest)
+
+    /**
+     * 拉取子任务
+     *
+     * @return 没有可执行的任务时返回null，否则返回一个待执行的任务
+     */
+    fun pullSubScanTask(): SubScanTask?
 }

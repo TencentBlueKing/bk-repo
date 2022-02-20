@@ -34,11 +34,11 @@ import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.model.TScanTask
+import com.tencent.bkrepo.scanner.model.TSubScanTask
+import com.tencent.bkrepo.scanner.pojo.*
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
@@ -114,7 +114,7 @@ class ScanServiceImpl @Autowired constructor(
             // 更新文件扫描结果
             val scanner = scannerService.get(subScanTask.scanner)
             fileScanResultDao.upsertResult(
-                subScanTask.storageCredentialsKey,
+                subScanTask.credentialsKey,
                 subScanTask.sha256,
                 parentTaskId,
                 scanner,
@@ -124,6 +124,16 @@ class ScanServiceImpl @Autowired constructor(
                 finishedDateTime
             )
         }
+    }
+
+    override fun pullSubScanTask(): SubScanTask? {
+        // 优先返回待执行任务，再返回超时任务
+        val task = subScanTaskDao.firstCreatedOrEnqueuedTask()
+            ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
+            ?: return null
+        subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.EXECUTING)
+        val scanner = scannerService.get(task.scanner)
+        return convert(task, scanner)
     }
 
     private fun convert(scanTask: TScanTask): ScanTask = with(scanTask) {
@@ -143,5 +153,20 @@ class ScanServiceImpl @Autowired constructor(
             scannerVersion = scannerVersion,
             scanResultOverview = scanResultOverview
         )
+    }
+
+    private fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask = with(subScanTask) {
+        SubScanTask(
+            taskId = id!!,
+            parentScanTaskId = parentScanTaskId,
+            scanner = scanner,
+            sha256 = sha256,
+            credentialsKey = credentialsKey
+        )
+    }
+
+    companion object {
+        // TODO 添加到配置文件中
+        private const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 600L
     }
 }

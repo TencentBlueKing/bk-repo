@@ -25,11 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.scanner.task.queue
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.scanner.model.TSubScanTaskQueueItem
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import org.springframework.stereotype.Component
 
-@Repository
-class SubScanTaskQueueItemDao : SimpleMongoDao<TSubScanTaskQueueItem>()
+@Component
+class DefaultSubScanTaskQueue : SubScanTaskQueue {
+    override fun enqueue(subScanTask: SubScanTask) {
+        // do nothing
+    }
+}

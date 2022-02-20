@@ -52,5 +52,5 @@ data class SubScanTask(
     /**
      * 文件所在存储使用的凭据
      */
-    val storageCredentialsKey: String?
+    val credentialsKey: String?
 )

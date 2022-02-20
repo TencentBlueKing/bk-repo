@@ -28,16 +28,50 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.DeleteResult
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
+import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
+import org.springframework.data.mongodb.core.query.*
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
+
     fun deleteById(subTaskId: String): DeleteResult {
         val query = Query(TSubScanTask::id.isEqualTo(subTaskId))
         return remove(query)
+    }
+
+    fun updateStatus(
+        subTaskId: String,
+        status: SubScanTaskStatus
+    ): UpdateResult {
+        val query = Query(TSubScanTask::id.isEqualTo(subTaskId))
+        val update = Update()
+            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TSubScanTask::status.name, status.name)
+        return updateFirst(query, update)
+    }
+
+    /**
+     * 获取一个待执行任务
+     */
+    fun firstCreatedOrEnqueuedTask(): TSubScanTask? {
+        val query = Query(TSubScanTask::status.inValues(listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.ENQUEUED)))
+        return findOne(query)
+    }
+
+    /**
+     * 获取一个执行超时的任务
+     *
+     * @param timeoutSeconds 允许执行的最长时间
+     */
+    fun firstTimeoutTask(timeoutSeconds: Long): TSubScanTask? {
+        val taskExecuteBeforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
+        val criteria = TSubScanTask::status.isEqualTo(SubScanTaskStatus.EXECUTING)
+            .and(TSubScanTask::lastModifiedDate).lt(taskExecuteBeforeDate)
+        return findOne(Query(criteria))
     }
 }

@@ -27,17 +27,39 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
+/**
+ * 扫描子任务
+ */
 @Document("sub_scan_task")
+@CompoundIndexes(
+    CompoundIndex(
+        name = "credentialsKey_sha256_idx",
+        def = "{'credentialsKey': 1, 'sha256': 1}",
+        background = true
+    ),
+    CompoundIndex(
+        name = "lastModifiedDate_idx",
+        def = "{'lastModifiedDate': 1}",
+        background = true
+    )
+)
 data class TSubScanTask(
     val id: String? = null,
     val createdDate: LocalDateTime,
+    val lastModifiedDate: LocalDateTime,
     /**
      * 所属扫描任务
      */
     val parentScanTaskId: String,
+    /**
+     * 子任务状态
+     */
+    val status: String,
     /**
      * 使用的扫描器
      */
@@ -49,5 +71,5 @@ data class TSubScanTask(
     /**
      * 文件所在存储使用的凭据
      */
-    val storageCredentialsKey: String?
+    val credentialsKey: String?
 )
