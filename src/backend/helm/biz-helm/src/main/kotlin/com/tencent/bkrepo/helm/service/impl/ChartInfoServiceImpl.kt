@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.NAME
@@ -58,12 +57,12 @@ import com.tencent.bkrepo.helm.service.ChartInfoService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
-import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class ChartInfoServiceImpl(
@@ -71,19 +70,7 @@ class ChartInfoServiceImpl(
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
-        with(artifactInfo) {
-            val lock = initRedisLock(artifactInfo.projectId, repoName)
-            if (getSpinLock(lock, 1500)) {
-                logger.info(
-                    "Handling query index.yaml request with redis distribute lock " +
-                        "in repo [$projectId/$repoName] by User [${SecurityUtils.getUserId()}]."
-                )
-                lock.use {
-                    return chartListSearch(artifactInfo, startTime)
-                }
-            }
-            return chartListSearch(artifactInfo, startTime)
-        }
+        return lockAction(artifactInfo.projectId, artifactInfo.repoName) { chartListSearch(artifactInfo, startTime) }
     }
 
     private fun chartListSearch(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
