@@ -50,6 +50,10 @@ data class SubScanTask(
      */
     val sha256: String,
     /**
+     * 文件大小
+     */
+    val size: Long,
+    /**
      * 文件所在存储使用的凭据
      */
     val credentialsKey: String?

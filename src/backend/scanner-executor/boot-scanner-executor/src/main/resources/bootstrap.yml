@@ -1,0 +1,2 @@
+service.name: scanner-executor
+server.port: 25812

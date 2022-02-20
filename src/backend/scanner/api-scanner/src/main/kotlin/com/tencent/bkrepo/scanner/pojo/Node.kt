@@ -46,5 +46,9 @@ data class Node(
     /**
      * 文件sha256
      */
-    val sha256: String
+    val sha256: String,
+    /**
+     * 文件大小
+     */
+    val size: Long
 )

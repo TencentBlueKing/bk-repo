@@ -32,7 +32,10 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
-import org.springframework.data.mongodb.core.query.*
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -71,7 +74,7 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
     fun firstTimeoutTask(timeoutSeconds: Long): TSubScanTask? {
         val taskExecuteBeforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
         val criteria = TSubScanTask::status.isEqualTo(SubScanTaskStatus.EXECUTING)
-            .and(TSubScanTask::lastModifiedDate).lt(taskExecuteBeforeDate)
+            .and(TSubScanTask::lastModifiedDate.name).lt(taskExecuteBeforeDate)
         return findOne(Query(criteria))
     }
 }

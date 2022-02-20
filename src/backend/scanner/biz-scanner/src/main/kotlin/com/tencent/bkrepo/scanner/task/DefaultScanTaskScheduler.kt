@@ -80,12 +80,13 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 val storageCredentialsKey = getStorageCredentialKey(storageCredentialCache, projectId, repoName)
                 // TODO 实现批量子任务提交
 
-                val savedSubTask = self.createSubTask(scanTask, sha256, storageCredentialsKey)
+                val savedSubTask = self.createSubTask(scanTask, sha256, size, storageCredentialsKey)
                 val subTask = SubScanTask(
                     taskId = savedSubTask.id!!,
                     parentScanTaskId = scanTask.taskId,
                     scanner = scanner,
                     sha256 = node.sha256,
+                    size = node.size,
                     credentialsKey = storageCredentialsKey
                 )
                 // TODO 实现任务数统计，并发送到influxdb
@@ -97,7 +98,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun createSubTask(scanTask: ScanTask, sha256: String, credentialKey: String? = null): TSubScanTask {
+    fun createSubTask(scanTask: ScanTask, sha256: String, size: Long, credentialKey: String? = null): TSubScanTask {
         val now = LocalDateTime.now()
         val savedSubScanTask = subScanTaskDao.save(
             TSubScanTask(
@@ -107,6 +108,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 status = SubScanTaskStatus.CREATED.name,
                 scanner = scanTask.scanner,
                 sha256 = sha256,
+                size = size,
                 credentialsKey = credentialKey
             )
         )

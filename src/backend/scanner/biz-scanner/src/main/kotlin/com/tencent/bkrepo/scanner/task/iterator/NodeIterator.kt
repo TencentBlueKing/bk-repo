@@ -93,10 +93,13 @@ class NodeIterator(
 
         val projectIdRule = createProjectIdRule(projectId, rule)
         // 获取下一页需要扫描的文件
+        val selected = listOf(
+            NodeDetail::sha256.name, NodeDetail::size.name, NodeDetail::fullPath.name, NodeDetail::repoName.name
+        )
         val queryModel = QueryModel(
             PageLimit(page, pageSize),
             Sort(listOf(AbstractMongoDao.ID), Sort.Direction.ASC),
-            listOf(NodeDetail::sha256.name, NodeDetail::fullPath.name, NodeDetail::repoName.name),
+            selected,
             projectIdRule
         )
         val res = nodeClient.search(queryModel)
@@ -108,8 +111,9 @@ class NodeIterator(
         return res.data!!.records.map {
             val repoName = it[NodeDetail::repoName.name]!! as String
             val sha256 = it[NodeDetail::sha256.name]!! as String
+            val size = it[NodeDetail::size.name]!! as Long
             val fullPath = it[NodeDetail::fullPath.name]!! as String
-            Node(projectId, repoName, fullPath, sha256)
+            Node(projectId, repoName, fullPath, sha256, size)
         }
     }
 
