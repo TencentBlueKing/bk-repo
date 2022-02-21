@@ -63,7 +63,7 @@ class UserScannerController @Autowired constructor(
     @ApiOperation("获取扫描器列表")
     @GetMapping
     fun list(): Response<List<Scanner>> {
-        return ResponseBuilder.success()
+        return ResponseBuilder.success(scannerService.list())
     }
 
     @ApiOperation("删除扫描器")

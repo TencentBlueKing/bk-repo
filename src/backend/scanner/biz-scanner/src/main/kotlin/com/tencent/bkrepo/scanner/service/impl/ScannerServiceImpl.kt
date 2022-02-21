@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.scanner.dao.ScannerDao
@@ -79,18 +80,13 @@ class ScannerServiceImpl @Autowired constructor(
     }
 
     override fun delete(name: String) {
+        // TODO 改为逻辑删除
         if (scannerDao.deleteByName(name).deletedCount == 0L) {
             throw ScannerNotFoundException(name)
         }
     }
 
     private fun convert(scanner: TScanner): Scanner {
-        with(scanner) {
-            return Scanner(
-                name = name,
-                type = type,
-                version = version
-            )
-        }
+        return scanner.config.readJsonString()
     }
 }
