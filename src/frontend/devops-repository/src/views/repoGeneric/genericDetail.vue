@@ -26,8 +26,13 @@
                     </div>
                 </div>
                 <div v-if="!detailSlider.folder" class="display-block" data-title="命令行下载">
-                    <span class="ml30 code-tip">使用个人访问令牌替换&lt;PERSONAL_ACCESS_TOKEN&gt;</span>
+                    <div class="pl30">
+                        <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
+                        {{ $t('tokenSubTitle') }}
+                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                    </div>
                     <code-area class="mt10" :code-list="codeList"></code-area>
+                    <create-token-dialog ref="createToken"></create-token-dialog>
                 </div>
             </bk-tab-panel>
             <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
@@ -76,11 +81,12 @@
 </template>
 <script>
     import CodeArea from '@repository/components/CodeArea'
+    import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     export default {
         name: 'genericDetail',
-        components: { CodeArea },
+        components: { CodeArea, createTokenDialog },
         data () {
             return {
                 tabName: 'detailInfo',
@@ -164,6 +170,9 @@
                 }).finally(() => {
                     this.detailSlider.loading = false
                 })
+            },
+            createToken () {
+                this.$refs.createToken.showDialogHandler()
             },
             showAddMetadata () {
                 this.metadata = {
