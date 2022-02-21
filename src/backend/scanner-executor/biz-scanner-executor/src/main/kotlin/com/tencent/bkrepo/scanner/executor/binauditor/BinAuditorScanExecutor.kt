@@ -37,15 +37,15 @@ import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
+import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.pojo.CommonScanExecutorResult
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.pojo.scanner.BinAuditorScanner
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.core.io.Resource
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
@@ -53,9 +53,8 @@ import org.springframework.stereotype.Component
 import java.io.File
 import java.io.InputStream
 
-@Component
-@Qualifier(BinAuditorScanner.TYPE)
-@ConditionalOnBean(DockerClient::class)
+@Component(BinAuditorScanner.TYPE)
+@ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class BinAuditorScanExecutor @Autowired constructor(
     private val dockerClient: DockerClient
 ) : ScanExecutor<BinAuditorScanner> {

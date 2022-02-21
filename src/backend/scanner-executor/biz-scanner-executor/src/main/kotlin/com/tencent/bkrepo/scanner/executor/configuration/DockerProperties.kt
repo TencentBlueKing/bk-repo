@@ -31,8 +31,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("scanner.executor.docker")
 data class DockerProperties(
-    val host: String = "unix:///var/run/docker.sock",
-    val version: String = "1.23",
-    val connectTimeout: Int = 5000,
-    val readTimeout: Int = 300000
-)
+    var enabled: Boolean = true,
+    var host: String = "unix://var/run/docker.sock",
+    var version: String = "1.23",
+    var connectTimeout: Int = 5000,
+    var readTimeout: Int = 300000
+) {
+    companion object {
+        const val SCANNER_EXECUTOR_DOCKER_ENABLED = "scanner.executor.docker.enabled"
+    }
+}
