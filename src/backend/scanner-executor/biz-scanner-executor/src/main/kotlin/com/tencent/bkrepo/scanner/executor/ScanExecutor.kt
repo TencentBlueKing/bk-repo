@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.scanner.executor
 
-import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorResult
+import com.tencent.bkrepo.scanner.executor.pojo.CommonScanExecutorResult
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
 
-interface ScanExecutor<S : Scanner> {
-    fun scan(task: ScanExecutorTask<S>): ScanExecutorResult
+interface ScanExecutor<in S : Scanner> {
+    fun scan(task: ScanExecutorTask<S>, callback: (CommonScanExecutorResult) -> Unit)
 }

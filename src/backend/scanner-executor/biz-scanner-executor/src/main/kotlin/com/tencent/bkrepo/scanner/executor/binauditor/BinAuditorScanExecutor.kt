@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
-import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorResult
+import com.tencent.bkrepo.scanner.executor.pojo.CommonScanExecutorResult
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.pojo.scanner.BinAuditorScanner
 import org.apache.commons.io.FileUtils
@@ -63,7 +63,10 @@ class BinAuditorScanExecutor @Autowired constructor(
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var binAuditorConfigTemplate: Resource
 
-    override fun scan(task: ScanExecutorTask<BinAuditorScanner>): ScanExecutorResult {
+    override fun scan(
+        task: ScanExecutorTask<BinAuditorScanner>,
+        callback: (CommonScanExecutorResult) -> Unit
+    ) {
         logger.info("start to run file [$task]")
         val scanner = task.scanner
         // 创建工作目录
@@ -79,7 +82,7 @@ class BinAuditorScanExecutor @Autowired constructor(
             // 执行扫描
             doScan(workDir, task)
             logger.info("finish run file [$task] ")
-            return result(File(workDir, scanner.container.outputDir))
+            callback(result(File(workDir, scanner.container.outputDir)))
         } catch (e: Exception) {
             logger.error("run file [$task] failed [$e]")
             throw e
@@ -193,7 +196,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         }
     }
 
-    private fun result(outputDir: File): ScanExecutorResult {
+    private fun result(outputDir: File): CommonScanExecutorResult {
         TODO()
     }
 
