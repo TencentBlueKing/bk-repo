@@ -6,14 +6,10 @@
                 {{ $t('token') }}
             </header>
             <template #content>
-                <div class="section-main flex-column">
-                    <span class="sub-title">
-                        {{ $t('tokenSubTitle') }}
-                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
-                    </span>
-                    <div class="token-main">
-                        <bk-button class="mt15" style="padding:0 8px;" theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
-                    </div>
+                <div class="pt20 section-main">
+                    <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
+                    {{ $t('tokenSubTitle') }}
+                    <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                 </div>
             </template>
             <create-token-dialog ref="createToken"></create-token-dialog>
