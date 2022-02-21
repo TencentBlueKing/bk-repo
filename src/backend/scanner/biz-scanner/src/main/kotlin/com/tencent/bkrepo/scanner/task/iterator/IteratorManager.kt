@@ -58,7 +58,8 @@ class IteratorManager(
         } else {
             ProjectIdIterator(projectClient)
         }
-        return NodeIterator(projectIdIterator, nodeClient)
+        val position = NodeIterator.NodeIteratePosition(rule)
+        return NodeIterator(projectIdIterator, nodeClient, position)
     }
 
     /**

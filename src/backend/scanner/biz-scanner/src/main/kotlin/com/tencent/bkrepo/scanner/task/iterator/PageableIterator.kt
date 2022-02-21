@@ -60,7 +60,7 @@ abstract class PageableIterator<T>(
      */
     private fun pageData(): List<T> {
         with(position) {
-            if (page == INITIAL_PAGE || index == data.size - 1) {
+            if (index == data.size - 1) {
                 data = nextPageData(++page, pageSize)
                 index = INITIAL_INDEX
             }
