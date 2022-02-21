@@ -32,6 +32,7 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
@@ -43,7 +44,7 @@ import java.time.LocalDateTime
 class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
 
     fun deleteById(subTaskId: String): DeleteResult {
-        val query = Query(TSubScanTask::id.isEqualTo(subTaskId))
+        val query =Query(Criteria.where(ID).isEqualTo(subTaskId))
         return remove(query)
     }
 
@@ -51,7 +52,7 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
         subTaskId: String,
         status: SubScanTaskStatus
     ): UpdateResult {
-        val query = Query(TSubScanTask::id.isEqualTo(subTaskId))
+        val query = Query(Criteria.where(ID).isEqualTo(subTaskId))
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, status.name)

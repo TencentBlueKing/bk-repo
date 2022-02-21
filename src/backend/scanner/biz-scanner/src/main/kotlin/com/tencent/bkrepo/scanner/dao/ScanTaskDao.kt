@@ -31,6 +31,7 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -57,7 +58,7 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         status: ScanTaskStatus = ScanTaskStatus.FINISHED,
         finishedTime: LocalDateTime = LocalDateTime.now()
     ): UpdateResult {
-        val criteria = TScanTask::id.isEqualTo(taskId)
+        val criteria = Criteria.where(ID).isEqualTo(taskId)
             .and(TScanTask::status).isEqualTo(ScanTaskStatus.SCANNING_SUBMITTED)
             .and(TScanTask::scanning).isEqualTo(0L)
         val query = Query(criteria)
@@ -91,7 +92,7 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         return updateFirst(query, update)
     }
 
-    private fun buildQuery(taskId: String) = Query(TScanTask::id.isEqualTo(taskId))
+    private fun buildQuery(taskId: String) = Query(Criteria.where(ID).isEqualTo(taskId))
 
     private fun buildUpdate(lastModifiedDate: LocalDateTime = LocalDateTime.now()): Update =
         Update.update(TScanTask::lastModifiedDate.name, lastModifiedDate)
