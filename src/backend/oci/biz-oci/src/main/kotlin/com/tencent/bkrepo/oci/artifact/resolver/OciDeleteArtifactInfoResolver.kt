@@ -59,20 +59,20 @@ class OciDeleteArtifactInfoResolver : ArtifactInfoResolver {
             // 页面删除包请求
             requestURL.contains(PACKAGE_DELETE_PREFIX) -> {
                 val packageKey = request.getParameter(PACKAGE_KEY)
-                OciArtifactInfo(projectId, repoName, packageKey, StringPool.EMPTY)
+                OciArtifactInfo(projectId, repoName, PackageKeys.resolveOci(packageKey), StringPool.EMPTY)
             }
             // 页面删除包版本请求
             requestURL.contains(PACKAGE_VERSION_DELETE_PREFIX) -> {
                 val packageKey = request.getParameter(PACKAGE_KEY)
                 val version = request.getParameter(VERSION)
-                OciArtifactInfo(projectId, repoName, packageKey, version)
+                OciArtifactInfo(projectId, repoName, PackageKeys.resolveOci(packageKey), version)
             }
             else -> {
                 // 客户端请求删除版本
                 val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
                 val id = attributes[NAME].toString().trim()
                 val version = attributes[VERSION].toString().trim()
-                OciArtifactInfo(projectId, repoName, PackageKeys.ofHelm(id), version)
+                OciArtifactInfo(projectId, repoName, id, version)
             }
         }
     }
