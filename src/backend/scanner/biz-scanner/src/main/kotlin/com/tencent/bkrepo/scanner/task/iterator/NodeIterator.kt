@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.scanner.pojo.Node
 import org.slf4j.LoggerFactory
+import java.lang.ClassCastException
 
 /**
  * 文件迭代器
@@ -91,7 +92,7 @@ class NodeIterator(
             return emptyList()
         }
 
-        val projectIdRule = createProjectIdRule(projectId, rule)
+        val projectIdRule = modifyRule(projectId, rule)
         // 获取下一页需要扫描的文件
         val selected = listOf(
             NodeDetail::sha256.name, NodeDetail::size.name, NodeDetail::fullPath.name, NodeDetail::repoName.name
@@ -111,9 +112,17 @@ class NodeIterator(
         return res.data!!.records.map {
             val repoName = it[NodeDetail::repoName.name]!! as String
             val sha256 = it[NodeDetail::sha256.name]!! as String
-            val size = it[NodeDetail::size.name]!! as Long
+            val size = toLong(it[NodeDetail::size.name]!!)
             val fullPath = it[NodeDetail::fullPath.name]!! as String
             Node(projectId, repoName, fullPath, sha256, size)
+        }
+    }
+
+    private fun toLong(value: Any): Long {
+        return when (value) {
+            is Int -> value.toLong()
+            is Long -> value
+            else -> throw ClassCastException()
         }
     }
 
@@ -123,9 +132,10 @@ class NodeIterator(
      * @param projectId 设置规则匹配的项目
      * @param rule 匹配规则
      */
-    private fun createProjectIdRule(projectId: String, rule: Rule?): Rule {
+    private fun modifyRule(projectId: String, rule: Rule?): Rule {
         val rules = ArrayList<Rule>(2)
         rules.add(Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ))
+        rules.add(Rule.QueryRule(NodeDetail::folder.name, false, OperationType.EQ))
         rule?.let { rules.add(it) }
         return Rule.NestedRule(rules)
     }
