@@ -70,7 +70,9 @@ class UserOciController(
         @ApiParam(value = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
-        return ResponseBuilder.success(operationService.detailVersion(userId, artifactInfo, packageKey, version))
+        return ResponseBuilder.success(
+            operationService.detailVersion(userId, artifactInfo, packageKey, version)
+        )
     }
 
     @ApiOperation("删除仓库下的包")

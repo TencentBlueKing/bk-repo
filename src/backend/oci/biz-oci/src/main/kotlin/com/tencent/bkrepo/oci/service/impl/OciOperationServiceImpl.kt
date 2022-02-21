@@ -164,11 +164,20 @@ class OciOperationServiceImpl(
     fun remove(userId: String, artifactInfo: OciArtifactInfo) {
         with(artifactInfo) {
             if (version.isNotBlank()) {
-                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                packageClient.findVersionByName(
+                    projectId,
+                    repoName,
+                    PackageKeys.ofOci(packageName),
+                    version
+                ).data?.let {
                     removeVersion(this, it.name, userId)
                 } ?: throw VersionNotFoundException(version)
             } else {
-                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
+                packageClient.listAllVersion(
+                    projectId,
+                    repoName,
+                    PackageKeys.ofOci(packageName)
+                ).data.orEmpty().forEach {
                     removeVersion(this, it.name, userId)
                 }
             }
@@ -216,6 +225,10 @@ class OciOperationServiceImpl(
                 repoName = repoName,
                 packageName = packageName,
                 version = version
+            )
+            logger.info(
+                "Current version $packageName|$version will be deleted from manifest $fullPath " +
+                    "in repo ${getRepoIdentify()}"
             )
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return
             val inputStream = storageManager.loadArtifactInputStream(
@@ -322,7 +335,7 @@ class OciOperationServiceImpl(
             )
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
                 logger.warn("node [$fullPath] don't found.")
-                throw OciFileNotFoundException("Could not find node [$fullPath] in repo ${getRepoIdentify()}")
+                throw OciFileNotFoundException("Could not find [$packageKey/$version] in repo ${getRepoIdentify()}")
             }
             val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
