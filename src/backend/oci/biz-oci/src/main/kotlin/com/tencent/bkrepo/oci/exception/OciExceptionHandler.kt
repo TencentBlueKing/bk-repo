@@ -38,6 +38,8 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
+import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
@@ -54,7 +56,9 @@ import javax.servlet.http.HttpServletResponse
 
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RestControllerAdvice
-class OciExceptionHandler {
+class OciExceptionHandler(
+    private val ociProperties: OciProperties
+) {
     /**
      * 单独处理认证失败异常，需要添加WWW_AUTHENTICATE响应头触发浏览器登录
      */
@@ -63,7 +67,14 @@ class OciExceptionHandler {
     fun handleException(exception: AuthenticationException) {
         val response = HttpContextHolder.getResponse()
         response.contentType = MediaTypes.APPLICATION_JSON
-//        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
+        response.addHeader(
+            HttpHeaders.WWW_AUTHENTICATE,
+            OciLoginAuthHandler.AUTH_CHALLENGE_SERVICE_SCOPE.format(
+                ociProperties.domain,
+                OciLoginAuthHandler.REGISTRY_SERVICE,
+                OciLoginAuthHandler.SCOPE_STR
+            )
+        )
         logger.info("header WWW_AUTHENTICATE : ${response.getHeader(HttpHeaders.WWW_AUTHENTICATE)}")
         val responseObject = OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
         ociResponse(responseObject, exception, response)
