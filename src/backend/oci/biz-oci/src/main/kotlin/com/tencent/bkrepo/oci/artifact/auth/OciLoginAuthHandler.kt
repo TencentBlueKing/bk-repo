@@ -82,7 +82,7 @@ class OciLoginAuthHandler(
         response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
-            AUTH_CHALLENGE_SERVICE_SCOPE.format(request.remoteHost, REGISTRY_SERVICE, SCOPE_STR)
+            AUTH_CHALLENGE_SERVICE_SCOPE.format("http://oci-dev.bkrepo.woa.com", REGISTRY_SERVICE, SCOPE_STR)
         )
         val ociAuthResponse = OciResponse.errorResponse(
             OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
