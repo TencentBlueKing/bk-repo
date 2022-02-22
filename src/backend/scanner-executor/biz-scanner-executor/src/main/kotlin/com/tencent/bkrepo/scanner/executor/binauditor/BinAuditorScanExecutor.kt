@@ -144,10 +144,9 @@ class BinAuditorScanExecutor @Autowired constructor(
             val nvTools = scanner.nvTools
             val dockerImage = scanner.container
             val template = binAuditorConfigTemplate.file.readText()
-            val inputFilePath = "${dockerImage.workDir}$SLASH${dockerImage.inputDir}$SLASH${scannerInputFile.name}"
-            val outputDir = "${dockerImage.workDir}$SLASH${dockerImage.outputDir}"
+            val inputFilePath = "${dockerImage.inputDir.removePrefix(SLASH)}$SLASH${scannerInputFile.name}"
+            val outputDir = dockerImage.outputDir.removePrefix(SLASH)
             val params = mapOf(
-                TEMPLATE_KEY_TASK_ID to scanTask.taskId,
                 TEMPLATE_KEY_INPUT_FILE to inputFilePath,
                 TEMPLATE_KEY_OUTPUT_DIR to outputDir,
                 TEMPLATE_KEY_NV_TOOLS_ENABLED to nvTools.enabled,
@@ -209,7 +208,6 @@ class BinAuditorScanExecutor @Autowired constructor(
         private const val CONFIG_FILE_TEMPLATE_CLASS_PATH = "classpath:standalone.toml"
 
         // BinAuditor配置文件模板key
-        private const val TEMPLATE_KEY_TASK_ID = "taskId"
         private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
         private const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
         private const val TEMPLATE_KEY_NV_TOOLS_ENABLED = "nvToolsEnabled"

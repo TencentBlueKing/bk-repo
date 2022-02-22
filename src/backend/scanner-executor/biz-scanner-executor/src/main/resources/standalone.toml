@@ -1,7 +1,7 @@
 [metadata]
 standalonemode = true
 # 任务ID，standalone模式可以忽略
-taskID = "#{[taskId]}"
+taskID = 0
 # 描述，standalone模式可以忽略
 description = "This is a simple reference project configuration."
 # 无需修改
