@@ -246,7 +246,7 @@ class MavenLocalRepository(
                     context.artifactInfo.repoName,
                     path
                 ).data
-                if (node != null) {
+                if (node != null && checksumType(context) == null) {
                     logger.warn("The File $path already existed in the ${context.artifactInfo.getRepoIdentify()}")
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, path)
                 }

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -60,6 +61,7 @@ import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import java.time.LocalDateTime
 import org.slf4j.Logger
@@ -74,6 +76,33 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
+        with(artifactInfo) {
+            val lock = initRedisLock(artifactInfo.projectId, repoName)
+            if (getSpinLock(lock, 1500)) {
+                ChartInfoServiceImpl.logger.info(
+                    "Handling download index.yaml request with redis distribute lock " +
+                        "in repo [$projectId/$repoName] by User [${SecurityUtils.getUserId()}]."
+                )
+                lock.use {
+                    downloadIndex(artifactInfo)
+                }
+            } else {
+                downloadIndex(artifactInfo)
+            }
+        }
+    }
+
+    private fun downloadIndex(artifactInfo: HelmArtifactInfo) {
+        // 创建仓库后，index.yaml文件时没有生成的，需要生成默认的
+        if (!exist(artifactInfo.projectId, artifactInfo.repoName, HelmUtils.getIndexCacheYamlFullPath())) {
+            val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
+                indexYamlMetadata = HelmUtils.initIndexYamlMetadata(),
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                operator = SecurityUtils.getUserId()
+            )
+            uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
+        }
         downloadIndexYaml()
     }
 
@@ -178,7 +207,7 @@ class ChartRepositoryServiceImpl(
                 FULL_PATH,
                 findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
             )
-            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+            else -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
         }
         context.putAttribute(FILE_TYPE, CHART)
         try {
@@ -227,7 +256,7 @@ class ChartRepositoryServiceImpl(
                 FULL_PATH,
                 findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
             )
-            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
+            else -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
         }
         context.putAttribute(FILE_TYPE, PROV)
         try {
@@ -242,7 +271,10 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         when (getRepositoryInfo(artifactInfo).category) {
-            RepositoryCategory.LOCAL -> {
+            RepositoryCategory.REMOTE -> {
+                initIndexYaml(artifactInfo.projectId, artifactInfo.repoName)
+            }
+            else -> {
                 val nodeList = queryNodeList(artifactInfo, false)
                 logger.info(
                     "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
@@ -251,7 +283,6 @@ class ChartRepositoryServiceImpl(
                 val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
                 uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
             }
-            else -> initIndexYaml(artifactInfo.projectId, artifactInfo.repoName)
         }
     }
 
@@ -260,8 +291,8 @@ class ChartRepositoryServiceImpl(
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
         val context = ArtifactQueryContext()
         when (context.repositoryDetail.category) {
-            RepositoryCategory.LOCAL -> batchInstallLocalTgz(artifactInfo, startTime)
             RepositoryCategory.REMOTE -> throw HelmBadRequestException("illegal request")
+            else -> batchInstallLocalTgz(artifactInfo, startTime)
         }
     }
 

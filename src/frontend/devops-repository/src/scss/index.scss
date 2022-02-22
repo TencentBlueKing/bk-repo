@@ -21,7 +21,6 @@
  @charset 'utf-8';
  @import './conf';
  @import './reset';
- @import './iconfont';
 
 html,
 body {
@@ -156,6 +155,45 @@ label {
     color: var(--primaryColor);
     background-color: var(--bgHoverLighterColor);
     border: 1px solid transparent;
+    &.SUCCESS {
+        color: var(--successColor);
+        background-color: var(--successBgColor);
+    }
+    &.FAILED,
+    &.STOP {
+        color: var(--dangerColor);
+        background-color: #FFDDDD;
+    }
+    &.INIT {
+        color: var(--fontSubsidiaryColor);
+        background-color: #EFF2F6; // 30% CBD5E0
+    }
+}
+
+
+.status-sign {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    &.SUCCESS,
+    &.HEALTHY {
+        background-color: var(--successColor);
+    }
+    &.UNHEALTHY,
+    &.HIGH {
+        background-color: var(--warningColor);
+    }
+    &.FAILED,
+    &.CRITICAL {
+        background-color: var(--dangerColor);
+    }
+    &.RUNNING,
+    &.MEDIUM {
+        background-color: var(--primaryColor);
+    }
+    &.LOW {
+        background-color: var(--fontSubsidiaryColor);
+    }
 }
 
 .break-all {
@@ -173,6 +211,7 @@ label {
 .spin-icon {
     animation: loading .8s linear infinite;
 }
+
 @keyframes loading {
     from {
         transform: rotate(0);
@@ -217,4 +256,30 @@ input[type=file] {
     z-index: 10;
     opacity: 0;
     cursor: pointer;
+}
+
+// 内容块标题展示
+.display-block {
+    position: relative;
+    margin-top: 55px;
+    &:first-child {
+        margin-top: 35px;
+    }
+    &:before {
+        position: absolute;
+        top: -28px;
+        left: 0;
+        content: '';
+        width: 3px;
+        height: 12px;
+        background-color: var(--primaryColor);
+    }
+    &:after {
+        position: absolute;
+        top: -33px;
+        left: 10px;
+        content: attr(data-title);
+        font-size: 14px;
+        font-weight: bold;
+    }
 }

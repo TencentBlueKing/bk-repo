@@ -36,7 +36,7 @@ export function throttle (func, interval = DEFAULT_TIME_INTERVAL) {
 
 export function throttleMessage (fn, delay = 1000) {
     let lastTime = 0
-    return function (messageBody) {
+    return messageBody => {
         // 设置默认配置
         const message = {
             offsetY: 80,
@@ -71,4 +71,27 @@ export function formatDate (ms) {
         prezero(time.getHours())}:${
         prezero(time.getMinutes())}:${
         prezero(time.getSeconds())}`
+}
+
+export function copyToClipboard (text) {
+    // navigator clipboard 需要https等安全上下文
+    if (navigator.clipboard && window.isSecureContext) {
+        // navigator clipboard 向剪贴板写文本
+        return navigator.clipboard.writeText(text)
+    } else {
+        const textArea = document.createElement('textarea')
+        textArea.style.position = 'absolute'
+        textArea.style.width = 0
+        textArea.style.height = 0
+        textArea.style.left = '-10px'
+        textArea.style.top = '-10px'
+        document.body.appendChild(textArea)
+
+        textArea.value = text
+        textArea.focus()
+        textArea.select()
+        const result = document.execCommand('copy')
+        textArea.remove()
+        return result ? Promise.resolve() : Promise.reject(new Error())
+    }
 }

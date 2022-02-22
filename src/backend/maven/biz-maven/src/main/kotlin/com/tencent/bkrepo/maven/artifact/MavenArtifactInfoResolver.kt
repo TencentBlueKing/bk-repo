@@ -56,7 +56,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             if (paths.size < pathMinLimit) {
                 val message = "Cannot build MavenArtifactInfo from '$artifactUri'. " +
                     "The groupId, artifactId and version are unreadable."
-                logger.error(artifactUri)
+                logger.warn(message)
                 throw MavenBadRequestException(message)
             }
             var pos = paths.size - groupMark
@@ -71,7 +71,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
             mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
 
             require(mavenArtifactInfo.isValid()) {
-                throw IllegalArgumentException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
+                throw MavenBadRequestException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
             }
         }
         return mavenArtifactInfo

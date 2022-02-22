@@ -77,7 +77,7 @@ class MavenService(
         try {
             repository.upload(context)
         } catch (e: PatternSyntaxException) {
-            logger.error(
+            logger.warn(
                 "Error [${e.message}] occurred during uploading ${mavenArtifactInfo.getArtifactFullPath()} " +
                     "in repo ${mavenArtifactInfo.getRepoIdentify()}"
             )

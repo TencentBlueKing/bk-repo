@@ -51,7 +51,7 @@ object HelmThreadPoolExecutor {
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
         val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("helm-worker-%d").build()
         return ThreadPoolExecutor(
-            1, 200, 60, TimeUnit.SECONDS,
+            100, 500, 30, TimeUnit.SECONDS,
             LinkedBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }

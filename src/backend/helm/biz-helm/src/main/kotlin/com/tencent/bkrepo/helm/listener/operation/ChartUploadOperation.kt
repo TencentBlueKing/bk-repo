@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.helm.listener.operation
 
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
@@ -39,12 +38,11 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 class ChartUploadOperation(
     private val request: ChartOperationRequest,
-    redisOperation: RedisOperation,
     private val helmChartMetadata: HelmChartMetadata,
     private val domain: String,
     private val nodeDetail: NodeDetail,
     chartService: AbstractChartService
-) : AbstractChartOperation(request, redisOperation, chartService) {
+) : AbstractChartOperation(request, chartService) {
 
     override fun handleEvent(helmIndexYamlMetadata: HelmIndexYamlMetadata) {
         logger.info("Prepare to add metadata to index's metadata..")

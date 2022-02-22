@@ -15,7 +15,7 @@
     </div>
 </template>
 <script>
-    import Clipboard from 'clipboard'
+    import { copyToClipboard } from '@repository/utils'
     export default {
         name: 'codeArea',
         props: {
@@ -38,25 +38,16 @@
         },
         methods: {
             copyCode () {
-                // eslint-disable-next-line prefer-const
-                const clipboard = new Clipboard('.code-area', {
-                    text: () => {
-                        return this.codeList.join('\n')
-                    }
-                })
-                clipboard.on('success', (e) => {
+                copyToClipboard(this.codeList.join('\n')).then(() => {
                     this.$bkMessage({
                         theme: 'success',
                         message: this.$t('copy') + this.$t('success')
                     })
-                    clipboard.destroy()
-                })
-                clipboard.on('error', (e) => {
+                }).catch(() => {
                     this.$bkMessage({
                         theme: 'error',
                         message: this.$t('copy') + this.$t('fail')
                     })
-                    clipboard.destroy()
                 })
             }
         }

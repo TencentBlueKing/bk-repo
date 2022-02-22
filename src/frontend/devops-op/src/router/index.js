@@ -2,6 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 export const TITLE_HOME = sidebarTitle
 export const ROUTER_NAME_SERVICE = 'Service'
+export const ROUTER_NAME_NODE = 'Node'
 export const ROUTER_NAME_INSTANCE = 'Instance'
 export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
 
@@ -77,6 +78,18 @@ export const asyncRoutes = [
         component: () => import('@/views/service/Instance'),
         props: true,
         meta: { title: '服务实例' }
+      }
+    ]
+  },
+  {
+    path: '/nodes',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_NODE,
+        meta: { title: '文件管理', icon: 'file' },
+        component: () => import('@/views/node/index')
       }
     ]
   },

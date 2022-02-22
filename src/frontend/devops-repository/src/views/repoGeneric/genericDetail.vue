@@ -7,7 +7,7 @@
         :width="720">
         <template #content><bk-tab class="detail-container" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="detailInfo" :label="$t('baseInfo')">
-                <div class="version-base-info base-info" :data-title="$t('baseInfo')" v-bkloading="{ isLoading: detailSlider.loading }">
+                <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')" v-bkloading="{ isLoading: detailSlider.loading }">
                     <div class="grid-item"
                         v-for="{ name, label, value } in detailInfoMap"
                         :key="name">
@@ -15,7 +15,7 @@
                         <span class="flex-1 text-overflow" :title="value">{{ value }}</span>
                     </div>
                 </div>
-                <div v-if="!detailSlider.folder" class="version-base-info base-info-checksums" data-title="Checksums" v-bkloading="{ isLoading: detailSlider.loading }">
+                <div v-if="!detailSlider.folder" class="version-base-info base-info-checksums display-block" data-title="Checksums" v-bkloading="{ isLoading: detailSlider.loading }">
                     <div v-if="detailSlider.data.sha256" class="grid-item">
                         <label>SHA256：</label>
                         <span class="flex-1 text-overflow" :title="detailSlider.data.sha256">{{ detailSlider.data.sha256 }}</span>
@@ -25,9 +25,18 @@
                         <span class="flex-1 text-overflow" :title="detailSlider.data.md5">{{ detailSlider.data.md5 }}</span>
                     </div>
                 </div>
+                <div v-if="!detailSlider.folder" class="display-block" data-title="命令行下载">
+                    <div class="pl30">
+                        <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
+                        {{ $t('tokenSubTitle') }}
+                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                    </div>
+                    <code-area class="mt10" :code-list="codeList"></code-area>
+                    <create-token-dialog ref="createToken"></create-token-dialog>
+                </div>
             </bk-tab-panel>
             <bk-tab-panel v-if="!detailSlider.folder" name="metaDate" :label="$t('metaData')">
-                <div class="version-metadata" data-title="元数据">
+                <div class="version-metadata display-block" data-title="元数据">
                     <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
@@ -71,10 +80,13 @@
     </bk-sideslider>
 </template>
 <script>
+    import CodeArea from '@repository/components/CodeArea'
+    import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     export default {
         name: 'genericDetail',
+        components: { CodeArea, createTokenDialog },
         data () {
             return {
                 tabName: 'detailInfo',
@@ -112,7 +124,7 @@
             }
         },
         computed: {
-            ...mapState(['userList']),
+            ...mapState(['userInfo', 'userList']),
             detailInfoMap () {
                 return [
                     { name: 'fullPath', label: this.$t('path') },
@@ -123,6 +135,11 @@
                     { name: 'lastModifiedDate', label: this.$t('lastModifiedDate') }
                 ].filter(({ name }) => name in this.detailSlider.data && (name !== 'size' || !this.detailSlider.data.folder))
                     .map(item => ({ ...item, value: this.detailSlider.data[item.name] }))
+            },
+            codeList () {
+                return [
+                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/generic/${this.detailSlider.repoName}${this.detailSlider.path}`
+                ]
             }
         },
         methods: {
@@ -153,6 +170,9 @@
                 }).finally(() => {
                     this.detailSlider.loading = false
                 })
+            },
+            createToken () {
+                this.$refs.createToken.showDialogHandler()
             },
             showAddMetadata () {
                 this.metadata = {
@@ -205,30 +225,6 @@
     }
 </script>
 <style lang="scss" scoped>
-@mixin display-block {
-    position: relative;
-    margin-top: 55px;
-    &:first-child {
-        margin-top: 35px;
-    }
-    &:before {
-        position: absolute;
-        top: -28px;
-        left: 0;
-        content: '';
-        width: 3px;
-        height: 12px;
-        background-color: var(--primaryColor);
-    }
-    &:after {
-        position: absolute;
-        top: -33px;
-        left: 10px;
-        content: attr(data-title);
-        font-size: 14px;
-        font-weight: bold;
-    }
-}
 .detail-container {
     height: 100%;
     ::v-deep .bk-tab-section {
@@ -236,33 +232,28 @@
         overflow-y: auto;
     }
     .version-base-info {
-        &.base-info,
-        &.base-info-checksums {
-            @include display-block;
-        }
         &.base-info {
             padding: 20px;
             display: grid;
-            grid-gap: 20px;
+            gap: 20px;
             background-color: var(--bgHoverColor);
         }
         &.base-info-checksums {
             padding: 20px;
             display: grid;
-            grid-gap: 20px;
+            gap: 20px;
             background-color: var(--bgHoverColor);
         }
         .grid-item {
             display: flex;
             overflow: hidden;
             label {
-                flex-basis: 100px;
+                flex-basis: 80px;
                 text-align: right;
             }
         }
     }
     .version-metadata {
-        @include display-block;
         .version-metadata-add {
             position: absolute;
             display: flex;
@@ -293,6 +284,9 @@
                 }
             }
         }
+    }
+    .code-tip {
+        color: var(--fontSubsidiaryColor);
     }
 }
 </style>
