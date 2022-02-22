@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.scanner.executor.pojo
 
-import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import java.io.InputStream
 
 /**

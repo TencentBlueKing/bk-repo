@@ -35,7 +35,7 @@ import com.tencent.bkrepo.scanner.dao.ScannerDao
 import com.tencent.bkrepo.scanner.exception.ScannerNotFoundException
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.model.TScanner
-import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.service.ScannerService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.scanner.pojo
 
-import com.tencent.bkrepo.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 
 /**
  * 提交给扫描执行服务的子扫描任务

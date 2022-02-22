@@ -25,12 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor
-
-import com.tencent.bkrepo.scanner.executor.pojo.CommonScanExecutorResult
-import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-
-interface ScanExecutor<in S : Scanner> {
-    fun scan(task: ScanExecutorTask<S>, callback: (CommonScanExecutorResult) -> Unit)
+dependencies {
+    api(project(":common:common-api"))
 }

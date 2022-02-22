@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.scanner
+package com.tencent.bkrepo.common.scanner.pojo.scanner
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
