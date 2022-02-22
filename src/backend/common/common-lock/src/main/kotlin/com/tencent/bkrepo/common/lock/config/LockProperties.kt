@@ -25,12 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.pojo
+package com.tencent.bkrepo.common.lock.config
 
-enum class LockType {
-    REDIS,
-    MONGODB;
+import com.tencent.bkrepo.common.lock.pojo.LockType
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-    fun id() = this.name.toLowerCase()
-}
-
+@ConfigurationProperties("lock.properties")
+data class LockProperties(
+    var type: String = LockType.MONGODB.id()
+)

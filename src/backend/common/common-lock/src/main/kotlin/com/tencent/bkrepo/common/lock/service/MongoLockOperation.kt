@@ -25,12 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.pojo
+package com.tencent.bkrepo.common.lock.service
 
-enum class LockType {
-    REDIS,
-    MONGODB;
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-    fun id() = this.name.toLowerCase()
+class MongoLockOperation(
+    private val mongoDistributedLock: MongoDistributedLock
+) : LockOperation {
+    override fun getLockInfo(lockKey: String): Any {
+        logger.info("Will use mongodb to lock the key $lockKey")
+        return mongoDistributedLock
+    }
+
+    override fun acquireLock(lockKey: String, lock: Any): Boolean {
+        return (lock as MongoDistributedLock).acquireLock(lockKey, LockOperation.EXPIRED_TIME_IN_SECONDS)
+    }
+
+    override fun close(lockKey: String, lock: Any) {
+        logger.info("Will try to close mongodb lock for $lockKey")
+        return (lock as MongoDistributedLock).releaseLock(lockKey)
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(MongoLockOperation::class.java)
+    }
 }
-

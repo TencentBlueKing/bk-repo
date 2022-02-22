@@ -27,15 +27,16 @@
 
 package com.tencent.bkrepo.common.lock
 
-import com.tencent.bkrepo.common.lock.config.RedisConfigProperties
+import com.tencent.bkrepo.common.lock.config.LockProperties
 import com.tencent.bkrepo.common.lock.dao.MongoDistributedLockDao
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.lock.service.MongoDistributedLock
+import com.tencent.bkrepo.common.lock.service.MongoLockOperation
+import com.tencent.bkrepo.common.lock.service.RedisLockOperation
 import com.tencent.bkrepo.common.redis.RedisOperation
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
-import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -43,25 +44,22 @@ import org.springframework.core.Ordered
 
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
+@EnableConfigurationProperties(LockProperties::class)
 @Import(
     MongoDistributedLockDao::class,
-    RedisOperation::class,
-    RedisConfigProperties::class
+    RedisOperation::class
 )
-@AutoConfigureAfter(ConfigurationProperties::class)
 class LockAutoConfiguration {
 
     @Bean
-    fun mongoDistributedLock(mongoDistributedLockDao: MongoDistributedLockDao): MongoDistributedLock {
-        return MongoDistributedLock(mongoDistributedLockDao)
+    @ConditionalOnProperty(prefix = "lock", name = ["type"], havingValue = "mongodb", matchIfMissing = true)
+    fun mongodbLockOperation(mongoDistributedLockDao: MongoDistributedLockDao): LockOperation {
+        return MongoLockOperation(MongoDistributedLock(mongoDistributedLockDao))
     }
 
     @Bean
-    fun lockOperation(
-        redisConfigProperties: RedisConfigProperties,
-        @Autowired mongoDistributedLock: MongoDistributedLock,
-        redisOperation: RedisOperation
-    ): LockOperation {
-        return LockOperation(redisOperation, mongoDistributedLock, redisConfigProperties)
+    @ConditionalOnProperty(prefix = "lock", name = ["type"], havingValue = "redis")
+    fun redisLockOperation(redisOperation: RedisOperation): LockOperation {
+        return RedisLockOperation(redisOperation)
     }
 }

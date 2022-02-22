@@ -27,49 +27,29 @@
 
 package com.tencent.bkrepo.common.lock.service
 
-import com.tencent.bkrepo.common.lock.config.RedisConfigProperties
-import com.tencent.bkrepo.common.lock.pojo.LockType
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-/**
- * 锁服务
- */
-class LockOperation(
-    private val redisOperation: RedisOperation,
-    private val mongoOperation: MongoDistributedLock,
-    private val redisProperties: RedisConfigProperties
-) {
+interface LockOperation {
+
     /**
-     * 判断是否配置了redis
+     * 获取锁信息
      */
-    private fun redisConnectionCheck(): Boolean {
-        return (redisProperties.host.isNullOrBlank() && redisProperties.cluster == null)
-    }
+    fun getLockInfo(lockKey: String): Any
 
     /**
      * 自旋获取锁
      */
-    private fun getSpinLock(
+    fun getSpinLock(
         lockKey: String,
-        redisLock: RedisLock? = null,
+        lock: Any,
         retryTimes: Int = RETRY_TIMES,
         sleepTime: Long = SPIN_SLEEP_TIME
     ): Boolean {
         logger.info("Will start to get lock to do some operations.")
-        val type = if (redisLock == null) {
-            logger.info("Will use mongodb lock to do some operations.")
-            LockType.MONGODB
-        } else {
-            logger.info("Will use redis lock to do some operations.")
-            LockType.REDIS
-        }
-
         // 自旋获取锁
         loop@ for (i in 0 until retryTimes) {
-            when (acquireLock(lockKey, type, redisLock)) {
+            when (acquireLock(lockKey, lock)) {
                 true -> return true
                 else ->
                     try {
@@ -83,40 +63,15 @@ class LockOperation(
         return false
     }
 
-    private fun getLockInfo(lockKey: String): RedisLock? {
-        return if (!redisConnectionCheck()) {
-            RedisLock(redisOperation, lockKey, EXPIRED_TIME_IN_SECONDS)
-        } else {
-            null
-        }
-    }
-
-    private fun acquireLock(key: String, type: LockType, lock: RedisLock? = null): Boolean {
-        return when (type) {
-            LockType.REDIS -> {
-                lock!!.tryLock()
-            }
-            LockType.MONGODB -> {
-                mongoOperation.acquireLock(key, EXPIRED_TIME_IN_SECONDS)
-            }
-        }
-    }
+    /**
+     * 获取锁
+     */
+    fun acquireLock(lockKey: String, lock: Any): Boolean
 
     /**
      * 释放锁
      */
-    private fun close(
-        lockKey: String,
-        redisLock: RedisLock? = null
-    ) {
-        logger.info("Will start to release the key with index.yaml")
-        if (redisLock == null) {
-            logger.info("Start to unlock the mongodb key($lockKey)")
-            mongoOperation.releaseLock(lockKey)
-        } else {
-            redisLock.unlock()
-        }
-    }
+    fun close(lockKey: String, lock: Any)
 
     fun <T> lockAction(lockKey: String, action: () -> T): T {
         val lock = getLockInfo(lockKey)
@@ -137,8 +92,8 @@ class LockOperation(
         /**
          * 定义Redis过期时间
          */
-        private const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
-        private const val SPIN_SLEEP_TIME: Long = 30L
-        private const val RETRY_TIMES: Int = 10000
+        const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
+        const val SPIN_SLEEP_TIME: Long = 30L
+        const val RETRY_TIMES: Int = 10000
     }
 }

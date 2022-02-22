@@ -25,12 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.lock.pojo
+package com.tencent.bkrepo.common.lock.service
 
-enum class LockType {
-    REDIS,
-    MONGODB;
+import com.tencent.bkrepo.common.lock.service.LockOperation.Companion.EXPIRED_TIME_IN_SECONDS
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
-    fun id() = this.name.toLowerCase()
+class RedisLockOperation(
+    private val redisOperation: RedisOperation
+) : LockOperation {
+    override fun getLockInfo(lockKey: String): Any {
+        logger.info("Will use redis to lock the key $lockKey")
+        return RedisLock(
+            redisOperation = redisOperation,
+            lockKey = lockKey,
+            expiredTimeInSeconds = EXPIRED_TIME_IN_SECONDS
+        )
+    }
+
+    override fun acquireLock(lockKey: String, lock: Any): Boolean {
+        return (lock as RedisLock).tryLock()
+    }
+
+    override fun close(lockKey: String, lock: Any) {
+        logger.info("Will try to close redis lock for $lockKey")
+        (lock as RedisLock).unlock()
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(RedisLockOperation::class.java)
+    }
 }
-
