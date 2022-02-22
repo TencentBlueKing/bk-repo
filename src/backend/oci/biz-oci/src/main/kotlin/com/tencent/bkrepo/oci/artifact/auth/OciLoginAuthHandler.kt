@@ -76,7 +76,7 @@ class OciLoginAuthHandler(
         response: HttpServletResponse,
         authenticationException: AuthenticationException
     ) {
-        logger.info("request info: ${request.requestURI} ${request.remoteHost}")
+        logger.info("request info: ${request.requestURI} ${request.remoteHost} ${request.locale}")
         response.status = HttpStatus.UNAUTHORIZED.value
         response.contentType = MediaTypes.APPLICATION_JSON
         response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
