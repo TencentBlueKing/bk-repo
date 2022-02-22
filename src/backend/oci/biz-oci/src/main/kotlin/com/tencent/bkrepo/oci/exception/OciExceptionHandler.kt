@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.security.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
@@ -64,7 +63,8 @@ class OciExceptionHandler {
     fun handleException(exception: AuthenticationException) {
         val response = HttpContextHolder.getResponse()
         response.contentType = MediaTypes.APPLICATION_JSON
-        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
+//        response.setHeader(HttpHeaders.WWW_AUTHENTICATE, BASIC_AUTH_PROMPT)
+        logger.info("header WWW_AUTHENTICATE : ${response.getHeader(HttpHeaders.WWW_AUTHENTICATE)}")
         val responseObject = OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
         ociResponse(responseObject, exception, response)
     }
