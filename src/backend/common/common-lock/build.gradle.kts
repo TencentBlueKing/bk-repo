@@ -30,11 +30,6 @@
  */
 
 dependencies {
-    api(project(":helm:api-helm"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-lock"))
-    implementation("org.yaml:snakeyaml")
-    implementation("org.apache.commons:commons-compress")
-    implementation("com.github.zafarkhaja:java-semver")
+    api(project(":common:common-mongo"))
+    api(project(":common:common-redis"))
 }
