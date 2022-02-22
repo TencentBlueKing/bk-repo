@@ -35,27 +35,27 @@ interface LockOperation {
     /**
      * 获取锁信息
      */
-    fun getLockInfo(lockKey: String): Any
+    fun <T> getLock(lockKey: String): T
 
     /**
      * 自旋获取锁
      */
-    fun getSpinLock(
+
+    fun <T> getSpinLock(
         lockKey: String,
-        lock: Any,
+        lock: T,
         retryTimes: Int = RETRY_TIMES,
         sleepTime: Long = SPIN_SLEEP_TIME
     ): Boolean {
         logger.info("Will start to get lock to do some operations.")
         // 自旋获取锁
-        loop@ for (i in 0 until retryTimes) {
+        for (i in 0 until retryTimes) {
             when (acquireLock(lockKey, lock)) {
                 true -> return true
                 else ->
                     try {
                         Thread.sleep(sleepTime)
-                    } catch (e: InterruptedException) {
-                        continue@loop
+                    } catch (ignore: InterruptedException) {
                     }
             }
         }
@@ -66,26 +66,12 @@ interface LockOperation {
     /**
      * 获取锁
      */
-    fun acquireLock(lockKey: String, lock: Any): Boolean
+    fun <T> acquireLock(lockKey: String, lock: T): Boolean
 
     /**
      * 释放锁
      */
-    fun close(lockKey: String, lock: Any)
-
-    fun <T> lockAction(lockKey: String, action: () -> T): T {
-        val lock = getLockInfo(lockKey)
-        return if (getSpinLock(lockKey, lock)) {
-            logger.info("Lock for key $lockKey has been acquired.")
-            try {
-                action()
-            } finally {
-                close(lockKey, lock)
-            }
-        } else {
-            action()
-        }
-    }
+    fun <T> close(lockKey: String, lock: T)
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(LockOperation::class.java)

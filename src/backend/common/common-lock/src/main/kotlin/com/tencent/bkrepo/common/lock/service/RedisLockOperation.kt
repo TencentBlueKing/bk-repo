@@ -33,23 +33,24 @@ import com.tencent.bkrepo.common.redis.RedisOperation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+@Suppress("UNCHECKED_CAST")
 class RedisLockOperation(
     private val redisOperation: RedisOperation
 ) : LockOperation {
-    override fun getLockInfo(lockKey: String): Any {
+    override fun <T> getLock(lockKey: String): T {
         logger.info("Will use redis to lock the key $lockKey")
         return RedisLock(
             redisOperation = redisOperation,
             lockKey = lockKey,
             expiredTimeInSeconds = EXPIRED_TIME_IN_SECONDS
-        )
+        ) as T
     }
 
-    override fun acquireLock(lockKey: String, lock: Any): Boolean {
+    override fun <T> acquireLock(lockKey: String, lock: T): Boolean {
         return (lock as RedisLock).tryLock()
     }
 
-    override fun close(lockKey: String, lock: Any) {
+    override fun <T> close(lockKey: String, lock: T) {
         logger.info("Will try to close redis lock for $lockKey")
         (lock as RedisLock).unlock()
     }

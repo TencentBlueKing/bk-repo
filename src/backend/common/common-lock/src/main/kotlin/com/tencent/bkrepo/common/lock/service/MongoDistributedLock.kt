@@ -35,6 +35,9 @@ import com.tencent.bkrepo.common.lock.dao.MongoDistributedLockDao
 class MongoDistributedLock(
     private val lockDao: MongoDistributedLockDao
 ) {
+    /**
+     * mongodb实现的锁不支持重入
+     */
     fun acquireLock(key: String, expireTime: Long): Boolean {
         if (key.isBlank()) return false
         val lockInfo = lockDao.findByKey(key)

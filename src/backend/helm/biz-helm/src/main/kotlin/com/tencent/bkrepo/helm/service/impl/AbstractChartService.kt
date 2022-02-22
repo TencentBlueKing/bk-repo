@@ -402,11 +402,21 @@ open class AbstractChartService : ArtifactService() {
     }
 
     /**
-     * 获取锁服务，并当完成后释放锁
+     * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
     fun <T> lockAction(projectId: String, repoName: String, action: () -> T): T {
         val lockKey = buildRedisKey(projectId, repoName)
-        return lockOperation.lockAction(lockKey, action)
+        val lock = lockOperation.getLock(lockKey) as T
+        return if (lockOperation.getSpinLock(lockKey, lock)) {
+            LockOperation.logger.info("Lock for key $lockKey has been acquired.")
+            try {
+                action()
+            } finally {
+                lockOperation.close(lockKey, lock)
+            }
+        } else {
+            action()
+        }
     }
 
     companion object {
