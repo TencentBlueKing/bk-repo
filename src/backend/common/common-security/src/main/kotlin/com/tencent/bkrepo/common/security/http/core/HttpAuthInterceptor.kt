@@ -56,14 +56,17 @@ class HttpAuthInterceptor(
         val requestMethod = request.method
         httpAuthSecurity.authHandlerList.forEach { authHandler ->
             val isLoginRequest = checkLoginRequest(authHandler, requestUri, requestMethod)
+            logger.info("preHandle isLoginRequest is $isLoginRequest")
             // 拦截所有请求或当前为LoginEndpoint请求，表示需要认证处理
             if (authHandler.getLoginEndpoint() == null || isLoginRequest) {
                 val authenticateResult = authenticateRequest(authHandler, isLoginRequest, request, response)
+                logger.info("authenticateResult $authenticateResult")
                 if (authenticateResult != null) {
                     return authenticateResult
                 }
             }
         }
+        logger.info("preHandle anonymousEnabled is ${httpAuthSecurity.anonymousEnabled}")
         // 没有合适的认证handler或为匿名用户
         if (httpAuthSecurity.anonymousEnabled) {
             request.setAttribute(USER_KEY, ANONYMOUS_USER)
@@ -85,6 +88,7 @@ class HttpAuthInterceptor(
         var result: Boolean? = null
         try {
             val authCredentials = authHandler.extractAuthCredentials(request)
+            logger.info("authCredentials $authCredentials and isLoginRequest is $isLoginRequest")
             if (authCredentials !is AnonymousCredentials) {
                 val userId = authHandler.onAuthenticate(request, authCredentials)
                 request.setAttribute(USER_KEY, userId)

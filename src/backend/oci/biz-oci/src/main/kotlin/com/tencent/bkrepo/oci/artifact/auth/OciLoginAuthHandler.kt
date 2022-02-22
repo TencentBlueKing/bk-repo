@@ -46,13 +46,14 @@ import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
 import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
 import com.tencent.bkrepo.oci.pojo.response.OciResponse
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
- * helm registry login handler
+ * oci registry login handler
  */
 class OciLoginAuthHandler(
     authenticationManager: AuthenticationManager
@@ -75,6 +76,7 @@ class OciLoginAuthHandler(
         response: HttpServletResponse,
         authenticationException: AuthenticationException
     ) {
+        logger.info("request info: ${request.requestURI} ${request.remoteHost}")
         response.status = HttpStatus.UNAUTHORIZED.value
         response.contentType = MediaTypes.APPLICATION_JSON
         response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
@@ -90,6 +92,7 @@ class OciLoginAuthHandler(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(OciLoginAuthHandler::class.java)
         const val AUTH_CHALLENGE_SERVICE_SCOPE = "Basic realm=\"%s\",service=\"%s\",scope=\"%s\""
         const val REGISTRY_SERVICE = "bkrepo"
         const val SCOPE_STR = "repository:*/*/tb:push,pull"
