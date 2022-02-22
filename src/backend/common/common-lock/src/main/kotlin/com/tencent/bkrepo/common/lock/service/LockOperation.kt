@@ -35,15 +35,15 @@ interface LockOperation {
     /**
      * 获取锁信息
      */
-    fun <T> getLock(lockKey: String): T
+    fun getLock(lockKey: String): Any
 
     /**
      * 自旋获取锁
      */
 
-    fun <T> getSpinLock(
+    fun getSpinLock(
         lockKey: String,
-        lock: T,
+        lock: Any,
         retryTimes: Int = RETRY_TIMES,
         sleepTime: Long = SPIN_SLEEP_TIME
     ): Boolean {
@@ -66,12 +66,12 @@ interface LockOperation {
     /**
      * 获取锁
      */
-    fun <T> acquireLock(lockKey: String, lock: T): Boolean
+    fun acquireLock(lockKey: String, lock: Any): Boolean
 
     /**
      * 释放锁
      */
-    fun <T> close(lockKey: String, lock: T)
+    fun close(lockKey: String, lock: Any)
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(LockOperation::class.java)

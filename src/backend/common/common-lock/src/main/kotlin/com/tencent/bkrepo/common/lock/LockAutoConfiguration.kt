@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.lock
 
-import com.tencent.bkrepo.common.lock.config.LockProperties
 import com.tencent.bkrepo.common.lock.dao.MongoDistributedLockDao
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.lock.service.MongoDistributedLock
@@ -36,7 +35,6 @@ import com.tencent.bkrepo.common.lock.service.RedisLockOperation
 import com.tencent.bkrepo.common.redis.RedisOperation
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -44,7 +42,6 @@ import org.springframework.core.Ordered
 
 @Configuration
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
-@EnableConfigurationProperties(LockProperties::class)
 @Import(
     MongoDistributedLockDao::class,
     RedisOperation::class

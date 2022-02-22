@@ -406,7 +406,7 @@ open class AbstractChartService : ArtifactService() {
      */
     fun <T> lockAction(projectId: String, repoName: String, action: () -> T): T {
         val lockKey = buildRedisKey(projectId, repoName)
-        val lock = lockOperation.getLock(lockKey) as T
+        val lock = lockOperation.getLock(lockKey)
         return if (lockOperation.getSpinLock(lockKey, lock)) {
             LockOperation.logger.info("Lock for key $lockKey has been acquired.")
             try {

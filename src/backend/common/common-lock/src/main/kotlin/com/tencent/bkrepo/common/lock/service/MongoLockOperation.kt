@@ -30,23 +30,22 @@ package com.tencent.bkrepo.common.lock.service
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-@Suppress("UNCHECKED_CAST")
 class MongoLockOperation(
     private val mongoDistributedLock: MongoDistributedLock
 ) : LockOperation {
-    override fun <T> getLock(lockKey: String): T {
+    override fun getLock(lockKey: String): Any {
         logger.info("Will use mongodb to lock the key $lockKey")
-        return mongoDistributedLock as T
+        return mongoDistributedLock
     }
 
     /**
      * mongodb实现的锁不支持重入
      */
-    override fun <T> acquireLock(lockKey: String, lock: T): Boolean {
+    override fun acquireLock(lockKey: String, lock: Any): Boolean {
         return (lock as MongoDistributedLock).acquireLock(lockKey, LockOperation.EXPIRED_TIME_IN_SECONDS)
     }
 
-    override fun <T> close(lockKey: String, lock: T) {
+    override fun close(lockKey: String, lock: Any) {
         logger.info("Will try to close mongodb lock for $lockKey")
         return (lock as MongoDistributedLock).releaseLock(lockKey)
     }
