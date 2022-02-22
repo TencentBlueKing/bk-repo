@@ -52,7 +52,7 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
 /**
- * helm registry login handler
+ * oci registry login handler
  */
 class OciLoginAuthHandler(
     authenticationManager: AuthenticationManager
