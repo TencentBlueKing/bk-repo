@@ -36,10 +36,12 @@ import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.scanner.pojo.scanner.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResultOverview
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
-import com.tencent.bkrepo.scanner.executor.pojo.CommonScanExecutorResult
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
@@ -52,6 +54,10 @@ import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
 import java.io.InputStream
+import java.time.Duration
+import java.time.LocalDateTime
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @Component(BinAuditorScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
@@ -64,26 +70,32 @@ class BinAuditorScanExecutor @Autowired constructor(
 
     override fun scan(
         task: ScanExecutorTask<BinAuditorScanner>,
-        callback: (CommonScanExecutorResult) -> Unit
+        callback: (ScanExecutorResult) -> Unit
     ) {
-        logger.info("start to run file [$task]")
+        val startDateTime = LocalDateTime.now()
+        logger.info(logMsg(task, "start to scan"))
         val scanner = task.scanner
         // 创建工作目录
         val workDir = createWorkDir(scanner.rootPath, task.taskId)
+        logger.info(logMsg(task, "create work dir success, $workDir"))
         try {
             // 加载待扫描文件
             val scannerInputFilePath = "${scanner.container.inputDir}$SLASH${task.sha256}"
             val scannerInputFile = loadFile(workDir, scannerInputFilePath, task.inputStream)
+            logger.info(logMsg(task, "load file success"))
 
             // 加载扫描配置文件
             loadConfigFile(task, workDir, scannerInputFile)
+            logger.info(logMsg(task, "load config success"))
 
             // 执行扫描
             doScan(workDir, task)
-            logger.info("finish run file [$task] ")
-            callback(result(File(workDir, scanner.container.outputDir)))
+            val finishedDateTime = LocalDateTime.now()
+            val timeSpent = Duration.between(startDateTime, finishedDateTime)
+            logger.info(logMsg(task, "scan finished took time $timeSpent"))
+            callback(result(startDateTime, finishedDateTime, File(workDir, scanner.container.outputDir)))
         } catch (e: Exception) {
-            logger.error("run file [$task] failed [$e]")
+            logger.error(logMsg(task, "scan failed"), e)
             throw e
         } finally {
             // 清理工作目录
@@ -134,38 +146,33 @@ class BinAuditorScanExecutor @Autowired constructor(
      *
      * @return BinAuditor扫描器配置文件
      */
-    fun loadConfigFile(
+    private fun loadConfigFile(
         scanTask: ScanExecutorTask<BinAuditorScanner>,
         workDir: File,
         scannerInputFile: File
     ): File {
-        try {
-            val scanner = scanTask.scanner
-            val nvTools = scanner.nvTools
-            val dockerImage = scanner.container
-            val template = binAuditorConfigTemplate.file.readText()
-            val inputFilePath = "${dockerImage.inputDir.removePrefix(SLASH)}$SLASH${scannerInputFile.name}"
-            val outputDir = dockerImage.outputDir.removePrefix(SLASH)
-            val params = mapOf(
-                TEMPLATE_KEY_INPUT_FILE to inputFilePath,
-                TEMPLATE_KEY_OUTPUT_DIR to outputDir,
-                TEMPLATE_KEY_NV_TOOLS_ENABLED to nvTools.enabled,
-                TEMPLATE_KEY_NV_TOOLS_USERNAME to nvTools.username,
-                TEMPLATE_KEY_NV_TOOLS_KEY to nvTools.key,
-                TEMPLATE_KEY_NV_TOOLS_HOST to nvTools.host
-            )
+        val scanner = scanTask.scanner
+        val nvTools = scanner.nvTools
+        val dockerImage = scanner.container
+        val template = binAuditorConfigTemplate.file.readText()
+        val inputFilePath = "${dockerImage.inputDir.removePrefix(SLASH)}$SLASH${scannerInputFile.name}"
+        val outputDir = dockerImage.outputDir.removePrefix(SLASH)
+        val params = mapOf(
+            TEMPLATE_KEY_INPUT_FILE to inputFilePath,
+            TEMPLATE_KEY_OUTPUT_DIR to outputDir,
+            TEMPLATE_KEY_NV_TOOLS_ENABLED to nvTools.enabled,
+            TEMPLATE_KEY_NV_TOOLS_USERNAME to nvTools.username,
+            TEMPLATE_KEY_NV_TOOLS_KEY to nvTools.key,
+            TEMPLATE_KEY_NV_TOOLS_HOST to nvTools.host
+        )
 
-            val content = SpelExpressionParser()
-                .parseExpression(template, TemplateParserContext())
-                .getValue(params, String::class.java)!!
+        val content = SpelExpressionParser()
+            .parseExpression(template, TemplateParserContext())
+            .getValue(params, String::class.java)!!
 
-            val configFile = File(workDir, scanner.configFilePath)
-            configFile.writeText(content)
-            return configFile
-        } catch (e: Exception) {
-            logger.warn("load config file exception [$scanTask] ")
-            throw e
-        }
+        val configFile = File(workDir, scanner.configFilePath)
+        configFile.writeText(content)
+        return configFile
     }
 
     private fun doScan(workDir: File, task: ScanExecutorTask<BinAuditorScanner>) {
@@ -179,25 +186,57 @@ class BinAuditorScanExecutor @Autowired constructor(
             .withTty(true)
             .withStdinOpen(true)
             .exec().id
-        logger.info("run container instance Id [$workDir, $containerId]")
+        logger.info(logMsg(task, "run container instance Id [$workDir, $containerId]"))
         try {
             dockerClient.startContainerCmd(containerId).exec()
             val resultCallback = WaitContainerResultCallback()
             dockerClient.waitContainerCmd(containerId).exec(resultCallback)
             resultCallback.awaitCompletion()
-            logger.info("task docker run success [$workDir, $containerId]")
-        } catch (e: Exception) {
-            logger.error("exec docker task exception[$workDir, $e]")
-            throw e
+            logger.info(logMsg(task, "task docker run success [$workDir, $containerId]"))
         } finally {
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
     }
 
-    private fun result(outputDir: File): CommonScanExecutorResult {
+    /**
+     * 解析扫描结果
+     */
+    private fun result(
+        startDateTime: LocalDateTime,
+        finishedDateTime: LocalDateTime,
+        outputDir: File
+    ): BinAuditorScanExecutorResult {
+        return BinAuditorScanExecutorResult(
+            startDateTime = startDateTime,
+            finishedDateTime = finishedDateTime,
+            resultZipFile = zipResult(outputDir),
+            overview = resultOverview(outputDir)
+        )
+    }
+
+    private fun resultOverview(outputDir: File): BinAuditorScanExecutorResultOverview {
+        // 解析制品依赖清单
         TODO()
     }
 
+    private fun zipResult(outputDir: File): File {
+        val resultFile = File(outputDir, RESULT_ZIP_FILE_NAME)
+        resultFile.outputStream().use { resultFileOutputStream ->
+            val zipOutputStream = ZipOutputStream(resultFileOutputStream)
+            outputDir
+                .walk()
+                .filter { it.isFile }
+                .forEach { file ->
+                    zipOutputStream.putNextEntry(ZipEntry(file.name))
+                    file.inputStream().use { it.copyTo(zipOutputStream) }
+                }
+        }
+        return resultFile
+    }
+
+    private fun logMsg(task: ScanExecutorTask<BinAuditorScanner>, msg: String) = with(task) {
+        "msg: $msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(BinAuditorScanExecutor::class.java)
@@ -214,5 +253,28 @@ class BinAuditorScanExecutor @Autowired constructor(
         private const val TEMPLATE_KEY_NV_TOOLS_USERNAME = "nvToolsUsername"
         private const val TEMPLATE_KEY_NV_TOOLS_KEY = "nvToolsKey"
         private const val TEMPLATE_KEY_NV_TOOLS_HOST = "nvToolsHost"
+
+        private const val RESULT_ZIP_FILE_NAME = "result.zip"
+
+        // BinAuditor扫描结果文件名
+        /**
+         * 证书扫描结果文件名
+         */
+        private const val RESULT_FILE_NAME_APPLICATION_ITEMS = "application_items.json"
+
+        /**
+         * 安全审计结果文件名
+         */
+        private const val RESULT_FILE_NAME_CHECK_SEC_ITEMS = "checksec_items.json"
+
+        /**
+         * CVE扫描结果文件名
+         */
+        private const val RESULT_FILE_NAME_CVE_SEC_ITEMS = "cvesec_items.json"
+
+        /**
+         * 敏感信息扫描结果文件名
+         */
+        private const val RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS = "sensitive_info_items.json"
     }
 }
