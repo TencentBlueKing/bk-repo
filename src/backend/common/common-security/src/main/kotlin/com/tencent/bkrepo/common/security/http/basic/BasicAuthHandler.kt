@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.BasicAuthUtils
-import org.slf4j.LoggerFactory
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -49,7 +48,6 @@ open class BasicAuthHandler(val authenticationManager: AuthenticationManager) : 
 
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
-        logger.info("authorizationHeader is $authorizationHeader")
         return if (authorizationHeader.startsWith(BASIC_AUTH_PREFIX)) {
             try {
                 val pair = BasicAuthUtils.decode(authorizationHeader)
@@ -63,8 +61,5 @@ open class BasicAuthHandler(val authenticationManager: AuthenticationManager) : 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is BasicAuthCredentials)
         return authenticationManager.checkUserAccount(authCredentials.username, authCredentials.password)
-    }
-    companion object {
-        private val logger = LoggerFactory.getLogger(BasicAuthHandler::class.java)
     }
 }

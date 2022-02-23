@@ -75,7 +75,6 @@ class OciExceptionHandler(
                 OciLoginAuthHandler.SCOPE_STR
             )
         )
-        logger.info("header WWW_AUTHENTICATE : ${response.getHeader(HttpHeaders.WWW_AUTHENTICATE)}")
         val responseObject = OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
         ociResponse(responseObject, exception, response)
     }

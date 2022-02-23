@@ -44,7 +44,6 @@ import com.tencent.bkrepo.oci.artifact.repository.OciRegistryLocalRepository
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryRemoteRepository
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryVirtualRepository
 import com.tencent.bkrepo.oci.config.OciProperties
-import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
@@ -63,12 +62,7 @@ class OciRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
             val authenticationManager = httpAuthSecurity.authenticationManager!!
             val ociLoginAuthHandler = OciLoginAuthHandler(authenticationManager)
-            logger.info("request prefix: ${httpAuthSecurity.prefix}")
             httpAuthSecurity.withPrefix("/oci").addHttpAuthHandler(ociLoginAuthHandler)
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(OciRegistryArtifactConfigurer::class.java)
     }
 }
