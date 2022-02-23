@@ -1,3 +1,4 @@
+// 仓库类型
 export const repoEnum = MODE_CONFIG === 'ci'
     ? [
         'generic',
@@ -16,13 +17,7 @@ export const repoEnum = MODE_CONFIG === 'ci'
         // 'nuget'
     ]
 
-export const repoTypeEnum = {
-    LOCAL: 'local', // 本地仓库。普通仓库，上传/下载构件都在本地进行
-    REMOTE: 'remote', // 远程仓库。通过访问远程地址拉取构件，不支持上传
-    VIRTUAL: 'virtual', // 虚拟仓库。可以组合多个本地仓库和远程仓库拉取构件，不支持上传
-    COMPOSITE: 'composite' // 组合仓库。具有LOCAL的功能，同时也支持代理多个远程地址进行下载
-}
-
+// 文件类型
 export const fileType = [
     'apk',
     'babelrc', 'bat',
@@ -63,4 +58,41 @@ export function getIconName (name) {
         xsd: 'xml'
     }[type] || type
     return fileType.includes(type) ? type : 'file'
+}
+
+// 节点类型
+export const nodeTypeEnum = {
+    CENTER: '中心节点',
+    EDGE: '边缘节点',
+    STANDALONE: '独立节点'
+}
+
+// 同步计划执行状态
+export const asyncPlanStatusEnum = {
+    RUNNING: '进行中',
+    SUCCESS: '已完成',
+    FAILED: '同步异常'
+}
+
+// 扫描方案类型
+export const scanTypeEnum = {
+    MOBILE: '移动端安装包扫描',
+    DEPENDENT: 'Maven依赖包扫描'
+}
+
+// 扫描方案执行状态
+export const scanStatusEnum = {
+    INIT: '未开始',
+    RUNNING: '进行中',
+    STOP: '已中止',
+    SUCCESS: '已完成',
+    FAILED: '扫描异常'
+}
+
+// 漏洞风险等级
+export const leakLevelEnum = {
+    CRITICAL: '危急',
+    HIGH: '高风险',
+    MEDIUM: '中风险',
+    LOW: '低风险'
 }

@@ -10,7 +10,7 @@
             :upload-progress="uploadDialog.uploadProgress">
         </artifactory-upload>
         <template #footer>
-            <bk-button @click="uploadDialog.loading ? abortUpload() : $emit('cancel')">{{ $t('cancel') }}</bk-button>
+            <bk-button @click="uploadDialog.loading ? abortUpload() : (uploadDialog.show = false)">{{ $t('cancel') }}</bk-button>
             <bk-button class="ml10" :loading="uploadDialog.loading" theme="primary" @click="submitUpload">{{ $t('confirm') }}</bk-button>
         </template>
     </canway-dialog>

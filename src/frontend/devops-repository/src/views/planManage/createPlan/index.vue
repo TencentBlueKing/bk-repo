@@ -134,12 +134,17 @@
         components: { Cron, CardRadioGroup, repositoryTable, packageTable, pathTable },
         data () {
             return {
-                isLoading: false,
                 conflictStrategyList: [
                     { value: 'SKIP', label: '跳过冲突', tip: '当目标节点存在相同制品时，跳过该制品同步，同步剩余制品' },
                     { value: 'OVERWRITE', label: '替换制品', tip: '当目标节点存在相同制品时，覆盖原制品并继续执行计划' },
                     { value: 'FAST_FAIL', label: '终止同步', tip: '当目标节点存在相同制品时，终止执行计划' }
                 ],
+                replicaObjectTypeList: [
+                    { value: 'REPOSITORY', label: '仓库', tip: '同步多个仓库' },
+                    { value: 'PACKAGE', label: '制品', tip: '同步同一仓库下多个制品' },
+                    { value: 'PATH', label: '文件', tip: '同步同一仓库下多个文件' }
+                ],
+                isLoading: false,
                 planForm: {
                     loading: false,
                     name: '',
@@ -208,13 +213,6 @@
             },
             disabled () {
                 return this.routeName === 'planDetail'
-            },
-            replicaObjectTypeList () {
-                return [
-                    { label: '仓库', value: 'REPOSITORY', tip: '同步多个仓库' },
-                    { label: '制品', value: 'PACKAGE', tip: '同步同一仓库下多个制品' },
-                    { label: '文件', value: 'PATH', tip: '同步同一仓库下多个文件' }
-                ]
             }
         },
         created () {
@@ -346,7 +344,7 @@
     background-color: white;
     overflow-y: auto;
     .plan-form {
-        max-width: 1200px;
+        max-width: 1080px;
         margin-top: 30px;
         margin-left: 50px;
         .arrow-right-icon {

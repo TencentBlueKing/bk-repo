@@ -178,7 +178,7 @@ export default {
                     title: '设置凭证',
                     main: [
                         {
-                            subTitle: '在配置文件 conf/settings.xml设置账户密码；项目内 settings.xml 也可以设置，高优先级',
+                            subTitle: '使用xml：在配置文件 conf/settings.xml设置账户密码；项目内 settings.xml 也可以设置，高优先级',
                             codeList: [
                                 '<servers>',
                                 '       <server>',
@@ -187,6 +187,14 @@ export default {
                                 '               <password><PERSONAL_ACCESS_TOKEN></password>',
                                 '       </server>',
                                 '</servers>'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Groovy DSL/Kotlin DSL：将下列配置添加到项目文件 build.gradle 同一级目录下的 gradle.properties 文件中',
+                            codeList: [
+                                `cpackUrl=${this.repoUrl}`,
+                                `cpackUsername=${this.userName}`,
+                                'cpackPassword=<PERSONAL_ACCESS_TOKEN>'
                             ]
                         }
                     ]
@@ -220,7 +228,7 @@ export default {
                     title: '推送',
                     main: [
                         {
-                            subTitle: '将下列配置添加到 pom.xml 文件中',
+                            subTitle: '使用xml：将下列配置添加到 pom.xml 文件中',
                             codeList: [
                                 '<distributionManagement>',
                                 '       <repository>',
@@ -233,9 +241,76 @@ export default {
                             ]
                         },
                         {
-                            subTitle: '在命令行执行以下命令推送制品',
+                            subTitle: '使用xml：在命令行执行以下命令推送制品',
                             codeList: [
-                                'mvn deploy'
+                                'mvn clean deploy'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Groovy DSL：将下列配置添加到项目的 build.gradle 文件中',
+                            codeList: [
+                                'plugins {',
+                                '    id "maven-publish"',
+                                '}',
+                                'publishing {',
+                                '    publications {',
+                                '        maven(MavenPublication) {',
+                                '            groupId = "com.company.group"',
+                                '            version = "1.0"',
+                                '            from components.java',
+                                '        }',
+                                '    }',
+                                '    repositories {',
+                                '        maven {',
+                                '            url = "${cpackUrl}"',
+                                '            credentials {',
+                                '                username = "${cpackUsername}"',
+                                '                password = "${cpackPassword}"',
+                                '            }',
+                                '        }',
+                                '    }',
+                                '}'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Groovy DSL：在命令行执行以下命令推送制品',
+                            codeList: [
+                                'gradle publish'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Kotlin DSL：将下列配置添加到项目的 build.gradle 文件中',
+                            codeList: [
+                                'plugins {',
+                                '    `maven-publish`',
+                                '}',
+                                'publishing {',
+                                '    publications {',
+                                '        create<MavenPublication>("maven") {',
+                                '            groupId = "com.company.group"',
+                                '            version = "1.0"',
+                                '            from(components["java"])',
+                                '        }',
+                                '    }',
+                                '    repositories {',
+                                '        maven {',
+                                '            val cpackUrl: String by project',
+                                '            val cpackUsername: String by project',
+                                '            val cpackPassword: String by project',
+                                '            url = uri(cpackUrl)',
+                                '            credentials {',
+                                '                username = cpackUsername',
+                                '                password = cpackPassword',
+                                '            }',
+                                '        }',
+                                '    }',
+                                '}'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Kotlin DSL：在命令行执行以下命令推送制品',
+                            codeList: [
+                                'gradle publish'
                             ]
                         }
                     ]
@@ -244,7 +319,7 @@ export default {
                     title: '拉取',
                     main: [
                         {
-                            subTitle: '将下列配置添加到 conf/settings.xml 文件中',
+                            subTitle: '使用xml: 将下列配置添加到 conf/settings.xml 文件中',
                             codeList: [
                                 '<profiles>',
                                 '       <profile>',
@@ -270,9 +345,52 @@ export default {
                             ]
                         },
                         {
-                            subTitle: '在命令行执行以下命令拉取制品',
+                            subTitle: '使用xml: 在命令行执行以下命令拉取制品',
                             codeList: [
-                                'mvn package'
+                                'mvn clean package'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Groovy DSL: 将下列配置添加项目的 build.gradle 文件中',
+                            codeList: [
+                                'repositories {',
+                                '    maven {',
+                                '        url = "${cpackUrl}"',
+                                '        credentials {',
+                                '            username = "${cpackUsername}"',
+                                '            password = "${cpackPassword}"',
+                                '        }',
+                                '    }',
+                                '}'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Groovy DSL: 在命令行执行以下命令拉取制品',
+                            codeList: [
+                                'gradle dependencies'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Kotlin DSL: 将下列配置添加项目的 build.gradle 文件中',
+                            codeList: [
+                                'repositories {',
+                                '    maven {',
+                                '        val cpackUrl: String by project',
+                                '        val cpackUsername: String by project',
+                                '        val cpackPassword: String by project',
+                                '        url = uri(cpackUrl)',
+                                '        credentials {',
+                                '            username = cpackUsername',
+                                '            password = cpackPassword',
+                                '        }',
+                                '    }',
+                                '}'
+                            ]
+                        },
+                        {
+                            subTitle: '使用Kotlin DSL: 在命令行执行以下命令拉取制品',
+                            codeList: [
+                                'gradle dependencies'
                             ]
                         }
                     ]

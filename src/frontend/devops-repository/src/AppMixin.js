@@ -51,6 +51,7 @@ export default {
             document.getElementsByTagName('head')[0].appendChild(script)
             script.onload = () => {
                 this.$syncUrl(this.$route.fullPath.replace(/^\/[a-zA-Z0-9]+\//, '/'))
+                this.$changeActiveRoutes(this.$route?.meta?.breadcrumb?.map(v => v.name) || [])
                 window.globalVue.$on('change::$currentProjectId', data => { // 蓝鲸Devops选择项目时切换
                     localStorage.setItem('projectId', data.currentProjectId)
                     if (this.projectId !== data.currentProjectId) {
@@ -59,7 +60,7 @@ export default {
                 })
 
                 window.globalVue.$on('change::$routePath', data => { // 蓝鲸Devops切换路径
-                    this.$router.push({ name: data.routePath.englishName })
+                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-zA-Z]+/, '/ui') })
                 })
 
                 window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换

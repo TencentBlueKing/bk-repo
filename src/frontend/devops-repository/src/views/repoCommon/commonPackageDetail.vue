@@ -38,7 +38,7 @@
                             v-for="$version in versionList"
                             :key="$version.name"
                             @click="changeVersion($version)">
-                            <span>{{ $version.name }}</span>
+                            <span class="text-overflow" style="max-width:150px;" :title="$version.name">{{ $version.name }}</span>
                             <operation-list
                                 class="version-operation"
                                 :list="[

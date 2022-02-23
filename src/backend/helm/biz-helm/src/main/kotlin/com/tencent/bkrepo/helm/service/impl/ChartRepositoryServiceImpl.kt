@@ -63,11 +63,11 @@ import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class ChartRepositoryServiceImpl(
@@ -76,20 +76,7 @@ class ChartRepositoryServiceImpl(
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
-        with(artifactInfo) {
-            val lock = initRedisLock(artifactInfo.projectId, repoName)
-            if (getSpinLock(lock, 1500)) {
-                ChartInfoServiceImpl.logger.info(
-                    "Handling download index.yaml request with redis distribute lock " +
-                        "in repo [$projectId/$repoName] by User [${SecurityUtils.getUserId()}]."
-                )
-                lock.use {
-                    downloadIndex(artifactInfo)
-                }
-            } else {
-                downloadIndex(artifactInfo)
-            }
-        }
+        lockAction(artifactInfo.projectId, artifactInfo.repoName) { downloadIndex(artifactInfo) }
     }
 
     private fun downloadIndex(artifactInfo: HelmArtifactInfo) {

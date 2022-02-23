@@ -3,7 +3,7 @@
         v-model="genericTreeData.show"
         :title="genericTreeData.title"
         width="600"
-        height-num="623"
+        height-num="563"
         @cancel="genericTreeData.show = false">
         <bk-input
             class="w250"
@@ -90,7 +90,7 @@
 </script>
 <style lang="scss" scoped>
 .dialog-tree-container {
-    height: 420px;
+    height: 360px;
     overflow: auto;
 }
 </style>

@@ -48,7 +48,7 @@ object MavenConfiguration {
                 when (it) {
                     1 -> SnapshotBehaviorType.NON_UNIQUE
                     2 -> SnapshotBehaviorType.DEPLOYER
-                    // 建议配置为 0 
+                    // 建议配置为 0
                     else -> SnapshotBehaviorType.UNIQUE
                 }
             }

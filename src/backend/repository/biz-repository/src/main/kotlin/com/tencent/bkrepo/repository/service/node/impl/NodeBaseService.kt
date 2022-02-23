@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.config.RepositoryProperties
@@ -82,6 +83,7 @@ abstract class NodeBaseService(
     }
 
     override fun listNode(artifact: ArtifactInfo, option: NodeListOption): List<NodeInfo> {
+        checkNodeListOption(option)
         with(artifact) {
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
             if (nodeDao.count(query) > repositoryProperties.listCountLimit) {
@@ -92,6 +94,7 @@ abstract class NodeBaseService(
     }
 
     override fun listNodePage(artifact: ArtifactInfo, option: NodeListOption): Page<NodeInfo> {
+        checkNodeListOption(option)
         with(artifact) {
             val pageNumber = option.pageNumber
             val pageSize = option.pageSize
@@ -104,6 +107,15 @@ abstract class NodeBaseService(
 
             return Pages.ofResponse(pageRequest, totalRecords, records)
         }
+    }
+
+    override fun listNodePageBySha256(sha256: String, option: NodeListOption): Page<NodeInfo> {
+        val nodes = nodeDao.pageBySha256(sha256, option, true)
+        return Pages.ofResponse(
+            Pages.ofRequest(option.pageNumber, option.pageSize),
+            nodes.totalElements,
+            nodes.content.map { convert(it)!! }
+        )
     }
 
     override fun checkExist(artifact: ArtifactInfo): Boolean {
@@ -251,6 +263,17 @@ abstract class NodeBaseService(
         }
     }
 
+    private fun checkNodeListOption(option: NodeListOption) {
+        Preconditions.checkArgument(
+            option.sortProperty.none { !TNode::class.java.declaredFields.map { f -> f.name }.contains(it) },
+            "sortProperty"
+        )
+        Preconditions.checkArgument(
+            option.direction.none { it != Sort.Direction.DESC.name && it != Sort.Direction.ASC.name },
+            "direction"
+        )
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(NodeServiceImpl::class.java)
 
@@ -273,7 +296,8 @@ abstract class NodeBaseService(
                     md5 = it.md5,
                     metadata = metadata,
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
-                    copyIntoCredentialsKey = it.copyIntoCredentialsKey
+                    copyIntoCredentialsKey = it.copyIntoCredentialsKey,
+                    deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }
