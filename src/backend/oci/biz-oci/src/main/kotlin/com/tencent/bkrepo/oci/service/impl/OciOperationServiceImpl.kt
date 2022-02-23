@@ -27,11 +27,14 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.APP_VERSION
@@ -317,6 +320,7 @@ class OciOperationServiceImpl(
         }
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun detailVersion(
         userId: String,
         artifactInfo: OciArtifactInfo,
@@ -346,11 +350,13 @@ class OciOperationServiceImpl(
         }
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun deletePackage(userId: String, artifactInfo: OciArtifactInfo) {
         logger.info("Try to delete the package [${artifactInfo.packageName}] in repo ${artifactInfo.getRepoIdentify()}")
         remove(userId, artifactInfo)
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun deleteVersion(userId: String, artifactInfo: OciArtifactInfo) {
         logger.info(
             "Try to delete the package [${artifactInfo.packageName}/${artifactInfo.version}] " +
@@ -359,6 +365,7 @@ class OciOperationServiceImpl(
         remove(userId, artifactInfo)
     }
 
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun getRegistryDomain(): OciDomainInfo {
         return OciDomainInfo(UrlFormatter.formatHost(ociProperties.domain))
     }
