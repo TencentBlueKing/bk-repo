@@ -32,7 +32,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
-@Document("scanner_config")
+@Document("scanner")
 @CompoundIndexes(
     CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
 )

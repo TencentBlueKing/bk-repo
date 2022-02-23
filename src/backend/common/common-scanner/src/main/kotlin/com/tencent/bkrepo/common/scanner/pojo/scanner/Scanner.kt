@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 

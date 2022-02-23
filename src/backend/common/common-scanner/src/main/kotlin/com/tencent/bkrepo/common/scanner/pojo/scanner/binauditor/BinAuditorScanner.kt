@@ -25,8 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner
+package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -72,12 +73,14 @@ data class BinAuditorDockerImage(
     val outputDir: String = "/output"
 )
 
-/**
- * BinAuditor漏洞库配置
- */
+@ApiModel("BinAuditor漏洞库配置")
 data class NvTools(
+    @ApiModelProperty("是否使用漏洞库")
     val enabled: Boolean = false,
+    @ApiModelProperty("用户名")
     val username: String? = null,
+    @ApiModelProperty("密码")
     val key: String? = null,
+    @ApiModelProperty("漏洞库服务地址")
     val host: String? = null
 )

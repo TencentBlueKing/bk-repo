@@ -27,23 +27,16 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
-import com.tencent.bkrepo.scanner.pojo.Node
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
 @ApiModel("扫描结果上报请求")
 data class ReportResultRequest(
     @ApiModelProperty("任务id")
     val subTaskId: String,
-    @ApiModelProperty("扫描开始执行的时间")
-    val startDateTime: LocalDateTime,
-    @ApiModelProperty("扫描执行结束的时间")
-    val finishedDateTime: LocalDateTime,
     @ApiModelProperty("父任务id")
     val parentTaskId: String,
-    @ApiModelProperty("扫描结果预览")
-    val scanResultOverview: Map<String, Long>,
-    @ApiModelProperty("扫描报告存储路径")
-    val reportNode: Node
+    @ApiModelProperty("扫描执行器扫描结果")
+    val scanExecutorResult: ScanExecutorResult
 )

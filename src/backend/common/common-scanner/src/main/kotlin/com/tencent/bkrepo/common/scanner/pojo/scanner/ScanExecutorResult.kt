@@ -25,12 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor
+package com.tencent.bkrepo.common.scanner.pojo.scanner
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
-interface ScanExecutor<in S : Scanner> {
-    fun scan(task: ScanExecutorTask<S>, callback: (ScanExecutorResult) -> Unit)
-}
+@ApiModel("扫描结果")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = BinAuditorScanExecutorResult::class, name = BinAuditorScanner.TYPE)
+)
+open class ScanExecutorResult(
+    @ApiModelProperty("扫描执行开始时间")
+    open val startDateTime: LocalDateTime,
+    @ApiModelProperty("扫描执行结束时间")
+    open val finishedDateTime: LocalDateTime,
+    @ApiModelProperty("扫描器类型")
+    val type: String
+)

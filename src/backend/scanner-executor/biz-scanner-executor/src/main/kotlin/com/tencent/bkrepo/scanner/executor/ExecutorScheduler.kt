@@ -6,6 +6,7 @@ import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.scanner.api.ScanClient
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
@@ -40,9 +41,9 @@ class ExecutorScheduler @Autowired constructor(
 
         artifactInputStream.use {
             val executorTask = convert(subScanTask, it)
-            scanExecutorFactory.get(subScanTask.scanner.type).scan(executorTask) {
-                // TODO 任务上报
-                logger.info(it.reportOverview.toString())
+            scanExecutorFactory.get(subScanTask.scanner.type).scan(executorTask) { result ->
+                val request = ReportResultRequest(subScanTask.taskId, subScanTask.parentScanTaskId, result)
+                scanClient.report(request)
             }
         }
     }
