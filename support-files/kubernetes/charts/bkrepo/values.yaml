@@ -136,6 +136,27 @@ common:
       ## filesystem配置，使用文件系统
       filesystem:
         path: /data/storage/store
+      ## innercos，使用对象存储终端存储文件
+      innercos:
+        ## cos secretId
+        secretId: xxx
+        ## cos secretKey
+        secretKey: xxx
+        ## cos region
+        region: gzc
+        ## cos bucket ,比如test-00001
+        bucket: test-00001
+        ## lb modeId
+        modId: 000001
+        ## lb cmdId
+        cmdId: 0001
+        cache:
+          enabled: true
+          path: /data/storage/cached
+          expireDays: 14
+          loadCacheFirst: true
+        upload:
+          location: /data/storage/temp
       # 是否启用nfs挂载
       nfs:
         enabled: false
