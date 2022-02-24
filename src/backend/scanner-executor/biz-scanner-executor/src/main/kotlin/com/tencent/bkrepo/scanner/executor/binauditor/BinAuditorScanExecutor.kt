@@ -62,8 +62,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
 import java.io.InputStream
-import java.time.Duration
-import java.time.LocalDateTime
 
 @Component(BinAuditorScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
@@ -78,7 +76,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         task: ScanExecutorTask<BinAuditorScanner>,
         callback: (ScanExecutorResult) -> Unit
     ) {
-        val startDateTime = LocalDateTime.now()
+        val startTimestamp = System.currentTimeMillis()
         logger.info(logMsg(task, "start to scan"))
         val scanner = task.scanner
         // 创建工作目录
@@ -96,10 +94,10 @@ class BinAuditorScanExecutor @Autowired constructor(
 
             // 执行扫描
             doScan(workDir, task)
-            val finishedDateTime = LocalDateTime.now()
-            val timeSpent = Duration.between(startDateTime, finishedDateTime)
-            logger.info(logMsg(task, "scan finished took time $timeSpent"))
-            callback(result(startDateTime, finishedDateTime, File(workDir, scanner.container.outputDir)))
+            val finishedTimestamp = System.currentTimeMillis()
+            val timeSpent = finishedTimestamp - startTimestamp
+            logger.info(logMsg(task, "scan finished took time $timeSpent ms"))
+            callback(result(startTimestamp, finishedTimestamp, File(workDir, scanner.container.outputDir)))
         } catch (e: Exception) {
             logger.error(logMsg(task, "scan failed"), e)
             throw e
@@ -208,27 +206,29 @@ class BinAuditorScanExecutor @Autowired constructor(
      * 解析扫描结果
      */
     private fun result(
-        startDateTime: LocalDateTime,
-        finishedDateTime: LocalDateTime,
+        startTimestamp: Long,
+        finishedTimestap: Long,
         outputDir: File
     ): BinAuditorScanExecutorResult {
         val cveSecResultFile = File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS)
-        val cveSecItems =
-            readJsonString<List<Map<String, Any?>>>(cveSecResultFile).map { CveSecItem.parseCveSecItems(it) }
+        val cveSecItems = readJsonString<List<Map<String, Any?>>>(cveSecResultFile)
+            ?.map { CveSecItem.parseCveSecItems(it) }
+            ?: emptyList()
 
         val checkSecItems =
-            readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS))
+            readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)) ?: emptyList()
 
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
-                .map { it.copy(licenseRisk = normalizedLevel(it.licenseRisk)) }
+                ?.map { it.copy(licenseRisk = normalizedLevel(it.licenseRisk)) }
+                ?: emptyList()
 
         val sensitiveItems =
-            readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS))
+            readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)) ?: emptyList()
 
         return BinAuditorScanExecutorResult(
-            startDateTime = startDateTime,
-            finishedDateTime = finishedDateTime,
+            startTimestamp = startTimestamp,
+            finishedTimestamp = finishedTimestap,
             overview = overview(applicationItems, sensitiveItems, cveSecItems),
             checkSecItems = checkSecItems,
             applicationItems = applicationItems,
@@ -265,8 +265,12 @@ class BinAuditorScanExecutor @Autowired constructor(
         return overview
     }
 
-    private inline fun <reified T> readJsonString(file: File): T {
-        return file.inputStream().use { it.readJsonString() }
+    private inline fun <reified T> readJsonString(file: File): T? {
+        return if (file.exists()) {
+            file.inputStream().use { it.readJsonString<T>() }
+        } else {
+            null
+        }
     }
 
     private fun logMsg(task: ScanExecutorTask<BinAuditorScanner>, msg: String) = with(task) {

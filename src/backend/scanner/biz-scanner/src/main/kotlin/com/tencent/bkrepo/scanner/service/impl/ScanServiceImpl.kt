@@ -50,7 +50,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 
 @Service
@@ -124,8 +126,8 @@ class ScanServiceImpl @Autowired constructor(
                 parentTaskId,
                 scanner,
                 scanExecutorResult.overview,
-                scanExecutorResult.startDateTime,
-                scanExecutorResult.finishedDateTime
+                toLocalDateTime(scanExecutorResult.startTimestamp),
+                toLocalDateTime(scanExecutorResult.finishedTimestamp)
             )
         }
     }
@@ -138,6 +140,10 @@ class ScanServiceImpl @Autowired constructor(
         subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.EXECUTING)
         val scanner = scannerService.get(task.scanner)
         return convert(task, scanner)
+    }
+
+    private fun toLocalDateTime(timestamp: Long): LocalDateTime {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
     }
 
     private fun convert(scanTask: TScanTask): ScanTask = with(scanTask) {

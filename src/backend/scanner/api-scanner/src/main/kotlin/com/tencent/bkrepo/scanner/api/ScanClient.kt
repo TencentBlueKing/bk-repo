@@ -35,6 +35,7 @@ import io.swagger.annotations.Api
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Api("扫描服务接口")
@@ -46,7 +47,7 @@ interface ScanClient {
      * @param reportResultRequest 扫描结果上报请求
      */
     @PostMapping("/report")
-    fun report(reportResultRequest: ReportResultRequest): Response<Void>
+    fun report(@RequestBody reportResultRequest: ReportResultRequest): Response<Void>
 
     /**
      * 拉取任务，没有待扫描的任务时返回null

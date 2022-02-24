@@ -30,12 +30,11 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
 @ApiModel("BinAuditor扫描器扫描结果")
 data class BinAuditorScanExecutorResult(
-    override val startDateTime: LocalDateTime,
-    override val finishedDateTime: LocalDateTime,
+    override val startTimestamp: Long,
+    override val finishedTimestamp: Long,
     override val overview: Map<String, Any?>,
     @ApiModelProperty("安全审计结果")
     val checkSecItems: List<CheckSecItem>,
@@ -45,7 +44,7 @@ data class BinAuditorScanExecutorResult(
     val sensitiveItems: List<SensitiveItem>,
     @ApiModelProperty("cve审计结果")
     val cveSecItems: List<CveSecItem>
-) : ScanExecutorResult(startDateTime, finishedDateTime, overview, BinAuditorScanner.TYPE) {
+) : ScanExecutorResult(startTimestamp, finishedTimestamp, overview, BinAuditorScanner.TYPE) {
     companion object {
 
         fun overviewKeyOfSensitive(type: String): String {

@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanE
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
 @ApiModel("扫描结果")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
@@ -42,9 +41,9 @@ import java.time.LocalDateTime
 )
 open class ScanExecutorResult(
     @ApiModelProperty("扫描执行开始时间")
-    open val startDateTime: LocalDateTime,
+    open val startTimestamp: Long,
     @ApiModelProperty("扫描执行结束时间")
-    open val finishedDateTime: LocalDateTime,
+    open val finishedTimestamp: Long,
     @ApiModelProperty("扫描结果预览")
     open val overview: Map<String, Any?>,
     @ApiModelProperty("扫描器类型")
