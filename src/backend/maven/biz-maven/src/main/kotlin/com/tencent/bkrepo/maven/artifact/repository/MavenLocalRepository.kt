@@ -88,12 +88,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 import org.apache.commons.lang.StringUtils
 import org.apache.maven.artifact.repository.metadata.Snapshot
 import org.apache.maven.artifact.repository.metadata.SnapshotVersion
@@ -105,6 +99,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 
 @Component
 class MavenLocalRepository(
@@ -327,7 +327,12 @@ class MavenLocalRepository(
             logger.info("Current file is artifact: $isArtifact")
             val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
             val node = buildMavenArtifactNode(context, packaging, mavenGavc)
-            storageManager.storeArtifactFile(node, context.getArtifactFile(), context.storageCredentials)
+            storageManager.storeArtifactFile(
+                request = node,
+                artifactFile = context.getArtifactFile(),
+                storageCredentials = context.storageCredentials
+            )
+
             if (isArtifact) createMavenVersion(context, mavenGavc)
             // 更新包各模块版本最新记录
             logger.info("Prepare to create maven metadata....")
@@ -454,33 +459,8 @@ class MavenLocalRepository(
             // 在.pom 上传完之后需要重新生成 maven-metadata.xml , 已记录由服务器生成的最新构件
             // 处理maven-metadata.xml文件上传顺序无法确定，导致metadata文件无法更新的问题
             verifyMetadataContent(context, artifactFullPath)
+            verifyPath(context, context.artifactInfo.getArtifactFullPath())
             return
-        }
-    }
-
-    private fun verifyPathWithHashType(context: ArtifactContext, hashType: HashType) {
-        val node = nodeClient.getNodeDetail(
-            context.projectId,
-            context.repoName,
-            context.artifactInfo.getArtifactFullPath().removeSuffix(".${hashType.ext}")
-        ).data ?: return
-        val checksum = node.metadata[hashType.ext] as? String
-        if (checksum != null) {
-            generateChecksum(node, hashType, checksum, context.storageCredentials)
-        }
-    }
-
-    private fun verifyPath(context: ArtifactUploadContext) {
-        val node = nodeClient.getNodeDetail(
-            context.projectId,
-            context.repoName,
-            context.artifactInfo.getArtifactFullPath()
-        ).data ?: return
-        for (hashType in HashType.values()) {
-            val checksum = node.metadata[hashType.ext] as? String
-            checksum?.let {
-                generateChecksum(node, hashType, checksum, context.storageCredentials)
-            }
         }
     }
 
@@ -523,13 +503,47 @@ class MavenLocalRepository(
                     "${artifactPath.substringBeforeLast('/')}/maven-metadata.xml"
                 }
                 updateMetadata(path, artifactFile)
-                verifyPath(context)
+                verifyPath(context, path)
             } finally {
                 artifactFile.delete()
             }
         }
     }
 
+
+    /**
+     * 生成对应checksum文件
+     */
+    private fun verifyPath(context: ArtifactContext, fullPath: String, hashType: HashType? = null) {
+        logger.info("Will go to update checkSum files for $fullPath")
+        val node = nodeClient.getNodeDetail(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            fullPath = fullPath
+        ).data ?: return
+        val typeArray = if (hashType == null) {
+            HashType.values()
+        } else {
+            arrayOf(hashType)
+        }
+        updateArtifactCheckSum(context, node, typeArray)
+    }
+
+    /**
+     * 上传后更新构件的checksum文件
+     */
+    private fun updateArtifactCheckSum(context: ArtifactContext, node: NodeDetail, typeArray: Array<HashType>) {
+        for (hashType in typeArray) {
+            val checksum = node.metadata[hashType.ext] as? String
+            checksum?.let {
+                generateChecksum(node, hashType, checksum, context.storageCredentials)
+            }
+        }
+    }
+
+    /**
+     * 生成对应类型的checksum文件节点，并存储
+     */
     private fun generateChecksum(
         node: NodeDetail,
         type: HashType,
@@ -644,16 +658,17 @@ class MavenLocalRepository(
      * checksum 文件不存在时，系统生成
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        val checksumType = checksumType(context)
-        var node = nodeClient.getNodeDetail(
-            context.projectId,
-            context.repoName,
-            context.artifactInfo.getArtifactFullPath()
-        ).data
-        if (checksumType != null && node == null) {
-            verifyPathWithHashType(context, checksumType)
-        }
         with(context) {
+            val checksumType = checksumType(context)
+            val fullPath = artifactInfo.getArtifactFullPath()
+            var node = nodeClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath
+            ).data
+            if (checksumType != null && node == null) {
+                verifyPath(context, fullPath.removeSuffix(".${checksumType.ext}"), checksumType)
+            }
             node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             node?.metadata?.get(HashType.SHA1.ext)?.let {
                 response.addHeader(X_CHECKSUM_SHA1, it.toString())
@@ -700,24 +715,34 @@ class MavenLocalRepository(
     override fun remove(context: ArtifactRemoveContext) {
         val packageKey = context.request.getParameter("packageKey")
         val version = context.request.getParameter("version")
-        with(context.artifactInfo) {
-            if (version.isNullOrBlank()) {
-                packageClient.deletePackage(
-                    projectId,
-                    repoName,
-                    packageKey,
-                    HttpContextHolder.getClientAddress()
-                )
-            } else {
-                packageClient.deleteVersion(
-                    projectId,
-                    repoName,
-                    packageKey,
-                    version,
-                    HttpContextHolder.getClientAddress()
-                )
+        if (packageKey.isNullOrBlank()) {
+            val request = NodeDeleteRequest(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                fullPath = context.artifactInfo.getArtifactFullPath(),
+                operator = context.userId
+            )
+            nodeClient.deleteNode(request)
+        } else {
+            with(context.artifactInfo) {
+                if (version.isNullOrBlank()) {
+                    packageClient.deletePackage(
+                        projectId,
+                        repoName,
+                        packageKey,
+                        HttpContextHolder.getClientAddress()
+                    )
+                } else {
+                    packageClient.deleteVersion(
+                        projectId,
+                        repoName,
+                        packageKey,
+                        version,
+                        HttpContextHolder.getClientAddress()
+                    )
+                }
+                logger.info("Success to delete $packageKey:$version")
             }
-            logger.info("Success to delete $packageKey:$version")
         }
         executeDelete(context, packageKey, version)
     }
