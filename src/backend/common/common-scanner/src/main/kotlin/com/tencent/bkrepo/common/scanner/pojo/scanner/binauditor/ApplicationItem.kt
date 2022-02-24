@@ -29,17 +29,35 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
+@ApiModel("应用依赖组件信息")
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ApplicationItem(
+    @ApiModelProperty("组件路径")
     @JsonProperty("FilePath")
     val path: String,
+
+    @ApiModelProperty("组件名")
     @JsonProperty("LibraryName")
     val libraryName: String,
+
+    @ApiModelProperty("组件版本")
     @JsonProperty("LibraryVersion")
     val libraryVersion: String,
+
+    /**
+     * 没有开源证书时为empty
+     */
+    @ApiModelProperty("组件使用的开源证书")
     @JsonProperty("LicenseShortName")
     val license: String,
+
+    /**
+     * Low,Middle,High
+     */
+    @ApiModelProperty("证书风险等级")
     @JsonProperty("LicenseRisk")
     val licenseRisk: String
 )

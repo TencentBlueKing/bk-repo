@@ -39,38 +39,12 @@ data class BinAuditorScanExecutorResult(
     override val finishedDateTime: LocalDateTime,
     @ApiModelProperty("扫描报告压缩文件")
     val resultZipFile: File,
-    @ApiModelProperty("扫描结果统计信息")
-    val overview: BinAuditorScanExecutorResultOverview
+    @ApiModelProperty("安全审计结果")
+    val checkSecItems: List<CheckSecItem>,
+    @ApiModelProperty("License审计结果")
+    val applicationItems: List<ApplicationItem>,
+    @ApiModelProperty("敏感信息审计结果")
+    val sensitiveItems: List<SensitiveItem>,
+    @ApiModelProperty("cve审计结果")
+    val cveSecItems: List<CveSecItem>
 ) : ScanExecutorResult(startDateTime, finishedDateTime, BinAuditorScanner.TYPE)
-
-@ApiModel("扫描结果预览")
-data class BinAuditorScanExecutorResultOverview(
-    @ApiModelProperty("敏感信息数")
-    val sensitiveUriCount: Long = 0L,
-    @ApiModelProperty("敏感信息数")
-    val sensitiveIpCount: Long = 0L,
-    @ApiModelProperty("敏感信息数")
-    val sensitiveEmailCount: Long = 0L,
-    @ApiModelProperty("敏感信息数")
-    val sensitivePrivateKeyCount: Long = 0L,
-    @ApiModelProperty("敏感信息数")
-    val sensitiveUriPasswordCount: Long = 0L,
-
-    @ApiModelProperty("高风险开源证书数量")
-    val licenseHighCount: Long = 0L,
-    @ApiModelProperty("中风险开源证书数量")
-    val licenseMediumCount: Long = 0L,
-    @ApiModelProperty("低风险开源证书数量")
-    val licenseLowCount: Long = 0L,
-    @ApiModelProperty("扫描器尚未支持扫描的开源证书数量")
-    val licenseNotAvailableCount: Long = 0L,
-
-    @ApiModelProperty("严重漏洞数")
-    val cveCriticalCount: Long = 0L,
-    @ApiModelProperty("高危漏洞数")
-    val cveHighCount: Long = 0L,
-    @ApiModelProperty("高危漏洞数")
-    val cveMediumCount: Long = 0L,
-    @ApiModelProperty("高危漏洞数")
-    val cveLowCount: Long = 0L
-)

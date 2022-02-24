@@ -30,8 +30,14 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 
+/**
+ * 安全审计结果数
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CheckSecItem(
+    /**
+     * 文件路径
+     */
     @JsonProperty("name")
     val path: String,
     @JsonProperty("canary")
@@ -53,7 +59,5 @@ data class CheckSecItem(
     @JsonProperty("runpath")
     val runPath: Boolean,
     @JsonProperty("symbols")
-    val symbols: Boolean,
-    @JsonProperty("err_description")
-    val errDes: String?
+    val symbols: Boolean
 )

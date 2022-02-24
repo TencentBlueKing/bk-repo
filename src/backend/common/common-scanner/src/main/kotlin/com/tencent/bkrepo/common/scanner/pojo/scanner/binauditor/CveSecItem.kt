@@ -27,132 +27,134 @@
 
 package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
-import com.fasterxml.jackson.annotation.JsonAlias
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import org.apache.commons.lang3.StringEscapeUtils
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@ApiModel("CVE信息")
 data class CveSecItem(
-    /**
-     * 文件路径
-     */
+    @ApiModelProperty("文件路径")
     @JsonProperty("path")
     val path: String,
-    /**
-     * 组件名
-     */
+
+    @ApiModelProperty("组件名")
     @JsonProperty("component")
-    @JsonAlias("lib_name")
     var component: String,
-    /**
-     * 库版本
-     */
+
+    @ApiModelProperty("库版本")
     @JsonProperty("version")
     val version: String,
-    @JsonProperty("poc_id")
-    val pocId: String,
-    /**
-     * 漏洞名
-     */
-    @JsonProperty("name")
-    val name: String,
-    /**
-     * 漏洞利用类型
-     */
-    @JsonProperty("category")
-    val category: String,
-    /**
-     * 漏洞类型
-     */
-    @JsonProperty("category_type")
-    val categoryType: String,
-    /**
-     * 漏洞影响版本
-     */
+
+    @ApiModelProperty("漏洞影响版本")
     @JsonProperty("version_effected")
     val versionEffected: String,
-    /**
-     * 漏洞修复版本
-     */
+
+    @ApiModelProperty("漏洞修复版本")
     @JsonProperty("version_fixed")
     val versionFixed: String,
-    /**
-     * cvss等级
-     */
-    @JsonProperty("cvss_rank")
-    val cvssRank: String,
-    /**
-     * cvss 评分
-     */
-    @JsonProperty("cvss")
-    val cvss: Double,
+
+    @ApiModelProperty("漏洞名")
+    @JsonProperty("name")
+    val name: String,
+
+    @ApiModelProperty("漏洞利用类型")
+    @JsonProperty("category")
+    val category: String,
+
+    @ApiModelProperty("漏洞类型")
+    @JsonProperty("category_type")
+    val categoryType: String,
+
+    @ApiModelProperty("poc id")
+    @JsonProperty("poc_id")
+    val pocId: String,
+
+    @ApiModelProperty("cve id")
     @JsonProperty("cve_id")
     val cveId: String,
+
+    @ApiModelProperty("cnvd id")
     @JsonProperty("cnvd_id")
     val cnvdId: String,
+
+    @ApiModelProperty("cnnvd id")
     @JsonProperty("cnnvd_id")
     val cnnvdId: String,
+
+    @ApiModelProperty("cwe id")
     @JsonProperty("cwe_id")
     val cweId: String,
 
+    /**
+     * CRITICAL,HIGH,MEDIUM,LOW
+     */
+    @ApiModelProperty("cvss等级")
+    @JsonProperty("cvss_rank")
+    val cvssRank: String,
+
+    @ApiModelProperty("cvss 评分")
+    @JsonProperty("cvss")
+    val cvss: Double,
+
+    @ApiModelProperty("cvss V3 漏洞影响评价")
+    @JsonProperty("cvss_v3_vector")
+    val cvssV3Vector: String?,
+
+    @ApiModelProperty("cvss V2 漏洞影响评价")
+    @JsonProperty("cvss_v2_vector")
+    val cvssV2Vector: String?,
+
+    @ApiModelProperty("dynamic level")
     @JsonProperty("dynamic_level")
     val dynamicLevel: Int,
 
+    /**
+     * 严重，高危，中危，低危，
+     */
+    @ApiModelProperty("nvTools 漏洞评级")
     @JsonProperty("level")
-    val level: String,
-    @JsonProperty("cvss_v3_score")
-    val cvssV3Score: String,
-    @JsonProperty("cvss_v3_vector")
-    val cvssV3Vector: String,
-    @JsonProperty("cvss_v2_score")
-    val cvssV2Score: String,
-    @JsonProperty("cvss_v2_vector")
-    val cvssV2Vector: String,
-    @JsonProperty("submit_time")
-    val submitTime: String,
+    val level: String?
+) {
 
-    @JsonProperty("cvss_v2")
-    val cvssV2: CvssV2?,
-    @JsonProperty("cvss_v3")
-    val cvssV3: CvssV3?,
-    @JsonProperty("nvtools_cveinfo")
-    val nvtoolsCveinfo: CveSecItem? = null
-)
+    companion object {
 
-data class CvssV3(
-    @JsonProperty("base_score")
-    val baseScore: Double,
-    @JsonProperty("confidentiality_impact")
-    val confidentialityImpact: String,
-    @JsonProperty("integrity_impact")
-    val integrityImpact: String,
-    @JsonProperty("availability_impact")
-    val availabilityImpact: String,
-    @JsonProperty("attackVector")
-    val attackVector: String,
-    @JsonProperty("attackComplexity")
-    val attackComplexity: String,
-    @JsonProperty("privileges_required")
-    val privilegesRequired: String,
-    @JsonProperty("user_interaction")
-    val userInteraction: String,
-    @JsonProperty("scope")
-    val scope: String
-)
+        @Suppress("UNCHECKED_CAST")
+        fun parseCveSecItems(cveSecItems: Map<String, Any?>): CveSecItem {
+            val nvToolsCveInfo = cveSecItems["nvtools_cveinfo"] as Map<String, Any?>?
+            val versionFixed =
+                StringEscapeUtils.unescapeJava(get(nvToolsCveInfo, cveSecItems, "version_fixed").toString())
+            val cvss = nvToolsCveInfo?.get("cvss_v3_score")
+                ?: nvToolsCveInfo?.get("cvss_v2_score")
+                ?: cveSecItems["cvss"]
+            return CveSecItem(
+                path = removeRootDirPath(cveSecItems["path"].toString()),
+                component = cveSecItems["lib_name"].toString(),
+                version = get(nvToolsCveInfo, cveSecItems, "version").toString(),
+                versionEffected = get(nvToolsCveInfo, cveSecItems, "version_effected").toString(),
+                versionFixed = versionFixed,
+                category = get(nvToolsCveInfo, cveSecItems, "category").toString(),
+                categoryType = get(nvToolsCveInfo, cveSecItems, "category_type").toString(),
+                name = get(nvToolsCveInfo, cveSecItems, "name").toString(),
+                pocId = get(nvToolsCveInfo, cveSecItems, "poc_id").toString(),
+                cveId = get(nvToolsCveInfo, cveSecItems, "cve_id").toString(),
+                cnvdId = get(nvToolsCveInfo, cveSecItems, "cnvd_id").toString(),
+                cnnvdId = get(nvToolsCveInfo, cveSecItems, "cnnvd_id").toString(),
+                cweId = get(nvToolsCveInfo, cveSecItems, "cwe_id").toString(),
+                cvssRank = cveSecItems["cvss_rank"].toString(),
+                cvss = cvss.toString().toDouble(),
+                cvssV3Vector = nvToolsCveInfo?.get("cvss_v3_vector").toString(),
+                cvssV2Vector = nvToolsCveInfo?.get("cvss_v2_vector").toString(),
+                dynamicLevel = get(nvToolsCveInfo, cveSecItems, "dynamic_level").toString().toInt(),
+                level = nvToolsCveInfo?.get("level").toString()
+            )
+        }
 
-data class CvssV2(
-    @JsonProperty("base_score")
-    val baseScore: Double,
-    @JsonProperty("confidentiality_impact")
-    val confidentialityImpact: String,
-    @JsonProperty("integrity_impact")
-    val integrityImpact: String,
-    @JsonProperty("availability_impact")
-    val availabilityImpact: String,
-    @JsonProperty("attackVector")
-    val attackVector: String,
-    @JsonProperty("attackComplexity")
-    val attackComplexity: String,
-    @JsonProperty("authentication")
-    val authentication: String
-)
+        private fun get(primary: Map<String, Any?>?, secondary: Map<String, Any?>, key: String): Any? {
+            return primary?.get(key) ?: secondary[key]
+        }
+
+    }
+
+}

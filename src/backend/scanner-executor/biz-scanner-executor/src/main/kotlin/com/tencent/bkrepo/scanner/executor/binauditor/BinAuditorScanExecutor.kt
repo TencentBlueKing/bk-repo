@@ -36,10 +36,11 @@ import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResultOverview
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
@@ -206,17 +207,23 @@ class BinAuditorScanExecutor @Autowired constructor(
         finishedDateTime: LocalDateTime,
         outputDir: File
     ): BinAuditorScanExecutorResult {
+        val cveSecResultFile = File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS)
+        val cveSecItems = readJsonString<List<Map<String, Any?>>>(cveSecResultFile)
+            .map { CveSecItem.parseCveSecItems(it) }
+
         return BinAuditorScanExecutorResult(
             startDateTime = startDateTime,
             finishedDateTime = finishedDateTime,
             resultZipFile = zipResult(outputDir),
-            overview = resultOverview(outputDir)
+            checkSecItems = readJsonString(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)),
+            applicationItems = readJsonString(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS)),
+            sensitiveItems = readJsonString(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)),
+            cveSecItems = cveSecItems
         )
     }
 
-    private fun resultOverview(outputDir: File): BinAuditorScanExecutorResultOverview {
-        // 解析制品依赖清单
-        TODO()
+    private inline fun <reified T> readJsonString(file: File): T {
+        return file.inputStream().use { it.readJsonString() }
     }
 
     private fun zipResult(outputDir: File): File {

@@ -27,4 +27,5 @@
 
 dependencies {
     api(project(":common:common-api"))
+    implementation("org.apache.commons:commons-lang3")
 }

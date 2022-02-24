@@ -25,43 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
+package com.tencent.bkrepo.common.scanner.pojo.scanner.utils
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 
-@ApiModel("敏感信息数据")
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SensitiveItem(
-    @ApiModelProperty("存在敏感信息的文件路径")
-    @JsonProperty("Source")
-    val path: String,
-
-    /**
-     * uri, ipv4, ipv6, email, secret
-     */
-    @ApiModelProperty("敏感信息类型,")
-    @JsonProperty("Class")
-    val type: String,
-
-    /**
-     * uri, ipv4, ipv6, email, common_key
-     */
-    @ApiModelProperty("敏感信息子类型")
-    @JsonProperty("SubClass")
-    val subType: String,
-
-    @ApiModelProperty("敏感信息内容")
-    @JsonProperty("Content")
-    val content: String,
-
-    @ApiModelProperty("敏感信息为uri或者email时生效")
-    @JsonProperty("Domain")
-    val domain: String,
-
-    @ApiModelProperty("敏感信息属性，存放文件类型，uri协议等信息")
-    @JsonProperty("Attr")
-    val attr: Map<String, String>
-)
+/**
+ * 移除根目录路径
+ */
+internal fun removeRootDirPath(path: String): String {
+    val indexOfSlash = path.indexOf(SLASH, 1)
+    if (indexOfSlash != -1) {
+        return path.substring(indexOfSlash)
+    }
+    return path
+}
