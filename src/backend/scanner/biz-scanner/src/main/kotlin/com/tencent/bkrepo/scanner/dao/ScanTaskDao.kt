@@ -79,14 +79,16 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
     fun updateScanResult(
         taskId: String,
         count: Int,
-        scanResultOverview: Map<String, Long>
+        scanResultOverview: Map<String, Any?>
     ): UpdateResult {
         val query = buildQuery(taskId)
         val update = buildUpdate()
             .inc(TScanTask::scanned.name, count)
             .inc(TScanTask::scanning.name, -count)
         scanResultOverview.forEach { (key, value) ->
-            update.inc("${TScanTask::scanResultOverview.name}.$key", value)
+            if (value is Number) {
+                update.inc("${TScanTask::scanResultOverview.name}.$key", value)
+            }
         }
 
         return updateFirst(query, update)

@@ -30,15 +30,13 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.io.File
 import java.time.LocalDateTime
 
 @ApiModel("BinAuditor扫描器扫描结果")
 data class BinAuditorScanExecutorResult(
     override val startDateTime: LocalDateTime,
     override val finishedDateTime: LocalDateTime,
-    @ApiModelProperty("扫描报告压缩文件")
-    val resultZipFile: File,
+    override val overview: Map<String, Any?>,
     @ApiModelProperty("安全审计结果")
     val checkSecItems: List<CheckSecItem>,
     @ApiModelProperty("License审计结果")
@@ -47,4 +45,25 @@ data class BinAuditorScanExecutorResult(
     val sensitiveItems: List<SensitiveItem>,
     @ApiModelProperty("cve审计结果")
     val cveSecItems: List<CveSecItem>
-) : ScanExecutorResult(startDateTime, finishedDateTime, BinAuditorScanner.TYPE)
+) : ScanExecutorResult(startDateTime, finishedDateTime, overview, BinAuditorScanner.TYPE) {
+    companion object {
+
+        fun overviewKeyOfSensitive(type: String): String {
+            return "OVERVIEW_KEY_SENSITIVE_${type.toUpperCase()}_COUNT"
+        }
+
+        fun overviewKeyOfCve(level: String): String {
+            return "OVERVIEW_KEY_CVE_${level.toUpperCase()}_COUNT"
+        }
+
+        fun overviewKeyOfLicenseRisk(riskLevel: String): String {
+            val level = if (riskLevel.isEmpty()) {
+                // 扫描器尚未支持的证书类型数量KEY
+                "NOT_AVAILABLE"
+            } else {
+                riskLevel
+            }
+            return "OVERVIEW_KEY_LICENSE_RISK_${level.toUpperCase()}_COUNT"
+        }
+    }
+}

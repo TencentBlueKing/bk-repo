@@ -38,9 +38,16 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfCve
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfLicenseRisk
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfSensitive
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
@@ -57,8 +64,6 @@ import java.io.File
 import java.io.InputStream
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 @Component(BinAuditorScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
@@ -208,41 +213,64 @@ class BinAuditorScanExecutor @Autowired constructor(
         outputDir: File
     ): BinAuditorScanExecutorResult {
         val cveSecResultFile = File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS)
-        val cveSecItems = readJsonString<List<Map<String, Any?>>>(cveSecResultFile)
-            .map { CveSecItem.parseCveSecItems(it) }
+        val cveSecItems =
+            readJsonString<List<Map<String, Any?>>>(cveSecResultFile).map { CveSecItem.parseCveSecItems(it) }
+
+        val checkSecItems =
+            readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS))
+
+        val applicationItems =
+            readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
+                .map { it.copy(licenseRisk = normalizedLevel(it.licenseRisk)) }
+
+        val sensitiveItems =
+            readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS))
 
         return BinAuditorScanExecutorResult(
             startDateTime = startDateTime,
             finishedDateTime = finishedDateTime,
-            resultZipFile = zipResult(outputDir),
-            checkSecItems = readJsonString(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)),
-            applicationItems = readJsonString(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS)),
-            sensitiveItems = readJsonString(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)),
+            overview = overview(applicationItems, sensitiveItems, cveSecItems),
+            checkSecItems = checkSecItems,
+            applicationItems = applicationItems,
+            sensitiveItems = sensitiveItems,
             cveSecItems = cveSecItems
         )
+    }
+
+    private fun overview(
+        applicationItems: List<ApplicationItem>,
+        sensitiveItems: List<SensitiveItem>,
+        cveSecItems: List<CveSecItem>
+    ): Map<String, Any?> {
+        val overview = HashMap<String, Long>()
+
+        // license risk
+        applicationItems.forEach {
+            val overviewKey = overviewKeyOfLicenseRisk(it.licenseRisk)
+            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+        }
+
+        // sensitive count
+        sensitiveItems.forEach {
+            val overviewKey = overviewKeyOfSensitive(it.type)
+            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+        }
+
+        // cve count
+        cveSecItems.forEach {
+            val overviewKey = overviewKeyOfCve(it.level ?: it.cvssRank)
+            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+        }
+
+        return overview
     }
 
     private inline fun <reified T> readJsonString(file: File): T {
         return file.inputStream().use { it.readJsonString() }
     }
 
-    private fun zipResult(outputDir: File): File {
-        val resultFile = File(outputDir, RESULT_ZIP_FILE_NAME)
-        resultFile.outputStream().use { resultFileOutputStream ->
-            val zipOutputStream = ZipOutputStream(resultFileOutputStream)
-            outputDir
-                .walk()
-                .filter { it.isFile }
-                .forEach { file ->
-                    zipOutputStream.putNextEntry(ZipEntry(file.name))
-                    file.inputStream().use { it.copyTo(zipOutputStream) }
-                }
-        }
-        return resultFile
-    }
-
     private fun logMsg(task: ScanExecutorTask<BinAuditorScanner>, msg: String) = with(task) {
-        "msg: $msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
     }
 
     companion object {
@@ -260,8 +288,6 @@ class BinAuditorScanExecutor @Autowired constructor(
         private const val TEMPLATE_KEY_NV_TOOLS_USERNAME = "nvToolsUsername"
         private const val TEMPLATE_KEY_NV_TOOLS_KEY = "nvToolsKey"
         private const val TEMPLATE_KEY_NV_TOOLS_HOST = "nvToolsHost"
-
-        private const val RESULT_ZIP_FILE_NAME = "result.zip"
 
         // BinAuditor扫描结果文件名
         /**

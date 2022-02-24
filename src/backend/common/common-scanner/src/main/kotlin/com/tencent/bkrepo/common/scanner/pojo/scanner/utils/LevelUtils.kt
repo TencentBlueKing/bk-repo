@@ -25,28 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner
+package com.tencent.bkrepo.common.scanner.pojo.scanner.utils
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
+const val LEVEL_CRITICAL = "critical"
+const val LEVEL_HIGH = "high"
+const val LEVEL_MID = "mid"
+const val LEVEL_LOW = "low"
 
-@ApiModel("扫描结果")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes(
-    JsonSubTypes.Type(value = BinAuditorScanExecutorResult::class, name = BinAuditorScanner.TYPE)
-)
-open class ScanExecutorResult(
-    @ApiModelProperty("扫描执行开始时间")
-    open val startDateTime: LocalDateTime,
-    @ApiModelProperty("扫描执行结束时间")
-    open val finishedDateTime: LocalDateTime,
-    @ApiModelProperty("扫描结果预览")
-    open val overview: Map<String, Any?>,
-    @ApiModelProperty("扫描器类型")
-    val type: String
-)
+/**
+ * 标准化等级
+ */
+fun normalizedLevel(level: String): String {
+    return when (level.toLowerCase()) {
+        "严重", "critical" -> LEVEL_CRITICAL
+        "高危", "high" -> LEVEL_HIGH
+        "中危", "mid", "middle", "medium" -> LEVEL_MID
+        "低危", "low" -> LEVEL_LOW
+        else -> level
+    }
+}

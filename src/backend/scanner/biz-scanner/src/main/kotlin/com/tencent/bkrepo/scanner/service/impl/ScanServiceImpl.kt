@@ -102,17 +102,18 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
+            logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
             // 任务已扫描过，重复上报直接返回
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
                 return
             }
-            logger.info("Updating file[${reportNode.sha256}] scan result")
+            logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId]")
 
             // 更新父任务扫描结果
-            scanTaskDao.updateScanResult(parentTaskId, 1, scanResultOverview)
+            scanTaskDao.updateScanResult(parentTaskId, 1, scanExecutorResult.overview)
             if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
-                logger.info("Task[$parentTaskId] scan finished")
+                logger.info("scan finished, task[$parentTaskId]")
             }
 
             // 更新文件扫描结果
@@ -122,10 +123,9 @@ class ScanServiceImpl @Autowired constructor(
                 subScanTask.sha256,
                 parentTaskId,
                 scanner,
-                scanResultOverview,
-                reportNode,
-                startDateTime,
-                finishedDateTime
+                scanExecutorResult.overview,
+                scanExecutorResult.startDateTime,
+                scanExecutorResult.finishedDateTime
             )
         }
     }

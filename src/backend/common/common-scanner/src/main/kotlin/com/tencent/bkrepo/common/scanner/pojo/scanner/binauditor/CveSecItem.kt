@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -142,12 +143,12 @@ data class CveSecItem(
                 cnvdId = get(nvToolsCveInfo, cveSecItems, "cnvd_id").toString(),
                 cnnvdId = get(nvToolsCveInfo, cveSecItems, "cnnvd_id").toString(),
                 cweId = get(nvToolsCveInfo, cveSecItems, "cwe_id").toString(),
-                cvssRank = cveSecItems["cvss_rank"].toString(),
+                cvssRank = normalizedLevel(cveSecItems["cvss_rank"].toString()),
                 cvss = cvss.toString().toDouble(),
-                cvssV3Vector = nvToolsCveInfo?.get("cvss_v3_vector").toString(),
-                cvssV2Vector = nvToolsCveInfo?.get("cvss_v2_vector").toString(),
+                cvssV3Vector = nvToolsCveInfo?.get("cvss_v3_vector")?.toString(),
+                cvssV2Vector = nvToolsCveInfo?.get("cvss_v2_vector")?.toString(),
                 dynamicLevel = get(nvToolsCveInfo, cveSecItems, "dynamic_level").toString().toInt(),
-                level = nvToolsCveInfo?.get("level").toString()
+                level = nvToolsCveInfo?.get("level")?.toString()?.let { normalizedLevel(it) }
             )
         }
 

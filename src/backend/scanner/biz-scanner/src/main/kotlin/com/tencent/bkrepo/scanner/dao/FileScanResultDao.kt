@@ -29,10 +29,9 @@ package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TScanResult
-import com.tencent.bkrepo.scanner.pojo.Node
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -51,7 +50,6 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
      * @param taskId 扫描任务id
      * @param scanner 使用的扫描器
      * @param resultOverview 结果预览
-     * @param reportNode 扫描结果报告路径
      * @param startDateTime 文件开始执行扫描的时间
      * @param finishedDateTime 文件结束扫描的时间
      */
@@ -60,19 +58,18 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
         sha256: String,
         taskId: String,
         scanner: Scanner,
-        resultOverview: Map<String, Long>,
-        reportNode: Node,
+        resultOverview: Map<String, Any?>,
         startDateTime: LocalDateTime,
         finishedDateTime: LocalDateTime
     ): UpdateResult {
         // TODO 通用upsert重试逻辑抽象
         return try {
             doUpsertResult(
-                credentialsKey, sha256, taskId, scanner, resultOverview, reportNode, startDateTime, finishedDateTime
+                credentialsKey, sha256, taskId, scanner, resultOverview, startDateTime, finishedDateTime
             )
         } catch (e: DuplicateKeyException) {
             doUpsertResult(
-                credentialsKey, sha256, taskId, scanner, resultOverview, reportNode, startDateTime, finishedDateTime
+                credentialsKey, sha256, taskId, scanner, resultOverview, startDateTime, finishedDateTime
             )
         }
     }
@@ -82,8 +79,7 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
         sha256: String,
         taskId: String,
         scanner: Scanner,
-        resultOverview: Map<String, Long>,
-        reportNode: Node,
+        resultOverview: Map<String, Any?>,
         startDateTime: LocalDateTime,
         finishedDateTime: LocalDateTime
     ): UpdateResult {
@@ -96,8 +92,7 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
             scanner = scanner.name,
             scannerType = scanner.type,
             scannerVersion = scanner.version,
-            overview = resultOverview,
-            reportNode = reportNode
+            overview = resultOverview
         )
         val update = buildUpdate(finishedDateTime).set(scanner.name, scanResult)
         return upsert(Query(criteria), update)

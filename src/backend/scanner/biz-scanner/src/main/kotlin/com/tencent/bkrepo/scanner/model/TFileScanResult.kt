@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.scanner.pojo.Node
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -91,11 +90,7 @@ data class TScanResult(
      */
     val scannerVersion: String,
     /**
-     * 文件扫描路径
-     */
-    val reportNode: Node,
-    /**
      * 扫描结果统计
      */
-    val overview: Map<String, Long>
+    val overview: Map<String, Any?>
 )
