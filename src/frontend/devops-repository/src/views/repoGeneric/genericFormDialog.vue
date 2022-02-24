@@ -3,13 +3,17 @@
         v-model="genericForm.show"
         :title="genericForm.title"
         width="450"
-        :height-num="193"
+        :height-num="311"
         @cancel="cancel">
         <bk-form class="repo-generic-form" :label-width="100" :model="genericForm" :rules="rules" ref="genericForm">
             <template v-if="genericForm.type === 'add'">
                 <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path" error-display-type="normal">
                     <label class="path-tip">支持 / 分隔符级联创建文件夹</label>
-                    <bk-input v-model.trim="genericForm.path" :placeholder="$t('folderNamePlacehodler')"></bk-input>
+                    <bk-input class="mt30"
+                        v-model.trim="genericForm.path"
+                        type="textarea" :rows="6"
+                        :placeholder="$t('folderPathPlacehodler')">
+                    </bk-input>
                 </bk-form-item>
             </template>
             <template v-else-if="genericForm.type === 'rename'">
@@ -42,13 +46,13 @@
                 rules: {
                     path: [
                         {
-                            regex: /[^\\/:*?"<>|]$/,
+                            required: true,
                             message: this.$t('pleaseInput') + this.$t('folder') + this.$t('path'),
                             trigger: 'blur'
                         },
                         {
-                            regex: /^([^\\:*?"<>|]){1,50}$/,
-                            message: this.$t('folderNamePlacehodler'),
+                            regex: /^(\/[^\\:*?"<>|]{1,50})+$/,
+                            message: this.$t('folderPathPlacehodler'),
                             trigger: 'blur'
                         }
                     ],
@@ -139,7 +143,6 @@
 .repo-generic-form {
     .path-tip {
         position: absolute;
-        margin-top: -26px;
         font-size: 12px;
         color: var(--fontSubsidiaryColor);
     }
