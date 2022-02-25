@@ -10,6 +10,7 @@ on_ERR (){
 set -a
 CTRL_DIR="${CTRL_DIR:-/data/install}"
 source $CTRL_DIR/load_env.sh
+source $CTRL_DIR/02-dynamic/hosts.env
 BK_PKG_SRC_PATH=${BK_PKG_SRC_PATH:-/data/src}
 BK_REPO_SRC_DIR=${BK_REPO_SRC_DIR:-$BK_PKG_SRC_PATH/repo}
 BK_REPO_HTTP_HEAD=$(echo $BK_PAAS_FQDN|awk -F\. '{print $1}'|sed "s#paas#repo#g")
@@ -17,9 +18,11 @@ BK_CI_HTTP_HEAD=$(echo $BK_PAAS_FQDN|awk -F\. '{print $1}'|sed "s#paas#devops#g"
 set +a
 repo_env_default="$CTRL_DIR/bin/default/repo.env"
 repo_env_03="$CTRL_DIR/bin/03-userdef/repo.env"
+repo_env_04="$CTRL_DIR/bin/04-final/repo.env"
 
 ci_env_default="$CTRL_DIR/bin/default/ci.env"
 ci_env_03="$CTRL_DIR/bin/03-userdef/ci.env"
+ci_env_04="$CTRL_DIR/bin/04-final/ci.env"
 
 set_env03 (){
     for kv in "$@"; do
@@ -73,7 +76,7 @@ check_empty_var (){
 cd "$CTRL_DIR"
 pkg_env_tpl="$BK_PKG_SRC_PATH/repo/scripts/repo.env"
 # 提前处理
-sed -i "/BK_CI_AUTH_TOKEN/d;/BK_CI_BKREPO_AUTHORIZATION/d;/BK_REPO_MONGODB_URI/d" $pkg_env_tpl && sed -i "/BK_REPO_MONGODB_URI/d" $repo_env_default && sed -i "/BK_REPO_MONGODB_URI/d" $repo_env_03
+sed -i "/BK_CI_AUTH_TOKEN/d;/BK_CI_BKREPO_AUTHORIZATION/d;/BK_REPO_MONGODB_URI/d" $pkg_env_tpl;sed -i "/BK_REPO_MONGODB_URI/d" $repo_env_default;sed -i "/BK_CI_AUTH_TOKEN/d;/BK_REPO_MONGODB_URI/d" $repo_env_03;sed -i "/BK_CI_AUTH_TOKEN/d" $repo_env_04;sed -i "/BK_CI_AUTH_TOKEN/d" $ci_env_03
 cat >> $pkg_env_tpl << EOF
 BK_CI_BKREPO_AUTHORIZATION=
 BK_CI_AUTH_TOKEN=
