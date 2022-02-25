@@ -100,7 +100,7 @@ class BkAuthPermissionServiceImpl constructor(
                     checkReportPermission(action)
                 }
                 else -> {
-                    checkProjectPermission(uid, projectId!!, action)
+                    super.checkPermission(request) || checkProjectPermission(uid, projectId!!, action)
                 }
             }
 
