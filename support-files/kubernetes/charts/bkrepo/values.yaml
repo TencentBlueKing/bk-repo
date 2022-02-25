@@ -107,7 +107,7 @@ init:
     image:
       registry: mirrors.tencent.com
       repository: blueking/bkrepo-init
-      tag: 1.2.2
+      tag: 1.1.0
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
@@ -195,7 +195,7 @@ gateway:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-gateway
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -236,7 +236,7 @@ repository:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-repository
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -277,7 +277,7 @@ auth:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-auth
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -317,7 +317,7 @@ generic:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-generic
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -357,7 +357,7 @@ replication:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-replication
-    tag: 1.2.3
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -477,7 +477,7 @@ pypi:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-pypi
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -517,7 +517,7 @@ helm:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-helm
-    tag: 1.2.2
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
