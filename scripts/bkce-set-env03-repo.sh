@@ -10,7 +10,7 @@ on_ERR (){
 set -a
 CTRL_DIR="${CTRL_DIR:-/data/install}"
 source $CTRL_DIR/load_env.sh
-source $CTRL_DIR/02-dynamic/hosts.env
+source $CTRL_DIR/bin/02-dynamic/hosts.env
 BK_PKG_SRC_PATH=${BK_PKG_SRC_PATH:-/data/src}
 BK_REPO_SRC_DIR=${BK_REPO_SRC_DIR:-$BK_PKG_SRC_PATH/repo}
 BK_REPO_HTTP_HEAD=$(echo $BK_PAAS_FQDN|awk -F\. '{print $1}'|sed "s#paas#repo#g")
