@@ -15,6 +15,7 @@ metadata:
     {{ $key }}: {{ include "common.tplvalues.render" (dict "value" $value "context" $) | quote }}
     {{- end }}
 spec:
+  hostNetwork: {{ .Values.ingress.hostNetwork }}
   rules:
     - host: {{ .Values.gateway.dockerHost }}
       http:
