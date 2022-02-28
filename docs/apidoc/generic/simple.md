@@ -29,8 +29,8 @@
   |X-BKREPO-MD5|string|否|无|文件md5|file md5|
   |X-BKREPO-OVERWRITE|boolean|否|false|是否覆盖已存在文件|overwrite exist file|
   |X-BKREPO-EXPIRES|long|否|0|过期时间，单位天(0代表永久保存)|file expired days|
-  |X-BKREPO-META-{key}|string|否|无|文件元数据，{key}表示元数据key，可以添加多个|file metadata|
-  |X-BKREPO-META|string|否|无|文件元数据，格式为base64(key1=value1&key2=value2)。当`X-BKREPO-META-{key}`不能满足需求时可用此字段代替|file metadata|
+  |X-BKREPO-META-{key}|string|否|无|文件元数据，{key}表示元数据key，可以添加多个。key大小写不敏感，按小写存储|file metadata|
+  |X-BKREPO-META|string|否|无|文件元数据，格式为base64(key1=value1&key2=value2)。key大小写敏感。当`X-BKREPO-META-{key}`不能满足需求时可用此字段代替|file metadata|
 
 
 - 响应体
