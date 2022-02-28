@@ -31,11 +31,10 @@
 
 package com.tencent.bkrepo.maven.artifact.repository
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -50,16 +49,20 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
-import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.constants.FULL_PATH
+import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
+import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.constants.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.ConflictException
+import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
+import com.tencent.bkrepo.maven.exception.MavenRequestForbiddenException
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
 import com.tencent.bkrepo.maven.pojo.Basic
 import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
@@ -87,6 +90,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import org.apache.commons.lang.StringUtils
 import org.apache.maven.artifact.repository.metadata.Snapshot
@@ -170,7 +174,7 @@ class MavenLocalRepository(
         val mavenArtifactInfo = context.artifactInfo as MavenArtifactInfo
         logger.info(
             "Try to combine the url for ${mavenArtifactInfo.getArtifactFullPath()} " +
-                "in repo ${mavenArtifactInfo.getRepoIdentify()}, and isSanpshot ${mavenArtifactInfo.isSnapshot()}"
+                "in repo ${mavenArtifactInfo.getRepoIdentify()}, and isSnapshot ${mavenArtifactInfo.isSnapshot()}"
         )
         val mavenRepoConf = getRepoConf(context)
         val snapshotFlag = mavenArtifactInfo.isSnapshot()
@@ -240,15 +244,17 @@ class MavenLocalRepository(
         logger.info("The File $path does not want to overwrite: $noOverwrite")
         if (noOverwrite) {
             // -SNAPSHOT/** 路径下的metadata.xml 文件不做判断
-            if (!path.endsWith("maven-metadata.xml")) {
+            if (!path.endsWith(MAVEN_METADATA_FILE_NAME)) {
                 val node = nodeClient.getNodeDetail(
                     context.artifactInfo.projectId,
                     context.artifactInfo.repoName,
                     path
                 ).data
-                if (node != null && checksumType(context) == null) {
-                    logger.warn("The File $path already existed in the ${context.artifactInfo.getRepoIdentify()}")
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, path)
+                if (node != null && checksumType(path) == null) {
+                    val message = "The File $path already existed in the ${context.artifactInfo.getRepoIdentify()}, " +
+                        "please check your overwrite configuration."
+                    logger.warn(message)
+                    throw MavenRequestForbiddenException(message)
                 }
             }
         }
@@ -276,7 +282,7 @@ class MavenLocalRepository(
             val repoConf = getRepoConf(context)
             if (artifactFilePath.isSnapshotUri() &&
                 (
-                    artifactFilePath.endsWith("maven-metadata.xml") ||
+                    artifactFilePath.endsWith(MAVEN_METADATA_FILE_NAME) ||
                         repoConf.versionBehaviorConflict(artifactFilePath)
                     )
             ) {
@@ -295,13 +301,7 @@ class MavenLocalRepository(
     }
 
     private fun getRepoConf(context: ArtifactContext): MavenRepoConf {
-        val repositoryInfo = repositoryClient.getRepoInfo(context.projectId, context.repoName).data
-            ?: throw ErrorCodeException(
-                CommonMessageCode.RESOURCE_NOT_FOUND,
-                "${context.projectId}/${context.repoName}"
-            )
-        val mavenConfiguration = repositoryInfo.configuration
-        return mavenConfiguration.toMavenRepoConf()
+        return context.repositoryDetail.configuration.toMavenRepoConf()
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -317,9 +317,9 @@ class MavenLocalRepository(
             val fileSuffix = packaging
             if (packaging == "pom") {
                 val mavenPomModel = context.getArtifactFile().getInputStream().use { MavenXpp3Reader().read(it) }
-                if (StringUtils.isNotBlank(mavenPomModel.version) &&
-                    mavenPomModel.packaging.equals("pom", ignoreCase = true)
-                ) else {
+                val verNotBlank = StringUtils.isNotBlank(mavenPomModel.version)
+                val isPom = mavenPomModel.packaging.equals("pom", ignoreCase = true)
+                if (!verNotBlank || !isPom) {
                     packaging = mavenPomModel.packaging
                 }
             }
@@ -332,13 +332,16 @@ class MavenLocalRepository(
                 artifactFile = context.getArtifactFile(),
                 storageCredentials = context.storageCredentials
             )
-
-            if (isArtifact) createMavenVersion(context, mavenGavc)
+            context.putAttribute(FULL_PATH, node.fullPath)
+            if (isArtifact) createMavenVersion(context, mavenGavc, node.fullPath)
             // 更新包各模块版本最新记录
             logger.info("Prepare to create maven metadata....")
             mavenMetadataService.update(node)
         } else {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+            val isSnapShotUri = artifactFullPath.isSnapshotUri()
+            val metadataCheckSum = metadataUploadHandler(artifactFullPath, context)
+            val artifactCheckSum = artifactUploadHandler(artifactFullPath, context)
             logger.info(
                 "Handling request to upload unmatched file $artifactFullPath " +
                     "in repo ${context.artifactInfo.getRepoIdentify()}"
@@ -346,9 +349,11 @@ class MavenLocalRepository(
             // -SNAPSHOT/** 路径下的构件和metadata.xml 文件的checksum 做拦截，
             // metadata.xml.* 改由系统生成
             // 构件名如果与仓库配置不符也改由系统生成
-            if (artifactFullPath.isSnapshotUri() &&
-                (matedataUploadHandler(artifactFullPath, context) || artifactUploadHandler(artifactFullPath, context))
-            ) {
+            if (isSnapShotUri && (metadataCheckSum || artifactCheckSum)) {
+                logger.info(
+                    "The unmatched file $artifactFullPath will be generated by server side " +
+                        "in repo ${context.artifactInfo.getRepoIdentify()}"
+                )
                 return
             } else {
                 super.onUpload(context)
@@ -356,7 +361,7 @@ class MavenLocalRepository(
         }
     }
 
-    private fun matedataUploadHandler(artifactFullPath: String, context: ArtifactContext): Boolean {
+    private fun metadataUploadHandler(artifactFullPath: String, context: ArtifactContext): Boolean {
         val repoConf = getRepoConf(context)
         if (repoConf.mavenSnapshotVersionBehavior != SnapshotBehaviorType.DEPLOYER) {
             for (hashType in HashType.values()) {
@@ -364,7 +369,7 @@ class MavenLocalRepository(
                 val isDigestFile = artifactFullPath.endsWith(suffix)
                 if (isDigestFile) {
                     val artifactFilePath = artifactFullPath.removeSuffix(suffix)
-                    return artifactFilePath.endsWith("maven-metadata.xml")
+                    return artifactFilePath.endsWith(MAVEN_METADATA_FILE_NAME)
                 }
             }
         }
@@ -379,7 +384,7 @@ class MavenLocalRepository(
     private fun artifactUploadHandler(artifactFullPath: String, context: ArtifactContext): Boolean {
         val repoConf = getRepoConf(context)
         return (
-            checksumType(context) != null &&
+            checksumType(artifactFullPath) != null &&
                 repoConf.versionBehaviorConflict(artifactFullPath)
             )
     }
@@ -387,12 +392,14 @@ class MavenLocalRepository(
     /**
      * 判断请求是否为checksum请求，并返回类型
      */
-    private fun checksumType(context: ArtifactContext): HashType? {
+    private fun checksumType(artifactFullPath: String): HashType? {
         var type: HashType? = null
-        val artifactFullPath = context.artifactInfo.getArtifactFullPath()
         for (hashType in HashType.values()) {
             val suffix = ".${hashType.ext}"
-            if (artifactFullPath.endsWith(suffix)) type = hashType
+            if (artifactFullPath.endsWith(suffix)) {
+                type = hashType
+                break
+            }
         }
         logger.info("The hashType of the file $artifactFullPath is $type")
         return type
@@ -405,10 +412,11 @@ class MavenLocalRepository(
         super.onUploadSuccess(context)
         val repoConf = getRepoConf(context)
         with(context) {
-            val mimeType = artifactInfo.getArtifactFullPath().fileMimeType()
+            val fullPath = context.getStringAttribute(FULL_PATH) ?: artifactInfo.getArtifactFullPath()
+            val mimeType = fullPath.fileMimeType()
             if (mimeType != null) {
                 val node =
-                    nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data ?: return
+                    nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return
                 val uri = "$mavenDomain/$projectId/$repoName/${node.fullPath}"
                 val mavenArtifactResponse = MavenArtifactResponse(
                     projectId = node.projectId,
@@ -426,7 +434,7 @@ class MavenLocalRepository(
                     originalChecksums = MavenArtifactResponse.OriginalChecksums(node.sha256),
                     uri = uri
                 )
-                response.status = artifactInfo.getArtifactFullPath().httpStatusCode(repoConf)
+                response.status = fullPath.httpStatusCode(repoConf)
                 response.writer.println(mavenArtifactResponse.toJsonString())
                 response.writer.flush()
             }
@@ -436,11 +444,11 @@ class MavenLocalRepository(
     override fun onUploadFinished(context: ArtifactUploadContext) {
         super.onUploadFinished(context)
         val repoConf = getRepoConf(context)
-        val artifactFullPath = context.artifactInfo.getArtifactFullPath()
+        val artifactFullPath = context.getStringAttribute(FULL_PATH) ?: context.artifactInfo.getArtifactFullPath()
         val isSnapshotUri = artifactFullPath.isSnapshotUri()
         val isSnapshotNonUniqueUri = artifactFullPath.isSnapshotNonUniqueUri()
         logger.info(
-            "The file $artifactFullPath has been uploaded, isSnapshotUri $isSnapshotUri" +
+            "The file $artifactFullPath has been uploaded, isSnapshotUri $isSnapshotUri " +
                 "the isSnapshotNonUniqueUri is $isSnapshotNonUniqueUri," +
                 "the snapshot behavior type is ${repoConf.mavenSnapshotVersionBehavior}"
         )
@@ -449,17 +457,17 @@ class MavenLocalRepository(
             return
         }
         // 生成`maven-metadata.xml`
-        if (artifactFullPath.endsWith("maven-metadata.xml")) {
+        if (artifactFullPath.endsWith(MAVEN_METADATA_FILE_NAME)) {
             verifyMetadataContent(context)
             return
         }
-        if (checksumType(context) == null) {
+        if (checksumType(artifactFullPath) == null) {
             // 处理maven2 *1.0-SNAPSHOT/1.0-SNAPSHOT.jar 格式构件
             // 对应 checksum 有客户端请求时再去生成，因为客户端 在上传时 不知道由服务器生成的 时间戳
             // 在.pom 上传完之后需要重新生成 maven-metadata.xml , 已记录由服务器生成的最新构件
             // 处理maven-metadata.xml文件上传顺序无法确定，导致metadata文件无法更新的问题
             verifyMetadataContent(context, artifactFullPath)
-            verifyPath(context, context.artifactInfo.getArtifactFullPath())
+            verifyPath(context, artifactFullPath)
             return
         }
     }
@@ -468,7 +476,7 @@ class MavenLocalRepository(
      * [artifactPath] maven-metadata.xml 父文件夹
      * 在指定构件路径下，服务生成 快照版本下的maven-metadata.xml,
      */
-    private fun verifyMetadataContent(context: ArtifactUploadContext, artifactPath: String? = null) {
+    private fun verifyMetadataContent(context: ArtifactContext, artifactPath: String? = null) {
         val fullPath = context.artifactInfo.getArtifactFullPath()
         logger.info(
             "Handling request to create maven-metadata.xml for $fullPath " +
@@ -476,7 +484,7 @@ class MavenLocalRepository(
         )
         val mavenGavc = fullPath.mavenGAVC()
         val repoConf = getRepoConf(context)
-        val records = mavenMetadataService.search(context.artifactInfo as MavenArtifactInfo, mavenGavc)
+        val records = mavenMetadataService.search(context.artifactInfo, mavenGavc)
         if (records.isEmpty()) return
         generateMetadata(repoConf.mavenSnapshotVersionBehavior, mavenGavc, records)?.let {
             reStoreMavenMetadataRelated(it, context, fullPath, artifactPath)
@@ -488,7 +496,7 @@ class MavenLocalRepository(
      */
     private fun reStoreMavenMetadataRelated(
         metadata: org.apache.maven.artifact.repository.metadata.Metadata,
-        context: ArtifactUploadContext,
+        context: ArtifactContext,
         fullPath: String,
         artifactPath: String? = null
     ) {
@@ -500,7 +508,7 @@ class MavenLocalRepository(
                 val path = if (artifactPath == null) {
                     fullPath
                 } else {
-                    "${artifactPath.substringBeforeLast('/')}/maven-metadata.xml"
+                    "${artifactPath.substringBeforeLast('/')}/$MAVEN_METADATA_FILE_NAME"
                 }
                 updateMetadata(path, artifactFile)
                 verifyPath(context, path)
@@ -515,7 +523,10 @@ class MavenLocalRepository(
      * 生成对应checksum文件
      */
     private fun verifyPath(context: ArtifactContext, fullPath: String, hashType: HashType? = null) {
-        logger.info("Will go to update checkSum files for $fullPath")
+        logger.info(
+            "Will go to update checkSum files for $fullPath " +
+                "in repo ${context.artifactInfo.getRepoIdentify()}"
+        )
         val node = nodeClient.getNodeDetail(
             projectId = context.projectId,
             repoName = context.repoName,
@@ -533,6 +544,10 @@ class MavenLocalRepository(
      * 上传后更新构件的checksum文件
      */
     private fun updateArtifactCheckSum(context: ArtifactContext, node: NodeDetail, typeArray: Array<HashType>) {
+        logger.info(
+            "Ready to generate checksum file on server side for ${node.fullPath} " +
+                "in repo ${context.artifactInfo.getRepoIdentify()}"
+        )
         for (hashType in typeArray) {
             val checksum = node.metadata[hashType.ext] as? String
             checksum?.let {
@@ -659,8 +674,8 @@ class MavenLocalRepository(
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val checksumType = checksumType(context)
             val fullPath = artifactInfo.getArtifactFullPath()
+            val checksumType = checksumType(fullPath)
             var node = nodeClient.getNodeDetail(
                 projectId = projectId,
                 repoName = repoName,
@@ -679,7 +694,7 @@ class MavenLocalRepository(
         }
     }
 
-    private fun createMavenVersion(context: ArtifactUploadContext, mavenGAVC: MavenGAVC) {
+    private fun createMavenVersion(context: ArtifactUploadContext, mavenGAVC: MavenGAVC, fullPath: String) {
         val metadata = mutableMapOf(
             "groupId" to mavenGAVC.groupId,
             "artifactId" to mavenGAVC.artifactId,
@@ -695,12 +710,11 @@ class MavenLocalRepository(
                 packageType = PackageType.MAVEN,
                 versionName = mavenGAVC.version,
                 size = context.getArtifactFile().getSize(),
-                artifactPath = context.artifactInfo.getArtifactFullPath(),
+                artifactPath = fullPath,
                 overwrite = true,
                 createdBy = context.userId,
                 metadata = metadata
-            ),
-            HttpContextHolder.getClientAddress()
+            )
         )
     }
 
@@ -712,102 +726,143 @@ class MavenLocalRepository(
         logger.info("Success to save $fullPath, size: ${metadataArtifact.getSize()}")
     }
 
+    /**
+     * 删除文件，删除对应文件后还需要更新对应的maven-metadata.xml文件, 同时还需要删除对应的metadata记录
+     */
     override fun remove(context: ArtifactRemoveContext) {
-        val packageKey = context.request.getParameter("packageKey")
-        val version = context.request.getParameter("version")
-        if (packageKey.isNullOrBlank()) {
+        when (context.artifactInfo) {
+            is MavenDeleteArtifactInfo -> {
+                deletePackage(context)
+            }
+            else -> {
+                deleteNode(context)
+                // 更新对应的metadata文件
+                verifyMetadataContent(context, context.artifactInfo.getArtifactFullPath())
+            }
+        }
+    }
+
+    /**
+     * 删除package
+     */
+    fun deletePackage(context: ArtifactRemoveContext) {
+        with(context.artifactInfo as MavenDeleteArtifactInfo) {
+            logger.info("Will prepare to delete package [$packageName|$version] in repo ${getRepoIdentify()}")
+            if (version.isBlank()) {
+                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
+                    removeVersion(context, it)
+                }
+                // 删除package下得metadata.xml文件
+                deleteNode(context, true)
+            } else {
+                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                    removeVersion(context, it)
+                    // 需要更新对应的metadata.xml文件
+                    updatePackageMetadata(
+                        context = context,
+                        version = version
+                    )
+                } ?: throw VersionNotFoundException(version)
+            }
+        }
+    }
+
+    /**
+     * 删除[version] 对应的node节点也会一起删除
+     */
+    private fun removeVersion(context: ArtifactRemoveContext, version: PackageVersion) {
+        with(context.artifactInfo as MavenDeleteArtifactInfo) {
+            logger.info(
+                "Will delete package $packageName version ${version.name} in repo ${getRepoIdentify()}"
+            )
+            packageClient.deleteVersion(projectId, repoName, packageName, version.name)
+            val artifactPath = MavenUtil.extractPath(packageName) + "/${version.name}"
+            // 需要删除对应的metadata表记录
+            val (artifactId, groupId) = MavenUtil.extractGrounpIdAndArtifactId(packageName)
+            val mavenGAVC = MavenGAVC(groupId, artifactId, version.name, null)
+            mavenMetadataService.delete(context.artifactInfo, null, mavenGAVC)
             val request = NodeDeleteRequest(
-                projectId = context.projectId,
-                repoName = context.repoName,
-                fullPath = context.artifactInfo.getArtifactFullPath(),
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = artifactPath,
                 operator = context.userId
             )
             nodeClient.deleteNode(request)
-        } else {
-            with(context.artifactInfo) {
-                if (version.isNullOrBlank()) {
-                    packageClient.deletePackage(
-                        projectId,
-                        repoName,
-                        packageKey,
-                        HttpContextHolder.getClientAddress()
-                    )
-                } else {
-                    packageClient.deleteVersion(
-                        projectId,
-                        repoName,
-                        packageKey,
-                        version,
-                        HttpContextHolder.getClientAddress()
-                    )
+        }
+    }
+
+    /**
+     * 删除单个节点
+     */
+    private fun deleteNode(context: ArtifactRemoveContext, forceDeleted: Boolean = false) {
+        with(context) {
+            val fullPath = artifactInfo.getArtifactFullPath()
+            logger.info("Will prepare to delete file $fullPath in repo ${artifactInfo.getRepoIdentify()} ")
+            // 如果删除单个文件不能删除metadata.xml文件, 如果文件删除了对应的校验文件也要删除
+            if (fullPath.endsWith(MAVEN_METADATA_FILE_NAME) && !forceDeleted)
+                throw MavenRequestForbiddenException("$MAVEN_METADATA_FILE_NAME can not be deleted.")
+            nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
+                if (checksumType(it.fullPath) == null) {
+                    deleteArtifactCheckSums(context, it)
                 }
-                logger.info("Success to delete $packageKey:$version")
+                // 需要删除对应的metadata表记录
+                mavenMetadataService.delete(context.artifactInfo, it)
+                val request = NodeDeleteRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    operator = userId
+                )
+                nodeClient.deleteNode(request)
+            } ?: throw MavenArtifactNotFoundException("Artifact $fullPath could not be found.")
+        }
+    }
+
+    /**
+     * 删除构件的checksum文件
+     */
+    private fun deleteArtifactCheckSums(
+        context: ArtifactContext,
+        node: NodeDetail,
+        typeArray: Array<HashType> = HashType.values()
+    ) {
+        with(node) {
+            for (hashType in typeArray) {
+                val fullPath = "${node.fullPath}.${hashType.ext}"
+                nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
+                    val request = NodeDeleteRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = fullPath,
+                        operator = context.userId
+                    )
+                    nodeClient.deleteNode(request)
+                }
             }
         }
-        executeDelete(context, packageKey, version)
-    }
-
-    private fun findMetadata(projectId: String, repoName: String, path: String): NodeDetail? {
-        return nodeClient.getNodeDetail(projectId, repoName, "/$path/maven-metadata.xml").data
     }
 
     /**
-     * 删除jar包 关联文件 并修改该包的版本管理文件
+     *  更新`/groupId/artifactId/maven-metadata.xml`文件
      */
-    fun executeDelete(context: ArtifactRemoveContext, packageKey: String, version: String?) {
-        val artifactId = packageKey.split(":").last()
-        val groupId = packageKey.removePrefix("gav://").split(":")[0]
-        val artifactPath = StringUtils.join(groupId.split("."), "/") + "/$artifactId"
-        val versionPath = "$artifactPath/$version"
-        // 删除 `/{groupId}/{artifact}/` 目录
-        if (version.isNullOrBlank()) {
-            nodeClient.deleteNode(
-                NodeDeleteRequest(
-                    context.projectId,
-                    context.repoName,
-                    "/$artifactPath",
-                    ArtifactRemoveContext().userId
-                )
-            )
-            return
-        } else {
-            nodeClient.deleteNode(
-                NodeDeleteRequest(
-                    context.projectId,
-                    context.repoName,
-                    "/$versionPath",
-                    ArtifactRemoveContext().userId
-                )
-            )
-            updateMetadata(context.projectId, context.repoName, artifactPath, version, context.userId)
-            return
-        }
-    }
-
-    /**
-     * [path] /groupId/artifactId
-     */
-    private fun updateMetadata(
-        projectId: String,
-        repoName: String,
-        path: String,
-        deleteVersion: String,
-        userId: String
+    private fun updatePackageMetadata(
+        context: ArtifactRemoveContext,
+        version: String
     ) {
         // reference https://maven.apache.org/guides/getting-started/#what-is-a-snapshot-version
         // 查找 `/groupId/artifactId/maven-metadata.xml`
-        val artifactMetadataNode = findMetadata(projectId, repoName, path)
-        artifactMetadataNode?.let { node ->
+        with(context) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data ?: return
             storageService.load(
                 node.sha256!!,
                 Range.full(node.size),
-                ArtifactRemoveContext().storageCredentials
+                storageCredentials
             ).use { artifactInputStream ->
                 // 更新 `/groupId/artifactId/maven-metadata.xml`
                 val mavenMetadata = MetadataXpp3Reader().read(artifactInputStream)
-                mavenMetadata.versioning.versions.remove(deleteVersion)
+                mavenMetadata.versioning.versions.remove(version)
                 if (mavenMetadata.versioning.versions.size == 0) {
-                    nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, artifactMetadataNode.fullPath, userId))
+                    nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, node.fullPath, userId))
                     return
                 }
                 mavenMetadata.deleteVersioning()
@@ -831,14 +886,15 @@ class MavenLocalRepository(
             val metadataArtifactSha1 = ByteArrayInputStream(resultXmlSha1.toByteArray()).use {
                 ArtifactFileFactory.build(it)
             }
-            updateMetadata("${node.path}/maven-metadata.xml", artifactFile)
+            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME", artifactFile)
             artifactFile.delete()
-            updateMetadata("${node.path}/maven-metadata.xml.md5", metadataArtifactMd5)
+            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.MD5}", metadataArtifactMd5)
             metadataArtifactMd5.delete()
-            updateMetadata("${node.path}/maven-metadata.xml.sha1", metadataArtifactSha1)
+            updateMetadata("${node.path}/$MAVEN_METADATA_FILE_NAME.${HashType.SHA1}", metadataArtifactSha1)
             metadataArtifactSha1.delete()
         }
     }
+
 
     override fun query(context: ArtifactQueryContext): MavenArtifactVersionData? {
         val packageKey = context.request.getParameter("packageKey")

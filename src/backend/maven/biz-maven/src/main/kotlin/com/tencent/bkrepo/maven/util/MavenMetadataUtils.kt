@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.maven.util
 
-import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import org.apache.maven.artifact.repository.metadata.Metadata
 import java.time.LocalDateTime
 import java.time.ZoneId

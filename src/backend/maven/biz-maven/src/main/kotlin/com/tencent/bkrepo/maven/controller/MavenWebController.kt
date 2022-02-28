@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.api.MavenWebResource
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import com.tencent.bkrepo.maven.service.MavenExtService
 import com.tencent.bkrepo.maven.service.MavenService
@@ -47,13 +48,13 @@ class MavenWebController(
     private val mavenExtService: MavenExtService
 ) : MavenWebResource {
 
-    override fun deletePackage(mavenArtifactInfo: MavenArtifactInfo, packageKey: String): Response<Void> {
+    override fun deletePackage(mavenArtifactInfo: MavenDeleteArtifactInfo, packageKey: String): Response<Void> {
         mavenService.delete(mavenArtifactInfo, packageKey, null)
         return ResponseBuilder.success()
     }
 
     override fun deleteVersion(
-        mavenArtifactInfo: MavenArtifactInfo,
+        mavenArtifactInfo: MavenDeleteArtifactInfo,
         packageKey: String,
         version: String?
     ): Response<Void> {

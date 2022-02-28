@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.service.MavenService
@@ -49,11 +50,11 @@ import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
-import java.util.regex.PatternSyntaxException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.util.regex.PatternSyntaxException
 
 @Service
 class MavenServiceImpl(
@@ -130,7 +131,7 @@ class MavenServiceImpl(
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
-    override fun delete(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?) {
+    override fun delete(mavenArtifactInfo: MavenDeleteArtifactInfo, packageKey: String, version: String?) {
         val context = ArtifactRemoveContext()
         ArtifactContextHolder.getRepository().remove(context)
     }
