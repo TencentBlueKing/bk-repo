@@ -29,20 +29,17 @@ package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
-import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
-import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.*
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
@@ -61,7 +58,8 @@ class ScanServiceImpl @Autowired constructor(
     private val subScanTaskDao: SubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
-    private val scanTaskScheduler: ScanTaskScheduler
+    private val scanTaskScheduler: ScanTaskScheduler,
+    private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>
 ) : ScanService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -129,6 +127,10 @@ class ScanServiceImpl @Autowired constructor(
                 toLocalDateTime(scanExecutorResult.startTimestamp),
                 toLocalDateTime(scanExecutorResult.finishedTimestamp)
             )
+
+            // 保存详细扫描结果
+            val resultManager = scanExecutorResultManagers[scanner.type]
+            resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner.name, scanExecutorResult)
         }
     }
 

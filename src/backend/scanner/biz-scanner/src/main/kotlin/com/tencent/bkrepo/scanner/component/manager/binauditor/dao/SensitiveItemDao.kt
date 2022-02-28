@@ -25,20 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.message
+package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
+import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TSensitiveItem
+import org.springframework.stereotype.Repository
 
-enum class ScannerMessageCode(
-    private val key: String,
-    private val businessCode: Int
-) : MessageCode {
-    SCANNER_NOT_FOUND("scanner.scanner.not-found", 0),
-    SCANNER_EXISTS("scanner.scanner.exists", 1),
-    SCAN_TASK_NOT_FOUND("scanner.task.not-found", 2),
-    SCANNER_RESULT_TYPE_INVALID("scanner.result.type.invalid", 3);
-
-    override fun getBusinessCode() = businessCode
-    override fun getKey() = key
-    override fun getModuleCode() = 16
-}
+@Repository
+class SensitiveItemDao : ResultItemDao<SensitiveItem, TSensitiveItem>()

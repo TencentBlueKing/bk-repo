@@ -47,7 +47,9 @@ class BinAuditorScanner(
     @ApiModelProperty("漏洞库配置")
     val nvTools: NvTools,
     @ApiModelProperty("使用的容器镜像")
-    val container: BinAuditorDockerImage
+    val container: BinAuditorDockerImage,
+    @ApiModelProperty("结果过滤规则")
+    val resultFilterRule: ResultFilterRule? = null
 ) : Scanner(name, TYPE, version) {
     companion object {
         /**
@@ -58,6 +60,18 @@ class BinAuditorScanner(
         const val DEFAULT_CONFIG_FILE_PATH = "/standalone.toml"
     }
 }
+
+@ApiModel("结果过滤规则")
+data class ResultFilterRule(
+    @ApiModelProperty("敏感信息扫描结果过滤规则")
+    val sensitiveItemFilterRule: SensitiveItemFilterRule
+)
+
+@ApiModel("敏感信息结果过滤规则")
+data class SensitiveItemFilterRule(
+    @ApiModelProperty("结果字段过滤规则")
+    val excludes: Map<String, String>
+)
 
 @ApiModel("BinAuditor容器镜像配置")
 data class BinAuditorDockerImage(

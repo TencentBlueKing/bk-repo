@@ -25,20 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.message
+package com.tencent.bkrepo.scanner.component.manager.binauditor.model
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 
-enum class ScannerMessageCode(
-    private val key: String,
-    private val businessCode: Int
-) : MessageCode {
-    SCANNER_NOT_FOUND("scanner.scanner.not-found", 0),
-    SCANNER_EXISTS("scanner.scanner.exists", 1),
-    SCAN_TASK_NOT_FOUND("scanner.task.not-found", 2),
-    SCANNER_RESULT_TYPE_INVALID("scanner.result.type.invalid", 3);
-
-    override fun getBusinessCode() = businessCode
-    override fun getKey() = key
-    override fun getModuleCode() = 16
-}
+@CompoundIndexes(
+    CompoundIndex(
+        name = "credentialsKey_sha256_scanner_idx",
+        def = "{'credentialsKey': 1, 'sha256': 1, 'scanner': 1}",
+        background = true
+    )
+)
+abstract class ResultItem <T>(
+    open val id: String? = null,
+    open val credentialsKey: String?,
+    open val sha256: String,
+    open val scanner: String,
+    open val data: T
+)
