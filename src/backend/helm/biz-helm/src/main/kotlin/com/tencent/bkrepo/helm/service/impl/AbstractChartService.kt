@@ -49,9 +49,8 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.redis.RedisLock
-import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
@@ -95,13 +94,13 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.ThreadPoolExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.ThreadPoolExecutor
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -128,7 +127,7 @@ open class AbstractChartService : ArtifactService() {
     lateinit var storageManager: StorageManager
 
     @Autowired
-    lateinit var redisOperation: RedisOperation
+    lateinit var lockOperation: LockOperation
 
     val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
 
@@ -352,11 +351,11 @@ open class AbstractChartService : ArtifactService() {
     ) {
         val contentPath = HelmUtils.getChartFileFullPath(chartInfo.name, chartInfo.version)
         val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
-            userId,
-            artifactInfo,
-            chartInfo,
-            size,
-            isOverwrite
+            userId = userId,
+            artifactInfo = artifactInfo,
+            chartInfo = chartInfo,
+            size = size,
+            isOverwrite = isOverwrite
         )
         val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(artifactInfo, chartInfo)
         try {
@@ -388,60 +387,42 @@ open class AbstractChartService : ArtifactService() {
         val context = ArtifactDownloadContext(repoDetail, ObjectBuilderUtil.buildIndexYamlRequest(projectId, repoName))
         nodeClient.deleteNode(
             NodeDeleteRequest(
-                projectId,
-                repoName,
-                fullPath,
-                context.userId
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                operator = context.userId
             )
         )
         context.putAttribute(FULL_PATH, fullPath)
         ArtifactContextHolder.getRepository().download(context)
     }
 
-    /**
-     * 自旋获取redis锁
-     */
-    fun getSpinLock(
-        lock: RedisLock,
-        retryTimes: Int = RETRY_TIMES,
-        sleepTime: Long = SPIN_SLEEP_TIME
-    ): Boolean {
-        logger.info("Start to get redis lock to fresh index.yaml..")
-        loop@ for (i in 0 until retryTimes) {
-            when {
-                lock.tryLock() -> return true
-                else -> try {
-                    Thread.sleep(sleepTime)
-                } catch (e: InterruptedException) {
-                    continue@loop
-                }
-            }
-        }
-        logger.info("Could not get redis lock after $retryTimes times...")
-        return false
+    private fun buildRedisKey(projectId: String, repoName: String): String {
+        return "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
     }
 
     /**
-     * 初始化redislock
+     * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
-    fun initRedisLock(projectId: String, repoName: String): RedisLock {
+    fun <T> lockAction(projectId: String, repoName: String, action: () -> T): T {
         val lockKey = buildRedisKey(projectId, repoName)
-        return RedisLock(redisOperation, lockKey, EXPIRED_TIME_IN_SECONDS)
+        val lock = lockOperation.getLock(lockKey)
+        return if (lockOperation.getSpinLock(lockKey, lock)) {
+            LockOperation.logger.info("Lock for key $lockKey has been acquired.")
+            try {
+                action()
+            } finally {
+                lockOperation.close(lockKey, lock)
+            }
+        } else {
+            action()
+        }
     }
 
     companion object {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 100000
         val logger: Logger = LoggerFactory.getLogger(AbstractChartService::class.java)
-
-        /**
-         * 定义Redis过期时间
-         */
-        private const val EXPIRED_TIME_IN_SECONDS: Long = 5 * 60 * 1000L
-        private const val SPIN_SLEEP_TIME: Long = 30L
-        private const val RETRY_TIMES: Int = 10000
-
-        fun buildRedisKey(projectId: String, repoName: String): String = "$REDIS_LOCK_KEY_PREFIX$projectId/$repoName"
 
         fun convertDateTime(timeStr: String): String {
             val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)

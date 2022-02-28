@@ -31,10 +31,8 @@
 
 package com.tencent.bkrepo.auth.service.bkauth
 
-import com.tencent.bkrepo.auth.config.BkAuthConfig
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -43,22 +41,9 @@ import org.springframework.stereotype.Service
  */
 @Service
 class BkAuthPipelineService(
-    private val bkAuthService: BkAuthService,
-    private val bkciAuthService: BkciAuthService,
-    private val bkAuthConfig: BkAuthConfig
+    private val bkciAuthService: BkciAuthService
 ) {
     fun listPermissionPipelines(uid: String, projectId: String): List<String> {
-        if (bkAuthConfig.choseBkAuth()) {
-            return bkAuthService.getUserResourceByPermission(
-                user = uid,
-                serviceCode = BkAuthServiceCode.PIPELINE,
-                resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-                projectCode = projectId,
-                permission = BkAuthPermission.LIST,
-                supplier = null,
-                retryIfTokenInvalid = true
-            )
-        }
         return bkciAuthService.getUserResourceByPermission(
             user = uid,
             projectCode = projectId,
@@ -77,17 +62,6 @@ class BkAuthPipelineService(
             "hasPermission: uid: $uid, projectId: $projectId, " +
                 "pipelineId: $pipelineId, permissionAction: $permissionAction"
         )
-        if (bkAuthConfig.choseBkAuth()) {
-            return bkAuthService.validateUserResourcePermission(
-                user = uid,
-                serviceCode = BkAuthServiceCode.PIPELINE,
-                resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
-                projectCode = projectId,
-                resourceCode = pipelineId,
-                permission = BkAuthPermission.DOWNLOAD,
-                retryIfTokenInvalid = true
-            )
-        }
         return bkciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,

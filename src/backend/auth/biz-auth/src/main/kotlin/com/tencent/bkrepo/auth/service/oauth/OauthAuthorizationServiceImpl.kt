@@ -139,8 +139,11 @@ class OauthAuthorizationServiceImpl(
         val client = accountRepository.findById(clientId)
             .orElseThrow { ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST) }
 
-        if (client.credentials.find { it.secretKey == clientSecret &&
-                it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE } == null) {
+        if (client.credentials.find {
+            it.secretKey == clientSecret &&
+                it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE
+        } == null
+        ) {
             throw ErrorCodeException(AuthMessageCode.AUTH_SECRET_CHECK_FAILED)
         }
         return client

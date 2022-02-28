@@ -344,7 +344,7 @@
     background-color: white;
     overflow-y: auto;
     .plan-form {
-        max-width: 1200px;
+        max-width: 1080px;
         margin-top: 30px;
         margin-left: 50px;
         .arrow-right-icon {

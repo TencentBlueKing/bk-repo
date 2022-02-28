@@ -42,25 +42,16 @@ abstract class AbstractChartOperation(
 ) : Runnable {
     override fun run() {
         with(request) {
-            val lock = chartService.initRedisLock(projectId, repoName)
             val stopWatch = StopWatch(
                 "Handling event for refreshing index.yaml " +
                     "in repo [$projectId/$repoName] by User [$operator]"
             )
             stopWatch.start()
-            if (chartService.getSpinLock(lock)) {
-                logger.info(
-                    "Prepare to refresh index.yaml with redis distribute lock " +
-                        "in repo [$projectId/$repoName] by User [$operator]."
-                )
-                lock.use {
-                    handleOperation(this)
-                }
-            }
+            chartService.lockAction(projectId, repoName) { handleOperation(this) }
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index.yaml" +
-                    "in repo [$projectId/$repoName] is: ${stopWatch.totalTimeSeconds}s"
+                    "in repo [$projectId/$repoName] by User [$operator] is: ${stopWatch.totalTimeSeconds}s"
             )
         }
     }
@@ -85,7 +76,7 @@ abstract class AbstractChartOperation(
                 stopWatch.stop()
                 logger.info(
                     "query index.yaml file metadata " +
-                        "in repo [$projectId/$repoName] cost: ${stopWatch.totalTimeSeconds}s"
+                        "in repo [$projectId/$repoName] by User [$operator] cost: ${stopWatch.totalTimeSeconds}s"
                 )
                 handleEvent(originalIndexYamlMetadata)
                 logger.info("index.yaml in repo [$projectId/$repoName] is ready to upload...")
