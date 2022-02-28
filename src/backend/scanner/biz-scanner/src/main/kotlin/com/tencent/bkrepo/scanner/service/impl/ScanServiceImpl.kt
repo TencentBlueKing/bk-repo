@@ -37,7 +37,11 @@ import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
-import com.tencent.bkrepo.scanner.pojo.*
+import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.service.ScanService

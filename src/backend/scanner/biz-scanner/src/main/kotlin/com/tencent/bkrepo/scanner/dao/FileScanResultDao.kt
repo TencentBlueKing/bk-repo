@@ -94,7 +94,8 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
             scannerVersion = scanner.version,
             overview = resultOverview
         )
-        val update = buildUpdate(finishedDateTime).set(scanner.name, scanResult)
+        val update = buildUpdate(finishedDateTime)
+            .set("${TFileScanResult::scanResult.name}.${scanner.name}", scanResult)
         return upsert(Query(criteria), update)
     }
 

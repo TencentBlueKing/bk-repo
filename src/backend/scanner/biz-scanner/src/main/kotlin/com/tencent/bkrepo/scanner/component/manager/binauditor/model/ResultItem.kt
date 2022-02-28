@@ -37,7 +37,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
         background = true
     )
 )
-abstract class ResultItem <T>(
+open class ResultItem <T>(
     open val id: String? = null,
     open val credentialsKey: String?,
     open val sha256: String,

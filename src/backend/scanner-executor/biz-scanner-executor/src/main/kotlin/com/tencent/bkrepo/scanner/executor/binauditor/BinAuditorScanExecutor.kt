@@ -38,10 +38,16 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.*
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfCve
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfLicenseRisk
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfSensitive
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ResultFilterRule
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
