@@ -17,7 +17,7 @@ PUSH=0
 REGISTRY=docker.io/bkrepo
 USERNAME=
 PASSWORD=
-BACKENDS=(repository auth generic docker helm npm pypi replication)
+BACKENDS=(repository auth generic docker helm npm pypi replication opdata)
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
