@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
 import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TSensitiveItem
 import org.springframework.stereotype.Repository
 
 @Repository
-class SensitiveItemDao : ResultItemDao<SensitiveItem, TSensitiveItem>()
+class SensitiveItemDao : ResultItemDao<TSensitiveItem>()

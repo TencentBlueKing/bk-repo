@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
 import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCveSecItem
 import org.springframework.stereotype.Repository
 
 @Repository
-class CveSecItemDao : ResultItemDao<CveSecItem, TCveSecItem>()
+class CveSecItemDao : ResultItemDao<TCveSecItem>()

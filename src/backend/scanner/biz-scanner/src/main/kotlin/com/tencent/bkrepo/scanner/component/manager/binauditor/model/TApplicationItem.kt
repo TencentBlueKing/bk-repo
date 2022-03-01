@@ -31,10 +31,10 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("application_item")
-data class TApplicationItem(
-    override val id: String? = null,
-    override val credentialsKey: String?,
-    override val sha256: String,
-    override val scanner: String,
-    override val data: ApplicationItem
+class TApplicationItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: ApplicationItem
 ) : ResultItem<ApplicationItem>(id, credentialsKey, sha256, scanner, data)

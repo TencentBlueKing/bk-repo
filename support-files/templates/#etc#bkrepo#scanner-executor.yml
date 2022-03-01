@@ -1,8 +1,0 @@
-scanner:
-  executor:
-    docker:
-      enabled: __BK_REPO_SCANNER_EXECUTOR_DOCKER_ENABLED__
-      host: __BK_REPO_SCANNER_EXECUTOR_DOCKER_HOST__
-      version: __BK_REPO_SCANNER_EXECUTOR_DOCKER_VERSION__
-      connect-timeout: __BK_REPO_SCANNER_EXECUTOR_DOCKER_CONNECT_TIMEOUT__
-      read-timeout: __BK_REPO_SCANNER_EXECUTOR_DOCKER_READ_TIMEOUT__

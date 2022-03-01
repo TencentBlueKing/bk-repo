@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
 import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TApplicationItem
 import org.springframework.stereotype.Repository
 
 @Repository
-class ApplicationItemDao : ResultItemDao<ApplicationItem, TApplicationItem>()
+class ApplicationItemDao : ResultItemDao<TApplicationItem>()

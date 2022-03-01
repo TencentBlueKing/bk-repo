@@ -31,10 +31,10 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("sensitive_item")
-data class TSensitiveItem(
-    override val id: String? = null,
-    override val credentialsKey: String?,
-    override val sha256: String,
-    override val scanner: String,
-    override val data: SensitiveItem
+class TSensitiveItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: SensitiveItem
 ) : ResultItem<SensitiveItem>(id, credentialsKey, sha256, scanner, data)

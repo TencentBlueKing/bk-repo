@@ -38,9 +38,9 @@ import org.springframework.data.mongodb.core.index.CompoundIndexes
     )
 )
 open class ResultItem <T>(
-    open val id: String? = null,
-    open val credentialsKey: String?,
-    open val sha256: String,
-    open val scanner: String,
-    open val data: T
+    val id: String? = null,
+    val credentialsKey: String?,
+    val sha256: String,
+    val scanner: String,
+    val data: T
 )

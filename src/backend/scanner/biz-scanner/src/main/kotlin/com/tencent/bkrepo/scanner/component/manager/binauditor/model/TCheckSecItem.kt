@@ -31,10 +31,10 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("check_sec_item")
-data class TCheckSecItem(
-    override val id: String? = null,
-    override val credentialsKey: String?,
-    override val sha256: String,
-    override val scanner: String,
-    override val data: CheckSecItem
+class TCheckSecItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: CheckSecItem
 ) : ResultItem<CheckSecItem>(id, credentialsKey, sha256, scanner, data)

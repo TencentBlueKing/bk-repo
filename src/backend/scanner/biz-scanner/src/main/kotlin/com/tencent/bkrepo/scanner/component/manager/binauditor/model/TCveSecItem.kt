@@ -31,10 +31,10 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("cve_sec_item")
-data class TCveSecItem(
-    override val id: String? = null,
-    override val credentialsKey: String?,
-    override val sha256: String,
-    override val scanner: String,
-    override val data: CveSecItem
+class TCveSecItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: CveSecItem
 ) : ResultItem<CveSecItem>(id, credentialsKey, sha256, scanner, data)

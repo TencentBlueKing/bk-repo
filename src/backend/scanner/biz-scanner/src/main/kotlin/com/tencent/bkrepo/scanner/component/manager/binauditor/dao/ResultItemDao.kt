@@ -32,19 +32,28 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.component.manager.binauditor.model.ResultItem
+import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig.Companion.BEAN_NAME_SCANNER_MONGO_TEMPLATE
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 
-abstract class ResultItemDao<T1, T2 : ResultItem<T1>> : SimpleMongoDao<T2>() {
+abstract class ResultItemDao<T : ResultItem<*>> : SimpleMongoDao<T>() {
+
+    @Suppress("LateinitUsage")
+    @Autowired
+    @Qualifier(BEAN_NAME_SCANNER_MONGO_TEMPLATE)
+    private lateinit var mongoTemplate: MongoTemplate
 
     fun deleteBy(credentialsKey: String?, sha256: String, scanner: String): DeleteResult {
         val criteria = buildCriteria(credentialsKey, sha256, scanner)
         return remove(Query(criteria))
     }
 
-    fun pageBy(credentialsKey: String?, sha256: String, scanner: String, pageLimit: PageLimit): Page<T2> {
+    fun pageBy(credentialsKey: String?, sha256: String, scanner: String, pageLimit: PageLimit): Page<T> {
         val pageable = PageRequest.of(pageLimit.pageNumber - 1, pageLimit.pageSize)
         val criteria = buildCriteria(credentialsKey, sha256, scanner)
         val query = Query(criteria).with(pageable)
@@ -55,8 +64,12 @@ abstract class ResultItemDao<T1, T2 : ResultItem<T1>> : SimpleMongoDao<T2>() {
 
     private fun buildCriteria(credentialsKey: String?, sha256: String, scanner: String): Criteria {
         return Criteria
-            .where(ResultItem<T1>::credentialsKey.name).isEqualTo(credentialsKey)
-            .and(ResultItem<T1>::sha256.name).isEqualTo(sha256)
-            .and(ResultItem<T1>::scanner.name).isEqualTo(scanner)
+            .where(ResultItem<*>::credentialsKey.name).isEqualTo(credentialsKey)
+            .and(ResultItem<*>::sha256.name).isEqualTo(sha256)
+            .and(ResultItem<*>::scanner.name).isEqualTo(scanner)
+    }
+
+    override fun determineMongoTemplate(): MongoTemplate {
+        return mongoTemplate
     }
 }

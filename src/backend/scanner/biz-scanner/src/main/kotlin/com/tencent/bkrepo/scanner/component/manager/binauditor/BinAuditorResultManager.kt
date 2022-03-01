@@ -104,7 +104,7 @@ class BinAuditorResultManager @Autowired constructor(
             }
         }.run { pageBy(credentialsKey, sha256, scanner, pageLimit) }
 
-        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data!! })
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
 
     private inline fun <T, reified R : ResultItem<T>> convert(
@@ -119,12 +119,12 @@ class BinAuditorResultManager @Autowired constructor(
     /**
      * 替换同一文件使用同一扫描器原有的扫描结果
      */
-    private fun <T1, T2 : ResultItem<T1>, D : ResultItemDao<T1, T2>> replace(
+    private fun <T : ResultItem<*>, D : ResultItemDao<T>> replace(
         credentialsKey: String?,
         sha256: String,
         scanner: String,
         resultItemDao: D,
-        resultItems: List<T2>
+        resultItems: List<T>
     ) {
         resultItemDao.deleteBy(credentialsKey, sha256, scanner)
         resultItemDao.insert(resultItems)

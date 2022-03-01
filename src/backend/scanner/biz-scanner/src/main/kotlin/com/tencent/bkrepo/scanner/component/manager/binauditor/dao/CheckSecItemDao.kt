@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
 import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCheckSecItem
 import org.springframework.stereotype.Repository
 
 @Repository
-class CheckSecItemDao : ResultItemDao<CheckSecItem, TCheckSecItem>()
+class CheckSecItemDao : ResultItemDao<TCheckSecItem>()
