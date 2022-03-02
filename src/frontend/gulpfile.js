@@ -22,7 +22,7 @@ const { dist, env, lsVersion, mode } = argv
 
 gulp.task('build', cb => {
     const spinner = new Ora(`building bkrepo frontend project, mode: ${mode}`).start()
-    const scopeCli = mode === 'canway-ci' ? '--scope=devops-{repository-ci,software}' : '--scope=devops-{repository,software}'
+    const scopeCli = mode === 'canway-ci' ? '--scope=devops-{repository-ci,software}' : '--scope=devops-{repository,software,op}'
     require('child_process').exec(`lerna run public:${env} ${scopeCli} --parallel -- --env dist=${dist} --env lsVersion=${lsVersion}`, {
         maxBuffer: 5000 * 1024
     }, (err, res) => {
