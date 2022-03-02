@@ -54,4 +54,11 @@ class BkAuthProjectService @Autowired constructor(
             permissionAction = permissionAction
         ) || bkciAuthService.isProjectMember(user, projectCode)
     }
+
+    fun isProjectManager(
+        user: String,
+        projectCode: String
+    ): Boolean {
+        return bkciAuthService.isProjectManager(user, projectCode)
+    }
 }

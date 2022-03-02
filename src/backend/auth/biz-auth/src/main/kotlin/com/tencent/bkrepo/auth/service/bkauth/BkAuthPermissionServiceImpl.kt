@@ -79,6 +79,10 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
             logger.debug("check devops permission request [$request]")
+            // 管理权限
+            if (action == PermissionAction.MANAGE.toString()) {
+                return bkAuthProjectService.isProjectManager(uid, projectId!!)
+            }
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
