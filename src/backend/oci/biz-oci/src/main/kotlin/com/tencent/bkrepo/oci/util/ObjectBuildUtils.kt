@@ -123,7 +123,7 @@ object ObjectBuildUtils {
                 packageType = PackageType.OCI,
                 versionName = version,
                 size = size,
-                manifestPath = fullPath,
+                artifactPath = fullPath,
                 metadata = metadata,
                 overwrite = true,
                 createdBy = SecurityUtils.getUserId()
