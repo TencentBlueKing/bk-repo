@@ -109,10 +109,12 @@ export default {
 </script>
 
 <style lang="scss">
+@import "~@/styles/variables.module.scss";
+
 /* 修复input 背景不协调 和光标变色 */
 /* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
 
-$bg:#283443;
+$bg:$menuBg;
 $light_gray:#fff;
 $cursor: #fff;
 
@@ -156,7 +158,9 @@ $cursor: #fff;
 </style>
 
 <style lang="scss" scoped>
-$bg:#2d3a4b;
+@import "~@/styles/variables.module.scss";
+
+$bg:$menuBg;
 $dark_gray:#889aa4;
 $light_gray:#eee;
 
