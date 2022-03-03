@@ -121,6 +121,8 @@ data class CveSecItem(
 
     companion object {
 
+        const val TYPE = "CVE_SEC_ITEM"
+
         @Suppress("UNCHECKED_CAST")
         fun parseCveSecItems(cveSecItems: Map<String, Any?>): CveSecItem {
             val nvToolsCveInfo = cveSecItems["nvtools_cveinfo"] as Map<String, Any?>?

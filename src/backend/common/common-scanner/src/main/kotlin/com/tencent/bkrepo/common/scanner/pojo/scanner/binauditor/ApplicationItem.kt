@@ -60,4 +60,9 @@ data class ApplicationItem(
     @ApiModelProperty("证书风险等级")
     @JsonProperty("LicenseRisk")
     val licenseRisk: String
-)
+) {
+    companion object {
+        const val TYPE = "APPLICATION_ITEM"
+    }
+}
+

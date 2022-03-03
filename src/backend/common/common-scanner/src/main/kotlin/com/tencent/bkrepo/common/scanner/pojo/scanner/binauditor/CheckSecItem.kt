@@ -60,4 +60,9 @@ data class CheckSecItem(
     val runPath: Boolean,
     @JsonProperty("symbols")
     val symbols: Boolean
-)
+) {
+    companion object {
+        const val TYPE = "CHECK_SEC_ITEM"
+    }
+}
+

@@ -32,6 +32,7 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.request.CredentialsKeyFiles
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -43,13 +44,13 @@ import java.time.LocalDateTime
 @Repository
 class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
 
-    fun findByCredentialsAndSha256Map(sha256: Map<String, List<String>>): List<TSubScanTask> {
+    fun findByCredentialsKeyAndSha256List(credentialsKeyFiles: List<CredentialsKeyFiles>): List<TSubScanTask> {
         val criteria = Criteria()
-        sha256.forEach {
+        credentialsKeyFiles.forEach {
             criteria.orOperator(
                 Criteria
-                    .where(TSubScanTask::credentialsKey.name).isEqualTo(it.key)
-                    .and(TSubScanTask::sha256.name).`in`(it.value)
+                    .where(TSubScanTask::credentialsKey.name).isEqualTo(it.credentialsKey)
+                    .and(TSubScanTask::sha256.name).`in`(it.sha256List)
             )
         }
         return find(Query(criteria))

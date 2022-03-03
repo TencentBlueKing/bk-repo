@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TScanResult
+import com.tencent.bkrepo.scanner.pojo.request.CredentialsKeyFiles
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -47,14 +48,14 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
     /**
      * 查询文件使用指定扫描器的扫描结果
      */
-    fun findScannerResults(scanner: String, sha256Map: Map<String, List<String>>): List<TFileScanResult> {
+    fun findScannerResults(scanner: String, credentialsKeyFiles: List<CredentialsKeyFiles>): List<TFileScanResult> {
         val criteria = Criteria()
         val scannerResultKey = scannerResultKey(scanner)
-        sha256Map.forEach {
+        credentialsKeyFiles.forEach {
             criteria.orOperator(
                 Criteria
-                    .where(TFileScanResult::credentialsKey.name).isEqualTo(it.key)
-                    .and(TFileScanResult::sha256.name).`in`(it.value)
+                    .where(TFileScanResult::credentialsKey.name).isEqualTo(it.credentialsKey)
+                    .and(TFileScanResult::sha256.name).`in`(it.sha256List)
                     .and(scannerResultKey).exists(true)
             )
         }

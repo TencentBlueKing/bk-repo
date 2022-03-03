@@ -35,5 +35,13 @@ data class FileScanResultOverviewRequest(
     @ApiModelProperty("扫描器名")
     val scanner: String,
     @ApiModelProperty("查询报告的文件sha256列表，key为credentials，value为sha256列表")
-    val sha256Map: Map<String, List<String>>
+    val credentialsKeyFiles: List<CredentialsKeyFiles>
+)
+
+@ApiModel("指定存储的文件")
+data class CredentialsKeyFiles(
+    @ApiModelProperty("存储凭据")
+    val credentialsKey: String?,
+    @ApiModelProperty("存储中的文件sha256列表")
+    val sha256List: List<String>
 )

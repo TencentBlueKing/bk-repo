@@ -44,7 +44,7 @@ import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -56,7 +56,7 @@ class UserScanReportController(private val scanService: ScanService) {
 
     @ApiOperation("获取文件扫描报告详情")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
-    @GetMapping("/detail${DefaultArtifactInfo.DEFAULT_MAPPING_URI}")
+    @PostMapping("/detail${DefaultArtifactInfo.DEFAULT_MAPPING_URI}")
     fun artifactReport(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestBody request: FileScanResultDetailRequest
@@ -67,7 +67,7 @@ class UserScanReportController(private val scanService: ScanService) {
 
     @ApiOperation("文件扫描结果预览")
     @Principal(PrincipalType.ADMIN)
-    @GetMapping("/overview")
+    @PostMapping("/overview")
     fun artifactReports(
         @RequestBody request: FileScanResultOverviewRequest
     ): Response<List<FileScanResultOverview>> {

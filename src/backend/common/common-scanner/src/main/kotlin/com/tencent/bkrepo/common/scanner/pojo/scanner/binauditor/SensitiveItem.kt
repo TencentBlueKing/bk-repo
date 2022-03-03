@@ -64,4 +64,8 @@ data class SensitiveItem(
     @ApiModelProperty("敏感信息属性，存放文件类型，uri协议等信息")
     @JsonProperty("Attr")
     val attr: Map<String, String>
-)
+) {
+    companion object {
+        const val TYPE = "SENSITIVE_ITEM"
+    }
+}

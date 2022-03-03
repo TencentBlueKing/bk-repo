@@ -159,11 +159,10 @@ class ScanServiceImpl @Autowired constructor(
     override fun resultOverview(request: FileScanResultOverviewRequest): List<FileScanResultOverview> {
         with(request) {
             val subScanTaskMap = subScanTaskDao
-                .findByCredentialsAndSha256Map(sha256Map)
+                .findByCredentialsKeyAndSha256List(credentialsKeyFiles)
                 .associateBy { "${it.credentialsKey}:${it.sha256}" }
 
-
-            return fileScanResultDao.findScannerResults(scanner, sha256Map).map {
+            return fileScanResultDao.findScannerResults(scanner, credentialsKeyFiles).map {
                 val status = subScanTaskMap["${it.credentialsKey}:${it.sha256}"]?.status
                     ?: SubScanTaskStatus.FINISHED.name
                 // 只查询对应scanner的结果，此处必定不为null

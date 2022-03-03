@@ -91,11 +91,12 @@ class BinAuditorResultManager @Autowired constructor(
         pageLimit: PageLimit?
     ): Any? {
         require(pageLimit != null && type != null)
+        CheckSecItem
         val page = when (type) {
-            CheckSecItem::class.java.name -> cveSecItemDao
-            ApplicationItem::class.java.name -> applicationItemDao
-            SensitiveItem::class.java.name -> sensitiveItemDao
-            CveSecItem::class.java.name -> cveSecItemDao
+            CheckSecItem.TYPE -> checkSecItemDao
+            ApplicationItem.TYPE -> applicationItemDao
+            SensitiveItem.TYPE -> sensitiveItemDao
+            CveSecItem.TYPE -> cveSecItemDao
             else -> {
                 throw ErrorCodeException(
                     messageCode = ScannerMessageCode.SCANNER_RESULT_TYPE_INVALID,
@@ -114,7 +115,7 @@ class BinAuditorResultManager @Autowired constructor(
         scanner: String,
         data: T
     ): R {
-        return R::class.java.constructors[0].newInstance(credentialsKey, sha256, scanner, data) as R
+        return R::class.java.constructors[0].newInstance(null, credentialsKey, sha256, scanner, data) as R
     }
 
     /**
