@@ -27,43 +27,51 @@
 
 package com.tencent.bkrepo.scanner.controller.user
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
+import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
+import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("扫描接口")
+@Api("扫描报告")
 @RestController
-@RequestMapping("/api/scan")
-class UserScanController @Autowired constructor(
-    private val scanService: ScanService
-) {
+@RequestMapping("/api/scan/reports")
+class UserScanReportController(private val scanService: ScanService) {
 
-    @ApiOperation("创建扫描任务")
-    @Principal(PrincipalType.ADMIN)
-    @PostMapping
-    fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL))
+    @ApiOperation("获取文件扫描报告详情")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    @GetMapping("/detail${DefaultArtifactInfo.DEFAULT_MAPPING_URI}")
+    fun artifactReport(
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+        @RequestBody request: FileScanResultDetailRequest
+    ): Response<FileScanResultDetail> {
+        request.artifactInfo = artifactInfo
+        return ResponseBuilder.success(scanService.resultDetail(request))
     }
 
-    @ApiOperation("获取扫描任务信息")
-    @GetMapping("/tasks/{taskId}")
+    @ApiOperation("文件扫描结果预览")
     @Principal(PrincipalType.ADMIN)
-    fun task(@PathVariable("taskId") taskId: String): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.task(taskId))
+    @GetMapping("/overview")
+    fun artifactReports(
+        @RequestBody request: FileScanResultOverviewRequest
+    ): Response<List<FileScanResultOverview>> {
+        return ResponseBuilder.success(scanService.resultOverview(request))
     }
 
 }

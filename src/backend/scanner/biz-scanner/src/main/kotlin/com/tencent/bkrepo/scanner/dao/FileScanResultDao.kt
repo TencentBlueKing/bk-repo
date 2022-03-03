@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TScanResult
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -42,6 +43,31 @@ import java.time.LocalDateTime
 
 @Repository
 class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
+
+    /**
+     * 查询文件使用指定扫描器的扫描结果
+     */
+    fun findScannerResults(scanner: String, sha256Map: Map<String, List<String>>): List<TFileScanResult> {
+        val criteria = Criteria()
+        val scannerResultKey = scannerResultKey(scanner)
+        sha256Map.forEach {
+            criteria.orOperator(
+                Criteria
+                    .where(TFileScanResult::credentialsKey.name).isEqualTo(it.key)
+                    .and(TFileScanResult::sha256.name).`in`(it.value)
+                    .and(scannerResultKey).exists(true)
+            )
+        }
+        val query = Query(criteria).apply {
+            fields()
+                .include(TFileScanResult::lastModifiedDate.name)
+                .include(TFileScanResult::sha256.name)
+                .include(TFileScanResult::credentialsKey.name)
+                .include(scannerResultKey)
+        }
+        return find(query)
+    }
+
     /**
      * 更新扫描结果
      *
@@ -95,9 +121,11 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
             overview = resultOverview
         )
         val update = buildUpdate(finishedDateTime)
-            .set("${TFileScanResult::scanResult.name}.${scanner.name}", scanResult)
+            .set(scannerResultKey(scanner.name), scanResult)
         return upsert(Query(criteria), update)
     }
+
+    private fun scannerResultKey(scanner: String) = "${TFileScanResult::scanResult.name}.$scanner"
 
     /**
      * TODO 通用更新lastModifiedDate逻辑抽象

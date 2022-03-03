@@ -31,7 +31,11 @@ import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
+import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 
 /**
  * 扫描服务
@@ -58,6 +62,24 @@ interface ScanService {
      * @param reportResultRequest 扫描结果上报请求
      */
     fun reportResult(reportResultRequest: ReportResultRequest)
+
+    /**
+     * 获取扫描结果预览
+     *
+     * @param request 扫描预览请求参数
+     *
+     * @return 扫描结果预览数据
+     */
+    fun resultOverview(request: FileScanResultOverviewRequest): List<FileScanResultOverview>
+
+    /**
+     * 获取文件扫描报告详情
+     *
+     * @param request 获取文件扫描报告请求参数
+     *
+     * @return 文件扫描报告详情
+     */
+    fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail
 
     /**
      * 拉取子任务

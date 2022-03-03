@@ -30,6 +30,8 @@ package com.tencent.bkrepo.scanner.service.impl
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
@@ -42,8 +44,12 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
+import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
+import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
@@ -58,6 +64,8 @@ import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 
 @Service
 class ScanServiceImpl @Autowired constructor(
+    private val nodeClient: NodeClient,
+    private val repositoryClient: RepositoryClient,
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
@@ -146,6 +154,49 @@ class ScanServiceImpl @Autowired constructor(
         subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.EXECUTING)
         val scanner = scannerService.get(task.scanner)
         return convert(task, scanner)
+    }
+
+    override fun resultOverview(request: FileScanResultOverviewRequest): List<FileScanResultOverview> {
+        with(request) {
+            val subScanTaskMap = subScanTaskDao
+                .findByCredentialsAndSha256Map(sha256Map)
+                .associateBy { "${it.credentialsKey}:${it.sha256}" }
+
+
+            return fileScanResultDao.findScannerResults(scanner, sha256Map).map {
+                val status = subScanTaskMap["${it.credentialsKey}:${it.sha256}"]?.status
+                    ?: SubScanTaskStatus.FINISHED.name
+                // 只查询对应scanner的结果，此处必定不为null
+                val scannerResult = it.scanResult[scanner]!!
+                FileScanResultOverview(
+                    status = status,
+                    sha256 = it.sha256,
+                    scanDate = scannerResult.startDateTime.format(ISO_DATE_TIME),
+                    overview = scannerResult.overview
+                )
+            }
+        }
+    }
+
+    override fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail {
+        with(request) {
+            val node = artifactInfo!!.run {
+                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath())
+            }.data!!
+            val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
+
+            val scanner = scannerService.get(scanner)
+            val scanResultDetail = scanExecutorResultManagers[scanner.type]?.load(
+                repo.storageCredentialsKey, node.sha256!!, scanner.name, reportType, pageLimit
+            )
+            val status = if (scanResultDetail == null) {
+                subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
+                    ?: SubScanTaskStatus.NEVER_SCANNED.name
+            } else {
+                SubScanTaskStatus.FINISHED.name
+            }
+            return FileScanResultDetail(status, node.sha256!!, scanResultDetail, reportType)
+        }
     }
 
     private fun toLocalDateTime(timestamp: Long): LocalDateTime {

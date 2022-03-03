@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.scanner.component.manager
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 
@@ -29,5 +28,5 @@ interface ScanExecutorResultManager {
      *
      * @return 扫描结果详情
      */
-    fun load(credentialsKey: String?, sha256: String, scanner: String, type: String, pageLimit: PageLimit): Page<Any>
+    fun load(credentialsKey: String?, sha256: String, scanner: String, type: String?, pageLimit: PageLimit?): Any?
 }

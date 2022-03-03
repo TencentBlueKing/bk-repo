@@ -5,6 +5,10 @@ package com.tencent.bkrepo.scanner.pojo
  */
 enum class SubScanTaskStatus {
     /**
+     * 从未扫描过
+     */
+    NEVER_SCANNED,
+    /**
      * 子任务已创建
      */
     CREATED,

@@ -87,9 +87,10 @@ class BinAuditorResultManager @Autowired constructor(
         credentialsKey: String?,
         sha256: String,
         scanner: String,
-        type: String,
-        pageLimit: PageLimit
-    ): Page<Any> {
+        type: String?,
+        pageLimit: PageLimit?
+    ): Any? {
+        require(pageLimit != null && type != null)
         val page = when (type) {
             CheckSecItem::class.java.name -> cveSecItemDao
             ApplicationItem::class.java.name -> applicationItemDao

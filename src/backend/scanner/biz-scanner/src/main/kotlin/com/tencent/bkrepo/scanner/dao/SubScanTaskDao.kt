@@ -43,8 +43,27 @@ import java.time.LocalDateTime
 @Repository
 class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
 
+    fun findByCredentialsAndSha256Map(sha256: Map<String, List<String>>): List<TSubScanTask> {
+        val criteria = Criteria()
+        sha256.forEach {
+            criteria.orOperator(
+                Criteria
+                    .where(TSubScanTask::credentialsKey.name).isEqualTo(it.key)
+                    .and(TSubScanTask::sha256.name).`in`(it.value)
+            )
+        }
+        return find(Query(criteria))
+    }
+
+    fun findByCredentialsAndSha256(credentialsKey: String?, sha256: String): TSubScanTask? {
+        val query = Query(
+            TSubScanTask::credentialsKey.isEqualTo(credentialsKey).and(TSubScanTask::sha256.name).isEqualTo(sha256)
+        )
+        return findOne(query)
+    }
+
     fun deleteById(subTaskId: String): DeleteResult {
-        val query =Query(Criteria.where(ID).isEqualTo(subTaskId))
+        val query = Query(Criteria.where(ID).isEqualTo(subTaskId))
         return remove(query)
     }
 
