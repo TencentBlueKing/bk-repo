@@ -43,8 +43,7 @@ class BkAuthProjectService @Autowired constructor(
     fun isProjectMember(
         user: String,
         projectCode: String,
-        permissionAction: String,
-        retryIfTokenInvalid: Boolean = false
+        permissionAction: String
     ): Boolean {
         return bkciAuthService.isProjectSuperAdmin(
             user = user,

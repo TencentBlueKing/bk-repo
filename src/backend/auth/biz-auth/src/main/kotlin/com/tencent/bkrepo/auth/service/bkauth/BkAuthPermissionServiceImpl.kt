@@ -79,10 +79,6 @@ class BkAuthPermissionServiceImpl constructor(
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
             logger.debug("check devops permission request [$request]")
-            // 管理权限
-            if (action == PermissionAction.MANAGE.toString()) {
-                return bkAuthProjectService.isProjectManager(uid, projectId!!)
-            }
 
             // project权限
             if (resourceType == ResourceType.PROJECT.toString()) {
@@ -161,7 +157,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
         logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
-        return bkAuthProjectService.isProjectMember(uid, projectId, action, retryIfTokenInvalid = true)
+        return when (action) {
+            PermissionAction.MANAGE.toString() -> bkAuthProjectService.isProjectManager(uid, projectId)
+            else -> bkAuthProjectService.isProjectMember(uid, projectId, action)
+        }
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
