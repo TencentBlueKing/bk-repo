@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,19 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.opdata.registry.consul
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.ecwid.consul.v1.ConsulClient
+import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
+import okhttp3.OkHttpClient
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.cloud.consul.ConsulProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], matchIfMissing = true)
+@ConditionalOnClass(ConsulClient::class)
+class ConsulRegistryClientConfiguration {
 
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid"),
-    CONFIG_CLIENT_NOT_FOUND("config.client.not-found"),
-    REGISTRY_CLIENT_NOT_FOUND("registry.client.not-found");
+    @Bean
+    fun consulRegistryClient(
+        @Qualifier(OkHttpConfiguration.OP_OKHTTP_CLIENT_NAME) httpClient: OkHttpClient,
+        consulProperties: ConsulProperties
+    ): ConsulRegistryClient {
+        return ConsulRegistryClient(httpClient, consulProperties)
+    }
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
 }

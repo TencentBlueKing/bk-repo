@@ -37,13 +37,9 @@ import com.tencent.bkrepo.opdata.config.client.ConfigClient
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
 import org.slf4j.LoggerFactory
-import org.springframework.cloud.consul.ConditionalOnConsulEnabled
 import org.springframework.cloud.consul.config.ConsulConfigProperties
-import org.springframework.stereotype.Component
 import org.yaml.snakeyaml.Yaml
 
-@Component
-@ConditionalOnConsulEnabled
 class ConsulConfigClient(
     private val client: ConsulClient,
     private val properties: ConsulConfigProperties
