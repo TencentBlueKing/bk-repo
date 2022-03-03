@@ -31,56 +31,48 @@
 
 package com.tencent.bkrepo.maven.artifact
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
-import com.tencent.bkrepo.maven.exception.MavenBadRequestException
-import org.apache.commons.lang.StringUtils
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
+import com.tencent.bkrepo.maven.constants.PACKAGE_KEY
+import com.tencent.bkrepo.maven.constants.VERSION
+import com.tencent.bkrepo.maven.util.MavenUtil
 import org.springframework.stereotype.Component
 import javax.servlet.http.HttpServletRequest
 
 @Component
-@Resolver(MavenArtifactInfo::class)
-class MavenArtifactInfoResolver : ArtifactInfoResolver {
+@Resolver(MavenDeleteArtifactInfo::class)
+class MavenDeleteArtifactInfoResolver : ArtifactInfoResolver {
     override fun resolve(
         projectId: String,
         repoName: String,
         artifactUri: String,
         request: HttpServletRequest
-    ): MavenArtifactInfo {
-        val mavenArtifactInfo = MavenArtifactInfo(projectId, repoName, artifactUri)
-        val fileName = artifactUri.substringAfterLast("/")
-        if (fileName.matches(Regex(PACKAGE_SUFFIX_REGEX))) {
-            val paths = artifactUri.trim('/').split("/")
-            if (paths.size < pathMinLimit) {
-                val message = "Cannot build MavenArtifactInfo from '$artifactUri'. " +
-                    "The groupId, artifactId and version are unreadable."
-                logger.warn(message)
-                throw MavenBadRequestException(message)
+    ): ArtifactInfo {
+        // 判断是客户端的请求还是页面发送的请求分别进行处理
+        val requestURL = request.requestURL
+        return when {
+            // 页面删除包请求
+            requestURL.contains(PACKAGE_DELETE_PREFIX) -> {
+                val packageKey = request.getParameter(PACKAGE_KEY)
+                val url = MavenUtil.extractPath(packageKey) + "/$MAVEN_METADATA_FILE_NAME"
+                MavenDeleteArtifactInfo(projectId, repoName, url, packageKey)
             }
-            var pos = paths.size - groupMark
-            mavenArtifactInfo.jarName = paths.last()
-            /*以请求路径作为版本号
-            e.g. /com/apache/http/1.0/http-1.0.jar   version = 1.0
-            e.g. /com/apache/http/1.0-SNAPSHOT/http-1.0-20210928.064954-1.jar   version = 1.0-SNAPSHOT
-             */
-            mavenArtifactInfo.versionId = paths[pos--]
-            mavenArtifactInfo.artifactId = paths[pos]
-            val groupCollection = paths.subList(0, pos)
-            mavenArtifactInfo.groupId = StringUtils.join(groupCollection, ".")
-
-            require(mavenArtifactInfo.isValid()) {
-                throw MavenBadRequestException("Invalid unit info for '${mavenArtifactInfo.getArtifactFullPath()}'.")
+            // 页面删除包版本请求
+            requestURL.contains(PACKAGE_VERSION_DELETE_PREFIX) -> {
+                val packageKey = request.getParameter(PACKAGE_KEY)
+                val url = MavenUtil.extractPath(packageKey) + "/$MAVEN_METADATA_FILE_NAME"
+                val version = request.getParameter(VERSION)
+                MavenDeleteArtifactInfo(projectId, repoName, url, packageKey, version)
             }
+            else -> MavenDeleteArtifactInfo(projectId, repoName, artifactUri, StringPool.EMPTY, StringPool.EMPTY)
         }
-        return mavenArtifactInfo
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MavenArtifactInfoResolver::class.java)
-        // artifact uri 最少请求参数 group/artifact/[version]/filename
-        private const val pathMinLimit = 3
-        private const val groupMark = 2
+        private const val PACKAGE_DELETE_PREFIX = "/ext/package/delete/"
+        private const val PACKAGE_VERSION_DELETE_PREFIX = "/ext/version/delete/"
     }
 }

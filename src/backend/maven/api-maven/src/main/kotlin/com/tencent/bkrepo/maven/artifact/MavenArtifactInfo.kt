@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 
 class MavenArtifactInfo(
     projectId: String,

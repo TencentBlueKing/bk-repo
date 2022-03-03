@@ -25,39 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.service
+package com.tencent.bkrepo.maven.controller
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.service.MavenService
+import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RestController
 
-interface MavenService {
-
-    /**
-     * 上传maven构件
-     */
+@RestController
+class MavenResourceController(
+    private val mavenService: MavenService
+) {
+    @PutMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deploy(
-        mavenArtifactInfo: MavenArtifactInfo,
+        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
         file: ArtifactFile
-    )
+    ) {
+        return mavenService.deploy(mavenArtifactInfo, file)
+    }
 
-    /**
-     * 获取对应路径下得构件
-     */
-    fun dependency(mavenArtifactInfo: MavenArtifactInfo)
+    @GetMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun dependency(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo) {
+        mavenService.dependency(mavenArtifactInfo)
+    }
 
-    /**
-     * 删除对应路径下得构件
-     */
-    fun deleteDependency(mavenArtifactInfo: MavenArtifactInfo)
-
-    /**
-     * 删除对应的packageversion
-     */
-    fun delete(mavenArtifactInfo: MavenDeleteArtifactInfo, packageKey: String, version: String?)
-
-    /**
-     * 获取对应制品版本详情
-     */
-    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): Any?
+    @DeleteMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun deleteDependency(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo) {
+        mavenService.deleteDependency(mavenArtifactInfo)
+    }
 }

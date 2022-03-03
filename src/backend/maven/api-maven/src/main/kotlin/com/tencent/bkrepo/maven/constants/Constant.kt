@@ -25,39 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.service
+package com.tencent.bkrepo.maven.constants
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+const val CHECKSUM_POLICY = "CHECKSUM_POLICY"
+const val SNAPSHOT_BEHAVIOR = "SNAPSHOT_BEHAVIOR"
+const val MAX_UNIQUE_SNAPSHOTS = "MAX_UNIQUE_SNAPSHOTS"
+const val SNAPSHOT_SUFFIX = "-SNAPSHOT"
+const val MAVEN_METADATA_FILE_NAME = "maven-metadata.xml"
 
-interface MavenService {
+const val X_CHECKSUM_SHA1 = "X-Checksum-Sha1"
+const val FULL_PATH = "fullPath"
+const val PACKAGE_KEY = "packageKey"
+const val VERSION = "version"
 
-    /**
-     * 上传maven构件
-     */
-    fun deploy(
-        mavenArtifactInfo: MavenArtifactInfo,
-        file: ArtifactFile
-    )
 
-    /**
-     * 获取对应路径下得构件
-     */
-    fun dependency(mavenArtifactInfo: MavenArtifactInfo)
+const val PACKAGE_SUFFIX_REGEX =
+    "(.+)\\.(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"
 
-    /**
-     * 删除对应路径下得构件
-     */
-    fun deleteDependency(mavenArtifactInfo: MavenArtifactInfo)
+const val ARTIFACT_FORMAT = "^%s-%s-?(SNAPSHOT|[0-9]{8}\\.[0-9]{6}-[0-9]+)?-?(.+)?.%s\$"
 
-    /**
-     * 删除对应的packageversion
-     */
-    fun delete(mavenArtifactInfo: MavenDeleteArtifactInfo, packageKey: String, version: String?)
-
-    /**
-     * 获取对应制品版本详情
-     */
-    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): Any?
-}
+const val TIMESTAMP_FORMAT = "([0-9]{8}\\.[0-9]{6})-([0-9]+)"

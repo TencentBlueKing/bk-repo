@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.maven.CHECKSUM_POLICY
-import com.tencent.bkrepo.maven.MAX_UNIQUE_SNAPSHOTS
-import com.tencent.bkrepo.maven.SNAPSHOT_BEHAVIOR
+import com.tencent.bkrepo.maven.constants.CHECKSUM_POLICY
+import com.tencent.bkrepo.maven.constants.MAX_UNIQUE_SNAPSHOTS
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_BEHAVIOR
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotNonUniqueUri
