@@ -64,6 +64,13 @@ class MavenExceptionHandler {
         mavenResponse(errorResponse, exception)
     }
 
+    @ExceptionHandler(MavenRequestForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleException(exception: MavenRequestForbiddenException) {
+        val errorResponse = MavenExceptionResponse(HttpStatus.FORBIDDEN.toString(), exception.message)
+        mavenResponse(errorResponse, exception)
+    }
+
     @ExceptionHandler(MavenArtifactNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleArtifactNotFoundException(exception: MavenArtifactNotFoundException) {

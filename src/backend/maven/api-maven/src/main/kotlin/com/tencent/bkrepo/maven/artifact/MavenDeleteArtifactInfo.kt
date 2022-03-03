@@ -29,32 +29,20 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.resource
+package com.tencent.bkrepo.maven.artifact
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import com.tencent.bkrepo.maven.service.MavenService
-import org.springframework.http.MediaType
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RestController
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
-@RestController
-class MavenResourceImpl(
-    private val mavenService: MavenService
-) {
+class MavenDeleteArtifactInfo(
+    projectId: String,
+    repoName: String,
+    artifactUri: String,
+    val packageName: String,
+    val version: String = StringPool.EMPTY
+) : ArtifactInfo(projectId, repoName, artifactUri) {
 
-    @PutMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun deploy(
-        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
-        file: ArtifactFile
-    ) {
-        return mavenService.deploy(mavenArtifactInfo, file)
-    }
+    override fun getArtifactName(): String = packageName
 
-    @GetMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun dependency(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo) {
-        mavenService.dependency(mavenArtifactInfo)
-    }
+    override fun getArtifactVersion(): String = version
 }

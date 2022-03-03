@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.service
+package com.tencent.bkrepo.opdata.config.client.consul
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
-import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.ecwid.consul.v1.ConsulClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.cloud.consul.config.ConsulConfigProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-interface MavenService {
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], matchIfMissing = true)
+@ConditionalOnClass(ConsulClient::class)
+class ConsulConfigClientConfiguration {
 
-    /**
-     * 上传maven构件
-     */
-    fun deploy(
-        mavenArtifactInfo: MavenArtifactInfo,
-        file: ArtifactFile
-    )
+    @Bean
+    fun consulConfigClient(client: ConsulClient, properties: ConsulConfigProperties): ConsulConfigClient {
+        return ConsulConfigClient(client, properties)
+    }
 
-    /**
-     * 获取对应路径下得构件
-     */
-    fun dependency(mavenArtifactInfo: MavenArtifactInfo)
-
-    /**
-     * 删除对应路径下得构件
-     */
-    fun deleteDependency(mavenArtifactInfo: MavenArtifactInfo)
-
-    /**
-     * 删除对应的packageversion
-     */
-    fun delete(mavenArtifactInfo: MavenDeleteArtifactInfo, packageKey: String, version: String?)
-
-    /**
-     * 获取对应制品版本详情
-     */
-    fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): Any?
 }
