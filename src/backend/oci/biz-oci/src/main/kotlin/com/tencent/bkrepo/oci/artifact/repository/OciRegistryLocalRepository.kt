@@ -80,7 +80,6 @@ class OciRegistryLocalRepository(
         with(context) {
             super.onUploadBefore(context)
             val isForce = request.getParameter(FORCE)?.let { true } ?: false
-            val repositoryDetail = repositoryDetail
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
             val fullPath = getFullPath(context)
@@ -289,6 +288,10 @@ class OciRegistryLocalRepository(
             chartYaml = chartYaml
         )
     }
+
+    /**
+     * 更新blobs的信息
+     */
     private fun doSyncBlob(
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,

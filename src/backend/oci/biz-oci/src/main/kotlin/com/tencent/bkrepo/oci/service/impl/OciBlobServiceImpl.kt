@@ -31,15 +31,12 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
@@ -55,7 +52,6 @@ class OciBlobServiceImpl(
     private val ociProperties: OciProperties
 ) : OciBlobService {
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
         with(artifactInfo) {
             logger.info("Handling bolb upload request $artifactInfo in ${getRepoIdentify()} .")
@@ -97,7 +93,6 @@ class OciBlobServiceImpl(
         }
     }
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
         logger.info("handing request upload blob [$artifactInfo] in repo ${artifactInfo.getRepoIdentify()}.")
         uploadBlobFromPut(artifactInfo, artifactFile)
@@ -116,7 +111,6 @@ class OciBlobServiceImpl(
         }
     }
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun downloadBlob(artifactInfo: OciBlobArtifactInfo) {
         with(artifactInfo) {
             logger.info(
@@ -127,7 +121,6 @@ class OciBlobServiceImpl(
         }
     }
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun deleteBlob(artifactInfo: OciBlobArtifactInfo) {
         logger.info(
             "Handling delete blob request for package [${artifactInfo.packageName}] " +

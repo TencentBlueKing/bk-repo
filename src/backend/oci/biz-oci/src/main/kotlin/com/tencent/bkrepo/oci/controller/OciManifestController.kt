@@ -31,7 +31,10 @@
 
 package com.tencent.bkrepo.oci.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.MANIFEST_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.service.OciManifestService
@@ -53,6 +56,7 @@ class OciManifestController(
      * 上传manifest文件
      */
     @PutMapping(MANIFEST_URL)
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     fun uploadManifests(
         artifactInfo: OciManifestArtifactInfo,
         artifactFile: ArtifactFile
@@ -65,6 +69,7 @@ class OciManifestController(
      * 可以通过digest或者tag去下载
      */
     @GetMapping(MANIFEST_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun downloadManifests(
         artifactInfo: OciManifestArtifactInfo
     ) {
@@ -76,6 +81,7 @@ class OciManifestController(
      * 只能通过digest删除
      */
     @DeleteMapping(MANIFEST_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteManifests(
         artifactInfo: OciManifestArtifactInfo
     ) {

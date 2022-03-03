@@ -31,7 +31,10 @@
 
 package com.tencent.bkrepo.oci.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_UPLOAD_FIRST_STEP_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_UPLOAD_SECOND_STEP_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.BOLBS_URL
@@ -59,6 +62,7 @@ class OciBlobController(
      * 2 当digest参数不存在时，使用post and put方式上传文件,此接口返回追加uuid
      */
     @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun startBlobUpload(
         artifactInfo: OciBlobArtifactInfo,
         artifactFile: ArtifactFile
@@ -71,6 +75,7 @@ class OciBlobController(
      * 如果正则匹配成功，则进行上传，执行完成则完成；否则使用的是追加上传的方式，完成最后一块的上传进行合并。
      */
     @PutMapping(BOLBS_UPLOAD_SECOND_STEP_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun uploadBlob(
         artifactInfo: OciBlobArtifactInfo,
         artifactFile: ArtifactFile
@@ -82,6 +87,7 @@ class OciBlobController(
      * 获取Blob文件
      */
     @GetMapping(BOLBS_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun downloadBlob(
         artifactInfo: OciBlobArtifactInfo
     ) {
@@ -93,6 +99,7 @@ class OciBlobController(
      * 只能通过digest删除
      */
     @DeleteMapping(BOLBS_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteBlob(
         artifactInfo: OciBlobArtifactInfo
     ) {

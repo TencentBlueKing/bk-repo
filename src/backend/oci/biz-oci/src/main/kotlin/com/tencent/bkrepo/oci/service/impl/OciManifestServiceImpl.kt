@@ -31,14 +31,11 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.constant.TAG_INVALID_CODE
 import com.tencent.bkrepo.oci.constant.TAG_INVALID_DESCRIPTION
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
@@ -50,7 +47,6 @@ import org.springframework.stereotype.Service
 @Service
 class OciManifestServiceImpl : OciManifestService {
 
-    @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun uploadManifest(artifactInfo: OciManifestArtifactInfo, artifactFile: ArtifactFile) {
         with(artifactInfo) {
             logger.info(
@@ -62,7 +58,6 @@ class OciManifestServiceImpl : OciManifestService {
         }
     }
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     override fun downloadManifests(artifactInfo: OciManifestArtifactInfo) {
         logger.info(
             "Handling download manifest request for package [${artifactInfo.packageName}] " +
@@ -72,7 +67,6 @@ class OciManifestServiceImpl : OciManifestService {
         ArtifactContextHolder.getRepository().download(context)
     }
 
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     override fun deleteManifests(artifactInfo: OciManifestArtifactInfo) {
         logger.info(
             "Handling delete manifest request for package [${artifactInfo.packageName}] " +

@@ -31,8 +31,11 @@
 
 package com.tencent.bkrepo.oci.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.oci.pojo.OciDomainInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
@@ -61,6 +64,7 @@ class UserOciController(
 
     @ApiOperation("查询包的版本详情")
     @GetMapping(OCI_VERSION_DETAIL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun detailVersion(
         @RequestAttribute
         userId: String,
@@ -77,6 +81,7 @@ class UserOciController(
 
     @ApiOperation("删除仓库下的包")
     @DeleteMapping(OCI_PACKAGE_DELETE_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deletePackage(
         @RequestAttribute userId: String,
         artifactInfo: OciArtifactInfo,
@@ -89,6 +94,7 @@ class UserOciController(
 
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping(OCI_VERSION_DELETE_URL)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteVersion(
         @RequestAttribute userId: String,
         artifactInfo: OciArtifactInfo,
@@ -103,6 +109,7 @@ class UserOciController(
 
     @ApiOperation("获取Oci域名地址")
     @GetMapping("/address")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getRegistryDomain(): Response<OciDomainInfo> {
         return ResponseBuilder.success(operationService.getRegistryDomain())
     }
