@@ -164,7 +164,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         val scanner = scanTask.scanner
         val nvTools = scanner.nvTools
         val dockerImage = scanner.container
-        val template = binAuditorConfigTemplate.file.readText()
+        val template = binAuditorConfigTemplate.inputStream.use { it.reader().readText() }
         val inputFilePath = "${dockerImage.inputDir.removePrefix(SLASH)}$SLASH${scannerInputFile.name}"
         val outputDir = dockerImage.outputDir.removePrefix(SLASH)
         val params = mapOf(
