@@ -26,7 +26,7 @@
  */
 
 dependencies {
-    implementation(project(":scanner-executor:api-scanner-executor"))
+    implementation(project(":scanner:api-scanner"))
     implementation(project(":common:common-service"))
     implementation(project(":common:common-security"))
     implementation(project(":common:common-mongo"))
