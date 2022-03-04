@@ -33,7 +33,7 @@ import java.io.InputStream
 /**
  * 扫描执行器扫描任务
  */
-data class ScanExecutorTask<out S : Scanner>(
+data class ScanExecutorTask(
     /**
      * 任务id
      */
@@ -45,7 +45,7 @@ data class ScanExecutorTask<out S : Scanner>(
     /**
      * 扫描执行器
      */
-    val scanner: S,
+    val scanner: Scanner,
     /**
      * 待扫描文件
      */

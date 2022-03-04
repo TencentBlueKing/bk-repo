@@ -33,9 +33,9 @@ import org.springframework.stereotype.Component
 
 @Component
 class ScanExecutorFactory(
-    private val scanExecutors: Map<String, ScanExecutor<*>>
+    private val scanExecutors: Map<String, ScanExecutor>
 ) {
-    fun get(type: String): ScanExecutor<*> {
+    fun get(type: String): ScanExecutor {
         return scanExecutors[type]
             ?: throw NotFoundException(ScannerMessageCode.SCANNER_NOT_FOUND, type)
     }

@@ -49,7 +49,7 @@ class ExecutorScheduler @Autowired constructor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun convert(subScanTask: SubScanTask, inputStream: InputStream): ScanExecutorTask<Nothing> {
+    private fun convert(subScanTask: SubScanTask, inputStream: InputStream): ScanExecutorTask {
         with(subScanTask) {
             return ScanExecutorTask(
                 taskId = taskId,
@@ -57,7 +57,7 @@ class ExecutorScheduler @Autowired constructor(
                 inputStream = inputStream,
                 scanner = scanner,
                 sha256 = sha256
-            ) as ScanExecutorTask<Nothing>
+            )
         }
     }
 

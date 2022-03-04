@@ -69,15 +69,16 @@ import kotlin.reflect.full.memberProperties
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
 class BinAuditorScanExecutor @Autowired constructor(
     private val dockerClient: DockerClient
-) : ScanExecutor<BinAuditorScanner> {
+) : ScanExecutor {
 
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var binAuditorConfigTemplate: Resource
 
     override fun scan(
-        task: ScanExecutorTask<BinAuditorScanner>,
+        task: ScanExecutorTask,
         callback: (ScanExecutorResult) -> Unit
     ) {
+        require(task.scanner is BinAuditorScanner)
         val startTimestamp = System.currentTimeMillis()
         logger.info(logMsg(task, "start to scan"))
         val scanner = task.scanner
@@ -155,10 +156,11 @@ class BinAuditorScanExecutor @Autowired constructor(
      * @return BinAuditor扫描器配置文件
      */
     private fun loadConfigFile(
-        scanTask: ScanExecutorTask<BinAuditorScanner>,
+        scanTask: ScanExecutorTask,
         workDir: File,
         scannerInputFile: File
     ): File {
+        require(scanTask.scanner is BinAuditorScanner)
         val scanner = scanTask.scanner
         val nvTools = scanner.nvTools
         val dockerImage = scanner.container
@@ -183,7 +185,8 @@ class BinAuditorScanExecutor @Autowired constructor(
         return configFile
     }
 
-    private fun doScan(workDir: File, task: ScanExecutorTask<BinAuditorScanner>) {
+    private fun doScan(workDir: File, task: ScanExecutorTask) {
+        require(task.scanner is BinAuditorScanner)
         val containerConfig = task.scanner.container
 
         val bind = Volume(containerConfig.workDir)
@@ -288,7 +291,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         }
     }
 
-    private fun logMsg(task: ScanExecutorTask<BinAuditorScanner>, msg: String) = with(task) {
+    private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
         "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
     }
 
