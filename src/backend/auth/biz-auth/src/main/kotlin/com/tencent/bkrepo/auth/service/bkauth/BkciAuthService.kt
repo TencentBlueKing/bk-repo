@@ -76,18 +76,42 @@ class BkciAuthService @Autowired constructor(
 
         val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode" +
             "/users/$user/isProjectUsers"
-        logger.debug("validateProjectUsers, requestUrl: [$url]")
         return try {
             val request =
                 Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
                     .header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
-            logger.debug("validateProjectUsers  result : [${apiResponse.content}]")
+            logger.debug("validateProjectUsers url[$url], result[${apiResponse.content}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
         } catch (exception: Exception) {
             logger.error("validateProjectUsers url is $url, error: ", exception)
+            false
+        }
+    }
+
+    fun isProjectManager(user: String, projectCode: String): Boolean {
+        val cacheKey = "manager::$user::$projectCode"
+        val cacheResult = resourcePermissionCache.getIfPresent(cacheKey)
+        cacheResult?.let {
+            logger.debug("match in cache: $cacheKey|$cacheResult")
+            return cacheResult
+        }
+
+        val url = "${bkAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode" +
+            "/users/$user/checkProjectManager"
+        return try {
+            val request =
+                Request.Builder().url(url).header(DEVOPS_BK_TOKEN, bkAuthConfig.getBkciAuthToken())
+                    .header(DEVOPS_PROJECT_ID, projectCode).get().build()
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
+            logger.debug("validateProjectManager url[$url], result[${apiResponse.content}]")
+            resourcePermissionCache.put(cacheKey, responseObject.data)
+            responseObject.data
+        } catch (exception: Exception) {
+            logger.error("validateProjectManager url is $url, error: ", exception)
             false
         }
     }

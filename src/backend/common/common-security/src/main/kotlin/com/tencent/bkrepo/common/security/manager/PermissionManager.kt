@@ -215,8 +215,9 @@ open class PermissionManager(
         )
         if (permissionResource.checkPermission(checkRequest).data != true) {
             // 无权限，响应403错误
-            throw PermissionException("user[$userId] does not have $action permission " +
-                "in project[$projectId] repo[$repoName] ")
+            var reason = "user[$userId] does not have $action permission in project[$projectId]"
+            repoName?.let { reason += " repo[$repoName]" }
+            throw PermissionException(reason)
         }
         if (logger.isDebugEnabled) {
             logger.debug("User[${SecurityUtils.getPrincipal()}] check permission success.")

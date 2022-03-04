@@ -157,7 +157,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkProjectPermission(uid: String, projectId: String, action: String): Boolean {
         logger.debug("checkProjectPermission: uid: $uid, projectId: $projectId, action: $action")
-        return bkAuthProjectService.isProjectMember(uid, projectId, action, retryIfTokenInvalid = true)
+        return when (action) {
+            PermissionAction.MANAGE.toString() -> bkAuthProjectService.isProjectManager(uid, projectId)
+            else -> bkAuthProjectService.isProjectMember(uid, projectId, action)
+        }
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {

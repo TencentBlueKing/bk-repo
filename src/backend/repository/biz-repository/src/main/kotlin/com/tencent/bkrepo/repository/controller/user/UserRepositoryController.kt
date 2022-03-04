@@ -194,7 +194,7 @@ class UserRepositoryController(
     }
 
     @ApiOperation("更新仓库")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/update/{projectId}/{repoName}")
     fun updateRepo(
         @RequestAttribute userId: String,
