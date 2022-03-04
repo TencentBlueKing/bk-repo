@@ -57,9 +57,9 @@ mongo -u $BK_REPO_MONGODB_USER -p $BK_REPO_MONGODB_PASSWORD $BK_REPO_MONGODB_ADD
 
 ### 2.2 consul配置初始化,后端配置文件渲染
 
-涉及到配置文件里面有双"_"下划线定义的变量需要做占位符号替换，已经抽离到scripts/bkrepo.env文件里:
+涉及到配置文件里面有双"_"下划线定义的变量需要做占位符号替换，已经抽离到scripts/repo.env文件里:
 
-- scripts/bkrepo.env 中有对应的配置项，需要进行修改，如果遇到配置项涉及到蓝鲸的或者不会用到的，则可以保持默认配置不修改即可，修改后保存退出。
+- scripts/repo.env 中有对应的配置项，需要进行修改，如果遇到配置项涉及到蓝鲸的或者不会用到的，则可以保持默认配置不修改即可，修改后保存退出。
 
   - 修改INSTALL_PATH，这个为安装主目录，默认是/data/bkee
   - 修改MODULE变量建议不要修改，默认为bkrepo
@@ -67,7 +67,7 @@ mongo -u $BK_REPO_MONGODB_USER -p $BK_REPO_MONGODB_PASSWORD $BK_REPO_MONGODB_ADD
 ```shell
 cd $WORK_DIR/bkrepo/scripts
 chmod +x render_tpl
-./render_tpl -u -p $WORK_DIR -m bkrepo -e bkrepo.env $WORK_DIR/bkrepo/support-files/templates/*.yaml
+./render_tpl -u -p $WORK_DIR -m bkrepo -e repo.env $WORK_DIR/bkrepo/support-files/templates/*.yaml
 services=(auth repository dockerapi generic docker helm maven npm)
 for var in ${services[@]};
 do
@@ -98,7 +98,7 @@ echo "put config to consul kv success."
 ```shell
 cd $WORK_DIR/bkrepo/scripts
 chmod +x render_tpl
-./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env /data/workspace/frontend/ui/frontend#ui#index.html
+./render_tpl -u -p /data/bkee -m bkrepo -e repo.env /data/workspace/frontend/ui/frontend#ui#index.html
 ```
 
 ### 3.3 后端微服务部署
