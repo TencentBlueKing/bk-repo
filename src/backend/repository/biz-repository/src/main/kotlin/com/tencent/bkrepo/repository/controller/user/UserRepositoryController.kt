@@ -156,7 +156,7 @@ class UserRepositoryController(
     }
 
     @ApiOperation("修改仓库配额")
-    @Permission(type = ResourceType.PROJECT, action = PermissionAction.MANAGE)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/quota/{projectId}/{repoName}")
     fun updateRepoQuota(
         @RequestAttribute userId: String,
@@ -194,7 +194,7 @@ class UserRepositoryController(
     }
 
     @ApiOperation("更新仓库")
-    @Permission(type = ResourceType.PROJECT, action = PermissionAction.MANAGE)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/update/{projectId}/{repoName}")
     fun updateRepo(
         @RequestAttribute userId: String,
