@@ -27,13 +27,16 @@
 
 package com.tencent.bkrepo.scanner.controller.user
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.service.ScanService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -64,6 +67,14 @@ class UserScanController @Autowired constructor(
     @Principal(PrincipalType.ADMIN)
     fun task(@PathVariable("taskId") taskId: String): Response<ScanTask> {
         return ResponseBuilder.success(scanService.task(taskId))
+    }
+
+
+    @ApiOperation("分页获取扫描任务信息")
+    @GetMapping("/tasks")
+    @Principal(PrincipalType.ADMIN)
+    fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Response<Page<ScanTask>> {
+        return ResponseBuilder.success(scanService.tasks(scanTaskQuery, pageLimit))
     }
 
 }

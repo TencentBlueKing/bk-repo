@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.scanner.service.impl
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -48,6 +51,7 @@ import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
@@ -55,6 +59,9 @@ import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -109,6 +116,20 @@ class ScanServiceImpl @Autowired constructor(
         return scanTaskDao.findById(taskId)?.let {
             convert(it)
         } ?: throw ScanTaskNotFoundException(taskId)
+    }
+
+    override fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<ScanTask> {
+        val criteria = Criteria()
+        with(scanTaskQuery) {
+            scanner?.let { criteria.and(TScanTask::scanner.name).isEqualTo(it) }
+            scannerType?.let { criteria.and(TScanTask::scannerType.name).isEqualTo(it) }
+            status?.let { criteria.and(TScanTask::status.name).isEqualTo(it) }
+        }
+        val query = Query(criteria)
+        val count = scanTaskDao.count(query)
+        query.with(Pages.ofRequest(pageLimit.pageNumber, pageLimit.pageSize))
+        val scanTasks = scanTaskDao.find(query).map { convert(it) }
+        return Page(pageLimit.pageNumber, pageLimit.pageSize, count, scanTasks)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
