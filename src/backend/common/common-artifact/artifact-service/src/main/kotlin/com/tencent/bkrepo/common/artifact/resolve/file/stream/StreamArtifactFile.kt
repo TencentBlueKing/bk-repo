@@ -158,9 +158,12 @@ open class StreamArtifactFile(
             return
         }
         try {
-            monitor.add(receiver)
-            if (!monitor.healthy.get()) {
-                receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
+            // 本地磁盘不需要fallback
+            if (!isInLocalDisk()) {
+                monitor.add(receiver)
+                if (!monitor.healthy.get()) {
+                    receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
+                }
             }
             receiver.receiveStream(source)
             val throughput = receiver.finish()
