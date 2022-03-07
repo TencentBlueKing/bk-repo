@@ -67,6 +67,19 @@ class ScannerServiceImpl @Autowired constructor(
         }
     }
 
+    override fun update(scanner: Scanner): Scanner {
+        with(scanner) {
+            val userId = SecurityUtils.getUserId()
+            val savedScanner = scannerDao.findByName(name) ?: throw ScannerNotFoundException(name)
+            return scannerDao.save(savedScanner.copy(
+                lastModifiedBy = userId,
+                lastModifiedDate = LocalDateTime.now(),
+                version = version,
+                config = scanner.toJsonString()
+            )).run { convert(this) }
+        }
+    }
+
     override fun get(name: String): Scanner {
         return find(name) ?: throw ScannerNotFoundException(name)
     }

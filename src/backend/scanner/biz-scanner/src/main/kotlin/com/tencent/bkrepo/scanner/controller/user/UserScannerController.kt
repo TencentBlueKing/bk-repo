@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.scanner.controller.user
 
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -71,5 +74,17 @@ class UserScannerController @Autowired constructor(
     fun delete(@PathVariable("name") name: String): Response<Void> {
         scannerService.delete(name)
         return ResponseBuilder.success()
+    }
+
+    @ApiOperation("更新扫描器")
+    @PutMapping("/{name}")
+    fun update(
+        @PathVariable("name") name: String,
+        @RequestBody scanner: Scanner
+    ): Response<Scanner> {
+        if (name != scanner.name) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+        }
+        return ResponseBuilder.success(scannerService.update(scanner))
     }
 }

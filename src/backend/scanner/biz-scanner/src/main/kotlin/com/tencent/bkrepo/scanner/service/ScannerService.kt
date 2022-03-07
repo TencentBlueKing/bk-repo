@@ -62,4 +62,9 @@ interface ScannerService {
      * 删除扫描器
      */
     fun delete(name: String)
+
+    /**
+     * 更新扫描器
+     */
+    fun update(scanner: Scanner): Scanner
 }
