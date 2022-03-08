@@ -79,6 +79,17 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
         return updateFirst(query, update)
     }
 
+    fun updateStatus(
+        subTaskIds: List<String>,
+        status: SubScanTaskStatus
+    ): UpdateResult {
+        val query = Query(Criteria.where(ID).`in`(subTaskIds))
+        val update = Update()
+            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TSubScanTask::status.name, status.name)
+        return updateFirst(query, update)
+    }
+
     /**
      * 获取一个待执行任务
      */

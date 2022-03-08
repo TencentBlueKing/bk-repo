@@ -34,4 +34,6 @@ interface SubScanTaskQueue {
      * 提交扫描任务
      */
     fun enqueue(subScanTask: SubScanTask)
+
+    fun enqueue(subScanTasks: List<SubScanTask>)
 }

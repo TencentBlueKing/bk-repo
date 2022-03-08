@@ -83,24 +83,32 @@ class DefaultScanTaskScheduler @Autowired constructor(
      */
     @Suppress("BlockingMethodInNonBlockingContext")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
-        val scanner = scannerService.get(scanTask.scanner)
-        val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         // 设置扫描任务状态为提交子任务中
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
+
+        val scanner = scannerService.get(scanTask.scanner)
         var submittedSubTaskCount = 0L
+        val subScanTasks = ArrayList<TSubScanTask>()
+
+        val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
             val storageCredentialsKey = credentialsCache.get(generateKey(node.projectId, node.repoName))
+
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
                 continue
             }
-            // TODO 实现批量子任务提交
-            val subTask = self.createSubTask(scanTask, node.sha256, node.size, storageCredentialsKey)
-                .run { convert(this, scanner) }
-            // TODO 实现任务数统计，并发送到influxdb
-            subScanTaskQueue.enqueue(subTask)
-            subScanTaskDao.updateStatus(subTask.taskId, SubScanTaskStatus.ENQUEUED)
-            submittedSubTaskCount++
+
+            subScanTasks.add(
+                createSubTask(scanTask, node.sha256, node.size, storageCredentialsKey)
+            )
+
+            // 批量提交子任务
+            if (subScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
+                submit(subScanTasks, scanner)
+                submittedSubTaskCount += subScanTasks.size
+                subScanTasks.clear()
+            }
         }
 
         // 更新任务状态为所有子任务已提交
@@ -115,23 +123,42 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
     }
 
-    @Transactional(rollbackFor = [Throwable::class])
+    fun submit(subScanTasks: List<TSubScanTask>, scanner: Scanner) {
+        if (subScanTasks.isEmpty()) {
+            return
+        }
+        val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
+        // TODO 实现任务数统计，并发送到influxdb
+        subScanTaskQueue.enqueue(subTasks)
+        subScanTaskDao.updateStatus(subTasks.map { it.taskId }, SubScanTaskStatus.ENQUEUED)
+    }
+
     fun createSubTask(scanTask: ScanTask, sha256: String, size: Long, credentialKey: String? = null): TSubScanTask {
         val now = LocalDateTime.now()
-        val savedSubScanTask = subScanTaskDao.save(
-            TSubScanTask(
-                createdDate = now,
-                lastModifiedDate = now,
-                parentScanTaskId = scanTask.taskId,
-                status = SubScanTaskStatus.CREATED.name,
-                scanner = scanTask.scanner,
-                sha256 = sha256,
-                size = size,
-                credentialsKey = credentialKey
-            )
+        return TSubScanTask(
+            createdDate = now,
+            lastModifiedDate = now,
+            parentScanTaskId = scanTask.taskId,
+            status = SubScanTaskStatus.CREATED.name,
+            scanner = scanTask.scanner,
+            sha256 = sha256,
+            size = size,
+            credentialsKey = credentialKey
         )
-        scanTaskDao.updateScanningCount(scanTask.taskId, 1)
-        return savedSubScanTask
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    fun saveSubTasks(subScanTasks: List<TSubScanTask>): Collection<TSubScanTask> {
+        if (subScanTasks.isEmpty()) {
+            return emptyList()
+        }
+        val tasks = subScanTaskDao.insert(subScanTasks)
+
+        // 更新当前正在扫描的任务数
+        val task = tasks.first()
+        scanTaskDao.updateScanningCount(task.parentScanTaskId, tasks.size)
+
+        return tasks
     }
 
     override fun resume(scanTask: ScanTask) {
@@ -182,5 +209,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
         private const val REPO_SPLIT = "::repo::"
         private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE = 1000L
         private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES = 60L
+
+        /**
+         * 批量提交子任务数量
+         */
+        private const val BATCH_SIZE = 20
     }
 }

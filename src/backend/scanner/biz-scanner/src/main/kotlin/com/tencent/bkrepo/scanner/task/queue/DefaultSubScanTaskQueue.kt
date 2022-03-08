@@ -35,4 +35,8 @@ class DefaultSubScanTaskQueue : SubScanTaskQueue {
     override fun enqueue(subScanTask: SubScanTask) {
         // do nothing
     }
+
+    override fun enqueue(subScanTasks: List<SubScanTask>) {
+        // do nothing
+    }
 }
