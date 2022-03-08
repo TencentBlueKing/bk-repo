@@ -1,22 +1,23 @@
-{{- if .Values.docker.enabled -}}
-kind: ConfigMap
+{{- if .Values.replication.enabled -}}
 apiVersion: v1
+kind: Service
 metadata:
-  name: {{ include "common.names.fullname" . }}-docker
+  name: {{ include "common.names.fullname" . }}-replication
   labels: {{- include "common.labels.standard" . | nindent 4 }}
-    app.kubernetes.io/component: docker
+    app.kubernetes.io/component: replication
     {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
   {{- if .Values.commonAnnotations }}
   annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
   {{- end }}
-data:
-  application.yml: |-
-    domain: docker.{{ .Values.gateway.host }}
-    auth:
-      url: http://{{ .Values.gateway.host }}/docker/v2/auth
-    {{- if keys $.Values.docker.config }}
-      {{- toYaml .Values.docker.config | nindent 6 }}
-    {{- end}}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector: {{- include "common.labels.matchLabels" . | nindent 4 }}
+    app.kubernetes.io/component: replication
 {{- end }}
