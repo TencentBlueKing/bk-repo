@@ -10,23 +10,41 @@ import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.io.InputStream
+import java.util.concurrent.atomic.AtomicInteger
 
 @Component
 class ExecutorScheduler @Autowired constructor(
     private val scanExecutorFactory: ScanExecutorFactory,
     private val storageCredentialsClient: StorageCredentialsClient,
     private val scanClient: ScanClient,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val executor: ThreadPoolTaskExecutor
 ) {
+
+    private val executingCount = AtomicInteger(0)
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun scan() {
         // TODO 添加允许同时执行的扫描任务限制配置
-        scanClient.pullSubTask().data?.let { doScan(it) }
+        if (allowExecute()) {
+            scanClient.pullSubTask().data?.let {
+                executor.execute { doScan(it)  }
+            }
+            logger.info("executing task count ${executingCount.get()}")
+        }
     }
 
+    /**
+     * 是否允许执行扫描
+     */
+    private fun allowExecute(): Boolean {
+        return executingCount.get() <= MAX_ALLOW_TASK_COUNT
+    }
+
+    @Suppress("BlockingMethodInNonBlockingContext")
     private fun doScan(subScanTask: SubScanTask) {
         val storageCredentials = subScanTask.credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
         val artifactInputStream =
@@ -65,5 +83,6 @@ class ExecutorScheduler @Autowired constructor(
         // TODO 添加到配置文件
         private const val FIXED_DELAY = 3000L
         private val logger = LoggerFactory.getLogger(ExecutorScheduler::class.java)
+        private const val MAX_ALLOW_TASK_COUNT = 4
     }
 }
