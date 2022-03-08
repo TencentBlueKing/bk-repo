@@ -44,6 +44,8 @@ open class ScanExecutorResult(
     open val startTimestamp: Long,
     @ApiModelProperty("扫描执行结束时间")
     open val finishedTimestamp: Long,
+    @ApiModelProperty("扫描执行状态")
+    open val scanStatus: String,
     @ApiModelProperty("扫描结果预览")
     open val overview: Map<String, Any?>,
     @ApiModelProperty("扫描器类型")

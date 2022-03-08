@@ -49,7 +49,9 @@ class BinAuditorScanner(
     @ApiModelProperty("使用的容器镜像")
     val container: BinAuditorDockerImage,
     @ApiModelProperty("结果过滤规则")
-    val resultFilterRule: ResultFilterRule? = null
+    val resultFilterRule: ResultFilterRule? = null,
+    @ApiModelProperty("最大允许的扫描时间")
+    val maxScanDuration: Long = DEFAULT_MAX_SCAN_DURATION
 ) : Scanner(name, TYPE, version) {
     companion object {
         /**
@@ -58,6 +60,7 @@ class BinAuditorScanner(
         const val VERSION_SPLIT = "::"
         const val TYPE = "BinAuditor"
         const val DEFAULT_CONFIG_FILE_PATH = "/standalone.toml"
+        const val DEFAULT_MAX_SCAN_DURATION = 10 * 60 * 1000L
     }
 }
 

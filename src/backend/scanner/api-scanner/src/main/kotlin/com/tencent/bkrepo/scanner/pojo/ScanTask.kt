@@ -51,6 +51,8 @@ data class ScanTask(
     val total: Long,
     @ApiModelProperty("扫描中的文件总数")
     val scanning: Long,
+    @ApiModelProperty("扫描失败的文件总数")
+    val failed: Long,
     @ApiModelProperty("已扫描文件总数")
     val scanned: Long,
     @ApiModelProperty("使用的扫描器")

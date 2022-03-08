@@ -69,6 +69,10 @@ data class TScanTask(
      */
     val scanning: Long,
     /**
+     * 扫描失败的文件数量
+     */
+    val failed: Long,
+    /**
      * 已扫描文件数
      */
     val scanned: Long,

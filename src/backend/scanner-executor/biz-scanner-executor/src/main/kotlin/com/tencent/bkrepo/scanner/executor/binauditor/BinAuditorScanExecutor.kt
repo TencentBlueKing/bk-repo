@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfCve
@@ -64,7 +65,9 @@ import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.full.memberProperties
+import kotlin.system.measureTimeMillis
 
 @Component(BinAuditorScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
@@ -97,11 +100,12 @@ class BinAuditorScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "load config success"))
 
             // 执行扫描
-            doScan(workDir, task)
+            val scanStatus = doScan(workDir, task)
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
             logger.info(logMsg(task, "scan finished took time $timeSpent ms"))
-            var result = result(startTimestamp, finishedTimestamp, File(workDir, scanner.container.outputDir))
+            var result =
+                result(startTimestamp, finishedTimestamp, File(workDir, scanner.container.outputDir), scanStatus)
             result = scanner.resultFilterRule?.let { filter(it, result) } ?: result
             callback(result)
         } catch (e: Exception) {
@@ -197,11 +201,27 @@ class BinAuditorScanExecutor @Autowired constructor(
         if (exists) {
             return
         }
-
-        dockerClient.pullImageCmd(tag).exec(PullImageResultCallback()).awaitCompletion()
+        logger.info("pulling image: $tag")
+        val elapsedTime = measureTimeMillis {
+            val result = dockerClient
+                .pullImageCmd(tag)
+                .exec(PullImageResultCallback())
+                .awaitCompletion(DEFAULT_PULL_IMAGE_DURATION, TimeUnit.MILLISECONDS)
+            if (!result) {
+                throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, "image $tag pull failed")
+            }
+        }
+        logger.info("image $tag pulled, elapse: $elapsedTime")
     }
 
-    private fun doScan(workDir: File, task: ScanExecutorTask) {
+    /**
+     * 创建容器执行扫描
+     * @param workDir 工作目录,将挂载到容器中
+     * @param task 扫描任务
+     *
+     * @return true 扫描成功， false 扫描失败
+     */
+    private fun doScan(workDir: File, task: ScanExecutorTask): SubScanTaskStatus {
         require(task.scanner is BinAuditorScanner)
         val containerConfig = task.scanner.container
         pullImage(containerConfig.image)
@@ -219,8 +239,12 @@ class BinAuditorScanExecutor @Autowired constructor(
             dockerClient.startContainerCmd(containerId).exec()
             val resultCallback = WaitContainerResultCallback()
             dockerClient.waitContainerCmd(containerId).exec(resultCallback)
-            resultCallback.awaitCompletion()
-            logger.info(logMsg(task, "task docker run success [$workDir, $containerId]"))
+            val result = resultCallback.awaitCompletion(task.scanner.maxScanDuration, TimeUnit.MILLISECONDS)
+            logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
+            if (!result) {
+                return SubScanTaskStatus.TIMEOUT
+            }
+            return SubScanTaskStatus.SUCCESS
         } finally {
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
@@ -231,8 +255,9 @@ class BinAuditorScanExecutor @Autowired constructor(
      */
     private fun result(
         startTimestamp: Long,
-        finishedTimestap: Long,
-        outputDir: File
+        finishedTimestamp: Long,
+        outputDir: File,
+        scanStatus: SubScanTaskStatus
     ): BinAuditorScanExecutorResult {
         val cveSecResultFile = File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS)
         val cveSecItems = readJsonString<List<Map<String, Any?>>>(cveSecResultFile)
@@ -252,7 +277,8 @@ class BinAuditorScanExecutor @Autowired constructor(
 
         return BinAuditorScanExecutorResult(
             startTimestamp = startTimestamp,
-            finishedTimestamp = finishedTimestap,
+            finishedTimestamp = finishedTimestamp,
+            scanStatus = scanStatus.name,
             overview = overview(applicationItems, sensitiveItems, cveSecItems),
             checkSecItems = checkSecItems,
             applicationItems = applicationItems,
@@ -348,5 +374,10 @@ class BinAuditorScanExecutor @Autowired constructor(
          * 敏感信息扫描结果文件名
          */
         private const val RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS = "sensitive_info_items.json"
+
+        /**
+         * 拉取镜像最大时间
+         */
+        private const val DEFAULT_PULL_IMAGE_DURATION = 15 * 60 * 1000L
     }
 }

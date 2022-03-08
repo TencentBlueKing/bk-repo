@@ -46,7 +46,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.pojo.SubScanTaskStatus
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
@@ -99,6 +99,7 @@ class ScanServiceImpl @Autowired constructor(
                     status = ScanTaskStatus.PENDING.name,
                     total = 0L,
                     scanning = 0L,
+                    failed = 0L,
                     scanned = 0L,
                     scanner = scanner.name,
                     scannerType = scanner.type,
@@ -144,9 +145,14 @@ class ScanServiceImpl @Autowired constructor(
             logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId]")
 
             // 更新父任务扫描结果
-            scanTaskDao.updateScanResult(parentTaskId, 1, scanExecutorResult.overview)
+            val scanSuccess = scanExecutorResult.scanStatus == SubScanTaskStatus.SUCCESS.name
+            scanTaskDao.updateScanResult(parentTaskId, 1, scanExecutorResult.overview, scanSuccess)
             if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
                 logger.info("scan finished, task[$parentTaskId]")
+            }
+
+            if (!scanSuccess) {
+                return
             }
 
             // 更新文件扫描结果
@@ -185,7 +191,7 @@ class ScanServiceImpl @Autowired constructor(
 
             return fileScanResultDao.findScannerResults(scanner, credentialsKeyFiles).map {
                 val status = subScanTaskMap["${it.credentialsKey}:${it.sha256}"]?.status
-                    ?: SubScanTaskStatus.FINISHED.name
+                    ?: SubScanTaskStatus.SUCCESS.name
                 // 只查询对应scanner的结果，此处必定不为null
                 val scannerResult = it.scanResult[scanner]!!
                 FileScanResultOverview(
@@ -213,7 +219,7 @@ class ScanServiceImpl @Autowired constructor(
                 subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
                     ?: SubScanTaskStatus.NEVER_SCANNED.name
             } else {
-                SubScanTaskStatus.FINISHED.name
+                SubScanTaskStatus.SUCCESS.name
             }
             return FileScanResultDetail(status, node.sha256!!, scanResultDetail, reportType)
         }
@@ -234,6 +240,7 @@ class ScanServiceImpl @Autowired constructor(
             rule = scanTask.rule?.readJsonString(),
             total = total,
             scanning = scanning,
+            failed = failed,
             scanned = scanned,
             scanner = scanner,
             scannerType = scannerType,

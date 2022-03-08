@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.common.scanner.pojo.scanner
 
 /**
  * 子扫描任务状态
@@ -24,7 +24,17 @@ enum class SubScanTaskStatus {
     EXECUTING,
 
     /**
-     * 执行结束
+     * 扫描超时
      */
-    FINISHED
+    TIMEOUT,
+
+    /**
+     * 扫描失败
+     */
+    FAILED,
+
+    /**
+     * 扫描成功
+     */
+    SUCCESS
 }
