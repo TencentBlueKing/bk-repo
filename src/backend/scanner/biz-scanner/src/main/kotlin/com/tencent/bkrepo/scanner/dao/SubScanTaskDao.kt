@@ -68,11 +68,25 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
         return remove(query)
     }
 
+    /**
+     * 更新任务状态
+     *
+     * @param subTaskId 待更新的子任务id
+     * @param status 更新后的任务状态
+     * @param lastModifiedDate 最后更新时间，用于充当乐观锁，只有最后修改时间匹配时候才更新
+     *
+     * @return 更新结果
+     */
     fun updateStatus(
         subTaskId: String,
-        status: SubScanTaskStatus
+        status: SubScanTaskStatus,
+        lastModifiedDate: LocalDateTime? = null
     ): UpdateResult {
-        val query = Query(Criteria.where(ID).isEqualTo(subTaskId))
+        val criteria = Criteria.where(ID).isEqualTo(subTaskId)
+        if (lastModifiedDate != null) {
+            criteria.and(TSubScanTask::lastModifiedDate.name).isEqualTo(lastModifiedDate)
+        }
+        val query = Query(criteria)
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, status.name)

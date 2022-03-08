@@ -47,6 +47,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
@@ -85,14 +86,15 @@ class ScanServiceImpl @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask {
+        val userId = SecurityUtils.getUserId()
         with(scanRequest) {
             val scanner = scannerService.get(scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
                 TScanTask(
-                    createdBy = "",
+                    createdBy = userId,
                     createdDate = now,
-                    lastModifiedBy = "",
+                    lastModifiedBy = userId,
                     lastModifiedDate = now,
                     rule = rule?.toJsonString(),
                     triggerType = triggerType.name,
@@ -174,13 +176,22 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     override fun pullSubScanTask(): SubScanTask? {
-        // 优先返回待执行任务，再返回超时任务
-        val task = subScanTaskDao.firstCreatedOrEnqueuedTask()
-            ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
-            ?: return null
-        subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.EXECUTING)
-        val scanner = scannerService.get(task.scanner)
-        return convert(task, scanner)
+        var count = 0
+        // 超过最大允许重试次数后说明当前冲突比较严重，有多个扫描器在拉任务，直接返回null
+        while (count++ < MAX_RETRY_PULL_TASK_TIMES) {
+            // 优先返回待执行任务，再返回超时任务
+            val task = subScanTaskDao.firstCreatedOrEnqueuedTask()
+                ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
+                ?: return null
+            val updateResult =
+                subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.EXECUTING, task.lastModifiedDate)
+            if (updateResult.modifiedCount != 0L) {
+                // 更新成功说明任务没有被其他扫描执行器拉取过
+                val scanner = scannerService.get(task.scanner)
+                return convert(task, scanner)
+            }
+        }
+        return null
     }
 
     override fun resultOverview(request: FileScanResultOverviewRequest): List<FileScanResultOverview> {
@@ -262,6 +273,11 @@ class ScanServiceImpl @Autowired constructor(
 
     companion object {
         // TODO 添加到配置文件中
-        private const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 600L
+        private const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
+
+        /**
+         * 最大允许的拉取任务重试次数
+         */
+        private const val MAX_RETRY_PULL_TASK_TIMES = 3
     }
 }

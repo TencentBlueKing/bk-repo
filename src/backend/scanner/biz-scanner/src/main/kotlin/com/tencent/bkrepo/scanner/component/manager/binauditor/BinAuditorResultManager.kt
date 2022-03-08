@@ -91,7 +91,6 @@ class BinAuditorResultManager @Autowired constructor(
         pageLimit: PageLimit?
     ): Any? {
         require(pageLimit != null && type != null)
-        CheckSecItem
         val page = when (type) {
             CheckSecItem.TYPE -> checkSecItemDao
             ApplicationItem.TYPE -> applicationItemDao
