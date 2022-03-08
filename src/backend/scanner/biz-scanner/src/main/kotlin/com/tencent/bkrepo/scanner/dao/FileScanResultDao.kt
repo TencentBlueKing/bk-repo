@@ -70,6 +70,19 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
     }
 
     /**
+     * 判断文件使用指定版本扫描器的扫描结果是否存在
+     */
+    fun exists(credentialsKey: String?, sha256: String, scanner: String, scannerVersion: String): Boolean {
+        val scannerResultKey = scannerResultKey(scanner)
+        val criteria = Criteria
+            .where(TFileScanResult::credentialsKey.name).isEqualTo(credentialsKey)
+            .and(TFileScanResult::sha256.name).isEqualTo(sha256)
+            .and(scannerResultKey).exists(true)
+            .and("$scannerResultKey.${TScanResult::scannerVersion}").isEqualTo(scannerVersion)
+        return exists(Query(criteria))
+    }
+
+    /**
      * 更新扫描结果
      *
      * @param credentialsKey 文件所在存储，为null时表示在默认存储

@@ -27,7 +27,14 @@
 
 package com.tencent.bkrepo.scanner.task
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.model.TSubScanTask
@@ -40,11 +47,10 @@ import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
 import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -54,47 +60,59 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scannerService: ScannerService,
     private val repositoryClient: RepositoryClient,
     private val subScanTaskDao: SubScanTaskDao,
-    private val scanTaskDao: ScanTaskDao
+    private val scanTaskDao: ScanTaskDao,
+    private val fileScanResultDao: FileScanResultDao,
+    private val executor: ThreadPoolTaskExecutor
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
+    private val credentialsCache: LoadingCache<String, String?> = CacheBuilder.newBuilder()
+        .maximumSize(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
+        .expireAfterWrite(DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
+        .build(CacheLoader.from { key -> loadStorageCredentialsCache(key!!) })
 
     @Autowired
     private lateinit var self: DefaultScanTaskScheduler
 
     override fun schedule(scanTask: ScanTask) {
-        // TODO 实现调度策略
         executor.execute { enqueueAllSubScanTask(scanTask) }
     }
 
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
+    @Suppress("BlockingMethodInNonBlockingContext")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
-        val storageCredentialCache = LRUCache<String, String?>(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
         val scanner = scannerService.get(scanTask.scanner)
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
+        // 设置扫描任务状态为提交子任务中
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
-        nodeIterator.forEach { node ->
-            with(node) {
-                val storageCredentialsKey = getStorageCredentialKey(storageCredentialCache, projectId, repoName)
-                // TODO 实现批量子任务提交
-
-                val savedSubTask = self.createSubTask(scanTask, sha256, size, storageCredentialsKey)
-                val subTask = SubScanTask(
-                    taskId = savedSubTask.id!!,
-                    parentScanTaskId = scanTask.taskId,
-                    scanner = scanner,
-                    sha256 = node.sha256,
-                    size = node.size,
-                    credentialsKey = storageCredentialsKey
-                )
-                // TODO 实现任务数统计，并发送到influxdb
-                subScanTaskQueue.enqueue(subTask)
-                subScanTaskDao.updateStatus(savedSubTask.id, SubScanTaskStatus.ENQUEUED)
+        var submittedSubTaskCount = 0L
+        for (node in nodeIterator) {
+            val storageCredentialsKey = credentialsCache.get(generateKey(node.projectId, node.repoName))
+            // 文件已存在扫描结果，跳过扫描
+            if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
+                continue
             }
+            // TODO 实现批量子任务提交
+            val subTask = self.createSubTask(scanTask, node.sha256, node.size, storageCredentialsKey)
+                .run { convert(this, scanner) }
+            // TODO 实现任务数统计，并发送到influxdb
+            subScanTaskQueue.enqueue(subTask)
+            subScanTaskDao.updateStatus(subTask.taskId, SubScanTaskStatus.ENQUEUED)
+            submittedSubTaskCount++
         }
+
+        // 更新任务状态为所有子任务已提交
+        logger.info("submit $submittedSubTaskCount sub tasks, " +
+                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED")
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
+
+        // 没有提交任何子任务，直接设置为任务扫描结束
+        if (submittedSubTaskCount == 0L) {
+            scanTaskDao.taskFinished(scanTask.taskId)
+            logger.info("scan finished, task[${scanTask.taskId}]")
+        }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -128,49 +146,41 @@ class DefaultScanTaskScheduler @Autowired constructor(
         TODO("Not yet implemented")
     }
 
-    private fun getStorageCredentialKey(
-        storageCredentialCache: MutableMap<String, String?>,
-        projectId: String,
-        repoName: String
-    ): String? {
-        val cacheKey = generateKey(projectId, repoName)
-        return storageCredentialCache.getOrPut(cacheKey) {
-            val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
-            if (repoRes.isNotOk()) {
-                logger.error(
-                    "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                            " projectId[$projectId], repoName[$repoName]"
-                )
-            }
-            repoRes.data!!.storageCredentialsKey
+    private fun loadStorageCredentialsCache(key: String): String? {
+        val (projectId, repoName) = fromKey(key)
+        val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
+        if (repoRes.isNotOk()) {
+            logger.error(
+                "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
+                        " projectId[$projectId], repoName[$repoName]"
+            )
+            throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, repoRes.message ?: "")
         }
+        return repoRes.data!!.storageCredentialsKey
     }
 
-    private fun generateKey(projectId: String, repoName: String) = "prj:$projectId:repo:$repoName"
+    private fun generateKey(projectId: String, repoName: String) = "$projectId$REPO_SPLIT$repoName"
+    private fun fromKey(key: String): Pair<String, String> {
+        val indexOfRepoSplit = key.indexOf(REPO_SPLIT)
+        val projectId = key.substring(0, indexOfRepoSplit)
+        val repoName = key.substring(indexOfRepoSplit, key.length)
+        return Pair(projectId, repoName)
+    }
 
-    companion object {
-        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE = 4
-
-        // 任务执行线程池
-        // TODO 线程池参数调整
-        private val executor: ThreadPoolExecutor = ThreadPoolExecutor(
-            Runtime.getRuntime().availableProcessors() * 2,
-            200, 60, TimeUnit.SECONDS, LinkedBlockingQueue(10000)
+    private fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask {
+        return SubScanTask(
+            taskId = subScanTask.id!!,
+            parentScanTaskId = subScanTask.parentScanTaskId,
+            scanner = scanner,
+            sha256 = subScanTask.sha256,
+            size = subScanTask.size,
+            credentialsKey = subScanTask.credentialsKey
         )
     }
 
-    private open class LRUCache<K, V>(
-        private val cacheSize: Int,
-        loadFactor: Float = DEFAULT_LOAD_FACTOR,
-        accessOrder: Boolean = true
-    ) : LinkedHashMap<K, V>(cacheSize, loadFactor, accessOrder) {
-
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>): Boolean {
-            return size > cacheSize
-        }
-
-        companion object {
-            const val DEFAULT_LOAD_FACTOR = 0.75f
-        }
+    companion object {
+        private const val REPO_SPLIT = "::repo::"
+        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE = 1000L
+        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES = 60L
     }
 }

@@ -106,8 +106,8 @@ class ScanServiceImpl @Autowired constructor(
                     scanResultOverview = null
                 )
             ).run { convert(this) }
-
             scanTaskScheduler.schedule(scanTask)
+            logger.info("create scan task[${scanTask.taskId}] success")
             return scanTask
         }
     }
