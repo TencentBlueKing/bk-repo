@@ -13,7 +13,8 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    domain: docker.{{ .Values.gateway.host }}
+    docker:
+      domain: {{ .Values.gateway.dockerHost }}
     auth:
       url: http://{{ .Values.gateway.host }}/docker/v2/auth
     {{- if keys $.Values.docker.config }}
