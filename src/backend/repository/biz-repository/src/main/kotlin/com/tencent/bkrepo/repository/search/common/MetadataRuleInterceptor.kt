@@ -79,12 +79,12 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
      * 是否是流水线相关查询
      * */
     private fun isInPipelineSearch(key: String): Boolean {
-        return key == PIPELINE_ID || key == BUILD_D
+        return key == PIPELINE_ID || key == BUILD_ID
     }
 
     companion object {
         const val ALPHA_PATTERN = "[A-Z]"
         const val PIPELINE_ID = "pipelineId"
-        const val BUILD_D = "buildId"
+        const val BUILD_ID = "buildId"
     }
 }
