@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.binauditor
 
 import com.github.dockerjava.api.DockerClient
+import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
@@ -185,9 +186,25 @@ class BinAuditorScanExecutor @Autowired constructor(
         return configFile
     }
 
+    /**
+     * 拉取镜像
+     */
+    private fun pullImage(tag: String) {
+        val images = dockerClient.listImagesCmd().exec()
+        val exists = images.any { image ->
+            image.repoTags.any { it == tag }
+        }
+        if (exists) {
+            return
+        }
+
+        dockerClient.pullImageCmd(tag).exec(PullImageResultCallback()).awaitCompletion()
+    }
+
     private fun doScan(workDir: File, task: ScanExecutorTask) {
         require(task.scanner is BinAuditorScanner)
         val containerConfig = task.scanner.container
+        pullImage(containerConfig.image)
 
         val bind = Volume(containerConfig.workDir)
         val binds = Binds(Bind(workDir.absolutePath, bind))
