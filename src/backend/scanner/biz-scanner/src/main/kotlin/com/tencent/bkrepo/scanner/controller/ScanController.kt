@@ -30,8 +30,11 @@ package com.tencent.bkrepo.scanner.controller
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.api.ScanClient
+import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.service.ScanService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -40,6 +43,10 @@ import org.springframework.web.bind.annotation.RestController
 class ScanController @Autowired constructor(
     private val scanService: ScanService
 ) : ScanClient {
+
+    override fun scan(scanRequest: ScanRequest): Response<ScanTask> {
+        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.ON_NEW_ARTIFACT))
+    }
 
     override fun report(reportResultRequest: ReportResultRequest): Response<Void> {
         scanService.reportResult(reportResultRequest)

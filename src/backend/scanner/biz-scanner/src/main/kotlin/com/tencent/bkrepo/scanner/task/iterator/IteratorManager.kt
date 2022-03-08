@@ -52,12 +52,13 @@ class IteratorManager(
      */
     fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): NodeIterator {
         val rule = scanTask.rule
-        val projectIdIterator = if (rule is Rule.NestedRule) {
-            val projectIds = projectIdsFromRule(rule)
-            projectIds.iterator()
-        } else {
-            ProjectIdIterator(projectClient)
-        }
+
+        // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
+        require(rule is Rule.NestedRule)
+        val projectIds = projectIdsFromRule(rule)
+        val projectIdIterator = projectIds.iterator()
+//        ProjectIdIterator(projectClient)
+
         val position = NodeIterator.NodeIteratePosition(rule)
         return NodeIterator(projectIdIterator, nodeClient, position)
     }
@@ -65,6 +66,7 @@ class IteratorManager(
     /**
      * 如果指定要扫描的projectId，必须relation为AND，在nestedRule里面的第一层rule包含projectId的匹配条件
      */
+    @Suppress("UNCHECKED_CAST")
     private fun projectIdsFromRule(rule: Rule.NestedRule): List<String> {
         val projectIds = ArrayList<String>()
         if (rule.relation != Rule.NestedRule.RelationType.AND) {

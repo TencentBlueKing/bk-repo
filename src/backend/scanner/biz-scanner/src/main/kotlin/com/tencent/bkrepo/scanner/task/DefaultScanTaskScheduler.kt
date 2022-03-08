@@ -85,17 +85,18 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
-
         val scanner = scannerService.get(scanTask.scanner)
+        logger.info("submitting sub tasks of task[${scanTask.taskId}], scanner: [${scanner.name}]")
+
         var submittedSubTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
-
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
             val storageCredentialsKey = credentialsCache.get(generateKey(node.projectId, node.repoName))
 
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
+                logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
                 continue
             }
 
@@ -128,8 +129,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
             return
         }
         val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
+        logger.info("${subTasks.size} subTasks saved")
         // TODO 实现任务数统计，并发送到influxdb
         subScanTaskQueue.enqueue(subTasks)
+        logger.info("${subTasks.size} subTasks enqueued")
         subScanTaskDao.updateStatus(subTasks.map { it.taskId }, SubScanTaskStatus.ENQUEUED)
     }
 

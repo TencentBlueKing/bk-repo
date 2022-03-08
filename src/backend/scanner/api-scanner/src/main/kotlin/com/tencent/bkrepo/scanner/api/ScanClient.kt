@@ -29,19 +29,28 @@ package com.tencent.bkrepo.scanner.api
 
 import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
-import io.swagger.annotations.Api
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("扫描服务接口")
 @FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanClient")
 @RequestMapping("/service/scan")
 interface ScanClient {
+
+    /**
+     * 创建扫描任务
+     * @param scanRequest 扫描请求
+     * @return 创建的扫描任务
+     */
+    @PostMapping
+    fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask>
+
     /**
      * 扫描结果上报
      * @param reportResultRequest 扫描结果上报请求
