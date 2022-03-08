@@ -68,6 +68,8 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
         } else {
             context.interpreter.resolveRule(nestedAndRule, context)
         }
+        // 使用metadata_idx的查询效率更高
+        context.mongoQuery.withHint(TNode.METADATA_IDX)
         return Criteria.where(TNode::metadata.name).elemMatch(criteria)
     }
 
