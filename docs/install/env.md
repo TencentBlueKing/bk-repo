@@ -1,4 +1,4 @@
-# bkrepo.env配置项说明
+# repo.env配置项说明
 
 ## 环境配置项
 

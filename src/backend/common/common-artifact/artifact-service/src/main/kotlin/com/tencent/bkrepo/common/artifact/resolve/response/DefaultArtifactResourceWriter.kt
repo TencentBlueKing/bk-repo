@@ -84,6 +84,9 @@ open class DefaultArtifactResourceWriter(
         val response = HttpContextHolder.getResponse()
         val name = resource.getSingleName()
         val range = resource.getSingleStream().range
+        val cacheControl = resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL)?.toString()
+            ?: resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL.toLowerCase())?.toString()
+            ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length.toInt())
         response.characterEncoding = resource.characterEncoding
@@ -91,7 +94,7 @@ open class DefaultArtifactResourceWriter(
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
-        response.setHeader(HttpHeaders.CACHE_CONTROL, StringPool.NO_CACHE)
+        response.setHeader(HttpHeaders.CACHE_CONTROL, cacheControl)
         response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
         if (resource.useDisposition) {
             response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(name))
