@@ -68,6 +68,12 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         return updateFirst(query, update)
     }
 
+    fun updateStartedDateTimeIfNotExists(taskId: String, startDateTime: LocalDateTime): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(taskId).and(TScanTask::startDateTime.name).isEqualTo(null)
+        val update = buildUpdate().set(TScanTask::startDateTime.name, startDateTime)
+        return updateFirst(Query(criteria), update)
+    }
+
     fun updateScanningCount(taskId: String, count: Int): UpdateResult {
         val query = buildQuery(taskId)
         val update = buildUpdate()

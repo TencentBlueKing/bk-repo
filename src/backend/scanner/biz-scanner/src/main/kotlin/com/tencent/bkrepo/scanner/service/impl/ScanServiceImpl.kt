@@ -177,7 +177,7 @@ class ScanServiceImpl @Autowired constructor(
      *
      * @return 是否更新成功
      */
-    @Transactional
+    @Transactional(rollbackFor = [Throwable::class])
     fun updateScanTaskResult(
         subTaskId: String,
         subTaskStatus: String,
@@ -199,9 +199,16 @@ class ScanServiceImpl @Autowired constructor(
         return true
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
     override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
         if (subScanTaskStatus == SubScanTaskStatus.EXECUTING.name) {
-            return subScanTaskDao.updateStatus(subScanTaskId, SubScanTaskStatus.EXECUTING).modifiedCount == 1L
+            val modified = subScanTaskDao.updateStatus(subScanTaskId, SubScanTaskStatus.EXECUTING).modifiedCount == 1L
+            if (modified) {
+                val subScanTask = subScanTaskDao.findById(subScanTaskId)!!
+                // 更新任务实际开始扫描的时间
+                scanTaskDao.updateStartedDateTimeIfNotExists(subScanTask.parentScanTaskId, LocalDateTime.now())
+            }
+            return modified
         }
         return false
     }
