@@ -151,7 +151,7 @@ object ResponseUtil {
      * prefix or https prefix
      */
     private fun getProtocol(httpHeaders: HttpHeaders): String {
-        return HTTP_PROTOCOL
+        logger.info("http headers [$httpHeaders]")
         val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
         if (protocolHeaders == null || protocolHeaders.isEmpty()) {
             return HTTP_PROTOCOL
