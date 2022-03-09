@@ -32,8 +32,9 @@ class ExecutorScheduler @Autowired constructor(
         if (allowExecute()) {
             scanClient.pullSubTask().data?.let {
                 executor.execute { doScan(it)  }
+                executingCount.incrementAndGet()
+                logger.info("executing task count ${executingCount.get()}")
             }
-            logger.info("executing task count ${executingCount.get()}")
         }
     }
 
@@ -64,6 +65,8 @@ class ExecutorScheduler @Autowired constructor(
                 scanClient.report(request)
             }
         }
+        executingCount.decrementAndGet()
+        logger.info("executing task count ${executingCount.get()}")
     }
 
     @Suppress("UNCHECKED_CAST")

@@ -51,6 +51,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -66,7 +67,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val credentialsCache: LoadingCache<String, String?> = CacheBuilder.newBuilder()
+    private val credentialsCache: LoadingCache<String, Optional<String>> = CacheBuilder.newBuilder()
         .maximumSize(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
         .expireAfterWrite(DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
         .build(CacheLoader.from { key -> loadStorageCredentialsCache(key!!) })
@@ -92,7 +93,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val subScanTasks = ArrayList<TSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
-            val storageCredentialsKey = credentialsCache.get(generateKey(node.projectId, node.repoName))
+            val storageCredentialsKey = credentialsCache
+                .get(generateKey(node.projectId, node.repoName))
+                .orElse(null)
 
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
@@ -176,7 +179,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         TODO("Not yet implemented")
     }
 
-    private fun loadStorageCredentialsCache(key: String): String? {
+    private fun loadStorageCredentialsCache(key: String): Optional<String> {
         val (projectId, repoName) = fromKey(key)
         val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
         if (repoRes.isNotOk()) {
@@ -186,14 +189,15 @@ class DefaultScanTaskScheduler @Autowired constructor(
             )
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, repoRes.message ?: "")
         }
-        return repoRes.data!!.storageCredentialsKey
+        repoRes.data!!.storageCredentialsKey?.let { return Optional.of(it) }
+        return Optional.empty()
     }
 
     private fun generateKey(projectId: String, repoName: String) = "$projectId$REPO_SPLIT$repoName"
     private fun fromKey(key: String): Pair<String, String> {
         val indexOfRepoSplit = key.indexOf(REPO_SPLIT)
         val projectId = key.substring(0, indexOfRepoSplit)
-        val repoName = key.substring(indexOfRepoSplit, key.length)
+        val repoName = key.substring(indexOfRepoSplit + REPO_SPLIT.length, key.length)
         return Pair(projectId, repoName)
     }
 
