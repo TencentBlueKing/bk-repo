@@ -215,7 +215,12 @@ class ScanServiceImpl @Autowired constructor(
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun enqueueTimeoutTask() {
-        pullSubScanTask()?.let { scanTaskScheduler.schedule(it) }
+        pullSubScanTask()?.let {
+            if (!scanTaskScheduler.schedule(it)) {
+                // 调度失败，归还任务
+                subScanTaskDao.updateStatus(it.taskId, SubScanTaskStatus.CREATED)
+            }
+        }
     }
 
     override fun pullSubScanTask(): SubScanTask? {

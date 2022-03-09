@@ -79,12 +79,14 @@ class DefaultScanTaskScheduler @Autowired constructor(
         executor.execute { enqueueAllSubScanTask(scanTask) }
     }
 
-    override fun schedule(subScanTask: SubScanTask) {
+    override fun schedule(subScanTask: SubScanTask): Boolean {
         // TODO 实现任务数统计，并发送到influxdb
-        if(subScanTaskQueue.enqueue(subScanTask)) {
+        val enqueued = subScanTaskQueue.enqueue(subScanTask)
+        if(enqueued) {
             subScanTaskDao.updateStatus(subScanTask.taskId, SubScanTaskStatus.ENQUEUED)
             logger.info("subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued]")
         }
+        return enqueued
     }
 
     /**

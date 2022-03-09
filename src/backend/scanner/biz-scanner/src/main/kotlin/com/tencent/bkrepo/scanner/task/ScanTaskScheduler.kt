@@ -39,7 +39,12 @@ interface ScanTaskScheduler {
      */
     fun schedule(scanTask: ScanTask)
 
-    fun schedule(subScanTask: SubScanTask)
+    /**
+     * 调度子任务
+     *
+     * @return 调度是否成功
+     */
+    fun schedule(subScanTask: SubScanTask): Boolean
 
     /**
      * 恢复执行扫描任务
