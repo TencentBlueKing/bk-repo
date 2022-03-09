@@ -32,8 +32,15 @@ import com.tencent.bkrepo.scanner.pojo.SubScanTask
 interface SubScanTaskQueue {
     /**
      * 提交扫描任务
+     *
+     * @return 是否提交成功
      */
-    fun enqueue(subScanTask: SubScanTask)
+    fun enqueue(subScanTask: SubScanTask): Boolean
 
-    fun enqueue(subScanTasks: List<SubScanTask>)
+    /**
+     * 批量提交任务
+     *
+     * @return 提交成功的任务id
+     */
+    fun enqueue(subScanTasks: List<SubScanTask>): List<String>
 }

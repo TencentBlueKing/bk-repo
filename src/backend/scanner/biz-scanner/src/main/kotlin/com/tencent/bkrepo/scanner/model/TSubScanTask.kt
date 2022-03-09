@@ -61,6 +61,10 @@ data class TSubScanTask(
      */
     val status: String,
     /**
+     * 已经执行的次数
+     */
+    val executedTimes: Int,
+    /**
      * 使用的扫描器
      */
     val scanner: String,

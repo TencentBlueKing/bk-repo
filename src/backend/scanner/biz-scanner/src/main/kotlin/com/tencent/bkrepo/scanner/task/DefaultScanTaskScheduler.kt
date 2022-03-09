@@ -79,6 +79,14 @@ class DefaultScanTaskScheduler @Autowired constructor(
         executor.execute { enqueueAllSubScanTask(scanTask) }
     }
 
+    override fun schedule(subScanTask: SubScanTask) {
+        // TODO 实现任务数统计，并发送到influxdb
+        if(subScanTaskQueue.enqueue(subScanTask)) {
+            subScanTaskDao.updateStatus(subScanTask.taskId, SubScanTaskStatus.ENQUEUED)
+            logger.info("subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued]")
+        }
+    }
+
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
@@ -134,9 +142,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
         logger.info("${subTasks.size} subTasks saved")
         // TODO 实现任务数统计，并发送到influxdb
-        subScanTaskQueue.enqueue(subTasks)
-        logger.info("${subTasks.size} subTasks enqueued")
-        subScanTaskDao.updateStatus(subTasks.map { it.taskId }, SubScanTaskStatus.ENQUEUED)
+        if (subScanTaskQueue.enqueue(subTasks).size == subTasks.size) {
+            logger.info("${subTasks.size} subTasks enqueued")
+            subScanTaskDao.updateStatus(subTasks.map { it.taskId }, SubScanTaskStatus.ENQUEUED)
+        }
     }
 
     fun createSubTask(scanTask: ScanTask, sha256: String, size: Long, credentialKey: String? = null): TSubScanTask {
@@ -146,6 +155,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             lastModifiedDate = now,
             parentScanTaskId = scanTask.taskId,
             status = SubScanTaskStatus.CREATED.name,
+            executedTimes = 0,
             scanner = scanTask.scanner,
             sha256 = sha256,
             size = size,

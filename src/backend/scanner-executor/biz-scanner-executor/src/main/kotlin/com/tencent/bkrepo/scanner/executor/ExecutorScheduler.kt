@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.scanner.executor
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.scanner.api.ScanClient
@@ -31,6 +32,7 @@ class ExecutorScheduler @Autowired constructor(
         // TODO 添加允许同时执行的扫描任务限制配置
         if (allowExecute()) {
             scanClient.pullSubTask().data?.let {
+                scanClient.updateSubScanTaskStatus(it.taskId, SubScanTaskStatus.EXECUTING.name)
                 executor.execute { doScan(it)  }
                 executingCount.incrementAndGet()
                 logger.info("executing task count ${executingCount.get()}")

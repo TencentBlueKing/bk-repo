@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
@@ -46,8 +48,6 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
@@ -63,6 +63,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -83,6 +84,9 @@ class ScanServiceImpl @Autowired constructor(
 ) : ScanService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
+
+    @Autowired
+    private lateinit var self: ScanServiceImpl
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask {
@@ -139,24 +143,17 @@ class ScanServiceImpl @Autowired constructor(
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
             logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
-            // 任务已扫描过，重复上报直接返回
+            // 更新扫描任务结果
+            val updateScanTaskResultSuccess = updateScanTaskResult(
+                subTaskId, scanExecutorResult.scanStatus, parentTaskId, scanExecutorResult.overview
+            )
+
+            // 没有扫描任务被更新或子扫描任务失败时直接返回
+            if (!updateScanTaskResultSuccess || scanExecutorResult.scanStatus != SubScanTaskStatus.SUCCESS.name) {
+                return
+            }
+
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
-            if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
-                return
-            }
-            logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId]")
-
-            // 更新父任务扫描结果
-            val scanSuccess = scanExecutorResult.scanStatus == SubScanTaskStatus.SUCCESS.name
-            scanTaskDao.updateScanResult(parentTaskId, 1, scanExecutorResult.overview, scanSuccess)
-            if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
-                logger.info("scan finished, task[$parentTaskId]")
-            }
-
-            if (!scanSuccess) {
-                return
-            }
-
             // 更新文件扫描结果
             val scanner = scannerService.get(subScanTask.scanner)
             fileScanResultDao.upsertResult(
@@ -175,23 +172,72 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
+    /**
+     * 更新任务状态
+     *
+     * @return 是否更新成功
+     */
+    @Transactional
+    fun updateScanTaskResult(
+        subTaskId: String,
+        subTaskStatus: String,
+        parentTaskId: String,
+        overview: Map<String, Any?>
+    ): Boolean {
+        // 任务已扫描过，重复上报直接返回
+        if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
+            return false
+        }
+        logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId][$subTaskStatus]")
+
+        // 更新父任务扫描结果
+        val scanSuccess = subTaskStatus == SubScanTaskStatus.SUCCESS.name
+        scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess)
+        if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
+            logger.info("scan finished, task[$parentTaskId]")
+        }
+        return true
+    }
+
+    override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
+        if (subScanTaskStatus == SubScanTaskStatus.EXECUTING.name) {
+            return subScanTaskDao.updateStatus(subScanTaskId, SubScanTaskStatus.EXECUTING).modifiedCount == 1L
+        }
+        return false
+    }
+
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    fun enqueueTimeoutTask() {
+        pullSubScanTask()?.let { scanTaskScheduler.schedule(it) }
+    }
+
     override fun pullSubScanTask(): SubScanTask? {
         var count = 0
-        // 超过最大允许重试次数后说明当前冲突比较严重，有多个扫描器在拉任务，直接返回null
-        while (count++ < MAX_RETRY_PULL_TASK_TIMES) {
+        while (true) {
             // 优先返回待执行任务，再返回超时任务
-            val task = subScanTaskDao.firstCreatedOrEnqueuedTask()
+            val task = subScanTaskDao.firstTaskByStatusIn(listOf(SubScanTaskStatus.CREATED.name))
                 ?: subScanTaskDao.firstTimeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
                 ?: return null
-            val updateResult =
-                subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.EXECUTING, task.lastModifiedDate)
+
+            // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
+            if (task.status == SubScanTaskStatus.EXECUTING.name && task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
+                logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] exceed max execute times")
+                self.updateScanTaskResult(task.id!!, SubScanTaskStatus.TIMEOUT.name, task.parentScanTaskId, emptyMap())
+                continue
+            }
+
+            // 更新任务，更新成功说明任务没有被其他扫描执行器拉取过，可以返回
+            val updateResult = subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.PULLED, task.lastModifiedDate)
             if (updateResult.modifiedCount != 0L) {
-                // 更新成功说明任务没有被其他扫描执行器拉取过
                 val scanner = scannerService.get(task.scanner)
                 return convert(task, scanner)
             }
+
+            // 超过最大允许重试次数后说明当前冲突比较严重，有多个扫描器在拉任务，直接返回null
+            if (++count >= MAX_RETRY_PULL_TASK_TIMES) {
+                return null
+            }
         }
-        return null
     }
 
     override fun resultOverview(request: FileScanResultOverviewRequest): List<FileScanResultOverview> {
@@ -272,12 +318,24 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     companion object {
-        // TODO 添加到配置文件中
+        /**
+         * 默认任务最长执行时间，超过后会触发重试
+         */
         private const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
+
+        /**
+         * 最大允许重复执行次数
+         */
+        private const val DEFAULT_MAX_EXECUTE_TIMES = 3
 
         /**
          * 最大允许的拉取任务重试次数
          */
         private const val MAX_RETRY_PULL_TASK_TIMES = 3
+
+        /**
+         * 定时扫描超时任务入队
+         */
+        private const val FIXED_DELAY = 3000L
     }
 }

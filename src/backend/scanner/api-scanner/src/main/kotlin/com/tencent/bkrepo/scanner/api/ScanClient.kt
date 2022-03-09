@@ -35,9 +35,12 @@ import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanClient")
 @RequestMapping("/service/scan")
@@ -63,4 +66,15 @@ interface ScanClient {
      */
     @GetMapping("/subtask")
     fun pullSubTask(): Response<SubScanTask?>
+
+    /**
+     * 更新子任务扫描状态
+     *
+     * @return 更新是否成功
+     */
+    @PutMapping("/subtask/{subScanTaskId}/status")
+    fun updateSubScanTaskStatus(
+        @PathVariable("subScanTaskId")subScanTaskId: String,
+        @RequestParam status: String
+    ): Response<Boolean>
 }

@@ -29,13 +29,13 @@ package com.tencent.bkrepo.scanner.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
@@ -88,6 +88,16 @@ interface ScanService {
      * @return 文件扫描报告详情
      */
     fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail
+
+    /**
+     * 更新子扫描任务状态
+     *
+     * @param subScanTaskId 子任务id
+     * @param subScanTaskStatus 要更新成哪个状态
+     *
+     * @return 是否更新成功
+     */
+    fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean
 
     /**
      * 拉取子任务

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.task
 
 import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.SubScanTask
 
 /**
  * 扫描任务调度器
@@ -37,6 +38,8 @@ interface ScanTaskScheduler {
      * 开始调度扫描任务
      */
     fun schedule(scanTask: ScanTask)
+
+    fun schedule(subScanTask: SubScanTask)
 
     /**
      * 恢复执行扫描任务

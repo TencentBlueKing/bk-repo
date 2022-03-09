@@ -32,11 +32,11 @@ import org.springframework.stereotype.Component
 
 @Component
 class DefaultSubScanTaskQueue : SubScanTaskQueue {
-    override fun enqueue(subScanTask: SubScanTask) {
-        // do nothing
+    override fun enqueue(subScanTask: SubScanTask): Boolean {
+        return false
     }
 
-    override fun enqueue(subScanTasks: List<SubScanTask>) {
-        // do nothing
+    override fun enqueue(subScanTasks: List<SubScanTask>): List<String> {
+        return emptyList()
     }
 }

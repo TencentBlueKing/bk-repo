@@ -38,6 +38,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.lt
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -104,11 +105,8 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
         return updateFirst(query, update)
     }
 
-    /**
-     * 获取一个待执行任务
-     */
-    fun firstCreatedOrEnqueuedTask(): TSubScanTask? {
-        val query = Query(TSubScanTask::status.inValues(listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.ENQUEUED)))
+    fun firstTaskByStatusIn(status: List<String>): TSubScanTask? {
+        val query = Query(TSubScanTask::status.inValues(status))
         return findOne(query)
     }
 
@@ -118,9 +116,8 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
      * @param timeoutSeconds 允许执行的最长时间
      */
     fun firstTimeoutTask(timeoutSeconds: Long): TSubScanTask? {
-        val taskExecuteBeforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
-        val criteria = TSubScanTask::status.isEqualTo(SubScanTaskStatus.EXECUTING)
-            .and(TSubScanTask::lastModifiedDate.name).lt(taskExecuteBeforeDate)
+        val beforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
+        val criteria = TSubScanTask::lastModifiedDate.lt(beforeDate)
         return findOne(Query(criteria))
     }
 }

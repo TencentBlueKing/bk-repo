@@ -14,6 +14,10 @@ enum class SubScanTaskStatus {
     CREATED,
 
     /**
+     * 已被拉取
+     */
+    PULLED,
+    /**
      * 子任务已入队
      */
     ENQUEUED,
@@ -27,12 +31,10 @@ enum class SubScanTaskStatus {
      * 扫描超时
      */
     TIMEOUT,
-
     /**
      * 扫描失败
      */
     FAILED,
-
     /**
      * 扫描成功
      */
