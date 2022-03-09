@@ -15,6 +15,7 @@ const storeObject = {
         genericTree: [
             {
                 name: '/',
+                displayName: '/',
                 fullPath: '',
                 folder: true,
                 children: [],
@@ -63,7 +64,7 @@ const storeObject = {
                 return {
                     ...item,
                     children,
-                    name: (item.metadata && item.metadata.displayName) || item.name
+                    displayName: (item.metadata && item.metadata.displayName) || item.name
                 }
             })
             tree.splice(0, tree.length, ...list)
