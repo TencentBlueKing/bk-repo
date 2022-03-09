@@ -129,7 +129,7 @@ object ResponseUtil {
                 port = Integer.valueOf(parts[1])
             }
         }
-
+        logger.info("docker url host")
         val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(getProtocol(httpHeaders))
         port?.let {
             builder.port(port)
