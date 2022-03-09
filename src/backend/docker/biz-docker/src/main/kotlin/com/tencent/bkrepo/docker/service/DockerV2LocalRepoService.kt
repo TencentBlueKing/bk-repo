@@ -410,6 +410,7 @@ class DockerV2LocalRepoService @Autowired constructor(
         }
 
         val location = ResponseUtil.getDockerURI(startUrl, httpHeaders)
+        logger.info("upload location", location)
         return ResponseEntity.status(HttpStatus.ACCEPTED).apply {
             header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         }.apply {
