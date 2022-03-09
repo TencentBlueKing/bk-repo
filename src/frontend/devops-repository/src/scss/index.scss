@@ -159,6 +159,10 @@ label {
         color: var(--successColor);
         background-color: var(--successBgColor);
     }
+    &.WARNING {
+        color: var(--warningColor);
+        background-color: var(--warningBgColor);
+    }
     &.FAILED,
     &.STOP {
         color: var(--dangerColor);

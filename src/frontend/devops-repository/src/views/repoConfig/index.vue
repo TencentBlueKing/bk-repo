@@ -87,7 +87,7 @@
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
     // import permissionConfig from './permissionConfig'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
         components: { CardRadioGroup, proxyConfig },
@@ -162,6 +162,7 @@
             }
         },
         computed: {
+            ...mapState(['domain']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -175,7 +176,11 @@
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
             },
             repoAddress () {
-                return location.origin + `/${this.repoBaseInfo.repoType}/${this.projectId}/${this.repoBaseInfo.name}/`
+                const { repoType, name } = this.repoBaseInfo
+                if (repoType === 'docker') {
+                    return `${location.protocol}//${this.domain.docker}/${this.projectId}/${name}/`
+                }
+                return `${location.origin}/${repoType}/${this.projectId}/${name}/`
             },
             available: {
                 get () {
@@ -197,11 +202,12 @@
             }
         },
         created () {
+            !this.domain.docker && this.getDockerDomain()
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDockerDomain']),
             toRepoList () {
                 this.$router.push({
                     name: 'repoList'
