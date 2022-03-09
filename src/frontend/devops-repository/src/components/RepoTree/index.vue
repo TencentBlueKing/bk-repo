@@ -3,7 +3,7 @@
         <ul class="repo-tree-list">
             <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
                 <div class="repo-tree-title hover-btn"
-                    :title="item.name"
+                    :title="item.displayName"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
                     :style="{ 'padding-left': 20 * computedDepth(item) + 10 + 'px' }"
                     @click.stop="itemClickHandler(item)">
@@ -14,7 +14,7 @@
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="node-text" :title="item.name" v-html="importantTransform(item.name)"></div>
+                        <div class="node-text" :title="item.displayName" v-html="importantTransform(item.displayName)"></div>
                     </slot>
                 </div>
             </li>
@@ -37,7 +37,7 @@
                 type: Object,
                 default: () => ({
                     roadMap: '',
-                    name: ''
+                    displayName: ''
                 })
             },
             openList: {
@@ -74,7 +74,7 @@
         },
         watch: {
             'selectedNode.roadMap' () {
-                this.calculateScrollTop(new RegExp(`^${this.selectedNode.name}$`))
+                this.calculateScrollTop(new RegExp(`^${this.selectedNode.displayName}$`))
             },
             importantSearch (val) {
                 val && this.calculateScrollTop(val)
@@ -129,9 +129,9 @@
             itemClickHandler (item) {
                 this.$emit('item-click', item)
             },
-            importantTransform (name) {
-                if (!this.importantSearch) return name
-                const normalText = name.split(this.importantSearch)
+            importantTransform (displayName) {
+                if (!this.importantSearch) return displayName
+                const normalText = displayName.split(this.importantSearch)
                 return normalText.reduce((a, b) => {
                     return a + `<em>${this.importantSearch}</em>` + b
                 })

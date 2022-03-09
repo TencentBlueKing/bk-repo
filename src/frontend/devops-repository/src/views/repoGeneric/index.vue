@@ -233,7 +233,7 @@
                 const road = this.selectedTreeNode.roadMap.split(',')
                 road.forEach(index => {
                     breadcrumb.push({
-                        name: node[index].name,
+                        name: node[index].displayName,
                         value: node[index],
                         cilckHandler: item => {
                             this.itemClickHandler(item.value)
@@ -304,6 +304,7 @@
             initPage () {
                 this.INIT_TREE([{
                     name: this.replaceRepoName(this.repoName),
+                    displayName: this.replaceRepoName(this.repoName),
                     fullPath: '',
                     folder: true,
                     children: [],
