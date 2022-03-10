@@ -71,7 +71,7 @@ class NodeIterator(
         with(position) {
             var nodes: List<Node>
             do {
-                nodes = requestNodes(projectId, rule, this.page + 1, this.pageSize)
+                nodes = requestNodes(projectId, this@NodeIterator.rule, this.page + 1, this.pageSize)
 
                 // 当前project没有数据，且没有其他需要遍历的project时表示遍历完成
                 if (nodes.isNotEmpty() || !projectIdIterator.hasNext()) {
@@ -136,7 +136,11 @@ class NodeIterator(
         val rules = ArrayList<Rule>(2)
         rules.add(Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ))
         rules.add(Rule.QueryRule(NodeDetail::folder.name, false, OperationType.EQ))
-        rule?.let { rules.add(it) }
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            rules.addAll(rule.rules)
+        } else {
+            rule?.let { rules.add(it) }
+        }
         return Rule.NestedRule(rules)
     }
 

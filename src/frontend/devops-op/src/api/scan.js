@@ -30,7 +30,7 @@ export function scan(scanner, projectId, repoName, path) {
             'operation': 'EQ'
           },
           {
-            'field': 'path',
+            'field': 'fullPath',
             'value': path,
             'operation': 'PREFIX'
           }
