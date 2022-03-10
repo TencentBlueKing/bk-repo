@@ -34,6 +34,7 @@ import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Volume
+import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -291,10 +292,35 @@ class BinAuditorScanExecutor @Autowired constructor(
         resultFilerRule: ResultFilterRule,
         binAuditorScanExecutorResult: BinAuditorScanExecutorResult
     ): BinAuditorScanExecutorResult {
-        val excludeSensitiveItemRule = resultFilerRule.sensitiveItemFilterRule.excludes
-        val sensitiveItems = binAuditorScanExecutorResult.sensitiveItems.filter { sensitiveItem ->
-            !SensitiveItem::class.memberProperties.any { excludeSensitiveItemRule[it.name] == it.get(sensitiveItem) }
+        val excludes = resultFilerRule.sensitiveItemFilterRule.excludes
+        val sensitiveItems = ArrayList<SensitiveItem>()
+        for (sensitiveItem in binAuditorScanExecutorResult.sensitiveItems) {
+            var match = false
+
+            for (prop in SensitiveItem::class.memberProperties) {
+                val propValue = prop.get(sensitiveItem)
+
+                if (excludes[prop.name] != null && propValue in excludes[prop.name]!!) {
+                    match = true
+                    break
+                }
+
+                if (propValue is Map<*, *>) {
+                    match = propValue.any {
+                        val rule = excludes["${prop.name}$DOT${it.key}"]
+                        rule != null && it.value in rule
+                    }
+                    if (match) {
+                        break
+                    }
+                }
+            }
+
+            if (!match) {
+                sensitiveItems.add(sensitiveItem)
+            }
         }
+
         return binAuditorScanExecutorResult.copy(sensitiveItems = sensitiveItems)
     }
 

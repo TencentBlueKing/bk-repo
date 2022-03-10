@@ -73,7 +73,7 @@ data class ResultFilterRule(
 @ApiModel("敏感信息结果过滤规则")
 data class SensitiveItemFilterRule(
     @ApiModelProperty("结果字段过滤规则")
-    val excludes: Map<String, String>
+    val excludes: Map<String, List<String>>
 )
 
 @ApiModel("BinAuditor容器镜像配置")
