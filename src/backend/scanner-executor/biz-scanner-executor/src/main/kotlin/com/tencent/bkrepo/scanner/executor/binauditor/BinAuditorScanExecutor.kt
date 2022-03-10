@@ -105,9 +105,13 @@ class BinAuditorScanExecutor @Autowired constructor(
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
             logger.info(logMsg(task, "scan finished took time $timeSpent ms"))
-            var result =
-                result(startTimestamp, finishedTimestamp, File(workDir, scanner.container.outputDir), scanStatus)
-            result = scanner.resultFilterRule?.let { filter(it, result) } ?: result
+            val result = result(
+                startTimestamp,
+                finishedTimestamp,
+                File(workDir, scanner.container.outputDir),
+                scanner.resultFilterRule,
+                scanStatus
+            )
             callback(result)
         } catch (e: Exception) {
             logger.error(logMsg(task, "scan failed"), e)
@@ -258,6 +262,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         startTimestamp: Long,
         finishedTimestamp: Long,
         outputDir: File,
+        resultFilterRule: ResultFilterRule?,
         scanStatus: SubScanTaskStatus
     ): BinAuditorScanExecutorResult {
         val cveSecResultFile = File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS)
@@ -273,8 +278,12 @@ class BinAuditorScanExecutor @Autowired constructor(
                 ?.map { it.copy(licenseRisk = normalizedLevel(it.licenseRisk)) }
                 ?: emptyList()
 
-        val sensitiveItems =
+        var sensitiveItems =
             readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)) ?: emptyList()
+        if (resultFilterRule != null) {
+            val excludes = resultFilterRule.sensitiveItemFilterRule.excludes
+            sensitiveItems = sensitiveItems.filterNot { excludedSensitiveItem(it, excludes) }
+        }
 
         return BinAuditorScanExecutorResult(
             startTimestamp = startTimestamp,
@@ -288,40 +297,37 @@ class BinAuditorScanExecutor @Autowired constructor(
         )
     }
 
-    private fun filter(
-        resultFilerRule: ResultFilterRule,
-        binAuditorScanExecutorResult: BinAuditorScanExecutorResult
-    ): BinAuditorScanExecutorResult {
-        val excludes = resultFilerRule.sensitiveItemFilterRule.excludes
-        val sensitiveItems = ArrayList<SensitiveItem>()
-        for (sensitiveItem in binAuditorScanExecutorResult.sensitiveItems) {
-            var match = false
+    /**
+     * 属性值是否在过滤规则里
+     *
+     * @param sensitiveItem 待过滤对象
+     * @param excludes 过滤规则
+     *
+     * @return true 在过滤规则中， false 不在过滤规则中
+     */
+    private fun excludedSensitiveItem(
+        sensitiveItem: SensitiveItem,
+        excludes: Map<String, List<String>>
+    ): Boolean {
+        for (prop in SensitiveItem::class.memberProperties) {
+            val propValue = prop.get(sensitiveItem)
 
-            for (prop in SensitiveItem::class.memberProperties) {
-                val propValue = prop.get(sensitiveItem)
-
-                if (excludes[prop.name] != null && propValue in excludes[prop.name]!!) {
-                    match = true
-                    break
-                }
-
-                if (propValue is Map<*, *>) {
-                    match = propValue.any {
-                        val rule = excludes["${prop.name}$DOT${it.key}"]
-                        rule != null && it.value in rule
-                    }
-                    if (match) {
-                        break
-                    }
-                }
+            if (excludes[prop.name] != null && propValue in excludes[prop.name]!!) {
+                return true
             }
 
-            if (!match) {
-                sensitiveItems.add(sensitiveItem)
+            if (propValue is Map<*, *>) {
+                val match = propValue.any {
+                    val rule = excludes["${prop.name}$DOT${it.key}"]
+                    rule != null && it.value in rule
+                }
+                if (match) {
+                    return true
+                }
             }
         }
 
-        return binAuditorScanExecutorResult.copy(sensitiveItems = sensitiveItems)
+        return false
     }
 
     private fun overview(
