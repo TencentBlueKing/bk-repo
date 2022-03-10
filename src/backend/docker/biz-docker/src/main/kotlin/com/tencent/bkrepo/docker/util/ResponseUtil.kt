@@ -118,7 +118,7 @@ object ResponseUtil {
     }
 
     // get docker return url
-    fun getDockerURI(path: String, httpHeaders: HttpHeaders): URI {
+    fun getDockerURI(path: String, httpHeaders: HttpHeaders, enableHttp: Boolean): URI {
         val hostHeaders = httpHeaders["Host"]
         var host = LOCAL_HOST
         var port: Int? = null
@@ -129,8 +129,7 @@ object ResponseUtil {
                 port = Integer.valueOf(parts[1])
             }
         }
-        logger.info("docker url host")
-        val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(getProtocol(httpHeaders))
+        val builder = UriBuilder.fromPath("v2/$path").host(host).scheme(getProtocol(httpHeaders, enableHttp))
         port?.let {
             builder.port(port)
         }
@@ -150,8 +149,8 @@ object ResponseUtil {
      * determine to return http protocol
      * prefix or https prefix
      */
-    private fun getProtocol(httpHeaders: HttpHeaders): String {
-        logger.info("http headers [$httpHeaders]")
+    private fun getProtocol(httpHeaders: HttpHeaders, enableHttp: Boolean): String {
+        if (enableHttp) return HTTP_PROTOCOL
         val protocolHeaders = httpHeaders[HTTP_FORWARDED_PROTO]
         if (protocolHeaders == null || protocolHeaders.isEmpty()) {
             return HTTP_PROTOCOL

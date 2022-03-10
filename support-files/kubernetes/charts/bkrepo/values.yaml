@@ -68,11 +68,11 @@ mongodb:
   # 是否部署mongodb
   # 如果需要使用外部数据库，设置为false并配置externalMongodb
   enabled: true
-  auth:
-    enabled: true
-    database: bkrepo
-    username: bkrepo
-    password: bkrepo
+  :
+  enabled: true
+  database: bkrepo
+  username: bkrepo
+  password: bkrepo
   persistence:
     subPath: mongodb
     size: 20Gi
@@ -434,6 +434,7 @@ opdata:
 ## docker registry服务配置
 docker:
   enabled: false
+  enableHttp: false
   config: {}
   ## Kubernetes 通用配置
   image:
