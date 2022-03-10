@@ -29,7 +29,6 @@ class ExecutorScheduler @Autowired constructor(
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun scan() {
-        // TODO 添加允许同时执行的扫描任务限制配置
         if (allowExecute()) {
             scanClient.pullSubTask().data?.let {
                 scanClient.updateSubScanTaskStatus(it.taskId, SubScanTaskStatus.EXECUTING.name)
@@ -85,7 +84,6 @@ class ExecutorScheduler @Autowired constructor(
     }
 
     companion object {
-        // TODO 添加到配置文件
         private const val FIXED_DELAY = 3000L
         private val logger = LoggerFactory.getLogger(ExecutorScheduler::class.java)
         private const val MAX_ALLOW_TASK_COUNT = 4

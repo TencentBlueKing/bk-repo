@@ -69,6 +69,12 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success(scannerService.list())
     }
 
+    @ApiOperation("获取扫描器")
+    @GetMapping("/{name}")
+    fun get(@PathVariable("name") name: String): Response<Scanner> {
+        return ResponseBuilder.success(scannerService.get(name))
+    }
+
     @ApiOperation("删除扫描器")
     @DeleteMapping("/{name}")
     fun delete(@PathVariable("name") name: String): Response<Void> {

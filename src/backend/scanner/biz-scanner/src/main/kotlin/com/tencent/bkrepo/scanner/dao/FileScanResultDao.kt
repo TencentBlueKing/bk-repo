@@ -102,7 +102,6 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
         startDateTime: LocalDateTime,
         finishedDateTime: LocalDateTime
     ): UpdateResult {
-        // TODO 通用upsert重试逻辑抽象
         return try {
             doUpsertResult(
                 credentialsKey, sha256, taskId, scanner, resultOverview, startDateTime, finishedDateTime
@@ -141,9 +140,6 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
 
     private fun scannerResultKey(scanner: String) = "${TFileScanResult::scanResult.name}.$scanner"
 
-    /**
-     * TODO 通用更新lastModifiedDate逻辑抽象
-     */
     private fun buildUpdate(lastModifiedDate: LocalDateTime = LocalDateTime.now()): Update =
         Update.update(TFileScanResult::lastModifiedDate.name, lastModifiedDate)
 }

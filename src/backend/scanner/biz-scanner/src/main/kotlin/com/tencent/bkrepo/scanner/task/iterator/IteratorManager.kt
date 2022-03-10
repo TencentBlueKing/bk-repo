@@ -37,7 +37,6 @@ import org.springframework.stereotype.Component
 
 /**
  * 迭代器管理器
- * TODO 实现迭代进度管理
  */
 @Component
 class IteratorManager(
