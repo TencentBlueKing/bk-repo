@@ -68,10 +68,23 @@ class MetadataRuleInterceptor : QueryRuleInterceptor {
         } else {
             context.interpreter.resolveRule(nestedAndRule, context)
         }
+        // 在流水线含有pipelineId或者buildId时，使用METADATA_IDX查询效率更高
+        if (isInPipelineSearch(key)) {
+            context.mongoQuery.withHint(TNode.METADATA_IDX)
+        }
         return Criteria.where(TNode::metadata.name).elemMatch(criteria)
+    }
+
+    /**
+     * 是否是流水线相关查询
+     * */
+    private fun isInPipelineSearch(key: String): Boolean {
+        return key == PIPELINE_ID || key == BUILD_ID
     }
 
     companion object {
         const val ALPHA_PATTERN = "[A-Z]"
+        const val PIPELINE_ID = "pipelineId"
+        const val BUILD_ID = "buildId"
     }
 }
