@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.artifact
 import com.tencent.bkrepo.common.artifact.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
+import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
@@ -63,6 +64,7 @@ import org.springframework.context.annotation.PropertySource
     ArtifactPermissionConfiguration::class,
     ArtifactManagerConfiguration::class,
     ArtifactResolverConfiguration::class,
-    ArtifactViewModelConfiguration::class
+    ArtifactViewModelConfiguration::class,
+    ArtifactHealthConfiguration::class
 )
 class ArtifactAutoConfiguration

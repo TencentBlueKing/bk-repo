@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.common.artifact.health
 
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.boot.actuate.health.AbstractHealthIndicator

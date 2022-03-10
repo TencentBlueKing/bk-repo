@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -46,19 +47,28 @@ import java.nio.charset.Charset
 class StreamArtifactFileTest {
 
     private val tempDir = System.getProperty("java.io.tmpdir")
+    private val localDir = tempDir.toPath().resolve("local")
 
-    private val uploadProperties = UploadProperties(location = tempDir)
+    private val uploadProperties = UploadProperties(location = tempDir, localPath = localDir.toString())
 
     private val storageCredentials = FileSystemCredentials(upload = uploadProperties)
 
-    private fun buildArtifactFile(source: InputStream, threshold: Long): StreamArtifactFile {
+    private fun buildArtifactFile(
+        source: InputStream,
+        threshold: Long,
+        localThreshold: Long = -1,
+        contentLength: Long? = null
+    ): StreamArtifactFile {
         val storageProperties = StorageProperties(
             filesystem = storageCredentials,
-            receive = ReceiveProperties(fileSizeThreshold = DataSize.ofBytes(threshold)),
+            receive = ReceiveProperties(
+                fileSizeThreshold = DataSize.ofBytes(threshold),
+                localThreshold = DataSize.ofBytes(localThreshold)
+            ),
             monitor = MonitorProperties()
         )
         val monitor = StorageHealthMonitor(storageProperties, tempDir)
-        return StreamArtifactFile(source, monitor, storageProperties, storageCredentials)
+        return StreamArtifactFile(source, monitor, storageProperties, storageCredentials, contentLength)
     }
 
     @Test
@@ -147,5 +157,26 @@ class StreamArtifactFileTest {
         file.delete()
         assertFalse(file.exists())
         assertFalse(artifactFile.getFile()!!.exists())
+    }
+
+    @Test
+    fun testLocalPath() {
+        val randomString = randomString(11)
+        val source = randomString.byteInputStream()
+        val artifactFile = buildArtifactFile(source, 10, 12, randomString.length.toLong())
+        val file = artifactFile.flushToFile()
+        assertEquals(true, artifactFile.isInLocalDisk())
+        assertTrue(file.toPath().startsWith(localDir))
+    }
+
+    @Test
+    fun testPath() {
+        val randomString = randomString(11)
+        val source = randomString.byteInputStream()
+        val artifactFile = buildArtifactFile(source, 5, 10, randomString.length.toLong())
+        val file = artifactFile.flushToFile()
+        assertEquals(false, artifactFile.isInLocalDisk())
+        assertFalse(file.toPath().startsWith(localDir))
+        assertTrue(file.toPath().startsWith(tempDir))
     }
 }

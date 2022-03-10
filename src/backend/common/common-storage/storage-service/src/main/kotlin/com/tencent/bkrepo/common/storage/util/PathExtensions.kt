@@ -66,16 +66,19 @@ fun Path.createNewOutputStream(): OutputStream {
 
 /**
  * 删除路径，如果路径为文件或者空目录则删除
+ * @return true表示已经执行了删除，false表示未执行删除
  * */
 fun Path.delete(): Boolean {
     // 文件
     if (this.toFile().isFile) {
-        return Files.deleteIfExists(this)
+        Files.deleteIfExists(this)
+        return true
     }
     // 删除空目录
     Files.newDirectoryStream(this).use {
         if (!it.iterator().hasNext()) {
-            return Files.deleteIfExists(this)
+            Files.deleteIfExists(this)
+            return true
         }
     }
     // 目录还存在内容
