@@ -91,6 +91,9 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, status.name)
+        if (status == SubScanTaskStatus.EXECUTING) {
+            update.inc(TSubScanTask::executedTimes.name, 1)
+        }
         return updateFirst(query, update)
     }
 
