@@ -83,5 +83,5 @@ data class VersionDependenciesInfo(
     @ApiModelProperty("包的开发依赖信息")
     val devDependencies: List<DependenciesInfo>,
     @ApiModelProperty("包的被依赖信息")
-    val dependents: Page<ModuleDepsInfo>
+    val dependents: Set<String>
 )
