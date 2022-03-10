@@ -27,10 +27,15 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 @Document("scan_task")
+@CompoundIndexes(
+    CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true)
+)
 data class TScanTask(
     val id: String? = null,
     val createdBy: String,

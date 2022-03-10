@@ -214,12 +214,21 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
-    fun enqueueTimeoutTask() {
+    fun enqueueTimeoutSubTask() {
         pullSubScanTask()?.let {
             if (!scanTaskScheduler.schedule(it)) {
                 // 调度失败，归还任务
                 subScanTaskDao.updateStatus(it.taskId, SubScanTaskStatus.CREATED)
             }
+        }
+    }
+
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    @Transactional(rollbackFor = [Throwable::class])
+    fun enqueueTimeoutTask() {
+        val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
+        if (task != null && scanTaskDao.resetTask(task.id!!, task.lastModifiedDate).modifiedCount == 1L) {
+            scanTaskScheduler.schedule(convert(task))
         }
     }
 

@@ -68,6 +68,33 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         return updateFirst(query, update)
     }
 
+    fun timeoutTask(timeoutSeconds: Long): TScanTask? {
+        val beforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
+        val criteria = Criteria
+            .where(TScanTask::status.name).`in`(ScanTaskStatus.PENDING.name, ScanTaskStatus.SCANNING_SUBMITTING.name)
+            .and(TScanTask::lastModifiedDate.name).lt(beforeDate)
+        return findOne(Query(criteria))
+    }
+
+    /**
+     * 重制扫描任务状态
+     */
+    fun resetTask(taskId: String, lastModifiedDate: LocalDateTime): UpdateResult {
+        val query = Query(
+            Criteria.where(ID).isEqualTo(taskId).and(TScanTask::lastModifiedDate.name).isEqualTo(lastModifiedDate)
+        )
+        val update = buildUpdate()
+            .set(TScanTask::startDateTime.name, null)
+            .set(TScanTask::finishedDateTime.name, null)
+            .set(TScanTask::scanResultOverview.name, null)
+            .set(TScanTask::status.name, ScanTaskStatus.PENDING.name)
+            .set(TScanTask::total.name, 0L)
+            .set(TScanTask::scanning.name, 0L)
+            .set(TScanTask::failed.name, 0L)
+            .set(TScanTask::scanned.name, 0L)
+        return updateFirst(query, update)
+    }
+
     fun updateStartedDateTimeIfNotExists(taskId: String, startDateTime: LocalDateTime): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(taskId).and(TScanTask::startDateTime.name).isEqualTo(null)
         val update = buildUpdate().set(TScanTask::startDateTime.name, startDateTime)
