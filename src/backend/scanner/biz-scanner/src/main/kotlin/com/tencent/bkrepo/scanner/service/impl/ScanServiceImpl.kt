@@ -143,6 +143,7 @@ class ScanServiceImpl @Autowired constructor(
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
             logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")
+            val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
                 subTaskId, scanExecutorResult.scanStatus, parentTaskId, scanExecutorResult.overview
@@ -153,7 +154,6 @@ class ScanServiceImpl @Autowired constructor(
                 return
             }
 
-            val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             // 更新文件扫描结果
             val scanner = scannerService.get(subScanTask.scanner)
             fileScanResultDao.upsertResult(
