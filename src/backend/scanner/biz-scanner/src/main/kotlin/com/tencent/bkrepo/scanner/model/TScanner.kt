@@ -34,7 +34,7 @@ import java.time.LocalDateTime
 
 @Document("scanner")
 @CompoundIndexes(
-    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
+    CompoundIndex(name = "name_idx", def = "{'name': 1, 'deleted': 1}", unique = true)
 )
 data class TScanner(
     val id: String? = null,
@@ -42,6 +42,8 @@ data class TScanner(
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
+    val deleted: LocalDateTime? = null,
+
     /**
      * 扫描器名
      */

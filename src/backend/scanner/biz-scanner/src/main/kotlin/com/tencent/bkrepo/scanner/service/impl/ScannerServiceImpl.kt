@@ -93,8 +93,7 @@ class ScannerServiceImpl @Autowired constructor(
     }
 
     override fun delete(name: String) {
-        // TODO 改为逻辑删除
-        if (scannerDao.deleteByName(name).deletedCount == 0L) {
+        if (scannerDao.deleteByName(name).modifiedCount == 0L) {
             throw ScannerNotFoundException(name)
         }
     }

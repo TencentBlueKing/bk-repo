@@ -27,12 +27,14 @@
 
 package com.tencent.bkrepo.scanner.dao
 
-import com.mongodb.client.result.DeleteResult
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanner
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class ScannerDao : SimpleMongoDao<TScanner>() {
@@ -46,10 +48,17 @@ class ScannerDao : SimpleMongoDao<TScanner>() {
         return findOne(query)
     }
 
-    fun deleteByName(name: String): DeleteResult {
+    fun deleteByName(name: String, deleted: LocalDateTime = LocalDateTime.now()): UpdateResult {
         val query = buildQuery(name)
-        return remove(query)
+        val update = Update.update(TScanner::deleted.name, deleted)
+        return updateFirst(query, update)
     }
 
-    private fun buildQuery(name: String) = Query(TScanner::name.isEqualTo(name))
+    private fun buildQuery(name: String, includeDeleted: Boolean = false): Query {
+        val criteria = TScanner::name.isEqualTo(name)
+        if (!includeDeleted) {
+            criteria.and(TScanner::deleted.name).isEqualTo(null)
+        }
+        return Query(criteria)
+    }
 }
