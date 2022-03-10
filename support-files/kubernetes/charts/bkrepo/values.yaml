@@ -68,11 +68,11 @@ mongodb:
   # 是否部署mongodb
   # 如果需要使用外部数据库，设置为false并配置externalMongodb
   enabled: true
-  :
-  enabled: true
-  database: bkrepo
-  username: bkrepo
-  password: bkrepo
+  auth:
+    enabled: true
+    database: bkrepo
+    username: bkrepo
+    password: bkrepo
   persistence:
     subPath: mongodb
     size: 20Gi
