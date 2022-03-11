@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonAlias
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -36,33 +36,33 @@ import io.swagger.annotations.ApiModelProperty
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SensitiveItem(
     @ApiModelProperty("存在敏感信息的文件路径")
-    @JsonProperty("Source")
+    @JsonAlias("Source")
     val path: String,
 
     /**
      * uri, ipv4, ipv6, email, secret
      */
     @ApiModelProperty("敏感信息类型,")
-    @JsonProperty("Class")
+    @JsonAlias("Class")
     val type: String,
 
     /**
      * uri, ipv4, ipv6, email, common_key
      */
     @ApiModelProperty("敏感信息子类型")
-    @JsonProperty("SubClass")
+    @JsonAlias("SubClass")
     val subType: String,
 
     @ApiModelProperty("敏感信息内容")
-    @JsonProperty("Content")
+    @JsonAlias("Content")
     val content: String,
 
     @ApiModelProperty("敏感信息为uri或者email时生效")
-    @JsonProperty("Domain")
+    @JsonAlias("Domain")
     val domain: String,
 
     @ApiModelProperty("敏感信息属性，存放文件类型，uri协议等信息")
-    @JsonProperty("Attr")
+    @JsonAlias("Attr")
     val attr: Map<String, String>
 ) {
     companion object {

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
 import io.swagger.annotations.ApiModel
@@ -37,85 +37,85 @@ import org.apache.commons.lang3.StringEscapeUtils
 @ApiModel("CVE信息")
 data class CveSecItem(
     @ApiModelProperty("文件路径")
-    @JsonProperty("path")
+    @JsonAlias("path")
     val path: String,
 
     @ApiModelProperty("组件名")
-    @JsonProperty("component")
+    @JsonAlias("component")
     var component: String,
 
     @ApiModelProperty("库版本")
-    @JsonProperty("version")
+    @JsonAlias("version")
     val version: String,
 
     @ApiModelProperty("漏洞影响版本")
-    @JsonProperty("version_effected")
+    @JsonAlias("version_effected")
     val versionEffected: String,
 
     @ApiModelProperty("漏洞修复版本")
-    @JsonProperty("version_fixed")
+    @JsonAlias("version_fixed")
     val versionFixed: String,
 
     @ApiModelProperty("漏洞名")
-    @JsonProperty("name")
+    @JsonAlias("name")
     val name: String,
 
     @ApiModelProperty("漏洞利用类型")
-    @JsonProperty("category")
+    @JsonAlias("category")
     val category: String,
 
     @ApiModelProperty("漏洞类型")
-    @JsonProperty("category_type")
+    @JsonAlias("category_type")
     val categoryType: String,
 
     @ApiModelProperty("poc id")
-    @JsonProperty("poc_id")
+    @JsonAlias("poc_id")
     val pocId: String,
 
     @ApiModelProperty("cve id")
-    @JsonProperty("cve_id")
+    @JsonAlias("cve_id")
     val cveId: String,
 
     @ApiModelProperty("cnvd id")
-    @JsonProperty("cnvd_id")
+    @JsonAlias("cnvd_id")
     val cnvdId: String,
 
     @ApiModelProperty("cnnvd id")
-    @JsonProperty("cnnvd_id")
+    @JsonAlias("cnnvd_id")
     val cnnvdId: String,
 
     @ApiModelProperty("cwe id")
-    @JsonProperty("cwe_id")
+    @JsonAlias("cwe_id")
     val cweId: String,
 
     /**
      * CRITICAL,HIGH,MEDIUM,LOW
      */
     @ApiModelProperty("cvss等级")
-    @JsonProperty("cvss_rank")
+    @JsonAlias("cvss_rank")
     val cvssRank: String,
 
     @ApiModelProperty("cvss 评分")
-    @JsonProperty("cvss")
+    @JsonAlias("cvss")
     val cvss: Double,
 
     @ApiModelProperty("cvss V3 漏洞影响评价")
-    @JsonProperty("cvss_v3_vector")
+    @JsonAlias("cvss_v3_vector")
     val cvssV3Vector: String?,
 
     @ApiModelProperty("cvss V2 漏洞影响评价")
-    @JsonProperty("cvss_v2_vector")
+    @JsonAlias("cvss_v2_vector")
     val cvssV2Vector: String?,
 
     @ApiModelProperty("dynamic level")
-    @JsonProperty("dynamic_level")
+    @JsonAlias("dynamic_level")
     val dynamicLevel: Int,
 
     /**
      * 严重，高危，中危，低危，
      */
     @ApiModelProperty("nvTools 漏洞评级")
-    @JsonProperty("level")
+    @JsonAlias("level")
     val level: String?
 ) {
 
