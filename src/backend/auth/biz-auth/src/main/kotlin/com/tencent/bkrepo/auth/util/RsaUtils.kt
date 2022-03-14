@@ -27,8 +27,3 @@ object RsaUtils {
         return rsa.decryptStr(password, KeyType.PrivateKey)
     }
 }
-
-fun main() {
-    val rsa2 = RSA(null,"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDkHUwvWNaF9OJ+1h7EhGX6WIpw9OTo75uMiSsaIjRbC8nlY6jS4MFPKT1XEQZQdE83RMd1UC2IH+0gnhagH7byG1/KelQBJJusAJpcjmPBmpzUj6WcIbm1yHShCBqfxYUZeO8eRrySbWURCGxWT5IZ6wcIKSfabez+bH9lxg+DFQIDAQAB")
-    println(rsa2.encryptBcd("bkrepo", KeyType.PublicKey))
-}
