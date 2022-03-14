@@ -31,8 +31,6 @@
 
 package com.tencent.bkrepo.npm.service.impl
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -53,10 +51,10 @@ import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.VersionDependenciesInfo
 import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
-import com.tencent.bkrepo.npm.service.ModuleDepsService
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.service.NpmWebService
 import com.tencent.bkrepo.npm.utils.NpmUtils
+import com.tencent.bkrepo.repository.api.PackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
@@ -69,7 +67,7 @@ import org.springframework.transaction.annotation.Transactional
 class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     @Autowired
-    private lateinit var moduleDepsService: ModuleDepsService
+    private lateinit var packageDependentsClient: PackageDependentsClient
 
     @Autowired
     private lateinit var npmClientService: NpmClientService
@@ -96,26 +94,21 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
             }
             val basicInfo = buildBasicInfo(nodeDetail, packageVersion)
             val versionDependenciesInfo =
-                queryVersionDependenciesInfo(artifactInfo, packageMetadata.versions.map[version]!!, name)
+                queryVersionDependenciesInfo(artifactInfo, packageKey, packageMetadata.versions.map[version]!!)
             return PackageVersionInfo(basicInfo, emptyMap(), versionDependenciesInfo)
         }
     }
 
     private fun queryVersionDependenciesInfo(
         artifactInfo: NpmArtifactInfo,
-        versionMetadata: NpmVersionMetadata,
-        name: String
+        packageKey: String,
+        versionMetadata: NpmVersionMetadata
     ): VersionDependenciesInfo {
-        val moduleDepsPage = moduleDepsService.page(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            DEFAULT_PAGE_NUMBER,
-            DEFAULT_PAGE_SIZE,
-            name
-        )
+        val packageDependents = packageDependentsClient.queryDependents(artifactInfo.projectId,
+            artifactInfo.repoName, packageKey).data.orEmpty()
         val dependenciesList = parseDependencies(versionMetadata)
         val devDependenciesList = parseDevDependencies(versionMetadata)
-        return VersionDependenciesInfo(dependenciesList, devDependenciesList, moduleDepsPage)
+        return VersionDependenciesInfo(dependenciesList, devDependenciesList, packageDependents)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
