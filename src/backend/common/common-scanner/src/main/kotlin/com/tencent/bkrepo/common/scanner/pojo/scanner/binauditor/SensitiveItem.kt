@@ -51,7 +51,7 @@ data class SensitiveItem(
      */
     @ApiModelProperty("敏感信息子类型")
     @JsonAlias("SubClass")
-    val subType: String,
+    val subtype: String,
 
     @ApiModelProperty("敏感信息内容")
     @JsonAlias("Content")

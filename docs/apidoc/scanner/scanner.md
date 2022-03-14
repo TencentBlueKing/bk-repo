@@ -43,26 +43,27 @@
 ```
 
 - 请求字段说明
+详情参考[支持的扫描器](./supported-scanner.md)
 
-  | 字段              | 类型     |是否必须| 默认值              | 说明                               | Description                          |
-                  |-----------------|----------|------------------|-----|------------------------------------|----------------------------------|
-  | name            | string  |是| 无                | 扫描器名                             | scanner name                         |
-  | version         | string  |是| 无                | 扫描器版本，BinAuditor扫描器版本和漏洞库版本用::分隔 | scanner version                      |
-  | type            | string  |是| 无                | 扫描器类型                            | scanner type                         |
-  | rootPath        | string  |是| 无                | 扫描器工作根目录                         | scanner work dir                     |
-  | configFilePath  | string  |否| /standalone.toml | 生成的BinAuditor扫描器配置文件存放路径         | bin-auditor scanner config file path |
-  | cleanWorkDir    | boolean |否| true             | 扫描结束后是否清理目录                      | clean work dir after scan            |
-  | maxScanDuration | number  |否| 600000           | 扫描超时时间，单位为毫秒                     | max scan duration            |
-  | nvtools.enabled | boolean  |是| false            | 是否使用漏洞库                     | use nvtools or not            |
-  | nvtools.username       | string  |否| 无                | 漏洞库用户名                     | nvtools username            |
-  | nvtools.key       | string  |否| 无                | 漏洞库认证密钥                     | nvtools key            |
-  | nvtools.host       | string  |否| 无                | 漏洞库地址                     | nvtools address            |
-  | container.image       | string  |是| 无                | 使用的arrowhead镜像tag                     | arrowhead image tag            |
-  | container.args       | string  |是| 无                | 启动容器时传的参数                     | container args            |
-  | container.workDir       | string  |否| /data            | 容器内工作目录根目录                     | work dir            |
-  | container.inputDir       | string  |否| /package         | 容器内扫描时的输入目录，相对于工作目录                     | input dir            |
-  | container.outputDir       | string  |否| /output          | 容器内扫描时的输出目录，相对于工作目录                     | output dir            |
-  | resultFilterRule.sensitiveItemFilterRule.excludes       | array  |否| 无                | 敏感信息扫描结果过滤规则，key为敏感信息结果字段名，value为要过滤的敏感信息结果字段值列表                     | sensitiv item filter rule            |
+| 字段                                                | 类型      | 是否必须 | 默认值              | 说明                                               | Description                          |
+|---------------------------------------------------|---------|------|------------------|--------------------------------------------------|--------------------------------------|
+| name                                              | string  | 是    | 无                | 扫描器名                                             | scanner name                         |
+| version                                           | string  | 是    | 无                | 扫描器版本，BinAuditor扫描器版本和漏洞库版本用::分隔                 | scanner version                      |
+| type                                              | string  | 是    | 无                | 扫描器类型                                            | scanner type                         |
+| rootPath                                          | string  | 是    | 无                | 扫描器工作根目录                                         | scanner work dir                     |
+| configFilePath                                    | string  | 否    | /standalone.toml | 生成的BinAuditor扫描器配置文件存放路径                         | bin-auditor scanner config file path |
+| cleanWorkDir                                      | boolean | 否    | true             | 扫描结束后是否清理目录                                      | clean work dir after scan            |
+| maxScanDuration                                   | number  | 否    | 600000           | 扫描超时时间，单位为毫秒                                     | max scan duration                    |
+| nvtools.enabled                                   | boolean | 是    | false            | 是否使用漏洞库                                          | use nvtools or not                   |
+| nvtools.username                                  | string  | 否    | 无                | 漏洞库用户名                                           | nvtools username                     |
+| nvtools.key                                       | string  | 否    | 无                | 漏洞库认证密钥                                          | nvtools key                          |
+| nvtools.host                                      | string  | 否    | 无                | 漏洞库地址                                            | nvtools address                      |
+| container.image                                   | string  | 是    | 无                | 使用的arrowhead镜像tag                                | arrowhead image tag                  |
+| container.args                                    | string  | 是    | 无                | 启动容器时传的参数                                        | container args                       |
+| container.workDir                                 | string  | 否    | /data            | 容器内工作目录根目录                                       | work dir                             |
+| container.inputDir                                | string  | 否    | /package         | 容器内扫描时的输入目录，相对于工作目录                              | input dir                            |
+| container.outputDir                               | string  | 否    | /output          | 容器内扫描时的输出目录，相对于工作目录                              | output dir                           |
+| resultFilterRule.sensitiveItemFilterRule.excludes | array   | 否    | 无                | 敏感信息扫描结果过滤规则，key为敏感信息结果字段名，value为要过滤的敏感信息结果字段值列表 | sensitiv item filter rule            |
 
 - 响应体
 
@@ -115,9 +116,9 @@
 - 请求体 此接口请求体为空
 - 请求字段说明
 
-  | 字段           |类型|是否必须|默认值| 说明   | Description  |
-                  |--------------|---|---|------|--------------|-------------------|
-  | scannerName            |string|否|无| 扫描器名 | scanner name |
+| 字段          | 类型     | 是否必须 | 默认值 | 说明   | Description  |
+|-------------|--------|------|-----|------|--------------|
+| scannerName | string | 否    | 无   | 扫描器名 | scanner name |
 
 - 响应体
 
@@ -161,26 +162,7 @@
  ```
 
 - data字段说明
-
-  | 字段              | 类型     |说明                               | Description                          |
-                |------------------|-----|------------------------------------|----------------------------------|
-  | name            | string  |扫描器名                             | scanner name                         |
-  | version         | string  |扫描器版本，BinAuditor扫描器版本和漏洞库版本用::分隔 | scanner version                      |
-  | type            | string  |扫描器类型                            | scanner type                         |
-  | rootPath        | string  |扫描器工作根目录                         | scanner work dir                     |
-  | configFilePath  | string  |生成的BinAuditor扫描器配置文件存放路径         | bin-auditor scanner config file path |
-  | cleanWorkDir    | boolean |扫描结束后是否清理目录                      | clean work dir after scan            |
-  | maxScanDuration | number  |扫描超时时间，单位为毫秒                     | max scan duration            |
-  | nvtools.enabled | boolean  |是否使用漏洞库                     | use nvtools or not            |
-  | nvtools.username       | string  |漏洞库用户名                     | nvtools username            |
-  | nvtools.key       | string  | 漏洞库认证密钥                     | nvtools key            |
-  | nvtools.host       | string            | 漏洞库地址                     | nvtools address            |
-  | container.image       | string            | 使用的arrowhead镜像tag                     | arrowhead image tag            |
-  | container.args       | string            | 启动容器时传的参数                     | container args            |
-  | container.workDir       | string  | 容器内工作目录根目录                     | work dir            |
-  | container.inputDir       | string           | 容器内扫描时的输入目录，相对于工作目录                     | input dir            |
-  | container.outputDir       | string           | 容器内扫描时的输出目录，相对于工作目录                     | output dir            |
-  | resultFilterRule.sensitiveItemFilterRule.excludes       | array  | 敏感信息扫描结果过滤规则，key为敏感信息结果字段名，value为要过滤的敏感信息结果字段值列表                     | sensitiv item filter rule            |
+详情参考[支持的扫描器](./supported-scanner.md)
 
 ## 删除扫描器
 
@@ -193,9 +175,9 @@
 
 - 请求字段说明
 
-  | 字段  |类型|是否必须|默认值|说明|Description|
-              |---|---|---|---|---|---|
-  | scannerName   |string|是|无|扫描器名称|scanner name|
+| 字段          | 类型     | 是否必须 | 默认值 | 说明    | Description  |
+|-------------|--------|------|-----|-------|--------------|
+| scannerName | string | 是    | 无   | 扫描器名称 | scanner name |
 
 - 响应体
 
@@ -262,22 +244,4 @@
 
 - data字段说明
 
-  | 字段              | 类型     |说明                               | Description                          |
-                  |------------------|-----|------------------------------------|----------------------------------|
-  | name            | string  |扫描器名                             | scanner name                         |
-  | version         | string  |扫描器版本，BinAuditor扫描器版本和漏洞库版本用::分隔 | scanner version                      |
-  | type            | string  |扫描器类型                            | scanner type                         |
-  | rootPath        | string  |扫描器工作根目录                         | scanner work dir                     |
-  | configFilePath  | string  |生成的BinAuditor扫描器配置文件存放路径         | bin-auditor scanner config file path |
-  | cleanWorkDir    | boolean |扫描结束后是否清理目录                      | clean work dir after scan            |
-  | maxScanDuration | number  |扫描超时时间，单位为毫秒                     | max scan duration            |
-  | nvtools.enabled | boolean  |是否使用漏洞库                     | use nvtools or not            |
-  | nvtools.username       | string  |漏洞库用户名                     | nvtools username            |
-  | nvtools.key       | string  | 漏洞库认证密钥                     | nvtools key            |
-  | nvtools.host       | string            | 漏洞库地址                     | nvtools address            |
-  | container.image       | string            | 使用的arrowhead镜像tag                     | arrowhead image tag            |
-  | container.args       | string            | 启动容器时传的参数                     | container args            |
-  | container.workDir       | string  | 容器内工作目录根目录                     | work dir            |
-  | container.inputDir       | string           | 容器内扫描时的输入目录，相对于工作目录                     | input dir            |
-  | container.outputDir       | string           | 容器内扫描时的输出目录，相对于工作目录                     | output dir            |
-  | resultFilterRule.sensitiveItemFilterRule.excludes       | array  | 敏感信息扫描结果过滤规则，key为敏感信息结果字段名，value为要过滤的敏感信息结果字段值列表                     | sensitiv item filter rule            |
+详情参考[支持的扫描器](./supported-scanner.md)

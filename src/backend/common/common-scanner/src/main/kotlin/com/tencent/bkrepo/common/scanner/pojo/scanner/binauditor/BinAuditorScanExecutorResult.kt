@@ -49,21 +49,21 @@ data class BinAuditorScanExecutorResult(
     companion object {
 
         fun overviewKeyOfSensitive(type: String): String {
-            return "OVERVIEW_KEY_SENSITIVE_${type.toUpperCase()}_COUNT"
+            return "sensitive${type.capitalize()}Count"
         }
 
         fun overviewKeyOfCve(level: String): String {
-            return "OVERVIEW_KEY_CVE_${level.toUpperCase()}_COUNT"
+            return "cve${level.capitalize()}Count"
         }
 
         fun overviewKeyOfLicenseRisk(riskLevel: String): String {
             val level = if (riskLevel.isEmpty()) {
                 // 扫描器尚未支持的证书类型数量KEY
-                "NOT_AVAILABLE"
+                "notAvailable"
             } else {
                 riskLevel
             }
-            return "OVERVIEW_KEY_LICENSE_RISK_${level.toUpperCase()}_COUNT"
+            return "licenseRisk${level.capitalize()}Count"
         }
     }
 }

@@ -39,10 +39,10 @@
 
 - 请求字段说明
 
-  | 字段      |类型|是否必须|默认值| 说明                      | Description  |
-    |---|---|---|-------------------------|--------------|---|
-  | scanner |string|是|无| 要获取的报告使用的扫描器名称          | scanner name |
-  | rule       |object|是|无| 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议)         | file match rule |
+| 字段      | 类型     | 是否必须 | 默认值 | 说明                                                         | Description     |
+|---------|--------|------|-----|------------------------------------------------------------|-----------------|
+| scanner | string | 是    | 无   | 要获取的报告使用的扫描器名称                                             | scanner name    |
+| rule    | object | 是    | 无   | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule |
 
 - 响应体
 
@@ -92,22 +92,24 @@
 
 - data字段说明
 
-  | 字段       | 类型   | 说明         | Description          |
-    | --------- | ------ | ------------ | -------------------- |
-  | taskId        | string | 任务id | task id      |
-  | createdBy | string | 任务创建者 | task creator |
-  | triggerDatetime | string    | 触发任务的时间     | task trigger time           |
-  | startDateTime | string    | 任务开始执行时间     | task started time           |
-  | finishedDateTime | string    | 任务执行结束时间     | task finished time           |
-  | status | string    | 任务状态     | task status           |
-  | rule       |object| 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议)         | file match rule |
-  | total | number    | 总扫描文件数     | total scan file count           |
-  | failed | number    | 扫描失败文件数     |  scan failed file count           |
-  | scanned | number    | 已扫描文件数     |  scanned file count           |
-  | scanner | string    | 使用的扫描器明     | scanner name           |
-  | scannerType | string    | 扫描器类型     | scanner type           |
-  | scannerVersion | string    | 扫描器版本     | scanner version           |
-  | scanResultOverview | array    | 扫描结果预览     | scan result overview           |
+| 字段                 | 类型     | 说明                                                         | Description            |
+|--------------------|--------|------------------------------------------------------------|------------------------|
+| taskId             | string | 任务id                                                       | task id                |
+| createdBy          | string | 任务创建者                                                      | task creator           |
+| triggerDatetime    | string | 触发任务的时间                                                    | task trigger time      |
+| startDateTime      | string | 任务开始执行时间                                                   | task started time      |
+| finishedDateTime   | string | 任务执行结束时间                                                   | task finished time     |
+| status             | string | 任务状态                                                       | task status            |
+| rule               | object | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
+| total              | number | 总扫描文件数                                                     | total scan file count  |
+| failed             | number | 扫描失败文件数                                                    | scan failed file count |
+| scanned            | number | 已扫描文件数                                                     | scanned file count     |
+| scanner            | string | 使用的扫描器明                                                    | scanner name           |
+| scannerType        | string | 扫描器类型                                                      | scanner type           |
+| scannerVersion     | string | 扫描器版本                                                      | scanner version        |
+| scanResultOverview | array  | 扫描结果预览                                                     | scan result overview   |
+
+扫描结果预览字段参考[支持的扫描器](./supported-scanner.md)
 
 ## 获取扫描任务
 
@@ -120,9 +122,9 @@
 
 - 请求字段说明
 
-  | 字段  | 类型   | 是否必须 | 默认值 | 说明                             | Description  |
-    | --------- | ------ | -------- | ------ | -------------------------------- | ------------ |
-  | taskId   | string | 是       | 无     | 任务id                         | task id |
+| 字段     | 类型     | 是否必须 | 默认值 | 说明   | Description |
+|--------|--------|------|-----|------|-------------|
+| taskId | string | 是    | 无   | 任务id | task id     |
 
 - 响应体
 
@@ -165,7 +167,7 @@
     "scannerType": "BinAuditor",
     "scannerVersion": "1::1",
     "scanResultOverview": {
-      "OVERVIEW_KEY_SENSITIVE_URI_COUNT": 4
+      "sensitiveUriCount": 4
     }
   },
   "traceId": ""
@@ -187,10 +189,10 @@
 
 - 请求字段说明
 
-  | 字段  | 类型   | 是否必须 | 默认值 | 说明                             | Description  |
-  | --------- | ------ | -------- | ------ | -------------------------------- | ------------ |
-  | pageSize   | number | 否       | 20     | 分页大小                         | page size |
-  | pageNumber   | number | 否       | 1     | 分页页码                         | page number |
+| 字段         | 类型     | 是否必须 | 默认值 | 说明   | Description |
+|------------|--------|------|-----|------|-------------|
+| pageSize   | number | 否    | 20  | 分页大小 | page size   |
+| pageNumber | number | 否    | 1   | 分页页码 | page number |
 
 - 响应体
 
@@ -250,4 +252,5 @@
 - data字段说明
 
 响应体参考[分页接口响应格式](../common/common.md?id=统一分页接口响应格式)
+
 响应体参考[创建扫描任务](./scan.md?id=创建扫描任务)响应体
