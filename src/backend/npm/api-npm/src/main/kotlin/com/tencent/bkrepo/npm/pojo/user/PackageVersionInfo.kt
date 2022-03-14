@@ -31,8 +31,6 @@
 
 package com.tencent.bkrepo.npm.pojo.user
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiModelProperty
 
