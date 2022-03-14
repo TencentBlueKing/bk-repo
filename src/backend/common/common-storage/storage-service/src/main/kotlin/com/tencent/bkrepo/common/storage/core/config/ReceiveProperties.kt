@@ -54,6 +54,12 @@ data class ReceiveProperties(
     var fileSizeThreshold: DataSize = DataSize.ofBytes(-1),
 
     /**
+     * 使用本地路径阈值，超过这阈值则使用其他路径
+     * 必须要超过文件内存阈值否则设置无效
+     * */
+    var localThreshold: DataSize = DataSize.ofBytes(-1),
+
+    /**
      * 是否延迟解析文件
      */
     var resolveLazily: Boolean = true,

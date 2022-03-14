@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
+import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -50,14 +51,14 @@ interface MavenWebResource {
     @ApiOperation("maven jar 包删除接口")
     @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_PACKAGE_DELETE)
     fun deletePackage(
-        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
+        @ArtifactPathVariable mavenArtifactInfo: MavenDeleteArtifactInfo,
         @RequestParam packageKey: String
     ): Response<Void>
 
     @ApiOperation("maven jar 包版本删除接口")
     @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_VERSION_DELETE)
     fun deleteVersion(
-        @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
+        @ArtifactPathVariable mavenArtifactInfo: MavenDeleteArtifactInfo,
         @RequestParam packageKey: String,
         @RequestParam version: String?
     ): Response<Void>

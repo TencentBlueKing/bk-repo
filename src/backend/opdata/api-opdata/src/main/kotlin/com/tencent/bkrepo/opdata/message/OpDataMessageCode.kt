@@ -33,7 +33,9 @@ enum class OpDataMessageCode(private val key: String) : MessageCode {
 
     ServiceInstanceNotFound("op.service.instance.not-found"),
     ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid");
+    ConfigValueTypeInvalid("config.value.type.invalid"),
+    CONFIG_CLIENT_NOT_FOUND("config.client.not-found"),
+    REGISTRY_CLIENT_NOT_FOUND("registry.client.not-found");
 
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key

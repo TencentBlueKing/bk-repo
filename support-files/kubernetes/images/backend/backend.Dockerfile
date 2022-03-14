@@ -1,4 +1,4 @@
-FROM blueking/jdk:0.0.1
+FROM mirrors.tencent.com/bkrepo/jdk:0.0.1
 
 LABEL maintainer="Tencent BlueKing Devops"
 

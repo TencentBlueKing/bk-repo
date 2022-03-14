@@ -144,11 +144,11 @@
     import Breadcrumb from '@repository/components/Breadcrumb'
     import MoveSplitBar from '@repository/components/MoveSplitBar'
     import RepoTree from '@repository/components/RepoTree'
-    import genericDetail from './genericDetail'
-    import genericUploadDialog from './genericUploadDialog'
-    import genericFormDialog from './genericFormDialog'
-    import genericShareDialog from './genericShareDialog'
-    import genericTreeDialog from './genericTreeDialog'
+    import genericDetail from '@repository/views/repoGeneric/genericDetail'
+    import genericUploadDialog from '@repository/views/repoGeneric/genericUploadDialog'
+    import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
+    import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
+    import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
@@ -233,7 +233,7 @@
                 const road = this.selectedTreeNode.roadMap.split(',')
                 road.forEach(index => {
                     breadcrumb.push({
-                        name: node[index].name,
+                        name: node[index].displayName,
                         value: node[index],
                         cilckHandler: item => {
                             this.itemClickHandler(item.value)
@@ -304,6 +304,7 @@
             initPage () {
                 this.INIT_TREE([{
                     name: this.replaceRepoName(this.repoName),
+                    displayName: this.replaceRepoName(this.repoName),
                     fullPath: '',
                     folder: true,
                     children: [],

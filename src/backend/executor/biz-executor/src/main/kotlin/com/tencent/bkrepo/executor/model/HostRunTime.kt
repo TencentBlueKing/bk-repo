@@ -6,7 +6,6 @@ import com.tencent.bkrepo.executor.config.ExecutorConfig
 import com.tencent.bkrepo.executor.exception.BuildWorkSpaceFailedException
 import com.tencent.bkrepo.executor.exception.LoadConfigFileFailedException
 import com.tencent.bkrepo.executor.pojo.context.FileScanContext
-import com.tencent.bkrepo.executor.util.BashUtil
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.apache.commons.io.FileUtils
@@ -29,22 +28,19 @@ class HostRunTime @Autowired constructor(
      * @param workDir  工作目录
      * @throws BuildWorkSpaceFailedException
      */
-    fun buildWorkSpace(workDir: String) {
+    fun buildWorkSpace(workDir: File) {
         // 清理生成workspace
-        val buildWorkSpace = "mkdir -p $workDir"
-        if (cleanWorkSpace(workDir) && BashUtil.runCmd(buildWorkSpace)) {
-            return
+        if (!cleanWorkSpace(workDir) || !workDir.mkdirs()) {
+            throw BuildWorkSpaceFailedException("build work space failed")
         }
-        throw BuildWorkSpaceFailedException("build work space failed")
     }
 
     /**
      * 清理工作空间
      * @param workDir  工作目录
      */
-    fun cleanWorkSpace(workDir: String): Boolean {
-        val cleanWorkSpace = "rm -rf $workDir"
-        return BashUtil.runCmd(cleanWorkSpace)
+    fun cleanWorkSpace(workDir: File): Boolean {
+        return workDir.deleteRecursively()
     }
 
     /**
@@ -55,29 +51,25 @@ class HostRunTime @Autowired constructor(
      * @param sha256 需要扫描文件的sha256
      * @return Boolean
      */
-    fun loadConfigFile(taskId: String, workDir: String, config: ExecutorConfig, sha256: String): Boolean {
+    fun loadConfigFile(taskId: String, workDir: File, config: ExecutorConfig, sha256: String): Boolean {
         try {
             val template = File(config.configTemplateDir).readText()
-            val params = mutableMapOf<String, String>()
-            params["taskId"] = taskId
-            params["sha256"] = sha256
-            val parser = SpelExpressionParser()
-            val parserContext = TemplateParserContext()
-            val content = parser.parseExpression(template, parserContext).getValue(params, String::class.java)
-            content?.let {
-                val fileName = "$workDir/${config.configName}"
-                val file = File(fileName)
-                if (!file.exists()) {
-                    file.createNewFile()
-                }
-                file.writeText(content)
-                return true
-            }
+            val params = mapOf(
+                "taskId" to taskId,
+                "sha256" to sha256
+            )
+
+            val content = SpelExpressionParser()
+                .parseExpression(template, TemplateParserContext())
+                .getValue(params, String::class.java)
+                ?: return false
+
+            File(workDir, config.configName).writeText(content)
+            return true
         } catch (e: Exception) {
             logger.warn("load config file exception [$taskId,$e] ")
             throw LoadConfigFileFailedException("load config file exception")
         }
-        return false
     }
 
     /**
@@ -86,7 +78,7 @@ class HostRunTime @Autowired constructor(
      * @param workDir 工作目录
      * @return String?
      */
-    fun loadFileToRunTime(context: FileScanContext, workDir: String): String? {
+    fun loadFileToRunTime(context: FileScanContext, workDir: File): String? {
         with(context) {
             try {
                 //  load file
@@ -100,12 +92,16 @@ class HostRunTime @Autowired constructor(
                     logger.warn("fail to get the node [$context]")
                     return null
                 }
-                val path = "$workDir${context.config.inputDir}${node.sha256}"
-                val file = File(path)
+                val inputDir = File(workDir, context.config.inputDir)
+                val file = File(inputDir, node.sha256!!)
                 val inputStream = storageService.load(
                     node.sha256!!, Range.full(node.size),
                     repository.storageCredentials
                 )
+                if (inputStream == null) {
+                    logger.warn("fail to get the input stream [$context]")
+                    return null
+                }
                 inputStream.use {
                     FileUtils.copyInputStreamToFile(inputStream, file)
                 }

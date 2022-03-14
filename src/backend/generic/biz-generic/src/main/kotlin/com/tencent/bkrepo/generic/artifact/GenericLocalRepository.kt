@@ -264,7 +264,7 @@ class GenericLocalRepository : LocalRepository() {
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim()
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().toLowerCase()
                 if (key.isNotBlank()) {
                     metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }

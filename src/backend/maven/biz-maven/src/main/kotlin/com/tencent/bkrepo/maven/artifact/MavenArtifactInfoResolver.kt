@@ -33,7 +33,7 @@ package com.tencent.bkrepo.maven.artifact
 
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
+import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import org.apache.commons.lang.StringUtils
 import org.slf4j.LoggerFactory

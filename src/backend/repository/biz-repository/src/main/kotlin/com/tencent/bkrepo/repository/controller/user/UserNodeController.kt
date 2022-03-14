@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
@@ -352,10 +353,20 @@ class UserNodeController(
      */
     private fun checkCrossRepoPermission(request: UserNodeMoveCopyRequest) {
         with(request) {
-            permissionManager.checkNodePermission(PermissionAction.WRITE, srcProjectId, srcRepoName, srcFullPath)
+            permissionManager.checkNodePermission(
+                action = PermissionAction.WRITE,
+                projectId = srcProjectId,
+                repoName = srcRepoName,
+                path = PathUtils.normalizeFullPath(srcFullPath)
+            )
             val toProjectId = request.destProjectId ?: srcProjectId
             val toRepoName = request.destRepoName ?: srcRepoName
-            permissionManager.checkNodePermission(PermissionAction.WRITE, toProjectId, toRepoName, destFullPath)
+            permissionManager.checkNodePermission(
+                action = PermissionAction.WRITE,
+                projectId = toProjectId,
+                repoName = toRepoName,
+                path = PathUtils.normalizeFullPath(destFullPath)
+            )
         }
     }
 }
