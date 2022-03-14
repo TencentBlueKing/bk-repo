@@ -52,7 +52,7 @@ data class ApplicationItem(
      */
     @ApiModelProperty("组件使用的开源证书")
     @JsonAlias("LicenseShortName")
-    val license: String,
+    val licenseShortName: String,
 
     /**
      * Low,Middle,High
