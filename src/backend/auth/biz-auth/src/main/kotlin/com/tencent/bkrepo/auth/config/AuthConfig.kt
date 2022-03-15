@@ -43,7 +43,11 @@ class AuthConfig : WebMvcConfigurer {
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(clientAuthInterceptor())
             .addPathPatterns("/api/**")
-            .excludePathPatterns("/external/**", "/api/user/login", "/api/user/info", "/api/user/verify", "/api/user/rsa")
+            .excludePathPatterns("/external/**")
+            .excludePathPatterns("/api/user/login")
+            .excludePathPatterns("/api/user/info")
+            .excludePathPatterns("/api/user/verify")
+            .excludePathPatterns("/api/user/rsa")
             .excludePathPatterns("/api/oauth/token")
             .order(0)
         super.addInterceptors(registry)
