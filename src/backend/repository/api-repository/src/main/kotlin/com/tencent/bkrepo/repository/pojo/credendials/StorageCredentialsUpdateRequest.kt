@@ -27,16 +27,15 @@
 
 package com.tencent.bkrepo.repository.pojo.credendials
 
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.UserRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("存储凭据更新请求")
 data class StorageCredentialsUpdateRequest(
-    @ApiModelProperty("是否优先加载缓存")
-    val loadCacheFirst: Boolean,
-    @ApiModelProperty("缓存过期天数")
-    val expireDays: Int,
+    @ApiModelProperty("更新的存储凭据内容")
+    val storageCredentials: StorageCredentials,
     @ApiModelProperty(hidden = true)
     var key: String? = null
 ) : UserRequest
