@@ -76,19 +76,6 @@ export default {
             }
         )
     },
-    // npm查询被依赖列表
-    getNpmDependents (_, { projectId, repoName, packageKey, current = 1 }) {
-        return Vue.prototype.$ajax.get(
-            `npm/ext/dependent/page/${projectId}/${repoName}`,
-            {
-                params: {
-                    pageNumber: current,
-                    pageSize: 20,
-                    packageKey
-                }
-            }
-        )
-    },
     // 包搜索-仓库数量
     searchRepoList (_, { projectId, repoType, packageName }) {
         const isGeneric = repoType === 'generic'
