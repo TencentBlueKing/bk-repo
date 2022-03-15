@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("存储凭据更新请求")
 data class StorageCredentialsUpdateRequest(
     @ApiModelProperty("更新的存储凭据内容")
-    val storageCredentials: StorageCredentials,
+    val credentials: StorageCredentials,
     @ApiModelProperty(hidden = true)
     var key: String? = null
 ) : UserRequest

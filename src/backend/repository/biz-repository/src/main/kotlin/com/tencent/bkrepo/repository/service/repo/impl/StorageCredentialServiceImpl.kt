@@ -93,10 +93,10 @@ class StorageCredentialServiceImpl(
 
         storageCredentials.apply {
             cache = cache.copy(
-                loadCacheFirst = request.storageCredentials.cache.loadCacheFirst,
-                expireDays = request.storageCredentials.cache.expireDays
+                loadCacheFirst = request.credentials.cache.loadCacheFirst,
+                expireDays = request.credentials.cache.expireDays
             )
-            upload = upload.copy(localPath = request.storageCredentials.upload.localPath)
+            upload = upload.copy(localPath = request.credentials.upload.localPath)
         }
 
         tStorageCredentials.credentials = storageCredentials.toJsonString()
