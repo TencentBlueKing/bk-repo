@@ -29,6 +29,7 @@ package com.tencent.bkrepo.scanner.metrics
 
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -54,14 +55,20 @@ class ScannerMetrics : MeterBinder {
                 .tag("status", it.name)
                 .register(registry)
         }
+
+        reuseResultSubtaskCounter = Counter.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT)
+            .description("reuse resul subtask count")
+            .register(registry)
     }
 
     companion object {
         private const val SCANNER_TASK_COUNT = "scanner.task.count"
         private const val SCANNER_SUBTASK_COUNT = "scanner.subtask.count"
+        private const val SCANNER_SUBTASK_REUSE_RESULT_COUNT = "scanner.subtask.reuse-result.count"
 
         private val taskCountMap = HashMap<String, AtomicLong>(ScanTaskStatus.values().size)
         private val subtaskCountMap = HashMap<String, AtomicLong>(SubScanTaskStatus.values().size)
+        private lateinit var reuseResultSubtaskCounter: Counter
 
         fun incTaskCountAndGet(status: ScanTaskStatus, count: Long = 1): Long {
             if (status == ScanTaskStatus.SCANNING_SUBMITTING) {
@@ -92,6 +99,10 @@ class ScannerMetrics : MeterBinder {
         fun subtaskStatusChange(pre: SubScanTaskStatus, next: SubScanTaskStatus) {
             subtaskCountMap[pre.name]!!.decrementAndGet()
             subtaskCountMap[next.name]!!.incrementAndGet()
+        }
+
+        fun incReuseResultSubtaskCount() {
+            reuseResultSubtaskCounter.increment()
         }
     }
 
