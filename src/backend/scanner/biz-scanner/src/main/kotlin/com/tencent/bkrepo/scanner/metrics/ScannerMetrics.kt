@@ -27,29 +27,32 @@
 
 package com.tencent.bkrepo.scanner.metrics
 
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
-import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 扫描服务数据统计
  */
 @Component
 class ScannerMetrics(
-    private val registryProvider: ObjectProvider<MeterRegistry>
+    private val registryProvider: ObjectProvider<MeterRegistry>,
+    // 一个任务可能被不同的服务实例处理，统计数据需要放到公共存储上才能保证数据准确
+    private val redisOperation: RedisOperation
 ) {
-    private val taskCountMap = ConcurrentHashMap<String, AtomicLong>(ScanTaskStatus.values().size)
-    private val subtaskCounterMap = ConcurrentHashMap<String, AtomicLong>(SubScanTaskStatus.values().size)
-    private val reuseResultSubtaskCounters: List<Counter> by lazy {
+    private val taskCountMap = ConcurrentHashMap<String, RedisAtomicLong>(ScanTaskStatus.values().size)
+    private val subtaskCounterMap = ConcurrentHashMap<String, RedisAtomicLong>(SubScanTaskStatus.values().size)
+    private val reuseResultSubtaskCounters: RedisAtomicLong by lazy {
         // 统计重用扫描结果的子任务数量
-        val counter = Counter.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT).description("reuse resul subtask count")
-        registryProvider.map { counter.register(it) }
+        val atomicLong = RedisAtomicLong(redisOperation, SCANNER_SUBTASK_REUSE_RESULT_COUNT)
+        val gauge = Gauge.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT, atomicLong, RedisAtomicLong::toDouble)
+        registryProvider.forEach { gauge.register(it) }
+        atomicLong
     }
 
     /**
@@ -102,14 +105,15 @@ class ScannerMetrics(
      * 重用扫描结果的子任务数量加1
      */
     fun incReuseResultSubtaskCount() {
-        reuseResultSubtaskCounters.forEach { it.increment() }
+        reuseResultSubtaskCounters.incrementAndGet()
     }
 
-    private fun subtaskCounter(status: SubScanTaskStatus): AtomicLong {
+    private fun subtaskCounter(status: SubScanTaskStatus): RedisAtomicLong {
         return subtaskCounterMap.syncGetOrPut(status.name) {
             // 统计不同状态扫描任务数量
-            val atomicLong = AtomicLong(0L)
-            val gauge = Gauge.builder(SCANNER_TASK_COUNT, atomicLong, AtomicLong::toDouble)
+            val key = metricsKey(SCANNER_TASK_COUNT, "status", status.name)
+            val atomicLong = RedisAtomicLong(redisOperation, key)
+            val gauge = Gauge.builder(SCANNER_TASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
                 .description("${status.name} task count")
                 .tag("status", status.name)
             registryProvider.forEach { gauge.register(it) }
@@ -117,16 +121,22 @@ class ScannerMetrics(
         }
     }
 
-    private fun taskCounter(status: ScanTaskStatus): AtomicLong {
+    private fun taskCounter(status: ScanTaskStatus): RedisAtomicLong {
         return taskCountMap.syncGetOrPut(status.name) {
-            val atomicLong = AtomicLong(0L)
             // 统计不同状态子任务数量
-            val gauge = Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, AtomicLong::toDouble)
+            val key = metricsKey(SCANNER_SUBTASK_COUNT, "status", status.name)
+            val atomicLong = RedisAtomicLong(redisOperation, key)
+            val gauge = Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
                 .description("${status.name} subtask count")
                 .tag("status", status.name)
             registryProvider.forEach { gauge.register(it) }
             atomicLong
         }
+    }
+
+    private fun metricsKey(meterName: String, vararg tags: String): String {
+        val newMeterName = meterName.removePrefix("scanner.").replace(".", ":")
+        return "metrics:scanner:$newMeterName:${tags.joinToString(":")}"
     }
 
     private fun <K : Any, V : Any> ConcurrentHashMap<K, V>.syncGetOrPut(key: K, defaultValue: () -> V): V {
