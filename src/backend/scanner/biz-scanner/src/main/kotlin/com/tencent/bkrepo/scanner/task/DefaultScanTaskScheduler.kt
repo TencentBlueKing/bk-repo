@@ -84,11 +84,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
     override fun schedule(subScanTask: SubScanTask): Boolean {
         val enqueued = subScanTaskQueue.enqueue(subScanTask)
-        if(enqueued) {
-            subScanTaskDao.updateStatus(subScanTask.taskId, SubScanTaskStatus.ENQUEUED)
-            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED)
-            logger.info("subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued]")
-        }
+        logger.info(
+            "subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued[$enqueued]]"
+        )
         return enqueued
     }
 

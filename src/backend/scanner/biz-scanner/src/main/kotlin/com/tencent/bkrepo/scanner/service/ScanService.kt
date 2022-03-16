@@ -104,5 +104,5 @@ interface ScanService {
      *
      * @return 没有可执行的任务时返回null，否则返回一个待执行的任务
      */
-    fun pullSubScanTask(): SubScanTask?
+    fun pull(): SubScanTask?
 }
