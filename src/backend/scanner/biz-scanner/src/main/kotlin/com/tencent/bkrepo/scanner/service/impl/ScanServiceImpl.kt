@@ -42,6 +42,7 @@ import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
+import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -113,6 +114,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanResultOverview = null
                 )
             ).run { convert(this) }
+            ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(scanTask)
             logger.info("create scan task[${scanTask.taskId}] success")
             return scanTask
@@ -146,7 +148,7 @@ class ScanServiceImpl @Autowired constructor(
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
-                subTaskId, scanExecutorResult.scanStatus, parentTaskId, scanExecutorResult.overview
+                subScanTask, scanExecutorResult.scanStatus, parentTaskId, scanExecutorResult.overview
             )
 
             // 没有扫描任务被更新或子扫描任务失败时直接返回
@@ -179,21 +181,26 @@ class ScanServiceImpl @Autowired constructor(
      */
     @Transactional(rollbackFor = [Throwable::class])
     fun updateScanTaskResult(
-        subTaskId: String,
-        subTaskStatus: String,
+        subTask: TSubScanTask,
+        resultSubTaskStatus: String,
         parentTaskId: String,
         overview: Map<String, Any?>
     ): Boolean {
+        val subTaskId = subTask.id!!
         // 任务已扫描过，重复上报直接返回
         if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
             return false
         }
-        logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId][$subTaskStatus]")
+        ScannerMetrics.subtaskStatusChange(
+            SubScanTaskStatus.valueOf(subTask.status), SubScanTaskStatus.valueOf(resultSubTaskStatus)
+        )
+        logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId][$resultSubTaskStatus]")
 
         // 更新父任务扫描结果
-        val scanSuccess = subTaskStatus == SubScanTaskStatus.SUCCESS.name
+        val scanSuccess = resultSubTaskStatus == SubScanTaskStatus.SUCCESS.name
         scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess)
         if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
+            ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[$parentTaskId]")
         }
         return true
@@ -202,9 +209,12 @@ class ScanServiceImpl @Autowired constructor(
     @Transactional(rollbackFor = [Throwable::class])
     override fun updateSubScanTaskStatus(subScanTaskId: String, subScanTaskStatus: String): Boolean {
         if (subScanTaskStatus == SubScanTaskStatus.EXECUTING.name) {
+            val subScanTask = subScanTaskDao.findById(subScanTaskId) ?: return false
             val modified = subScanTaskDao.updateStatus(subScanTaskId, SubScanTaskStatus.EXECUTING).modifiedCount == 1L
             if (modified) {
-                val subScanTask = subScanTaskDao.findById(subScanTaskId)!!
+                ScannerMetrics.subtaskStatusChange(
+                    SubScanTaskStatus.valueOf(subScanTask.status), SubScanTaskStatus.EXECUTING
+                )
                 // 更新任务实际开始扫描的时间
                 scanTaskDao.updateStartedDateTimeIfNotExists(subScanTask.parentScanTaskId, LocalDateTime.now())
             }
@@ -216,9 +226,11 @@ class ScanServiceImpl @Autowired constructor(
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun enqueueTimeoutSubTask() {
         pullSubScanTask()?.let {
+            ScannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.PULLED)
             if (!scanTaskScheduler.schedule(it)) {
                 // 调度失败，归还任务
                 subScanTaskDao.updateStatus(it.taskId, SubScanTaskStatus.CREATED)
+                ScannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED)
             }
         }
     }
@@ -228,6 +240,7 @@ class ScanServiceImpl @Autowired constructor(
     fun enqueueTimeoutTask() {
         val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
         if (task != null && scanTaskDao.resetTask(task.id!!, task.lastModifiedDate).modifiedCount == 1L) {
+            ScannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(convert(task))
         }
     }
@@ -243,7 +256,7 @@ class ScanServiceImpl @Autowired constructor(
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
             if (task.status == SubScanTaskStatus.EXECUTING.name && task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
                 logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] exceed max execute times")
-                self.updateScanTaskResult(task.id!!, SubScanTaskStatus.TIMEOUT.name, task.parentScanTaskId, emptyMap())
+                self.updateScanTaskResult(task, SubScanTaskStatus.TIMEOUT.name, task.parentScanTaskId, emptyMap())
                 continue
             }
 
@@ -251,6 +264,7 @@ class ScanServiceImpl @Autowired constructor(
             val updateResult = subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.PULLED, task.lastModifiedDate)
             if (updateResult.modifiedCount != 0L) {
                 val scanner = scannerService.get(task.scanner)
+                ScannerMetrics.subtaskStatusChange(SubScanTaskStatus.valueOf(task.status), SubScanTaskStatus.PULLED)
                 return convert(task, scanner)
             }
 
