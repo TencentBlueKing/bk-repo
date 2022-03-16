@@ -81,7 +81,8 @@ class ScanServiceImpl @Autowired constructor(
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
-    private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>
+    private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
+    private val scannerMetrics: ScannerMetrics
 ) : ScanService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -114,7 +115,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanResultOverview = null
                 )
             ).run { convert(this) }
-            ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
+            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(scanTask)
             logger.info("create scan task[${scanTask.taskId}] success")
             return scanTask
@@ -191,7 +192,7 @@ class ScanServiceImpl @Autowired constructor(
         if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
             return false
         }
-        ScannerMetrics.subtaskStatusChange(
+        scannerMetrics.subtaskStatusChange(
             SubScanTaskStatus.valueOf(subTask.status), SubScanTaskStatus.valueOf(resultSubTaskStatus)
         )
         logger.info("updating scan result, parentTask[$parentTaskId], subTask[$subTaskId][$resultSubTaskStatus]")
@@ -200,7 +201,7 @@ class ScanServiceImpl @Autowired constructor(
         val scanSuccess = resultSubTaskStatus == SubScanTaskStatus.SUCCESS.name
         scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess)
         if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
-            ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
+            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[$parentTaskId]")
         }
         return true
@@ -212,7 +213,7 @@ class ScanServiceImpl @Autowired constructor(
             val subScanTask = subScanTaskDao.findById(subScanTaskId) ?: return false
             val modified = subScanTaskDao.updateStatus(subScanTaskId, SubScanTaskStatus.EXECUTING).modifiedCount == 1L
             if (modified) {
-                ScannerMetrics.subtaskStatusChange(
+                scannerMetrics.subtaskStatusChange(
                     SubScanTaskStatus.valueOf(subScanTask.status), SubScanTaskStatus.EXECUTING
                 )
                 // 更新任务实际开始扫描的时间
@@ -226,11 +227,11 @@ class ScanServiceImpl @Autowired constructor(
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun enqueueTimeoutSubTask() {
         pullSubScanTask()?.let {
-            ScannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.PULLED)
+            scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.PULLED)
             if (!scanTaskScheduler.schedule(it)) {
                 // 调度失败，归还任务
                 subScanTaskDao.updateStatus(it.taskId, SubScanTaskStatus.CREATED)
-                ScannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED)
+                scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED)
             }
         }
     }
@@ -240,7 +241,7 @@ class ScanServiceImpl @Autowired constructor(
     fun enqueueTimeoutTask() {
         val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
         if (task != null && scanTaskDao.resetTask(task.id!!, task.lastModifiedDate).modifiedCount == 1L) {
-            ScannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
+            scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(convert(task))
         }
     }
@@ -264,7 +265,7 @@ class ScanServiceImpl @Autowired constructor(
             val updateResult = subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.PULLED, task.lastModifiedDate)
             if (updateResult.modifiedCount != 0L) {
                 val scanner = scannerService.get(task.scanner)
-                ScannerMetrics.subtaskStatusChange(SubScanTaskStatus.valueOf(task.status), SubScanTaskStatus.PULLED)
+                scannerMetrics.subtaskStatusChange(SubScanTaskStatus.valueOf(task.status), SubScanTaskStatus.PULLED)
                 return convert(task, scanner)
             }
 
