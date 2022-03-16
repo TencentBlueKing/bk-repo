@@ -25,39 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.controller
+package com.tencent.bkrepo.scanner.utils
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.api.ScanClient
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.scanner.model.TScanTask
+import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.service.ScanService
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.RestController
+import java.time.format.DateTimeFormatter
 
-@RestController
-class ScanController @Autowired constructor(
-    private val scanService: ScanService
-) : ScanClient {
+class Converter {
 
-    override fun scan(scanRequest: ScanRequest): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.ON_NEW_ARTIFACT))
+    companion object {
+        fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask = with(subScanTask) {
+            SubScanTask(
+                taskId = id!!,
+                parentScanTaskId = parentScanTaskId,
+                scanner = scanner,
+                sha256 = sha256,
+                size = size,
+                credentialsKey = credentialsKey
+            )
+        }
+
+        fun convert(scanTask: TScanTask): ScanTask = with(scanTask) {
+            ScanTask(
+                taskId = id!!,
+                createdBy = createdBy,
+                triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                startDateTime = startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                status = status,
+                rule = scanTask.rule?.readJsonString(),
+                total = total,
+                scanning = scanning,
+                failed = failed,
+                scanned = scanned,
+                scanner = scanner,
+                scannerType = scannerType,
+                scannerVersion = scannerVersion,
+                scanResultOverview = scanResultOverview
+            )
+        }
     }
 
-    override fun report(reportResultRequest: ReportResultRequest): Response<Void> {
-        scanService.reportResult(reportResultRequest)
-        return ResponseBuilder.success()
-    }
-
-    override fun pullSubTask(): Response<SubScanTask?> {
-        return ResponseBuilder.success(scanService.pull())
-    }
-
-    override fun updateSubScanTaskStatus(subScanTaskId: String, status: String): Response<Boolean> {
-        return ResponseBuilder.success(scanService.updateSubScanTaskStatus(subScanTaskId, status))
-    }
 }
