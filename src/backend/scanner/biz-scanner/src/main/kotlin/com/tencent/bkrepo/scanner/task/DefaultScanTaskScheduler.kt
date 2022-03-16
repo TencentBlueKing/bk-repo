@@ -65,7 +65,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val subScanTaskDao: SubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
-    private val executor: ThreadPoolTaskExecutor
+    private val executor: ThreadPoolTaskExecutor,
+    private val scannerMetrics: ScannerMetrics
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -85,7 +86,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val enqueued = subScanTaskQueue.enqueue(subScanTask)
         if(enqueued) {
             subScanTaskDao.updateStatus(subScanTask.taskId, SubScanTaskStatus.ENQUEUED)
-            ScannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED)
+            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED)
             logger.info("subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued]")
         }
         return enqueued
@@ -98,7 +99,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
-        ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTING)
+        scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTING)
         val scanner = scannerService.get(scanTask.scanner)
         logger.info("submitting sub tasks of task[${scanTask.taskId}], scanner: [${scanner.name}]")
 
@@ -113,7 +114,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
-                ScannerMetrics.incReuseResultSubtaskCount()
+                scannerMetrics.incReuseResultSubtaskCount()
                 continue
             }
 
@@ -133,12 +134,12 @@ class DefaultScanTaskScheduler @Autowired constructor(
         logger.info("submit $submittedSubTaskCount sub tasks, " +
                 "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED")
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
-        ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTED)
+        scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTED)
 
         // 没有提交任何子任务，直接设置为任务扫描结束
         if (submittedSubTaskCount == 0L) {
             scanTaskDao.taskFinished(scanTask.taskId)
-            ScannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
+            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[${scanTask.taskId}]")
         }
     }
@@ -155,8 +156,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
         if (enqueuedTasks.isNotEmpty()) {
             subScanTaskDao.updateStatus(enqueuedTasks, SubScanTaskStatus.ENQUEUED)
-            ScannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.CREATED, enqueuedTasks.size.toLong())
-            ScannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED, enqueuedTasks.size.toLong())
+            scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.CREATED, enqueuedTasks.size.toLong())
+            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED, enqueuedTasks.size.toLong())
         }
     }
 
@@ -185,7 +186,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         // 更新当前正在扫描的任务数
         val task = tasks.first()
         scanTaskDao.updateScanningCount(task.parentScanTaskId, tasks.size)
-        ScannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, tasks.size.toLong())
+        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, tasks.size.toLong())
 
         return tasks
     }
