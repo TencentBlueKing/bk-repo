@@ -86,7 +86,7 @@ class FileReferenceCleanupJob(
         val credentialsKey = row.credentialsKey
         val sha256 = row.sha256
         val id = row.id
-        val storageCredentials = getCredentials(credentialsKey)
+        val storageCredentials = credentialsKey?.let { getCredentials(credentialsKey) }
         try {
             if (sha256.isNotBlank() && storageService.exist(sha256, storageCredentials)) {
                 storageService.delete(sha256, storageCredentials)
@@ -104,7 +104,7 @@ class FileReferenceCleanupJob(
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
-    private fun getCredentials(key: String?): StorageCredentials? {
+    private fun getCredentials(key: String): StorageCredentials? {
         return cacheMap.getOrPut(key) {
             storageCredentialsClient.findByKey(key).data ?: return null
         }

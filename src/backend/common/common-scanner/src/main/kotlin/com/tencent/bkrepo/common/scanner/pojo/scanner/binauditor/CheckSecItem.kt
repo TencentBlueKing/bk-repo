@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
  * 安全审计结果数
@@ -38,27 +38,27 @@ data class CheckSecItem(
     /**
      * 文件路径
      */
-    @JsonProperty("name")
+    @JsonAlias("name")
     val path: String,
-    @JsonProperty("canary")
+    @JsonAlias("canary")
     val canary: Boolean,
-    @JsonProperty("fortified")
+    @JsonAlias("fortified")
     val fortified: Long,
-    @JsonProperty("fortify-able")
+    @JsonAlias("fortify-able")
     val fortifyAble: Long,
-    @JsonProperty("fortify_source")
+    @JsonAlias("fortify_source")
     val fortifySource: Boolean,
-    @JsonProperty("nx")
+    @JsonAlias("nx")
     val nx: Boolean,
-    @JsonProperty("pie")
+    @JsonAlias("pie")
     val pie: Boolean,
-    @JsonProperty("relro")
+    @JsonAlias("relro")
     val relRo: Boolean,
-    @JsonProperty("rpath")
+    @JsonAlias("rpath")
     val rPath: Boolean,
-    @JsonProperty("runpath")
+    @JsonAlias("runpath")
     val runPath: Boolean,
-    @JsonProperty("symbols")
+    @JsonAlias("symbols")
     val symbols: Boolean
 ) {
     companion object {

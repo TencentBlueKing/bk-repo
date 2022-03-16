@@ -31,6 +31,7 @@
 dependencies {
     implementation(project(":common:common-service"))
     implementation(project(":common:common-job"))
+    implementation(project(":common:common-security"))
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":repository:api-repository"))
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
