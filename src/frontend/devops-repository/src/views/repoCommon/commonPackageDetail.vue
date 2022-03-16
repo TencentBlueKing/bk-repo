@@ -188,16 +188,18 @@
                 }).then(({ records, totalRecords }) => {
                     load ? this.versionList.push(...records) : (this.versionList = records)
                     this.pagination.count = totalRecords
-                    if (!this.versionList.length) {
-                        this.$router.back()
-                    }
-                    if (!this.version || !this.versionList.find(v => v.name === this.version)) {
-                        this.$router.replace({
-                            query: {
-                                ...this.$route.query,
-                                version: records[0].name
-                            }
-                        })
+                    if (!this.versionInput) {
+                        if (!this.versionList.length) {
+                            this.$router.back()
+                        }
+                        if (!this.version || !this.versionList.find(v => v.name === this.version)) {
+                            this.$router.replace({
+                                query: {
+                                    ...this.$route.query,
+                                    version: records[0].name
+                                }
+                            })
+                        }
                     }
                 }).finally(() => {
                     this.isLoading = false

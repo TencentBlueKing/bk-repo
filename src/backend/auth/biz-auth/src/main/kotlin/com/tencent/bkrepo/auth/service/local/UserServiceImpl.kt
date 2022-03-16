@@ -322,6 +322,9 @@ class UserServiceImpl constructor(
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         logger.debug("find user userId : [$userId]")
+        if (pwd == DEFAULT_PASSWORD) {
+            logger.warn("login with default password [$userId]")
+        }
         val hashPwd = DataDigestUtils.md5FromStr(pwd)
         val query = UserQueryHelper.buildPermissionCheck(userId, pwd, hashPwd)
         val result = mongoTemplate.findOne(query, TUser::class.java) ?: run {
