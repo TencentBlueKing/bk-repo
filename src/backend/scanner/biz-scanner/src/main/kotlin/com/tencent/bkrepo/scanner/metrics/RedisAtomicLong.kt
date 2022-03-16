@@ -25,12 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
+package com.tencent.bkrepo.scanner.metrics
+
+import com.tencent.bkrepo.common.redis.RedisOperation
+
+class RedisAtomicLong(
+    private val redisOperation: RedisOperation,
+    private val key: String,
+    initValue: Long = 0
+) {
+    init {
+        redisOperation.set(key, initValue.toString())
+    }
+
+    fun incrementAndGet(): Long {
+        return addAndGet(1L)
+    }
+
+    fun decrementAndGet(): Long {
+        return addAndGet(-1L)
+    }
+
+    fun addAndGet(delta: Long): Long {
+        return redisOperation.increment(key, delta)!!
+    }
+
+
+    fun get(): Long {
+        return redisOperation.get(key)?.toLong() ?: 0L
+    }
+
+    fun toDouble(): Double {
+        return get().toDouble()
+    }
+
 }
