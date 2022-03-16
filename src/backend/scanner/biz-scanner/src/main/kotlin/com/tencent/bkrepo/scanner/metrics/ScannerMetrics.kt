@@ -32,9 +32,11 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 /**
  * 扫描服务数据统计
@@ -47,6 +49,7 @@ class ScannerMetrics(
 ) {
     private val taskCountMap = ConcurrentHashMap<String, RedisAtomicLong>(ScanTaskStatus.values().size)
     private val subtaskCounterMap = ConcurrentHashMap<String, RedisAtomicLong>(SubScanTaskStatus.values().size)
+    private val subtaskTimers = ConcurrentHashMap<String, List<Timer>>()
     private val reuseResultSubtaskCounters: RedisAtomicLong by lazy {
         // 统计重用扫描结果的子任务数量
         val atomicLong = RedisAtomicLong(redisOperation, SCANNER_SUBTASK_REUSE_RESULT_COUNT)
@@ -108,6 +111,12 @@ class ScannerMetrics(
         reuseResultSubtaskCounters.incrementAndGet()
     }
 
+    fun record(fileType: String, fileSize: Long, scanner: String, startTimestamp: Long, finishedTimestamp: Long) {
+        taskTimer(fileType, FileSizeLevel.fromSize(fileSize), scanner).forEach {
+            it.record(finishedTimestamp - startTimestamp, TimeUnit.MILLISECONDS)
+        }
+    }
+
     private fun subtaskCounter(status: SubScanTaskStatus): RedisAtomicLong {
         return subtaskCounterMap.syncGetOrPut(status.name) {
             // 统计不同状态扫描任务数量
@@ -133,6 +142,20 @@ class ScannerMetrics(
             atomicLong
         }
     }
+
+    private fun taskTimer(fileType: String, fileSizeLevel: FileSizeLevel, scanner: String): List<Timer> {
+        return subtaskTimers.syncGetOrPut(timerCacheKey(fileType, fileSizeLevel, scanner)) {
+            val timer = Timer.builder(SCANNER_SUBTASK_TIME_SPENT)
+                .description("subtask time spent")
+                .tag("fileType", fileType)
+                .tag("fileSizeLevel", fileSizeLevel.name)
+                .tag("scanner", scanner)
+            registryProvider.map { timer.register(it) }
+        }
+    }
+
+    private fun timerCacheKey(fileType: String, fileSizeLevel: FileSizeLevel, scanner: String) =
+        "$fileType:$fileSizeLevel:$scanner"
 
     private fun metricsKey(meterName: String, vararg tags: String): String {
         val newMeterName = meterName.removePrefix("scanner.").replace(".", ":")

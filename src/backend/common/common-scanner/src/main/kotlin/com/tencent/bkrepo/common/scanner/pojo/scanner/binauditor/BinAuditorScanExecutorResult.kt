@@ -36,6 +36,7 @@ data class BinAuditorScanExecutorResult(
     override val startTimestamp: Long,
     override val finishedTimestamp: Long,
     override val scanStatus: String,
+    override val fileType: String,
     override val overview: Map<String, Any?>,
     @ApiModelProperty("安全审计结果")
     val checkSecItems: List<CheckSecItem>,
@@ -45,7 +46,7 @@ data class BinAuditorScanExecutorResult(
     val sensitiveItems: List<SensitiveItem>,
     @ApiModelProperty("cve审计结果")
     val cveSecItems: List<CveSecItem>
-) : ScanExecutorResult(startTimestamp, finishedTimestamp, scanStatus, overview, BinAuditorScanner.TYPE) {
+) : ScanExecutorResult(startTimestamp, finishedTimestamp, scanStatus, fileType, overview, BinAuditorScanner.TYPE) {
     companion object {
 
         fun overviewKeyOfSensitive(type: String): String {

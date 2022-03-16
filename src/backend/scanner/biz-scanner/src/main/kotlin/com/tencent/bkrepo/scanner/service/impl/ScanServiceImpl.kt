@@ -156,6 +156,12 @@ class ScanServiceImpl @Autowired constructor(
                 return
             }
 
+            // 统计任务耗时
+            scannerMetrics.record(
+                scanExecutorResult.fileType, subScanTask.size, subScanTask.scanner,
+                scanExecutorResult.startTimestamp, scanExecutorResult.finishedTimestamp
+            )
+
             // 更新文件扫描结果
             val scanner = scannerService.get(subScanTask.scanner)
             fileScanResultDao.upsertResult(

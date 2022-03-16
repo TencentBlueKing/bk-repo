@@ -25,31 +25,51 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner
+package com.tencent.bkrepo.scanner.metrics
 
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import org.springframework.util.unit.DataSize
+import org.springframework.util.unit.DataUnit
 
-@ApiModel("扫描结果")
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes(
-    JsonSubTypes.Type(value = BinAuditorScanExecutorResult::class, name = BinAuditorScanner.TYPE)
-)
-open class ScanExecutorResult(
-    @ApiModelProperty("扫描执行开始时间")
-    open val startTimestamp: Long,
-    @ApiModelProperty("扫描执行结束时间")
-    open val finishedTimestamp: Long,
-    @ApiModelProperty("扫描执行状态")
-    open val scanStatus: String,
-    @ApiModelProperty("文件类型")
-    open val fileType: String,
-    @ApiModelProperty("扫描结果预览")
-    open val overview: Map<String, Any?>,
-    @ApiModelProperty("扫描器类型")
-    val type: String
-)
+enum class FileSizeLevel(private val range: LongRange) {
+    MINI(
+        LongRange(
+            0L,
+            DataSize.of(100, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    SMALL(
+        LongRange(
+            MINI.range.last,
+            DataSize.of(200, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    NORMAL(
+        LongRange(
+            SMALL.range.last,
+            DataSize.of(300, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    LARGE(
+        LongRange(
+            NORMAL.range.last,
+            DataSize.of(500, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    HUGE(
+        LongRange(
+            LARGE.range.last,
+            Long.MAX_VALUE
+        )
+    );
+
+    companion object {
+        fun fromSize(size: Long): FileSizeLevel {
+            values().forEach {
+                if (size in it.range) {
+                    return it
+                }
+            }
+            return HUGE
+        }
+    }
+}
