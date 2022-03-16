@@ -113,6 +113,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
+                ScannerMetrics.incReuseResultSubtaskCount()
                 continue
             }
 
