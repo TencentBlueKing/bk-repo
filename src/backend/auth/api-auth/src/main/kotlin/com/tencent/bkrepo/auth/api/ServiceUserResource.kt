@@ -201,6 +201,10 @@ interface ServiceUserResource {
         @RequestParam token: String
     ): Response<Boolean>
 
+    @ApiOperation("获取公钥")
+    @GetMapping("/rsa")
+    fun getPublicKey(): Response<String?>
+
     @ApiOperation("校验用户会话token")
     @PostMapping("/login")
     fun loginUser(

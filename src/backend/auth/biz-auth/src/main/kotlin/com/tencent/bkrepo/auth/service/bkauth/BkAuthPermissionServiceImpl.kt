@@ -39,7 +39,6 @@ import com.tencent.bkrepo.auth.repository.PermissionRepository
 import com.tencent.bkrepo.auth.repository.RoleRepository
 import com.tencent.bkrepo.auth.repository.UserRepository
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -180,16 +179,10 @@ class BkAuthPermissionServiceImpl constructor(
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
 
-        // devops匿名访问请求处理
-        if (matchAnonymousCond(request.appId, request.uid)) {
-            logger.warn("devops anonymous pass [$request] ")
-            return true
-        }
-
         // bcs或bkrepo账号
         if (matchBcsOrRepoCond(request.appId)) return super.checkPermission(request) || checkDevopsPermission(request)
 
-        // devops实名访问请求处理
+        // devops账号
         if (matchDevopsCond(request.appId)) return checkDevopsPermission(request)
 
         // 非devops体系
@@ -215,9 +208,6 @@ class BkAuthPermissionServiceImpl constructor(
         return devopsAppIdList.contains(appId)
     }
 
-    private fun matchAnonymousCond(appId: String?, uid: String): Boolean {
-        return appId == bkAuthConfig.devopsAppId && uid == ANONYMOUS_USER && bkAuthConfig.devopsAllowAnonymous
-    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkAuthPermissionServiceImpl::class.java)

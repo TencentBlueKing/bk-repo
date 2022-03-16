@@ -75,4 +75,9 @@ interface ArtifactFile : FileHashAccessor {
      * 判断数据存储过程是否降级到本地磁盘
      */
     fun isFallback(): Boolean
+
+    /**
+     * 判断文件是否在本地磁盘
+     * */
+    fun isInLocalDisk(): Boolean
 }

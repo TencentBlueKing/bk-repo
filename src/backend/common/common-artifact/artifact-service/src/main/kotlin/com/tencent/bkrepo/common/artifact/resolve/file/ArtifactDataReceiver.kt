@@ -1,6 +1,5 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
- * 
  *
  * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
  *
@@ -155,9 +154,7 @@ class ArtifactDataReceiver(
     var finished = false
 
     init {
-        if (randomPath) {
-            path = generateRandomPath(path, filename)
-        }
+        initPath()
     }
 
     override fun unhealthy(fallbackPath: Path?, reason: String?) {
@@ -338,7 +335,8 @@ class ArtifactDataReceiver(
     }
 
     /**
-     * 检查是否超出内存阈值，超过则将数据写入文件中，并保持outputStream开启
+     * 检查文件接受阈值，超过内存阈值时将写入文件中，
+     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
      */
     private fun checkThreshold() {
         if (inMemory && received > fileSizeThreshold) {
@@ -377,7 +375,7 @@ class ArtifactDataReceiver(
                     // 说明当前目录下还有目录或者文件，则不继续清理
                     return
                 }
-                logger.debug("delete path $tempPath")
+                logger.info("Delete path $tempPath")
                 tempPath = tempPath.parent
             }
         }
@@ -402,6 +400,15 @@ class ArtifactDataReceiver(
         val fileLocator = HashFileLocator()
         val dir = fileLocator.locate(filename.sha256())
         return Paths.get(root.toFile().path, dir)
+    }
+
+    /**
+     * 如果开启了随机路径，则进行初始化path
+     * */
+    private fun initPath() {
+        if (randomPath) {
+            path = generateRandomPath(path, filename)
+        }
     }
 
     companion object {

@@ -13,12 +13,13 @@ import com.tencent.bkrepo.executor.exception.RunContainerFailedException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.io.File
 
 @Component
-class DockerRunTime @Autowired constructor(val config: ContainerTaskConfig) {
+class DockerRunTime @Autowired constructor(private val config: ContainerTaskConfig) {
 
     private val dockerConfig = DefaultDockerClientConfig.createDefaultConfigBuilder()
-        .withDockerConfig(config.dockerHost)
+        .withDockerHost(config.dockerHost)
         .withApiVersion(config.apiVerion)
         .build()
 
@@ -39,9 +40,9 @@ class DockerRunTime @Autowired constructor(val config: ContainerTaskConfig) {
      * @param workDir  工作目录
      * @throws RunContainerFailedException
      */
-    fun runContainerOnce(workDir: String) {
+    fun runContainerOnce(workDir: File) {
         val bind = Volume(config.containerDir)
-        val binds = Binds(Bind(workDir, bind))
+        val binds = Binds(Bind(workDir.absolutePath, bind))
         val containerId = httpDockerCli.createContainerCmd(config.imageName)
             .withHostConfig(HostConfig().withBinds(binds))
             .withCmd(config.args)

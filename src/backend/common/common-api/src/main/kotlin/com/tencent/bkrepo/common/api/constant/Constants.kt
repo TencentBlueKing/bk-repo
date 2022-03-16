@@ -75,3 +75,4 @@ const val DEFAULT_PAGE_SIZE = 20
 const val REPOSITORY_SERVICE_NAME = "\${service.prefix:repo-}repository\${service.suffix:}"
 const val AUTH_SERVICE_NAME = "\${service.prefix:repo-}auth\${service.suffix:}"
 const val REPLICATION_SERVICE_NAME = "\${service.prefix:repo-}replication\${service.suffix:}"
+const val SCANNER_SERVICE_NAME = "\${service.prefix:repo-}scanner\${service.suffix:}"

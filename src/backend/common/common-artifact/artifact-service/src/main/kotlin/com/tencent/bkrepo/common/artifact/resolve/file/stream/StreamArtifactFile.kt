@@ -46,7 +46,8 @@ open class StreamArtifactFile(
     private val source: InputStream,
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
-    private val storageCredentials: StorageCredentials
+    private val storageCredentials: StorageCredentials,
+    private val contentLength: Long? = null
 ) : ArtifactFile {
 
     /**
@@ -60,17 +61,29 @@ open class StreamArtifactFile(
     private var sha1: String? = null
 
     /**
+     *
+     * */
+    private val useLocalPath: Boolean
+
+    /**
      * 数据接收器
      */
     private val receiver: ArtifactDataReceiver
 
     init {
+        // 主要路径，可以为DFS路径
         val path = storageCredentials.upload.location.toPath()
+        // 本地路径
+        val localPath = storageCredentials.upload.localPath.toPath()
+        // 本地路径阈值
+        val localThreshold = storageProperties.receive.localThreshold
+        useLocalPath = contentLength != null && contentLength > 0 && contentLength < localThreshold.toBytes()
+        val receivePath = if (useLocalPath) localPath else path
         receiver = ArtifactDataReceiver(
             storageProperties.receive,
             storageProperties.monitor,
-            path,
-            randomPath = true
+            receivePath,
+            randomPath = !useLocalPath
         )
         if (!storageProperties.receive.resolveLazily) {
             init()
@@ -138,14 +151,19 @@ open class StreamArtifactFile(
         return initialized
     }
 
+    override fun isInLocalDisk() = useLocalPath
+
     private fun init() {
         if (initialized) {
             return
         }
         try {
-            monitor.add(receiver)
-            if (!monitor.healthy.get()) {
-                receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
+            // 本地磁盘不需要fallback
+            if (!isInLocalDisk()) {
+                monitor.add(receiver)
+                if (!monitor.healthy.get()) {
+                    receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)
+                }
             }
             receiver.receiveStream(source)
             val throughput = receiver.finish()
