@@ -29,6 +29,12 @@ export default {
         )
     },
     // 登录
+    getRSAKey () {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/user/rsa`
+        )
+    },
+    // 登录
     bkrepoLogin (_, formData) {
         return Vue.prototype.$ajax.post(
             `${prefix}/user/login`,

@@ -85,32 +85,36 @@
         },
         methods: {
             ...mapMutations(['SHOW_LOGIN_DIALOG']),
-            ...mapActions(['bkrepoLogin']),
+            ...mapActions(['bkrepoLogin', 'getRSAKey']),
             submitLogin () {
                 this.loginFailed = false
-                const formData = new FormData()
-                formData.append('uid', this.loginForm.username)
-                formData.append('token', this.loginForm.password)
-                this.bkrepoLogin(formData).then(res => {
-                    if (res) {
-                        this.$bkMessage({
-                            theme: 'success',
-                            message: this.$t('login') + this.$t('success')
-                        })
-                        const afterLoginUrl = sessionStorage.getItem('afterLogin')
-                        sessionStorage.removeItem('afterLogin')
-                        afterLoginUrl && window.open(afterLoginUrl, '_self')
-                        location.href = ''
-                        this.loginFailCounter = 0
-                    } else {
-                        this.loginFailedTip = this.$t('loginErrorTip')
+                this.getRSAKey().then(rsaKey => {
+                    const formData = new FormData()
+                    formData.append('uid', this.loginForm.username)
+                    const encrypt = new window.JSEncrypt()
+                    encrypt.setPublicKey(rsaKey)
+                    formData.append('token', encrypt.encrypt(this.loginForm.password))
+                    this.bkrepoLogin(formData).then(res => {
+                        if (res) {
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: this.$t('login') + this.$t('success')
+                            })
+                            const afterLoginUrl = sessionStorage.getItem('afterLogin')
+                            sessionStorage.removeItem('afterLogin')
+                            afterLoginUrl && window.open(afterLoginUrl, '_self')
+                            location.href = ''
+                            this.loginFailCounter = 0
+                        } else {
+                            this.loginFailedTip = this.$t('loginErrorTip')
+                            this.loginFailed = true
+                            this.loginFailCounter++
+                        }
+                    }).catch(e => {
+                        this.loginFailedTip = e.message
                         this.loginFailed = true
                         this.loginFailCounter++
-                    }
-                }).catch(e => {
-                    this.loginFailedTip = e.message
-                    this.loginFailed = true
-                    this.loginFailCounter++
+                    })
                 })
             },
             enterEvent (e) {

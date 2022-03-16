@@ -13,7 +13,7 @@ const val MIN_OBJECT_ID = "000000000000000000000000"
 /**
  * 一次处理数据量
  */
-const val BATCH_SIZE = 5
+const val BATCH_SIZE = 10000
 /**
  * 数据库字段
  */
