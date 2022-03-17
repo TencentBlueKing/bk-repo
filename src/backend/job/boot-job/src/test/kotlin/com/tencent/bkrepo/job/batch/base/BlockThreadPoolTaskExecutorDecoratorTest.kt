@@ -81,10 +81,11 @@ class BlockThreadPoolTaskExecutorDecoratorTest {
         val executor = BlockThreadPoolTaskExecutorDecorator(Executors.newSingleThreadExecutor(), 1)
         val num = AtomicInteger()
         // 使用executeProduce避免死锁
-        executor.executeProduce {
+        val r = Runnable {
             executor.execute { }
             num.incrementAndGet()
         }
+        executor.executeProduce(r)
         TimeUnit.MILLISECONDS.sleep(100)
         Assertions.assertEquals(1, num.get())
     }
@@ -96,5 +97,21 @@ class BlockThreadPoolTaskExecutorDecoratorTest {
         val identityTask = IdentityTask(id = "id", runnable = Runnable { TimeUnit.MILLISECONDS.sleep(timeout * 2) })
         executor.executeWithId(identityTask)
         assertThrows<TimeoutException> { executor.completeAndGet(identityTask.id, timeout) }
+    }
+
+    @Test
+    fun rateLimitTest() {
+        val executor = BlockThreadPoolTaskExecutorDecorator(Executors.newFixedThreadPool(100), 100)
+        val id = "id"
+        val begin = System.currentTimeMillis()
+        repeat(100) {
+            val identityTask = IdentityTask(id = id, runnable = Runnable { TimeUnit.MILLISECONDS.sleep(100) })
+            executor.executeWithId(identityTask, permitsPerSecond = 30.0)
+        }
+        executor.completeAndGet(id, 5000)
+        val end = System.currentTimeMillis()
+        val spend = end - begin
+        println(spend)
+        Assertions.assertTrue(spend > 3000)
     }
 }

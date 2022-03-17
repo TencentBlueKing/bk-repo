@@ -14,7 +14,8 @@ import org.springframework.test.context.TestPropertySource
 @TestPropertySource(
     locations = [
         "classpath:bootstrap-ut.properties",
-        "classpath:bootstrap.properties"
+        "classpath:bootstrap.properties",
+        "classpath:job-ut.properties"
     ]
 )
 open class JobBaseTest

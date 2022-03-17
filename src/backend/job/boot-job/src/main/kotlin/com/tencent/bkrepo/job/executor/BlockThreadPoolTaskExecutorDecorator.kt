@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.executor
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import org.slf4j.LoggerFactory
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executor
@@ -9,13 +10,15 @@ import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import kotlin.system.measureTimeMillis
 
 /**
  * 阻塞任务执行器
  * 可以设置限制大小，当达到任务限制时，会阻塞当前线程
  * 支持id任务，可以执行相同id的多个任务，然后等待所有任务完成
  * */
-class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, limit: Int, bossCount: Int = 1) {
+class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, limit: Int, bossCount: Int = 1) :
+    Executor {
 
     // 信号量
     private val semaphore: Semaphore = Semaphore(limit)
@@ -33,11 +36,11 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
     /**
      * 执行Runnable
      * */
-    fun execute(command: () -> Unit) {
+    override fun execute(command: Runnable) {
         semaphore.acquire()
         workerGroup.execute {
             try {
-                command()
+                command.run()
             } finally {
                 semaphore.release()
             }
@@ -47,21 +50,28 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
     /**
      * 执行产生子任务的Runnable
      * */
-    fun executeProduce(command: () -> Unit) {
+    fun executeProduce(command: Runnable) {
         bossGroup.execute {
-            command()
+            command.run()
         }
     }
 
     /**
      * 执行带Id的任务
      * */
-    fun executeWithId(identityTask: IdentityTask, produce: Boolean = false) {
-        val taskInfo = taskInfos.getOrPut(identityTask.id) { IdentityTaskInfo() }
+    fun executeWithId(identityTask: IdentityTask, produce: Boolean = false, permitsPerSecond: Double = 0.0) {
+        val id = identityTask.id
+        val taskInfo = taskInfos.getOrPut(id) { IdentityTaskInfo(id, permitsPerSecond = permitsPerSecond) }
         taskInfo.count.incrementAndGet()
-        val task = {
+        val enterTime = System.currentTimeMillis()
+        val task = Runnable {
             try {
-                identityTask.run()
+                taskInfo.acquire()
+                val beginTime = System.currentTimeMillis()
+                taskInfo.waitTime.addAndGet(beginTime - enterTime)
+                measureTimeMillis { identityTask.run() }.apply {
+                    taskInfo.executeTime.addAndGet(this)
+                }
             } finally {
                 with(taskInfo) {
                     doneCount.incrementAndGet()
@@ -96,11 +106,12 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
                 // 等待超时后，已做任务数没有变化
                 if (!result && done == doneCount.get()) {
                     taskInfos.remove(id)
-                    throw TimeoutException()
+                    throw TimeoutException("Task[$id] was timeout,info: $this")
                 }
                 done = doneCount.get()
             }
         }
+        logger.info("Task[$id] has complete,info: $taskInfo")
         taskInfos.remove(id)
     }
 
@@ -124,5 +135,9 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
         val taskInfo = taskInfos[id] ?: throw IllegalArgumentException("no task $id")
         taskInfo.complete = true
         get(id, timeout)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(BlockThreadPoolTaskExecutorDecorator::class.java)
     }
 }

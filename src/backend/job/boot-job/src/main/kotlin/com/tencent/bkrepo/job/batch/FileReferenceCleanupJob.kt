@@ -38,9 +38,8 @@ import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.FileJobContext
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
-import com.tencent.bkrepo.job.batch.base.JobConcurrentLevel
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.exception.FileMissException
+import com.tencent.bkrepo.job.config.MongodbJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -48,28 +47,30 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 清理引用=0的文件
  */
-@Component
 class FileReferenceCleanupJob(
     private val storageService: StorageService,
     private val mongoTemplate: MongoTemplate,
-    private val storageCredentialsClient: StorageCredentialsClient
-) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData>() {
+    private val storageCredentialsClient: StorageCredentialsClient,
+    properties: MongodbJobProperties
+) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData>(properties) {
 
     @Scheduled(cron = "0 0 4/6 * * ?") // 4点开始，6小时执行一次
     override fun start(): Boolean {
         return super.start()
     }
 
-    override val concurrentLevel: JobConcurrentLevel = JobConcurrentLevel.COLLECTION
     override fun createJobContext(): JobContext {
         return FileJobContext()
+    }
+
+    override fun entityClass(): Class<FileReferenceData> {
+        return FileReferenceData::class.java
     }
 
     override fun collectionNames(): List<String> {
@@ -91,12 +92,10 @@ class FileReferenceCleanupJob(
             if (sha256.isNotBlank() && storageService.exist(sha256, storageCredentials)) {
                 storageService.delete(sha256, storageCredentials)
             } else {
-                throw FileMissException("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
+                (context as FileJobContext).fileMissing.incrementAndGet()
+                logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
             }
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
-        } catch (e: FileMissException) {
-            (context as FileJobContext).fileMissing.incrementAndGet()
-            logger.warn(e.message, e)
         } catch (e: Exception) {
             throw JobExecuteException("Failed to delete file[$sha256] on [$storageCredentials].", e)
         }

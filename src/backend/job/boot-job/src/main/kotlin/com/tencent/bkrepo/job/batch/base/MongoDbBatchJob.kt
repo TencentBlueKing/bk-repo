@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.MIN_OBJECT_ID
+import com.tencent.bkrepo.job.config.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
 import java.util.concurrent.CountDownLatch
@@ -20,7 +21,7 @@ import org.springframework.data.mongodb.core.query.Query
 /**
  * MongoDb抽象批处理作业Job
  * */
-abstract class MongoDbBatchJob<T> : BatchJob() {
+abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) : BatchJob(properties) {
     /**
      * 需要操作的表名列表
      * */
@@ -44,16 +45,12 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
      * */
     abstract fun mapToObject(row: Map<String, Any?>): T
 
-    /**
-     * 并发级别
-     * 默认序列化，即顺序执行
-     * */
-    open val concurrentLevel: JobConcurrentLevel = JobConcurrentLevel.SERIALIZE
+    abstract fun entityClass(): Class<T>
 
     /**
      * 每次批处理作业大小
      * */
-    protected open val batchSize: Int = BATCH_SIZE
+    private val batchSize: Int = BATCH_SIZE
 
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
@@ -68,6 +65,7 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
     private lateinit var executor: BlockThreadPoolTaskExecutorDecorator
 
     override fun doStart(jobContext: JobContext) {
+        val concurrentLevel = properties.concurrentLevel
         try {
             val collectionNames = collectionNames()
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
@@ -105,14 +103,19 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
         var sum = 0L
         measureNanoTime {
             do {
+                val query = buildQuery().addCriteria(Criteria.where(ID).gt(lastId)).limit(batchSize)
+                entityClass().fields.forEach {
+                    val filedName = if (it.name.equals(JAVA_ID)) ID else it.name
+                    query.fields().include(filedName)
+                }
                 val data = mongoTemplate.find<Map<String, Any?>>(
-                    buildQuery().addCriteria(Criteria.where(ID).gt(lastId)).limit(batchSize),
+                    query,
                     collectionName
                 )
                 if (data.isEmpty()) {
                     break
                 }
-                if (concurrentLevel >= JobConcurrentLevel.ROW) {
+                if (properties.concurrentLevel >= JobConcurrentLevel.ROW) {
                     runAsync(data) { runRow(it, collectionName, context) }
                 } else {
                     data.forEach { runRow(it, collectionName, context) }
@@ -141,7 +144,7 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
     ) {
         tasks.forEach {
             val task = IdentityTask(taskId, Runnable { block(it) })
-            executor.executeWithId(task, produce)
+            executor.executeWithId(task, produce, properties.permitsPerSecond)
         }
     }
 

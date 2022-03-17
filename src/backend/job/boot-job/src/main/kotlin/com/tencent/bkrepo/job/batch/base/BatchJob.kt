@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.job.config.BatchJobProperties
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,7 +13,7 @@ import java.time.Duration
 /**
  * 抽象批处理作业Job
  * */
-abstract class BatchJob {
+abstract class BatchJob(private val batchJobProperties: BatchJobProperties) {
     /**
      * 锁名称
      */
@@ -61,6 +62,9 @@ abstract class BatchJob {
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
     open fun start(): Boolean {
+        if (!batchJobProperties.enabled) {
+            logger.info("Job[${getJobName()}] not enabled,exit job.")
+        }
         logger.info("Start to execute async job[${getJobName()}]")
         stop = false
         val jobContext = createJobContext()
