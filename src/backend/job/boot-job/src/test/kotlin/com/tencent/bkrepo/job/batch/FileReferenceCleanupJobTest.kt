@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -18,16 +19,13 @@ import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.Import
+import org.springframework.context.ApplicationContext
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.util.concurrent.atomic.AtomicInteger
 
 @DisplayName("文件引用清理Job测试")
 @DataMongoTest
-@Import(
-    FileReferenceCleanupJob::class
-)
 class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @MockBean
@@ -45,6 +43,9 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @Autowired
     lateinit var jobProperties: JobProperties
 
+    @Autowired
+    lateinit var applicationContext: ApplicationContext
+
     @BeforeEach
     fun beforeEach() {
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
@@ -52,6 +53,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(
             ResponseBuilder.success(credentials)
         )
+        SpringContextUtils().setApplicationContext(applicationContext)
     }
 
     @AfterEach

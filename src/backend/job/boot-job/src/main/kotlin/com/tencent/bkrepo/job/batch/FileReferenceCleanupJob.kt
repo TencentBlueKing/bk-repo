@@ -120,7 +120,7 @@ class FileReferenceCleanupJob(
     data class FileReferenceData(private val map: Map<String, Any?>) {
         val id: String? by map
         val sha256: String by map
-        val credentialsKey: String? by map
+        val credentialsKey: String? = map["credentialsKey"] as String?
     }
 
     override fun mapToObject(row: Map<String, Any?>): FileReferenceData {

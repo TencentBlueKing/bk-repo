@@ -1,10 +1,12 @@
 package com.tencent.bkrepo.job.executor
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Semaphore
 import java.util.concurrent.ThreadPoolExecutor
@@ -17,14 +19,17 @@ import kotlin.system.measureTimeMillis
  * 可以设置限制大小，当达到任务限制时，会阻塞当前线程
  * 支持id任务，可以执行相同id的多个任务，然后等待所有任务完成
  * */
-class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, limit: Int, bossCount: Int = 1) :
-    Executor {
+class BlockThreadPoolTaskExecutorDecorator(
+    private val workerGroup: ThreadPoolTaskExecutor,
+    limit: Int,
+    bossCount: Int = 1
+) {
 
     // 信号量
     private val semaphore: Semaphore = Semaphore(limit)
 
     // 存放任务信息
-    val taskInfos = ConcurrentHashMap<String, IdentityTaskInfo>()
+    private val taskInfos = ConcurrentHashMap<String, IdentityTaskInfo>()
 
     private val bossGroup = ThreadPoolExecutor(
         bossCount, bossCount,
@@ -36,11 +41,11 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
     /**
      * 执行Runnable
      * */
-    override fun execute(command: Runnable) {
+    fun execute(command: () -> Unit) {
         semaphore.acquire()
         workerGroup.execute {
             try {
-                command.run()
+                command.invoke()
             } finally {
                 semaphore.release()
             }
@@ -50,9 +55,9 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
     /**
      * 执行产生子任务的Runnable
      * */
-    fun executeProduce(command: Runnable) {
+    fun executeProduce(command: () -> Unit) {
         bossGroup.execute {
-            command.run()
+            command.invoke()
         }
     }
 
@@ -64,18 +69,19 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
         val taskInfo = taskInfos.getOrPut(id) { IdentityTaskInfo(id, permitsPerSecond = permitsPerSecond) }
         taskInfo.count.incrementAndGet()
         val enterTime = System.currentTimeMillis()
-        val task = Runnable {
+        val task = {
             try {
                 taskInfo.acquire()
                 val beginTime = System.currentTimeMillis()
-                taskInfo.waitTime.addAndGet(beginTime - enterTime)
+                taskInfo.waitTime.addAndGet((beginTime - enterTime).toInt())
                 measureTimeMillis { identityTask.run() }.apply {
-                    taskInfo.executeTime.addAndGet(this)
+                    taskInfo.executeTime.addAndGet(this.toInt())
                 }
+                Unit
             } finally {
                 with(taskInfo) {
                     doneCount.incrementAndGet()
-                    if (count.decrementAndGet() == 0L) {
+                    if (count.decrementAndGet() == 0) {
                         signalAll()
                     }
                 }
@@ -101,16 +107,18 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
         val duration = Duration.ofMillis(timeout)
         with(taskInfo) {
             var done = doneCount.get()
-            while (!(complete && count.get() == 0L)) {
+            while (!(complete && count.get() == 0)) {
                 val result = await(duration)
                 // 等待超时后，已做任务数没有变化
                 if (!result && done == doneCount.get()) {
                     taskInfos.remove(id)
+                    afterGet(taskInfo)
                     throw TimeoutException("Task[$id] was timeout,info: $this")
                 }
                 done = doneCount.get()
             }
         }
+        afterGet(taskInfo)
         logger.info("Task[$id] has complete,info: $taskInfo")
         taskInfos.remove(id)
     }
@@ -135,6 +143,38 @@ class BlockThreadPoolTaskExecutorDecorator(private val workerGroup: Executor, li
         val taskInfo = taskInfos[id] ?: throw IllegalArgumentException("no task $id")
         taskInfo.complete = true
         get(id, timeout)
+    }
+
+    private fun afterGet(taskInfo: IdentityTaskInfo) {
+        with(taskInfo) {
+            val taskExecutedEvent = TaskExecutedEvent(
+                doneCount.get(),
+                Duration.ofMillis(avgWaitTime().toLong()),
+                Duration.ofMillis(avgExecuteTime().toLong())
+            )
+            SpringContextUtils.publishEvent(taskExecutedEvent)
+        }
+    }
+
+    /**
+     * 实时线程池任务数
+     * */
+    fun activeCount(): Int {
+        return bossGroup.activeCount.plus(workerGroup.activeCount)
+    }
+
+    /**
+     * 任务队列长度
+     * */
+    fun queueSize(): Int {
+        return bossGroup.queue.size.plus(workerGroup.threadPoolExecutor.queue.size)
+    }
+
+    /**
+     * 实时Job任务数
+     * */
+    fun activeTaskCount(): Int {
+        return taskInfos.size
     }
 
     companion object {
