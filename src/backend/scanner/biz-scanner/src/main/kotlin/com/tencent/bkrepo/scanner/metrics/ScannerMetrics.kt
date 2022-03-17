@@ -118,11 +118,11 @@ class ScannerMetrics(
     }
 
     private fun subtaskCounter(status: SubScanTaskStatus): RedisAtomicLong {
-        return subtaskCounterMap.syncGetOrPut(status.name) {
+        return subtaskCounterMap.getOrPut(status.name) {
             // 统计不同状态扫描任务数量
-            val key = metricsKey(SCANNER_TASK_COUNT, "status", status.name)
+            val key = metricsKey(SCANNER_SUBTASK_COUNT, "status", status.name)
             val atomicLong = RedisAtomicLong(redisOperation, key)
-            val gauge = Gauge.builder(SCANNER_TASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
+            val gauge = Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
                 .description("${status.name} task count")
                 .tag("status", status.name)
             registryProvider.forEach { gauge.register(it) }
@@ -131,11 +131,11 @@ class ScannerMetrics(
     }
 
     private fun taskCounter(status: ScanTaskStatus): RedisAtomicLong {
-        return taskCountMap.syncGetOrPut(status.name) {
+        return taskCountMap.getOrPut(status.name) {
             // 统计不同状态子任务数量
-            val key = metricsKey(SCANNER_SUBTASK_COUNT, "status", status.name)
+            val key = metricsKey(SCANNER_TASK_COUNT, "status", status.name)
             val atomicLong = RedisAtomicLong(redisOperation, key)
-            val gauge = Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
+            val gauge = Gauge.builder(SCANNER_TASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
                 .description("${status.name} subtask count")
                 .tag("status", status.name)
             registryProvider.forEach { gauge.register(it) }
@@ -144,7 +144,7 @@ class ScannerMetrics(
     }
 
     private fun taskTimer(fileType: String, fileSizeLevel: FileSizeLevel, scanner: String): List<Timer> {
-        return subtaskTimers.syncGetOrPut(timerCacheKey(fileType, fileSizeLevel, scanner)) {
+        return subtaskTimers.getOrPut(timerCacheKey(fileType, fileSizeLevel, scanner)) {
             val timer = Timer.builder(SCANNER_SUBTASK_TIME_SPENT)
                 .description("subtask time spent")
                 .tag("fileType", fileType)
@@ -160,19 +160,6 @@ class ScannerMetrics(
     private fun metricsKey(meterName: String, vararg tags: String): String {
         val newMeterName = meterName.removePrefix("scanner.").replace(".", ":")
         return "metrics:scanner:$newMeterName:${tags.joinToString(":")}"
-    }
-
-    private fun <K : Any, V : Any> ConcurrentHashMap<K, V>.syncGetOrPut(key: K, defaultValue: () -> V): V {
-        var value = get(key)
-        if (value == null) {
-            synchronized(this) {
-                value = get(key)
-                if (value == null) {
-                    value = put(key, defaultValue.invoke())
-                }
-            }
-        }
-        return value!!
     }
 
     companion object {
