@@ -25,24 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.listener.event
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import java.time.Duration
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class
+/**
+ * 任务执行完事件
+ * */
+data class TaskExecutedEvent(
+    val doneCount: Int,
+    val avgWaitTime: Duration,
+    val avgExecuteTime: Duration
 )
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:bootstrap.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-open class JobBaseTest
