@@ -1,10 +1,12 @@
 import request from '@/utils/request'
 import { updateConfig } from '@/api/config'
+import { isEmpty } from 'lodash'
 
 const PREFIX_STORAGE = '/repository/api/storage'
 const PREFIX_STORAGE_CREDENTIALS = `${PREFIX_STORAGE}/credentials`
 const STORAGE_CONFIG_PREFIX = 'storage'
 const STORAGE_CACHE_CONFIG_PREFIX = 'cache'
+const STORAGE_UPLOAD_CONFIG_PREFIX = 'upload'
 export const STORAGE_TYPE_FILESYSTEM = 'filesystem'
 export const STORAGE_TYPE_INNER_COS = 'innercos'
 export const STORAGE_TYPE_HDFS = 'hdfs'
@@ -25,9 +27,7 @@ export function defaultCredential() {
 }
 
 export function createCredential(credential) {
-  if (credential.upload && (!credential.upload.location || credential.upload.location.length === 0)) {
-    credential.upload.location = undefined
-  }
+  normalizeCredential(credential)
   const createReq = {
     key: credential.key,
     credentials: credential,
@@ -54,18 +54,37 @@ export function updateCredential(key, credential, defaultCredential = false) {
         'value': credential.cache.loadCacheFirst
       }
     ]
+    if (credential.upload && !isEmpty(credential.upload.localPath)) {
+      const uploadLocalPathConfigItem = {
+        'key': `${STORAGE_CONFIG_PREFIX}.${credential.type}.${STORAGE_UPLOAD_CONFIG_PREFIX}.localPath`,
+        'value': credential.upload.localPath
+      }
+      values.push(uploadLocalPathConfigItem)
+    }
     return updateConfig(values)
   } else {
-    const data = {
-      loadCacheFirst: credential.cache.loadCacheFirst,
-      expireDays: credential.cache.expireDays
+    normalizeCredential(credential)
+    const updateReq = {
+      credentials: credential
     }
     return request({
       url: `${PREFIX_STORAGE_CREDENTIALS}/${key}`,
       method: 'put',
-      data
+      data: updateReq
     })
   }
+}
+
+function normalizeCredential(credential) {
+  if (credential.upload) {
+    if (isEmpty(credential.upload.location)) {
+      credential.upload.location = undefined
+    }
+    if (isEmpty(credential.upload.localPath)) {
+      credential.upload.localPath = undefined
+    }
+  }
+  return credential
 }
 
 export function deleteCredential(key) {

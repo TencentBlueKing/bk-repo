@@ -1,5 +1,5 @@
 <template>
-  <el-dialog title="创建凭据" :visible.sync="showDialog" :before-close="beforeClose">
+  <el-dialog :title="createMode ? '创建凭据' : '更新凭据'" :visible.sync="showDialog" :before-close="beforeClose">
     <el-form ref="form" :rules="rules" :model="credential" status-icon>
       <el-form-item label="Key" prop="key" required>
         <el-input v-model="credential.key" :disabled="!createMode" />
@@ -84,6 +84,9 @@
       <el-form-item label="上传路径" prop="upload.location">
         <el-input v-model="credential.upload.location" placeholder="请输入文件上传路径，默认为系统临时文件目录" :disabled="!createMode" />
       </el-form-item>
+      <el-form-item label="本地存储路径" prop="upload.localPath">
+        <el-input v-model="credential.upload.localPath" placeholder="请输入文件本地存储，默认为系统临时文件目录" />
+      </el-form-item>
 
       <!-- cache config -->
       <el-form-item label="开启缓存" prop="cache.enabled">
@@ -148,6 +151,9 @@ export default {
         'upload.location': [
           { validator: this.validateFilePathAllowEmpty, trigger: 'change' }
         ],
+        'upload.localPath': [
+          { validator: this.validateFilePathAllowEmpty, trigger: 'change' }
+        ],
         'cache.path': [
           { validator: this.validateFilePath, trigger: 'change' }
         ],
@@ -183,7 +189,7 @@ export default {
       this.validateUri(rule, value, callback, FILE_PATH_REGEX)
     },
     validateFilePathAllowEmpty(rule, value, callback) {
-      this.validateUri(rule, value, callback, FILE_PATH_REGEX, true)
+      this.validateUri(rule, value, callback, FILE_PATH_REGEX, this.createMode)
     },
     validateHdfsUrl(rule, value, callback) {
       this.validateUri(rule, value, callback, /^hdfs:\/\/[\w-]+(\.[\w-]+)*(:\d{1,5})?$/)
@@ -260,7 +266,8 @@ export default {
           expireDays: 0
         },
         upload: {
-          location: ''
+          location: '',
+          localPath: ''
         }
       }
       switch (type) {

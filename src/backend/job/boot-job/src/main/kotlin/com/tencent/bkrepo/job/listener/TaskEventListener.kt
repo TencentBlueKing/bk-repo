@@ -25,24 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.listener
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
+import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
+import com.tencent.bkrepo.job.metrics.JobMetrics
+import org.slf4j.LoggerFactory
+import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class
-)
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:bootstrap.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-open class JobBaseTest
+/**
+ * 任务监听器
+ * */
+@Component
+class TaskEventListener(private val jobMetrics: JobMetrics) {
+
+    @EventListener(TaskExecutedEvent::class)
+    fun listen(event: TaskExecutedEvent) {
+        with(event) {
+            logger.info("Receive taskExecutedEvent:$event")
+            jobMetrics.jobTasksCounter.increment(doneCount.toDouble())
+            jobMetrics.jobAvgWaitTimeConsumeTimer.record(avgWaitTime)
+            jobMetrics.jobAvgExecuteTimeConsumeTimer.record(avgExecuteTime)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(TaskExecutedEvent::class.java)
+    }
+}
