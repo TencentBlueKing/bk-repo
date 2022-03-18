@@ -16,15 +16,11 @@ metadata:
     {{- end }}
 spec:
   tls:
-    - hosts:
-        - {{ .Values.gateway.host }}
-      secretName: testsecret-tls
-    - hosts:
-        - {{ .Values.gateway.dockerHost }}
-      secretName: testsecret-tls
-    - hosts:
-        - {{ .Values.gateway.helmHost }}
-      secretName: testsecret-tls
+  - hosts:
+      - {{ .Values.gateway.host }}
+      - {{ .Values.gateway.dockerHost }}
+      - {{ .Values.gateway.helmHost }}
+    secretName: testsecret-tls
   rules:
     - host: {{ .Values.gateway.dockerHost }}
       secretName: bkrepo-tls
