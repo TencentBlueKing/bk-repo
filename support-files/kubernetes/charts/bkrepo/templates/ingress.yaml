@@ -15,8 +15,17 @@ metadata:
     {{ $key }}: {{ include "common.tplvalues.render" (dict "value" $value "context" $) | quote }}
     {{- end }}
 spec:
+  tls:
+    - hosts:
+        - {{ .Values.gateway.host }}
+      secretName: testsecret-tls
+    - hosts:
+        - {{ .Values.gateway.dockerHost }}
+      secretName: testsecret-tls
+    - hosts:
+        - {{ .Values.gateway.helmHost }}
+      secretName: testsecret-tls
   rules:
-    tls:
     - host: {{ .Values.gateway.dockerHost }}
       secretName: bkrepo-tls
       http:
