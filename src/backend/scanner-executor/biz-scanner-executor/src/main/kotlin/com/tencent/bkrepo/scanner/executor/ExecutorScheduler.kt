@@ -32,8 +32,14 @@ class ExecutorScheduler @Autowired constructor(
         if (allowExecute()) {
             scanClient.pullSubTask().data?.let {
                 scanClient.updateSubScanTaskStatus(it.taskId, SubScanTaskStatus.EXECUTING.name)
-                executor.execute { doScan(it)  }
                 executingCount.incrementAndGet()
+                executor.execute {
+                    try {
+                        doScan(it)
+                    } finally {
+                        executingCount.decrementAndGet()
+                    }
+                }
                 logger.info("executing task count ${executingCount.get()}")
             }
         }
@@ -66,7 +72,6 @@ class ExecutorScheduler @Autowired constructor(
                 scanClient.report(request)
             }
         }
-        executingCount.decrementAndGet()
         logger.info("executing task count ${executingCount.get()}")
     }
 

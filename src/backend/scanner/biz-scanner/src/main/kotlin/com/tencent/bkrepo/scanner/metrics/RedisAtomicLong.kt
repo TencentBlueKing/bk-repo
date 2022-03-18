@@ -31,12 +31,8 @@ import com.tencent.bkrepo.common.redis.RedisOperation
 
 class RedisAtomicLong(
     private val redisOperation: RedisOperation,
-    private val key: String,
-    initValue: Long = 0
+    private val key: String
 ) {
-    init {
-        redisOperation.set(key, initValue.toString())
-    }
 
     fun incrementAndGet(): Long {
         return addAndGet(1L)
