@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.config.MongodbJobProperties
@@ -74,10 +73,14 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
 
     abstract fun entityClass(): Class<T>
 
-    /**
-     * 每次批处理作业大小
-     * */
-    private val batchSize: Int = BATCH_SIZE
+    private val batchSize: Int
+        get() = properties.batchSize
+
+    private val concurrentLevel: JobConcurrentLevel
+        get() = properties.concurrentLevel
+
+    private val permitsPerSecond: Double
+        get() = properties.permitsPerSecond
 
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
@@ -92,7 +95,6 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
     private lateinit var executor: BlockThreadPoolTaskExecutorDecorator
 
     override fun doStart(jobContext: JobContext) {
-        val concurrentLevel = properties.concurrentLevel
         try {
             val collectionNames = collectionNames()
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
@@ -142,7 +144,7 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
                 if (data.isEmpty()) {
                     break
                 }
-                if (properties.concurrentLevel >= JobConcurrentLevel.ROW) {
+                if (concurrentLevel >= JobConcurrentLevel.ROW) {
                     runAsync(data) { runRow(it, collectionName, context) }
                 } else {
                     data.forEach { runRow(it, collectionName, context) }
@@ -171,7 +173,7 @@ abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) 
     ) {
         tasks.forEach {
             val task = IdentityTask(taskId, Runnable { block(it) })
-            executor.executeWithId(task, produce, properties.permitsPerSecond)
+            executor.executeWithId(task, produce, permitsPerSecond)
         }
     }
 

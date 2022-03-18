@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.batch.base
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -68,7 +67,7 @@ abstract class BatchJob(private val batchJobProperties: BatchJobProperties) {
      * 任务id
      * 唯一标识
      * */
-    protected val taskId = StringPool.uniqueId()
+    protected val taskId: String = javaClass.simpleName
 
     /**
      * 最长加锁时间

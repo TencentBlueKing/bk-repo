@@ -30,6 +30,8 @@ package com.tencent.bkrepo.job.batch
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.COUNT
+import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.FileJobContext
@@ -109,14 +111,13 @@ class FileReferenceCleanupJob(
 
     companion object {
         private val logger = LoggerHolder.jobLogger
-        private const val COUNT = "count"
         private const val COLLECTION_NAME_PREFIX = "file_reference_"
     }
 
     data class FileReferenceData(private val map: Map<String, Any?>) {
         val id: String? by map
         val sha256: String by map
-        val credentialsKey: String? = map["credentialsKey"] as String?
+        val credentialsKey: String? = map[CREDENTIALS] as String?
     }
 
     override fun mapToObject(row: Map<String, Any?>): FileReferenceData {
