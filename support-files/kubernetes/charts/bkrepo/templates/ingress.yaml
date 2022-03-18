@@ -18,8 +18,6 @@ spec:
   tls:
   - hosts:
       - {{ .Values.gateway.host }}
-      - {{ .Values.gateway.dockerHost }}
-      - {{ .Values.gateway.helmHost }}
     secretName: testsecret-tls
   rules:
     - host: {{ .Values.gateway.dockerHost }}
