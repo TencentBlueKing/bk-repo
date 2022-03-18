@@ -1,10 +1,37 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.ID
 import com.tencent.bkrepo.job.MIN_OBJECT_ID
+import com.tencent.bkrepo.job.config.MongodbJobProperties
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.executor.IdentityTask
 import java.util.concurrent.CountDownLatch
@@ -20,7 +47,7 @@ import org.springframework.data.mongodb.core.query.Query
 /**
  * MongoDb抽象批处理作业Job
  * */
-abstract class MongoDbBatchJob<T> : BatchJob() {
+abstract class MongoDbBatchJob<T>(private val properties: MongodbJobProperties) : BatchJob(properties) {
     /**
      * 需要操作的表名列表
      * */
@@ -44,16 +71,16 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
      * */
     abstract fun mapToObject(row: Map<String, Any?>): T
 
-    /**
-     * 并发级别
-     * 默认序列化，即顺序执行
-     * */
-    open val concurrentLevel: JobConcurrentLevel = JobConcurrentLevel.SERIALIZE
+    abstract fun entityClass(): Class<T>
 
-    /**
-     * 每次批处理作业大小
-     * */
-    protected open val batchSize: Int = BATCH_SIZE
+    private val batchSize: Int
+        get() = properties.batchSize
+
+    private val concurrentLevel: JobConcurrentLevel
+        get() = properties.concurrentLevel
+
+    private val permitsPerSecond: Double
+        get() = properties.permitsPerSecond
 
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
@@ -105,8 +132,13 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
         var sum = 0L
         measureNanoTime {
             do {
+                val query = buildQuery().addCriteria(Criteria.where(ID).gt(lastId)).limit(batchSize)
+                entityClass().fields.forEach {
+                    val filedName = if (it.name.equals(JAVA_ID)) ID else it.name
+                    query.fields().include(filedName)
+                }
                 val data = mongoTemplate.find<Map<String, Any?>>(
-                    buildQuery().addCriteria(Criteria.where(ID).gt(lastId)).limit(batchSize),
+                    query,
                     collectionName
                 )
                 if (data.isEmpty()) {
@@ -141,7 +173,7 @@ abstract class MongoDbBatchJob<T> : BatchJob() {
     ) {
         tasks.forEach {
             val task = IdentityTask(taskId, Runnable { block(it) })
-            executor.executeWithId(task, produce)
+            executor.executeWithId(task, produce, permitsPerSecond)
         }
     }
 
