@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
-apiVersion: networking.k8s.io/v1
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
   name: {{ include "common.names.fullname" . }}-ingress
@@ -18,10 +18,11 @@ spec:
   tls:
     - hosts:
         - {{ .Values.gateway.host }}
+        - {{ .Values.gateway.dockerHost }}
+        - {{ .Values.gateway.helmHost }}
       secretName: bkrepo-tls
   rules:
     - host: {{ .Values.gateway.dockerHost }}
-      secretName: bkrepo-tls
       http:
         paths:
           - path: /
@@ -30,7 +31,6 @@ spec:
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
     - host: {{ .Values.gateway.helmHost }}
-      secretName: bkrepo-tls
       http:
         paths:
           - path: /
@@ -39,7 +39,6 @@ spec:
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
     - host: {{ .Values.gateway.host }}
-      secretName: bkrepo-tls
       http:
         paths:
           - path: /
