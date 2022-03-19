@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
-apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "common.names.fullname" . }}-ingress
@@ -16,9 +16,9 @@ metadata:
     {{- end }}
 spec:
   tls:
-  - hosts:
-    - {{ .Values.gateway.host }}
-    secretName: bkrepo-tls
+    - hosts:
+        - {{ .Values.gateway.host }}
+      secretName: bkrepo-tls
   rules:
     - host: {{ .Values.gateway.dockerHost }}
       secretName: bkrepo-tls
