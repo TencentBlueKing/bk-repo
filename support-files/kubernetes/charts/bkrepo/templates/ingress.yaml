@@ -16,9 +16,9 @@ metadata:
     {{- end }}
 spec:
   tls:
-    - hosts:
-        - https-example.foo.com
-      secretName: testsecret-tls
+  - hosts:
+    - {{ .Values.gateway.host }}
+    secretName: bkrepo-tls
   rules:
     - host: {{ .Values.gateway.dockerHost }}
       secretName: bkrepo-tls
