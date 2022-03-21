@@ -100,6 +100,11 @@ object NodeQueryHelper {
         if (!option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
         }
+        if (option.deep) {
+            query.withHint(TNode.FULL_PATH_IDX)
+        } else {
+            query.withHint(TNode.PATH_IDX)
+        }
         return query
     }
 
