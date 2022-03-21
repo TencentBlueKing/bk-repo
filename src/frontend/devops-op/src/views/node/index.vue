@@ -123,6 +123,12 @@
             type="danger"
             @click="showNodeDelete(scope.$index, scope.row)"
           >删除</el-button>
+          <el-button
+            style="margin-left: 10px"
+            size="mini"
+            type="primary"
+            @click="showScanDialog(scope.row)"
+          >扫描</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -140,6 +146,7 @@
     <file-detail-dialog :visible.sync="showNodeDetailDialog" :node="nodeOfDetailDialog" />
     <file-restore-dialog :visible.sync="showNodeRestoreDialog" :node="nodeToRestore" @restore-success="onRestoreSuccess" />
     <file-delete-dialog :visible.sync="showNodeDeleteDialog" :node="nodeToDelete" @delete-success="onDeleteSuccess" />
+    <file-scan-dialog :visible.sync="showFileScanDialog" :node="nodeToScan" />
   </div>
 </template>
 <script>
@@ -151,10 +158,11 @@ import FileRestoreDialog from '@/views/node/components/FileRestoreDialog'
 import FileDeleteDialog from '@/views/node/components/FileDeleteDialog'
 import { listProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
+import FileScanDialog from '@/views/node/components/FileScanDialog'
 
 export default {
   name: 'Node',
-  components: { FileDeleteDialog, FileRestoreDialog, FileDetailDialog, FileReferenceDialog },
+  components: { FileScanDialog, FileDeleteDialog, FileRestoreDialog, FileDetailDialog, FileReferenceDialog },
   data() {
     return {
       rules: {
@@ -185,7 +193,9 @@ export default {
       nodeToRestore: {},
       showNodeDeleteDialog: false,
       nodeToDelete: {},
-      indexOfNodeToDelete: -1
+      indexOfNodeToDelete: -1,
+      showFileScanDialog: false,
+      nodeToScan: {}
     }
   },
   mounted() {
@@ -348,6 +358,10 @@ export default {
       this.nodeQuery.useSha256 = true
       this.nodeQuery.sha256 = sha256
       this.changeRouteQueryParams(true)
+    },
+    showScanDialog(node) {
+      this.nodeToScan = node
+      this.showFileScanDialog = true
     },
     showNodesOfFolder(node) {
       const nodeQuery = this.nodeQuery

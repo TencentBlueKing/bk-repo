@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.maven.pojo
 
-import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import org.apache.commons.lang3.StringUtils
 
 data class MavenVersion(

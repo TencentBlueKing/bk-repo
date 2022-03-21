@@ -12,6 +12,7 @@ auth:
   devops:
     envName: __BK_CI_AUTH_ENV__
     appId: bkdevops
+    appIdSet: bkdevops,bkrepo,codecc
     authEnabled: true
     allowAnonymous: true
     ciAuthServer: __BK_CI_PUBLIC_URL__

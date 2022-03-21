@@ -43,8 +43,7 @@ class BkAuthProjectService @Autowired constructor(
     fun isProjectMember(
         user: String,
         projectCode: String,
-        permissionAction: String,
-        retryIfTokenInvalid: Boolean = false
+        permissionAction: String
     ): Boolean {
         return bkciAuthService.isProjectSuperAdmin(
             user = user,
@@ -53,5 +52,12 @@ class BkAuthProjectService @Autowired constructor(
             resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
             permissionAction = permissionAction
         ) || bkciAuthService.isProjectMember(user, projectCode)
+    }
+
+    fun isProjectManager(
+        user: String,
+        projectCode: String
+    ): Boolean {
+        return bkciAuthService.isProjectManager(user, projectCode)
     }
 }

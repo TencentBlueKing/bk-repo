@@ -31,10 +31,11 @@
 
 package com.tencent.bkrepo.maven.util
 
-import com.tencent.bkrepo.maven.ARTIFACT_FORMAT
-import com.tencent.bkrepo.maven.PACKAGE_SUFFIX_REGEX
-import com.tencent.bkrepo.maven.SNAPSHOT_SUFFIX
-import com.tencent.bkrepo.maven.TIMESTAMP_FORMAT
+import com.tencent.bkrepo.maven.constants.ARTIFACT_FORMAT
+import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
+import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
+import com.tencent.bkrepo.maven.constants.TIMESTAMP_FORMAT
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
@@ -65,7 +66,7 @@ object MavenStringUtils {
     }
 
     fun String.httpStatusCode(repoConf: MavenRepoConf): Int {
-        return if (this.endsWith("maven-metadata.xml") && this.isSnapshotUri() &&
+        return if (this.endsWith(MAVEN_METADATA_FILE_NAME) && this.isSnapshotUri() &&
             repoConf.mavenSnapshotVersionBehavior != SnapshotBehaviorType.DEPLOYER
         ) {
             HttpStatus.SC_ACCEPTED
@@ -97,7 +98,7 @@ object MavenStringUtils {
     fun String.isSnapshotUniqueUri(): Boolean {
         if (this.isSnapshotUri()) {
             val suffix = this.substringAfterLast("/")
-            return !suffix.contains(SNAPSHOT_SUFFIX) && !suffix.startsWith("maven-metadata.xml")
+            return !suffix.contains(SNAPSHOT_SUFFIX) && !suffix.startsWith(MAVEN_METADATA_FILE_NAME)
         }
         return false
     }

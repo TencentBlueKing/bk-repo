@@ -30,6 +30,7 @@
  */
 
 dependencies {
+    api(project(":oci:api-oci"))
     api(project(":common:common-artifact:artifact-service"))
-    api("javax.ws.rs:jsr311-api:1.1.1")
+    implementation("com.github.zafarkhaja:java-semver")
 }

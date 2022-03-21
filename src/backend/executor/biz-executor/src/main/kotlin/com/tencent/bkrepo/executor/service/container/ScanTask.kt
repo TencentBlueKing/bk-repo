@@ -44,8 +44,8 @@ class ScanTask @Autowired constructor(
     override fun runFile(context: FileScanContext): String {
         val task = {
             with(context) {
-                val workDir = "${config.rootDir}/$taskId"
-                val outputDir = "$workDir${config.outputDir}"
+                val workDir = File(config.rootDir, taskId)
+                val outputDir = File(workDir, config.outputDir)
                 // 生成当前task存储表
                 buildReportStore(taskId)
                 // 执行扫描
@@ -86,8 +86,8 @@ class ScanTask @Autowired constructor(
                         fullPath = it["fullPath"] as String
                     )
                     val runTaskId = "${context.taskId}$tempIndex"
-                    val workDir = "${context.config.rootDir}/$runTaskId"
-                    val outputDir = "$workDir${context.config.outputDir}"
+                    val workDir = File(context.config.rootDir, runTaskId)
+                    val outputDir = File(workDir, context.config.outputDir)
                     scanFile(fileContext, workDir, outputDir, runTaskId)
                 }
                 index++
@@ -117,7 +117,7 @@ class ScanTask @Autowired constructor(
     /**
      * 文件扫描入口
      */
-    private fun scanFile(context: FileScanContext, workDir: String, outputDir: String, runTaskId: String) {
+    private fun scanFile(context: FileScanContext, workDir: File, outputDir: File, runTaskId: String) {
         with(context) {
 
             logger.info("start to run file [$context]")
@@ -185,9 +185,9 @@ class ScanTask @Autowired constructor(
         }
     }
 
-    private fun reportOutput(context: FileScanContext, outputDir: String): Boolean {
+    private fun reportOutput(context: FileScanContext, outputDir: File): Boolean {
         fileMap.forEach {
-            val file = File("$outputDir${it.value}")
+            val file = File(outputDir, it.value)
             if (!file.exists()) return@forEach
             with(context) {
                 val content = file.readText()

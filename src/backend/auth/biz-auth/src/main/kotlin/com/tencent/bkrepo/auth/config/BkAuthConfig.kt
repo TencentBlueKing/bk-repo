@@ -73,11 +73,6 @@ class BkAuthConfig {
     @Value("\${auth.devops.bkrepoAppId:}")
     var bkrepoAppId: String = ""
 
-    /**
-     * 是否允许蓝盾匿名用户请求
-     */
-    @Value("\${auth.devops.allowAnonymous:true}")
-    var devopsAllowAnonymous: Boolean = true
 
     fun getBkciAuthServer(): String {
         return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {

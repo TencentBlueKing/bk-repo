@@ -7,5 +7,5 @@
   - [后端部署](/install/binary/backend)
 - **容器化部署**
   - [Helm Charts部署](/install/helm.md)
-- [bkrepo.env配置项](/install/env.md)
+- [repo.env配置项](/install/env.md)
 - [源码编译](/install/compile.md)
