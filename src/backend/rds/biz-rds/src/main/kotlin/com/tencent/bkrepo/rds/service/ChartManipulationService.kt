@@ -29,24 +29,25 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.service
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo
+import com.tencent.bkrepo.rds.pojo.artifact.RdsDeleteArtifactInfo
+
+interface ChartManipulationService {
+    /**
+     * 上传helm包
+     */
+    fun upload(artifactInfo: RdsArtifactInfo, artifactFileMap: ArtifactFileMap)
+
+    /**
+     * 删除chart包
+     */
+    fun deletePackage(userId: String, artifactInfo: RdsDeleteArtifactInfo)
+
+    /**
+     * 删除chart版本
+     */
+    fun deleteVersion(userId: String, artifactInfo: RdsDeleteArtifactInfo)
 }

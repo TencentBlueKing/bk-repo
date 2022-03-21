@@ -29,24 +29,34 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.service
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo
+import com.tencent.bkrepo.rds.pojo.metadata.RdsIndexYamlMetadata
+
+interface ChartRepositoryService {
+    /**
+     * get index.yaml
+     */
+    fun queryIndexYaml(@ArtifactPathVariable artifactInfo: RdsArtifactInfo)
+
+    /**
+     * install chart
+     */
+    fun installTgz(@ArtifactPathVariable artifactInfo: RdsArtifactInfo)
+
+    /**
+     * regenerate index.yaml
+     */
+    fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: RdsArtifactInfo)
+
+    /**
+     * 构造indexYaml元数据，[result]为自定义查询出来的node节点, [isInit] 是否需要初始化indexYaml元数据
+     */
+    fun buildIndexYamlMetadata(
+        result: List<Map<String, Any?>>,
+        artifactInfo: RdsArtifactInfo,
+        isInit: Boolean = false
+    ): RdsIndexYamlMetadata
 }

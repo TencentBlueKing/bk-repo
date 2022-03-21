@@ -29,24 +29,40 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.controller
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo
+import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo.Companion.CHARTS_LIST
+import com.tencent.bkrepo.rds.service.ChartInfoService
+import java.time.LocalDateTime
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+
+@Suppress("MVCPathVariableInspection")
+@RestController
+class ChartInfoController(
+    private val chartInfoService: ChartInfoService
+) {
+    @GetMapping(CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun allChartsList(
+        @ArtifactPathVariable
+        artifactInfo: RdsArtifactInfo,
+        @RequestParam startTime: LocalDateTime?
+    ): ResponseEntity<Any> {
+        return chartInfoService.allChartsList(artifactInfo, startTime)
+    }
+
+    @RequestMapping(CHARTS_LIST, method = [RequestMethod.HEAD])
+    fun exists(
+        @ArtifactPathVariable
+        artifactInfo: RdsArtifactInfo
+    ) {
+        chartInfoService.isExists(artifactInfo)
+    }
 }

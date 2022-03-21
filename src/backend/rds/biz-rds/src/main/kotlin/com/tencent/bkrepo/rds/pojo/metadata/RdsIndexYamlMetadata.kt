@@ -29,24 +29,36 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.pojo.metadata
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import java.util.SortedSet
+
+data class RdsIndexYamlMetadata(
+    val apiVersion: String,
+    val entries: MutableMap<String, SortedSet<RdsChartMetadata>> = mutableMapOf(),
+    var generated: String,
+    val serverInfo: Map<String, Any> = emptyMap()
+) {
+    fun entriesSize(): Int {
+        var count = 0
+        entries.values.forEach {
+            count += it.size
+        }
+        return count
+    }
+
+    fun parseMapForFilter(filter: String): Map<String, SortedSet<RdsChartMetadata>> {
+        return if (this.entries.isEmpty()) {
+            mutableMapOf()
+        } else {
+            entries.filterKeys { filterKey(it, filter) }
+        }
+    }
+
+    /**
+     * 通过indexof匹配想要查询的字符
+     */
+    fun filterKey(key: String, filters: String): Boolean {
+        return key.indexOf(filters)> -1
+    }
 }
