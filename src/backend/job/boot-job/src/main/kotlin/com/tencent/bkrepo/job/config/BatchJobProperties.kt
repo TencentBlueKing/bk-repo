@@ -25,24 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.batch
+package com.tencent.bkrepo.job.config
 
-import com.tencent.bkrepo.common.job.JobAutoConfiguration
-import com.tencent.bkrepo.job.config.JobConfig
-import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.context.annotation.Import
-import org.springframework.test.context.TestPropertySource
-
-@Import(
-    JobAutoConfiguration::class,
-    TaskExecutionAutoConfiguration::class,
-    JobConfig::class
+open class BatchJobProperties(
+    /**
+     * 是否开启任务
+     * */
+    open var enabled: Boolean = true
 )
-@TestPropertySource(
-    locations = [
-        "classpath:bootstrap-ut.properties",
-        "classpath:bootstrap.properties",
-        "classpath:job-ut.properties"
-    ]
-)
-open class JobBaseTest
