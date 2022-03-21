@@ -29,24 +29,43 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.constants
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
-}
+const val REPO_TYPE = "RDS"
+
+const val INDEX_YAML = "index.yaml"
+const val INDEX_CACHE_YAML = "index-cache.yaml"
+const val SIZE = "size"
+const val FORCE = "force"
+const val OVERWRITE = "isOverwrite"
+
+const val FULL_PATH = "_full_path"
+const val META_DETAIL = "meta_detail"
+const val FILE_TYPE = "file_type"
+
+const val V1 = "v1"
+const val CHART_YAML = "RDS.yaml"
+const val CHART = "chart"
+const val NAME = "name"
+const val PACKAGE_KEY = "packageKey"
+const val VERSION = "version"
+// const val CHART_PACKAGE_FILE_EXTENSION = "tgz"
+// const val PROVENANCE_FILE_EXTENSION = "tgz.prov"
+const val REDIS_LOCK_KEY_PREFIX = "rds:lock:indexFile:"
+
+// 定义返回代码片段
+val CHART_NOT_FOUND = mapOf("error" to "chart not found")
+val NO_CHART_NAME_FOUND = mapOf("error" to "no chart name found")
+
+const val SLEEP_MILLIS = 20L
+const val PROJECT_ID = "projectId"
+const val REPO_NAME = "repoName"
+const val NODE_FULL_PATH = "fullPath"
+const val TGZ_SUFFIX = ".tgz"
+const val NODE_CREATE_DATE = "createdDate"
+const val NODE_NAME = "name"
+const val NODE_METADATA = "metadata"
+const val NODE_METADATA_NAME = "metadata.name"
+const val NODE_METADATA_VERSION = "metadata.version"
+const val NODE_SHA256 = "sha256"
+const val EXTENSION = "extension"

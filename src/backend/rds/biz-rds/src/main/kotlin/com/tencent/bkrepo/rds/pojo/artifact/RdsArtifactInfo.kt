@@ -29,24 +29,37 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.pojo.artifact
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+
+open class RdsArtifactInfo(
+    projectId: String,
+    repoName: String,
+    artifactUri: String
+) : ArtifactInfo(projectId, repoName, artifactUri) {
+    companion object {
+        const val CHARTS_LIST = "/{projectId}/{repoName}/api/charts/**"
+
+        // rds upload
+        const val RDS_PUSH_URL = "/api/{projectId}/{repoName}/charts"
+        const val RDS_PUSH_PLUGIN_URL = "/{projectId}/{repoName}/charts"
+//        const val RDS_PUSH_PROV_URL = "/api/{projectId}/{repoName}/prov"
+
+        // chart delete
+        const val CHART_DELETE_VERSION_URL = "/{projectId}/{repoName}/api/charts/{name}/{version}"
+
+        // get index.yaml
+        const val RDS_INDEX_YAML_URL = "/{projectId}/{repoName}/index.yaml"
+        // chart install
+        const val RDS_INSTALL_URL = "/{projectId}/{repoName}/charts/**"
+        // chart prov install
+//        const val RDS_PROV_INSTALL_URL = "/{projectId}/{repoName}/charts/*.prov"
+
+        // rds version detail
+        const val RDS_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
+        // chart delete
+        const val CHART_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"
+        const val CHART_VERSION_DELETE_URL = "/version/delete/{projectId}/{repoName}"
+    }
 }

@@ -29,24 +29,40 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.pojo.metadata
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.github.zafarkhaja.semver.Version
+import com.tencent.bkrepo.rds.constants.TGZ_SUFFIX
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class RdsChartMetadata(
+    var RDSVersion: String?,
+    var name: String,
+    var code: String?,
+    var version: String,
+    var description: String?,
+    var home: String?,
+    var icon: String?,
+    var digest: String?,
+    var created: String?,
+    var extension: String = TGZ_SUFFIX,
+    var keywords: List<String> = emptyList(),
+    var maintainers: List<RdsMaintainerMetadata?> = emptyList()
+) : Comparable<RdsChartMetadata> {
+
+    override fun compareTo(other: RdsChartMetadata): Int {
+        val result = this.name.compareTo(other.name)
+        return if (result != 0) {
+            result
+        } else {
+            try {
+                Version.valueOf(other.version).compareWithBuildsTo(Version.valueOf(this.version))
+            } catch (ignored: Exception) {
+                other.version.compareTo(this.version)
+            }
+        }
+    }
 }

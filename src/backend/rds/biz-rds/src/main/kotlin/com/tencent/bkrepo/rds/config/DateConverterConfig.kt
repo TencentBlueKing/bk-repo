@@ -29,24 +29,36 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.config
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.core.convert.converter.Converter
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+@Configuration
+class DateConverterConfig {
+    /**
+     * LocalDateTime转换器，用于转换RequestParam和PathVariable参数
+     */
+    @Bean
+    fun localDateTimeConverter(): Converter<String, LocalDateTime> {
+        return Converter { source ->
+            LocalDateTime.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT))
+        }
+    }
+
+    @Bean
+    fun localDateConverter(): Converter<String, LocalDate> {
+        return Converter { source ->
+            LocalDate.parse(source, DateTimeFormatter.ofPattern(DEFAULT_DATE_FORMAT))
+        }
+    }
+
+    companion object {
+        private const val DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss"
+        private const val DEFAULT_DATE_FORMAT = "yyyy-MM-dd"
+    }
 }
