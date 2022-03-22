@@ -37,6 +37,7 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 扫描服务数据统计
@@ -47,6 +48,10 @@ class ScannerMetrics(
     // 一个任务可能被不同的服务实例处理，统计数据需要放到公共存储上才能保证数据准确
     private val redisOperation: RedisOperation
 ) {
+    /**
+     * 记录本服务实例上各状态任务数量
+     */
+    private val localTaskCountMap = ConcurrentHashMap<String, AtomicLong>(ScanTaskStatus.values().size)
     private val taskCountMap = ConcurrentHashMap<String, RedisAtomicLong>(ScanTaskStatus.values().size)
     private val subtaskCounterMap = ConcurrentHashMap<String, RedisAtomicLong>(SubScanTaskStatus.values().size)
     private val subtaskTimers = ConcurrentHashMap<String, List<Timer>>()
@@ -64,12 +69,19 @@ class ScannerMetrics(
     fun incTaskCountAndGet(status: ScanTaskStatus, count: Long = 1): Long {
         if (status == ScanTaskStatus.SCANNING_SUBMITTING) {
             taskCounter(ScanTaskStatus.PENDING).addAndGet(-count)
+            localTaskCounter(ScanTaskStatus.PENDING).addAndGet(-count)
         }
         if (status == ScanTaskStatus.SCANNING_SUBMITTED) {
             taskCounter(ScanTaskStatus.SCANNING_SUBMITTING).addAndGet(-count)
+            localTaskCounter(ScanTaskStatus.SCANNING_SUBMITTING).addAndGet(-count)
         }
         if (status == ScanTaskStatus.FINISHED) {
             taskCounter(ScanTaskStatus.SCANNING_SUBMITTED).addAndGet(-count)
+        }
+
+        // 单个服务实例仅统计PENDING和SCANNING_SUBMITTING状态的任务数量
+        if (status == ScanTaskStatus.PENDING || status == ScanTaskStatus.SCANNING_SUBMITTING) {
+            localTaskCounter(status).addAndGet(count)
         }
         return taskCounter(status).addAndGet(count)
     }
@@ -78,6 +90,9 @@ class ScannerMetrics(
      * [pre]状态任务数量减1，[next]状态任务数量加1
      */
     fun taskStatusChange(pre: ScanTaskStatus, next: ScanTaskStatus) {
+        if (next == ScanTaskStatus.PENDING) {
+            localTaskCounter(next).incrementAndGet()
+        }
         taskCounter(pre).decrementAndGet()
         taskCounter(next).incrementAndGet()
     }
@@ -123,8 +138,18 @@ class ScannerMetrics(
             val key = metricsKey(SCANNER_SUBTASK_COUNT, "status", status.name)
             val atomicLong = RedisAtomicLong(redisOperation, key)
             val gauge = Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
-                .description("${status.name} task count")
+                .description("${status.name} subtask count")
                 .tag("status", status.name)
+            registryProvider.forEach { gauge.register(it) }
+            atomicLong
+        }
+    }
+
+    private fun localTaskCounter(status: ScanTaskStatus): AtomicLong {
+        return localTaskCountMap.getOrPut(status.name) {
+            // 统计不同状态子任务数量
+            val atomicLong = AtomicLong(0L)
+            val gauge = taskGauge(atomicLong, AtomicLong::toDouble, status, true)
             registryProvider.forEach { gauge.register(it) }
             atomicLong
         }
@@ -135,12 +160,22 @@ class ScannerMetrics(
             // 统计不同状态子任务数量
             val key = metricsKey(SCANNER_TASK_COUNT, "status", status.name)
             val atomicLong = RedisAtomicLong(redisOperation, key)
-            val gauge = Gauge.builder(SCANNER_TASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
-                .description("${status.name} subtask count")
-                .tag("status", status.name)
+            val gauge = taskGauge(atomicLong, RedisAtomicLong::toDouble, status)
             registryProvider.forEach { gauge.register(it) }
             atomicLong
         }
+    }
+
+    private fun <T> taskGauge(
+        obj: T,
+        f: T.() -> Double,
+        status: ScanTaskStatus,
+        local: Boolean = false
+    ): Gauge.Builder<T> {
+        return Gauge.builder(SCANNER_TASK_COUNT, obj, f)
+            .description("${status.name} task count")
+            .tag("status", status.name)
+            .tag("local", local.toString())
     }
 
     private fun taskTimer(fileType: String, fileSizeLevel: FileSizeLevel, scanner: String): List<Timer> {
@@ -178,7 +213,9 @@ class ScannerMetrics(
          */
         private const val SCANNER_SUBTASK_REUSE_RESULT_COUNT = "scanner.subtask.reuse-result.count"
 
+        /**
+         * 子任务执行耗时
+         */
         private const val SCANNER_SUBTASK_TIME_SPENT = "scanner.subtask.spent.millis"
     }
-
 }
