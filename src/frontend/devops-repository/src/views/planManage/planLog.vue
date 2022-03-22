@@ -14,7 +14,7 @@
                 </bk-radio-group>
                 <bk-table
                     class="mt10"
-                    :height="planData.replicaType !== 'REAL_TIME' ? 'calc(100% - 92px)' : 'calc(100% - 62px)'"
+                    :height="planData.replicaType !== 'REAL_TIME' ? 'calc(100% - 90px)' : 'calc(100% - 60px)'"
                     :data="logList"
                     :outer-border="false"
                     :row-border="false"

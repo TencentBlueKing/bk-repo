@@ -63,7 +63,7 @@ function prezero (num) {
 }
 
 export function formatDate (ms) {
-    if (!ms) return '--'
+    if (!ms) return ms
     const time = new Date(ms)
     return `${time.getFullYear()}-${
         prezero(time.getMonth() + 1)}-${
@@ -71,6 +71,15 @@ export function formatDate (ms) {
         prezero(time.getHours())}:${
         prezero(time.getMinutes())}:${
         prezero(time.getSeconds())}`
+}
+
+// 数字三位分隔
+export function segmentNumberThree (num) {
+    if (!num || !Number(num)) return num
+    let [int, dot] = Number(num).toString().split('.')
+    int = Number(int).toLocaleString()
+    dot = dot ? '.' + dot : ''
+    return int + dot
 }
 
 export function copyToClipboard (text) {

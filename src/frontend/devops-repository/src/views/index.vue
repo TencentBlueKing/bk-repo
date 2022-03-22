@@ -32,7 +32,7 @@
         </div>
         <div class="m10 bkrepo-view-main flex-column flex-1">
             <breadcrumb class="mb10 repo-breadcrumb">
-                <bk-breadcrumb-item :to="{ name: 'repoList' }">制品管理</bk-breadcrumb-item>
+                <bk-breadcrumb-item :to="{ name: 'repoList' }">制品库</bk-breadcrumb-item>
             </breadcrumb>
             <router-view class="flex-1"></router-view>
         </div>
@@ -57,6 +57,7 @@
                         (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoList',
                         (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoSearch',
                         // MODE_CONFIG === 'ci' && 'repoToken',
+                        (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.manage && 'repoScan',
                         (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.admin && this.isMasterNode && 'planManage',
                         (MODE_CONFIG === 'ci' || this.projectList.length) && !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
                     ].filter(Boolean),
