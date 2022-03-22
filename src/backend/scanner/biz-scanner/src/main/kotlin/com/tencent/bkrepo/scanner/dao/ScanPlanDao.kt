@@ -27,18 +27,94 @@
 
 package com.tencent.bkrepo.scanner.dao
 
+import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.scanner.model.TScanPlan
+import com.tencent.bkrepo.scanner.pojo.ScanPlan
+import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
+    fun find(projectId: String, id: String): TScanPlan? {
+        val criteria = projectCriteria(projectId).and(TScanPlan::id.name).isEqualTo(id)
+        return findOne(Query(criteria))
+    }
+
+    fun exists(projectId: String, id: String): Boolean {
+        val criteria = projectCriteria(projectId).and(TScanPlan::id.name).isEqualTo(id)
+        return exists(Query(criteria))
+    }
+
+    fun delete(projectId: String, id: String): UpdateResult {
+        val criteria = projectCriteria(projectId).and(TScanPlan::id.name).isEqualTo(id)
+        val now = LocalDateTime.now()
+        val update = update(now).set(TScanPlan::deleted.name, now)
+        return updateFirst(Query(criteria), update)
+    }
+
     fun existsByProjectIdAndName(projectId: String, name: String): Boolean {
         val query = Query(
-            TScanPlan::projectId.isEqualTo(projectId).and(TScanPlan::name.name).isEqualTo(name)
+            projectCriteria(projectId).and(TScanPlan::name.name).isEqualTo(name)
         )
         return exists(query)
+    }
+
+    fun list(projectId: String, type: String? = null): List<TScanPlan> {
+        val criteria = projectCriteria(projectId)
+        type?.let { criteria.and(TScanPlan::type.name).isEqualTo(type) }
+        val query = Query(criteria).with(Sort.by(TScanPlan::createdDate.name).descending())
+        return find(query)
+    }
+
+    fun page(projectId: String, type: String?, planNameContains: String?, pageLimit: PageLimit): Page<TScanPlan> {
+        val criteria = projectCriteria(projectId)
+        type?.let { criteria.and(TScanPlan::type.name).isEqualTo(type) }
+        planNameContains?.let { criteria.and(TScanPlan::name.name).regex(".*$planNameContains.*") }
+        val pageRequest = Pages.ofRequest(pageLimit.getNormalizedPageNumber(), pageLimit.getNormalizedPageSize())
+        val query = Query(criteria).with(pageRequest).with(Sort.by(TScanPlan::createdDate.name).descending())
+
+        return Pages.ofResponse(pageRequest, count(query), find(query))
+    }
+
+    fun update(scanPlan: ScanPlan): UpdateResult {
+        with(scanPlan) {
+            val criteria = projectCriteria(projectId!!).and(TScanPlan::id.name).`is`(id)
+            val update = update()
+            name?.let { update.set(TScanPlan::name.name, it) }
+            description?.let { update.set(TScanPlan::description.name, it) }
+            scanOnNewArtifact?.let { update.set(TScanPlan::scanOnNewArtifact.name, it) }
+            repoNames?.let { update.set(TScanPlan::repoNames.name, it) }
+            rule?.let { update.set(TScanPlan::rule.name, it.toJsonString()) }
+
+            val query = Query(criteria)
+            return updateFirst(query, update)
+        }
+    }
+
+    private fun projectCriteria(projectId: String, includeDeleted: Boolean = false): Criteria {
+        val criteria = TScanPlan::projectId.isEqualTo(projectId)
+        if (!includeDeleted) {
+            criteria.and(TScanPlan::deleted.name).isEqualTo(null)
+        }
+        return criteria
+    }
+
+    private fun update(
+        now: LocalDateTime = LocalDateTime.now(),
+        lastModifiedBy: String = SecurityUtils.getUserId()
+    ): Update {
+        return Update.update(TScanPlan::lastModifiedDate.name, now)
+            .set(TScanPlan::lastModifiedBy.name, lastModifiedBy)
     }
 }

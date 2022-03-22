@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -129,7 +130,7 @@ class UserScanPlanController(
         pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<ScanPlanInfo>> {
         val page = scanPlanService.page(
-            projectId = projectId, type = type, name = name, pageNumber = pageNumber, pageSize = pageSize
+            projectId = projectId, type = type, planNameContains = name, pageLimit = PageLimit(pageNumber, pageSize)
         )
         return ResponseBuilder.success(page)
     }
@@ -159,7 +160,7 @@ class UserScanPlanController(
         @PathVariable
         id: String
     ): Response<ScanPlanInfo?> {
-        return ResponseBuilder.success(scanPlanService.latestScanTask(projectId, id))
+        return ResponseBuilder.success(scanPlanService.scanPlanInfo(projectId, id))
     }
 
     @ApiOperation("方案详情-制品信息")

@@ -34,15 +34,24 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Rule.NestedRule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_CRITICAL
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_HIGH
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_LOW
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_MID
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
+import com.tencent.bkrepo.scanner.pojo.ScanStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
+import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.pojo.rule.RuleType
@@ -149,6 +158,55 @@ object Converter {
                 rule = convert(artifactRules)
             )
         }
+    }
+
+    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?): ScanPlanInfo {
+        with(scanPlan) {
+            val critical = latestScanTask?.let { getCveCount(LEVEL_CRITICAL, latestScanTask) } ?: 0L
+            val high = latestScanTask?.let { getCveCount(LEVEL_HIGH, latestScanTask) } ?: 0L
+            val medium = latestScanTask?.let { getCveCount(LEVEL_MID, latestScanTask) } ?: 0L
+            val low = latestScanTask?.let { getCveCount(LEVEL_LOW, latestScanTask) } ?: 0L
+            val artifactCount = latestScanTask?.total ?: 0L
+            val status = latestScanTask?.let { convertScanTaskStatus(it.status).name } ?: ScanStatus.INIT.name
+
+            return ScanPlanInfo(
+                id = id!!,
+                name = name,
+                planType = type,
+                projectId = projectId,
+                status = status,
+                artifactCount = artifactCount,
+                critical = critical,
+                high = high,
+                medium = medium,
+                low = low,
+                total = critical + high + medium + low,
+                createdBy = createdBy,
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastScanDate = latestScanTask?.startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+        }
+    }
+
+    private fun convertScanTaskStatus(status: String?): ScanStatus {
+        return when (status) {
+            ScanTaskStatus.PENDING.name -> ScanStatus.INIT
+            ScanTaskStatus.SCANNING_SUBMITTING.name, ScanTaskStatus.SCANNING_SUBMITTED.name -> ScanStatus.RUNNING
+            ScanTaskStatus.PAUSE.name, ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
+            ScanTaskStatus.FINISHED.name -> ScanStatus.SUCCESS
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, status.toString())
+        }
+    }
+
+    private fun getCveCount(level: String, scanTask: TScanTask): Long {
+        if (scanTask.scannerType == BinAuditorScanner.TYPE) {
+            val key = BinAuditorScanExecutorResult.overviewKeyOfCve(level)
+            return scanTask.scanResultOverview?.get(key) ?: 0L
+        }
+
+        return 0L
     }
 
     private fun convert(rule: Rule): List<ArtifactRule> {

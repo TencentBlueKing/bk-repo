@@ -34,7 +34,8 @@ import java.time.LocalDateTime
 
 @Document("scan_task")
 @CompoundIndexes(
-    CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true)
+    CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true),
+    CompoundIndex(name = "planId_idx", def = "{'planId': 1}", background = true)
 )
 data class TScanTask(
     val id: String? = null,
@@ -57,6 +58,10 @@ data class TScanTask(
      * 触发类型，手动、新构件上传、定时扫描
      */
     val triggerType: String,
+    /**
+     * 使用的扫描方案id
+     */
+    val planId: String? = null,
     /**
      * 任务状态
      */
