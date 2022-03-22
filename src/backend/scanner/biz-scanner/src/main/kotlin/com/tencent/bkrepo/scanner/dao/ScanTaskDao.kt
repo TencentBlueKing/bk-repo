@@ -31,10 +31,12 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
@@ -130,6 +132,24 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         }
 
         return updateFirst(query, update)
+    }
+
+    fun findByPlanIdIn(planIds: List<String>): List<TScanTask> {
+        val query = Query(TScanTask::planId.inValues(planIds))
+        return find(query)
+    }
+
+    fun latestTask(planId: String): TScanTask? {
+        val query = Query(TScanTask::planId.isEqualTo(planId))
+            .with(Sort.by(TScanTask::startDateTime.name).descending())
+        return findOne(query)
+    }
+
+    fun existsByPlanIdAndStatus(planId: String, status: List<String>): Boolean {
+        val criteria = Criteria
+            .where(TScanTask::planId.name).isEqualTo(planId)
+            .and(TScanTask::status.name).inValues(status)
+        return exists(Query(criteria))
     }
 
     private fun buildQuery(taskId: String) = Query(Criteria.where(ID).isEqualTo(taskId))
