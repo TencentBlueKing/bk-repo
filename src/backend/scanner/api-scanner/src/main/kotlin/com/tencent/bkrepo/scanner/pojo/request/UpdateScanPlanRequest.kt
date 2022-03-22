@@ -39,6 +39,8 @@ data class UpdateScanPlanRequest(
     val projectId: String? = null,
     @ApiModelProperty("方案名称")
     val name: String? = null,
+    @ApiModelProperty("使用的扫描器")
+    val scanner: String? = null,
     @ApiModelProperty("描述")
     val description: String? = null,
     @ApiModelProperty("是否自动扫描")

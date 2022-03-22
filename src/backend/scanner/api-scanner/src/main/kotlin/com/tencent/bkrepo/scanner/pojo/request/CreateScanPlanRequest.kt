@@ -41,6 +41,8 @@ data class CreateScanPlanRequest(
     val name: String,
     @ApiModelProperty("方案类型")
     val type: String,
+    @ApiModelProperty("使用的扫描器")
+    val scanner: String,
     @ApiModelProperty("描述")
     val description: String = "",
     @ApiModelProperty("是否自动扫描")

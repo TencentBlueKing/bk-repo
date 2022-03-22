@@ -25,40 +25,56 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.scanner.pojo.response
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@ApiModel("扫描方案")
-data class ScanPlan(
-    @ApiModelProperty("方案ID")
-    val id: String? = null,
-    @ApiModelProperty("项目ID")
-    val projectId: String? = null,
-    @ApiModelProperty("方案名称")
-    val name: String? = null,
+@ApiModel("扫描方案基础信息")
+@Deprecated(
+    "仅用于兼容旧接口",
+    replaceWith = ReplaceWith(
+        expression = "ScanPlan",
+        imports = ["com.tencent.bkrepo.scanner.pojo.ScanPlan"]
+    )
+)
+data class ScanPlanBase(
+    @ApiModelProperty("方案id")
+    val id: String,
+    @ApiModelProperty("方案名")
+    val name: String?,
     @ApiModelProperty("方案类型")
-    val type: String? = null,
+    val type: String,
     @ApiModelProperty("使用的扫描器")
-    val scanner: String? = null,
-    @ApiModelProperty("方案描述")
-    val description: String? = null,
+    val scanner: String,
+    @ApiModelProperty("描述")
+    val description: String? = "",
+    @ApiModelProperty("projectId")
+    val projectId: String,
+    @ApiModelProperty("是否开启自动扫描")
+    @Deprecated("仅用于兼容旧接口", ReplaceWith("scanOnNewArtifact"))
+    val autoScan: Boolean,
     @ApiModelProperty("是否有新制品上传时自动扫描")
     val scanOnNewArtifact: Boolean? = null,
     @ApiModelProperty("自动扫描仓库")
-    val repoNames: List<String>? = null,
+    @Deprecated("仅用于兼容旧接口", ReplaceWith("repoNames"))
+    val repoNameList: List<String> = emptyList(),
+    @ApiModelProperty("自动扫描仓库")
+    val repoNames: List<String> = emptyList(),
+    @ApiModelProperty("自动扫描规则")
+    @Deprecated("仅用于兼容旧接口", ReplaceWith("rule"))
+    val artifactRules: List<ArtifactRule> = emptyList(),
     @ApiModelProperty("自动扫描规则")
     val rule: Rule? = null,
+
     @ApiModelProperty("创建者")
-    val createdBy: String? = null,
+    val createdBy: String,
     @ApiModelProperty("创建时间")
-    val createdDate: String? = null,
+    val createdDate: String,
     @ApiModelProperty("修改者")
-    val lastModifiedBy: String? = null,
+    val lastModifiedBy: String,
     @ApiModelProperty("修改时间")
-    val lastModifiedDate: String? = null
+    val lastModifiedDate: String
 )

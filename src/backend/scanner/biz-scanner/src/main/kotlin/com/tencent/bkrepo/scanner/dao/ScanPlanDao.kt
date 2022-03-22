@@ -29,7 +29,16 @@ package com.tencent.bkrepo.scanner.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanPlan
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class ScanPlanDao : SimpleMongoDao<TScanPlan>()
+class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
+    fun existsByProjectIdAndName(projectId: String, name: String): Boolean {
+        val query = Query(
+            TScanPlan::projectId.isEqualTo(projectId).and(TScanPlan::name.name).isEqualTo(name)
+        )
+        return exists(query)
+    }
+}
