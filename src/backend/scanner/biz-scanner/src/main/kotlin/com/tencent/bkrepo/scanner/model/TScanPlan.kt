@@ -64,7 +64,7 @@ data class TScanPlan(
     /**
      * 自动扫描仓库
      */
-    val repoNameList: List<String> = emptyList(),
+    val repoNames: List<String> = emptyList(),
 
     /**
      * 使用的扫描器名

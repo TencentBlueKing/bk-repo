@@ -39,5 +39,14 @@ enum class PlanType {
     /**
      * 依赖包扫描
      */
-    DEPENDENT
+    DEPENDENT;
+
+    companion object {
+
+        private val names = values().map { it.name }
+
+        fun contains(name: String?): Boolean {
+            return name in names
+        }
+    }
 }

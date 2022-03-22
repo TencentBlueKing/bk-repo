@@ -34,13 +34,13 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
+import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.utils.Converter
@@ -79,8 +79,10 @@ class UserScanPlanController(
         @ApiParam(value = "方案id")
         @PathVariable
         id: String
-    ): Response<ScanPlan?> {
-        return ResponseBuilder.success(scanPlanService.find(projectId, id))
+    ): Response<ScanPlanBase?> {
+        return ResponseBuilder.success(
+            scanPlanService.find(projectId, id)?.let { Converter.convert(it) }
+        )
     }
 
     @ApiOperation("删除扫描方案")
@@ -142,8 +144,8 @@ class UserScanPlanController(
         @ApiParam(value = "方案类型(DEPENDENT/MOBILE)")
         @RequestParam
         type: String?
-    ): Response<List<ScanPlan>> {
-        return ResponseBuilder.success(scanPlanService.list(projectId, type))
+    ): Response<List<ScanPlanBase>> {
+        return ResponseBuilder.success(scanPlanService.list(projectId, type).map { Converter.convert(it) })
     }
 
     @ApiOperation("方案详情-统计数据")
