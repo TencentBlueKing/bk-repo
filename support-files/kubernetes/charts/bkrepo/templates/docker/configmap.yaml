@@ -15,7 +15,7 @@ data:
   application.yml: |-
     domain: docker.{{ .Values.gateway.host }}
     auth:
-      {{- if .Values.docker..enableHttp }}
+      {{- if .Values.docker.enableHttp }}
       url: http://{{ .Values.gateway.host }}/docker/v2/auth
       {{- else }}
       url: https://{{ .Values.gateway.host }}/docker/v2/auth
