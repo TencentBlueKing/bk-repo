@@ -30,16 +30,19 @@ package com.tencent.bkrepo.scanner.task
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TSubScanTask
+import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
@@ -51,7 +54,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import java.util.Optional
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -68,10 +71,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val credentialsCache: LoadingCache<String, Optional<String>> = CacheBuilder.newBuilder()
-        .maximumSize(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
-        .expireAfterWrite(DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key -> loadStorageCredentialsCache(key!!) })
+    private val repoInfoCache: LoadingCache<String, RepositoryInfo> = CacheBuilder.newBuilder()
+        .maximumSize(DEFAULT_REPO_INFO_CACHE_SIZE)
+        .expireAfterWrite(DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
+        .build(CacheLoader.from { key -> loadRepoInfo(key!!) })
 
     @Autowired
     private lateinit var self: DefaultScanTaskScheduler
@@ -103,9 +106,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val subScanTasks = ArrayList<TSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
-            val storageCredentialsKey = credentialsCache
+            val storageCredentialsKey = repoInfoCache
                 .get(generateKey(node.projectId, node.repoName))
-                .orElse(null)
+                .storageCredentialsKey
 
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
@@ -115,7 +118,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             }
 
             subScanTasks.add(
-                createSubTask(scanTask, node.sha256, node.size, storageCredentialsKey)
+                createSubTask(scanTask, node, storageCredentialsKey)
             )
 
             // 批量提交子任务
@@ -159,22 +162,34 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
     }
 
-    fun createSubTask(scanTask: ScanTask, sha256: String, size: Long, credentialKey: String? = null): TSubScanTask {
-        TODO()
-//        val now = LocalDateTime.now()
-//        return TSubScanTask(
-//            createdDate = now,
-//            lastModifiedDate = now,
-//            parentScanTaskId = scanTask.taskId,
-//            planId = scanTask.scanPlan?.id,
-//            status = SubScanTaskStatus.CREATED.name,
-//            executedTimes = 0,
-//            scanner = scanTask.scanner,
-//            scannerType = scanTask.scannerType,
-//            sha256 = sha256,
-//            size = size,
-//            credentialsKey = credentialKey
-//        )
+    fun createSubTask(scanTask: ScanTask, node: Node, credentialKey: String? = null): TSubScanTask {
+        with(node) {
+            val now = LocalDateTime.now()
+            val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
+            return TSubScanTask(
+                createdDate = now,
+                lastModifiedDate = now,
+
+                parentScanTaskId = scanTask.taskId,
+                planId = scanTask.scanPlan?.id,
+
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoInfo.type.name,
+                packageKey = packageKey,
+                version = packageVersion,
+                fullPath = fullPath,
+                artifactName = artifactName,
+
+                status = SubScanTaskStatus.CREATED.name,
+                executedTimes = 0,
+                scanner = scanTask.scanner,
+                scannerType = scanTask.scannerType,
+                sha256 = sha256,
+                size = size,
+                credentialsKey = credentialKey
+            )
+        }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -204,7 +219,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         TODO("Not yet implemented")
     }
 
-    private fun loadStorageCredentialsCache(key: String): Optional<String> {
+    private fun loadRepoInfo(key: String): RepositoryInfo {
         val (projectId, repoName) = fromKey(key)
         val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
         if (repoRes.isNotOk()) {
@@ -214,8 +229,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             )
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, repoRes.message ?: "")
         }
-        repoRes.data!!.storageCredentialsKey?.let { return Optional.of(it) }
-        return Optional.empty()
+        return repoRes.data ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
     }
 
     private fun generateKey(projectId: String, repoName: String) = "$projectId$REPO_SPLIT$repoName"
@@ -239,8 +253,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
     companion object {
         private const val REPO_SPLIT = "::repo::"
-        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE = 1000L
-        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES = 60L
+        private const val DEFAULT_REPO_INFO_CACHE_SIZE = 1000L
+        private const val DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES = 60L
 
         /**
          * 批量提交子任务数量

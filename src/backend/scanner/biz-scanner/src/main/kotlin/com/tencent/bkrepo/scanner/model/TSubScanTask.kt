@@ -52,7 +52,7 @@ class TSubScanTask(
     id: String? = null,
     createdDate: LocalDateTime,
     lastModifiedDate: LocalDateTime,
-    startDateTime: LocalDateTime,
+    startDateTime: LocalDateTime? = null,
 
     parentScanTaskId: String,
     planId: String?,
@@ -72,7 +72,7 @@ class TSubScanTask(
     sha256: String,
     size: Long,
     credentialsKey: String?
-): SubScanTaskDefinition(
+) : SubScanTaskDefinition(
     id = id,
     createdDate = createdDate,
     lastModifiedDate = lastModifiedDate,
