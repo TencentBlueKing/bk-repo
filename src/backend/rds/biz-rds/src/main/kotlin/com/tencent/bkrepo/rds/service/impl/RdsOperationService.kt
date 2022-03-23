@@ -70,20 +70,19 @@ class RdsOperationService : AbstractChartService() {
             val version = packageClient.findPackageByKey(projectId, repoName, packageName).data?.latest
             try {
                 val packageVersion = packageClient.findVersionByName(projectId, repoName, packageName, version!!).data
-                packageVersion?.let {
-                    val metadata = RdsMetadataUtils.convertToObject(packageVersion.metadata)
-                    val chartPath = RdsUtils.getChartFileFullPath(getArtifactName(), version, metadata.extension)
-                    val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
-                    val chartInfo = map?.let { it1 -> RdsMetadataUtils.convertToObject(it1) }
-                    chartInfo?.version?.let {
-                        val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
-                            context.artifactInfo,
-                            PackageKeys.resolveRds(packageName),
-                            chartInfo.version,
-                            chartInfo.description
-                        )
-                        packageClient.updatePackage(packageUpdateRequest)
-                    }
+                    ?: return
+                val metadata = RdsMetadataUtils.convertToObject(packageVersion.metadata)
+                val chartPath = RdsUtils.getChartFileFullPath(getArtifactName(), version, metadata.extension)
+                val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
+                val chartInfo = map?.let { it1 -> RdsMetadataUtils.convertToObject(it1) }
+                chartInfo?.version?.let {
+                    val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
+                        context.artifactInfo,
+                        PackageKeys.resolveRds(packageName),
+                        chartInfo.version,
+                        chartInfo.description
+                    )
+                    packageClient.updatePackage(packageUpdateRequest)
                 }
             } catch (e: Exception) {
                 RdsLocalRepository.logger.warn("can not convert meta data")

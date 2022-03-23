@@ -88,38 +88,36 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
         artifactInfo: RdsArtifactInfo,
         isInit: Boolean
     ): RdsIndexYamlMetadata {
-        with(artifactInfo) {
-            val indexYamlMetadata =
-                if (!exist(projectId, repoName, RdsUtils.getIndexYamlFullPath()) || isInit) {
-                    RdsUtils.initIndexYamlMetadata()
-                } else {
-                    queryOriginalIndexYaml()
-                }
-            if (result.isEmpty()) return indexYamlMetadata
-            val context = ArtifactQueryContext()
-            result.forEach {
-                val fullPath = it[NODE_FULL_PATH] as String
-                if (!fullPath.endsWith(INDEX_CACHE_YAML)) {
-                    Thread.sleep(SLEEP_MILLIS)
-                    var chartName: String? = null
-                    var chartVersion: String? = null
-                    try {
-                        val chartMetadata = queryRdsChartMetadata(context, it)
-                        chartName = chartMetadata.name
-                        chartVersion = chartMetadata.version
-                        chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
-                        chartMetadata.digest = it[NODE_SHA256] as String
-                        ChartParserUtil.addIndexEntries(indexYamlMetadata, chartMetadata)
-                    } catch (ex: Exception) {
-                        logger.warn(
-                            "generate indexFile for chart [$chartName-$chartVersion] in " +
-                                "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
-                        )
-                    }
+        val indexYamlMetadata =
+            if (!exist(artifactInfo.projectId, artifactInfo.repoName, RdsUtils.getIndexYamlFullPath()) || isInit) {
+                RdsUtils.initIndexYamlMetadata()
+            } else {
+                queryOriginalIndexYaml()
+            }
+        if (result.isEmpty()) return indexYamlMetadata
+        val context = ArtifactQueryContext()
+        result.forEach {
+            val fullPath = it[NODE_FULL_PATH] as String
+            if (!fullPath.endsWith(INDEX_CACHE_YAML)) {
+                Thread.sleep(SLEEP_MILLIS)
+                var chartName: String? = null
+                var chartVersion: String? = null
+                try {
+                    val chartMetadata = queryRdsChartMetadata(context, it)
+                    chartName = chartMetadata.name
+                    chartVersion = chartMetadata.version
+                    chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
+                    chartMetadata.digest = it[NODE_SHA256] as String
+                    ChartParserUtil.addIndexEntries(indexYamlMetadata, chartMetadata)
+                } catch (ex: Exception) {
+                    logger.warn(
+                        "generate indexFile for chart [$chartName-$chartVersion] in " +
+                            "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
+                    )
                 }
             }
-            return indexYamlMetadata
         }
+        return indexYamlMetadata
     }
 
     private fun queryRdsChartMetadata(context: ArtifactQueryContext, nodeInfo: Map<String, Any?>): RdsChartMetadata {

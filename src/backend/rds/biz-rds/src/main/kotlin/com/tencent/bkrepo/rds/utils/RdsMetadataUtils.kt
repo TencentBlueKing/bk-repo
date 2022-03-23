@@ -38,14 +38,10 @@ import com.tencent.bkrepo.rds.pojo.metadata.RdsChartMetadata
 object RdsMetadataUtils {
 
     fun convertToMap(chartInfo: RdsChartMetadata): Map<String, Any> {
-        return chartInfo.toJsonString().readJsonString<Map<String, Any>>()
+        return chartInfo.toJsonString().readJsonString()
     }
 
     fun convertToObject(map: Map<String, Any>): RdsChartMetadata {
-        return map.toJsonString().readJsonString<RdsChartMetadata>()
-    }
-
-    fun convertToString(chartInfo: RdsChartMetadata): String {
-        return chartInfo.toJsonString()
+        return map.toJsonString().readJsonString()
     }
 }
