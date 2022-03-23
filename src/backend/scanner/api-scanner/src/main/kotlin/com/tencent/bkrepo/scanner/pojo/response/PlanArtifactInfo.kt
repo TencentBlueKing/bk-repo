@@ -29,7 +29,6 @@ package com.tencent.bkrepo.scanner.pojo.response
 
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
 
 @ApiModel("扫描制品信息")
 data class PlanArtifactInfo(
@@ -55,11 +54,11 @@ data class PlanArtifactInfo(
     @ApiModelProperty("扫描时长")
     val duration: Long,
     @ApiModelProperty("完成时间")
-    val finishTime: LocalDateTime?,
+    val finishTime: String?,
     @ApiModelProperty("状态")
     val status: String,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
-    val createdDate: LocalDateTime
+    val createdDate: String
 )

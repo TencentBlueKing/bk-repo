@@ -166,7 +166,7 @@ class UserScanPlanController(
     @ApiOperation("方案详情-制品信息")
     @GetMapping("/artifact")
     fun planArtifactList(planArtifactRequest: PlanArtifactRequest): Response<Page<PlanArtifactInfo>> {
-        return ResponseBuilder.success(scanPlanService.planArtifactPage(planArtifactRequest))
+        return ResponseBuilder.success(scanPlanService.planArtifactPage(Converter.convert(planArtifactRequest)))
     }
 
     @ApiOperation("文件/包关联的扫描方案列表")

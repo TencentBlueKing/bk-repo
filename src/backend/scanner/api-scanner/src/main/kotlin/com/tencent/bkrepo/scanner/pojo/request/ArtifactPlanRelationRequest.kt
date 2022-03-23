@@ -34,10 +34,10 @@ import io.swagger.annotations.ApiModelProperty
 data class ArtifactPlanRelationRequest(
     @ApiModelProperty("制品所属项目")
     val projectId: String,
-    @ApiModelProperty("仓库类型")
-    val repoType: String,
     @ApiModelProperty("仓库名")
     val repoName: String,
+    @ApiModelProperty("仓库类型")
+    val repoType: String,
     @ApiModelProperty("依赖包标识，比如gav://org.example:test-lib")
     val packageKey: String? = null,
     @ApiModelProperty("依赖包版本号")

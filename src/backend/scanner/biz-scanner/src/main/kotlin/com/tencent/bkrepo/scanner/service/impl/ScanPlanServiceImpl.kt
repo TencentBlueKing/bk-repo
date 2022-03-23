@@ -32,10 +32,17 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
+import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.PlanType
@@ -48,6 +55,7 @@ import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.ScanParamUtil
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -55,7 +63,9 @@ import java.time.LocalDateTime
 @Service
 class ScanPlanServiceImpl(
     private val scanPlanDao: ScanPlanDao,
-    private val scanTaskDao: ScanTaskDao
+    private val scanTaskDao: ScanTaskDao,
+    private val subScanTaskDao: SubScanTaskDao,
+    private val finishedSubScanTaskDao: FinishedSubScanTaskDao
 ) : ScanPlanService {
     override fun create(request: ScanPlan): ScanPlan {
         val operator = SecurityUtils.getUserId()
@@ -155,15 +165,80 @@ class ScanPlanServiceImpl(
     }
 
     override fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo> {
-        TODO("Not yet implemented")
+        val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
+
+        // 获取扫描方案最新一次扫描任务
+        val scanTask = request.parentScanTaskId?.let { scanTaskDao.findById(it) }
+            ?: scanTaskDao.latestTask(request.planId)
+            ?: return Pages.ofResponse(pageRequest, 0L, emptyList())
+        request.parentScanTaskId = scanTask.id
+
+        // 获取最高级别漏洞对应的扫描结果预览key
+        val vulnerabilityOverviewKey = request.highestLeakLevel?.let {
+            vulnerabilityOverviewKey(it, scanTask.scannerType)
+        }
+
+        // 查询已结束的子任务
+        val containsFinishedStatus =
+            request.subScanTaskStatus?.firstOrNull { SubScanTaskStatus.finishedStatus(it) } != null
+        val finishedSubScanTasks = if (containsFinishedStatus) {
+            finishedSubScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
+        } else {
+            null
+        }
+
+        // 查询执行中的子任务
+        val containsUnfinishedStatus =
+            request.subScanTaskStatus?.firstOrNull { !SubScanTaskStatus.finishedStatus(it) } != null
+        val unfinishedSubScanTasks = if (containsUnfinishedStatus) {
+            subScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
+        } else {
+            null
+        }
+
+        // 合并结果返回
+        val totalRecords = (finishedSubScanTasks?.totalRecords ?: 0L) + (unfinishedSubScanTasks?.totalRecords ?: 0L)
+        val subTasks = (finishedSubScanTasks?.records ?: emptyList()) + (unfinishedSubScanTasks?.records ?: emptyList())
+        return Pages.ofResponse(
+            pageRequest,
+            totalRecords,
+            subTasks.map { Converter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
+        )
     }
 
     override fun artifactPlanList(request: ArtifactPlanRelationRequest): List<ArtifactPlanRelation> {
-        TODO("Not yet implemented")
+        with(request) {
+            ScanParamUtil.checkParam(
+                repoType = RepositoryType.valueOf(repoType),
+                artifactName = fullPath ?: "",
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath
+            )
+
+            val subtasks = finishedSubScanTaskDao.findSubScanTasks(request) + subScanTaskDao.findSubScanTasks(request)
+            return subtasks.map {
+                Converter.convertToArtifactPlanRelation(it)
+            }
+        }
     }
 
-    override fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String {
-        TODO("Not yet implemented")
+    override fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String? {
+        val relations = artifactPlanList(request)
+
+        if (relations.isEmpty()) {
+            return null
+        }
+
+        return Converter.artifactStatus(relations.map { it.status })
+    }
+
+    private fun vulnerabilityOverviewKey(highestLeakLevel: String, scannerType: String): String {
+        if (scannerType == BinAuditorScanner.TYPE) {
+            return BinAuditorScanExecutorResult.overviewKeyOfCve(highestLeakLevel)
+        } else {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, highestLeakLevel, scannerType)
+        }
     }
 
     private fun checkRunning(planId: String) {

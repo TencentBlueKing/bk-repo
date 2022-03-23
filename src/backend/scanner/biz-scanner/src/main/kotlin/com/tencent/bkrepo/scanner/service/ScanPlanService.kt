@@ -134,5 +134,5 @@ interface ScanPlanService {
      *
      * @return 制品关联的扫描方案信息
      */
-    fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String
+    fun artifactPlanStatus(request: ArtifactPlanRelationRequest): String?
 }

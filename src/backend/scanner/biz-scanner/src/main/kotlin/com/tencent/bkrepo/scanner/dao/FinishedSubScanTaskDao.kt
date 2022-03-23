@@ -25,22 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.utils
+package com.tencent.bkrepo.scanner.dao
 
-const val LEVEL_CRITICAL = "critical"
-const val LEVEL_HIGH = "high"
-const val LEVEL_MID = "mid"
-const val LEVEL_LOW = "low"
+import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import org.springframework.stereotype.Repository
 
-/**
- * 标准化等级
- */
-fun normalizedLevel(level: String): String {
-    return when (level.toLowerCase()) {
-        "危急", "严重", "critical" -> LEVEL_CRITICAL
-        "高危", "high" -> LEVEL_HIGH
-        "中危", "mid", "middle", "medium" -> LEVEL_MID
-        "低危", "low" -> LEVEL_LOW
-        else -> level
+@Repository
+class FinishedSubScanTaskDao : AbsSubScanTaskDao<TFinishedSubScanTask>() {
+    override fun artifactPlanRelationAggregateResultClass(): Class<*> {
+        return ArtifactPlanRelationAggregateResult::class.java
     }
+
+    class ArtifactPlanRelationAggregateResult(
+        subScanTasks: List<TFinishedSubScanTask>
+    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TFinishedSubScanTask>(subScanTasks)
 }

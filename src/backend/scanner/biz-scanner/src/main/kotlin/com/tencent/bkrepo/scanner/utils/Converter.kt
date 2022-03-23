@@ -30,31 +30,40 @@ package com.tencent.bkrepo.scanner.utils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Rule.NestedRule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_CRITICAL
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_HIGH
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_LOW
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_MID
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
+import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
+import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.pojo.rule.RuleType
+import java.time.Duration
 import java.time.format.DateTimeFormatter
 
 object Converter {
@@ -69,7 +78,7 @@ object Converter {
         )
     }
 
-    fun convert(scanTask: TScanTask): ScanTask = with(scanTask) {
+    fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null): ScanTask = with(scanTask) {
         ScanTask(
             taskId = id!!,
             createdBy = createdBy,
@@ -77,6 +86,7 @@ object Converter {
             startDateTime = startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
             finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
             status = status,
+            scanPlan = scanPlan?.let { convert(it) },
             rule = scanTask.rule?.readJsonString(),
             total = total,
             scanning = scanning,
@@ -167,7 +177,7 @@ object Converter {
             val medium = latestScanTask?.let { getCveCount(LEVEL_MID, latestScanTask) } ?: 0L
             val low = latestScanTask?.let { getCveCount(LEVEL_LOW, latestScanTask) } ?: 0L
             val artifactCount = latestScanTask?.total ?: 0L
-            val status = latestScanTask?.let { convertScanTaskStatus(it.status).name } ?: ScanStatus.INIT.name
+            val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
 
             return ScanPlanInfo(
                 id = id!!,
@@ -190,12 +200,116 @@ object Converter {
         }
     }
 
-    private fun convertScanTaskStatus(status: String?): ScanStatus {
+    fun convert(request: PlanArtifactRequest): PlanArtifactRequest {
+        request.highestLeakLevel = request.highestLeakLevel?.let { normalizedLevel(it) }
+        request.subScanTaskStatus = request.status
+            ?.let { convertToSubScanTaskStatus(ScanStatus.valueOf(it)) }
+            ?.map { it.name }
+        return request
+    }
+
+    fun convertToPlanArtifactInfo(subScanTask: SubScanTaskDefinition, createdBy: String): PlanArtifactInfo {
+        return with(subScanTask) {
+            val duration = if (startDateTime != null && finishedDateTime != null) {
+                Duration.between(startDateTime, finishedDateTime).toMillis()
+            } else {
+                0L
+            }
+            PlanArtifactInfo(
+                recordId = id!!,
+                subTaskId = id,
+                name = artifactName,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                repoType = repoType,
+                repoName = repoName,
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                duration = duration,
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                status = convertToScanStatus(status).name,
+                createdBy = createdBy,
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+            )
+        }
+    }
+
+    fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition): ArtifactPlanRelation {
+        val planType = if (subScanTask.repoType == RepositoryType.GENERIC.name) {
+            PlanType.MOBILE.name
+        } else {
+            PlanType.DEPENDENT.name
+        }
+        return with(subScanTask) {
+            ArtifactPlanRelation(
+                id = planId!!,
+                planId = planId,
+                projectId = projectId,
+                planType = planType,
+                name = artifactName,
+                status = convertToScanStatus(status).name,
+                recordId = id!!,
+                subTaskId = id
+            )
+        }
+    }
+
+    fun artifactStatus(status: List<String>): String {
+        require(status.isNotEmpty())
+        var maxStatus: ScanStatus? = null
+        status.forEach { curStatus ->
+            if (curStatus == ScanStatus.RUNNING.name) {
+                return curStatus
+            }
+            maxStatus = maxStatus
+                ?.let { max -> maxOf(ScanStatus.valueOf(curStatus), max) }
+                ?: ScanStatus.valueOf(curStatus)
+        }
+        return maxStatus!!.name
+    }
+
+    private fun highestLeakLevel(overview: Map<String, Number>): String {
+        return if (overview.keys.contains(LEVEL_CRITICAL)) {
+            LEVEL_CRITICAL
+        } else if (overview.keys.contains(LEVEL_HIGH)) {
+            LEVEL_HIGH
+        } else if (overview.keys.contains(LEVEL_MID)) {
+            LEVEL_MID
+        } else {
+            LEVEL_LOW
+        }
+    }
+
+    private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {
         return when (status) {
+            ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED, SubScanTaskStatus.ENQUEUED)
+            ScanStatus.RUNNING -> listOf(SubScanTaskStatus.EXECUTING)
+            ScanStatus.STOP -> listOf(SubScanTaskStatus.STOP)
+            ScanStatus.FAILED -> listOf(SubScanTaskStatus.FAILED)
+            ScanStatus.SUCCESS -> listOf(SubScanTaskStatus.SUCCESS)
+        }
+    }
+
+    private fun convertToScanStatus(status: String?): ScanStatus {
+        return when (status) {
+            SubScanTaskStatus.CREATED.name,
+            SubScanTaskStatus.PULLED.name,
+            SubScanTaskStatus.ENQUEUED.name,
             ScanTaskStatus.PENDING.name -> ScanStatus.INIT
-            ScanTaskStatus.SCANNING_SUBMITTING.name, ScanTaskStatus.SCANNING_SUBMITTED.name -> ScanStatus.RUNNING
-            ScanTaskStatus.PAUSE.name, ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
+
+            SubScanTaskStatus.EXECUTING.name,
+            ScanTaskStatus.SCANNING_SUBMITTING.name,
+            ScanTaskStatus.SCANNING_SUBMITTED.name -> ScanStatus.RUNNING
+
+            SubScanTaskStatus.STOP.name,
+            ScanTaskStatus.PAUSE.name,
+            ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
+
+            SubScanTaskStatus.SUCCESS.name,
             ScanTaskStatus.FINISHED.name -> ScanStatus.SUCCESS
+
+            SubScanTaskStatus.TIMEOUT.name,
+            SubScanTaskStatus.FAILED.name -> ScanStatus.FAILED
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, status.toString())
         }
     }

@@ -25,22 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.utils
+package com.tencent.bkrepo.scanner.utils
 
-const val LEVEL_CRITICAL = "critical"
-const val LEVEL_HIGH = "high"
-const val LEVEL_MID = "mid"
-const val LEVEL_LOW = "low"
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 
 /**
- * 标准化等级
+ * 参数检查
  */
-fun normalizedLevel(level: String): String {
-    return when (level.toLowerCase()) {
-        "危急", "严重", "critical" -> LEVEL_CRITICAL
-        "高危", "high" -> LEVEL_HIGH
-        "中危", "mid", "middle", "medium" -> LEVEL_MID
-        "低危", "low" -> LEVEL_LOW
-        else -> level
+object ScanParamUtil {
+
+    fun checkParam(
+        repoType: RepositoryType,
+        artifactName: String,
+        packageKey: String?,
+        version: String?,
+        fullPath: String?
+    ) {
+        when (repoType) {
+            RepositoryType.MAVEN -> {
+                if (packageKey.isNullOrEmpty() || version.isNullOrEmpty()) {
+                    throw ErrorCodeException(
+                        CommonMessageCode.PARAMETER_INVALID,
+                        "packageKey[$packageKey], version[$version]"
+                    )
+                }
+            }
+
+            RepositoryType.GENERIC -> {
+                if (fullPath.isNullOrEmpty()) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "fullPath[$fullPath]")
+                }
+
+                //只支持ipa/apk类型包
+                if (!artifactName.endsWith(".apk") && !artifactName.endsWith(".ipa")) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "name[$artifactName]")
+                }
+            }
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "repoType[${repoType.name}]")
+        }
     }
 }

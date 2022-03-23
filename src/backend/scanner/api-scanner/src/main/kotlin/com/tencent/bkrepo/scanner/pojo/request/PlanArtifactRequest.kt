@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import io.swagger.annotations.ApiModel
@@ -37,14 +38,17 @@ data class PlanArtifactRequest(
     @ApiModelProperty("扫描方案所属项目id", required = true)
     val projectId: String,
     @ApiModelProperty("扫描方案id", required = true)
-    val id: String,
+    @JsonAlias("id")
+    val planId: String,
+    @ApiModelProperty("扫描任务id，默认为扫描方案最新一次的扫描任务")
+    var parentScanTaskId: String? = null,
     @ApiModelProperty("制品名关键字，只要制品名包含该关键字则匹配")
-    val name: String? = null,
+    val artifactName: String? = null,
     /**
      * [com.tencent.bkrepo.scanner.pojo.LeakType]
      */
     @ApiModelProperty("制品最高等级漏洞")
-    val highestLeakLevel: String? = null,
+    var highestLeakLevel: String? = null,
     /**
      * [com.tencent.bkrepo.common.artifact.pojo.RepositoryType]
      */
@@ -56,7 +60,10 @@ data class PlanArtifactRequest(
      * [com.tencent.bkrepo.scanner.pojo.ScanStatus]
      */
     @ApiModelProperty("制品扫描状态")
+    @Deprecated("仅用于兼容旧接口", ReplaceWith("subScanTaskStatus"))
     val status: String? = null,
+    @ApiModelProperty("制品扫描状态")
+    var subScanTaskStatus: List<String>? = null,
     @ApiModelProperty("制品开始扫描时间")
     val startTime: String? = null,
     @ApiModelProperty("制品扫描结束时间")
