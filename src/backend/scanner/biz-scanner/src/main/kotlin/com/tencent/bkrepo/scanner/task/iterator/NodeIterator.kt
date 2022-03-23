@@ -95,7 +95,11 @@ class NodeIterator(
         val projectIdRule = modifyRule(projectId, rule)
         // 获取下一页需要扫描的文件
         val selected = listOf(
-            NodeDetail::sha256.name, NodeDetail::size.name, NodeDetail::fullPath.name, NodeDetail::repoName.name
+            NodeDetail::sha256.name,
+            NodeDetail::size.name,
+            NodeDetail::fullPath.name,
+            NodeDetail::repoName.name,
+            NodeDetail::name.name
         )
         val queryModel = QueryModel(
             PageLimit(page, pageSize),
@@ -114,7 +118,8 @@ class NodeIterator(
             val sha256 = it[NodeDetail::sha256.name]!! as String
             val size = toLong(it[NodeDetail::size.name]!!)
             val fullPath = it[NodeDetail::fullPath.name]!! as String
-            Node(projectId, repoName, fullPath, sha256, size)
+            val name = it[NodeDetail::name.name]!! as String
+            Node(projectId, repoName, fullPath, name, null, null, sha256, size)
         }
     }
 
@@ -185,4 +190,3 @@ class NodeIterator(
         override var index: Int = INITIAL_INDEX
     ) : PageIteratePosition(page = page, pageSize = pageSize, index = index)
 }
-

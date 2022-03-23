@@ -44,6 +44,18 @@ data class Node(
      */
     val fullPath: String,
     /**
+     * 制品名
+     */
+    val artifactName: String,
+    /**
+     * 依赖包唯一标识，制品为依赖包时候存在
+     */
+    val packageKey: String? = null,
+    /**
+     * 依赖包版本
+     */
+    val packageVersion: String? = null,
+    /**
      * 文件sha256
      */
     val sha256: String,
