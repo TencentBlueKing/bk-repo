@@ -6,7 +6,7 @@
                 <span>请参考下方使用指引来推送你的第一个制品</span>
                 <template v-if="showRepoConfigRoute">
                     <span>，或者</span>
-                    <router-link class="router-link" :to="{ name: 'repoConfig', query: { repoName: this.$route.query.repoName } }">配置代理</router-link>
+                    <router-link :to="{ name: 'repoConfig', query: { repoName: this.$route.query.repoName } }">配置代理</router-link>
                     <span>以代理其他仓库的制品</span>
                 </template>
             </div>
@@ -22,7 +22,7 @@
                     <div class="ml20 empty-guide-item-subtitle">
                         <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                         {{ $t('tokenSubTitle') }}
-                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                        <router-link :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                     </div>
                 </div>
                 <create-token-dialog ref="createToken"></create-token-dialog>

@@ -1,6 +1,6 @@
 <template>
     <div class="repo-token-container" v-bkloading="{ isLoading }">
-        <bk-button class="ml20 mt10" icon="plus" theme="primary" @click="createToken"><span class="mr5">{{ $t('create') }}</span></bk-button>
+        <bk-button class="ml20 mt10" icon="plus" theme="primary" @click="createToken">{{ $t('create') }}</bk-button>
         <bk-table
             class="mt10"
             :data="tokenList"

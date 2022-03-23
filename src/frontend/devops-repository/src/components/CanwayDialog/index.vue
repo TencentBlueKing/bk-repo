@@ -39,7 +39,8 @@
             top () {
                 // 25 = ci顶部导航高度 / 2
                 const offset = MODE_CONFIG === 'ci' ? 25 : 0
-                const top = (this.bodyHeight - this.heightNum) / 2 - offset
+                const dialogHeight = this.heightNum > 280 ? this.heightNum : 280
+                const top = (this.bodyHeight - dialogHeight) / 2 - offset
                 return top > 0 ? top : 0
             }
         },
@@ -57,7 +58,7 @@
         }
     }
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 .canway-dialog-header {
     height: 50px;
     margin-bottom: 27px;
@@ -77,5 +78,8 @@
             background-color: var(--bgHoverLighterColor);
         }
     }
+}
+.bk-dialog-body {
+    min-height: 148px;
 }
 </style>

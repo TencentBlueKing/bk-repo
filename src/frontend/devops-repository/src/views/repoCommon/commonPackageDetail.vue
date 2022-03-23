@@ -2,14 +2,14 @@
     <div class="common-package-detail">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
             <Icon class="package-img" size="70" :name="repoType" />
-            <div class="ml20 common-package-title flex-column">
-                <span class="mb5 repo-title text-overflow" :title="pkg.name">
+            <div class="ml20 common-package-title">
+                <div class="mb5 repo-title text-overflow" :title="pkg.name">
                     {{ pkg.name }}
-                </span>
-                <span class="repo-description text-overflow"
+                </div>
+                <div class="repo-description text-overflow"
                     :title="pkg.description">
                     {{ pkg.description || '【制品描述】' }}
-                </span>
+                </div>
             </div>
         </header>
         <div class="common-version-main flex-align-center">
@@ -284,7 +284,6 @@
     height: 100%;
     .common-package-header{
         height: 90px;
-        color: var(--fontPrimaryColor);
         background-color: white;
         .package-img {
             padding: 15px;
@@ -299,7 +298,7 @@
             }
             .repo-description {
                 max-width: 70vw;
-                padding-left: 6px;
+                padding: 5px 15px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
             }

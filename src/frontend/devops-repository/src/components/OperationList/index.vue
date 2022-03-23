@@ -7,7 +7,7 @@
         ext-cls="operation-container"
         v-bind="$attrs">
         <slot>
-            <i @click.stop="() => {}" class="devops-icon icon-more flex-center"></i>
+            <i @click.stop="() => {}" class="devops-icon icon-more flex-center hover-btn"></i>
         </slot>
         <template #content><ul class="operation-list">
             <li v-for="li in list" :key="li.label"
@@ -34,7 +34,7 @@
 .operation-trigger {
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: 2px;
     cursor: pointer;
     .bk-tooltip-ref,
     .icon-more {

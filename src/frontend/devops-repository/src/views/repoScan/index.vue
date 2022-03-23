@@ -1,7 +1,7 @@
 <template>
     <div class="scan-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="showCreateDialog"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="showCreateDialog">{{ $t('create') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     class="w250"

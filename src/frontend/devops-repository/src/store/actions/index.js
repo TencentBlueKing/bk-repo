@@ -37,7 +37,7 @@ export default {
             `${prefix}/repo/create`,
             body
         ).then(res => {
-            dispatch('getRepoListAll')
+            dispatch('getRepoListAll', { projectId: body.projectId })
             return res
         })
     },
@@ -91,7 +91,7 @@ export default {
         return Vue.prototype.$ajax.delete(
             `${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`
         ).then(res => {
-            dispatch('getRepoListAll')
+            dispatch('getRepoListAll', { projectId })
             return res
         })
     },

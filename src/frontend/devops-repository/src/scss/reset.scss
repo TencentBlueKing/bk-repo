@@ -90,10 +90,27 @@ body {
         min-width: 56px;
         padding: 0 8px;
         height: 30px;
-        line-height: 28px;
-        .bk-icon {
+        line-height: initial;
+        & > div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .icon-plus {
+            top: auto;
+            margin: 0 -2px 0 -4px;
             font-size: 20px;
         }
+        &.bk-default.hover,
+        &.bk-default:hover {
+            border-color: var(--primaryColor);
+            color: var(--primaryColor);
+            background-color: var(--bgHoverLighterColor);
+        }
+    }
+    .bk-button-text.bk-primary.hover,
+    .bk-button-text.bk-primary:hover {
+        color: var(--primaryWeightColor);
     }
     /* 面包屑 */
     .bk-breadcrumb .bk-breadcrumb-item {
@@ -255,6 +272,13 @@ body {
         background-color: var(--fontSubsidiaryColor);
         &.bk-switcher-small {
             width: 32px;
+        }
+    }
+    .bk-button {
+        & > div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     }
 }
