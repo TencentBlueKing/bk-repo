@@ -300,7 +300,7 @@ open class AbstractChartService : ArtifactService() {
         size: Long,
         isOverwrite: Boolean = false
     ) {
-        val contentPath = RdsUtils.getChartFileFullPath(chartInfo.name, chartInfo.version, chartInfo.extension)
+        val contentPath = RdsUtils.getChartFileFullPath(chartInfo.code, chartInfo.version, chartInfo.extension)
         val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
             userId = userId,
             artifactInfo = artifactInfo,

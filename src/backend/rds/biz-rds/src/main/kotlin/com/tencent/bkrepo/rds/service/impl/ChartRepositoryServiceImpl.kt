@@ -104,7 +104,7 @@ class ChartRepositoryServiceImpl : AbstractChartService(), ChartRepositoryServic
                 var chartVersion: String? = null
                 try {
                     val chartMetadata = queryRdsChartMetadata(context, it)
-                    chartName = chartMetadata.name
+                    chartName = chartMetadata.code
                     chartVersion = chartMetadata.version
                     chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
                     chartMetadata.digest = it[NODE_SHA256] as String

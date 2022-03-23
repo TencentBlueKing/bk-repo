@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.rds.pojo.metadata
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.github.zafarkhaja.semver.Version
@@ -39,9 +40,10 @@ import com.tencent.bkrepo.rds.constants.TGZ_SUFFIX
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class RdsChartMetadata(
-    var RDSVersion: String?,
+    @JsonAlias("RDSVersion")
+    var rdsVersion: String?,
     var name: String,
-    var code: String?,
+    var code: String,
     var version: String,
     var description: String?,
     var home: String?,
@@ -54,7 +56,7 @@ data class RdsChartMetadata(
 ) : Comparable<RdsChartMetadata> {
 
     override fun compareTo(other: RdsChartMetadata): Int {
-        val result = this.name.compareTo(other.name)
+        val result = this.code.compareTo(other.code)
         return if (result != 0) {
             result
         } else {

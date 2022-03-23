@@ -65,7 +65,7 @@ object ObjectBuilderUtil {
     ): PackageUpdateRequest {
         return buildPackageUpdateRequest(
             artifactInfo,
-            chartInfo.name,
+            chartInfo.code,
             chartInfo.version,
             chartInfo.description
         )
@@ -97,14 +97,14 @@ object ObjectBuilderUtil {
         return PackageVersionCreateRequest(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,
-            packageName = chartInfo.name,
-            packageKey = PackageKeys.ofRds(chartInfo.name),
+            packageName = chartInfo.code,
+            packageKey = PackageKeys.ofRds(chartInfo.code),
             packageType = PackageType.RDS,
             packageDescription = chartInfo.description,
             versionName = chartInfo.version,
             size = size,
             manifestPath = null,
-            artifactPath = RdsUtils.getChartFileFullPath(chartInfo.name, chartInfo.version, chartInfo.extension),
+            artifactPath = RdsUtils.getChartFileFullPath(chartInfo.code, chartInfo.version, chartInfo.extension),
             stageTag = null,
             metadata = RdsMetadataUtils.convertToMap(chartInfo),
             overwrite = isOverwrite,

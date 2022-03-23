@@ -84,10 +84,10 @@ class RdsLocalRepository(
                     val chartMetadata = ChartParserUtil.parseChartFileInfo(context.getArtifactFile(), extension!!)
                     putAttribute(
                         FULL_PATH,
-                        RdsUtils.getChartFileFullPath(chartMetadata.name, chartMetadata.version, extension)
+                        RdsUtils.getChartFileFullPath(chartMetadata.code, chartMetadata.version, extension)
                     )
                     putAttribute(META_DETAIL, RdsMetadataUtils.convertToMap(chartMetadata))
-                    putAttribute(NAME, chartMetadata.name)
+                    putAttribute(NAME, chartMetadata.code)
                     putAttribute(VERSION, chartMetadata.version)
                 } catch (e: Exception) {
                     throw RdsBadRequestException("The chart is broken.....")

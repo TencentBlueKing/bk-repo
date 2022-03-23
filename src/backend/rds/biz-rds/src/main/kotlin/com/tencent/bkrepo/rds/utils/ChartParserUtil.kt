@@ -60,12 +60,12 @@ object ChartParserUtil {
      * 将新增加的Chart包信息加入到index.yaml中
      */
     fun addIndexEntries(indexYamlMetadata: RdsIndexYamlMetadata, chartMetadata: RdsChartMetadata) {
-        val chartName = chartMetadata.name
+        val chartName = chartMetadata.code
         val chartVersion = chartMetadata.version
-        val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.name)
+        val isFirstChart = !indexYamlMetadata.entries.containsKey(chartMetadata.code)
         indexYamlMetadata.entries.let {
             if (isFirstChart) {
-                it[chartMetadata.name] = sortedSetOf(chartMetadata)
+                it[chartMetadata.code] = sortedSetOf(chartMetadata)
             } else {
                 // force upload
                 run stop@{
