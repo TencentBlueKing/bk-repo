@@ -45,6 +45,8 @@ data class ScanTask(
     val finishedDateTime: String?,
     @ApiModelProperty("任务状态")
     val status: String,
+    @ApiModelProperty("扫描方案")
+    val scanPlan: ScanPlan?,
     @ApiModelProperty("扫描文件匹配规则")
     val rule: Rule?,
     @ApiModelProperty("计划扫描文件总数")

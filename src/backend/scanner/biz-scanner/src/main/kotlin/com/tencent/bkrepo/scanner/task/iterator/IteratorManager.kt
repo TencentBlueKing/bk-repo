@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import org.springframework.stereotype.Component
 
@@ -50,7 +51,7 @@ class IteratorManager(
      * @param resume 是否从之前的扫描进度恢复
      */
     fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): NodeIterator {
-        val rule = scanTask.rule
+        val rule = scanTask.scanPlan?.let { fromScanPlan(it) } ?: scanTask.rule
 
         // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
         require(rule is Rule.NestedRule)
@@ -60,6 +61,10 @@ class IteratorManager(
 
         val position = NodeIterator.NodeIteratePosition(rule)
         return NodeIterator(projectIdIterator, nodeClient, position)
+    }
+
+    private fun fromScanPlan(scanPlan: ScanPlan): Rule {
+        TODO()
     }
 
     /**

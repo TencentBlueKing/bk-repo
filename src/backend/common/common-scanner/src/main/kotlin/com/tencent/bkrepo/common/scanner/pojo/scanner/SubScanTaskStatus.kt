@@ -28,6 +28,11 @@ enum class SubScanTaskStatus {
     EXECUTING,
 
     /**
+     * 扫描停止
+     */
+    STOP,
+
+    /**
      * 扫描超时
      */
     TIMEOUT,
@@ -38,5 +43,21 @@ enum class SubScanTaskStatus {
     /**
      * 扫描成功
      */
-    SUCCESS
+    SUCCESS;
+
+    companion object {
+        /**
+         * 判断[status]是否是已结束的状态
+         */
+        fun finishedStatus(status: SubScanTaskStatus): Boolean {
+            return status == TIMEOUT || status == FAILED || status == SUCCESS
+        }
+
+        /**
+         * 判断[status]是否是已结束的状态
+         */
+        fun finishedStatus(status: String): Boolean {
+            return finishedStatus(valueOf(status))
+        }
+    }
 }

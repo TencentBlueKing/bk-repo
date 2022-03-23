@@ -37,10 +37,12 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
+import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
+import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -77,6 +79,7 @@ class ScanServiceImpl @Autowired constructor(
     private val repositoryClient: RepositoryClient,
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
+    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
@@ -197,6 +200,7 @@ class ScanServiceImpl @Autowired constructor(
         if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
             return false
         }
+        finishedSubScanTaskDao.insert(TFinishedSubScanTask.from(subTask, resultSubTaskStatus, overview))
         scannerMetrics.subtaskStatusChange(
             SubScanTaskStatus.valueOf(subTask.status), SubScanTaskStatus.valueOf(resultSubTaskStatus)
         )

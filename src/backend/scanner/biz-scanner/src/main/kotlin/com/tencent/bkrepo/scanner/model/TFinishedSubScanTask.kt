@@ -27,32 +27,19 @@
 
 package com.tencent.bkrepo.scanner.model
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 /**
- * 正在扫描的子任务，查询比较频繁，单独一张表
+ * 已完成扫描的子任务
  */
-@Document("sub_scan_task")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "credentialsKey_sha256_idx",
-        def = "{'credentialsKey': 1, 'sha256': 1}",
-        background = true
-    ),
-    CompoundIndex(
-        name = "lastModifiedDate_idx",
-        def = "{'lastModifiedDate': 1}",
-        background = true
-    )
-)
-class TSubScanTask(
+@Document("finished_sub_scan_task")
+class TFinishedSubScanTask(
     id: String? = null,
     createdDate: LocalDateTime,
     lastModifiedDate: LocalDateTime,
-    startDateTime: LocalDateTime,
+    startDateTime: LocalDateTime?,
+    finishedDateTime: LocalDateTime,
 
     parentScanTaskId: String,
     planId: String?,
@@ -71,15 +58,17 @@ class TSubScanTask(
     scannerType: String,
     sha256: String,
     size: Long,
-    credentialsKey: String?
-): SubScanTaskDefinition(
+    credentialsKey: String?,
+
+    scanResultOverview: Map<String, Number>?
+) : SubScanTaskDefinition(
     id = id,
     createdDate = createdDate,
     lastModifiedDate = lastModifiedDate,
     startDateTime = startDateTime,
+    finishedDateTime = finishedDateTime,
     parentScanTaskId = parentScanTaskId,
     planId = planId,
-
     projectId = projectId,
     repoName = repoName,
     repoType = repoType,
@@ -87,7 +76,6 @@ class TSubScanTask(
     version = version,
     fullPath = fullPath,
     artifactName = artifactName,
-
     status = status,
     executedTimes = executedTimes,
     scanner = scanner,
@@ -95,5 +83,45 @@ class TSubScanTask(
     sha256 = sha256,
     size = size,
     credentialsKey = credentialsKey,
-    scanResultOverview = null
-)
+    scanResultOverview = scanResultOverview
+) {
+    companion object {
+        fun from(
+            task: TSubScanTask,
+            resultStatus: String,
+            overview: Map<String, Any?>,
+            now: LocalDateTime = LocalDateTime.now()
+        ) = with(task) {
+            val numberOverview = HashMap<String, Number>(overview.size)
+            overview.forEach {
+                if (it.value is Number) {
+                    numberOverview[it.key] = it.value as Number
+                }
+            }
+            TFinishedSubScanTask(
+                id = id,
+                createdDate = createdDate,
+                lastModifiedDate = now,
+                startDateTime = startDateTime,
+                finishedDateTime = now,
+                parentScanTaskId = parentScanTaskId,
+                planId = planId,
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoType,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                artifactName = artifactName,
+                status = resultStatus,
+                executedTimes = executedTimes,
+                scanner = scanner,
+                scannerType = scannerType,
+                sha256 = sha256,
+                size = size,
+                credentialsKey = credentialsKey,
+                scanResultOverview = numberOverview
+            )
+        }
+    }
+}

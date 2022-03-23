@@ -51,10 +51,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import java.util.Optional
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 @Component
 class DefaultScanTaskScheduler @Autowired constructor(
@@ -129,8 +127,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
 
         // 更新任务状态为所有子任务已提交
-        logger.info("submit $submittedSubTaskCount sub tasks, " +
-                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED")
+        logger.info(
+            "submit $submittedSubTaskCount sub tasks, " +
+                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED"
+        )
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
         scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTED)
 
@@ -160,18 +160,21 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     fun createSubTask(scanTask: ScanTask, sha256: String, size: Long, credentialKey: String? = null): TSubScanTask {
-        val now = LocalDateTime.now()
-        return TSubScanTask(
-            createdDate = now,
-            lastModifiedDate = now,
-            parentScanTaskId = scanTask.taskId,
-            status = SubScanTaskStatus.CREATED.name,
-            executedTimes = 0,
-            scanner = scanTask.scanner,
-            sha256 = sha256,
-            size = size,
-            credentialsKey = credentialKey
-        )
+        TODO()
+//        val now = LocalDateTime.now()
+//        return TSubScanTask(
+//            createdDate = now,
+//            lastModifiedDate = now,
+//            parentScanTaskId = scanTask.taskId,
+//            planId = scanTask.scanPlan?.id,
+//            status = SubScanTaskStatus.CREATED.name,
+//            executedTimes = 0,
+//            scanner = scanTask.scanner,
+//            scannerType = scanTask.scannerType,
+//            sha256 = sha256,
+//            size = size,
+//            credentialsKey = credentialKey
+//        )
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -207,7 +210,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         if (repoRes.isNotOk()) {
             logger.error(
                 "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                        " projectId[$projectId], repoName[$repoName]"
+                    " projectId[$projectId], repoName[$repoName]"
             )
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, repoRes.message ?: "")
         }
