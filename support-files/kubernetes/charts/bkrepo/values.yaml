@@ -48,6 +48,9 @@ bkLogConfig:
 ## ingress配置
 ingress:
   enabled: true
+  tls: false
+    crt: ""
+    key: ""
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "10240m"
@@ -434,7 +437,6 @@ opdata:
 ## docker registry服务配置
 docker:
   enabled: false
-  enableHttp: false
   config: {}
   ## Kubernetes 通用配置
   image:
