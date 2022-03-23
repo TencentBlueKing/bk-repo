@@ -30,8 +30,12 @@ package com.tencent.bkrepo.scanner.task.iterator
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.scanner.pojo.Node
+import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import org.springframework.stereotype.Component
@@ -42,7 +46,8 @@ import org.springframework.stereotype.Component
 @Component
 class IteratorManager(
     private val projectClient: ProjectClient,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val packageClient: PackageClient
 ) {
     /**
      * 创建待扫描文件迭代器
@@ -50,7 +55,7 @@ class IteratorManager(
      * @param scanTask 扫描任务
      * @param resume 是否从之前的扫描进度恢复
      */
-    fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): NodeIterator {
+    fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
         val rule = scanTask.scanPlan?.let { fromScanPlan(it) } ?: scanTask.rule
 
         // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
@@ -59,12 +64,56 @@ class IteratorManager(
         val projectIdIterator = projectIds.iterator()
 //        ProjectIdIterator(projectClient)
 
-        val position = NodeIterator.NodeIteratePosition(rule)
-        return NodeIterator(projectIdIterator, nodeClient, position)
+        return if (scanTask.scanPlan != null && scanTask.scanPlan!!.type == PlanType.DEPENDENT.name) {
+            PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))
+        } else {
+            NodeIterator(projectIdIterator, nodeClient, NodeIterator.NodeIteratePosition(rule))
+        }
     }
 
     private fun fromScanPlan(scanPlan: ScanPlan): Rule {
-        TODO()
+        var rule = addProjectIdAdnRepoRule(scanPlan.rule, scanPlan.projectId!!, scanPlan.repoNames!!)
+        if (scanPlan.type == PlanType.MOBILE.name) {
+            rule = addMobilePackageRule(rule)
+        }
+        return rule
+    }
+
+    /**
+     * 添加projectId和repoName规则
+     */
+    private fun addProjectIdAdnRepoRule(rule: Rule?, projectId: String, repoNames: List<String>): Rule {
+        val rules = mutableListOf<Rule>(
+            Rule.QueryRule(PackageSummary::projectId.name, projectId, OperationType.EQ)
+        )
+        if (repoNames.isNotEmpty()) {
+            rules.add(Rule.QueryRule(PackageSummary::repoName.name, repoNames, OperationType.IN))
+        }
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            rule.rules.addAll(rules)
+            return rule
+        }
+
+        rule?.let { rules.add(it) }
+        return Rule.NestedRule(rules, Rule.NestedRule.RelationType.AND)
+    }
+
+    /**
+     * 添加ipa和apk文件过滤规则
+     */
+    private fun addMobilePackageRule(rule: Rule): Rule {
+        val mobilePackageRule = Rule.NestedRule(
+            mutableListOf(
+                Rule.QueryRule(NodeDetail::fullPath.name, ".apk", OperationType.SUFFIX),
+                Rule.QueryRule(NodeDetail::fullPath.name, ".ipa", OperationType.SUFFIX)
+            ),
+            Rule.NestedRule.RelationType.OR
+        )
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            rule.rules.add(mobilePackageRule)
+            return rule
+        }
+        return Rule.NestedRule(mutableListOf(rule, mobilePackageRule), Rule.NestedRule.RelationType.AND)
     }
 
     /**
