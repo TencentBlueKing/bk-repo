@@ -33,7 +33,6 @@ import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
@@ -84,10 +83,10 @@ class IteratorManager(
      */
     private fun addProjectIdAdnRepoRule(rule: Rule?, projectId: String, repoNames: List<String>): Rule {
         val rules = mutableListOf<Rule>(
-            Rule.QueryRule(PackageSummary::projectId.name, projectId, OperationType.EQ)
+            Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
         )
         if (repoNames.isNotEmpty()) {
-            rules.add(Rule.QueryRule(PackageSummary::repoName.name, repoNames, OperationType.IN))
+            rules.add(Rule.QueryRule(NodeDetail::repoName.name, repoNames, OperationType.IN))
         }
         if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
             rule.rules.addAll(rules)

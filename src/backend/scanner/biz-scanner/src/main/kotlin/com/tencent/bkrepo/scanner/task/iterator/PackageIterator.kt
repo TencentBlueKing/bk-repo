@@ -29,7 +29,9 @@ package com.tencent.bkrepo.scanner.task.iterator
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
@@ -38,7 +40,8 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.pojo.Node
-import org.slf4j.LoggerFactory
+import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.scanner.utils.Request
 
 /**
  * 依赖包迭代器
@@ -49,63 +52,199 @@ class PackageIterator(
     override val position: PackageIteratePosition
 ) : PageableIterator<Node>() {
     override fun nextPageData(page: Int, pageSize: Int): List<Node> {
-        val packages = requestPackages(page, pageSize)
-
-        val nodeQueryRule = nodeQueryRule(packages)
-        val nodeQueryModel = QueryModel(PageLimit(DEFAULT_PAGE_NUMBER, pageSize), null, nodeSelect, nodeQueryRule)
-        val nodeRes = nodeClient.search(nodeQueryModel)
-        if (nodeRes.isNotOk()) {
-            logger.error("Search nodes failed: [${nodeRes.message}], queryModel:[$nodeQueryModel]")
-            throw SystemErrorException()
-        }
-
-        return convert(packages, nodeRes.data!!.records)
+        val packages = requestPackage(page, pageSize)
+        return requestNode(packages)
     }
 
-    private fun requestPackages(page: Int, pageSize: Int): List<Package> {
-        val packageQueryModel = QueryModel(PageLimit(page, pageSize), null, packageSelect, position.rule)
-        val packageRes = packageClient.searchPackage(packageQueryModel)
-        if (packageRes.isNotOk()) {
-            logger.error("Search package failed: [${packageRes.message}], queryModel:[$packageQueryModel]")
-            throw SystemErrorException()
+    /**
+     * 请求package数据
+     */
+    private fun requestPackage(page: Int, pageSize: Int): List<Package> {
+        val packageQueryModel = QueryModel(
+            PageLimit(page, pageSize), null, packageSelect, packageSummaryRule(position.rule)
+        )
+
+        val records = Request.request { packageClient.searchPackage(packageQueryModel) }!!.records
+        return if (records.isEmpty()) {
+            emptyList()
+        } else {
+            val packageNameToVersionMap = packageNameToVersions(position.rule)
+            records.flatMap {
+                val pkg = parse(it)
+                val versions = packageNameToVersionMap[pkg.artifactName] ?: listOf(pkg.latestVersion)
+                versions.map { version -> populatePackage(pkg.copy(packageVersion = version)) }
+            }
         }
-        if (packageRes.data!!.records.isEmpty()) {
-            return emptyList()
-        }
-        return packageRes.data!!.records.map { convert(it) }
     }
 
-    private fun nodeQueryRule(packages: List<Package>): Rule {
-        TODO()
-    }
-
-    private fun convert(packageSummary: Map<*, *>) = Package(
+    /**
+     * 解析package数据
+     */
+    private fun parse(packageSummary: Map<*, *>) = Package(
         projectId = packageSummary[PackageSummary::projectId.name] as String,
         repoName = packageSummary[PackageSummary::repoName.name] as String,
         artifactName = packageSummary[PackageSummary::name.name] as String,
         packageKey = packageSummary[PackageSummary::key.name] as String,
-        packageVersion = packageSummary[PackageSummary::latest.name] as String
+        latestVersion = packageSummary[PackageSummary::latest.name] as String
     )
 
-    private fun convert(packages: List<Package>, nodeDetail: List<Map<String, Any?>>): List<Node> {
-        TODO()
+    /**
+     * 获取packageSummary查询规则
+     *
+     * @param rule 初始规则
+     *
+     * @return 过滤了version字段规则后的rule
+     */
+    private fun packageSummaryRule(rule: Rule): Rule {
+        require(rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND)
+        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name))
+    }
+
+    /**
+     * 过滤AND类型的NestedRule中[fields]相关的rule
+     */
+    private fun filterAndNestedRuleField(rule: Rule.NestedRule, fields: List<String>): Rule.NestedRule {
+        require(rule.relation == Rule.NestedRule.RelationType.AND)
+        val rules = ArrayList<Rule>(rule.rules.size)
+        rule.rules.forEach {
+            if (it is Rule.QueryRule && it.field !in fields) {
+                rules.add(it)
+            }
+
+            if (it is Rule.NestedRule && it.relation == Rule.NestedRule.RelationType.AND) {
+                rules.addAll(filterAndNestedRuleField(it, fields).rules)
+            }
+
+            if (it is Rule.NestedRule && it.relation == Rule.NestedRule.RelationType.OR) {
+                val filteredRule = filterOrNestedRuleField(it, fields)
+                if (filteredRule.rules.isNotEmpty()) {
+                    rules.add(filteredRule)
+                }
+            }
+        }
+
+        return Rule.NestedRule(rules, Rule.NestedRule.RelationType.AND)
+    }
+
+    /**
+     * 过滤OR类型的NestedRule中[fields]相关的rule
+     */
+    private fun filterOrNestedRuleField(rule: Rule.NestedRule, fields: List<String>): Rule.NestedRule {
+        require(rule.relation == Rule.NestedRule.RelationType.OR)
+        val rules = ArrayList<Rule>(rule.rules.size)
+
+        rule.rules.forEach {
+            if (it is Rule.QueryRule && it.field !in fields) {
+                rules.add(it)
+            }
+
+            if (it is Rule.NestedRule && it.relation == Rule.NestedRule.RelationType.AND) {
+                val filteredRule = filterAndNestedRuleField(it, fields)
+                if (filteredRule.rules.isNotEmpty()) {
+                    rules.add(filteredRule)
+                }
+            }
+
+            if (it is Rule.NestedRule && it.relation == Rule.NestedRule.RelationType.OR) {
+                rules.addAll(filterOrNestedRuleField(it, fields).rules)
+            }
+        }
+
+        return Rule.NestedRule(rules, Rule.NestedRule.RelationType.OR)
+    }
+
+    /**
+     * 从[rule]中解析出packageName对应的要查询的所有版本
+     */
+    private fun packageNameToVersions(rule: Rule): Map<String, MutableList<String>> {
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+            val map = HashMap<String, MutableList<String>>()
+            // 获取nameRule
+            val nameRule = rule.rules.firstOrNull {
+                it is Rule.QueryRule && it.field == RuleArtifact::name.name
+            } as Rule.QueryRule?
+
+            // 获取versionRule
+            val versionRule = rule.rules.firstOrNull {
+                it is Rule.QueryRule && it.field == RuleArtifact::version.name
+            } as Rule.QueryRule?
+
+            // nameRule和versionRule都存在的时候不包含其他rule
+            if (nameRule != null && versionRule != null) {
+                map.getOrPut(nameRule.value.toString()) { ArrayList() }.add(versionRule.value.toString())
+            } else {
+                rule.rules.map { packageNameToVersions(it) }.forEach { map.putAll(it) }
+            }
+            return map
+        }
+
+        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.OR) {
+            val map = HashMap<String, MutableList<String>>()
+            rule.rules.forEach { map.putAll(packageNameToVersions(it)) }
+            return map
+        }
+
+        return emptyMap()
+    }
+
+    /**
+     * 填充包的fullPath字段
+     * TODO 实现批量获取package完整数据接口后移除此方法
+     */
+    private fun populatePackage(pkg: Package): Package {
+        require(pkg.packageVersion != null)
+        with(pkg) {
+            val packageVersion = Request.request {
+                packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
+            } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey, packageVersion!!)
+            pkg.fullPath = packageVersion.contentPath!!
+        }
+        return pkg
+    }
+
+    /**
+     * 请求[packages]对应的node数据
+     */
+    private fun requestNode(packages: List<Package>): List<Node> {
+        val nodeQueryRule = nodeQueryRule(packages)
+        val nodes = Request.requestNodes(nodeClient, nodeQueryRule, DEFAULT_PAGE_NUMBER, position.pageSize)
+        val packageMap = packages.associateBy { it.fullPath }
+        nodes.forEach {
+            val pkg = packageMap[it.fullPath]!!
+            it.packageKey = pkg.packageKey
+            it.packageVersion = pkg.packageVersion
+        }
+        return nodes
+    }
+
+    /**
+     * 获取查询[packages]对应node信息的rule
+     */
+    private fun nodeQueryRule(packages: List<Package>): Rule {
+        val projectIdRule = (position.rule as Rule.NestedRule)
+            .rules
+            .first { it is Rule.QueryRule && it.field == NodeDetail::projectId.name }
+
+        val rules = mutableListOf(projectIdRule)
+        val packagesRules = packages.map {
+            val packageRules = mutableListOf<Rule>(
+                Rule.QueryRule(NodeDetail::repoName.name, it.repoName, OperationType.EQ),
+                Rule.QueryRule(NodeDetail::fullPath.name, it.fullPath!!, OperationType.EQ)
+            )
+            Rule.NestedRule(packageRules, Rule.NestedRule.RelationType.AND)
+        }
+        rules.add(Rule.NestedRule(packagesRules.toMutableList(), Rule.NestedRule.RelationType.OR))
+
+        return Rule.NestedRule(rules, Rule.NestedRule.RelationType.AND)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PackageIterator::class.java)
         private val packageSelect = listOf(
             PackageSummary::projectId.name,
             PackageSummary::repoName.name,
             PackageSummary::key.name,
             PackageSummary::name.name,
             PackageSummary::latest.name
-        )
-        private val nodeSelect = listOf(
-            NodeDetail::sha256.name,
-            NodeDetail::size.name,
-            NodeDetail::fullPath.name,
-            NodeDetail::repoName.name,
-            NodeDetail::name.name
         )
     }
 
@@ -114,7 +253,9 @@ class PackageIterator(
         val repoName: String,
         val artifactName: String,
         val packageKey: String,
-        val packageVersion: String
+        val latestVersion: String,
+        var packageVersion: String? = null,
+        var fullPath: String? = null
     )
 
     /**
@@ -123,6 +264,47 @@ class PackageIterator(
     data class PackageIteratePosition(
         /**
          * 需要遍历的依赖包匹配规则
+         * rule结构如下
+         * {
+         *     "rules": [
+         *         {
+         *            "field": "projectId",
+         *            "value": "test",
+         *            "operation": "EQ"
+         *         },
+         *         {
+         *            "field": "repoName",
+         *            "value": "test",
+         *            "operation": "EQ"
+         *         },
+         *         {
+         *             "rules": [
+         *                 {
+         *                     "field": "name",
+         *                     "value": "test",
+         *                     "operation": "EQ"
+         *                 },
+         *                 {
+         *                     rules: [
+         *                         {
+         *                             "field": "name",
+         *                             "value": "test",
+         *                             "operation": "EQ"
+         *                         },
+         *                         {
+         *                             "field": "version",
+         *                             "value": "test",
+         *                             "operation": "EQ"
+         *                         },
+         *                     ],
+         *                     relation: "AND"
+         *                 }
+         *             ],
+         *             "relation": "OR"
+         *         }
+         *     ],
+         *     "relation": "AND"
+         * }
          */
         val rule: Rule,
         override var page: Int = INITIAL_PAGE,
