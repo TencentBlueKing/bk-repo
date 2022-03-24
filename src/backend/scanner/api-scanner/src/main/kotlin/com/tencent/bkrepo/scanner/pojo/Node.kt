@@ -50,11 +50,11 @@ data class Node(
     /**
      * 依赖包唯一标识，制品为依赖包时候存在
      */
-    val packageKey: String? = null,
+    var packageKey: String? = null,
     /**
      * 依赖包版本
      */
-    val packageVersion: String? = null,
+    var packageVersion: String? = null,
     /**
      * 文件sha256
      */
