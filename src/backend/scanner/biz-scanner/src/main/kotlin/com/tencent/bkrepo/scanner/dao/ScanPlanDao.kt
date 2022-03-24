@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
@@ -40,24 +42,35 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
 class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
+    fun get(id: String): TScanPlan {
+        val query = Query(criteria().and(ID).isEqualTo(id))
+        return findOne(query) ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
+    }
+
     fun find(projectId: String, id: String): TScanPlan? {
-        val criteria = projectCriteria(projectId).and(TScanPlan::id.name).isEqualTo(id)
+        val criteria = projectCriteria(projectId).and(ID).isEqualTo(id)
         return findOne(Query(criteria))
     }
 
+    fun findByIds(ids: List<String>): List<TScanPlan> {
+        val query = Query(criteria().and(ID).inValues(ids))
+        return find(query)
+    }
+
     fun exists(projectId: String, id: String): Boolean {
-        val criteria = projectCriteria(projectId).and(TScanPlan::id.name).isEqualTo(id)
+        val criteria = projectCriteria(projectId).and(ID).isEqualTo(id)
         return exists(Query(criteria))
     }
 
     fun delete(projectId: String, id: String): UpdateResult {
-        val criteria = projectCriteria(projectId).and(TScanPlan::id.name).isEqualTo(id)
+        val criteria = projectCriteria(projectId).and(ID).isEqualTo(id)
         val now = LocalDateTime.now()
         val update = update(now).set(TScanPlan::deleted.name, now)
         return updateFirst(Query(criteria), update)
@@ -89,7 +102,7 @@ class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
 
     fun update(scanPlan: ScanPlan): UpdateResult {
         with(scanPlan) {
-            val criteria = projectCriteria(projectId!!).and(TScanPlan::id.name).`is`(id)
+            val criteria = projectCriteria(projectId!!).and(ID).`is`(id)
             val update = update()
             name?.let { update.set(TScanPlan::name.name, it) }
             description?.let { update.set(TScanPlan::description.name, it) }
@@ -108,6 +121,14 @@ class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
             criteria.and(TScanPlan::deleted.name).isEqualTo(null)
         }
         return criteria
+    }
+
+    private fun criteria(includeDeleted: Boolean = false): Criteria {
+        return if (!includeDeleted) {
+            TScanPlan::deleted.isEqualTo(null)
+        } else {
+            Criteria()
+        }
     }
 
     private fun update(

@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
@@ -97,7 +98,7 @@ interface ScanPlanService {
      *
      * @return 更新后的扫描方案
      */
-    fun update(request: ScanPlan): ScanPlan
+    fun update(request: UpdateScanPlanRequest): ScanPlan
 
     /**
      * 获取扫描方案最新一次扫描详情

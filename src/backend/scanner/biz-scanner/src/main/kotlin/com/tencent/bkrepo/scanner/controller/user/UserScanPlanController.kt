@@ -101,8 +101,7 @@ class UserScanPlanController(
     @ApiOperation("更新扫描方案")
     @PostMapping("/update")
     fun updateScanPlan(@RequestBody request: UpdateScanPlanRequest): Response<Boolean> {
-        val scanPlan = Converter.convert(request)
-        scanPlanService.update(scanPlan)
+        scanPlanService.update(request)
         return ResponseBuilder.success(true)
     }
 

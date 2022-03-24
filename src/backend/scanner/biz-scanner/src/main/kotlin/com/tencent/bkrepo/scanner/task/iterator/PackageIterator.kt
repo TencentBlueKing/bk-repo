@@ -71,7 +71,7 @@ class PackageIterator(
             val packageNameToVersionMap = packageNameToVersions(position.rule)
             records.flatMap {
                 val pkg = parse(it)
-                val versions = packageNameToVersionMap[pkg.artifactName] ?: listOf(pkg.latestVersion)
+                val versions = packageNameToVersionMap[pkg.artifactName] ?: pkg.historyVersion
                 versions.map { version -> populatePackage(pkg.copy(packageVersion = version)) }
             }
         }
@@ -80,12 +80,14 @@ class PackageIterator(
     /**
      * 解析package数据
      */
+    @Suppress("UNCHECKED_CAST")
     private fun parse(packageSummary: Map<*, *>) = Package(
         projectId = packageSummary[PackageSummary::projectId.name] as String,
         repoName = packageSummary[PackageSummary::repoName.name] as String,
         artifactName = packageSummary[PackageSummary::name.name] as String,
         packageKey = packageSummary[PackageSummary::key.name] as String,
-        latestVersion = packageSummary[PackageSummary::latest.name] as String
+        latestVersion = packageSummary[PackageSummary::latest.name] as String,
+        historyVersion = packageSummary[PackageSummary::historyVersion.name] as Set<String>
     )
 
     /**
@@ -244,7 +246,8 @@ class PackageIterator(
             PackageSummary::repoName.name,
             PackageSummary::key.name,
             PackageSummary::name.name,
-            PackageSummary::latest.name
+            PackageSummary::latest.name,
+            PackageSummary::historyVersion.name
         )
     }
 
@@ -254,6 +257,7 @@ class PackageIterator(
         val artifactName: String,
         val packageKey: String,
         val latestVersion: String,
+        val historyVersion: Set<String>,
         var packageVersion: String? = null,
         var fullPath: String? = null
     )
