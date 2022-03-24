@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.utils
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_HIGH
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_LOW
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_MID
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
@@ -56,9 +58,12 @@ import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
@@ -115,7 +120,7 @@ object Converter {
                 description = description,
                 scanOnNewArtifact = scanOnNewArtifact,
                 repoNames = repoNames,
-                rule = rule?.readJsonString(),
+                rule = rule.readJsonString(),
                 createdBy = createdBy,
                 createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
@@ -147,8 +152,13 @@ object Converter {
         }
     }
 
-    fun convert(scanPlanRequest: UpdateScanPlanRequest): ScanPlan {
+    fun convert(scanPlanRequest: UpdateScanPlanRequest, curRepoNames: List<String>, curRule: Rule): ScanPlan {
         return with(scanPlanRequest) {
+            val rule = if (repoNameList?.isEmpty() == true && artifactRules?.isEmpty() == true) {
+                null
+            } else {
+                convert(projectId!!, repoNameList ?: curRepoNames, artifactRules ?: convert(curRule))
+            }
             ScanPlan(
                 id = id,
                 projectId = projectId,
@@ -156,7 +166,7 @@ object Converter {
                 description = description,
                 scanOnNewArtifact = autoScan,
                 repoNames = repoNameList,
-                rule = artifactRules?.let { convert(it) }
+                rule = rule
             )
         }
     }
@@ -171,7 +181,7 @@ object Converter {
                 description = description,
                 scanOnNewArtifact = autoScan,
                 repoNames = repoNameList,
-                rule = convert(artifactRules)
+                rule = convert(projectId, repoNameList, artifactRules)
             )
         }
     }
@@ -300,6 +310,25 @@ object Converter {
         return Pages.ofResponse(pageRequest, 0L, emptyList())
     }
 
+    fun convert(request: BatchScanRequest): ScanRequest {
+        with(request) {
+            val rule = if (repoNames.isEmpty() && artifactRules.isEmpty()) {
+                null
+            } else {
+                convert(projectId, repoNames, artifactRules)
+            }
+            return ScanRequest(null, request.planId, rule)
+        }
+    }
+
+    fun convert(triggerType: String): ScanTriggerType {
+        return when (triggerType) {
+            "MANUAL" -> ScanTriggerType.MANUAL
+            "AUTOM" -> ScanTriggerType.ON_NEW_ARTIFACT
+            else -> throw SystemErrorException()
+        }
+    }
+
     private fun highestLeakLevel(overview: Map<String, Number>): String {
         return if (overview.keys.contains(LEVEL_CRITICAL)) {
             LEVEL_CRITICAL
@@ -355,36 +384,64 @@ object Converter {
         return 0L
     }
 
-    private fun convert(rule: Rule): List<ArtifactRule> {
-        if (rule is NestedRule && rule.relation == NestedRule.RelationType.OR) {
-            return rule.rules.map { artifactRule(it) }
-        } else if (rule is NestedRule && rule.relation == NestedRule.RelationType.AND || rule is Rule.QueryRule) {
-            return listOf(artifactRule(rule))
-        }
+    private fun convert(projectId: String, repoNames: List<String>, rules: List<ArtifactRule>): Rule {
+        val rule = addProjectIdAdnRepoRule(null, projectId, repoNames)
 
-        throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, rule)
-    }
-
-    private fun convert(rules: List<ArtifactRule>): Rule? {
         if (rules.isEmpty()) {
-            return null
+            return rule
+        } else if (rules.size == 1) {
+            val nameAndVersionRule = rule(rules[0])
+            if (nameAndVersionRule is NestedRule) {
+                rule.rules.addAll(nameAndVersionRule.rules)
+            } else {
+                rule.rules.add(nameAndVersionRule)
+            }
+        } else {
+            rules
+                .asSequence()
+                .filter { it.versionRule != null || it.nameRule != null }
+                .map { artifactRule -> rule(artifactRule) }
+                .let { rule.rules.add(NestedRule(it.toMutableList(), NestedRule.RelationType.OR)) }
         }
 
-        if (rules.size == 1) {
-            return rule(rules[0])
-        }
-
-        return rules
-            .asSequence()
-            .filter { it.versionRule != null || it.nameRule != null }
-            .map { rule -> rule(rule) }
-            .run { NestedRule(this.toMutableList(), NestedRule.RelationType.OR) }
+        return rule
     }
 
     private fun rule(artifactRule: ArtifactRule): Rule {
         val nameRule = artifactRule.nameRule?.let { convertRule(RuleArtifact::name.name, it) }
         val versionRule = artifactRule.versionRule?.let { convertRule(RuleArtifact::version.name, it) }
         return rule(nameRule, versionRule)
+    }
+
+    private fun convertRule(field: String, rule: com.tencent.bkrepo.scanner.pojo.rule.Rule): Rule.QueryRule {
+        return Rule.QueryRule(field, rule.value, convertRuleType(rule.type))
+    }
+
+    private fun convertRuleType(type: RuleType): OperationType {
+        return when (type) {
+            RuleType.EQ -> OperationType.EQ
+            RuleType.IN -> OperationType.IN
+            RuleType.REGEX -> OperationType.MATCH
+        }
+    }
+
+    /**
+     * 添加projectId和repoName规则
+     */
+    private fun addProjectIdAdnRepoRule(rule: Rule?, projectId: String, repoNames: List<String>): NestedRule {
+        val rules = mutableListOf<Rule>(
+            Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
+        )
+        if (repoNames.isNotEmpty()) {
+            rules.add(Rule.QueryRule(NodeDetail::repoName.name, repoNames, OperationType.IN))
+        }
+        if (rule is NestedRule && rule.relation == NestedRule.RelationType.AND) {
+            rule.rules.addAll(rules)
+            return rule
+        }
+
+        rule?.let { rules.add(it) }
+        return NestedRule(rules, NestedRule.RelationType.AND)
     }
 
     private fun rule(nameRule: Rule?, versionRule: Rule?): Rule {
@@ -398,6 +455,51 @@ object Converter {
         }
 
         return NestedRule(mutableListOf(nameRule, versionRule), NestedRule.RelationType.AND)
+    }
+
+    private fun convert(rule: Rule): List<ArtifactRule> {
+        require(rule is NestedRule)
+
+        rule.rules.forEach { innerRule ->
+            val isArtifactRule = isArtifactRule(innerRule)
+
+            if (isArtifactRule && innerRule is Rule.QueryRule) {
+                return listOf(artifactRule(innerRule))
+            }
+
+            if (isArtifactRule && innerRule is NestedRule && innerRule.relation == NestedRule.RelationType.AND) {
+                return listOf(artifactRule(innerRule))
+            }
+
+            if (isArtifactRule && innerRule is NestedRule && innerRule.relation == NestedRule.RelationType.OR) {
+                return innerRule.rules.map { artifactRule(it) }
+            }
+        }
+
+        return emptyList()
+    }
+
+    private fun isArtifactRule(rule: Rule): Boolean {
+        with(rule) {
+            // 只存在一个artifactRule，version和name只存在一种
+            if (this is Rule.QueryRule) {
+                return field == RuleArtifact::name.name || field == RuleArtifact::version.name
+            }
+
+            // 只存在一个artifactRule，version和name两种rule都存在
+            if (this is NestedRule && this.relation == NestedRule.RelationType.AND) {
+                val artifactRule = artifactRule(this)
+                return artifactRule.nameRule != null && artifactRule.versionRule != null
+            }
+
+            // 存在多个artifactRule的情况
+            if (this is NestedRule && this.relation == NestedRule.RelationType.OR) {
+                val artifactRule = artifactRule(this.rules.first())
+                return artifactRule.nameRule != null || artifactRule.versionRule != null
+            }
+
+            return false
+        }
     }
 
     private fun artifactRule(rule: Rule): ArtifactRule {
@@ -430,18 +532,6 @@ object Converter {
             convertRuleOperationType(rule.operation),
             rule.value.toString()
         )
-    }
-
-    private fun convertRule(field: String, rule: com.tencent.bkrepo.scanner.pojo.rule.Rule): Rule.QueryRule {
-        return Rule.QueryRule(field, rule.value, convertRuleType(rule.type))
-    }
-
-    private fun convertRuleType(type: RuleType): OperationType {
-        return when (type) {
-            RuleType.EQ -> OperationType.EQ
-            RuleType.IN -> OperationType.IN
-            RuleType.REGEX -> OperationType.MATCH
-        }
     }
 
     private fun convertRuleOperationType(type: OperationType): RuleType {

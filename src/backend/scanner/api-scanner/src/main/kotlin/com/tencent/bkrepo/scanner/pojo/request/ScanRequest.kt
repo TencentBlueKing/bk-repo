@@ -34,7 +34,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("扫描请求")
 data class ScanRequest(
     @ApiModelProperty("扫描器名")
-    val scanner: String,
+    val scanner: String? = null,
+    @ApiModelProperty("扫描方案名")
+    val planId: String? = null,
     @ApiModelProperty("扫描文件匹配规则")
     val rule: Rule? = null
 )

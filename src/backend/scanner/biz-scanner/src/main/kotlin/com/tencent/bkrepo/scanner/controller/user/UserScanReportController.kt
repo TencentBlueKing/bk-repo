@@ -82,6 +82,7 @@ class UserScanReportController(private val scanService: ScanService) {
 
     @ApiOperation("制品详情--漏洞数据")
     @GetMapping("/artifact/leak/{projectId}/{subScanTaskId}")
+    @Principal(PrincipalType.ADMIN)
     @Deprecated("切换为使用artifactReports接口", ReplaceWith("artifactReports"))
     fun artifactLeak(
         @ApiParam(value = "projectId") @PathVariable projectId: String,

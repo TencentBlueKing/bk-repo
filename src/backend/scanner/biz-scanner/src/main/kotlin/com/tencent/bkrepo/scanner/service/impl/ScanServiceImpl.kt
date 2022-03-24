@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
@@ -83,6 +84,7 @@ class ScanServiceImpl @Autowired constructor(
     private val repositoryClient: RepositoryClient,
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
+    private val scanPlanDao: ScanPlanDao,
     private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
@@ -98,9 +100,11 @@ class ScanServiceImpl @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask {
-        val userId = SecurityUtils.getUserId()
         with(scanRequest) {
-            val scanner = scannerService.get(scanner)
+            require(planId != null || scanner != null)
+            val userId = SecurityUtils.getUserId()
+            val plan = planId?.let { scanPlanDao.get(it) }
+            val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
                 TScanTask(
@@ -108,8 +112,9 @@ class ScanServiceImpl @Autowired constructor(
                     createdDate = now,
                     lastModifiedBy = userId,
                     lastModifiedDate = now,
-                    rule = rule?.toJsonString(),
+                    rule = (rule ?: plan?.rule)?.toJsonString(),
                     triggerType = triggerType.name,
+                    planId = plan?.id,
                     status = ScanTaskStatus.PENDING.name,
                     total = 0L,
                     scanning = 0L,
@@ -120,7 +125,7 @@ class ScanServiceImpl @Autowired constructor(
                     scannerVersion = scanner.version,
                     scanResultOverview = null
                 )
-            ).run { Converter.convert(this) }
+            ).run { Converter.convert(this, plan) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(scanTask)
             logger.info("create scan task[${scanTask.taskId}] success")
@@ -129,8 +134,9 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     override fun task(taskId: String): ScanTask {
-        return scanTaskDao.findById(taskId)?.let {
-            Converter.convert(it)
+        return scanTaskDao.findById(taskId)?.let { task ->
+            val plan = task.planId?.let { scanPlanDao.get(it) }
+            Converter.convert(task, plan)
         } ?: throw ScanTaskNotFoundException(taskId)
     }
 
@@ -144,7 +150,17 @@ class ScanServiceImpl @Autowired constructor(
         val query = Query(criteria)
         val count = scanTaskDao.count(query)
         query.with(Pages.ofRequest(pageLimit.pageNumber, pageLimit.pageSize))
-        val scanTasks = scanTaskDao.find(query).map { Converter.convert(it) }
+        val tScanTasks = scanTaskDao.find(query)
+        val planIds = tScanTasks.filter { it.planId != null }.map { it.planId!! }
+        val tPlans = if (planIds.isEmpty()) {
+            emptyMap()
+        } else {
+            scanPlanDao.findByIds(planIds).associateBy { it.id!! }
+        }
+        val scanTasks = tScanTasks.map { task ->
+            val tPlan = task.planId?.let { tPlans[it] }
+            Converter.convert(task, tPlan)
+        }
         return Page(pageLimit.pageNumber, pageLimit.pageSize, count, scanTasks)
     }
 
@@ -272,7 +288,8 @@ class ScanServiceImpl @Autowired constructor(
         val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
         if (task != null && scanTaskDao.resetTask(task.id!!, task.lastModifiedDate).modifiedCount == 1L) {
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
-            scanTaskScheduler.schedule(Converter.convert(task))
+            val plan = task.planId?.let { scanPlanDao.get(it) }
+            scanTaskScheduler.schedule(Converter.convert(task, plan))
         }
     }
 

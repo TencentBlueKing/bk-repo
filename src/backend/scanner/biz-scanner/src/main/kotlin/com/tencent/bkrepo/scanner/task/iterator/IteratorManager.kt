@@ -55,7 +55,9 @@ class IteratorManager(
      * @param resume 是否从之前的扫描进度恢复
      */
     fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
-        val rule = scanTask.scanPlan?.let { fromScanPlan(it) } ?: scanTask.rule
+        val rule = scanTask.scanPlan
+            ?.let { fromScanPlan(it, scanTask.rule) }
+            ?: scanTask.rule
 
         // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
         require(rule is Rule.NestedRule)
@@ -70,40 +72,23 @@ class IteratorManager(
         }
     }
 
-    private fun fromScanPlan(scanPlan: ScanPlan): Rule {
-        var rule = addProjectIdAdnRepoRule(scanPlan.rule, scanPlan.projectId!!, scanPlan.repoNames!!)
+    private fun fromScanPlan(scanPlan: ScanPlan, customRule: Rule?): Rule {
+        val rule = customRule ?: scanPlan.rule!!
         if (scanPlan.type == PlanType.MOBILE.name) {
-            rule = addMobilePackageRule(rule)
+            return addMobilePackageRule(rule)
         }
         return rule
     }
 
     /**
-     * 添加projectId和repoName规则
-     */
-    private fun addProjectIdAdnRepoRule(rule: Rule?, projectId: String, repoNames: List<String>): Rule {
-        val rules = mutableListOf<Rule>(
-            Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
-        )
-        if (repoNames.isNotEmpty()) {
-            rules.add(Rule.QueryRule(NodeDetail::repoName.name, repoNames, OperationType.IN))
-        }
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            rule.rules.addAll(rules)
-            return rule
-        }
-
-        rule?.let { rules.add(it) }
-        return Rule.NestedRule(rules, Rule.NestedRule.RelationType.AND)
-    }
-
-    /**
-     * 添加ipa和apk文件过滤规则
+     * 添加ipa和apk文件过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
      */
     private fun addMobilePackageRule(rule: Rule): Rule {
         val mobilePackageRule = Rule.NestedRule(
             mutableListOf(
                 Rule.QueryRule(NodeDetail::fullPath.name, ".apk", OperationType.SUFFIX),
+                Rule.QueryRule(NodeDetail::fullPath.name, ".apks", OperationType.SUFFIX),
+                Rule.QueryRule(NodeDetail::fullPath.name, ".aab", OperationType.SUFFIX),
                 Rule.QueryRule(NodeDetail::fullPath.name, ".ipa", OperationType.SUFFIX)
             ),
             Rule.NestedRule.RelationType.OR

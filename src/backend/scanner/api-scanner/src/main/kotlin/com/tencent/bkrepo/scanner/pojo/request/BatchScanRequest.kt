@@ -25,69 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.model
+package com.tencent.bkrepo.scanner.pojo.request
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.fasterxml.jackson.annotation.JsonAlias
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-/**
- * 扫描方案
- */
-@Document("scan_plan")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "unique_index",
-        def = "{'projectId': 1, 'name': 1, 'type': 1, 'deleted': 1}",
-        unique = true, background = true
-    )
-)
-data class TScanPlan(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-    val deleted: LocalDateTime? = null,
-
-    /**
-     * 扫描方案名
-     */
-    val name: String,
-
-    /**
-     * 扫描方案所属项目
-     */
+@ApiModel("方案批量扫描请求")
+data class BatchScanRequest(
+    @ApiModelProperty("项目ID")
     val projectId: String,
-
+    @ApiModelProperty("方案ID")
+    @JsonAlias("id")
+    val planId: String,
+    @ApiModelProperty("触发方式")
+    @JsonAlias("triggerMethod")
+    val triggerType: String = ScanTriggerType.MANUAL.name,
     /**
-     * 自动扫描仓库
+     * 指定扫描的仓库列表，未指定时使用扫描方案指定的仓库，都不存在时扫描全部仓库
      */
+    @ApiModelProperty("仓库名")
+    @JsonAlias("repoNameList")
     val repoNames: List<String> = emptyList(),
-
     /**
-     * 使用的扫描器名
+     * 指定扫描的制品名字与制品版本规则，未指定时使用扫描方案指定的规则，都不存在时扫描全部文件
      */
-    val scanner: String,
-
-    /**
-     * 扫描方案类型
-     */
-    val type: String,
-
-    /**
-     * 扫描方案描述
-     */
-    val description: String,
-
-    /**
-     * 有满足规则的制品上传时触发扫描
-     */
-    val scanOnNewArtifact: Boolean = false,
-
-    /**
-     * 自动扫描规则
-     */
-    val rule: String
+    @ApiModelProperty("制品规则")
+    val artifactRules: List<ArtifactRule> = emptyList()
 )

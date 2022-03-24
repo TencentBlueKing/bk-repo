@@ -35,9 +35,11 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.service.ScanService
+import com.tencent.bkrepo.scanner.utils.Converter
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -62,6 +64,14 @@ class UserScanController @Autowired constructor(
         return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL))
     }
 
+    @ApiOperation("批量扫描")
+    @PostMapping("/batch")
+    @Principal(PrincipalType.ADMIN)
+    fun batchScan(@RequestBody request: BatchScanRequest): Response<Boolean> {
+        scanService.scan(Converter.convert(request), Converter.convert(request.triggerType))
+        return ResponseBuilder.success(true)
+    }
+
     @ApiOperation("获取扫描任务信息")
     @GetMapping("/tasks/{taskId}")
     @Principal(PrincipalType.ADMIN)
@@ -69,12 +79,10 @@ class UserScanController @Autowired constructor(
         return ResponseBuilder.success(scanService.task(taskId))
     }
 
-
     @ApiOperation("分页获取扫描任务信息")
     @GetMapping("/tasks")
     @Principal(PrincipalType.ADMIN)
     fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Response<Page<ScanTask>> {
         return ResponseBuilder.success(scanService.tasks(scanTaskQuery, pageLimit))
     }
-
 }

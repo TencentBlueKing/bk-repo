@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -50,6 +51,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
@@ -93,7 +95,7 @@ class ScanPlanServiceImpl(
                 scanner = scanner!!,
                 scanOnNewArtifact = scanOnNewArtifact ?: false,
                 repoNames = repoNames ?: emptyList(),
-                rule = rule?.toJsonString(),
+                rule = rule!!.toJsonString(),
                 createdBy = operator,
                 createdDate = now,
                 lastModifiedBy = operator,
@@ -140,19 +142,18 @@ class ScanPlanServiceImpl(
         scanPlanDao.delete(projectId, id)
     }
 
-    override fun update(request: ScanPlan): ScanPlan {
+    override fun update(request: UpdateScanPlanRequest): ScanPlan {
         val operator = SecurityUtils.getUserId()
         logger.info("userId:$operator, updateScanPlan:[${request.id}]")
         with(request) {
             if (id.isNullOrEmpty()) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "planId is empty")
             }
-            if (!scanPlanDao.exists(projectId!!, id!!)) {
-                throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, request.toString())
-            }
+            val plan = scanPlanDao.find(projectId!!, id!!)
+                ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, request.toString())
 //            checkRunning(id!!)
 
-            scanPlanDao.update(request)
+            scanPlanDao.update(Converter.convert(request, plan.repoNames, plan.rule.readJsonString()))
             return scanPlanDao.findById(request.id!!)!!.let { Converter.convert(it) }
         }
     }
