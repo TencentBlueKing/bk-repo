@@ -29,15 +29,19 @@ package com.tencent.bkrepo.scanner.utils
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Rule.NestedRule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_CRITICAL
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_HIGH
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_LOW
@@ -57,12 +61,14 @@ import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.pojo.rule.RuleType
+import org.springframework.data.domain.PageRequest
 import java.time.Duration
 import java.time.format.DateTimeFormatter
 
@@ -266,6 +272,32 @@ object Converter {
                 ?: ScanStatus.valueOf(curStatus)
         }
         return maxStatus!!.name
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun convert(
+        detailReport: Any?,
+        scannerType: String,
+        reportType: String,
+        pageLimit: PageLimit
+    ): Page<ArtifactVulnerabilityInfo> {
+        val pageRequest = PageRequest.of(pageLimit.pageNumber, pageLimit.pageSize)
+        if (scannerType == BinAuditorScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
+            detailReport as Page<CveSecItem>
+            val reports = detailReport.records.map {
+                // TODO 添加漏洞详情
+                ArtifactVulnerabilityInfo(
+                    cveId = it.cveId,
+                    severity = it.level!!,
+                    pkgName = it.component,
+                    installedVersion = it.version,
+                    title = it.name,
+                    vulnerabilityName = it.name
+                )
+            }
+            return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)
+        }
+        return Pages.ofResponse(pageRequest, 0L, emptyList())
     }
 
     private fun highestLeakLevel(overview: Map<String, Number>): String {

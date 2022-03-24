@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.scanner.service.impl
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -49,11 +51,13 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
@@ -247,7 +251,7 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     // TODO 添加消息队列后开启定时任务
-    //@Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    // @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun enqueueTimeoutSubTask() {
         val subtask = pullSubScanTask() ?: return
         val enqueued = scanTaskScheduler.schedule(Converter.convert(subtask, scannerService.get(subtask.scanner)))
@@ -342,6 +346,18 @@ class ScanServiceImpl @Autowired constructor(
                 SubScanTaskStatus.SUCCESS.name
             }
             return FileScanResultDetail(status, node.sha256!!, scanResultDetail, reportType)
+        }
+    }
+
+    override fun resultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo> {
+        with(request) {
+            val subtask = finishedSubScanTaskDao.findById(subScanTaskId!!)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+            val pageLimit = PageLimit(pageNumber, pageSize)
+            val detailReport = scanExecutorResultManagers[subtask.scannerType]?.load(
+                subtask.credentialsKey, subtask.sha256, subtask.scanner, reportType, pageLimit
+            )
+            return Converter.convert(detailReport, subtask.scannerType, reportType, pageLimit)
         }
     }
 
