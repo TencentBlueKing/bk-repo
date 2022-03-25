@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
-import com.tencent.bkrepo.maven.exception.MavenArtifactNotFoundException
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.service.MavenService
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -50,11 +49,11 @@ import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import java.util.regex.PatternSyntaxException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.util.regex.PatternSyntaxException
 
 @Service
 class MavenServiceImpl(
@@ -87,11 +86,16 @@ class MavenServiceImpl(
         // 为了兼容jfrog，当查询到目录时，会展示当前目录下所有子项，而不是直接报错
         with(mavenArtifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw MavenArtifactNotFoundException("Artifact ${getArtifactFullPath()} could not find..")
             val download = HttpContextHolder.getRequest().getParameter(PARAM_DOWNLOAD)?.toBoolean() ?: false
-            if (node.folder && !download) {
-                logger.info("The folder: ${getArtifactFullPath()} will be displayed...")
-                renderListView(node, this)
+            if (node != null) {
+                if (node.folder && !download) {
+                    logger.info("The folder: ${getArtifactFullPath()} will be displayed...")
+                    renderListView(node, this)
+                } else {
+                    logger.info("The dependency file: ${getArtifactFullPath()} will be downloaded... ")
+                    val context = ArtifactDownloadContext()
+                    ArtifactContextHolder.getRepository().download(context)
+                }
             } else {
                 logger.info("The dependency file: ${getArtifactFullPath()} will be downloaded... ")
                 val context = ArtifactDownloadContext()

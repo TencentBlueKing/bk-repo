@@ -61,4 +61,17 @@ object MavenGAVCUtils {
             classifier = mavenVersion.classifier
         )
     }
+
+    fun String.toMavenGAVC(): MavenGAVC {
+        val paths = this.trim('/').split("/")
+        val jarName = paths.last()
+        val maven = this.mavenGAVC()
+        val mavenVersion = jarName.resolverName(maven.artifactId, maven.version)
+        return MavenGAVC(
+            groupId = maven.groupId,
+            artifactId = maven.artifactId,
+            version = maven.version,
+            classifier = mavenVersion.classifier
+        )
+    }
 }
