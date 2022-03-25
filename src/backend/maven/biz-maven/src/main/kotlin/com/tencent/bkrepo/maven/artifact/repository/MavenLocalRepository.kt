@@ -92,6 +92,12 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.regex.Pattern
 import org.apache.commons.lang.StringUtils
 import org.apache.maven.artifact.repository.metadata.Snapshot
 import org.apache.maven.artifact.repository.metadata.SnapshotVersion
@@ -103,12 +109,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
 
 @Component
 class MavenLocalRepository(
@@ -518,7 +518,6 @@ class MavenLocalRepository(
         }
     }
 
-
     /**
      * 生成对应checksum文件
      */
@@ -674,17 +673,7 @@ class MavenLocalRepository(
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val fullPath = artifactInfo.getArtifactFullPath()
-            val checksumType = checksumType(fullPath)
-            var node = nodeClient.getNodeDetail(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath
-            ).data
-            if (checksumType != null && node == null) {
-                verifyPath(context, fullPath.removeSuffix(".${checksumType.ext}"), checksumType)
-            }
-            node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = getNodeInfoForDownload(context)
             node?.metadata?.get(HashType.SHA1.ext)?.let {
                 response.addHeader(X_CHECKSUM_SHA1, it.toString())
             }
@@ -692,6 +681,167 @@ class MavenLocalRepository(
             val responseName = artifactInfo.getResponseName()
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
+    }
+
+    /**
+     * 针对两种路径获取对应节点信息
+     */
+    private fun getNodeInfoForDownload(context: ArtifactDownloadContext): NodeDetail? {
+        with(context) {
+            var fullPath = artifactInfo.getArtifactFullPath()
+            val checksumType = checksumType(fullPath)
+            logger.info("Will download node $fullPath in repo ${artifactInfo.getRepoIdentify()}")
+            // 针对正常路径
+            var node = findNode(context, fullPath, checksumType)
+            if (node != null) return node
+            // 剔除文件夹路径
+            if (checksumType == null) {
+                if (!fullPath.matches(Regex(PACKAGE_SUFFIX_REGEX))) {
+                    throw MavenArtifactNotFoundException("Artifact $fullPath could not find..")
+                }
+            }
+            val mavenArtifactInfo = context.artifactInfo as MavenArtifactInfo
+            try {
+                mavenArtifactInfo.isSnapshot()
+            } catch (e: Exception) {
+                val maven = if (checksumType != null) {
+                    fullPath.removeSuffix(".${checksumType.ext}").toMavenGAVC()
+                } else {
+                    fullPath.toMavenGAVC()
+                }
+                mavenArtifactInfo.artifactId = maven.artifactId
+                mavenArtifactInfo.versionId = maven.version
+                mavenArtifactInfo.groupId = maven.groupId
+            }
+            if (isUniqueAndSnapshot(context, mavenArtifactInfo)) {
+                // 针对非正常路径: 获取后缀为-1.0.0-SNAPSHOT.jar， 实际存储后缀为-1.0.0-20190917.073536-2.jar
+                fullPath = urlConvert(context, checksumType, mavenArtifactInfo) ?: return null
+                logger.info(
+                    "Will download node ${artifactInfo.getArtifactFullPath()} " +
+                        "with the new path $fullPath in repo ${artifactInfo.getRepoIdentify()}"
+                )
+                node = findNode(context, fullPath, checksumType)
+            }
+            return node
+        }
+    }
+
+    /**
+     * 针对可能源文件存在，但是实际上对应checksum文件不存在需要处理
+     */
+    private fun findNode(
+        context: ArtifactDownloadContext,
+        fullPath: String,
+        checksumType: HashType? = null
+    ): NodeDetail? {
+        with(context) {
+            var node = nodeClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath
+            ).data
+            if (node != null || checksumType == null) {
+                return node
+            }
+            // 针对可能文件上传，但是对应checksum文件没有生成的情况
+            logger.info(
+                "Will try to get $fullPath after removing suffix ${checksumType.ext} " +
+                    "in ${artifactInfo.getRepoIdentify()}"
+            )
+            val temPath = fullPath.removeSuffix(".${checksumType.ext}")
+            node = nodeClient.getNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = temPath
+            ).data
+            // 源文件存在，但是对应checksum文件不存在，需要生成
+            if (node != null) {
+                verifyPath(context, temPath, checksumType)
+                node = nodeClient.getNodeDetail(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath
+                ).data
+            }
+            return node
+        }
+    }
+
+    /**
+     * 判断是否是snapshot并且仓库是UNIQUE
+     */
+    private fun isUniqueAndSnapshot(context: ArtifactDownloadContext, mavenArtifactInfo: MavenArtifactInfo): Boolean {
+        val mavenRepoConf = getRepoConf(context)
+        val snapshotFlag = mavenArtifactInfo.isSnapshot()
+        if (!snapshotFlag) {
+            return false
+        }
+        if (mavenRepoConf.mavenSnapshotVersionBehavior != SnapshotBehaviorType.UNIQUE) {
+            return false
+        }
+        return true
+    }
+
+    /**
+     * 针对unique仓库，snapshot版本，直接下载，导致路径不存在的问题特殊处理
+     * 源请求： jungle-udp-l5/1.0.0-SNAPSHOT/jungle-udp-l5-1.0.0-SNAPSHOT.jar
+     * 实际存储路径： jungle-udp-l5/1.0.0-SNAPSHOT/jungle-udp-l5-1.0.0-20190917.073536-2.jar
+     */
+    private fun urlConvert(
+        context: ArtifactDownloadContext,
+        checksumType: HashType? = null,
+        mavenArtifactInfo: MavenArtifactInfo
+    ): String? {
+        val fullPath = if (checksumType == null) {
+            mavenArtifactInfo.getArtifactFullPath()
+        } else {
+            mavenArtifactInfo.getArtifactFullPath().removeSuffix(".${checksumType.ext}")
+        }
+        val name = fullPath.split("/").last()
+        logger.info("The name of fullPath $fullPath is $name in repo ${context.artifactInfo.getRepoIdentify()}")
+        val path = getUniquePath(
+            fullPath = fullPath,
+            name = name,
+            mavenArtifactInfo = mavenArtifactInfo,
+            projectId = context.projectId,
+            repoName = context.repoName
+        ) ?: return null
+        return if (checksumType == null) {
+            path
+        } else {
+            path + ".${checksumType.ext}"
+        }
+    }
+
+    /**
+     * 将-1.0.0-SNAPSHOT.jar转换为1.0.0-20190917.073536-2.jar
+     */
+    private fun getUniquePath(
+        fullPath: String,
+        name: String,
+        mavenArtifactInfo: MavenArtifactInfo,
+        projectId: String,
+        repoName: String
+    ): String? {
+        val mavenVersion = name.resolverName(mavenArtifactInfo.artifactId, mavenArtifactInfo.versionId)
+        val list = mavenMetadataService.search(
+            MavenMetadataSearchPojo(
+                projectId = projectId,
+                repoName = repoName,
+                groupId = mavenArtifactInfo.groupId,
+                artifactId = mavenArtifactInfo.artifactId,
+                version = mavenArtifactInfo.versionId,
+                classifier = mavenVersion.classifier,
+                extension = mavenVersion.packaging
+            )
+        )
+        if (list.isNullOrEmpty()) return null
+        list[0].apply {
+            mavenVersion.timestamp = this.timestamp
+            mavenVersion.buildNo = this.buildNo
+        }
+        val uniqueName = mavenVersion.combineToUnique()
+        return fullPath.replace(name, uniqueName)
     }
 
     private fun createMavenVersion(context: ArtifactUploadContext, mavenGAVC: MavenGAVC, fullPath: String) {
@@ -894,7 +1044,6 @@ class MavenLocalRepository(
             metadataArtifactSha1.delete()
         }
     }
-
 
     override fun query(context: ArtifactQueryContext): MavenArtifactVersionData? {
         val packageKey = context.request.getParameter("packageKey")
