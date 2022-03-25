@@ -46,6 +46,7 @@ import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -67,6 +68,7 @@ import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
 import com.tencent.bkrepo.scanner.utils.Converter
 import com.tencent.bkrepo.scanner.utils.RuleMatcher
+import com.tencent.bkrepo.scanner.utils.Converter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.query.Criteria
