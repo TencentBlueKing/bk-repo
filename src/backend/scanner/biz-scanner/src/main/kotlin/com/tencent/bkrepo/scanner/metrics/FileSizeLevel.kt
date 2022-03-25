@@ -25,12 +25,51 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-redis"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-query:query-mongo"))
+package com.tencent.bkrepo.scanner.metrics
+
+import org.springframework.util.unit.DataSize
+import org.springframework.util.unit.DataUnit
+
+enum class FileSizeLevel(private val range: LongRange) {
+    MINI(
+        LongRange(
+            0L,
+            DataSize.of(100, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    SMALL(
+        LongRange(
+            MINI.range.last,
+            DataSize.of(200, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    NORMAL(
+        LongRange(
+            SMALL.range.last,
+            DataSize.of(300, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    LARGE(
+        LongRange(
+            NORMAL.range.last,
+            DataSize.of(500, DataUnit.MEGABYTES).toBytes()
+        )
+    ),
+    HUGE(
+        LongRange(
+            LARGE.range.last,
+            Long.MAX_VALUE
+        )
+    );
+
+    companion object {
+        fun fromSize(size: Long): FileSizeLevel {
+            values().forEach {
+                if (size in it.range) {
+                    return it
+                }
+            }
+            return HUGE
+        }
+    }
 }

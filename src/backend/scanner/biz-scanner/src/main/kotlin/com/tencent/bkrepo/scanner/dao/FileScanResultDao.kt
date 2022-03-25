@@ -78,7 +78,7 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
             .where(TFileScanResult::credentialsKey.name).isEqualTo(credentialsKey)
             .and(TFileScanResult::sha256.name).isEqualTo(sha256)
             .and(scannerResultKey).exists(true)
-            .and("$scannerResultKey.${TScanResult::scannerVersion}").isEqualTo(scannerVersion)
+            .and("$scannerResultKey.${TScanResult::scannerVersion.name}").isEqualTo(scannerVersion)
         return exists(Query(criteria))
     }
 
