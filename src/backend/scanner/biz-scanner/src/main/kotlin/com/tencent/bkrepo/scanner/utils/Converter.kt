@@ -25,6 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.tencent.bkrepo.scanner.utils
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -49,6 +51,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_LOW
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_MID
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
@@ -64,6 +67,7 @@ import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
@@ -329,6 +333,23 @@ object Converter {
         }
     }
 
+    fun convert(request: SingleScanRequest): ScanRequest {
+        with(request) {
+            require(fullPath != null || packageKey != null && version != null)
+
+            // 创建rule
+            val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
+            if (fullPath != null) {
+                rule.rules.add(Rule.QueryRule(NodeDetail::fullPath.name, fullPath!!, OperationType.EQ))
+            } else {
+                rule.rules.add(Rule.QueryRule(PackageSummary::key.name, packageKey!!, OperationType.EQ))
+                rule.rules.add(Rule.QueryRule(RuleArtifact::version.name, version!!, OperationType.EQ))
+            }
+
+            return ScanRequest(planId = planId, rule = rule)
+        }
+    }
+
     private fun highestLeakLevel(overview: Map<String, Number>): String {
         return if (overview.keys.contains(LEVEL_CRITICAL)) {
             LEVEL_CRITICAL
@@ -385,7 +406,7 @@ object Converter {
     }
 
     private fun convert(projectId: String, repoNames: List<String>, rules: List<ArtifactRule>): Rule {
-        val rule = addProjectIdAdnRepoRule(null, projectId, repoNames)
+        val rule = createProjectIdAdnRepoRule(projectId, repoNames)
 
         if (rules.isEmpty()) {
             return rule
@@ -428,19 +449,14 @@ object Converter {
     /**
      * 添加projectId和repoName规则
      */
-    private fun addProjectIdAdnRepoRule(rule: Rule?, projectId: String, repoNames: List<String>): NestedRule {
+    private fun createProjectIdAdnRepoRule(projectId: String, repoNames: List<String>): NestedRule {
         val rules = mutableListOf<Rule>(
             Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
         )
         if (repoNames.isNotEmpty()) {
             rules.add(Rule.QueryRule(NodeDetail::repoName.name, repoNames, OperationType.IN))
         }
-        if (rule is NestedRule && rule.relation == NestedRule.RelationType.AND) {
-            rule.rules.addAll(rules)
-            return rule
-        }
 
-        rule?.let { rules.add(it) }
         return NestedRule(rules, NestedRule.RelationType.AND)
     }
 

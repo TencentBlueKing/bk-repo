@@ -38,6 +38,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
+import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.utils.Converter
 import io.swagger.annotations.Api
@@ -69,6 +70,13 @@ class UserScanController @Autowired constructor(
     @Principal(PrincipalType.ADMIN)
     fun batchScan(@RequestBody request: BatchScanRequest): Response<Boolean> {
         scanService.scan(Converter.convert(request), Converter.convert(request.triggerType))
+        return ResponseBuilder.success(true)
+    }
+
+    @ApiOperation("单个制品扫描")
+    @PostMapping("/single")
+    fun singleScan(@RequestBody request: SingleScanRequest): Response<Boolean> {
+        scanService.scan(Converter.convert(request), ScanTriggerType.MANUAL)
         return ResponseBuilder.success(true)
     }
 
