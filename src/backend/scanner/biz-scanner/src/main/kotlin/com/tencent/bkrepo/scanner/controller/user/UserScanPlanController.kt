@@ -44,7 +44,7 @@ import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
-import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -66,7 +66,7 @@ class UserScanPlanController(
     @ApiOperation("创建扫描方案")
     @PostMapping("/create")
     fun createScanPlan(@RequestBody request: CreateScanPlanRequest): Response<Boolean> {
-        val scanPlan = Converter.convert(request)
+        val scanPlan = ScanPlanConverter.convert(request)
         scanPlanService.create(scanPlan)
         return ResponseBuilder.success(true)
     }
@@ -82,7 +82,7 @@ class UserScanPlanController(
         id: String
     ): Response<ScanPlanBase?> {
         return ResponseBuilder.success(
-            scanPlanService.find(projectId, id)?.let { Converter.convert(it) }
+            scanPlanService.find(projectId, id)?.let { ScanPlanConverter.convert(it) }
         )
     }
 
@@ -145,7 +145,7 @@ class UserScanPlanController(
         @RequestParam
         type: String?
     ): Response<List<ScanPlanBase>> {
-        return ResponseBuilder.success(scanPlanService.list(projectId, type).map { Converter.convert(it) })
+        return ResponseBuilder.success(scanPlanService.list(projectId, type).map { ScanPlanConverter.convert(it) })
     }
 
     @ApiOperation("方案详情-统计数据")
@@ -165,7 +165,7 @@ class UserScanPlanController(
     @ApiOperation("方案详情-制品信息")
     @GetMapping("/artifact")
     fun planArtifactList(planArtifactRequest: PlanArtifactRequest): Response<Page<PlanArtifactInfo>> {
-        return ResponseBuilder.success(scanPlanService.planArtifactPage(Converter.convert(planArtifactRequest)))
+        return ResponseBuilder.success(scanPlanService.planArtifactPage(ScanPlanConverter.convert(planArtifactRequest)))
     }
 
     @ApiOperation("文件/包关联的扫描方案列表")

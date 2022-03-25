@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.utils.Request
+import com.tencent.bkrepo.scanner.utils.RuleMatcher
 
 /**
  * 依赖包迭代器
@@ -60,6 +61,7 @@ class PackageIterator(
      * 请求package数据
      */
     private fun requestPackage(page: Int, pageSize: Int): List<Package> {
+        // 拉取待扫描的package
         val packageQueryModel = QueryModel(
             PageLimit(page, pageSize), null, packageSelect, packageSummaryRule(position.rule)
         )
@@ -68,10 +70,16 @@ class PackageIterator(
         return if (records.isEmpty()) {
             emptyList()
         } else {
-            val packageNameToVersionMap = packageNameToVersions(position.rule)
+            val packageNameToVersionMap = RuleMatcher.packageNameToVersions(position.rule)
             records.flatMap {
                 val pkg = parse(it)
-                val versions = packageNameToVersionMap[pkg.artifactName] ?: pkg.historyVersion
+                // 获取rule中指定的版本
+                var versions: Collection<String>? =
+                    packageNameToVersionMap[pkg.artifactName] ?: packageNameToVersionMap[null]
+                // rule中未指定版本时扫描所有版本
+                if (versions == null || versions.isEmpty()) {
+                    versions = pkg.historyVersion
+                }
                 versions.map { version -> populatePackage(pkg.copy(packageVersion = version)) }
             }
         }
@@ -153,40 +161,6 @@ class PackageIterator(
         }
 
         return Rule.NestedRule(rules, Rule.NestedRule.RelationType.OR)
-    }
-
-    /**
-     * 从[rule]中解析出packageName对应的要查询的所有版本
-     */
-    private fun packageNameToVersions(rule: Rule): Map<String, MutableList<String>> {
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            val map = HashMap<String, MutableList<String>>()
-            // 获取nameRule
-            val nameRule = rule.rules.firstOrNull {
-                it is Rule.QueryRule && it.field == RuleArtifact::name.name
-            } as Rule.QueryRule?
-
-            // 获取versionRule
-            val versionRule = rule.rules.firstOrNull {
-                it is Rule.QueryRule && it.field == RuleArtifact::version.name
-            } as Rule.QueryRule?
-
-            // nameRule和versionRule都存在的时候不包含其他rule
-            if (nameRule != null && versionRule != null) {
-                map.getOrPut(nameRule.value.toString()) { ArrayList() }.add(versionRule.value.toString())
-            } else {
-                rule.rules.map { packageNameToVersions(it) }.forEach { map.putAll(it) }
-            }
-            return map
-        }
-
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.OR) {
-            val map = HashMap<String, MutableList<String>>()
-            rule.rules.forEach { map.putAll(packageNameToVersions(it)) }
-            return map
-        }
-
-        return emptyMap()
     }
 
     /**
