@@ -168,45 +168,48 @@ class ScanPlanServiceImpl(
     }
 
     override fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo> {
-        val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
+        with(request) {
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
 
-        // 获取扫描方案最新一次扫描任务
-        val scanTask = request.parentScanTaskId?.let { scanTaskDao.findById(it) }
-            ?: scanTaskDao.latestTask(request.planId)
-            ?: return Pages.ofResponse(pageRequest, 0L, emptyList())
-        request.parentScanTaskId = scanTask.id
+            // 获取扫描方案最新一次扫描任务
+            val scanTask = parentScanTaskId?.let { scanTaskDao.findById(it) }
+                ?: scanTaskDao.latestTask(planId)
+                ?: return Pages.ofResponse(pageRequest, 0L, emptyList())
+            parentScanTaskId = scanTask.id
 
-        // 获取最高级别漏洞对应的扫描结果预览key
-        val vulnerabilityOverviewKey = request.highestLeakLevel?.let {
-            vulnerabilityOverviewKey(it, scanTask.scannerType)
+            // 获取最高级别漏洞对应的扫描结果预览key
+            val vulnerabilityOverviewKey = highestLeakLevel?.let {
+                vulnerabilityOverviewKey(it, scanTask.scannerType)
+            }
+
+            // 查询已结束的子任务
+            val containsFinishedStatus = subScanTaskStatus.isNullOrEmpty()
+                || subScanTaskStatus!!.firstOrNull { SubScanTaskStatus.finishedStatus(it) } != null
+            val finishedSubScanTasks = if (containsFinishedStatus) {
+                finishedSubScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
+            } else {
+                null
+            }
+
+            // 查询执行中的子任务
+            val containsUnfinishedStatus = subScanTaskStatus.isNullOrEmpty()
+                || subScanTaskStatus?.firstOrNull { !SubScanTaskStatus.finishedStatus(it) } != null
+            val unfinishedSubScanTasks = if (containsUnfinishedStatus) {
+                subScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
+            } else {
+                null
+            }
+
+            // 合并结果返回
+            val totalRecords = (finishedSubScanTasks?.totalRecords ?: 0L) + (unfinishedSubScanTasks?.totalRecords ?: 0L)
+            val subTasks = (finishedSubScanTasks?.records ?: emptyList()) + (unfinishedSubScanTasks?.records
+                ?: emptyList())
+            return Pages.ofResponse(
+                pageRequest,
+                totalRecords,
+                subTasks.map { ScanPlanConverter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
+            )
         }
-
-        // 查询已结束的子任务
-        val containsFinishedStatus =
-            request.subScanTaskStatus?.firstOrNull { SubScanTaskStatus.finishedStatus(it) } != null
-        val finishedSubScanTasks = if (containsFinishedStatus) {
-            finishedSubScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
-        } else {
-            null
-        }
-
-        // 查询执行中的子任务
-        val containsUnfinishedStatus =
-            request.subScanTaskStatus?.firstOrNull { !SubScanTaskStatus.finishedStatus(it) } != null
-        val unfinishedSubScanTasks = if (containsUnfinishedStatus) {
-            subScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
-        } else {
-            null
-        }
-
-        // 合并结果返回
-        val totalRecords = (finishedSubScanTasks?.totalRecords ?: 0L) + (unfinishedSubScanTasks?.totalRecords ?: 0L)
-        val subTasks = (finishedSubScanTasks?.records ?: emptyList()) + (unfinishedSubScanTasks?.records ?: emptyList())
-        return Pages.ofResponse(
-            pageRequest,
-            totalRecords,
-            subTasks.map { ScanPlanConverter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
-        )
     }
 
     override fun artifactPlanList(request: ArtifactPlanRelationRequest): List<ArtifactPlanRelation> {

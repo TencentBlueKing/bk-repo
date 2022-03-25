@@ -133,6 +133,6 @@ class SubScanTaskDao : AbsSubScanTaskDao<TSubScanTask>() {
     }
 
     class ArtifactPlanRelationAggregateResult(
-        subScanTasks: List<TSubScanTask>
-    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TSubScanTask>(subScanTasks)
+        artifactSubScanTasks: List<TSubScanTask>
+    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TSubScanTask>(artifactSubScanTasks)
 }

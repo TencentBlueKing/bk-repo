@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import com.tencent.bkrepo.scanner.utils.Converter
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -92,12 +93,7 @@ class TFinishedSubScanTask(
             overview: Map<String, Any?>,
             now: LocalDateTime = LocalDateTime.now()
         ) = with(task) {
-            val numberOverview = HashMap<String, Number>(overview.size)
-            overview.forEach {
-                if (it.value is Number) {
-                    numberOverview[it.key] = it.value as Number
-                }
-            }
+            val numberOverview = Converter.convert(overview)
             TFinishedSubScanTask(
                 id = id,
                 createdDate = createdDate,

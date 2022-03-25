@@ -49,7 +49,7 @@ import java.time.LocalDateTime
     )
 )
 open class SubScanTaskDefinition(
-    val id: String? = null,
+    var id: String? = null,
     val createdDate: LocalDateTime,
     val lastModifiedDate: LocalDateTime,
     /**

@@ -115,11 +115,15 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         taskId: String,
         count: Int,
         scanResultOverview: Map<String, Any?>,
-        success: Boolean = true
+        success: Boolean = true,
+        reuseResult: Boolean = false
     ): UpdateResult {
         val query = buildQuery(taskId)
         val update = buildUpdate()
-            .inc(TScanTask::scanning.name, -count)
+        // 不是重用扫描结果的情况才需要减去扫描中的任务数量
+        if (!reuseResult) {
+            update.inc(TScanTask::scanning.name, -count)
+        }
         if (success) {
             update.inc(TScanTask::scanned.name, count)
         } else {

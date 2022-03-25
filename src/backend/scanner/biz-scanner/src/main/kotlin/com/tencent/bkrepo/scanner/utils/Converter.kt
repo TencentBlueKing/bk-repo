@@ -153,4 +153,14 @@ object Converter {
             else -> throw SystemErrorException()
         }
     }
+
+    fun convert(overview: Map<String, Any?>): Map<String, Number> {
+        val numberOverview = HashMap<String, Number>(overview.size)
+        overview.forEach {
+            if (it.value is Number) {
+                numberOverview[it.key] = it.value as Number
+            }
+        }
+        return numberOverview
+    }
 }

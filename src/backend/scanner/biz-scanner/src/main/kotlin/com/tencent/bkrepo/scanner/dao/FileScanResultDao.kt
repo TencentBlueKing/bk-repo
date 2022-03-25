@@ -72,14 +72,14 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
     /**
      * 判断文件使用指定版本扫描器的扫描结果是否存在
      */
-    fun exists(credentialsKey: String?, sha256: String, scanner: String, scannerVersion: String): Boolean {
+    fun find(credentialsKey: String?, sha256: String, scanner: String, scannerVersion: String): TFileScanResult? {
         val scannerResultKey = scannerResultKey(scanner)
         val criteria = Criteria
             .where(TFileScanResult::credentialsKey.name).isEqualTo(credentialsKey)
             .and(TFileScanResult::sha256.name).isEqualTo(sha256)
             .and(scannerResultKey).exists(true)
             .and("$scannerResultKey.${TScanResult::scannerVersion.name}").isEqualTo(scannerVersion)
-        return exists(Query(criteria))
+        return findOne(Query(criteria))
     }
 
     /**

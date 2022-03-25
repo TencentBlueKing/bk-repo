@@ -117,13 +117,13 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>(
         val results = aggregateResult.mappedResults as List<ArtifactPlanRelationAggregateResult<SubScanTaskDefinition>>
         return results
             .asSequence()
-            .filter { it.subScanTasks.isNotEmpty() }
-            .map { it.subScanTasks.maxBy { task -> task.createdDate }!! }
+            .filter { it.artifactSubScanTasks.isNotEmpty() }
+            .map { it.artifactSubScanTasks.maxBy { task -> task.createdDate }!! }
             .toList() as List<E>
     }
 
     open class ArtifactPlanRelationAggregateResult<T : SubScanTaskDefinition>(
-        open val subScanTasks: List<T>
+        open val artifactSubScanTasks: List<T>
     )
 
     companion object {

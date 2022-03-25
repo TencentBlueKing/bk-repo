@@ -186,7 +186,7 @@ object ScanPlanConverter {
             }
             PlanArtifactInfo(
                 recordId = id!!,
-                subTaskId = id,
+                subTaskId = id!!,
                 name = artifactName,
                 packageKey = packageKey,
                 version = version,
@@ -218,7 +218,7 @@ object ScanPlanConverter {
                 name = artifactName,
                 status = convertToScanStatus(status).name,
                 recordId = id!!,
-                subTaskId = id
+                subTaskId = id!!
             )
         }
     }

@@ -37,6 +37,6 @@ class FinishedSubScanTaskDao : AbsSubScanTaskDao<TFinishedSubScanTask>() {
     }
 
     class ArtifactPlanRelationAggregateResult(
-        subScanTasks: List<TFinishedSubScanTask>
-    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TFinishedSubScanTask>(subScanTasks)
+        artifactSubScanTasks: List<TFinishedSubScanTask>
+    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TFinishedSubScanTask>(artifactSubScanTasks)
 }
