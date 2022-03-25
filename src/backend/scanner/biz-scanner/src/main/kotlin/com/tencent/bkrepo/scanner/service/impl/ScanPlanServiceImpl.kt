@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
@@ -56,14 +57,16 @@ import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
-import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.Request
 import com.tencent.bkrepo.scanner.utils.ScanParamUtil
+import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class ScanPlanServiceImpl(
+    private val packageClient: PackageClient,
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
@@ -102,12 +105,12 @@ class ScanPlanServiceImpl(
                 lastModifiedDate = now
             )
             logger.info("insert tScanPlan:$tScanPlan")
-            return Converter.convert(scanPlanDao.insert(tScanPlan))
+            return ScanPlanConverter.convert(scanPlanDao.insert(tScanPlan))
         }
     }
 
     override fun list(projectId: String, type: String?): List<ScanPlan> {
-        return scanPlanDao.list(projectId, type).map { Converter.convert(it) }
+        return scanPlanDao.list(projectId, type).map { ScanPlanConverter.convert(it) }
     }
 
     override fun page(
@@ -122,12 +125,12 @@ class ScanPlanServiceImpl(
             page.pageNumber,
             page.pageSize,
             page.totalRecords,
-            page.records.map { Converter.convert(it, scanTaskMap[it.id!!]) }
+            page.records.map { ScanPlanConverter.convert(it, scanTaskMap[it.id!!]) }
         )
     }
 
     override fun find(projectId: String, id: String): ScanPlan? {
-        return scanPlanDao.find(projectId, id)?.let { Converter.convert(it) }
+        return scanPlanDao.find(projectId, id)?.let { ScanPlanConverter.convert(it) }
     }
 
     override fun delete(projectId: String, id: String) {
@@ -153,8 +156,8 @@ class ScanPlanServiceImpl(
                 ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, request.toString())
 //            checkRunning(id!!)
 
-            scanPlanDao.update(Converter.convert(request, plan.repoNames, plan.rule.readJsonString()))
-            return scanPlanDao.findById(request.id!!)!!.let { Converter.convert(it) }
+            scanPlanDao.update(ScanPlanConverter.convert(request, plan.repoNames, plan.rule.readJsonString()))
+            return scanPlanDao.findById(request.id!!)!!.let { ScanPlanConverter.convert(it) }
         }
     }
 
@@ -162,7 +165,7 @@ class ScanPlanServiceImpl(
         val scanPlan = scanPlanDao.find(projectId, id)
             ?: throw throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
         val scanTask = scanTaskDao.latestTask(id)
-        return Converter.convert(scanPlan, scanTask)
+        return ScanPlanConverter.convert(scanPlan, scanTask)
     }
 
     override fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo> {
@@ -203,7 +206,7 @@ class ScanPlanServiceImpl(
         return Pages.ofResponse(
             pageRequest,
             totalRecords,
-            subTasks.map { Converter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
+            subTasks.map { ScanPlanConverter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
         )
     }
 
@@ -216,10 +219,14 @@ class ScanPlanServiceImpl(
                 version = version,
                 fullPath = fullPath
             )
-
+            if (fullPath == null) {
+                fullPath = Request.request {
+                    packageClient.findVersionByName(projectId, repoName, packageKey!!, version!!)
+                }?.contentPath ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
+            }
             val subtasks = finishedSubScanTaskDao.findSubScanTasks(request) + subScanTaskDao.findSubScanTasks(request)
             return subtasks.map {
-                Converter.convertToArtifactPlanRelation(it)
+                ScanPlanConverter.convertToArtifactPlanRelation(it)
             }
         }
     }
@@ -231,7 +238,7 @@ class ScanPlanServiceImpl(
             return null
         }
 
-        return Converter.artifactStatus(relations.map { it.status })
+        return ScanPlanConverter.artifactStatus(relations.map { it.status })
     }
 
     private fun vulnerabilityOverviewKey(highestLeakLevel: String, scannerType: String): String {

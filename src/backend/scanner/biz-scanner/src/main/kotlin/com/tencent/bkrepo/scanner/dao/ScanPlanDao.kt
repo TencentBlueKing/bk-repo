@@ -59,6 +59,18 @@ class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
         return findOne(Query(criteria))
     }
 
+    fun findByProjectIdAndRepoNames(
+        projectId: String,
+        repoNames: List<String>,
+        scanOnNewArtifact: Boolean = true
+    ): List<TScanPlan> {
+        val criteria = Criteria
+            .where(TScanPlan::projectId.name).isEqualTo(projectId)
+            .and(TScanPlan::repoNames.name).all(repoNames)
+            .and(TScanPlan::scanOnNewArtifact.name).isEqualTo(scanOnNewArtifact)
+        return find(Query(criteria))
+    }
+
     fun findByIds(ids: List<String>): List<TScanPlan> {
         val query = Query(criteria().and(ID).inValues(ids))
         return find(query)

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
+import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
@@ -53,6 +54,11 @@ interface ScanService {
      * @param triggerType 触发类型
      */
     fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask
+
+    /**
+     * 匹配文件扫描
+     */
+    fun matchPlanScan(request: MatchPlanSingleScanRequest): List<ScanTask>
 
     /**
      * 获取扫描任务

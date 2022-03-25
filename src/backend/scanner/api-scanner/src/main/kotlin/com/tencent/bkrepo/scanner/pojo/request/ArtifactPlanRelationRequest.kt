@@ -43,5 +43,5 @@ data class ArtifactPlanRelationRequest(
     @ApiModelProperty("依赖包版本号")
     val version: String? = null,
     @ApiModelProperty("制品完整路径")
-    val fullPath: String? = null
+    var fullPath: String? = null
 )

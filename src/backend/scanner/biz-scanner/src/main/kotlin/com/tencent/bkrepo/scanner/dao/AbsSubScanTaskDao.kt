@@ -27,10 +27,7 @@
 
 package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
@@ -90,6 +87,7 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>(
         }
     }
 
+    @Suppress("SpreadOperator")
     fun findSubScanTasks(request: ArtifactPlanRelationRequest): List<E> {
         with(request) {
             //多个方案扫描过相同项目-仓库-同一个制品
@@ -100,21 +98,8 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>(
                 .and(SubScanTaskDefinition::repoType.name).`is`(repoType)
             groupFields.add(SubScanTaskDefinition::projectId.name)
             groupFields.add(SubScanTaskDefinition::repoName.name)
-            when (repoType) {
-                RepositoryType.GENERIC.name -> {
-                    criteria.and(SubScanTaskDefinition::fullPath.name).`is`(fullPath)
-                    groupFields.add(SubScanTaskDefinition::fullPath.name)
-                }
-
-                RepositoryType.MAVEN.name -> {
-                    criteria.and(SubScanTaskDefinition::packageKey.name).`is`(packageKey)
-                    criteria.and(SubScanTaskDefinition::version.name).`is`(version)
-                    groupFields.add(SubScanTaskDefinition::packageKey.name)
-                    groupFields.add(SubScanTaskDefinition::version.name)
-                }
-                else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, repoType)
-            }
-
+            criteria.and(SubScanTaskDefinition::fullPath.name).`is`(fullPath)
+            groupFields.add(SubScanTaskDefinition::fullPath.name)
 
             val aggregation = newAggregation(
                 match(criteria),
