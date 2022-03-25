@@ -9,6 +9,9 @@ import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.FindAndModifyOptions
@@ -16,9 +19,6 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 @Service
 class MavenMetadataService(
@@ -165,6 +165,29 @@ class MavenMetadataService(
         val options = FindAndModifyOptions().upsert(true).returnNew(true)
         return mavenMetadataDao.determineMongoTemplate()
             .findAndModify(query, update, options, TMavenMetadataRecord::class.java)!!
+    }
+
+    fun search(mavenMetadataSearchPojo: MavenMetadataSearchPojo): List<TMavenMetadataRecord>? {
+        logger.info(
+            "search metadata groupId[${mavenMetadataSearchPojo.groupId}], " +
+                "artifactId[${mavenMetadataSearchPojo.artifactId}], " +
+                "version[${mavenMetadataSearchPojo.version}]," +
+                "extension[${mavenMetadataSearchPojo.extension}]," +
+                "classifier[${mavenMetadataSearchPojo.classifier}]"
+        )
+        val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(mavenMetadataSearchPojo.projectId)
+            .and(TMavenMetadataRecord::repoName.name).`is`(mavenMetadataSearchPojo.repoName)
+            .and(TMavenMetadataRecord::groupId.name).`is`(mavenMetadataSearchPojo.groupId)
+            .and(TMavenMetadataRecord::artifactId.name).`is`(mavenMetadataSearchPojo.artifactId)
+            .and(TMavenMetadataRecord::version.name).`is`(mavenMetadataSearchPojo.version)
+            .and(TMavenMetadataRecord::extension.name).`is`(mavenMetadataSearchPojo.extension)
+        if (mavenMetadataSearchPojo.classifier == null) {
+            criteria.and(TMavenMetadataRecord::classifier.name).exists(false)
+        } else {
+            criteria.and(TMavenMetadataRecord::classifier.name).`is`(mavenMetadataSearchPojo.classifier)
+        }
+        val query = Query(criteria)
+        return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
     }
 
     companion object {
