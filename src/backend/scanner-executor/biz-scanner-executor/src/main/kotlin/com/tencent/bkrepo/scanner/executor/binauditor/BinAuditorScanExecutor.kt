@@ -56,6 +56,7 @@ import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import org.apache.commons.io.FileUtils
+import org.apache.tika.Tika
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -78,6 +79,7 @@ class BinAuditorScanExecutor @Autowired constructor(
 
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var binAuditorConfigTemplate: Resource
+    private val tika by lazy { Tika() }
 
     override fun scan(
         task: ScanExecutorTask,
@@ -94,6 +96,7 @@ class BinAuditorScanExecutor @Autowired constructor(
             // 加载待扫描文件
             val scannerInputFilePath = "${scanner.container.inputDir}$SLASH${task.sha256}"
             val scannerInputFile = loadFile(workDir, scannerInputFilePath, task.inputStream)
+            val fileType = tika.detect(scannerInputFile)
             logger.info(logMsg(task, "load file success"))
 
             // 加载扫描配置文件
@@ -108,6 +111,7 @@ class BinAuditorScanExecutor @Autowired constructor(
             val result = result(
                 startTimestamp,
                 finishedTimestamp,
+                fileType,
                 File(workDir, scanner.container.outputDir),
                 scanner.resultFilterRule,
                 scanStatus
@@ -261,6 +265,7 @@ class BinAuditorScanExecutor @Autowired constructor(
     private fun result(
         startTimestamp: Long,
         finishedTimestamp: Long,
+        fileType: String,
         outputDir: File,
         resultFilterRule: ResultFilterRule?,
         scanStatus: SubScanTaskStatus
@@ -289,6 +294,7 @@ class BinAuditorScanExecutor @Autowired constructor(
             startTimestamp = startTimestamp,
             finishedTimestamp = finishedTimestamp,
             scanStatus = scanStatus.name,
+            fileType = fileType,
             overview = overview(applicationItems, sensitiveItems, cveSecItems),
             checkSecItems = checkSecItems,
             applicationItems = applicationItems,

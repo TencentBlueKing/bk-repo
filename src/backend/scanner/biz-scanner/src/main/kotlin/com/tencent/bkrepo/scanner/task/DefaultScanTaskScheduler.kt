@@ -33,15 +33,16 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
 import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
@@ -53,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 import java.util.Optional
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 
 @Component
 class DefaultScanTaskScheduler @Autowired constructor(
@@ -63,7 +65,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val subScanTaskDao: SubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
-    private val executor: ThreadPoolTaskExecutor
+    private val executor: ThreadPoolTaskExecutor,
+    private val scannerMetrics: ScannerMetrics
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -80,12 +83,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     override fun schedule(subScanTask: SubScanTask): Boolean {
-        // TODO 实现任务数统计，并发送到influxdb
         val enqueued = subScanTaskQueue.enqueue(subScanTask)
-        if(enqueued) {
-            subScanTaskDao.updateStatus(subScanTask.taskId, SubScanTaskStatus.ENQUEUED)
-            logger.info("subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued]")
-        }
+        logger.info(
+            "subTask[${subScanTask.taskId}] of parentTask[${subScanTask.parentScanTaskId}] enqueued[$enqueued]]"
+        )
         return enqueued
     }
 
@@ -96,6 +97,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
+        scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTING)
         val scanner = scannerService.get(scanTask.scanner)
         logger.info("submitting sub tasks of task[${scanTask.taskId}], scanner: [${scanner.name}]")
 
@@ -110,6 +112,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             // 文件已存在扫描结果，跳过扫描
             if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
+                scannerMetrics.incReuseResultSubtaskCount()
                 continue
             }
 
@@ -119,7 +122,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
             // 批量提交子任务
             if (subScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
-                submit(subScanTasks, scanner)
+                self.submit(subScanTasks, scanner)
                 submittedSubTaskCount += subScanTasks.size
                 subScanTasks.clear()
             }
@@ -129,24 +132,30 @@ class DefaultScanTaskScheduler @Autowired constructor(
         logger.info("submit $submittedSubTaskCount sub tasks, " +
                 "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED")
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
+        scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTED)
 
         // 没有提交任何子任务，直接设置为任务扫描结束
         if (submittedSubTaskCount == 0L) {
             scanTaskDao.taskFinished(scanTask.taskId)
+            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[${scanTask.taskId}]")
         }
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
     fun submit(subScanTasks: List<TSubScanTask>, scanner: Scanner) {
         if (subScanTasks.isEmpty()) {
             return
         }
         val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
         logger.info("${subTasks.size} subTasks saved")
-        // TODO 实现任务数统计，并发送到influxdb
-        if (subScanTaskQueue.enqueue(subTasks).size == subTasks.size) {
-            logger.info("${subTasks.size} subTasks enqueued")
-            subScanTaskDao.updateStatus(subTasks.map { it.taskId }, SubScanTaskStatus.ENQUEUED)
+        val enqueuedTasks = subScanTaskQueue.enqueue(subTasks)
+        logger.info("${enqueuedTasks.size} subTasks enqueued")
+
+        if (enqueuedTasks.isNotEmpty()) {
+            subScanTaskDao.updateStatus(enqueuedTasks, SubScanTaskStatus.ENQUEUED)
+            scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.CREATED, enqueuedTasks.size.toLong())
+            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.ENQUEUED, enqueuedTasks.size.toLong())
         }
     }
 
@@ -175,6 +184,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         // 更新当前正在扫描的任务数
         val task = tasks.first()
         scanTaskDao.updateScanningCount(task.parentScanTaskId, tasks.size)
+        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, tasks.size.toLong())
 
         return tasks
     }
