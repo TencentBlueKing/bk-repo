@@ -111,21 +111,17 @@ class UserScanPlanController(
         @ApiParam(value = "projectId", required = true)
         @PathVariable
         projectId: String,
-
         @ApiParam(value = "方案类型(DEPENDENT/MOBILE)")
         @RequestParam
         type: String?,
-
         @ApiParam(value = "方案名")
         @RequestParam
         name: String?,
-
         @ApiParam("页数", required = false, defaultValue = "1")
-        @RequestParam
+        @RequestParam(required = false, defaultValue = DEFAULT_PAGE_NUMBER.toString())
         pageNumber: Int = DEFAULT_PAGE_NUMBER,
-
         @ApiParam("每页数量", required = false, defaultValue = "20")
-        @RequestParam
+        @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE.toString())
         pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<ScanPlanInfo>> {
         val page = scanPlanService.page(

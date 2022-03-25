@@ -104,7 +104,6 @@ class ScanPlanServiceImpl(
                 lastModifiedBy = operator,
                 lastModifiedDate = now
             )
-            logger.info("insert tScanPlan:$tScanPlan")
             return ScanPlanConverter.convert(scanPlanDao.insert(tScanPlan))
         }
     }

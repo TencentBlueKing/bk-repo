@@ -95,7 +95,6 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>(
             val criteria = Criteria
                 .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
                 .and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName)
-                .and(SubScanTaskDefinition::repoType.name).`is`(repoType)
             groupFields.add(SubScanTaskDefinition::projectId.name)
             groupFields.add(SubScanTaskDefinition::repoName.name)
             criteria.and(SubScanTaskDefinition::fullPath.name).`is`(fullPath)

@@ -63,6 +63,7 @@ object ScanPlanConverter {
     fun convert(scanPlan: TScanPlan): ScanPlan {
         return with(scanPlan) {
             ScanPlan(
+                id = id!!,
                 projectId = projectId,
                 name = name,
                 type = type,
