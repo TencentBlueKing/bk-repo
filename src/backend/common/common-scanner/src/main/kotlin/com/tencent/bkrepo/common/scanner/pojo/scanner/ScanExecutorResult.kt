@@ -40,14 +40,8 @@ import io.swagger.annotations.ApiModelProperty
     JsonSubTypes.Type(value = BinAuditorScanExecutorResult::class, name = BinAuditorScanner.TYPE)
 )
 open class ScanExecutorResult(
-    @ApiModelProperty("扫描执行开始时间")
-    open val startTimestamp: Long,
-    @ApiModelProperty("扫描执行结束时间")
-    open val finishedTimestamp: Long,
     @ApiModelProperty("扫描执行状态")
     open val scanStatus: String,
-    @ApiModelProperty("文件类型")
-    open val fileType: String,
     @ApiModelProperty("扫描结果预览")
     open val overview: Map<String, Any?>,
     @ApiModelProperty("扫描器类型")

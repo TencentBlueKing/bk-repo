@@ -55,8 +55,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import org.apache.commons.io.FileUtils
-import org.apache.tika.Tika
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -66,7 +64,7 @@ import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
-import java.io.InputStream
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.full.memberProperties
 import kotlin.system.measureTimeMillis
@@ -79,24 +77,20 @@ class BinAuditorScanExecutor @Autowired constructor(
 
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var binAuditorConfigTemplate: Resource
-    private val tika by lazy { Tika() }
 
     override fun scan(
         task: ScanExecutorTask,
         callback: (ScanExecutorResult) -> Unit
     ) {
         require(task.scanner is BinAuditorScanner)
-        val startTimestamp = System.currentTimeMillis()
-        logger.info(logMsg(task, "start to scan"))
         val scanner = task.scanner
         // 创建工作目录
         val workDir = createWorkDir(scanner.rootPath, task.taskId)
         logger.info(logMsg(task, "create work dir success, $workDir"))
         try {
             // 加载待扫描文件
-            val scannerInputFilePath = "${scanner.container.inputDir}$SLASH${task.sha256}"
-            val scannerInputFile = loadFile(workDir, scannerInputFilePath, task.inputStream)
-            val fileType = tika.detect(scannerInputFile)
+            val scannerInputFile = File(File(workDir, scanner.container.inputDir), task.sha256)
+            Files.createSymbolicLink(scannerInputFile.toPath(), task.file.toPath())
             logger.info(logMsg(task, "load file success"))
 
             // 加载扫描配置文件
@@ -105,13 +99,7 @@ class BinAuditorScanExecutor @Autowired constructor(
 
             // 执行扫描
             val scanStatus = doScan(workDir, task)
-            val finishedTimestamp = System.currentTimeMillis()
-            val timeSpent = finishedTimestamp - startTimestamp
-            logger.info(logMsg(task, "scan finished took time $timeSpent ms"))
             val result = result(
-                startTimestamp,
-                finishedTimestamp,
-                fileType,
                 File(workDir, scanner.container.outputDir),
                 scanner.resultFilterRule,
                 scanStatus
@@ -143,21 +131,6 @@ class BinAuditorScanExecutor @Autowired constructor(
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, workDir.absolutePath)
         }
         return workDir
-    }
-
-    /**
-     * 加载待扫描的文件
-     *
-     * @param workDir 工作目录
-     * @param filePath 加载待扫描文件后的存储路径
-     * @param inputStream 待扫描文件输入流
-     *
-     * @return 待扫描文件
-     */
-    private fun loadFile(workDir: File, filePath: String, inputStream: InputStream): File {
-        val scannerInputFile = File(workDir, filePath)
-        FileUtils.copyInputStreamToFile(inputStream, scannerInputFile)
-        return scannerInputFile
     }
 
     /**
@@ -263,9 +236,6 @@ class BinAuditorScanExecutor @Autowired constructor(
      * 解析扫描结果
      */
     private fun result(
-        startTimestamp: Long,
-        finishedTimestamp: Long,
-        fileType: String,
         outputDir: File,
         resultFilterRule: ResultFilterRule?,
         scanStatus: SubScanTaskStatus
@@ -291,10 +261,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         }
 
         return BinAuditorScanExecutorResult(
-            startTimestamp = startTimestamp,
-            finishedTimestamp = finishedTimestamp,
             scanStatus = scanStatus.name,
-            fileType = fileType,
             overview = overview(applicationItems, sensitiveItems, cveSecItems),
             checkSecItems = checkSecItems,
             applicationItems = applicationItems,

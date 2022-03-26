@@ -1,5 +1,6 @@
 scanner:
   executor:
+    work-dir: __BK_REPO_SCANNER_EXECUTOR_WORK_DIR__
     docker:
       enabled: __BK_REPO_SCANNER_EXECUTOR_DOCKER_ENABLED__
       host: __BK_REPO_SCANNER_EXECUTOR_DOCKER_HOST__

@@ -25,43 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
+package com.tencent.bkrepo.scanner.executor.configuration
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ApiModel("BinAuditor扫描器扫描结果")
-data class BinAuditorScanExecutorResult(
-    override val scanStatus: String,
-    override val overview: Map<String, Any?>,
-    @ApiModelProperty("安全审计结果")
-    val checkSecItems: List<CheckSecItem>,
-    @ApiModelProperty("License审计结果")
-    val applicationItems: List<ApplicationItem>,
-    @ApiModelProperty("敏感信息审计结果")
-    val sensitiveItems: List<SensitiveItem>,
-    @ApiModelProperty("cve审计结果")
-    val cveSecItems: List<CveSecItem>
-) : ScanExecutorResult(scanStatus, overview, BinAuditorScanner.TYPE) {
-    companion object {
-
-        fun overviewKeyOfSensitive(type: String): String {
-            return "sensitive${type.capitalize()}Count"
-        }
-
-        fun overviewKeyOfCve(level: String): String {
-            return "cve${level.capitalize()}Count"
-        }
-
-        fun overviewKeyOfLicenseRisk(riskLevel: String): String {
-            val level = if (riskLevel.isEmpty()) {
-                // 扫描器尚未支持的证书类型数量KEY
-                "notAvailable"
-            } else {
-                riskLevel
-            }
-            return "licenseRisk${level.capitalize()}Count"
-        }
-    }
-}
+@ConfigurationProperties("scanner.executor")
+data class ScannerExecutorProperties(
+    var workDir: String = System.getProperty("java.io.tmpdir")
+)

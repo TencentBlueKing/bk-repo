@@ -114,7 +114,7 @@ class ScanServiceImpl @Autowired constructor(
                     createdDate = now,
                     lastModifiedBy = userId,
                     lastModifiedDate = now,
-                    rule = (rule ?: plan?.rule)?.toJsonString(),
+                    rule = rule?.toJsonString() ?: plan?.rule,
                     triggerType = triggerType.name,
                     planId = plan?.id,
                     status = ScanTaskStatus.PENDING.name,
@@ -183,19 +183,16 @@ class ScanServiceImpl @Autowired constructor(
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
-                subScanTask, scanExecutorResult.scanStatus, parentTaskId, scanExecutorResult.overview
+                subScanTask, scanStatus, parentTaskId, scanExecutorResult?.overview ?: emptyMap()
             )
 
             // 没有扫描任务被更新或子扫描任务失败时直接返回
-            if (!updateScanTaskResultSuccess || scanExecutorResult.scanStatus != SubScanTaskStatus.SUCCESS.name) {
+            if (!updateScanTaskResultSuccess || scanStatus != SubScanTaskStatus.SUCCESS.name) {
                 return
             }
 
             // 统计任务耗时
-            scannerMetrics.record(
-                scanExecutorResult.fileType, subScanTask.size, subScanTask.scanner,
-                scanExecutorResult.startTimestamp, scanExecutorResult.finishedTimestamp
-            )
+            scannerMetrics.record(fileType!!, subScanTask.size, subScanTask.scanner, startTimestamp, finishedTimestamp)
 
             // 更新文件扫描结果
             val scanner = scannerService.get(subScanTask.scanner)
@@ -204,14 +201,14 @@ class ScanServiceImpl @Autowired constructor(
                 subScanTask.sha256,
                 parentTaskId,
                 scanner,
-                scanExecutorResult.overview,
-                toLocalDateTime(scanExecutorResult.startTimestamp),
-                toLocalDateTime(scanExecutorResult.finishedTimestamp)
+                scanExecutorResult!!.overview,
+                toLocalDateTime(startTimestamp),
+                toLocalDateTime(finishedTimestamp)
             )
 
             // 保存详细扫描结果
             val resultManager = scanExecutorResultManagers[scanner.type]
-            resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner.name, scanExecutorResult)
+            resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner.name, scanExecutorResult!!)
         }
     }
 

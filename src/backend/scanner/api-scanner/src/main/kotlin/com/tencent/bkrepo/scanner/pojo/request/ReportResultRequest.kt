@@ -37,6 +37,14 @@ data class ReportResultRequest(
     val subTaskId: String,
     @ApiModelProperty("父任务id")
     val parentTaskId: String,
+    @ApiModelProperty("扫描执行开始时间")
+    val startTimestamp: Long,
+    @ApiModelProperty("扫描执行结束时间")
+    val finishedTimestamp: Long,
+    @ApiModelProperty("扫描执行状态")
+    val scanStatus: String,
+    @ApiModelProperty("文件类型")
+    val fileType: String?,
     @ApiModelProperty("扫描执行器扫描结果")
-    val scanExecutorResult: ScanExecutorResult
+    val scanExecutorResult: ScanExecutorResult? = null
 )

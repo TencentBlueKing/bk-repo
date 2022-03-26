@@ -95,7 +95,7 @@ class PackageIterator(
         artifactName = packageSummary[PackageSummary::name.name] as String,
         packageKey = packageSummary[PackageSummary::key.name] as String,
         latestVersion = packageSummary[PackageSummary::latest.name] as String,
-        historyVersion = packageSummary[PackageSummary::historyVersion.name] as Set<String>
+        historyVersion = packageSummary[PackageSummary::historyVersion.name] as List<String>
     )
 
     /**
@@ -182,6 +182,9 @@ class PackageIterator(
      * 请求[packages]对应的node数据
      */
     private fun requestNode(packages: List<Package>): List<Node> {
+        if (packages.isEmpty()) {
+            return emptyList()
+        }
         val nodeQueryRule = nodeQueryRule(packages)
         val nodes = Request.requestNodes(nodeClient, nodeQueryRule, DEFAULT_PAGE_NUMBER, position.pageSize)
         val packageMap = packages.associateBy { it.fullPath }
@@ -197,6 +200,7 @@ class PackageIterator(
      * 获取查询[packages]对应node信息的rule
      */
     private fun nodeQueryRule(packages: List<Package>): Rule {
+        require(packages.isNotEmpty())
         val projectIdRule = (position.rule as Rule.NestedRule)
             .rules
             .first { it is Rule.QueryRule && it.field == NodeDetail::projectId.name }
@@ -231,7 +235,7 @@ class PackageIterator(
         val artifactName: String,
         val packageKey: String,
         val latestVersion: String,
-        val historyVersion: Set<String>,
+        val historyVersion: List<String>,
         var packageVersion: String? = null,
         var fullPath: String? = null
     )
