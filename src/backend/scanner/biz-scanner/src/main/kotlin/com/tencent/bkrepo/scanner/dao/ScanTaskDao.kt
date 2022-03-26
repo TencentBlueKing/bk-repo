@@ -54,19 +54,24 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
 
     /**
      * 将已提交所有子任务且都扫描完的任务设置为结束状态
+     *
+     * @param taskId 扫描结束的任务id
+     * @param finishedTime 扫描结束时间
+     * @param startDateTime 扫描开始时间，没有执行扫描子任务就结束的任务需要设置该参数
      */
     fun taskFinished(
         taskId: String,
-        status: ScanTaskStatus = ScanTaskStatus.FINISHED,
-        finishedTime: LocalDateTime = LocalDateTime.now()
+        finishedTime: LocalDateTime = LocalDateTime.now(),
+        startDateTime: LocalDateTime? = null
     ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(taskId)
             .and(TScanTask::status).isEqualTo(ScanTaskStatus.SCANNING_SUBMITTED)
             .and(TScanTask::scanning).isEqualTo(0L)
         val query = Query(criteria)
         val update = buildUpdate(finishedTime)
-            .set(TScanTask::status.name, status)
+            .set(TScanTask::status.name, ScanTaskStatus.FINISHED.name)
             .set(TScanTask::finishedDateTime.name, finishedTime)
+        startDateTime?.let { update.set(TScanTask::startDateTime.name, startDateTime) }
         return updateFirst(query, update)
     }
 
@@ -111,6 +116,16 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         return updateFirst(query, update)
     }
 
+    /**
+     * 更新扫描结果
+     *
+     * @param taskId 扫描任务id
+     * @param count 更新的结果数量,
+     * @param scanResultOverview 需要更新的预览结果
+     * @param success 是否更新扫描成功的任务数量
+     * @param reuseResult 是否是重用扫描结果的情况
+     *
+     */
     fun updateScanResult(
         taskId: String,
         count: Int,
@@ -120,8 +135,10 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
     ): UpdateResult {
         val query = buildQuery(taskId)
         val update = buildUpdate()
-        // 不是重用扫描结果的情况才需要减去扫描中的任务数量
-        if (!reuseResult) {
+        if (reuseResult) {
+            update.inc(TScanTask::total.name, count)
+        } else {
+            // 不是重用扫描结果的情况才需要减去扫描中的任务数量
             update.inc(TScanTask::scanning.name, -count)
         }
         if (success) {

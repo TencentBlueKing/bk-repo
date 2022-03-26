@@ -154,7 +154,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
         // 没有提交任何子任务，直接设置为任务扫描结束
         if (submittedSubTaskCount == 0L) {
-            scanTaskDao.taskFinished(scanTask.taskId)
+            val now = LocalDateTime.now()
+            scanTaskDao.taskFinished(scanTask.taskId, now, now)
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[${scanTask.taskId}]")
         }
@@ -193,7 +194,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
 
         val task = tasks.first()
-        scanTaskDao.updateScanResult(task.parentScanTaskId, tasks.size, overview)
+        scanTaskDao.updateScanResult(task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true)
         scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toLong())
     }
 

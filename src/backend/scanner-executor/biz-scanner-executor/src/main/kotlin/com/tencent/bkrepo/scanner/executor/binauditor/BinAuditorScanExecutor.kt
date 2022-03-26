@@ -64,7 +64,6 @@ import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
-import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.full.memberProperties
 import kotlin.system.measureTimeMillis
@@ -90,7 +89,7 @@ class BinAuditorScanExecutor @Autowired constructor(
         try {
             // 加载待扫描文件
             val scannerInputFile = File(File(workDir, scanner.container.inputDir), task.sha256)
-            Files.createSymbolicLink(scannerInputFile.toPath(), task.file.toPath())
+            task.file.copyTo(scannerInputFile)
             logger.info(logMsg(task, "load file success"))
 
             // 加载扫描配置文件
