@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
-import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import io.swagger.annotations.ApiModel
@@ -38,8 +37,7 @@ data class PlanArtifactRequest(
     @ApiModelProperty("扫描方案所属项目id", required = true)
     val projectId: String,
     @ApiModelProperty("扫描方案id", required = true)
-    @JsonAlias("id")
-    val planId: String,
+    val id: String,
     @ApiModelProperty("扫描任务id，默认为扫描方案最新一次的扫描任务")
     var parentScanTaskId: String? = null,
     @ApiModelProperty("制品名关键字，只要制品名包含该关键字则匹配")

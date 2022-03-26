@@ -173,7 +173,7 @@ class ScanPlanServiceImpl(
 
             // 获取扫描方案最新一次扫描任务
             val scanTask = parentScanTaskId?.let { scanTaskDao.findById(it) }
-                ?: scanTaskDao.latestTask(planId)
+                ?: scanTaskDao.latestTask(id)
                 ?: return Pages.ofResponse(pageRequest, 0L, emptyList())
             parentScanTaskId = scanTask.id
 

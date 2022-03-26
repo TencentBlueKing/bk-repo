@@ -171,9 +171,9 @@ object ScanPlanConverter {
 
     fun convert(request: PlanArtifactRequest): PlanArtifactRequest {
         request.highestLeakLevel = request.highestLeakLevel?.let { normalizedLevel(it) }
-        request.subScanTaskStatus = request.status
-            ?.let { convertToSubScanTaskStatus(ScanStatus.valueOf(it)) }
-            ?.map { it.name }
+        if (!request.status.isNullOrEmpty()) {
+            request.subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(request.status!!)).map { it.name }
+        }
         return request
     }
 
