@@ -46,6 +46,13 @@ import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 
 abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>() {
+    fun find(projectId: String, subtaskId: String): E? {
+        val criteria = Criteria
+            .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
+            .and(ID).isEqualTo(subtaskId)
+        return findOne(Query(criteria))
+    }
+
     fun findSubScanTasks(request: PlanArtifactRequest, overviewKey: String? = null): Page<E> {
         with(request) {
             val criteria = Criteria

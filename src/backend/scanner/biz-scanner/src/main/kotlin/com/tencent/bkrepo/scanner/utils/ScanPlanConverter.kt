@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
+import com.tencent.bkrepo.scanner.pojo.LeakType
 import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanStatus
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
@@ -203,6 +205,32 @@ object ScanPlanConverter {
         }
     }
 
+    fun convert(subScanTask: SubScanTaskDefinition): ArtifactScanResultOverview {
+        return with(subScanTask) {
+            val critical = getCveCount(LEVEL_CRITICAL, subScanTask)
+            val high = getCveCount(LEVEL_HIGH, subScanTask)
+            val medium = getCveCount(LEVEL_MID, subScanTask)
+            val low = getCveCount(LEVEL_LOW, subScanTask)
+
+            ArtifactScanResultOverview(
+                recordId = subScanTask.id!!,
+                subTaskId = subScanTask.id!!,
+                name = artifactName,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                repoType = repoType,
+                repoName = repoName,
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                critical = critical,
+                high = high,
+                medium = medium,
+                low = low,
+                total = critical + high + medium + low
+            )
+        }
+    }
+
     fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition): ArtifactPlanRelation {
         val planType = if (subScanTask.repoType == RepositoryType.GENERIC.name) {
             PlanType.MOBILE.name
@@ -237,8 +265,18 @@ object ScanPlanConverter {
         return maxStatus!!.name
     }
 
+    fun convertToLeakLevel(level: String): String {
+        return when(level) {
+            LEVEL_CRITICAL -> LeakType.CRITICAL.name
+            LEVEL_HIGH -> LeakType.HIGH.name
+            LEVEL_MID -> LeakType.MEDIUM.name
+            LEVEL_LOW -> LeakType.LOW.name
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, level)
+        }
+    }
+
     private fun highestLeakLevel(overview: Map<String, Number>): String {
-        return if (overview.keys.contains(LEVEL_CRITICAL)) {
+        val level = if (overview.keys.contains(LEVEL_CRITICAL)) {
             LEVEL_CRITICAL
         } else if (overview.keys.contains(LEVEL_HIGH)) {
             LEVEL_HIGH
@@ -247,6 +285,7 @@ object ScanPlanConverter {
         } else {
             LEVEL_LOW
         }
+        return convertToLeakLevel(level)
     }
 
     private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {
@@ -284,9 +323,17 @@ object ScanPlanConverter {
     }
 
     private fun getCveCount(level: String, scanTask: TScanTask): Long {
-        if (scanTask.scannerType == BinAuditorScanner.TYPE) {
+        return getCveCount(scanTask.scannerType, level, scanTask.scanResultOverview)
+    }
+
+    private fun getCveCount(level: String, subtask: SubScanTaskDefinition): Long {
+        return getCveCount(subtask.scannerType, level, subtask.scanResultOverview)
+    }
+
+    private fun getCveCount(scannerType: String, level: String, overview: Map<String, Number>?): Long {
+        if (scannerType == BinAuditorScanner.TYPE) {
             val key = BinAuditorScanExecutorResult.overviewKeyOfCve(level)
-            return scanTask.scanResultOverview?.get(key) ?: 0L
+            return overview?.get(key)?.toLong() ?: 0L
         }
 
         return 0L

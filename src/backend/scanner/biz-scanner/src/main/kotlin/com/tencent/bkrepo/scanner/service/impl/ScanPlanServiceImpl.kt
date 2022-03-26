@@ -54,6 +54,7 @@ import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
@@ -210,6 +211,13 @@ class ScanPlanServiceImpl(
                 subTasks.map { ScanPlanConverter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
             )
         }
+    }
+
+    override fun planArtifact(projectId: String, subScanTaskId: String): ArtifactScanResultOverview {
+        val subtask = finishedSubScanTaskDao.find(projectId, subScanTaskId)
+            ?: subScanTaskDao.find(projectId, subScanTaskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, subScanTaskId)
+        return ScanPlanConverter.convert(subtask)
     }
 
     override fun artifactPlanList(request: ArtifactPlanRelationRequest): List<ArtifactPlanRelation> {

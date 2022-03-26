@@ -134,7 +134,7 @@ object Converter {
                 // TODO 添加漏洞详情
                 ArtifactVulnerabilityInfo(
                     cveId = it.cveId,
-                    severity = it.level!!,
+                    severity = ScanPlanConverter.convertToLeakLevel(it.level!!),
                     pkgName = it.component,
                     installedVersion = it.version,
                     title = it.name,
