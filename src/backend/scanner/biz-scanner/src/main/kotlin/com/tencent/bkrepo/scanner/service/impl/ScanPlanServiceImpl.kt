@@ -37,8 +37,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
@@ -180,7 +178,7 @@ class ScanPlanServiceImpl(
 
             // 获取最高级别漏洞对应的扫描结果预览key
             val vulnerabilityOverviewKey = highestLeakLevel?.let {
-                vulnerabilityOverviewKey(it, scanTask.scannerType)
+                ScanPlanConverter.getCveOverviewKey(scanTask.scannerType, it)
             }
 
             // 查询已结束的子任务
@@ -249,14 +247,6 @@ class ScanPlanServiceImpl(
         }
 
         return ScanPlanConverter.artifactStatus(relations.map { it.status })
-    }
-
-    private fun vulnerabilityOverviewKey(highestLeakLevel: String, scannerType: String): String {
-        if (scannerType == BinAuditorScanner.TYPE) {
-            return BinAuditorScanExecutorResult.overviewKeyOfCve(highestLeakLevel)
-        } else {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, highestLeakLevel, scannerType)
-        }
     }
 
     private fun checkRunning(planId: String) {

@@ -195,7 +195,7 @@ object ScanPlanConverter {
                 fullPath = fullPath,
                 repoType = repoType,
                 repoName = repoName,
-                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(scannerType, it) },
                 duration = duration,
                 finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 status = convertToScanStatus(status).name,
@@ -221,7 +221,7 @@ object ScanPlanConverter {
                 fullPath = fullPath,
                 repoType = repoType,
                 repoName = repoName,
-                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(scannerType, it) },
                 critical = critical,
                 high = high,
                 medium = medium,
@@ -275,12 +275,12 @@ object ScanPlanConverter {
         }
     }
 
-    private fun highestLeakLevel(overview: Map<String, Number>): String {
-        val level = if (overview.keys.contains(LEVEL_CRITICAL)) {
+    private fun highestLeakLevel(scannerType: String, overview: Map<String, Number>): String {
+        val level = if (overview.keys.contains(getCveOverviewKey(scannerType, LEVEL_CRITICAL))) {
             LEVEL_CRITICAL
-        } else if (overview.keys.contains(LEVEL_HIGH)) {
+        } else if (overview.keys.contains(getCveOverviewKey(scannerType, LEVEL_HIGH))) {
             LEVEL_HIGH
-        } else if (overview.keys.contains(LEVEL_MID)) {
+        } else if (overview.keys.contains(getCveOverviewKey(scannerType, LEVEL_MID))) {
             LEVEL_MID
         } else {
             LEVEL_LOW
@@ -331,11 +331,14 @@ object ScanPlanConverter {
     }
 
     private fun getCveCount(scannerType: String, level: String, overview: Map<String, Number>?): Long {
-        if (scannerType == BinAuditorScanner.TYPE) {
-            val key = BinAuditorScanExecutorResult.overviewKeyOfCve(level)
-            return overview?.get(key)?.toLong() ?: 0L
-        }
+        val key = getCveOverviewKey(scannerType, level)
+        return overview?.get(key)?.toLong() ?: 0L
+    }
 
-        return 0L
+    fun getCveOverviewKey(scannerType: String, level: String): String {
+        if (scannerType == BinAuditorScanner.TYPE) {
+            return BinAuditorScanExecutorResult.overviewKeyOfCve(level)
+        }
+        throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, scannerType, level)
     }
 }
