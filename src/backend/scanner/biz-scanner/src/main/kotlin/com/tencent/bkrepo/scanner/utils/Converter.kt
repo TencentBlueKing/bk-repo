@@ -138,7 +138,10 @@ object Converter {
                     pkgName = it.component,
                     installedVersion = it.version,
                     title = it.name,
-                    vulnerabilityName = it.name
+                    vulnerabilityName = it.name,
+                    description = it.description,
+                    officialSolution = it.officialSolution.ifEmpty { it.defenseSolution },
+                    reference = it.references
                 )
             }.toList()
             return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)

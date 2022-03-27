@@ -101,5 +101,5 @@ data class TScanTask(
     /**
      * 扫描结果统计信息
      */
-    val scanResultOverview: Map<String, Long>
+    val scanResultOverview: Map<String, Long> = emptyMap()
 )

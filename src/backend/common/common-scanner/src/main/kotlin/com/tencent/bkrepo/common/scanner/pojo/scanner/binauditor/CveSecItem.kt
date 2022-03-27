@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
 
 import com.fasterxml.jackson.annotation.JsonAlias
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
 import io.swagger.annotations.ApiModel
@@ -67,6 +68,22 @@ data class CveSecItem(
     @ApiModelProperty("漏洞类型")
     @JsonAlias("category_type")
     val categoryType: String,
+
+    @ApiModelProperty("漏洞描述")
+    @JsonAlias("description")
+    val description: String,
+
+    @ApiModelProperty("官方解决方案")
+    @JsonAlias("official_solution")
+    val officialSolution: String,
+
+    @ApiModelProperty("解决方案")
+    @JsonAlias("defense_solution")
+    val defenseSolution: String,
+
+    @ApiModelProperty("相关链接")
+    @JsonAlias("reference")
+    val references: List<String>,
 
     @ApiModelProperty("poc id")
     @JsonAlias("poc_id")
@@ -139,6 +156,10 @@ data class CveSecItem(
                 versionFixed = versionFixed,
                 category = get(nvToolsCveInfo, cveSecItems, "category").toString(),
                 categoryType = get(nvToolsCveInfo, cveSecItems, "category_type").toString(),
+                description = (nvToolsCveInfo?.get("des") ?: cveSecItems["description"]).toString(),
+                officialSolution = get(nvToolsCveInfo, cveSecItems, "official_solution").toString(),
+                defenseSolution = get(nvToolsCveInfo, cveSecItems, "defense_solution").toString(),
+                references = getReferences(nvToolsCveInfo, cveSecItems),
                 name = get(nvToolsCveInfo, cveSecItems, "name").toString(),
                 pocId = get(nvToolsCveInfo, cveSecItems, "poc_id").toString(),
                 cveId = get(nvToolsCveInfo, cveSecItems, "cve_id").toString(),
@@ -158,6 +179,12 @@ data class CveSecItem(
             return primary?.get(key) ?: secondary[key]
         }
 
+        @Suppress("UNCHECKED_CAST")
+        private fun getReferences(primary: Map<String, Any?>?, secondary: Map<String, Any?>): List<String> {
+            return primary?.get("reference")?.toString()?.readJsonString<List<String>>()
+                ?: secondary["reference"] as List<String>
+                ?: emptyList()
+        }
     }
 
 }
