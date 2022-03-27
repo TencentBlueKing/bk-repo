@@ -124,17 +124,17 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
                 val finishedSubtask = createFinishedSubTask(scanTask, existsFileScanResult, node, storageCredentialsKey)
                 finishedSubScanTasks.add(finishedSubtask)
-                // 批量保存重用扫描结果的任务
-                if (finishedSubScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
-                    self.save(finishedSubScanTasks)
-                    reuseResultTaskCount += finishedSubScanTasks.size
-                    finishedSubScanTasks.clear()
-                }
-                scannerMetrics.incReuseResultSubtaskCount()
-                continue
+            } else {
+                subScanTasks.add(createSubTask(scanTask, node, storageCredentialsKey))
             }
 
-            subScanTasks.add(createSubTask(scanTask, node, storageCredentialsKey))
+            // 批量保存重用扫描结果的任务
+            if (finishedSubScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
+                self.save(finishedSubScanTasks)
+                scannerMetrics.incReuseResultSubtaskCount(finishedSubScanTasks.size.toLong())
+                reuseResultTaskCount += finishedSubScanTasks.size
+                finishedSubScanTasks.clear()
+            }
 
             // 批量提交子任务
             if (subScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {

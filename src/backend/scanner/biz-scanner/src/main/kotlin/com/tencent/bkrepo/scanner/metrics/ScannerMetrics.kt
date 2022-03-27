@@ -122,8 +122,8 @@ class ScannerMetrics(
     /**
      * 重用扫描结果的子任务数量加1
      */
-    fun incReuseResultSubtaskCount() {
-        reuseResultSubtaskCounters.incrementAndGet()
+    fun incReuseResultSubtaskCount(count: Long = 1) {
+        reuseResultSubtaskCounters.addAndGet(count)
     }
 
     fun record(fileType: String, fileSize: Long, scanner: String, startTimestamp: Long, finishedTimestamp: Long) {
