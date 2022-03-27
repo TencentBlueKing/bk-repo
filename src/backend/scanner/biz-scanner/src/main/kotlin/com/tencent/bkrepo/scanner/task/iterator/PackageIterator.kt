@@ -78,7 +78,7 @@ class PackageIterator(
                     packageNameToVersionMap[pkg.artifactName] ?: packageNameToVersionMap[null]
                 // rule中未指定版本时扫描所有版本
                 if (versions == null || versions.isEmpty()) {
-                    versions = pkg.historyVersion
+                    versions = pkg.historyVersion.ifEmpty { listOf(pkg.latestVersion) }
                 }
                 versions.map { version -> populatePackage(pkg.copy(packageVersion = version)) }
             }
@@ -95,7 +95,7 @@ class PackageIterator(
         artifactName = packageSummary[PackageSummary::name.name] as String,
         packageKey = packageSummary[PackageSummary::key.name] as String,
         latestVersion = packageSummary[PackageSummary::latest.name] as String,
-        historyVersion = packageSummary[PackageSummary::historyVersion.name] as List<String>
+        historyVersion = packageSummary[PackageSummary::historyVersion.name] as List<String>? ?: emptyList()
     )
 
     /**
@@ -235,7 +235,7 @@ class PackageIterator(
         val artifactName: String,
         val packageKey: String,
         val latestVersion: String,
-        val historyVersion: List<String>,
+        val historyVersion: List<String> = emptyList(),
         var packageVersion: String? = null,
         var fullPath: String? = null
     )
