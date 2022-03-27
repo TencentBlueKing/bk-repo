@@ -125,7 +125,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanner = scanner.name,
                     scannerType = scanner.type,
                     scannerVersion = scanner.version,
-                    scanResultOverview = null
+                    scanResultOverview = emptyMap()
                 )
             ).run { Converter.convert(this, plan) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)

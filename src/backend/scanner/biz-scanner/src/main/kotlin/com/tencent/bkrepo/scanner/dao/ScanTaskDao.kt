@@ -93,7 +93,7 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         val update = buildUpdate()
             .set(TScanTask::startDateTime.name, null)
             .set(TScanTask::finishedDateTime.name, null)
-            .set(TScanTask::scanResultOverview.name, null)
+            .set(TScanTask::scanResultOverview.name, emptyMap<String, Long>())
             .set(TScanTask::status.name, ScanTaskStatus.PENDING.name)
             .set(TScanTask::total.name, 0L)
             .set(TScanTask::scanning.name, 0L)
