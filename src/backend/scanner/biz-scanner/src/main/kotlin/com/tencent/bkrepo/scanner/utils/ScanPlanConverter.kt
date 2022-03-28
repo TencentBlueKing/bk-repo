@@ -34,13 +34,10 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_CRITICAL
-import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_HIGH
-import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_LOW
-import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.LEVEL_MID
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
@@ -59,6 +56,8 @@ import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 object ScanPlanConverter {
@@ -143,10 +142,10 @@ object ScanPlanConverter {
 
     fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?): ScanPlanInfo {
         with(scanPlan) {
-            val critical = latestScanTask?.let { getCveCount(LEVEL_CRITICAL, latestScanTask) } ?: 0L
-            val high = latestScanTask?.let { getCveCount(LEVEL_HIGH, latestScanTask) } ?: 0L
-            val medium = latestScanTask?.let { getCveCount(LEVEL_MID, latestScanTask) } ?: 0L
-            val low = latestScanTask?.let { getCveCount(LEVEL_LOW, latestScanTask) } ?: 0L
+            val critical = latestScanTask?.let { getCveCount(Level.CRITICAL.levelName, latestScanTask) } ?: 0L
+            val high = latestScanTask?.let { getCveCount(Level.HIGH.levelName, latestScanTask) } ?: 0L
+            val medium = latestScanTask?.let { getCveCount(Level.MID.levelName, latestScanTask) } ?: 0L
+            val low = latestScanTask?.let { getCveCount(Level.LOW.levelName, latestScanTask) } ?: 0L
             val artifactCount = latestScanTask?.total ?: 0L
             val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
 
@@ -173,6 +172,8 @@ object ScanPlanConverter {
 
     fun convert(request: PlanArtifactRequest): PlanArtifactRequest {
         request.highestLeakLevel = request.highestLeakLevel?.let { normalizedLevel(it) }
+        request.startDateTime = request.startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+        request.finishedDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
         if (!request.status.isNullOrEmpty()) {
             request.subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(request.status!!)).map { it.name }
         }
@@ -207,10 +208,10 @@ object ScanPlanConverter {
 
     fun convert(subScanTask: SubScanTaskDefinition): ArtifactScanResultOverview {
         return with(subScanTask) {
-            val critical = getCveCount(LEVEL_CRITICAL, subScanTask)
-            val high = getCveCount(LEVEL_HIGH, subScanTask)
-            val medium = getCveCount(LEVEL_MID, subScanTask)
-            val low = getCveCount(LEVEL_LOW, subScanTask)
+            val critical = getCveCount(Level.CRITICAL.levelName, subScanTask)
+            val high = getCveCount(Level.HIGH.levelName, subScanTask)
+            val medium = getCveCount(Level.MID.levelName, subScanTask)
+            val low = getCveCount(Level.LOW.levelName, subScanTask)
 
             ArtifactScanResultOverview(
                 recordId = subScanTask.id!!,
@@ -266,26 +267,22 @@ object ScanPlanConverter {
     }
 
     fun convertToLeakLevel(level: String): String {
-        return when(level) {
-            LEVEL_CRITICAL -> LeakType.CRITICAL.name
-            LEVEL_HIGH -> LeakType.HIGH.name
-            LEVEL_MID -> LeakType.MEDIUM.name
-            LEVEL_LOW -> LeakType.LOW.name
+        return when (level) {
+            Level.CRITICAL.levelName -> LeakType.CRITICAL.name
+            Level.HIGH.levelName -> LeakType.HIGH.name
+            Level.MID.levelName -> LeakType.MEDIUM.name
+            Level.LOW.levelName -> LeakType.LOW.name
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, level)
         }
     }
 
-    private fun highestLeakLevel(scannerType: String, overview: Map<String, Number>): String {
-        val level = if (overview.keys.contains(getCveOverviewKey(scannerType, LEVEL_CRITICAL))) {
-            LEVEL_CRITICAL
-        } else if (overview.keys.contains(getCveOverviewKey(scannerType, LEVEL_HIGH))) {
-            LEVEL_HIGH
-        } else if (overview.keys.contains(getCveOverviewKey(scannerType, LEVEL_MID))) {
-            LEVEL_MID
-        } else {
-            LEVEL_LOW
+    private fun highestLeakLevel(scannerType: String, overview: Map<String, Number>): String? {
+        Level.values().forEach {
+            if (overview.keys.contains(getCveOverviewKey(scannerType, it.levelName))) {
+                return convertToLeakLevel(it.levelName)
+            }
         }
-        return convertToLeakLevel(level)
+        return null
     }
 
     private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {

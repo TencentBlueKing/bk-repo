@@ -30,9 +30,11 @@ package com.tencent.bkrepo.scanner.dao
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
@@ -53,18 +55,16 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>(
         return findOne(Query(criteria))
     }
 
-    fun findSubScanTasks(request: PlanArtifactRequest, overviewKey: String? = null): Page<E> {
+    fun findSubScanTasks(request: PlanArtifactRequest, scannerType: String): Page<E> {
         with(request) {
             val criteria = Criteria
                 .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
                 .and(SubScanTaskDefinition::parentScanTaskId.name).`is`(parentScanTaskId)
 
-            artifactName?.let {
-                criteria.and(SubScanTaskDefinition::artifactName.name).regex(".*$artifactName.*")
+            name?.let {
+                criteria.and(SubScanTaskDefinition::artifactName.name).regex(".*$name.*")
             }
-            overviewKey?.let {
-                criteria.and("${SubScanTaskDefinition::scanResultOverview.name}.$overviewKey").exists(true)
-            }
+            highestLeakLevel?.let { addHighestVulnerabilityLevel(scannerType, it, criteria) }
             repoType?.let { criteria.and(SubScanTaskDefinition::repoType.name).isEqualTo(repoType) }
             repoName?.let { criteria.and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName) }
             subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
@@ -118,6 +118,22 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>(
     }
 
     protected abstract fun artifactPlanRelationAggregateResultClass(): Class<*>
+
+    private fun addHighestVulnerabilityLevel(scannerType: String, level: String, criteria: Criteria): Criteria {
+        Level.values().forEach {
+            val isHighest = level == it.levelName
+            criteria.and(resultOverviewKey(scannerType, it.levelName)).exists(isHighest)
+            if (isHighest) {
+                return criteria
+            }
+        }
+        return criteria
+    }
+
+    private fun resultOverviewKey(scannerType: String, level: String): String {
+        val overviewKey = ScanPlanConverter.getCveOverviewKey(scannerType, level)
+        return "${SubScanTaskDefinition::scanResultOverview.name}.$overviewKey"
+    }
 
     @Suppress("UNCHECKED_CAST")
     private fun artifactPlanRelationAggregateResult(aggregateResult: AggregationResults<*>): List<E> {

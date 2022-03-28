@@ -176,16 +176,11 @@ class ScanPlanServiceImpl(
                 ?: return Pages.ofResponse(pageRequest, 0L, emptyList())
             parentScanTaskId = scanTask.id
 
-            // 获取最高级别漏洞对应的扫描结果预览key
-            val vulnerabilityOverviewKey = highestLeakLevel?.let {
-                ScanPlanConverter.getCveOverviewKey(scanTask.scannerType, it)
-            }
-
             // 查询已结束的子任务
             val containsFinishedStatus = subScanTaskStatus.isNullOrEmpty()
                 || subScanTaskStatus!!.firstOrNull { SubScanTaskStatus.finishedStatus(it) } != null
             val finishedSubScanTasks = if (containsFinishedStatus) {
-                finishedSubScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
+                finishedSubScanTaskDao.findSubScanTasks(request, scanTask.scannerType)
             } else {
                 null
             }
@@ -194,7 +189,7 @@ class ScanPlanServiceImpl(
             val containsUnfinishedStatus = subScanTaskStatus.isNullOrEmpty()
                 || subScanTaskStatus?.firstOrNull { !SubScanTaskStatus.finishedStatus(it) } != null
             val unfinishedSubScanTasks = if (containsUnfinishedStatus) {
-                subScanTaskDao.findSubScanTasks(request, vulnerabilityOverviewKey)
+                subScanTaskDao.findSubScanTasks(request, scanTask.scannerType)
             } else {
                 null
             }

@@ -31,6 +31,8 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.Instant
+import java.time.LocalDateTime
 
 @ApiModel("请求指定扫描方案扫描过的制品扫描结果信息")
 data class PlanArtifactRequest(
@@ -41,7 +43,7 @@ data class PlanArtifactRequest(
     @ApiModelProperty("扫描任务id，默认为扫描方案最新一次的扫描任务")
     var parentScanTaskId: String? = null,
     @ApiModelProperty("制品名关键字，只要制品名包含该关键字则匹配")
-    val artifactName: String? = null,
+    val name: String? = null,
     /**
      * [com.tencent.bkrepo.scanner.pojo.LeakType]
      */
@@ -63,9 +65,13 @@ data class PlanArtifactRequest(
     @ApiModelProperty("制品扫描状态")
     var subScanTaskStatus: List<String>? = null,
     @ApiModelProperty("制品开始扫描时间")
-    val startTime: String? = null,
+    val startTime: Instant? = null,
+    @ApiModelProperty("制品开始扫描时间")
+    var startDateTime: LocalDateTime? = null,
     @ApiModelProperty("制品扫描结束时间")
-    val endTime: String? = null,
+    val endTime: Instant? = null,
+    @ApiModelProperty("制品扫描结束时间")
+    var finishedDateTime: LocalDateTime? = null,
     @ApiModelProperty("页码")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     @ApiModelProperty("页大小")
