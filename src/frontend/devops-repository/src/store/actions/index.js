@@ -7,6 +7,7 @@ import token from './token'
 import permission from './permission'
 import nodeManage from './nodeManage'
 import project from './project'
+import scan from './scan'
 
 const prefix = 'repository/api'
 
@@ -17,6 +18,7 @@ export default {
     ...permission,
     ...nodeManage,
     ...project,
+    ...scan,
     /*
         创建仓库
         body: {
@@ -30,11 +32,14 @@ export default {
             "storageCredentialsKey": null
         }
     */
-    createRepo (_, { body }) {
+    createRepo ({ dispatch }, { body }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/repo/create`,
             body
-        )
+        ).then(res => {
+            dispatch('getRepoListAll')
+            return res
+        })
     },
     // 校验仓库名称
     checkRepoName (_, { projectId, name }) {
@@ -82,10 +87,13 @@ export default {
         )
     },
     // 删除仓库
-    deleteRepoList (_, { projectId, name, forced = false }) {
+    deleteRepoList ({ dispatch }, { projectId, name, forced = false }) {
         return Vue.prototype.$ajax.delete(
             `${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`
-        )
+        ).then(res => {
+            dispatch('getRepoListAll')
+            return res
+        })
     },
     // 查询公有源列表
     getPublicProxy (_, { repoType }) {

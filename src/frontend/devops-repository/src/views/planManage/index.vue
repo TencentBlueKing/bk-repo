@@ -31,7 +31,7 @@
         </div>
         <bk-table
             class="mt10 plan-table"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="planList"
             :outer-border="false"
             :row-border="false"
@@ -89,7 +89,7 @@
             <bk-table-column label="计划状态" width="120">
                 <template #default="{ row }">
                     <div class="flex-align-center" @click.stop="() => {}">
-                        <bk-switcher class="mr10" v-model="row.enabled" @change="changeEnabledHandler(row)"></bk-switcher>
+                        <bk-switcher class="mr10" v-model="row.enabled" size="small" theme="primary" @change="changeEnabledHandler(row)"></bk-switcher>
                         <div>{{row.enabled ? '启用' : '停用'}}</div>
                     </div>
                 </template>

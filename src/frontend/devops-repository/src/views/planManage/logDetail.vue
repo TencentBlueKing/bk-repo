@@ -23,7 +23,7 @@
         </div>
         <bk-table
             class="mt10"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="pkgList"
             :outer-border="false"
             :row-border="false"

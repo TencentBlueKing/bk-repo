@@ -30,7 +30,7 @@
     </canway-dialog>
 </template>
 <script>
-    import { mapState } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     import RepoTree from '@repository/components/RepoTree'
     export default {
         name: 'genericTreeDialog',
@@ -43,15 +43,26 @@
                     loading: false,
                     type: 'move',
                     title: '',
+                    path: '',
                     openList: [],
                     selectedNode: {}
                 }
             }
         },
         computed: {
-            ...mapState(['genericTree'])
+            ...mapState(['genericTree']),
+            projectId () {
+                return this.$route.params.projectId
+            },
+            repoName () {
+                return this.$route.query.repoName
+            }
         },
         methods: {
+            ...mapActions([
+                'moveNode',
+                'copyNode'
+            ]),
             // 树组件选中文件夹
             itemClickHandler (node) {
                 this.genericTreeData.selectedNode = node
@@ -78,12 +89,35 @@
             setTreeData (data) {
                 this.genericTreeData = {
                     ...this.genericTreeData,
+                    openList: ['0'],
+                    selectedNode: this.genericTree[0],
                     ...data
                 }
                 setTimeout(this.$refs.dialogTree.computedSize, 0)
             },
             submit () {
-                this.$emit('submit', this.genericTreeData)
+                this.genericTreeData.loading = true
+                const { type, path, selectedNode } = this.genericTreeData
+                this[type + 'Node']({
+                    body: {
+                        srcProjectId: this.projectId,
+                        srcRepoName: this.repoName,
+                        srcFullPath: path,
+                        destProjectId: this.projectId,
+                        destRepoName: this.repoName,
+                        destFullPath: `${selectedNode.fullPath || '/'}`,
+                        overwrite: false
+                    }
+                }).then(() => {
+                    this.genericTreeData.show = false
+                    this.$emit('refresh')
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t(type) + this.$t('success')
+                    })
+                }).finally(() => {
+                    this.genericTreeData.loading = false
+                })
             }
         }
     }
