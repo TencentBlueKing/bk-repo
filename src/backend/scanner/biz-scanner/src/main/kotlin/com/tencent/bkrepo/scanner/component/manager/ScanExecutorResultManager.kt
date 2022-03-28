@@ -14,8 +14,16 @@ interface ScanExecutorResultManager {
      * @param sha256 被扫描文件sha256
      * @param scanner 使用的扫描器名称
      * @param result 扫描结果详情
+     * @param extra 额外信息
+     *
      */
-    fun save(credentialsKey: String?, sha256: String, scanner: String, result: ScanExecutorResult)
+    fun save(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        result: ScanExecutorResult,
+        extra: Map<String, Any> = emptyMap()
+    )
 
     /**
      * 分页获取指定类型的扫描结果详情
@@ -25,8 +33,16 @@ interface ScanExecutorResultManager {
      * @param scanner 使用的扫描器名称
      * @param type 指定类型的扫描结果详情
      * @param pageLimit 分页信息
+     * @param extra 额外信息
      *
      * @return 扫描结果详情
      */
-    fun load(credentialsKey: String?, sha256: String, scanner: String, type: String?, pageLimit: PageLimit?): Any?
+    fun load(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        type: String?,
+        pageLimit: PageLimit?,
+        extra: Map<String, Any> = emptyMap()
+    ): Any?
 }

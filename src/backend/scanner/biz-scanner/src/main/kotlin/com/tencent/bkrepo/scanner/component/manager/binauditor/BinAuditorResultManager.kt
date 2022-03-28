@@ -63,7 +63,13 @@ class BinAuditorResultManager @Autowired constructor(
 ) : ScanExecutorResultManager {
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun save(credentialsKey: String?, sha256: String, scanner: String, result: ScanExecutorResult) {
+    override fun save(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        result: ScanExecutorResult,
+        extra: Map<String, Any>
+    ) {
         result as BinAuditorScanExecutorResult
 
         result.checkSecItems
@@ -88,7 +94,8 @@ class BinAuditorResultManager @Autowired constructor(
         sha256: String,
         scanner: String,
         type: String?,
-        pageLimit: PageLimit?
+        pageLimit: PageLimit?,
+        extra: Map<String, Any>
     ): Any? {
         require(pageLimit != null && type != null)
         val page = when (type) {
@@ -103,7 +110,7 @@ class BinAuditorResultManager @Autowired constructor(
                     params = arrayOf(type)
                 )
             }
-        }.run { pageBy(credentialsKey, sha256, scanner, pageLimit) }
+        }.run { pageBy(credentialsKey, sha256, scanner, pageLimit, extra) }
 
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }

@@ -25,28 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.scanner.component.manager
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-
-@ApiModel("获取制品漏洞详情请求")
-data class ArtifactVulnerabilityRequest(
-    @ApiModelProperty("项目id")
-    var projectId: String? = null,
-    @ApiModelProperty("子任务id")
-    var subScanTaskId: String? = null,
-    @ApiModelProperty("cveId")
-    val cveId: String? = null,
-    @ApiModelProperty("漏洞等级")
-    var leakType: String? = null,
-    @ApiModelProperty("报告类型")
-    val reportType: String = CveSecItem.TYPE,
-    @ApiModelProperty("页数")
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("每页数量")
-    val pageSize: Int = DEFAULT_PAGE_SIZE
-)
+object Extra {
+    /**
+     * 漏洞等级筛选
+     */
+    const val EXTRA_VULNERABILITY_LEVEL = "EXTRA_VULNERABILITY_LEVEL"
+    const val EXTRA_CVE_ID = "EXTRA_CVE_ID"
+}

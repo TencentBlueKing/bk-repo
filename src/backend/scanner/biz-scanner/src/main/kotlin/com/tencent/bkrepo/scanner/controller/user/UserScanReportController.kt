@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -96,6 +97,7 @@ class UserScanReportController(
     ): Response<Page<ArtifactVulnerabilityInfo>> {
         request.projectId = projectId
         request.subScanTaskId = subScanTaskId
+        request.leakType = request.leakType?.let { normalizedLevel(it) }
         return ResponseBuilder.success(scanService.resultDetail(request))
     }
 

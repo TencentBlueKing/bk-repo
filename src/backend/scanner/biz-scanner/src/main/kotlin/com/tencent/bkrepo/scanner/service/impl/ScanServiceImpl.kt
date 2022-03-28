@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.scanner.component.manager.Extra
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
@@ -380,8 +381,11 @@ class ScanServiceImpl @Autowired constructor(
             val subtask = finishedSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
             val pageLimit = PageLimit(pageNumber, pageSize)
+            val extra = HashMap<String, Any>()
+            leakType?.let { extra[Extra.EXTRA_VULNERABILITY_LEVEL] = listOf(it) }
+            cveId?.let { extra[Extra.EXTRA_CVE_ID] = listOf(it) }
             val detailReport = scanExecutorResultManagers[subtask.scannerType]?.load(
-                subtask.credentialsKey, subtask.sha256, subtask.scanner, reportType, pageLimit
+                subtask.credentialsKey, subtask.sha256, subtask.scanner, reportType, pageLimit, extra
             )
             return Converter.convert(detailReport, subtask.scannerType, reportType, pageLimit)
         }

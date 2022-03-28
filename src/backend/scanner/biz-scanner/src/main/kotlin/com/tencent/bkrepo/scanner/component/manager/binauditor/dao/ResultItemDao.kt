@@ -53,13 +53,24 @@ abstract class ResultItemDao<T : ResultItem<*>> : SimpleMongoDao<T>() {
         return remove(Query(criteria))
     }
 
-    fun pageBy(credentialsKey: String?, sha256: String, scanner: String, pageLimit: PageLimit): Page<T> {
+    fun pageBy(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        pageLimit: PageLimit,
+        extra: Map<String, Any>
+    ): Page<T> {
         val pageable = PageRequest.of(pageLimit.pageNumber - 1, pageLimit.pageSize)
         val criteria = buildCriteria(credentialsKey, sha256, scanner)
+        customizePageBy(criteria, extra)
         val query = Query(criteria).with(pageable)
         val total = count(Query.of(query).limit(0).skip(0))
         val data = find(query)
         return Page(pageLimit.pageNumber, pageLimit.pageSize, total, data)
+    }
+
+    protected open fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
+        return criteria
     }
 
     private fun buildCriteria(credentialsKey: String?, sha256: String, scanner: String): Criteria {

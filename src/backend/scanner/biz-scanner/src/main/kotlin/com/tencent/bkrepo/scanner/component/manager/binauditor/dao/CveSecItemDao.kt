@@ -27,8 +27,26 @@
 
 package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
 
+import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
+import com.tencent.bkrepo.scanner.component.manager.Extra
 import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCveSecItem
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
 
 @Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>()
+class CveSecItemDao : ResultItemDao<TCveSecItem>() {
+    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
+        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
+        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
+            criteria.and(dataKey(CveSecItem::level.name)).inValues(vulnerabilityLevels)
+        }
+        val cveIds = extra[Extra.EXTRA_CVE_ID]
+        if (cveIds is List <*> && cveIds.isNotEmpty()) {
+            criteria.and(dataKey(CveSecItem::cveId.name)).inValues(cveIds)
+        }
+        return criteria
+    }
+
+    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
+}
