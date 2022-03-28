@@ -88,7 +88,9 @@ object RuleMatcher {
             return rule.rules.all { it is Rule.NestedRule && nameVersionMatch(name, version, it) }
         }
 
-        if (name == null && nameRule != null || version == null && versionRule != null) {
+        val nameMatchFailed = name == null && nameRule != null
+        val versionMatchFailed = version == null && versionRule != null
+        if (nameMatchFailed || versionMatchFailed) {
             return false
         }
 
