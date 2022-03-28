@@ -70,16 +70,13 @@ class PackageIterator(
         return if (records.isEmpty()) {
             emptyList()
         } else {
-            val packageNameToVersionMap = RuleMatcher.packageNameToVersions(position.rule)
             records.flatMap {
                 val pkg = parse(it)
-                // 获取rule中指定的版本
-                var versions: Collection<String>? =
-                    packageNameToVersionMap[pkg.artifactName] ?: packageNameToVersionMap[null]
-                // rule中未指定版本时扫描所有版本
-                if (versions == null || versions.isEmpty()) {
-                    versions = pkg.historyVersion.ifEmpty { listOf(pkg.latestVersion) }
-                }
+                // 获取与rule匹配的版本
+                val versions = pkg.historyVersion.ifEmpty { listOf(pkg.latestVersion) }
+                    .filter { version ->
+                        RuleMatcher.nameVersionMatch(pkg.artifactName, version, position.rule as Rule.NestedRule)
+                    }
                 versions.map { version -> populatePackage(pkg.copy(packageVersion = version)) }
             }
         }

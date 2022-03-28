@@ -107,14 +107,10 @@ object RuleConverter {
     }
 
     private fun convertRule(field: String, rule: com.tencent.bkrepo.scanner.pojo.rule.Rule): Rule.QueryRule {
-        return Rule.QueryRule(field, rule.value, convertRuleType(rule.type))
-    }
-
-    private fun convertRuleType(type: RuleType): OperationType {
-        return when (type) {
-            RuleType.EQ -> OperationType.EQ
-            RuleType.IN -> OperationType.IN
-            RuleType.REGEX -> OperationType.MATCH
+        return when(rule.type) {
+            RuleType.EQ -> Rule.QueryRule(field, rule.value, OperationType.EQ)
+            RuleType.IN -> Rule.QueryRule(field, "*${rule.value}*", OperationType.MATCH)
+            RuleType.REGEX -> Rule.QueryRule(field, rule.value, OperationType.MATCH)
         }
     }
 

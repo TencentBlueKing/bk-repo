@@ -106,7 +106,7 @@ object ScanPlanConverter {
 
     fun convert(scanPlanRequest: UpdateScanPlanRequest, curRepoNames: List<String>, curRule: Rule): ScanPlan {
         return with(scanPlanRequest) {
-            val rule = if (repoNameList?.isEmpty() == true && artifactRules?.isEmpty() == true) {
+            val rule = if (repoNameList == null && artifactRules == null) {
                 null
             } else {
                 val repoNames = repoNameList ?: curRepoNames

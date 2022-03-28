@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.scanner.utils
 
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
@@ -38,66 +40,90 @@ object RuleMatcher {
     fun match(request: MatchPlanSingleScanRequest, plan: TScanPlan): Boolean {
         return with(request) {
             if (fullPath != null) {
-                match(fullPath!!, plan.rule.readJsonString())
+                matchFullPath(fullPath!!, plan.rule.readJsonString())
             } else {
-                match(packageName!!, version!!, plan.rule.readJsonString())
+                nameVersionMatch(packageName!!, version!!, plan.rule.readJsonString())
             }
         }
     }
 
-    private fun match(packageName: String, packageVersion: String, rule: Rule): Boolean {
-        val packageNameVersionMap = packageNameToVersions(rule)
-        return if (packageNameVersionMap.isEmpty()) {
-            true
-        } else {
-            packageNameVersionMap[packageName]?.let { packageVersion in it } ?: false
-        }
-    }
-
-    private fun match(fullPath: String, rule: Rule): Boolean {
+    private fun matchFullPath(fullPath: String, rule: Rule): Boolean {
+        require(rule is Rule.NestedRule)
         val name = File(fullPath).name
-        val packageNameVersionMap = packageNameToVersions(rule)
-
-        // 未配置任何规则或仅配置了artifactName规则，未配置版本规则
-        return packageNameVersionMap.isEmpty() || packageNameVersionMap[name]?.isEmpty() == true
+        return nameVersionMatch(name, null, rule)
     }
 
     /**
-     * 从[rule]中解析出packageName对应的要查询的所有版本
+     * 判断制品[name]和[version]是否匹配[rule]
+     *
+     * @param name 制品名
+     * @param version 制品版本
+     * @param rule 用于匹配的规则
+     *
+     * @return true 匹配， false 不匹配， [rule]中没有限制[name]和[version]相关规则时候返回true
      */
-    fun packageNameToVersions(rule: Rule): Map<String?, MutableList<String>> {
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            val map = HashMap<String?, MutableList<String>>()
-            // 获取nameRule
-            val nameRule = rule.rules.firstOrNull {
-                it is Rule.QueryRule && it.field == RuleArtifact::name.name
-            } as Rule.QueryRule?
-
-            // 获取versionRule
-            val versionRule = rule.rules.firstOrNull {
-                it is Rule.QueryRule && it.field == RuleArtifact::version.name
-            } as Rule.QueryRule?
-
-            // nameRule或versionRule存在的时候不包含其他rule
-            if (nameRule != null && versionRule != null) {
-                map.getOrPut(nameRule.value.toString()) { ArrayList() }.add(versionRule.value.toString())
-            } else if (nameRule != null) {
-                map.getOrPut(nameRule.value.toString()) { ArrayList() }
-            } else if (versionRule != null) {
-                map.getOrPut(null) { ArrayList() }.add(versionRule.value.toString())
-            }
-            else {
-                rule.rules.map { packageNameToVersions(it) }.forEach { map.putAll(it) }
-            }
-            return map
+    fun nameVersionMatch(name: String?, version: String?, rule: Rule.NestedRule): Boolean {
+        if (rule.relation == Rule.NestedRule.RelationType.AND) {
+            return matchAnd(name, version, rule)
         }
 
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.OR) {
-            val map = HashMap<String?, MutableList<String>>()
-            rule.rules.forEach { map.putAll(packageNameToVersions(it)) }
-            return map
+        if (rule.relation == Rule.NestedRule.RelationType.OR) {
+            return rule.rules.any { it is Rule.NestedRule && nameVersionMatch(name, version, it) }
         }
 
-        return emptyMap()
+        return true
+    }
+
+    private fun matchAnd(name: String?, version: String?, rule: Rule.NestedRule): Boolean {
+        require(rule.relation == Rule.NestedRule.RelationType.AND)
+
+        // 获取nameRule
+        val nameRule = getQueryRule(rule, RuleArtifact::name.name)
+
+        // 获取versionRule
+        val versionRule = getQueryRule(rule, RuleArtifact::version.name)
+
+        // nameRule或versionRule不存在的时候才继续遍历
+        if (nameRule == null && versionRule == null) {
+            return rule.rules.all { it is Rule.NestedRule && nameVersionMatch(name, version, it) }
+        }
+
+        if (name == null && nameRule != null || version == null && versionRule != null) {
+            return false
+        }
+
+
+        // 制品名匹配
+        return if (name != null && nameRule != null) {
+            val matched = match(name, nameRule)
+            // 制品名不匹配时直接返回匹配失败，制品版本与制品版本规则都存在时候才进行版本匹配，否则直接返回制品名匹配结果
+            matched && (version == null || versionRule == null || match(version, versionRule))
+        } else {
+            // 不存在制品名或不存在制品名相关规则时，直接匹配版本
+            match(version!!, versionRule!!)
+        }
+    }
+
+    private fun getQueryRule(rule: Rule.NestedRule, field: String): Rule.QueryRule? {
+        // 获取nameRule
+        return rule.rules.firstOrNull {
+            it is Rule.QueryRule && it.field == field
+        } as Rule.QueryRule?
+    }
+
+    /**
+     * 判断[value]是否匹配[rule]
+     * 目前仅支持EQ,MATCH
+     */
+    private fun match(value: String, rule: Rule.QueryRule): Boolean {
+        return when (rule.operation) {
+            OperationType.EQ -> value == rule.value
+            OperationType.MATCH -> {
+                val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(rule.value.toString())
+                val regexPattern = escapedValue.replace("*", ".*")
+                "^$regexPattern$".toRegex().matches(value)
+            }
+            else -> false
+        }
     }
 }
