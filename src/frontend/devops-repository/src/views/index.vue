@@ -85,7 +85,7 @@
         overflow-y: auto;
         padding-top: 12px;
         font-size: 14px;
-        background-color: var(--deepBgColor);
+        background-color: white;
         will-change: width;
         transition: width .3s;
         &.hidden-menu {
@@ -94,22 +94,22 @@
         .split-line {
             height: 1px;
             margin: 6px 16px;
-            background-color: white;
+            background-color: var(--fontSubsidiaryColor);
             opacity: 0.2;
         }
         .nav-submain-item {
             height: 44px;
             margin-bottom: 4px;
             padding: 0 16px;
-            color: rgba(255, 255, 255, 0.8);
+            color: #7b7d8a;
             &:hover {
-                color: white;
-                background-color: #407BE0;
+                color: #3b97ff;
+                background-color: #ecf4ff;
             }
             &.router-link-active,
             &.active-link {
-                color: var(--primaryColor);
-                background-color: white;
+                color: #3b97ff;
+                background-color: #ecf4ff;
             }
             .menu-icon {
                 ::v-deep .bk-tooltip-ref {
@@ -124,7 +124,7 @@
             position: absolute;
             left: 16px;
             bottom: 24px;
-            color: white;
+            color: #7b7d8a;
             cursor: pointer;
         }
     }
