@@ -61,8 +61,8 @@ const val DOCKER_CATALOG_SUFFIX = "_catalog"
 const val DOCKER_TMP_UPLOAD_PATH = "_uploads"
 
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
-const val HTTP_PROTOCOL_HTTP = "http"
-const val HTTP_PROTOCOL_HTTPS = "https"
+const val HTTP_PROTOCOL = "http"
+const val HTTPS_PROTOCOL = "https"
 const val REGISTRY_SERVICE = "bkrepo"
 
 const val ERROR_MESSAGE = "{\"errors\":[{\"code\":\"%s\",\"message\":\"%s\",\"detail\":\"%s\"}]}"

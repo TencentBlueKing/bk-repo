@@ -48,6 +48,9 @@ bkLogConfig:
 ## ingress配置
 ingress:
   enabled: true
+  tls: false
+  crt: ""
+  key: ""
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "10240m"
@@ -133,7 +136,7 @@ common:
   config:
     ## bkrepo存储配置
     storage:
-      ## 指定存储类型，支持filesystem/cos/s3/hdfs
+      ## 指定存储类型，支持filesystem/cos/s3/hdfs/innercos
       type: filesystem
       ## filesystem配置，使用文件系统
       filesystem:
