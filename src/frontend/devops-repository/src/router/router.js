@@ -32,6 +32,12 @@ const planManage = () => import(/* webpackChunkName: "planManage" */'@repository
 const createPlan = () => import(/* webpackChunkName: "createPlan" */'@repository/views/planManage/createPlan')
 const logDetail = () => import(/* webpackChunkName: "logDetail" */'@repository/views/planManage/logDetail')
 
+const repoScan = () => import(/* webpackChunkName: "repoScan" */'@repository/views/repoScan')
+const scanReport = () => import(/* webpackChunkName: "scanReport" */'@repository/views/repoScan/scanReport')
+const artiReport = () => import(/* webpackChunkName: "artiReport" */'@repository/views/repoScan/artiReport')
+const scanConfig = () => import(/* webpackChunkName: "scanConfig" */'@repository/views/repoScan/scanConfig')
+const startScan = () => import(/* webpackChunkName: "scanConfig" */'@repository/views/repoScan/startScan')
+
 const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@repository/views/repoGeneric')
 
 const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@repository/views/repoCommon/commonPackageList')
@@ -197,6 +203,79 @@ const routes = [
                     breadcrumb: [
                         { name: 'planManage', label: '{planName}', template: '制品分发' },
                         { name: 'logDetail', label: '日志详情' }
+                    ]
+                }
+            },
+            {
+                path: 'repoScan',
+                name: 'repoScan',
+                component: repoScan,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoScan', label: '制品扫描' }
+                    ]
+                }
+            },
+            {
+                path: 'scanReport/:planId',
+                name: 'scanReport',
+                component: scanReport,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'scanReport', label: '{scanName}', template: '扫描报告' }
+                    ]
+                }
+            },
+            {
+                path: 'artiReport/:planId/:recordId',
+                name: 'artiReport',
+                component: artiReport,
+                beforeEnter: (to, from, next) => {
+                    const repoType = to.query.repoType
+                    if (to.query.scanName) {
+                        to.meta.breadcrumb = [
+                            { name: 'repoScan', label: '制品扫描' },
+                            { name: 'scanReport', label: '{scanName}', template: '扫描报告' },
+                            { name: 'artiReport', label: '{artiName}', template: '制品扫描结果' }
+                        ]
+                    } else if (repoType === 'generic') {
+                        to.meta.breadcrumb = [
+                            { name: 'repoList', label: '仓库列表' },
+                            { name: 'repoGeneric', label: '{repoName}', template: '二进制仓库' },
+                            { name: 'artiReport', label: '制品扫描结果' }
+                        ]
+                    } else if (repoType) {
+                        to.meta.breadcrumb = [
+                            { name: 'repoList', label: '仓库列表' },
+                            { name: 'commonList', label: '{repoName}', template: '依赖仓库' },
+                            { name: 'commonPackage', label: '{package}', template: '制品详情' },
+                            { name: 'artiReport', label: '制品扫描结果' }
+                        ]
+                    }
+                    next()
+                }
+            },
+            {
+                path: 'scanConfig/:planId',
+                name: 'scanConfig',
+                component: scanConfig,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'scanConfig', label: '{scanName}', template: '方案设置' }
+                    ]
+                }
+            },
+            {
+                path: 'startScan/:planId',
+                name: 'startScan',
+                component: startScan,
+                meta: {
+                    breadcrumb: [
+                        { name: 'repoScan', label: '制品扫描' },
+                        { name: 'scanReport', label: '{scanName}', template: '扫描报告' },
+                        { name: 'startScan', label: '立即扫描' }
                     ]
                 }
             },

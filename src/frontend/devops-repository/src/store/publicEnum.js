@@ -82,10 +82,10 @@ export const scanTypeEnum = {
 
 // 扫描方案执行状态
 export const scanStatusEnum = {
-    INIT: '未开始',
-    RUNNING: '进行中',
-    STOP: '已中止',
-    SUCCESS: '已完成',
+    INIT: '等待扫描',
+    RUNNING: '正在扫描',
+    STOP: '扫描中止',
+    SUCCESS: '扫描完成',
     FAILED: '扫描异常'
 }
 

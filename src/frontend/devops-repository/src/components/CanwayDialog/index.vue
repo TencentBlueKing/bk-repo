@@ -6,7 +6,7 @@
         <template #tools>
             <div class="canway-dialog-header flex-align-center">
                 <span class="mr20 canway-dialog-title text-overflow" :title="title">{{ title }}</span>
-                <i class="devops-icon icon-close" @click="$emit('cancel')"></i>
+                <i class="bk-icon icon-close hover-btn" @click="$emit('cancel')"></i>
             </div>
         </template>
         <slot></slot>
@@ -67,11 +67,15 @@
     cursor: default;
     .canway-dialog-title {
         font-size: 16px;
-        font-weight: bold;
+        font-weight: 500;
     }
     .icon-close {
-        padding: 5px;
-        cursor: pointer;
+        color: var(--fontSubsidiaryColor);
+        font-size: 22px;
+        font-weight: 400;
+        &:hover {
+            background-color: var(--bgHoverLighterColor);
+        }
     }
 }
 </style>

@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "webpack-dev-server --mode development --progress",
     "public": "webpack --mode production",
-    "public:dev": "cross-env NODE_ENV=dev  npm run public --",
-    "public:test": "cross-env NODE_ENV=test  npm run public --",
-    "public:master": "cross-env NODE_ENV=master  npm run public --",
-    "public:external": "cross-env NODE_ENV=external npm run public --"
+    "public:dev": "cross-env NODE_ENV=dev  yarn public --",
+    "public:test": "cross-env NODE_ENV=test  yarn public --",
+    "public:master": "cross-env NODE_ENV=master  yarn public --",
+    "public:external": "cross-env NODE_ENV=external yarn public --"
   },
   "dependencies": {
     "axios": "^0.21.1",

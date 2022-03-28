@@ -8,7 +8,7 @@
         <div v-if="token" class="flex-align-center">
             <i class="flex-center devops-icon icon-check-1"></i>
             <div>
-                <h3>{{ $t('create') + $t('success') }}</h3>
+                <span class="token-title">{{ $t('create') + $t('success') }}</span>
                 <div @click="copyToken(token)" class="mt10 mb10 hover-btn flex-align-center">
                     {{ $t('tokenIs') + token }}
                     <i class="ml10 devops-icon icon-clipboard"></i>
@@ -126,6 +126,10 @@
     color: white;
     border-radius: 50%;
     background-color: var(--successColor);
+}
+.token-title {
+    font-size: 17px;
+    font-weight: bold;
 }
 .token-tip {
     color: var(--warningColor);

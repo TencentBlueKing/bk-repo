@@ -102,6 +102,12 @@ export default {
             { headers: { 'Content-Type': 'multipart/form-data' } }
         )
     },
+    // 重置密码
+    resetPwd (_, userId) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/reset/${userId}`
+        )
+    },
     // 删除用户
     deleteUser (_, userId) {
         return Vue.prototype.$ajax.delete(

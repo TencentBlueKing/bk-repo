@@ -1,0 +1,110 @@
+<template>
+    <div class="scan-config-container" v-bkloading="{ isLoading }">
+        <bk-tab class="scan-config-tab" type="unborder-card" :active.sync="tabName">
+            <bk-tab-panel name="baseInfo" label="基础设置">
+                <bk-form :label-width="150">
+                    <bk-form-item label="方案名称">
+                        <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
+                    </bk-form-item>
+                    <bk-form-item label="方案类型">
+                        <span>{{ scanTypeEnum[scanBaseInfo.type] }}</span>
+                    </bk-form-item>
+                    <bk-form-item :label="$t('description')">
+                        <bk-input type="textarea"
+                            class="w480"
+                            maxlength="200"
+                            :rows="6"
+                            v-model.trim="scanBaseInfo.description">
+                        </bk-input>
+                    </bk-form-item>
+                    <bk-form-item>
+                        <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
+                    </bk-form-item>
+                </bk-form>
+            </bk-tab-panel>
+            <bk-tab-panel render-directive="if" name="autoConfig" label="监控设置">
+                <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
+            </bk-tab-panel>
+        </bk-tab>
+    </div>
+</template>
+<script>
+    import autoScanConfig from './autoScanConfig'
+    import { mapActions } from 'vuex'
+    import { scanTypeEnum } from '@repository/store/publicEnum'
+    export default {
+        name: 'scanConfig',
+        components: { autoScanConfig },
+        data () {
+            return {
+                scanTypeEnum,
+                tabName: 'baseInfo',
+                scanBaseInfo: {
+                    name: '',
+                    type: '',
+                    description: '',
+                    autoScan: false,
+                    repoNameList: [],
+                    artifactRules: []
+                }
+            }
+        },
+        computed: {
+            projectId () {
+                return this.$route.params.projectId
+            },
+            planId () {
+                return this.$route.params.planId
+            }
+        },
+        created () {
+            this.ajaxScanConfig()
+        },
+        methods: {
+            ...mapActions([
+                'getScanConfig',
+                'saveScanConfig'
+            ]),
+            save () {
+                this.ajaxSaveConfig({
+                    name: this.scanBaseInfo.name,
+                    description: this.scanBaseInfo.description
+                })
+            },
+            ajaxScanConfig () {
+                this.getScanConfig({
+                    projectId: this.projectId,
+                    id: this.planId
+                }).then(res => {
+                    this.scanBaseInfo = res
+                })
+            },
+            ajaxSaveConfig (body) {
+                this.saveScanConfig({
+                    id: this.planId,
+                    projectId: this.projectId,
+                    ...body
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('save') + this.$t('success')
+                    })
+                    this.ajaxScanConfig()
+                })
+            }
+        }
+    }
+</script>
+<style lang="scss" scoped>
+.scan-config-container {
+    height: 100%;
+    background-color: white;
+    .scan-config-tab {
+        height: 100%;
+        ::v-deep .bk-tab-section {
+            height: calc(100% - 42px);
+            overflow-y: auto;
+        }
+    }
+}
+</style>
