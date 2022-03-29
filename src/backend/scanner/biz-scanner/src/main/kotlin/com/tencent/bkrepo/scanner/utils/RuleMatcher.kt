@@ -63,11 +63,11 @@ object RuleMatcher {
      * @return true 匹配， false 不匹配， [rule]中没有限制[name]和[version]相关规则时候返回true
      */
     fun nameVersionMatch(name: String?, version: String?, rule: Rule.NestedRule): Boolean {
-        if (rule.relation == Rule.NestedRule.RelationType.AND) {
+        if (rule.relation == Rule.NestedRule.RelationType.AND && rule.rules.isNotEmpty()) {
             return matchAnd(name, version, rule)
         }
 
-        if (rule.relation == Rule.NestedRule.RelationType.OR) {
+        if (rule.relation == Rule.NestedRule.RelationType.OR && rule.rules.isNotEmpty()) {
             return rule.rules.any { it is Rule.NestedRule && nameVersionMatch(name, version, it) }
         }
 
@@ -85,7 +85,10 @@ object RuleMatcher {
 
         // nameRule或versionRule不存在的时候才继续遍历
         if (nameRule == null && versionRule == null) {
-            return rule.rules.all { it is Rule.NestedRule && nameVersionMatch(name, version, it) }
+            return rule.rules
+                .asSequence()
+                .filterIsInstance<Rule.NestedRule>()
+                .all { nameVersionMatch(name, version, it) }
         }
 
         val nameMatchFailed = name == null && nameRule != null
