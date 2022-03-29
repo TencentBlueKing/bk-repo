@@ -43,6 +43,7 @@ import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.utils.Request
 import com.tencent.bkrepo.scanner.utils.RuleMatcher
+import kotlin.math.min
 
 /**
  * 依赖包迭代器
@@ -53,8 +54,20 @@ class PackageIterator(
     override val position: PackageIteratePosition
 ) : PageableIterator<Node>() {
     override fun nextPageData(page: Int, pageSize: Int): List<Node> {
-        val packages = requestPackage(page, pageSize)
-        return requestNode(packages)
+        if (position.packages.isEmpty() || position.packageIndex >= position.packages.size - 1) {
+            position.packages = requestPackage(page, pageSize)
+            position.packageIndex = INITIAL_INDEX
+        }
+
+        if (position.packages.isEmpty()) {
+            return emptyList()
+        }
+
+        val fromIndex = position.packageIndex + 1
+        val toIndex = min(position.packages.size, position.packageIndex + position.pageSize + 1)
+        val populatedPackages = position.packages.subList(fromIndex, toIndex).map { pkg -> populatePackage(pkg) }
+        position.packageIndex += position.pageSize
+        return requestNode(populatedPackages)
     }
 
     /**
@@ -73,11 +86,14 @@ class PackageIterator(
             records.flatMap {
                 val pkg = parse(it)
                 // 获取与rule匹配的版本
-                val versions = pkg.historyVersion.ifEmpty { listOf(pkg.latestVersion) }
+                pkg.historyVersion
+                    .ifEmpty { listOf(pkg.latestVersion) }
+                    .asSequence()
                     .filter { version ->
                         RuleMatcher.nameVersionMatch(pkg.artifactName, version, position.rule as Rule.NestedRule)
                     }
-                versions.map { version -> populatePackage(pkg.copy(packageVersion = version)) }
+                    .map { version -> pkg.copy(packageVersion = version) }
+                    .toList()
             }
         }
     }
@@ -226,7 +242,7 @@ class PackageIterator(
         )
     }
 
-    private data class Package(
+    data class Package(
         val projectId: String,
         val repoName: String,
         val artifactName: String,
@@ -286,6 +302,8 @@ class PackageIterator(
          * }
          */
         val rule: Rule,
+        var packages: List<Package> = emptyList(),
+        var packageIndex: Int = INITIAL_INDEX,
         override var page: Int = INITIAL_PAGE,
         override var pageSize: Int = DEFAULT_PAGE_SIZE,
         override var index: Int = INITIAL_INDEX
