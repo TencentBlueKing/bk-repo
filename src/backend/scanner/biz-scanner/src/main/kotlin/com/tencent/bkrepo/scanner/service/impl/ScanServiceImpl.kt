@@ -152,7 +152,7 @@ class ScanServiceImpl @Autowired constructor(
         val subtask = subScanTaskDao.find(projectId, subtaskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
         val userId = SecurityUtils.getUserId()
-        return updateScanTaskResult(subtask, SubScanTaskStatus.STOP.name, emptyMap(), userId)
+        return updateScanTaskResult(subtask, SubScanTaskStatus.STOPPED.name, emptyMap(), userId)
     }
 
     override fun task(taskId: String): ScanTask {

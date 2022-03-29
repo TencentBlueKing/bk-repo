@@ -289,7 +289,7 @@ object ScanPlanConverter {
         return when (status) {
             ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED, SubScanTaskStatus.ENQUEUED)
             ScanStatus.RUNNING -> listOf(SubScanTaskStatus.EXECUTING)
-            ScanStatus.STOP -> listOf(SubScanTaskStatus.STOP)
+            ScanStatus.STOP -> listOf(SubScanTaskStatus.STOPPED)
             ScanStatus.FAILED -> listOf(SubScanTaskStatus.FAILED)
             ScanStatus.SUCCESS -> listOf(SubScanTaskStatus.SUCCESS)
         }
@@ -306,7 +306,7 @@ object ScanPlanConverter {
             ScanTaskStatus.SCANNING_SUBMITTING.name,
             ScanTaskStatus.SCANNING_SUBMITTED.name -> ScanStatus.RUNNING
 
-            SubScanTaskStatus.STOP.name,
+            SubScanTaskStatus.STOPPED.name,
             ScanTaskStatus.PAUSE.name,
             ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
 
