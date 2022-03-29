@@ -43,9 +43,9 @@ body {
 
     a {
         text-decoration: none;
-        color: var(--fontPrimaryColor);
+        color: var(--primaryColor);
         &:hover {
-            color: var(--primaryColor);
+            color: var(--primaryWeightColor);
         }
     }
 }
@@ -58,17 +58,10 @@ body {
     user-select: none;
     cursor: pointer;
     &:hover {
-        color: var(--primaryColor);
+        color: var(--primaryWeightColor);
     }
     &.hover-danger:hover {
         color: var(--dangerColor);
-    }
-}
-
-.router-link {
-    color: var(--primaryColor);
-    &:hover {
-        color: var(--primaryHoverColor);
     }
 }
 

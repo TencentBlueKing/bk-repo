@@ -28,7 +28,7 @@
                                 :key="tag">
                                 {{ tag }}
                             </span>
-                            <scan-tag v-if="detail.basic.scanStatus" class="ml10" :status="detail.basic.scanStatus"></scan-tag>
+                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="detail.basic.scanStatus"></scan-tag>
                         </template>
                     </span>
                 </div>

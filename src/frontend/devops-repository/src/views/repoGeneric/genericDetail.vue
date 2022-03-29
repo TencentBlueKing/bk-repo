@@ -29,7 +29,7 @@
                     <div class="pl30">
                         <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                         {{ $t('tokenSubTitle') }}
-                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                        <router-link :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                     </div>
                     <code-area class="mt10" :code-list="codeList"></code-area>
                     <create-token-dialog ref="createToken"></create-token-dialog>

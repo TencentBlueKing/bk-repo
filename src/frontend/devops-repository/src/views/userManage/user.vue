@@ -11,7 +11,7 @@
                     <li class="operation-item hover-btn" @click.stop="downloadTemplate">下载模板</li>
                 </ul></template>
             </bk-popover> -->
-            <bk-button class="ml20" icon="plus" theme="primary" @click="showCreateUser"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button class="ml20" icon="plus" theme="primary" @click="showCreateUser">{{ $t('create') }}</bk-button>
             <div class="mr20 flex-align-center">
                 <bk-input
                     v-model.trim="userInput"

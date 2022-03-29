@@ -78,7 +78,7 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: !isDev ? '[name].[contenthash].css' : '[name].css',
-                chunkFilename: '[id].css',
+                chunkFilename: '[id].[contenthash].css',
                 ignoreOrder: true
             }),
             new CopyWebpackPlugin({

@@ -1,7 +1,7 @@
 <template>
     <div class="plan-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="$router.push({ name: 'createPlan' })"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="$router.push({ name: 'createPlan' })">{{ $t('create') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     class="w250"
@@ -86,11 +86,10 @@
                     {{formatDate(row.createdDate)}}
                 </template>
             </bk-table-column>
-            <bk-table-column label="计划状态" width="120">
+            <bk-table-column label="启用计划" width="70">
                 <template #default="{ row }">
                     <div class="flex-align-center" @click.stop="() => {}">
                         <bk-switcher class="mr10" v-model="row.enabled" size="small" theme="primary" @change="changeEnabledHandler(row)"></bk-switcher>
-                        <div>{{row.enabled ? '启用' : '停用'}}</div>
                     </div>
                 </template>
             </bk-table-column>
