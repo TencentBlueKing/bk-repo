@@ -56,6 +56,16 @@ interface ScanService {
     fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask
 
     /**
+     * 停止子任务
+     *
+     * @param projectId 项目id
+     * @param subtaskId 子任务id
+     *
+     * @return true 停止成功，false 停止失败
+     */
+    fun stopSubtask(projectId: String, subtaskId: String): Boolean
+
+    /**
      * 匹配文件扫描
      */
     fun matchPlanScan(request: MatchPlanSingleScanRequest): List<ScanTask>

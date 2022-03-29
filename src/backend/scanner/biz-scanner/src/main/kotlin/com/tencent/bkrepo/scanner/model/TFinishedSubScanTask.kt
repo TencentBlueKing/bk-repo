@@ -37,7 +37,9 @@ import java.time.LocalDateTime
 @Document("finished_sub_scan_task")
 class TFinishedSubScanTask(
     id: String? = null,
+    createdBy: String,
     createdDate: LocalDateTime,
+    lastModifiedBy: String,
     lastModifiedDate: LocalDateTime,
     startDateTime: LocalDateTime?,
     finishedDateTime: LocalDateTime,
@@ -64,7 +66,9 @@ class TFinishedSubScanTask(
     scanResultOverview: Map<String, Number>?
 ) : SubScanTaskDefinition(
     id = id,
+    createdBy = createdBy,
     createdDate = createdDate,
+    lastModifiedBy = lastModifiedBy,
     lastModifiedDate = lastModifiedDate,
     startDateTime = startDateTime,
     finishedDateTime = finishedDateTime,
@@ -91,12 +95,15 @@ class TFinishedSubScanTask(
             task: TSubScanTask,
             resultStatus: String,
             overview: Map<String, Any?>,
+            modifiedBy: String? = null,
             now: LocalDateTime = LocalDateTime.now()
         ) = with(task) {
             val numberOverview = Converter.convert(overview)
             TFinishedSubScanTask(
                 id = id,
+                createdBy = createdBy,
                 createdDate = createdDate,
+                lastModifiedBy = modifiedBy ?: lastModifiedBy,
                 lastModifiedDate = now,
                 startDateTime = startDateTime,
                 finishedDateTime = now,

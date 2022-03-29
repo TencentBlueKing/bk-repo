@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -146,6 +147,14 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun stopSubtask(projectId: String, subtaskId: String): Boolean {
+        val subtask = subScanTaskDao.find(projectId, subtaskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
+        val userId = SecurityUtils.getUserId()
+        return updateScanTaskResult(subtask, SubScanTaskStatus.STOP.name, emptyMap(), userId)
+    }
+
     override fun task(taskId: String): ScanTask {
         return scanTaskDao.findById(taskId)?.let { task ->
             val plan = task.planId?.let { scanPlanDao.get(it) }
@@ -184,7 +193,7 @@ class ScanServiceImpl @Autowired constructor(
             val subScanTask = subScanTaskDao.findById(subTaskId) ?: return
             // 更新扫描任务结果
             val updateScanTaskResultSuccess = updateScanTaskResult(
-                subScanTask, scanStatus, parentTaskId, scanExecutorResult?.overview ?: emptyMap()
+                subScanTask, scanStatus, scanExecutorResult?.overview ?: emptyMap()
             )
 
             // 没有扫描任务被更新或子扫描任务失败时直接返回
@@ -222,15 +231,16 @@ class ScanServiceImpl @Autowired constructor(
     fun updateScanTaskResult(
         subTask: TSubScanTask,
         resultSubTaskStatus: String,
-        parentTaskId: String,
-        overview: Map<String, Any?>
+        overview: Map<String, Any?>,
+        modifiedBy: String? = null
     ): Boolean {
         val subTaskId = subTask.id!!
+        val parentTaskId = subTask.parentScanTaskId
         // 任务已扫描过，重复上报直接返回
         if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
             return false
         }
-        finishedSubScanTaskDao.insert(TFinishedSubScanTask.from(subTask, resultSubTaskStatus, overview))
+        finishedSubScanTaskDao.insert(TFinishedSubScanTask.from(subTask, resultSubTaskStatus, overview, modifiedBy))
         scannerMetrics.subtaskStatusChange(
             SubScanTaskStatus.valueOf(subTask.status), SubScanTaskStatus.valueOf(resultSubTaskStatus)
         )
@@ -314,7 +324,7 @@ class ScanServiceImpl @Autowired constructor(
             // 处于执行中的任务，而且任务执行了最大允许的次数，直接设置为失败
             if (task.status == SubScanTaskStatus.EXECUTING.name && task.executedTimes >= DEFAULT_MAX_EXECUTE_TIMES) {
                 logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] exceed max execute times")
-                self.updateScanTaskResult(task, SubScanTaskStatus.TIMEOUT.name, task.parentScanTaskId, emptyMap())
+                self.updateScanTaskResult(task, SubScanTaskStatus.TIMEOUT.name, emptyMap())
                 continue
             }
 

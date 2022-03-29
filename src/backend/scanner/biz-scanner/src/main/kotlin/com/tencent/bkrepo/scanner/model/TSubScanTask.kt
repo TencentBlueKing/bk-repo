@@ -51,7 +51,9 @@ import java.time.LocalDateTime
 class TSubScanTask(
     id: String? = null,
     createdDate: LocalDateTime,
+    createdBy: String,
     lastModifiedDate: LocalDateTime,
+    lastModifiedBy: String,
     startDateTime: LocalDateTime? = null,
 
     parentScanTaskId: String,
@@ -75,7 +77,9 @@ class TSubScanTask(
 ) : SubScanTaskDefinition(
     id = id,
     createdDate = createdDate,
+    createdBy = createdBy,
     lastModifiedDate = lastModifiedDate,
+    lastModifiedBy = lastModifiedBy,
     startDateTime = startDateTime,
     parentScanTaskId = parentScanTaskId,
     planId = planId,

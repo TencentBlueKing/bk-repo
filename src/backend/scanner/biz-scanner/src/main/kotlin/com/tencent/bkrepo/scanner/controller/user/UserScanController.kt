@@ -43,12 +43,14 @@ import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.utils.Converter
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("扫描接口")
@@ -63,6 +65,17 @@ class UserScanController @Autowired constructor(
     @PostMapping
     fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
         return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL))
+    }
+
+    @ApiOperation("中止制品扫描")
+    @PostMapping("/{projectId}/stop")
+    fun stopScan(
+        @ApiParam(value = "projectId")
+        @PathVariable projectId: String,
+        @ApiParam(value = "记录id")
+        @RequestParam("recordId") subtaskId: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(scanService.stopSubtask(projectId, subtaskId))
     }
 
     @ApiOperation("批量扫描")

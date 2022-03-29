@@ -50,7 +50,9 @@ import java.time.LocalDateTime
 )
 open class SubScanTaskDefinition(
     var id: String? = null,
+    val createdBy: String,
     val createdDate: LocalDateTime,
+    val lastModifiedBy: String,
     val lastModifiedDate: LocalDateTime,
     /**
      * 开始扫描时间

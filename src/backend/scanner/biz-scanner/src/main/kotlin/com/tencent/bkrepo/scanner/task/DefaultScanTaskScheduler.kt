@@ -203,7 +203,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
             val now = LocalDateTime.now()
             val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
             return TSubScanTask(
+                createdBy = scanTask.createdBy,
                 createdDate = now,
+                lastModifiedBy = scanTask.createdBy,
                 lastModifiedDate = now,
 
                 parentScanTaskId = scanTask.taskId,
@@ -243,7 +245,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?.overview
                 ?.let { Converter.convert(it) }
             return TFinishedSubScanTask(
+                createdBy = scanTask.createdBy,
                 createdDate = now,
+                lastModifiedBy = scanTask.createdBy,
                 lastModifiedDate = now,
                 startDateTime = now,
                 finishedDateTime = now,
