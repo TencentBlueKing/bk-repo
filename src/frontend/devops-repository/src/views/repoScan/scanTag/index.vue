@@ -2,7 +2,7 @@
     <span class="repo-tag scan-tag-container" :class="status"
         @click.stop="showScanList"
         v-bk-clickoutside="handleClickOutSide">
-        {{scanStatusEnum[status]}}
+        {{scanStatusEnum[status] || '未扫描'}}
         <bk-dialog
             class="scan-list-dialog"
             v-model="visible"
@@ -12,13 +12,18 @@
             :close-icon="false"
             :show-footer="false"
             :draggable="false">
-            <div class="scan-item flex-between-center"
-                v-for="scan in scanList"
-                :key="scan.id">
-                <span class="hover-btn text-overflow" style="max-width:150px;"
-                    @click="toReport(scan)" :title="scan.name">{{ scan.name }}</span>
-                <span class="repo-tag" :class="scan.status">{{scanStatusEnum[scan.status]}}</span>
-            </div>
+            <template v-if="scanList.length">
+                <div class="scan-item flex-between-center"
+                    v-for="scan in scanList"
+                    :key="scan.id">
+                    <span class="hover-btn text-overflow" style="max-width:150px;"
+                        @click="toReport(scan)" :title="scan.name">{{ scan.name }}</span>
+                    <span class="repo-tag" :class="scan.status">{{scanStatusEnum[scan.status]}}</span>
+                </div>
+            </template>
+            <empty-data class="m20" v-else>
+                <span class="ml10">暂无适配的扫描方案</span>
+            </empty-data>
         </bk-dialog>
     </span>
 </template>
@@ -105,6 +110,7 @@
             .bk-dialog-body {
                 padding: 20px;
                 max-height: 200px;
+                min-height: auto;
                 overflow-y: auto;
             }
         }

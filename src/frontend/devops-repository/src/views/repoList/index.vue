@@ -1,7 +1,7 @@
 <template>
     <div class="repo-list-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="createRepo"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="createRepo">{{ $t('create') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     v-model.trim="query.name"

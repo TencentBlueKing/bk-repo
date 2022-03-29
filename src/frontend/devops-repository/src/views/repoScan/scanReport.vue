@@ -230,9 +230,7 @@
             }
         },
         created () {
-            !this.repoListAll.length && this.getRepoListAll({
-                projectId: this.projectId
-            })
+            !this.repoListAll.length && this.getRepoListAll({ projectId: this.projectId })
             this.scanReportOverview({
                 projectId: this.projectId,
                 id: this.planId

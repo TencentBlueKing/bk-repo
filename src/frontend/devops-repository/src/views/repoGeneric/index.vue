@@ -2,14 +2,14 @@
     <div class="repo-generic-container">
         <header class="mb10 pl20 pr20 generic-header flex-align-center">
             <Icon class="generic-img" size="70" name="generic" />
-            <div class="ml20 generic-title flex-column">
-                <span class="mb10 repo-title text-overflow" :title="replaceRepoName(repoName)">
+            <div class="ml20 generic-title">
+                <div class="mb10 repo-title text-overflow" :title="replaceRepoName(repoName)">
                     {{ replaceRepoName(repoName) }}
-                </span>
-                <span class="repo-description text-overflow"
+                </div>
+                <div class="repo-description text-overflow"
                     :title="currentRepo.description">
                     {{ currentRepo.description || '【仓库描述】' }}
-                </span>
+                </div>
             </div>
         </header>
         <div class="repo-generic-main flex-align-center"
@@ -88,9 +88,9 @@
                     @selection-change="selectMultiRow">
                     <template #empty>
                         <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)">
-                            <template v-if="!Boolean(searchFileName)">
+                            <template v-if="!Boolean(searchFileName) && permission.write && repoName !== 'pipeline'">
                                 <span class="ml10">暂无文件，</span>
-                                <bk-button text @click="handlerUpload">即刻上传</bk-button>
+                                <bk-button text @click="handlerUpload(selectedTreeNode)">即刻上传</bk-button>
                             </template>
                         </empty-data>
                     </template>
@@ -100,7 +100,8 @@
                             <div class="flex-align-center flex-inline">
                                 <Icon size="20" :name="row.folder ? 'folder' : getIconName(row.name)" />
                                 <div class="ml10 flex-1 text-overflow" :title="row.name">{{row.name}}</div>
-                                <scan-tag v-if="row.scanStatus" class="ml10"
+                                <scan-tag class="ml10"
+                                    v-if="/\.(ipa)|(apk)$/.test(row.name)"
                                     :status="row.scanStatus"
                                     :full-path="row.fullPath">
                                 </scan-tag>
@@ -632,7 +633,7 @@
             }
             .repo-description {
                 max-width: 70vw;
-                padding-left: 6px;
+                padding: 5px 15px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
             }
