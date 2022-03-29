@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.binauditor
+package com.tencent.bkrepo.scanner.executor.arrowhead
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.PullImageResultCallback
@@ -41,19 +41,20 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfCve
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfLicenseRisk
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult.Companion.overviewKeyOfSensitive
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ResultFilterRule
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult.Companion.overviewKeyOfCve
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult.Companion.overviewKeyOfLicenseRisk
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult.Companion.overviewKeyOfSensitive
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ResultFilterRule
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
+import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -68,20 +69,21 @@ import java.util.concurrent.TimeUnit
 import kotlin.reflect.full.memberProperties
 import kotlin.system.measureTimeMillis
 
-@Component(BinAuditorScanner.TYPE)
+@Component(ArrowheadScanner.TYPE)
 @ConditionalOnProperty(SCANNER_EXECUTOR_DOCKER_ENABLED, matchIfMissing = true)
-class BinAuditorScanExecutor @Autowired constructor(
-    private val dockerClient: DockerClient
+class ArrowheadScanExecutor @Autowired constructor(
+    private val dockerClient: DockerClient,
+    private val scannerExecutorProperties: ScannerExecutorProperties
 ) : ScanExecutor {
 
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
-    private lateinit var binAuditorConfigTemplate: Resource
+    private lateinit var arrowheadConfigTemplate: Resource
 
     override fun scan(
         task: ScanExecutorTask,
         callback: (ScanExecutorResult) -> Unit
     ) {
-        require(task.scanner is BinAuditorScanner)
+        require(task.scanner is ArrowheadScanner)
         val scanner = task.scanner
         // 创建工作目录
         val workDir = createWorkDir(scanner.rootPath, task.taskId)
@@ -125,7 +127,7 @@ class BinAuditorScanExecutor @Autowired constructor(
      */
     private fun createWorkDir(rootPath: String, taskId: String): File {
         // 创建工作目录
-        val workDir = File(rootPath, taskId)
+        val workDir = File(File(scannerExecutorProperties.workDir, rootPath), taskId)
         if (!workDir.deleteRecursively() || !workDir.mkdirs()) {
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, workDir.absolutePath)
         }
@@ -133,33 +135,32 @@ class BinAuditorScanExecutor @Autowired constructor(
     }
 
     /**
-     * 加载BinAuditor扫描器配置文件
+     * 加载扫描器配置文件
      *
      * @param scanTask 扫描任务
      * @param workDir 工作目录
      * @param scannerInputFile 待扫描文件
      *
-     * @return BinAuditor扫描器配置文件
+     * @return 扫描器配置文件
      */
     private fun loadConfigFile(
         scanTask: ScanExecutorTask,
         workDir: File,
         scannerInputFile: File
     ): File {
-        require(scanTask.scanner is BinAuditorScanner)
+        require(scanTask.scanner is ArrowheadScanner)
         val scanner = scanTask.scanner
-        val nvTools = scanner.nvTools
+        val knowledgeBase = scanner.knowledgeBase
         val dockerImage = scanner.container
-        val template = binAuditorConfigTemplate.inputStream.use { it.reader().readText() }
+        val template = arrowheadConfigTemplate.inputStream.use { it.reader().readText() }
         val inputFilePath = "${dockerImage.inputDir.removePrefix(SLASH)}$SLASH${scannerInputFile.name}"
         val outputDir = dockerImage.outputDir.removePrefix(SLASH)
         val params = mapOf(
             TEMPLATE_KEY_INPUT_FILE to inputFilePath,
             TEMPLATE_KEY_OUTPUT_DIR to outputDir,
-            TEMPLATE_KEY_NV_TOOLS_ENABLED to nvTools.enabled,
-            TEMPLATE_KEY_NV_TOOLS_USERNAME to nvTools.username,
-            TEMPLATE_KEY_NV_TOOLS_KEY to nvTools.key,
-            TEMPLATE_KEY_NV_TOOLS_HOST to nvTools.host
+            TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID to knowledgeBase.secretId,
+            TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY to knowledgeBase.secretKey,
+            TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT to knowledgeBase.endpoint
         )
 
         val content = SpelExpressionParser()
@@ -203,7 +204,7 @@ class BinAuditorScanExecutor @Autowired constructor(
      * @return true 扫描成功， false 扫描失败
      */
     private fun doScan(workDir: File, task: ScanExecutorTask): SubScanTaskStatus {
-        require(task.scanner is BinAuditorScanner)
+        require(task.scanner is ArrowheadScanner)
         val containerConfig = task.scanner.container
         pullImage(containerConfig.image)
 
@@ -238,11 +239,11 @@ class BinAuditorScanExecutor @Autowired constructor(
         outputDir: File,
         resultFilterRule: ResultFilterRule?,
         scanStatus: SubScanTaskStatus
-    ): BinAuditorScanExecutorResult {
-        val cveSecResultFile = File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS)
-        val cveSecItems = readJsonString<List<Map<String, Any?>>>(cveSecResultFile)
-            ?.map { CveSecItem.parseCveSecItems(it) }
-            ?: emptyList()
+    ): ArrowheadScanExecutorResult {
+        val cveSecItems =
+            readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
+                ?.map { CveSecItem.normalize(it) }
+                ?: emptyList()
 
         val checkSecItems =
             readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)) ?: emptyList()
@@ -259,7 +260,7 @@ class BinAuditorScanExecutor @Autowired constructor(
             sensitiveItems = sensitiveItems.filterNot { excludedSensitiveItem(it, excludes) }
         }
 
-        return BinAuditorScanExecutorResult(
+        return ArrowheadScanExecutorResult(
             scanStatus = scanStatus.name,
             overview = overview(applicationItems, sensitiveItems, cveSecItems),
             checkSecItems = checkSecItems,
@@ -323,7 +324,7 @@ class BinAuditorScanExecutor @Autowired constructor(
 
         // cve count
         cveSecItems.forEach {
-            val overviewKey = overviewKeyOfCve(it.level ?: it.cvssRank)
+            val overviewKey = overviewKeyOfCve(it.cvssRank)
             overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
 
@@ -343,22 +344,21 @@ class BinAuditorScanExecutor @Autowired constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BinAuditorScanExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(ArrowheadScanExecutor::class.java)
 
         /**
-         * standalone模式 taskId占位符
+         * 扫描器配置文件路径
          */
         private const val CONFIG_FILE_TEMPLATE_CLASS_PATH = "classpath:standalone.toml"
 
-        // BinAuditor配置文件模板key
+        // arrowhead配置文件模板key
         private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
         private const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
-        private const val TEMPLATE_KEY_NV_TOOLS_ENABLED = "nvToolsEnabled"
-        private const val TEMPLATE_KEY_NV_TOOLS_USERNAME = "nvToolsUsername"
-        private const val TEMPLATE_KEY_NV_TOOLS_KEY = "nvToolsKey"
-        private const val TEMPLATE_KEY_NV_TOOLS_HOST = "nvToolsHost"
+        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
+        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
+        private const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
 
-        // BinAuditor扫描结果文件名
+        // arrowhead扫描结果文件名
         /**
          * 证书扫描结果文件名
          */

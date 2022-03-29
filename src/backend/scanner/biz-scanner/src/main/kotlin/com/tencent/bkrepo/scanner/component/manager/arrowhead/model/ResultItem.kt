@@ -25,16 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.model
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
-import org.springframework.data.mongodb.core.mapping.Document
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 
-@Document("application_item")
-class TApplicationItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: ApplicationItem
-) : ResultItem<ApplicationItem>(id, credentialsKey, sha256, scanner, data)
+@CompoundIndexes(
+    CompoundIndex(
+        name = "credentialsKey_sha256_scanner_idx",
+        def = "{'credentialsKey': 1, 'sha256': 1, 'scanner': 1}",
+        background = true
+    )
+)
+open class ResultItem <T>(
+    var id: String? = null,
+    val credentialsKey: String?,
+    val sha256: String,
+    val scanner: String,
+    val data: T
+)

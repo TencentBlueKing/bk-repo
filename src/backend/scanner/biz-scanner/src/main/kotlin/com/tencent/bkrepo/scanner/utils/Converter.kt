@@ -33,8 +33,8 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
@@ -128,13 +128,13 @@ object Converter {
         pageLimit: PageLimit
     ): Page<ArtifactVulnerabilityInfo> {
         val pageRequest = PageRequest.of(pageLimit.pageNumber, pageLimit.pageSize)
-        if (scannerType == BinAuditorScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
+        if (scannerType == ArrowheadScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
             detailReport as Page<CveSecItem>
             val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {
                 // TODO 添加漏洞详情
                 ArtifactVulnerabilityInfo(
                     cveId = it.cveId,
-                    severity = ScanPlanConverter.convertToLeakLevel(it.level!!),
+                    severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),
                     pkgName = it.component,
                     installedVersion = it.version,
                     title = it.name,

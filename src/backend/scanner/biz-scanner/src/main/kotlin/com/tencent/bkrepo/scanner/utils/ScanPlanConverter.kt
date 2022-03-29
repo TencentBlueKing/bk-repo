@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
@@ -333,8 +333,8 @@ object ScanPlanConverter {
     }
 
     fun getCveOverviewKey(scannerType: String, level: String): String {
-        if (scannerType == BinAuditorScanner.TYPE) {
-            return BinAuditorScanExecutorResult.overviewKeyOfCve(level)
+        if (scannerType == ArrowheadScanner.TYPE) {
+            return ArrowheadScanExecutorResult.overviewKeyOfCve(level)
         }
         throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, scannerType, level)
     }

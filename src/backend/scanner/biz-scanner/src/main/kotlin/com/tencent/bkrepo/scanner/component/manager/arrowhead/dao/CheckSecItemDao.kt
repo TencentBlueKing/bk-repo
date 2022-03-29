@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TSensitiveItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCheckSecItem
 import org.springframework.stereotype.Repository
 
 @Repository
-class SensitiveItemDao : ResultItemDao<TSensitiveItem>()
+class CheckSecItemDao : ResultItemDao<TCheckSecItem>()

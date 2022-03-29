@@ -25,10 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCheckSecItem
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
+import org.springframework.data.mongodb.core.mapping.Document
 
-@Repository
-class CheckSecItemDao : ResultItemDao<TCheckSecItem>()
+@Document("sensitive_item")
+class TSensitiveItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: SensitiveItem
+) : ResultItem<SensitiveItem>(id, credentialsKey, sha256, scanner, data)

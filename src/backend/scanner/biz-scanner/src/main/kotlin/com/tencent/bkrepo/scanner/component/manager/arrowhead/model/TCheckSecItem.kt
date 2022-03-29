@@ -25,44 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
-import com.fasterxml.jackson.annotation.JsonAlias
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
+import org.springframework.data.mongodb.core.mapping.Document
 
-@ApiModel("应用依赖组件信息")
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class ApplicationItem(
-    @ApiModelProperty("组件路径")
-    @JsonAlias("FilePath")
-    val path: String,
-
-    @ApiModelProperty("组件名")
-    @JsonAlias("LibraryName")
-    val libraryName: String,
-
-    @ApiModelProperty("组件版本")
-    @JsonAlias("LibraryVersion")
-    val libraryVersion: String,
-
-    /**
-     * 没有开源证书时为empty
-     */
-    @ApiModelProperty("组件使用的开源证书")
-    @JsonAlias("LicenseShortName")
-    val licenseShortName: String,
-
-    /**
-     * Low,Middle,High
-     */
-    @ApiModelProperty("证书风险等级")
-    @JsonAlias("LicenseRisk")
-    val licenseRisk: String
-) {
-    companion object {
-        const val TYPE = "APPLICATION_ITEM"
-    }
-}
-
+@Document("check_sec_item")
+class TCheckSecItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: CheckSecItem
+) : ResultItem<CheckSecItem>(id, credentialsKey, sha256, scanner, data)

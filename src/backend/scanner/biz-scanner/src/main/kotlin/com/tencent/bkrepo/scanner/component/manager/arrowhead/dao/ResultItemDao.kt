@@ -25,13 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.ResultItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
 import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig.Companion.BEAN_NAME_SCANNER_MONGO_TEMPLATE
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier

@@ -25,16 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.model
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TSensitiveItem
+import org.springframework.stereotype.Repository
 
-@Document("cve_sec_item")
-class TCveSecItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: CveSecItem
-) : ResultItem<CveSecItem>(id, credentialsKey, sha256, scanner, data)
+@Repository
+class SensitiveItemDao : ResultItemDao<TSensitiveItem>()

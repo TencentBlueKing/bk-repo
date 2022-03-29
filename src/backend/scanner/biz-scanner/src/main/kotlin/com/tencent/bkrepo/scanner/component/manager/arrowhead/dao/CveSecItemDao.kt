@@ -25,47 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonAlias
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.scanner.component.manager.Extra
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.stereotype.Repository
 
-@ApiModel("敏感信息数据")
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SensitiveItem(
-    @ApiModelProperty("存在敏感信息的文件路径")
-    @JsonAlias("Source")
-    val path: String,
-
-    /**
-     * uri, ipv4, ipv6, email, secret
-     */
-    @ApiModelProperty("敏感信息类型,")
-    @JsonAlias("Class")
-    val type: String,
-
-    /**
-     * uri, ipv4, ipv6, email, common_key
-     */
-    @ApiModelProperty("敏感信息子类型")
-    @JsonAlias("SubClass")
-    val subtype: String,
-
-    @ApiModelProperty("敏感信息内容")
-    @JsonAlias("Content")
-    val content: String,
-
-    @ApiModelProperty("敏感信息为uri或者email时生效")
-    @JsonAlias("Domain")
-    val domain: String,
-
-    @ApiModelProperty("敏感信息属性，存放文件类型，uri协议等信息")
-    @JsonAlias("Attr")
-    val attr: Map<String, String>
-) {
-    companion object {
-        const val TYPE = "SENSITIVE_ITEM"
+@Repository
+class CveSecItemDao : ResultItemDao<TCveSecItem>() {
+    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
+        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
+        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
+            criteria.and(dataKey(CveSecItem::cvssRank.name)).inValues(vulnerabilityLevels)
+        }
+        val cveIds = extra[Extra.EXTRA_CVE_ID]
+        if (cveIds is List <*> && cveIds.isNotEmpty()) {
+            criteria.and(dataKey(CveSecItem::cveId.name)).inValues(cveIds)
+        }
+        return criteria
     }
+
+    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
 }

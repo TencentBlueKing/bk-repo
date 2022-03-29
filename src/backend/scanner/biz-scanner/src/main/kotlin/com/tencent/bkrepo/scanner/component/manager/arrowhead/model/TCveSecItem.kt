@@ -25,28 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.dao
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCveSecItem
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import org.springframework.data.mongodb.core.mapping.Document
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(CveSecItem::level.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(CveSecItem::cveId.name)).inValues(cveIds)
-        }
-        return criteria
-    }
-
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
-}
+@Document("cve_sec_item")
+class TCveSecItem(
+    id: String? = null,
+    credentialsKey: String?,
+    sha256: String,
+    scanner: String,
+    data: CveSecItem
+) : ResultItem<CveSecItem>(id, credentialsKey, sha256, scanner, data)

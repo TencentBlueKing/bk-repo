@@ -25,16 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.model
+package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
-import org.springframework.data.mongodb.core.mapping.Document
+import com.fasterxml.jackson.annotation.JsonAlias
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
-@Document("sensitive_item")
-class TSensitiveItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: SensitiveItem
-) : ResultItem<SensitiveItem>(id, credentialsKey, sha256, scanner, data)
+/**
+ * 安全审计结果数
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class CheckSecItem(
+    /**
+     * 文件路径
+     */
+    @JsonAlias("name")
+    val path: String,
+    @JsonAlias("canary")
+    val canary: Boolean,
+    @JsonAlias("fortified")
+    val fortified: Long,
+    @JsonAlias("fortify-able")
+    val fortifyAble: Long,
+    @JsonAlias("fortify_source")
+    val fortifySource: Boolean,
+    @JsonAlias("nx")
+    val nx: Boolean,
+    @JsonAlias("pie")
+    val pie: Boolean,
+    @JsonAlias("relro")
+    val relRo: Boolean,
+    @JsonAlias("rpath")
+    val rPath: Boolean,
+    @JsonAlias("runpath")
+    val runPath: Boolean,
+    @JsonAlias("symbols")
+    val symbols: Boolean
+) {
+    companion object {
+        const val TYPE = "CHECK_SEC_ITEM"
+    }
+}
+

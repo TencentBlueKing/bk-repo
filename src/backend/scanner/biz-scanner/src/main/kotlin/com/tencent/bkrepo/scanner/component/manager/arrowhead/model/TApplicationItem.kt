@@ -25,16 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor.model
+package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
 import org.springframework.data.mongodb.core.mapping.Document
 
-@Document("check_sec_item")
-class TCheckSecItem(
+@Document("application_item")
+class TApplicationItem(
     id: String? = null,
     credentialsKey: String?,
     sha256: String,
     scanner: String,
-    data: CheckSecItem
-) : ResultItem<CheckSecItem>(id, credentialsKey, sha256, scanner, data)
+    data: ApplicationItem
+) : ResultItem<ApplicationItem>(id, credentialsKey, sha256, scanner, data)

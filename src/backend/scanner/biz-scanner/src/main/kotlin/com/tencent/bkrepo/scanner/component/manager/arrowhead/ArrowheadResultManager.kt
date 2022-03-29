@@ -25,37 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.binauditor
+package com.tencent.bkrepo.scanner.component.manager.arrowhead
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.ApplicationItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CheckSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.CveSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.SensitiveItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
-import com.tencent.bkrepo.scanner.component.manager.binauditor.dao.ApplicationItemDao
-import com.tencent.bkrepo.scanner.component.manager.binauditor.dao.CheckSecItemDao
-import com.tencent.bkrepo.scanner.component.manager.binauditor.dao.CveSecItemDao
-import com.tencent.bkrepo.scanner.component.manager.binauditor.dao.ResultItemDao
-import com.tencent.bkrepo.scanner.component.manager.binauditor.dao.SensitiveItemDao
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.ResultItem
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TApplicationItem
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCheckSecItem
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.binauditor.model.TSensitiveItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ApplicationItemDao
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CheckSecItemDao
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CveSecItemDao
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ResultItemDao
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.SensitiveItemDao
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCheckSecItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TSensitiveItem
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
-@Component(BinAuditorScanner.TYPE)
-class BinAuditorResultManager @Autowired constructor(
+@Component(ArrowheadScanner.TYPE)
+class ArrowheadResultManager @Autowired constructor(
     private val checkSecItemDao: CheckSecItemDao,
     private val applicationItemDao: ApplicationItemDao,
     private val sensitiveItemDao: SensitiveItemDao,
@@ -70,7 +70,7 @@ class BinAuditorResultManager @Autowired constructor(
         result: ScanExecutorResult,
         extra: Map<String, Any>
     ) {
-        result as BinAuditorScanExecutorResult
+        result as ArrowheadScanExecutorResult
 
         result.checkSecItems
             .map { convert<CheckSecItem, TCheckSecItem>(credentialsKey, sha256, scanner, it) }

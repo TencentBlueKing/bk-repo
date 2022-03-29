@@ -25,43 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
+package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.fasterxml.jackson.annotation.JsonAlias
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("BinAuditor扫描器扫描结果")
-data class BinAuditorScanExecutorResult(
-    override val scanStatus: String,
-    override val overview: Map<String, Any?>,
-    @ApiModelProperty("安全审计结果")
-    val checkSecItems: List<CheckSecItem>,
-    @ApiModelProperty("License审计结果")
-    val applicationItems: List<ApplicationItem>,
-    @ApiModelProperty("敏感信息审计结果")
-    val sensitiveItems: List<SensitiveItem>,
-    @ApiModelProperty("cve审计结果")
-    val cveSecItems: List<CveSecItem>
-) : ScanExecutorResult(scanStatus, overview, BinAuditorScanner.TYPE) {
+@ApiModel("应用依赖组件信息")
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class ApplicationItem(
+    @ApiModelProperty("组件路径")
+    @JsonAlias("FilePath")
+    val path: String,
+
+    @ApiModelProperty("组件名")
+    @JsonAlias("LibraryName")
+    val libraryName: String,
+
+    @ApiModelProperty("组件版本")
+    @JsonAlias("LibraryVersion")
+    val libraryVersion: String,
+
+    /**
+     * 没有开源证书时为empty
+     */
+    @ApiModelProperty("组件使用的开源证书")
+    @JsonAlias("LicenseShortName")
+    val licenseShortName: String,
+
+    /**
+     * Low,Middle,High
+     */
+    @ApiModelProperty("证书风险等级")
+    @JsonAlias("LicenseRisk")
+    val licenseRisk: String
+) {
     companion object {
-
-        fun overviewKeyOfSensitive(type: String): String {
-            return "sensitive${type.capitalize()}Count"
-        }
-
-        fun overviewKeyOfCve(level: String): String {
-            return "cve${level.capitalize()}Count"
-        }
-
-        fun overviewKeyOfLicenseRisk(riskLevel: String): String {
-            val level = if (riskLevel.isEmpty()) {
-                // 扫描器尚未支持的证书类型数量KEY
-                "notAvailable"
-            } else {
-                riskLevel
-            }
-            return "licenseRisk${level.capitalize()}Count"
-        }
+        const val TYPE = "APPLICATION_ITEM"
     }
 }
+

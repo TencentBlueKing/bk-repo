@@ -25,18 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor
+package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("BinAuditor扫描器配置")
-class BinAuditorScanner(
+@ApiModel("Arrowhead扫描器配置")
+class ArrowheadScanner(
     override val name: String,
     /**
-     * 扫描器版本，格式为BinAuditorVersion::NvToolsVersion
+     * 格式为ArrowheadImageVersion::KnowledgeBaseVervion::StandaloneConfigTemplateVersion
+     * 或者ArrowheadImageVersion::KnowledgeBaseVervion
      */
+    @ApiModelProperty("扫描器版本")
     override val version: String,
     @ApiModelProperty("扫描器根目录")
     val rootPath: String,
@@ -44,10 +46,10 @@ class BinAuditorScanner(
     val configFilePath: String = DEFAULT_CONFIG_FILE_PATH,
     @ApiModelProperty("扫描结束后是否清理工作目录")
     val cleanWorkDir: Boolean = true,
-    @ApiModelProperty("漏洞库配置")
-    val nvTools: NvTools,
+    @ApiModelProperty("漏洞知识库配置")
+    val knowledgeBase: KnowledgeBase,
     @ApiModelProperty("使用的容器镜像")
-    val container: BinAuditorDockerImage,
+    val container: ArrowheadDockerImage,
     @ApiModelProperty("结果过滤规则")
     val resultFilterRule: ResultFilterRule? = null,
     @ApiModelProperty("最大允许的扫描时间")
@@ -58,7 +60,7 @@ class BinAuditorScanner(
          * 扫描器和漏洞库版本号分隔符
          */
         const val VERSION_SPLIT = "::"
-        const val TYPE = "BinAuditor"
+        const val TYPE = "arrowhead"
         const val DEFAULT_CONFIG_FILE_PATH = "/standalone.toml"
         const val DEFAULT_MAX_SCAN_DURATION = 10 * 60 * 1000L
     }
@@ -76,8 +78,8 @@ data class SensitiveItemFilterRule(
     val excludes: Map<String, List<String>>
 )
 
-@ApiModel("BinAuditor容器镜像配置")
-data class BinAuditorDockerImage(
+@ApiModel("arrowhead容器镜像配置")
+data class ArrowheadDockerImage(
     @ApiModelProperty("使用的镜像名和版本")
     val image: String,
     @ApiModelProperty("容器启动参数")
@@ -90,14 +92,12 @@ data class BinAuditorDockerImage(
     val outputDir: String = "/output"
 )
 
-@ApiModel("BinAuditor漏洞库配置")
-data class NvTools(
-    @ApiModelProperty("是否使用漏洞库")
-    val enabled: Boolean = false,
-    @ApiModelProperty("用户名")
-    val username: String? = null,
-    @ApiModelProperty("密码")
-    val key: String? = null,
-    @ApiModelProperty("漏洞库服务地址")
-    val host: String? = null
+@ApiModel("v2 arrowhead漏洞知识库配置")
+data class KnowledgeBase(
+    @ApiModelProperty("漏洞知识库地址，例如http://127.0.0.1:1234")
+    val endpoint: String,
+    @ApiModelProperty("漏洞知识库认证id")
+    val secretId: String = "",
+    @ApiModelProperty("漏洞知识库认证密钥")
+    val secretKey: String = ""
 )
