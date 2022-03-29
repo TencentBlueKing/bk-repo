@@ -216,7 +216,7 @@
             }
         },
         created () {
-            !this.repoListAll.length && this.getRepoListAll({ projectId: this.projectId })
+            this.getRepoListAll({ projectId: this.projectId })
             this.routeName !== 'createPlan' && this.handlePlanDetail()
         },
         methods: {

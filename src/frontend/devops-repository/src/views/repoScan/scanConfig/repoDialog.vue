@@ -10,6 +10,7 @@
             :title="['仓库列表', '已选仓库']"
             :source-list="repoList"
             :target-list="targetList"
+            display-key="name"
             setting-key="name"
             searchable
             show-overflow-tips

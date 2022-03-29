@@ -268,17 +268,23 @@ body {
             }
         }
     }
+
     .bk-switcher {
         background-color: var(--fontSubsidiaryColor);
         &.bk-switcher-small {
             width: 32px;
         }
     }
-    .bk-button {
-        & > div {
+
+    .bk-transfer {
+        .source-list,
+        .target-list {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            .content {
+                max-height: initial;
+                margin: initial;
+            }
         }
     }
 }
