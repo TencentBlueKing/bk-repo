@@ -96,6 +96,10 @@ body {
             align-items: center;
             justify-content: center;
         }
+        .bk-button-loading {
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
         .icon-plus {
             top: auto;
             margin: 0 -2px 0 -4px;
@@ -268,17 +272,23 @@ body {
             }
         }
     }
+
     .bk-switcher {
         background-color: var(--fontSubsidiaryColor);
         &.bk-switcher-small {
             width: 32px;
         }
     }
-    .bk-button {
-        & > div {
+
+    .bk-transfer {
+        .source-list,
+        .target-list {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            .content {
+                max-height: initial;
+                margin: initial;
+            }
         }
     }
 }

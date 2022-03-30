@@ -36,10 +36,7 @@ export default {
         return Vue.prototype.$ajax.post(
             `${prefix}/repo/create`,
             body
-        ).then(res => {
-            dispatch('getRepoListAll', { projectId: body.projectId })
-            return res
-        })
+        )
     },
     // 校验仓库名称
     checkRepoName (_, { projectId, name }) {
@@ -90,10 +87,7 @@ export default {
     deleteRepoList ({ dispatch }, { projectId, name, forced = false }) {
         return Vue.prototype.$ajax.delete(
             `${prefix}/repo/delete/${projectId}/${name}?forced=${forced}`
-        ).then(res => {
-            dispatch('getRepoListAll', { projectId })
-            return res
-        })
+        )
     },
     // 查询公有源列表
     getPublicProxy (_, { repoType }) {

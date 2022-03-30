@@ -110,7 +110,7 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
             allowedHosts: 'all',
             historyApiFallback: true,
             client: {
-                webSocketURL: 'auto://127.0.0.1:' + port + '/ws'
+                webSocketURL: `auto://127.0.0.1:${port}/ws`
             },
             hot: isDev,
             port
