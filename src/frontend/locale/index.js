@@ -9,18 +9,18 @@ const loadedModule = {}
 const localeLabelMap = {
     'zh-CN': '中文',
     'zh-cn': '中文',
-    'cn': '中文',
+    cn: '中文',
     'en-US': 'English',
     'en-us': 'English',
-    'en': 'English',
-    'us': 'English'
+    en: 'English',
+    us: 'English'
 }
 const localeAliasMap = {
     'zh-cn': 'zh-CN',
-    'cn': 'zh-CN',
+    cn: 'zh-CN',
     'en-us': 'en-US',
-    'en': 'en-US',
-    'us': 'en-US',
+    en: 'en-US',
+    us: 'en-US',
     // 设置蓝鲸cookie使用
     'zh-CN': 'zh-cn',
     'en-US': 'en'
@@ -71,7 +71,7 @@ export default (r) => {
             
             i18n.setLocaleMessage(locale, {
                 ...i18n.messages[locale],
-                [ module ]: messages
+                [module]: messages
             })
             loadedModule[localeModuleId] = true
         })

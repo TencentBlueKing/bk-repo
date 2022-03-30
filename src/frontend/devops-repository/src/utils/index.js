@@ -57,7 +57,7 @@ export function throttleMessage (fn, delay = 1000) {
 function prezero (num) {
     num = Number(num)
     if (num < 10) {
-        return '0' + num
+        return `0${num}`
     }
     return num
 }
@@ -78,8 +78,8 @@ export function segmentNumberThree (num) {
     if (!num || !Number(num)) return num
     let [int, dot] = Number(num).toString().split('.')
     int = Number(int).toLocaleString()
-    dot = dot ? '.' + dot : ''
-    return int + dot
+    dot = dot ? `.${dot}` : ''
+    return `${int}${dot}`
 }
 
 export function copyToClipboard (text) {
