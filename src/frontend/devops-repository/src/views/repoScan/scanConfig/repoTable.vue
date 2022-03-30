@@ -70,7 +70,7 @@
             }
         },
         created () {
-            !this.repoListAll.length && this.getRepoListAll({ projectId: this.projectId })
+            this.getRepoListAll({ projectId: this.projectId })
         },
         methods: {
             ...mapActions(['getRepoListAll']),

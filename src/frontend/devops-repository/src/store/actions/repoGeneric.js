@@ -146,7 +146,7 @@ export default {
                                 ? [
                                     {
                                         field: 'name',
-                                        value: `\*${name}\*`,
+                                        value: `*${name}*`,
                                         operation: 'MATCH'
                                     }
                                 ]

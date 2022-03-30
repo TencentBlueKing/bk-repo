@@ -34,6 +34,7 @@
         name: 'scanTag',
         props: {
             status: String,
+            repoType: String,
             fullPath: String
         },
         data () {
@@ -53,7 +54,7 @@
             showScanList (e) {
                 this.openScanList(e)
                 this.isLoading = true
-                const { projectId, repoType } = this.$route.params
+                const { projectId, repoType = this.repoType } = this.$route.params
                 const { repoName, version } = this.$route.query
                 this.getArtiScanList({
                     projectId,

@@ -17,7 +17,9 @@ const createRouter = (store) => {
         routes: routerArr
     })
     router.afterEach(route => {
-        Vue.prototype.$changeActiveRoutes && Vue.prototype.$changeActiveRoutes(route?.meta?.breadcrumb?.map(v => v.name) || [])
+        Vue.prototype.$changeActiveRoutes?.(
+            route?.meta?.breadcrumb?.map(v => v.name) || []
+        )
     })
     return router
 }
