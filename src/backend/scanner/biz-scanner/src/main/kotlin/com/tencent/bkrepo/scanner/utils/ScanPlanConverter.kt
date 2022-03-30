@@ -144,7 +144,7 @@ object ScanPlanConverter {
         with(scanPlan) {
             val critical = latestScanTask?.let { getCveCount(Level.CRITICAL.levelName, latestScanTask) } ?: 0L
             val high = latestScanTask?.let { getCveCount(Level.HIGH.levelName, latestScanTask) } ?: 0L
-            val medium = latestScanTask?.let { getCveCount(Level.MID.levelName, latestScanTask) } ?: 0L
+            val medium = latestScanTask?.let { getCveCount(Level.MEDIUM.levelName, latestScanTask) } ?: 0L
             val low = latestScanTask?.let { getCveCount(Level.LOW.levelName, latestScanTask) } ?: 0L
             val artifactCount = latestScanTask?.total ?: 0L
             val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
@@ -210,7 +210,7 @@ object ScanPlanConverter {
         return with(subScanTask) {
             val critical = getCveCount(Level.CRITICAL.levelName, subScanTask)
             val high = getCveCount(Level.HIGH.levelName, subScanTask)
-            val medium = getCveCount(Level.MID.levelName, subScanTask)
+            val medium = getCveCount(Level.MEDIUM.levelName, subScanTask)
             val low = getCveCount(Level.LOW.levelName, subScanTask)
 
             ArtifactScanResultOverview(
@@ -270,7 +270,7 @@ object ScanPlanConverter {
         return when (level) {
             Level.CRITICAL.levelName -> LeakType.CRITICAL.name
             Level.HIGH.levelName -> LeakType.HIGH.name
-            Level.MID.levelName -> LeakType.MEDIUM.name
+            Level.MEDIUM.levelName -> LeakType.MEDIUM.name
             Level.LOW.levelName -> LeakType.LOW.name
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, level)
         }

@@ -36,7 +36,7 @@ fun normalizedLevel(level: String): String {
     return when (level.toLowerCase()) {
         "危急", "严重", "critical" -> Level.CRITICAL.levelName
         "高危", "high" -> Level.HIGH.levelName
-        "中危", "mid", "middle", "medium" -> Level.MID.levelName
+        "中危", "mid", "middle", "medium" -> Level.MEDIUM.levelName
         "低危", "low" -> Level.LOW.levelName
         else -> level
     }

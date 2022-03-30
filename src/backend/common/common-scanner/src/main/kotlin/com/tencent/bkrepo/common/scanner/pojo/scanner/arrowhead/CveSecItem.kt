@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
-import org.apache.commons.lang3.StringEscapeUtils
 
 @ApiModel("CVE信息")
 data class CveSecItem(
@@ -135,9 +134,8 @@ data class CveSecItem(
 
         fun normalize(cveSecItem: CveSecItem): CveSecItem {
             val path = removeRootDirPath(cveSecItem.path)
-            val versionFixed = StringEscapeUtils.unescapeJava(cveSecItem.versionFixed)
             val cvssRank = normalizedLevel(cveSecItem.cvssRank)
-            return cveSecItem.copy(path = path, versionFixed = versionFixed, cvssRank = cvssRank)
+            return cveSecItem.copy(path = path, cvssRank = cvssRank)
         }
     }
 

@@ -51,7 +51,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ResultFilterRule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
@@ -245,20 +244,23 @@ class ArrowheadScanExecutor @Autowired constructor(
                 ?.map { CveSecItem.normalize(it) }
                 ?: emptyList()
 
-        val checkSecItems =
-            readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)) ?: emptyList()
-
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
-                ?.map { it.copy(licenseRisk = normalizedLevel(it.licenseRisk)) }
+                ?.map { ApplicationItem.normalize(it) }
                 ?: emptyList()
 
-        var sensitiveItems =
-            readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)) ?: emptyList()
-        if (resultFilterRule != null) {
-            val excludes = resultFilterRule.sensitiveItemFilterRule.excludes
-            sensitiveItems = sensitiveItems.filterNot { excludedSensitiveItem(it, excludes) }
-        }
+//        val checkSecItems =
+//            readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)) ?: emptyList()
+//
+//        var sensitiveItems =
+//            readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)) ?: emptyList()
+//        if (resultFilterRule != null) {
+//            val excludes = resultFilterRule.sensitiveItemFilterRule.excludes
+//            sensitiveItems = sensitiveItems.filterNot { excludedSensitiveItem(it, excludes) }
+//        }
+
+        val checkSecItems = emptyList<CheckSecItem>()
+        val sensitiveItems = emptyList<SensitiveItem>()
 
         return ArrowheadScanExecutorResult(
             scanStatus = scanStatus.name,

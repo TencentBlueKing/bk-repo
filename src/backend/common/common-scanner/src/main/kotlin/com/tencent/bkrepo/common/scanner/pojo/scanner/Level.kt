@@ -30,6 +30,6 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner
 enum class Level(val levelName: String, val level: Int) {
     CRITICAL("critical", 3),
     HIGH("high", 2),
-    MID("mid", 1),
+    MEDIUM("medium", 1),
     LOW("low", 0);
 }

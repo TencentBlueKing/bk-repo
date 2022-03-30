@@ -29,6 +29,8 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
+import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -62,6 +64,13 @@ data class ApplicationItem(
     val licenseRisk: String
 ) {
     companion object {
+
+        fun normalize(applicationItem: ApplicationItem): ApplicationItem {
+            val path = removeRootDirPath(applicationItem.path)
+            val licenseRisk = normalizedLevel(applicationItem.licenseRisk)
+            return applicationItem.copy(path = path, licenseRisk = licenseRisk)
+        }
+
         const val TYPE = "APPLICATION_ITEM"
     }
 }

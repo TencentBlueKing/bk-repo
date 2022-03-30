@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
@@ -66,37 +67,41 @@ class ArrowheadResultManager @Autowired constructor(
     override fun save(
         credentialsKey: String?,
         sha256: String,
-        scanner: String,
+        scanner: Scanner,
         result: ScanExecutorResult,
         extra: Map<String, Any>
     ) {
         result as ArrowheadScanExecutorResult
+        scanner as ArrowheadScanner
+        val scannerName = scanner.name
 
         result.checkSecItems
-            .map { convert<CheckSecItem, TCheckSecItem>(credentialsKey, sha256, scanner, it) }
-            .run { replace(credentialsKey, sha256, scanner, checkSecItemDao, this) }
+            .map { convert<CheckSecItem, TCheckSecItem>(credentialsKey, sha256, scannerName, it) }
+            .run { replace(credentialsKey, sha256, scannerName, checkSecItemDao, this) }
 
         result.applicationItems
-            .map { convert<ApplicationItem, TApplicationItem>(credentialsKey, sha256, scanner, it) }
-            .run { replace(credentialsKey, sha256, scanner, applicationItemDao, this) }
+            .map { convert<ApplicationItem, TApplicationItem>(credentialsKey, sha256, scannerName, it) }
+            .run { replace(credentialsKey, sha256, scannerName, applicationItemDao, this) }
 
         result.sensitiveItems
-            .map { convert<SensitiveItem, TSensitiveItem>(credentialsKey, sha256, scanner, it) }
-            .run { replace(credentialsKey, sha256, scanner, sensitiveItemDao, this) }
+            .map { convert<SensitiveItem, TSensitiveItem>(credentialsKey, sha256, scannerName, it) }
+            .run { replace(credentialsKey, sha256, scannerName, sensitiveItemDao, this) }
 
         result.cveSecItems
-            .map { convert<CveSecItem, TCveSecItem>(credentialsKey, sha256, scanner, it) }
-            .run { replace(credentialsKey, sha256, scanner, cveSecItemDao, this) }
+            .map { convert<CveSecItem, TCveSecItem>(credentialsKey, sha256, scannerName, it) }
+            .run { replace(credentialsKey, sha256, scannerName, cveSecItemDao, this) }
     }
 
     override fun load(
         credentialsKey: String?,
         sha256: String,
-        scanner: String,
+        scanner: Scanner,
         type: String?,
         pageLimit: PageLimit?,
         extra: Map<String, Any>
     ): Any? {
+        scanner as ArrowheadScanner
+
         require(pageLimit != null && type != null)
         val page = when (type) {
             CheckSecItem.TYPE -> checkSecItemDao
@@ -110,7 +115,7 @@ class ArrowheadResultManager @Autowired constructor(
                     params = arrayOf(type)
                 )
             }
-        }.run { pageBy(credentialsKey, sha256, scanner, pageLimit, extra) }
+        }.run { pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra) }
 
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }

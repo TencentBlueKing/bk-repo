@@ -218,7 +218,7 @@ class ScanServiceImpl @Autowired constructor(
 
             // 保存详细扫描结果
             val resultManager = scanExecutorResultManagers[scanner.type]
-            resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner.name, scanExecutorResult!!)
+            resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner, scanExecutorResult!!)
         }
     }
 
@@ -374,7 +374,7 @@ class ScanServiceImpl @Autowired constructor(
 
             val scanner = scannerService.get(scanner)
             val scanResultDetail = scanExecutorResultManagers[scanner.type]?.load(
-                repo.storageCredentialsKey, node.sha256!!, scanner.name, reportType, pageLimit
+                repo.storageCredentialsKey, node.sha256!!, scanner, reportType, pageLimit
             )
             val status = if (scanResultDetail == null) {
                 subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
@@ -390,12 +390,13 @@ class ScanServiceImpl @Autowired constructor(
         with(request) {
             val subtask = finishedSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+            val scanner = scannerService.get(subtask.scanner)
             val pageLimit = PageLimit(pageNumber, pageSize)
             val extra = HashMap<String, Any>()
             leakType?.let { extra[Extra.EXTRA_VULNERABILITY_LEVEL] = listOf(it) }
             cveId?.let { extra[Extra.EXTRA_CVE_ID] = listOf(it) }
             val detailReport = scanExecutorResultManagers[subtask.scannerType]?.load(
-                subtask.credentialsKey, subtask.sha256, subtask.scanner, reportType, pageLimit, extra
+                subtask.credentialsKey, subtask.sha256, scanner, reportType, pageLimit, extra
             )
             return Converter.convert(detailReport, subtask.scannerType, reportType, pageLimit)
         }
