@@ -30,23 +30,7 @@
  */
 
 dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
-
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+    implementation(project(":common:common-api"))
+    implementation(project(":common:common-artifact:artifact-api"))
+    compileOnly("org.springframework:spring-web")
 }

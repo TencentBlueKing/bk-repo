@@ -29,24 +29,30 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.pool
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+
+/**
+ * rds线程池，用于同步索引文件
+ */
+object RdsThreadPoolExecutor {
+    /**
+     * 线程池实例
+     */
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("rds-worker-%d").build()
+        return ThreadPoolExecutor(
+            100, 500, 30, TimeUnit.SECONDS,
+            LinkedBlockingQueue(10), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
+    }
 }

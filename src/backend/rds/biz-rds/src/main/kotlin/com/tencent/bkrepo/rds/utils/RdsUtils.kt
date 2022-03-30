@@ -29,54 +29,55 @@
  * SOFTWARE.
  */
 
-rootProject.name = "bk-repo-backend"
+package com.tencent.bkrepo.rds.utils
 
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
+import com.tencent.bkrepo.rds.constants.INDEX_CACHE_YAML
+import com.tencent.bkrepo.rds.constants.INDEX_YAML
+import com.tencent.bkrepo.rds.constants.TGZ_SUFFIX
+import com.tencent.bkrepo.rds.constants.V1
+import com.tencent.bkrepo.rds.pojo.metadata.RdsIndexYamlMetadata
+
+object RdsUtils {
+
+    fun getChartFileFullPath(name: String, version: String, extension: String = TGZ_SUFFIX): String {
+        return "/%s-%s.%s".format(name, version, extension)
+    }
+
+    fun getIndexCacheYamlFullPath(): String {
+        return "/$INDEX_CACHE_YAML"
+    }
+
+    fun getIndexYamlFullPath(): String {
+        return "/$INDEX_YAML"
+    }
+
+    fun initIndexYamlMetadata(): RdsIndexYamlMetadata {
+        return RdsIndexYamlMetadata(
+            apiVersion = V1,
+            generated = TimeFormatUtil.getUtcTime()
+        )
+    }
+
+    /**
+     * remote仓库下载index.yaml时使用的是index.yaml, 需要做个转换
+     */
+    fun convertIndexYamlPath(path: String): String {
+        return when (path) {
+            "/" -> getIndexYamlFullPath()
+            getIndexCacheYamlFullPath() -> getIndexYamlFullPath()
+            else -> path
+        }
+    }
+
+    /**
+     * index.yaml存储时使用的是index-cache.yaml, 需要做个转换
+     */
+    fun convertIndexYamlPathToCache(path: String): String {
+        return when (path) {
+            "/" -> getIndexCacheYamlFullPath()
+            else -> {
+                path.substring(path.lastIndexOf('/'))
+            }
+        }
     }
 }
-
-fun File.directories() = listFiles()?.filter { it.isDirectory && it.name != "build" }?.toList() ?: emptyList()
-
-fun includeAll(module: String) {
-    include(module)
-    val name = module.replace(":", "/")
-    file("$rootDir/$name/").directories().forEach {
-        include("$module:${it.name}")
-    }
-}
-
-include(":boot-assembly")
-includeAll(":auth")
-includeAll(":common")
-includeAll(":common:common-storage")
-includeAll(":common:common-query")
-includeAll(":common:common-artifact")
-includeAll(":common:common-notify")
-includeAll(":common:common-plugin")
-includeAll(":common:common-operate")
-includeAll(":composer")
-includeAll(":docker")
-includeAll(":generic")
-includeAll(":helm")
-includeAll(":rds")
-includeAll(":maven")
-includeAll(":monitor")
-includeAll(":npm")
-includeAll(":npm-registry")
-includeAll(":nuget")
-includeAll(":opdata")
-includeAll(":pypi")
-includeAll(":replication")
-includeAll(":repository")
-includeAll(":rpm")
-includeAll(":git")
-includeAll(":executor")
-includeAll(":oci")
-includeAll(":webhook")
-includeAll(":job")
-includeAll(":scanner")
-includeAll(":scanner-executor")

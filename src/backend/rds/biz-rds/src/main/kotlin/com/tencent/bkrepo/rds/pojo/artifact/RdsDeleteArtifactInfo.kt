@@ -29,24 +29,26 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.pojo.artifact
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.rds.utils.RdsUtils
+
+class RdsDeleteArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val packageName: String,
+    val version: String = StringPool.EMPTY
+) : RdsArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    private val name = PackageKeys.resolveRds(packageName)
+
+    private val chartFullPath = RdsUtils.getChartFileFullPath(name, version)
+
+    override fun getArtifactFullPath(): String = chartFullPath
+
+    override fun getArtifactName(): String = name
+
+    override fun getArtifactVersion(): String = version
 }

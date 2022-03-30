@@ -29,24 +29,21 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.pojo.chart
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
-}
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("chart删除请求")
+data class ChartVersionDeleteRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    override val projectId: String,
+    @ApiModelProperty("所属仓库id", required = true)
+    override val repoName: String,
+    @ApiModelProperty("chart名称", required = true)
+    val name: String,
+    @ApiModelProperty("chart版本", required = true)
+    val version: String,
+    @ApiModelProperty("操作用户id", required = true)
+    override val operator: String
+) : ChartOperationRequest

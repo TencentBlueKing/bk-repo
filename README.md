@@ -1,33 +1,33 @@
-# bk-repo 蓝鲸制品库
+# bk-repo 蓝盾制品库
 
 ## Overview
 
-蓝鲸制品库平台是一个基于微服务架构的平台，采用spring boot+ spring cloud的技术栈，kotlin作为主要的开发语言，微服务网关采用的是openresty
+蓝盾制品库是一个基于微服务架构设计的平台
+- 架构层面使用spring boot+ spring cloud的技术栈，是一个kotlin作为主要的开发语言的gradle工程，微服务网关基于openresty。
+- 功能层面提供各种类型的制品存储协议、制品代理、分发、晋级、扫描、包管理等。
+- 存储层面制品库采用多级分层的策略去接收制品文件，使用对象存储去永久的存储制品文件，使用mongodb去存储节点信息与元数据信息，对外提供高于4个9的可用性。
 
-制品库架构图![制品库架构图](/uploads/0FCF5A4590AD4CDE8BDC78DBA397E4D4/bkrepo.png)
+
+制品库架构图![制品库架构图](docs/resource/bkrepo.png)
 
 - 应用场景层
 - oss(运营支撑)层
-- 接入层
-- 协议层
-- 数据与调度层
-
+- 接入协议层
+- 存储与调度层
 
 
 ## Features
-- auth 微服务，实现基于rbac的权限体系
-- generic 通用制品库微服务
-- repository 仓库微服务
-- docker docker镜像仓库微服务
-- helm helm chart仓库微服务
-- npm npm依赖源微服务
-- pypi pypi依赖源微服务
-- rpm rpm依赖源微服务
-- maven maven依赖源微服务
-- composer composer依赖源微服务
-- opdata 运营统计微服务
-- monitor 监控微服务
-- replication 备份复制微服务
+- auth 统一账号、权限管理，对接bk-user、bk-iam等账号权限体系
+- repository 项目、仓库、节点管理
+- metadata 元数据管理
+- generic 通用制品管理
+- rpm rpm包管理
+- docker image、helm chart、oci 云原生镜像仓库
+- npm、composer、pypi、maven、nuget依赖源微服务
+- opdata 制品库admin服务
+- replication 制品分发微服务
+- webhook服务 webhook的订阅与推送
+- scanner scanner-executor 制品扫描
 
 ## Getting started
 * [下载与编译](docs/install/compile.md)
