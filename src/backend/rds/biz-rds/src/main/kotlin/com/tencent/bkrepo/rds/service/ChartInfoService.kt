@@ -29,24 +29,37 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":auth:biz-auth"))
-    implementation(project(":repository:biz-repository"))
-    implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
-    implementation(project(":docker:biz-docker"))
-    implementation(project(":helm:biz-helm"))
-    implementation(project(":rds:biz-rds"))
-    implementation(project(":maven:biz-maven"))
-    implementation(project(":npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
-    implementation(project(":pypi:biz-pypi"))
-    implementation(project(":rpm:biz-rpm"))
-}
+package com.tencent.bkrepo.rds.service
 
-configurations.all {
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-discovery")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-consul-config")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-openfeign")
-    exclude(group = "org.springframework.cloud", module = "spring-cloud-starter-netflix-hystrix")
+import com.tencent.bkrepo.rds.pojo.RdsDomainInfo
+import com.tencent.bkrepo.rds.pojo.artifact.RdsArtifactInfo
+import com.tencent.bkrepo.rds.pojo.user.PackageVersionInfo
+import java.time.LocalDateTime
+import org.springframework.http.ResponseEntity
+
+interface ChartInfoService {
+    /**
+     * 查看chart列表
+     */
+    fun allChartsList(artifactInfo: RdsArtifactInfo, startTime: LocalDateTime? = null): ResponseEntity<Any>
+
+    /**
+     * 查看chart是否存在
+     */
+    fun isExists(artifactInfo: RdsArtifactInfo)
+
+    /**
+     * 查询版本详情
+     */
+    fun detailVersion(
+        userId: String,
+        artifactInfo: RdsArtifactInfo,
+        packageKey: String,
+        version: String
+    ): PackageVersionInfo
+
+    /**
+     * 获取helm域名信息
+     */
+    fun getRegistryDomain(): RdsDomainInfo
 }
