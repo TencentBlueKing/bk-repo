@@ -51,7 +51,6 @@ import java.util.concurrent.LinkedBlockingQueue
  * 构件传输事件监听器
  */
 class ArtifactTransferListener(
-    private val artifactMetrics: ArtifactMetrics,
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>
 ) {
 
@@ -60,8 +59,6 @@ class ArtifactTransferListener(
     @EventListener(ArtifactReceivedEvent::class)
     fun listen(event: ArtifactReceivedEvent) {
         with(event) {
-            artifactMetrics.uploadedSizeCounter.increment(throughput.bytes.toDouble())
-            artifactMetrics.uploadedConsumeTimer.record(throughput.duration)
             logger.info("Receive artifact file, $throughput.")
 
             val repositoryDetail = ArtifactContextHolder.getRepoDetail()
@@ -79,14 +76,13 @@ class ArtifactTransferListener(
                 clientIp = clientIp
             )
             queue.offer(record)
+            ArtifactMetrics.getUploadedDistributionSummary().record(throughput.bytes.toDouble())
         }
     }
 
     @EventListener(ArtifactResponseEvent::class)
     fun listen(event: ArtifactResponseEvent) {
         with(event) {
-            artifactMetrics.downloadedSizeCounter.increment(throughput.bytes.toDouble())
-            artifactMetrics.downloadedConsumeTimer.record(throughput.duration)
             logger.info("Response artifact file, $throughput.")
 
             val repositoryDetail = ArtifactContextHolder.getRepoDetail()
@@ -103,6 +99,7 @@ class ArtifactTransferListener(
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp
             )
+            ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             queue.offer(record)
         }
     }
