@@ -60,26 +60,29 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 object ObjectBuilderUtil {
 
     fun buildPackageUpdateRequest(
-        artifactInfo: ArtifactInfo,
+        projectId: String,
+        repoName: String,
         chartInfo: HelmChartMetadata
     ): PackageUpdateRequest {
         return buildPackageUpdateRequest(
-            artifactInfo,
-            chartInfo.name,
-            chartInfo.appVersion.toString(),
-            chartInfo.description
+            projectId = projectId,
+            repoName = repoName,
+            name = chartInfo.name,
+            appVersion = chartInfo.appVersion.toString(),
+            description = chartInfo.description
         )
     }
 
     fun buildPackageUpdateRequest(
-        artifactInfo: ArtifactInfo,
+        projectId: String,
+        repoName: String,
         name: String,
         appVersion: String,
         description: String?
     ): PackageUpdateRequest {
         return PackageUpdateRequest(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
+            projectId = projectId,
+            repoName = repoName,
             name = name,
             packageKey = PackageKeys.ofHelm(name),
             description = description,
@@ -90,14 +93,15 @@ object ObjectBuilderUtil {
 
     fun buildPackageVersionCreateRequest(
         userId: String,
-        artifactInfo: ArtifactInfo,
+        projectId: String,
+        repoName: String,
         chartInfo: HelmChartMetadata,
         size: Long,
         isOverwrite: Boolean = false
     ): PackageVersionCreateRequest {
         return PackageVersionCreateRequest(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
+            projectId = projectId,
+            repoName = repoName,
             packageName = chartInfo.name,
             packageKey = PackageKeys.ofHelm(chartInfo.name),
             packageType = PackageType.HELM,

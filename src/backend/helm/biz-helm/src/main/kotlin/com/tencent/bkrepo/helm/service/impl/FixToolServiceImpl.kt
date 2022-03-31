@@ -419,11 +419,12 @@ class FixToolServiceImpl(
                 val metaMap = HelmMetadataUtils.convertToMap(chartMetadata)
                 context.putAttribute(FULL_PATH, path)
                 createVersion(
-                    context.userId,
-                    artifactInfo,
-                    chartMetadata,
-                    context.getLongAttribute(SIZE)!!,
-                    true
+                    userId = context.userId,
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    chartInfo = chartMetadata,
+                    size = context.getLongAttribute(SIZE)!!,
+                    isOverwrite = true
                 )
                 val metadataSaveRequest = MetadataSaveRequest(
                     artifactInfo.projectId,

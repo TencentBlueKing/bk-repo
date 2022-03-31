@@ -68,6 +68,11 @@ open class ArtifactEvent(
     }
 
     /**
+     * 该类型消息对应的topic
+     */
+    open val topic: String = "bkrepo_artifact_" + type.name.split("_").first().toLowerCase()
+
+    /**
      * 获取完整的资源key
      */
     @JsonIgnore

@@ -247,6 +247,49 @@ object ChartParserUtil {
         }
     }
 
+    /**
+     * 比较新旧两个index文件中的chart包差异
+     */
+    fun compareIndexYamlMetadata(
+        oldEntries: MutableMap<String, SortedSet<HelmChartMetadata>>,
+        newEntries: MutableMap<String, SortedSet<HelmChartMetadata>>
+    ): Pair<MutableMap<String, SortedSet<HelmChartMetadata>>, MutableMap<String, SortedSet<HelmChartMetadata>>> {
+        // 初次创建时需要将所有index中的全部存储
+        if (oldEntries.isEmpty()) {
+            return Pair(mutableMapOf(), newEntries)
+        }
+        val deletedMetadata: MutableMap<String, SortedSet<HelmChartMetadata>> = mutableMapOf()
+        val addedMetadata: MutableMap<String, SortedSet<HelmChartMetadata>> = mutableMapOf()
+        // 旧index中存在，新index不存在chart的需要删除
+        deletedMetadata.putAll(oldEntries.minus(newEntries.keys))
+        // 新index中存在，旧index不存在的chart需要新增
+        addedMetadata.putAll(newEntries.minus(oldEntries.keys))
+
+        // 针对同一个chart下不同版本差异处理
+        oldEntries.forEach { index ->
+            if (!newEntries.containsKey(index.key)) {
+                return@forEach
+            }
+            val newSet: SortedSet<HelmChartMetadata>? = newEntries[index.key]
+            val oldSet: SortedSet<HelmChartMetadata>? = oldEntries[index.key]
+            if (oldSet.isNullOrEmpty()) {
+                newSet?.let {
+                    addedMetadata[index.key] = it
+                }
+            } else {
+                if (newSet.isNullOrEmpty()) {
+                    deletedMetadata[index.key] = oldSet
+                } else {
+                    val deletedSet = oldSet.minus(newSet)
+                    val addedSet = newSet.minus(oldSet)
+                    deletedMetadata[index.key] = deletedSet.toSortedSet()
+                    addedMetadata[index.key] = addedSet.toSortedSet()
+                }
+            }
+        }
+        return Pair(deletedMetadata, addedMetadata)
+    }
+
     fun convertUtcTime(indexYamlMetadata: HelmIndexYamlMetadata): HelmIndexYamlMetadata {
         convertUtcTime(indexYamlMetadata.entries)
         return indexYamlMetadata

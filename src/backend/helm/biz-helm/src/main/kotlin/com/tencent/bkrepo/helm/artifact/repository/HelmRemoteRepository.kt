@@ -51,7 +51,7 @@ import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SIZE
 import com.tencent.bkrepo.helm.constants.VERSION
-import com.tencent.bkrepo.helm.exception.HelmBadRequestException
+import com.tencent.bkrepo.helm.exception.HelmForbiddenRequestException
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
@@ -59,13 +59,12 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import java.net.MalformedURLException
-import java.net.URL
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.MalformedURLException
+import java.net.URL
 
 @Component
 class HelmRemoteRepository(
@@ -74,9 +73,9 @@ class HelmRemoteRepository(
 
     override fun upload(context: ArtifactUploadContext) {
         with(context) {
-            val message = "Unable to upload chart into a remote repository [$projectId/$repoName]"
+            val message = "Forbidden to upload chart into a remote repository [$projectId/$repoName]"
             logger.warn(message)
-            throw HelmBadRequestException(message)
+            throw HelmForbiddenRequestException(message)
         }
     }
 
@@ -104,24 +103,33 @@ class HelmRemoteRepository(
     private fun checkNode(context: ArtifactQueryContext, artifactFile: ArtifactFile): Any? {
         with(context) {
             val fullPath = getStringAttribute(FULL_PATH)!!
+            logger.info(
+                "Will go to check the artifact $fullPath in the cache " +
+                    "in repo ${context.artifactInfo.getRepoIdentify()}"
+            )
             val sha256 = artifactFile.getFileSha256()
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
                 if (it.sha256.equals(sha256)) {
                     logger.info("artifact [$fullPath] hits the cache.")
                     return artifactFile.getInputStream().artifactStream(Range.full(artifactFile.getSize()))
-                } else {
-                    nodeClient.deleteNode(
-                        NodeDeleteRequest(
-                            projectId,
-                            repoName,
-                            fullPath,
-                            context.userId
-                        )
-                    )
                 }
             }
             return null
         }
+    }
+
+    /**
+     * 下载前回调
+     */
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        val fullPath = when (context.artifactInfo.getArtifactFullPath()) {
+            HelmUtils.getIndexCacheYamlFullPath() -> HelmUtils.getIndexYamlFullPath()
+            else -> helmOperationService.findRemoteArtifactFullPath(
+                context.artifactInfo.getArtifactFullPath()
+            )
+        }
+        context.putAttribute(FULL_PATH, fullPath)
     }
 
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
