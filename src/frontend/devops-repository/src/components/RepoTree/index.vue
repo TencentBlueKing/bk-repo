@@ -3,7 +3,6 @@
         <ul class="repo-tree-list">
             <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
                 <div class="repo-tree-title hover-btn"
-                    :title="item.displayName"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
                     :style="{ 'padding-left': 20 * computedDepth(item) + 10 + 'px' }"
                     @click.stop="itemClickHandler(item)">
@@ -14,8 +13,11 @@
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="node-text" :title="item.displayName" v-html="importantTransform(item.displayName)"></div>
+                        <div class="mr10 node-text" :title="item.displayName" v-html="importantTransform(item.displayName)"></div>
                     </slot>
+                    <div class="mr10 node-operation flex-align-center">
+                        <slot name="operation" :item="item"></slot>
+                    </div>
                 </div>
             </li>
         </ul>
@@ -174,8 +176,8 @@
         align-items: center;
         .loading {
             display: inline-block;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border: 1px solid;
             border-right-color: transparent;
             border-radius: 50%;
@@ -186,7 +188,7 @@
             z-index: 1;
         }
         .node-text {
-            max-width: 150px;
+            flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -196,18 +198,24 @@
                 background-color: var(--warningColor);
             }
         }
-        &:hover {
-            background-color: var(--bgLightColor);
+        .node-operation {
+            visibility: hidden;
+        }
+        &:hover,
+        &.selected {
             .devops-icon {
                 color: var(--primaryColor);
             }
+            .node-operation {
+                visibility: visible;
+            }
+        }
+        &:hover {
+            background-color: var(--bgLightColor);
         }
         &.selected {
             background-color: var(--bgHoverLighterColor);
             color: var(--primaryColor);
-            .devops-icon {
-                color: var(--primaryColor);
-            }
         }
     }
 }

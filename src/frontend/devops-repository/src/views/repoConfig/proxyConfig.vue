@@ -1,7 +1,7 @@
 <template>
     <div class="proxy-config-container">
         <div class="mb10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="addProxy"><span class="mr5">{{ $t('add') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="addProxy">{{ $t('add') }}</bk-button>
             <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
         </div>
         <div class="proxy-head">

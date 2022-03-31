@@ -1,7 +1,7 @@
 <template>
     <div class="repo-list-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="createRepo"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="createRepo">{{ $t('create') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     v-model.trim="query.name"
@@ -29,7 +29,7 @@
         <bk-table
             class="mt10"
             :data="repoList"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :outer-border="false"
             :row-border="false"
             size="small"
@@ -49,12 +49,12 @@
                     <div class="flex-align-center" :title="replaceRepoName(row.name)">
                         <Icon size="20" :name="row.repoType" />
                         <span class="ml10 text-overflow hover-btn" style="max-width:400px">{{replaceRepoName(row.name)}}</span>
-                        <bk-tag v-if="MODE_CONFIG === 'ci' && (row.name === 'custom' || row.name === 'pipeline')"
-                            class="ml10" type="filled" style="background-color: var(--successColor);">内置</bk-tag>
-                        <bk-tag v-if="row.configuration.settings.system"
-                            class="ml10" type="filled" style="background-color: var(--primaryHoverColor);">系统</bk-tag>
-                        <bk-tag v-if="row.public"
-                            class="ml10" type="filled" style="background-color: var(--warningColor);">公开</bk-tag>
+                        <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
+                            class="ml10 repo-tag SUCCESS">内置</span>
+                        <span v-if="row.configuration.settings.system"
+                            class="ml10 repo-tag">系统</span>
+                        <span v-if="row.public"
+                            class="ml10 repo-tag WARNING">公开</span>
                     </div>
                 </template>
             </bk-table-column>

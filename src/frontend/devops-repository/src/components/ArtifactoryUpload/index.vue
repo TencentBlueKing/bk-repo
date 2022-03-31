@@ -128,7 +128,7 @@
 <style lang="scss" scoped>
 .artifactory-upload-container {
     position: relative;
-    min-height: 70px;
+    height: 150px;
     padding: 10px 20px;
     border: 1px dashed;
     border-radius: 10px;

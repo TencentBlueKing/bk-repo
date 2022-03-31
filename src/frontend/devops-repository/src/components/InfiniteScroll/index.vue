@@ -78,7 +78,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            color: var(--fontTipColor);
+            color: var(--fontDisableColor);
             .icon-circle-2-1 {
                 margin-right: 8px;
             }

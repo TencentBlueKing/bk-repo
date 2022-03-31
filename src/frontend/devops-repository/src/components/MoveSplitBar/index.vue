@@ -55,5 +55,10 @@
 <style lang="scss" scoped>
 .move-split-bar {
     cursor: col-resize;
+    will-change: background-color;
+    transition: background-color 1s;
+    &:hover {
+        background-color: var(--primaryHoverColor);
+    }
 }
 </style>

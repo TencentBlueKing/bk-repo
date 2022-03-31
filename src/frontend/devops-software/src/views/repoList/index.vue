@@ -40,7 +40,7 @@
         <bk-table
             class="mt10"
             :data="repoList"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :outer-border="false"
             :row-border="false"
             size="small"
@@ -65,8 +65,8 @@
                     <div class="flex-align-center" :title="replaceRepoName(row.name)">
                         <Icon size="20" :name="row.repoType" />
                         <span class="ml10 text-overflow hover-btn" style="max-width:400px">{{replaceRepoName(row.name)}}</span>
-                        <bk-tag v-if="row.public"
-                            class="ml10" type="filled" style="background-color: var(--warningColor);">公开</bk-tag>
+                        <span v-if="row.public"
+                            class="ml10 repo-tag WARNING">公开</span>
                     </div>
                 </template>
             </bk-table-column>

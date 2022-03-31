@@ -1,14 +1,43 @@
 @charset 'utf-8';
 body {
     /*  */
-    .bk-page {
+    .bk-page.bk-page-small {
+        display: flex;
+        align-items: center;
         margin-top: -1px;
         border-top: 1px solid var(--borderColor);
+        .bk-page-total-count-left,
+        .bk-page-count {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            line-height: inherit;
+            float: initial;
+            .bk-select {
+                margin: 0 10px;
+                .bk-select-name {
+                    height: 28px;
+                    line-height: 28px;
+                }
+            }
+        }
+        .bk-page-list {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            .page-item .page-button {
+                height: 30px;
+                min-width: 30px;
+            }
+        }
     }
     /* 表格 */
     .bk-table {
         /* 列边距 */
         .cell {
+            display: flex;
+            align-items: center;
             padding: 0 10px;
         }
         /* 行高 */
@@ -19,6 +48,9 @@ body {
                 padding-left: 30px;
             }
             &:last-child > .cell {
+                padding-right: 30px;
+            }
+            &.is-right .cell {
                 padding-right: 30px;
             }
         }
@@ -48,17 +80,41 @@ body {
         .bk-table-empty-text {
             padding: 20px 0 100px;
         }
+        .bk-table-column-selection .bk-form-checkbox .bk-checkbox {
+            flex: initial
+        }
     }
     /* 按钮 */
     .bk-button,
     .bk-button.no-slot {
-        padding: 0 2px;
-        height: 30px;
-        line-height: 28px;
         min-width: 56px;
-        .bk-icon {
+        padding: 0 8px;
+        height: 30px;
+        line-height: initial;
+        & > div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bk-button-loading {
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .icon-plus {
+            top: auto;
+            margin: 0 -2px 0 -4px;
             font-size: 20px;
         }
+        &.bk-default.hover,
+        &.bk-default:hover {
+            border-color: var(--primaryColor);
+            color: var(--primaryColor);
+            background-color: var(--bgHoverLighterColor);
+        }
+    }
+    .bk-button-text.bk-primary.hover,
+    .bk-button-text.bk-primary:hover {
+        color: var(--primaryWeightColor);
     }
     /* 面包屑 */
     .bk-breadcrumb .bk-breadcrumb-item {
@@ -68,9 +124,11 @@ body {
             margin: 0;
             font-size: 20px;
         }
+        &:last-child .bk-breadcrumb-item-inner.is-link {
+            cursor: initial;
+        }
     }
     /* 字体颜色重置 */
-    .bk-breadcrumb .bk-breadcrumb-item,
     .bk-table,
     .bk-form .bk-label,
     .bk-form-checkbox .bk-checkbox-text,
@@ -79,11 +137,15 @@ body {
     .bk-form-control,
     .bk-button,
     .bk-select,
-    .bk-sideslider-title {
+    .bk-sideslider-title,
+    .bk-breadcrumb-item-inner.is-link {
         color: var(--fontPrimaryColor);
     }
 
-    .bk-breadcrumb .bk-breadcrumb-item:last-child,
+    .bk-breadcrumb .bk-breadcrumb-item:last-child .bk-breadcrumb-item-inner.is-link,
+    .bk-page .bk-page-total-count,
+    .bk-page .bk-page-total-count .stress,
+    .bk-page .bk-page-count-left,
     .bk-table th .bk-table-header-label,
     .bk-form-radio-button .bk-radio-button-text {
         color: var(--fontSubsidiaryColor);
@@ -121,35 +183,63 @@ body {
     .bk-form-radio input[type=radio] {
         border-color: var(--borderWeightColor);
     }
-    .bk-form-radio:hover {
-        color: var(--primaryColor);
-        input[type=radio] {
+    .bk-form-radio input[type=radio] {
+        width: 14px;
+        height: 14px;
+        &:not([disabled], .is-checked):hover {
+            background-color: var(--bgHoverLighterColor);
+            border-color: var(--primaryColor);
+        }
+        &:not([disabled]).is-checked {
+            background-color: white;
+            border: 4px solid var(--primaryColor);
+        }
+        &:is([disabled]).is-checked {
+            border: 4px solid var(--borderWeightColor);
+        }
+    }
+    .bk-form-checkbox {
+        display: inline-flex;
+        align-items: center;
+        line-height: inherit;
+        .bk-checkbox {
+            width: 14px;
+            height: 14px;
+        }
+        &.is-checked .bk-checkbox:after {
+            top: -1px;
+            left: 3px;
+        }
+        &.is-indeterminate:not(.is-checked) .bk-checkbox {
+            border-color: var(--borderWeightColor);
+            background-color: white;
+            &:after {
+                width: 6px;
+                height: 6px;
+                margin-left: -3px;
+                margin-top: -3px;
+                border-radius: initial;
+                background-color: var(--primaryColor);
+            }
+        }
+        &:not(.is-disabled, .is-checked, .is-indeterminate):hover .bk-checkbox {
+            background-color: var(--bgHoverLighterColor);
             border-color: var(--primaryColor);
         }
     }
 
-    .bk-tab-label-item .bk-tab-label {
-        position: relative;
-        &::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: var(--activeBarHeight);
-            background: var(--primaryColor);
-            transition: width .3s cubic-bezier(.645,.045,.355,1);
-            will-change: width;
+    .bk-tab-label-wrapper .bk-tab-label-list {
+        &.bk-tab-label-list-has-bar:after {
+            margin-left: 8px;
+            width: calc(var(--activeBarWidth) - 16px);
         }
-    }
-    .bk-tab-label-item.active .bk-tab-label {
-        font-weight: bold;
-        &::before {
-            width: 100%;
+        .bk-tab-label-item {
+            min-width: initial;
+            padding: 0 20px;
+            &.active .bk-tab-label {
+                font-weight: bold;
+            }
         }
-    }
-    .bk-tab-label-list-has-bar:after {
-        background: transparent;
     }
 
     .bk-message-icon {
@@ -179,6 +269,25 @@ body {
             .clear-icon {
                 position: absolute;
                 right: 0;
+            }
+        }
+    }
+
+    .bk-switcher {
+        background-color: var(--fontSubsidiaryColor);
+        &.bk-switcher-small {
+            width: 32px;
+        }
+    }
+
+    .bk-transfer {
+        .source-list,
+        .target-list {
+            display: flex;
+            flex-direction: column;
+            .content {
+                max-height: initial;
+                margin: initial;
             }
         }
     }

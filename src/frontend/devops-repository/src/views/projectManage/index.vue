@@ -1,7 +1,7 @@
 <template>
     <div class="project-manage-container">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="showProjectDialog()"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="showProjectDialog()">{{ $t('create') }}</bk-button>
             <bk-input
                 v-model.trim="projectInput"
                 class="w250"
@@ -14,7 +14,7 @@
         <bk-table
             class="mt10"
             :data="filterProjectList"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :outer-border="false"
             :row-border="false"
             size="small">

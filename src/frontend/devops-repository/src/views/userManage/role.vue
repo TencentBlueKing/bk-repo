@@ -1,7 +1,7 @@
 <template>
     <div class="role-container" v-bkloading="{ isLoading }">
         <div class="mt10 flex-between-center">
-            <bk-button class="ml20" icon="plus" theme="primary" @click="createRoleHandler"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button class="ml20" icon="plus" theme="primary" @click="createRoleHandler">{{ $t('create') }}</bk-button>
             <bk-input
                 v-model.trim="role"
                 class="mr20 w250"

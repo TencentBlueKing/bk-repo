@@ -1,7 +1,7 @@
 <template>
     <div class="node-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="showCreateNode"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="showCreateNode">{{ $t('create') }}</bk-button>
             <div class="node-search flex-align-center">
                 <bk-input
                     class="w250"
@@ -25,7 +25,7 @@
         </div>
         <bk-table
             class="mt10 node-table"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="filterClusterList"
             :outer-border="false"
             :row-border="false"
