@@ -37,11 +37,9 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="方案名称" prop="name" min-width="150" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="扫描类型" show-overflow-tooltip>
-                <template #default="{ row }">
-                    {{ scanTypeEnum[row.planType] }}
-                </template>
+            <bk-table-column label="方案名称" prop="name" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="扫描类型">
+                <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
             </bk-table-column>
             <bk-table-column
                 v-for="column in [
@@ -54,18 +52,16 @@
                 :key="column.prop"
                 :label="column.label"
                 :prop="column.prop"
-                align="right"
-                :formatter="(...rest) => segmentNumberThree(rest[2])">
+                align="right">
+                <template #default="{ row }">{{ segmentNumberThree(row[column.prop]) }}</template>
             </bk-table-column>
-            <bk-table-column label="扫描状态" width="90">
+            <bk-table-column label="扫描状态">
                 <template #default="{ row }">
                     <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column label="最后扫描时间">
-                <template #default="{ row }">
-                    {{formatDate(row.lastScanDate)}}
-                </template>
+                <template #default="{ row }">{{formatDate(row.lastScanDate)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">

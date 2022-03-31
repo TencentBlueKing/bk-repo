@@ -143,6 +143,7 @@
     }
     .icon-close {
         position: absolute;
+        font-size: 12px;
         top: 10px;
         right: 10px;
     }

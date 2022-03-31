@@ -48,24 +48,22 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column :label="$t('account')" prop="userId" width="200"></bk-table-column>
+            <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
             <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
             <bk-table-column label="电话" prop="phone"></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
-                <template #default="{ row }">
-                    {{formatDate(row.createdDate)}}
-                </template>
+                <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
             <bk-table-column label="系统管理员">
-                <template #default="{ row }"><div class="flex-align-center">
-                    <bk-switcher v-model="row.admin" size="small" theme="primary" @change="changeAdminStatus(row)"></bk-switcher>
-                </div></template>
+                <template #default="{ row }">
+                    <bk-switcher class="m5" v-model="row.admin" size="small" theme="primary" @change="changeAdminStatus(row)"></bk-switcher>
+                </template>
             </bk-table-column>
             <bk-table-column label="启用账号">
-                <template #default="{ row }"><div class="flex-align-center">
-                    <bk-switcher :value="!row.locked" size="small" theme="primary" @change="changeUserStatus(row)"></bk-switcher>
-                </div></template>
+                <template #default="{ row }">
+                    <bk-switcher class="m5" :value="!row.locked" size="small" theme="primary" @change="changeUserStatus(row)"></bk-switcher>
+                </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">

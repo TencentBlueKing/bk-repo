@@ -26,15 +26,13 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="项目标识" prop="id" width="150"></bk-table-column>
+            <bk-table-column label="项目标识" prop="id" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="项目名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="项目描述" prop="description" show-overflow-tooltip></bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="200">
-                <template #default="{ row }">
-                    {{ formatDate(row.createdDate) }}
-                </template>
+            <bk-table-column :label="$t('createdDate')">
+                <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')" width="150">
+            <bk-table-column :label="$t('createdBy')">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>

@@ -1,8 +1,8 @@
 <template>
     <span class="repo-tag scan-tag-container" :class="status"
         @click.stop="showScanList"
-        v-bk-clickoutside="handleClickOutSide">
-        {{scanStatusEnum[status] || '未扫描'}}
+        v-bk-clickoutside="handleClickOutSide"
+        :data-name="scanStatusEnum[status] || '未扫描'">
         <bk-dialog
             class="scan-list-dialog"
             v-model="visible"
@@ -98,6 +98,9 @@
 <style lang="scss" scoped>
 .scan-tag-container {
     cursor: pointer;
+    &:before {
+        content: attr(data-name);
+    }
 }
 </style>
 <style lang="scss">
