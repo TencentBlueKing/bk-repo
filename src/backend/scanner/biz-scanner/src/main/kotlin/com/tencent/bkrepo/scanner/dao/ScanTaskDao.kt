@@ -44,11 +44,13 @@ import java.time.LocalDateTime
 class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
     fun updateStatus(
         taskId: String,
-        status: ScanTaskStatus
+        status: ScanTaskStatus,
+        lastModifiedDate: LocalDateTime? = null
     ): UpdateResult {
-        val query = buildQuery(taskId)
+        val criteria = Criteria.where(ID).isEqualTo(taskId)
+        lastModifiedDate?.let { criteria.and(TScanTask::lastModifiedDate.name).isEqualTo(it) }
         val update = buildUpdate().set(TScanTask::status.name, status.name)
-        return updateFirst(query, update)
+        return updateFirst(Query(criteria), update)
     }
 
     /**

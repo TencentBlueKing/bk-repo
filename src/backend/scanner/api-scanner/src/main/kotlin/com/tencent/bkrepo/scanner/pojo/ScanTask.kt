@@ -37,6 +37,8 @@ data class ScanTask(
     val taskId: String,
     @ApiModelProperty("触发者")
     val createdBy: String,
+    @ApiModelProperty("最后修改时间")
+    val lastModifiedDateTime: String,
     @ApiModelProperty("任务触发时间")
     val triggerDateTime: String,
     @ApiModelProperty("任务开始执行时间")

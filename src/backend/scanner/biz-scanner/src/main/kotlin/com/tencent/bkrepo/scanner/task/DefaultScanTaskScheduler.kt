@@ -59,6 +59,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -102,7 +103,15 @@ class DefaultScanTaskScheduler @Autowired constructor(
     @Suppress("BlockingMethodInNonBlockingContext")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
-        scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
+        val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
+        val updateResult = scanTaskDao.updateStatus(
+            scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING, lastModifiedDate
+        )
+        if (updateResult.modifiedCount == 0L) {
+            // 更新任务状态失败，表示任务已经被提交过，不再重复处理，直接返回
+            return
+        }
+
         scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTING)
         val scanner = scannerService.get(scanTask.scanner)
         logger.info("submitting sub tasks of task[${scanTask.taskId}], scanner: [${scanner.name}]")
