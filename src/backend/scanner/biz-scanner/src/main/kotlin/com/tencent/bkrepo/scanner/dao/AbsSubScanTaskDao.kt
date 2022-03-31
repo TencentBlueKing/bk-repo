@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
@@ -114,6 +115,11 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongo
             val aggregateResult = aggregate(aggregation, artifactPlanRelationAggregateResultClass())
             return artifactPlanRelationAggregateResult(aggregateResult)
         }
+    }
+
+    fun deleteByParentTaskId(parentTaskId: String): DeleteResult {
+        val query = Query(SubScanTaskDefinition::parentScanTaskId.isEqualTo(parentTaskId))
+        return remove(query)
     }
 
     protected abstract fun artifactPlanRelationAggregateResultClass(): Class<*>
