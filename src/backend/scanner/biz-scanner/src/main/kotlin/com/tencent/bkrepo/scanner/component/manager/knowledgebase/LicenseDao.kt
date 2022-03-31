@@ -25,28 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
+import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.BulkOperations
+import org.springframework.data.mongodb.core.insert
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
+class LicenseDao : ScannerSimpleMongoDao<TLicense>() {
+    fun findByName(name: String): TLicense? {
+        val query = Query(TLicense::name.isEqualTo(name))
+        return findOne(query)
     }
 
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
+    fun findByNames(names: Collection<String>): List<TLicense> {
+        val query = Query(TLicense::name.inValues(names))
+        return find(query)
+    }
+
+    fun saveIfNotExists(license: TLicense) {
+        if (!exists(Query(TLicense::name.isEqualTo(license.name)))) {
+            try {
+                insert(license)
+            } catch (ignore: DuplicateKeyException) {
+            }
+        }
+    }
+
+    fun saveIfNotExists(licenses: Collection<TLicense>) {
+        try {
+            determineMongoTemplate()
+                .insert<TLicense>()
+                .withBulkMode(BulkOperations.BulkMode.UNORDERED)
+                .bulk(licenses)
+        } catch (ignore: DuplicateKeyException) {
+        }
+    }
 }

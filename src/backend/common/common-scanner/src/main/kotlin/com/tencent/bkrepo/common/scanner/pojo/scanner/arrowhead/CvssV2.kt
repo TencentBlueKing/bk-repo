@@ -25,28 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import com.fasterxml.jackson.annotation.JsonProperty
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
-    }
-
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
-}
+data class CvssV2(
+    @JsonProperty("base_score")
+    val baseScore: Double,
+    @JsonProperty("confidentiality_impact")
+    val confidentialityImpact: String,
+    @JsonProperty("integrity_impact")
+    val integrityImpact: String,
+    @JsonProperty("availability_impact")
+    val availabilityImpact: String,
+    @JsonProperty("access_vector")
+    val accessVector: String,
+    @JsonProperty("access_complexity")
+    val attackComplexity: String,
+    @JsonProperty("authentication")
+    val authentication: String
+)

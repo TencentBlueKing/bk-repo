@@ -88,7 +88,7 @@ class UserScanController @Autowired constructor(
     @ApiOperation("单个制品扫描")
     @PostMapping("/single")
     fun singleScan(@RequestBody request: SingleScanRequest): Response<Boolean> {
-        scanService.scan(Converter.convert(request), ScanTriggerType.MANUAL)
+        scanService.singleScan(request)
         return ResponseBuilder.success(true)
     }
 

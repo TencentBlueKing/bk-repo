@@ -25,28 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.data.mongodb.core.MongoTemplate
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
+abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
+    @Suppress("LateinitUsage")
+    @Autowired
+    @Qualifier(MultipleMongoConfig.BEAN_NAME_SCANNER_MONGO_TEMPLATE)
+    private lateinit var mongoTemplate: MongoTemplate
+
+    override fun determineMongoTemplate(): MongoTemplate {
+        return mongoTemplate
     }
-
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
 }

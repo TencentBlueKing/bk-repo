@@ -25,28 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
+import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.core.BulkOperations
+import org.springframework.data.mongodb.core.insert
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
+class CveDao : ScannerSimpleMongoDao<TCve>() {
+    fun findByCveId(cveId: String): TCve? {
+        val query = Query(TCve::cveId.isEqualTo(cveId))
+        return findOne(query)
     }
 
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
+    fun findByCveIds(cveIds: Collection<String>): List<TCve> {
+        val query = Query(TCve::cveId.inValues(cveIds))
+        return find(query)
+    }
+
+    fun saveIfNotExists(cve: TCve) {
+        if (!exists(Query(TCve::cveId.isEqualTo(cve.cveId)))) {
+            try {
+                insert(cve)
+            } catch (ignore: DuplicateKeyException) {
+            }
+        }
+    }
+
+    fun saveIfNotExists(cveList: Collection<TCve>) {
+        try {
+            determineMongoTemplate()
+                .insert<TCve>()
+                .withBulkMode(BulkOperations.BulkMode.UNORDERED)
+                .bulk(cveList)
+        } catch (ignore: DuplicateKeyException) {
+        }
+    }
 }

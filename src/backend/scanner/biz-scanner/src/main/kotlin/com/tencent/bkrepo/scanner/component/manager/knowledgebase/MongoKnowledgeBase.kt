@@ -25,28 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
+@Component
+open class MongoKnowledgeBase(
+    private val cveDao: CveDao,
+    private val licenseDao: LicenseDao
+) : KnowledgeBase {
+    override fun saveLicense(license: TLicense) {
+        licenseDao.saveIfNotExists(license)
     }
 
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
+    override fun saveLicenses(licenses: Collection<TLicense>) {
+        licenseDao.saveIfNotExists(licenses)
+    }
+
+    override fun findLicense(licenceName: String): TLicense? {
+        return licenseDao.findByName(licenceName)
+    }
+
+    override fun findLicense(licenseNames: Collection<String>): List<TLicense> {
+        return licenseDao.findByNames(licenseNames)
+    }
+
+    override fun saveCve(cve: TCve) {
+        cveDao.saveIfNotExists(cve)
+    }
+
+    override fun saveCve(cveList: Collection<TCve>) {
+        cveDao.saveIfNotExists(cveList)
+    }
+
+    override fun findCve(cveId: String): TCve? {
+        return cveDao.findByCveId(cveId)
+    }
+
+    override fun findCve(cveIds: Collection<String>): List<TCve> {
+        return cveDao.findByCveIds(cveIds)
+    }
 }

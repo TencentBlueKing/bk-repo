@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
 import com.fasterxml.jackson.annotation.JsonAlias
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.removeRootDirPath
 import io.swagger.annotations.ApiModel
@@ -125,9 +124,8 @@ data class CveSecItem(
 
     @ApiModelProperty("cvss V2 漏洞影响评价")
     @JsonAlias("cvss_v2")
-    val cvssV2Vector: CvssV2?
+    val cvssV2: CvssV2?
 ) {
-
     companion object {
 
         const val TYPE = "CVE_SEC_ITEM"
@@ -138,42 +136,4 @@ data class CveSecItem(
             return cveSecItem.copy(path = path, cvssRank = cvssRank)
         }
     }
-
-    data class CvssV3(
-        @JsonProperty("base_score")
-        val baseScore: Double,
-        @JsonProperty("confidentiality_impact")
-        val confidentialityImpact: String,
-        @JsonProperty("integrity_impact")
-        val integrityImpact: String,
-        @JsonProperty("availability_impact")
-        val availabilityImpact: String,
-        @JsonProperty("attackVector")
-        val attackVector: String,
-        @JsonProperty("attackComplexity")
-        val attackComplexity: String,
-        @JsonProperty("privileges_required")
-        val privilegesRequired: String,
-        @JsonProperty("user_interaction")
-        val userInteraction: String,
-        @JsonProperty("scope")
-        val scope: String
-    )
-
-    data class CvssV2(
-        @JsonProperty("base_score")
-        val baseScore: Double,
-        @JsonProperty("confidentiality_impact")
-        val confidentialityImpact: String,
-        @JsonProperty("integrity_impact")
-        val integrityImpact: String,
-        @JsonProperty("availability_impact")
-        val availabilityImpact: String,
-        @JsonProperty("access_vector")
-        val accessVector: String,
-        @JsonProperty("access_complexity")
-        val attackComplexity: String,
-        @JsonProperty("authentication")
-        val authentication: String
-    )
 }

@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -48,7 +47,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class ScanPlanDao : SimpleMongoDao<TScanPlan>() {
+class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
     fun get(id: String): TScanPlan {
         val query = Query(criteria().and(ID).isEqualTo(id))
         return findOne(query) ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)

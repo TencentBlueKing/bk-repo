@@ -61,6 +61,7 @@ import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
+import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
@@ -134,6 +135,13 @@ class ScanServiceImpl @Autowired constructor(
             scanTaskScheduler.schedule(scanTask)
             logger.info("create scan task[${scanTask.taskId}] success")
             return scanTask
+        }
+    }
+
+    override fun singleScan(request: SingleScanRequest): ScanTask {
+        with(request) {
+            val plan = scanPlanDao.get(planId)
+            return scan(Converter.convert(request, plan.type), ScanTriggerType.MANUAL)
         }
     }
 

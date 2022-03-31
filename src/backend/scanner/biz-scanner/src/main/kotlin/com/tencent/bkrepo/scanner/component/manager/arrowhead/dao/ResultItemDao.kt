@@ -29,24 +29,15 @@ package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
-import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig.Companion.BEAN_NAME_SCANNER_MONGO_TEMPLATE
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
+import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 
-abstract class ResultItemDao<T : ResultItem<*>> : SimpleMongoDao<T>() {
-
-    @Suppress("LateinitUsage")
-    @Autowired
-    @Qualifier(BEAN_NAME_SCANNER_MONGO_TEMPLATE)
-    private lateinit var mongoTemplate: MongoTemplate
+abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
 
     fun deleteBy(credentialsKey: String?, sha256: String, scanner: String): DeleteResult {
         val criteria = buildCriteria(credentialsKey, sha256, scanner)
@@ -78,9 +69,5 @@ abstract class ResultItemDao<T : ResultItem<*>> : SimpleMongoDao<T>() {
             .where(ResultItem<*>::credentialsKey.name).isEqualTo(credentialsKey)
             .and(ResultItem<*>::sha256.name).isEqualTo(sha256)
             .and(ResultItem<*>::scanner.name).isEqualTo(scanner)
-    }
-
-    override fun determineMongoTemplate(): MongoTemplate {
-        return mongoTemplate
     }
 }

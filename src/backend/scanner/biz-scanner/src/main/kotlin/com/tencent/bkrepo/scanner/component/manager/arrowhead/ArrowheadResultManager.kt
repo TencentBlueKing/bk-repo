@@ -50,6 +50,9 @@ import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplication
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCheckSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TSensitiveItem
+import com.tencent.bkrepo.scanner.component.manager.knowledgebase.KnowledgeBase
+import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
+import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TLicense
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -60,7 +63,8 @@ class ArrowheadResultManager @Autowired constructor(
     private val checkSecItemDao: CheckSecItemDao,
     private val applicationItemDao: ApplicationItemDao,
     private val sensitiveItemDao: SensitiveItemDao,
-    private val cveSecItemDao: CveSecItemDao
+    private val cveSecItemDao: CveSecItemDao,
+    private val knowledgeBase: KnowledgeBase
 ) : ScanExecutorResultManager {
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -79,17 +83,13 @@ class ArrowheadResultManager @Autowired constructor(
             .map { convert<CheckSecItem, TCheckSecItem>(credentialsKey, sha256, scannerName, it) }
             .run { replace(credentialsKey, sha256, scannerName, checkSecItemDao, this) }
 
-        result.applicationItems
-            .map { convert<ApplicationItem, TApplicationItem>(credentialsKey, sha256, scannerName, it) }
-            .run { replace(credentialsKey, sha256, scannerName, applicationItemDao, this) }
+        replaceApplicationItems(credentialsKey, sha256, scannerName, result.applicationItems)
 
         result.sensitiveItems
             .map { convert<SensitiveItem, TSensitiveItem>(credentialsKey, sha256, scannerName, it) }
             .run { replace(credentialsKey, sha256, scannerName, sensitiveItemDao, this) }
 
-        result.cveSecItems
-            .map { convert<CveSecItem, TCveSecItem>(credentialsKey, sha256, scannerName, it) }
-            .run { replace(credentialsKey, sha256, scannerName, cveSecItemDao, this) }
+        replaceCveItems(credentialsKey, sha256, scannerName, result.cveSecItems)
     }
 
     override fun load(
@@ -105,9 +105,9 @@ class ArrowheadResultManager @Autowired constructor(
         require(pageLimit != null && type != null)
         val page = when (type) {
             CheckSecItem.TYPE -> checkSecItemDao
-            ApplicationItem.TYPE -> applicationItemDao
+            ApplicationItem.TYPE -> return loadApplicationItems(credentialsKey, sha256, scanner, pageLimit, extra)
             SensitiveItem.TYPE -> sensitiveItemDao
-            CveSecItem.TYPE -> cveSecItemDao
+            CveSecItem.TYPE -> return loadCveItems(credentialsKey, sha256, scanner, pageLimit, extra)
             else -> {
                 throw ErrorCodeException(
                     messageCode = ScannerMessageCode.SCANNER_RESULT_TYPE_INVALID,
@@ -118,6 +118,92 @@ class ArrowheadResultManager @Autowired constructor(
         }.run { pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra) }
 
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
+    }
+
+    private fun loadApplicationItems(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: Scanner,
+        pageLimit: PageLimit,
+        extra: Map<String, Any>
+    ): Page<ApplicationItem> {
+        val page = applicationItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra)
+        val licenseNames = page.records.filter { it.data.licenseName != null }.map { it.data.licenseName!! }
+        val licenses = knowledgeBase.findLicense(licenseNames).associateBy { it.name }
+        val records = page.records.map { Converter.convert(it, licenses[it.data.licenseName]) }
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
+    }
+
+    private fun replaceApplicationItems(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        applicationItems: List<ApplicationItem>
+    ) {
+        val licenses = HashSet<TLicense>()
+        val tApplicationItems = ArrayList<TApplicationItem>(applicationItems.size)
+
+        applicationItems
+            .asSequence()
+            .filter { it.license != null }
+            .forEach { item ->
+                licenses.add(Converter.convertToLicense(item.license!!))
+                tApplicationItems.add(
+                    TApplicationItem(
+                        credentialsKey = credentialsKey,
+                        sha256 = sha256,
+                        scanner = scanner,
+                        data = Converter.convert(item)
+                    )
+                )
+            }
+        if (licenses.isNotEmpty()) {
+            knowledgeBase.saveLicenses(licenses)
+        }
+        replace(credentialsKey, sha256, scanner, applicationItemDao, tApplicationItems)
+    }
+
+    private fun loadCveItems(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: Scanner,
+        pageLimit: PageLimit,
+        extra: Map<String, Any>
+    ): Page<CveSecItem> {
+        val page = cveSecItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra)
+        val cveIds = page.records.map { it.data.cveId }
+        val cveMap = knowledgeBase.findCve(cveIds).associateBy { it.cveId }
+        val records = page.records.map { Converter.convert(it, cveMap[it.data.cveId]) }
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
+    }
+
+    private fun replaceCveItems(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        cveItems: List<CveSecItem>
+    ) {
+        val cveSet = HashSet<TCve>(cveItems.size)
+        val tCveItems = ArrayList<TCveSecItem>(cveItems.size)
+
+        cveItems
+            .asSequence()
+            .forEach {
+                cveSet.add(Converter.convertToCve(it))
+                tCveItems.add(
+                    TCveSecItem(
+                        credentialsKey = credentialsKey,
+                        sha256 = sha256,
+                        scanner = scanner,
+                        data = Converter.convert(it)
+                    )
+                )
+            }
+
+        if (cveSet.isNotEmpty()) {
+            knowledgeBase.saveCve(cveSet)
+        }
+        replace(credentialsKey, sha256, scanner, cveSecItemDao, tCveItems)
     }
 
     private inline fun <T, reified R : ResultItem<T>> convert(

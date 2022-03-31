@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TScanResult
@@ -43,7 +42,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
+class FileScanResultDao : ScannerSimpleMongoDao<TFileScanResult>() {
 
     /**
      * 查询文件使用指定扫描器的扫描结果

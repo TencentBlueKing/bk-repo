@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import org.springframework.data.domain.Sort
@@ -42,7 +41,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class ScanTaskDao : SimpleMongoDao<TScanTask>() {
+class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
     fun updateStatus(
         taskId: String,
         status: ScanTaskStatus

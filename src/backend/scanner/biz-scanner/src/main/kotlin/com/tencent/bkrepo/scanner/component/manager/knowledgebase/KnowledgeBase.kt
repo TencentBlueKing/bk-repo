@@ -25,28 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+/**
+ * CVE和License知识库
+ */
+interface KnowledgeBase {
+    fun saveLicense(license: TLicense)
+    fun saveLicenses(licenses: Collection<TLicense>)
+    fun findLicense(licenceName: String): TLicense?
+    fun findLicense(licenseNames: Collection<String>): List<TLicense>
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
-    }
-
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
+    fun saveCve(cve: TCve)
+    fun saveCve(cveList: Collection<TCve>)
+    fun findCve(cveId: String): TCve?
+    fun findCve(cveIds: Collection<String>): List<TCve>
 }

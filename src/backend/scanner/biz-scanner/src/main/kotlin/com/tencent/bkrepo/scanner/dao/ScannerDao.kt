@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanner
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -38,7 +37,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class ScannerDao : SimpleMongoDao<TScanner>() {
+class ScannerDao : ScannerSimpleMongoDao<TScanner>() {
     fun existsByName(name: String): Boolean {
         val query = buildQuery(name)
         return exists(query)

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("application_item")
@@ -36,5 +35,32 @@ class TApplicationItem(
     credentialsKey: String?,
     sha256: String,
     scanner: String,
-    data: ApplicationItem
-) : ResultItem<ApplicationItem>(id, credentialsKey, sha256, scanner, data)
+    data: TApplicationItemData
+) : ResultItem<TApplicationItemData>(id, credentialsKey, sha256, scanner, data)
+
+data class TApplicationItemData(
+    /**
+     * 组件路径
+     */
+    val path: String,
+
+    /**
+     * 组件名
+     */
+    val component: String,
+
+    /**
+     * 组件版本
+     */
+    val version: String,
+
+    /**
+     * 证书名字
+     */
+    val licenseName: String?,
+
+    /**
+     * 证书风险等级， LOW, MEDIUM, HIGH
+     */
+    val risk: String?
+)

@@ -25,28 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
-    }
+import com.fasterxml.jackson.annotation.JsonAlias
+import io.swagger.annotations.ApiModelProperty
 
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
-}
+/**
+ * 许可证
+ */
+data class License(
+    @ApiModelProperty("证书名字")
+    @JsonAlias("Name")
+    val name: String,
+    @ApiModelProperty("许可证内容")
+    @JsonAlias("Content")
+    val content: String,
+    @ApiModelProperty("许可证链接")
+    @JsonAlias("Source")
+    val source: String,
+    @ApiModelProperty("证书风险等级， LOW, MEDIUM, HIGH")
+    @JsonAlias("Risk")
+    val risk: String
+)

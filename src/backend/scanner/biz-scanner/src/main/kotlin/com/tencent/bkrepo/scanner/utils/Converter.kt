@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
+import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
@@ -93,12 +94,12 @@ object Converter {
         }
     }
 
-    fun convert(request: SingleScanRequest): ScanRequest {
+    fun convert(request: SingleScanRequest, planType: String): ScanRequest {
         with(request) {
             require(fullPath != null || packageKey != null && version != null)
 
             // 创建rule
-            val rule = if (fullPath != null) {
+            val rule = if (planType == PlanType.MOBILE.name) {
                 RuleConverter.convert(projectId, repoName, fullPath!!)
             } else {
                 RuleConverter.convert(projectId, repoName, packageKey!!, version!!)

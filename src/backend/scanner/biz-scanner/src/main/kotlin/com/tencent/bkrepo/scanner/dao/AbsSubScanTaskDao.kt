@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
@@ -47,7 +46,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 
-abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : SimpleMongoDao<E>() {
+abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongoDao<E>() {
     fun find(projectId: String, subtaskId: String): E? {
         val criteria = Criteria
             .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)

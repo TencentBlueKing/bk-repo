@@ -25,28 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-@Repository
-class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
-        }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
-        }
-        return criteria
-    }
+/**
+ * 许可证信息
+ */
+@Document("license")
+@CompoundIndexes(
+    CompoundIndex(name = "name_idx", def = "{'name': 1}", unique = true)
+)
+data class TLicense(
+    val id: String? = null,
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    val lastModifiedBy: String,
+    val lastModifiedDate: LocalDateTime,
 
-    private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"
-}
+    /**
+     * 证书名字
+     */
+    val name: String,
+    /**
+     * 许可证内容
+     */
+    val content: String,
+    /**
+     * 许可证链接
+     */
+    val source: String,
+    /**
+     * 证书风险等级， LOW, MEDIUM, HIGH
+     */
+    val risk: String
+)

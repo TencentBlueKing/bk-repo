@@ -314,8 +314,10 @@ class ArrowheadScanExecutor @Autowired constructor(
 
         // license risk
         applicationItems.forEach {
-            val overviewKey = overviewKeyOfLicenseRisk(it.licenseRisk)
-            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+            it.license?.let { license ->
+                val overviewKey = overviewKeyOfLicenseRisk(license.risk)
+                overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+            }
         }
 
         // sensitive count

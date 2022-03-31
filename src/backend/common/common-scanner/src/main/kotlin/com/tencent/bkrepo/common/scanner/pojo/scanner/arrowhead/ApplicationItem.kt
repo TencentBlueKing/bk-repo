@@ -43,35 +43,24 @@ data class ApplicationItem(
 
     @ApiModelProperty("组件名")
     @JsonAlias("LibraryName")
-    val libraryName: String,
+    val component: String,
 
     @ApiModelProperty("组件版本")
     @JsonAlias("LibraryVersion")
-    val libraryVersion: String,
+    val version: String,
 
-    /**
-     * 没有开源证书时为empty
-     */
-    @ApiModelProperty("组件使用的开源证书")
-    @JsonAlias("LicenseShortName")
-    val licenseShortName: String,
-
-    /**
-     * Low,Middle,High
-     */
-    @ApiModelProperty("证书风险等级")
-    @JsonAlias("LicenseRisk")
-    val licenseRisk: String
+    @ApiModelProperty("证书详情")
+    @JsonAlias("license")
+    val license: License? = null
 ) {
     companion object {
 
         fun normalize(applicationItem: ApplicationItem): ApplicationItem {
             val path = removeRootDirPath(applicationItem.path)
-            val licenseRisk = normalizedLevel(applicationItem.licenseRisk)
-            return applicationItem.copy(path = path, licenseRisk = licenseRisk)
+            val license = applicationItem.license?.copy(risk = normalizedLevel(applicationItem.license.risk))
+            return applicationItem.copy(path = path, license = license)
         }
 
         const val TYPE = "APPLICATION_ITEM"
     }
 }
-
