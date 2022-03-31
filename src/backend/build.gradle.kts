@@ -39,6 +39,7 @@ allprojects {
     version = "1.0.0-SNAPSHOT"
 
     apply(plugin = "com.tencent.devops.boot")
+    apply(plugin = "jacoco")
     dependencyManagement {
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:0.9.0")
@@ -61,6 +62,14 @@ allprojects {
         kotlinOptions {
             freeCompilerArgs = listOf("-java-parameters")
         }
+    }
+
+    tasks.withType<JacocoReport> {
+        reports {
+            xml.isEnabled = true
+            html.isEnabled = true
+        }
+        dependsOn(tasks.getByName("test"))
     }
 }
 
