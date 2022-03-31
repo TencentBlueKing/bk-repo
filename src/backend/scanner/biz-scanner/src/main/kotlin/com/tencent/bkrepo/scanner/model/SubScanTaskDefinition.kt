@@ -92,9 +92,9 @@ open class SubScanTaskDefinition(
      */
     val version: String? = null,
     /**
-     * repoType为[com.tencent.bkrepo.common.artifact.pojo.RepositoryType.GENERIC]时存在
+     * 文件路径
      */
-    var fullPath: String? = null,
+    var fullPath: String,
     /**
      * 制品名称
      * repoType为[com.tencent.bkrepo.common.artifact.pojo.RepositoryType.GENERIC]时为nodeName

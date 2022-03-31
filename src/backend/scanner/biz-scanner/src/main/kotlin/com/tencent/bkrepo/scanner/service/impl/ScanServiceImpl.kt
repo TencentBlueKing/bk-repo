@@ -210,7 +210,9 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             // 统计任务耗时
-            scannerMetrics.record(fileType!!, subScanTask.size, subScanTask.scanner, startTimestamp, finishedTimestamp)
+            scannerMetrics.record(
+                subScanTask.fullPath, subScanTask.size, subScanTask.scanner, startTimestamp, finishedTimestamp
+            )
 
             // 更新文件扫描结果
             val scanner = scannerService.get(subScanTask.scanner)

@@ -35,6 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -126,8 +127,15 @@ class ScannerMetrics(
         reuseResultSubtaskCounters.addAndGet(count)
     }
 
-    fun record(fileType: String, fileSize: Long, scanner: String, startTimestamp: Long, finishedTimestamp: Long) {
-        taskTimer(fileType, FileSizeLevel.fromSize(fileSize), scanner).forEach {
+    fun record(
+        fullPath: String,
+        fileSize: Long,
+        scanner: String,
+        startTimestamp: Long,
+        finishedTimestamp: Long
+    ) {
+        val fileExtensionName = File(fullPath).extension.ifEmpty { UNKNOWN_EXTENSION }
+        taskTimer(fileExtensionName, FileSizeLevel.fromSize(fileSize), scanner).forEach {
             it.record(finishedTimestamp - startTimestamp, TimeUnit.MILLISECONDS)
         }
     }
@@ -217,5 +225,10 @@ class ScannerMetrics(
          * 子任务执行耗时
          */
         private const val SCANNER_SUBTASK_TIME_SPENT = "scanner.subtask.spent.millis"
+
+        /**
+         * 未知扩展名
+         */
+        private const val UNKNOWN_EXTENSION = "UNKNOWN"
     }
 }

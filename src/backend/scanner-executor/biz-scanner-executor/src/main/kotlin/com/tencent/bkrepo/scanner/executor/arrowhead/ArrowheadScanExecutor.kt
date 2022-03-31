@@ -78,10 +78,7 @@ class ArrowheadScanExecutor @Autowired constructor(
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var arrowheadConfigTemplate: Resource
 
-    override fun scan(
-        task: ScanExecutorTask,
-        callback: (ScanExecutorResult) -> Unit
-    ) {
+    override fun scan(task: ScanExecutorTask): ScanExecutorResult {
         require(task.scanner is ArrowheadScanner)
         val scanner = task.scanner
         // 创建工作目录
@@ -90,8 +87,11 @@ class ArrowheadScanExecutor @Autowired constructor(
         try {
             // 加载待扫描文件
             val scannerInputFile = File(File(workDir, scanner.container.inputDir), task.sha256)
-            task.file.copyTo(scannerInputFile)
-            logger.info(logMsg(task, "load file success"))
+            scannerInputFile.parentFile.mkdirs()
+            task.inputStream.use { taskInputStream ->
+                scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }
+            }
+            logger.info(logMsg(task, "read file success"))
 
             // 加载扫描配置文件
             loadConfigFile(task, workDir, scannerInputFile)
@@ -99,12 +99,11 @@ class ArrowheadScanExecutor @Autowired constructor(
 
             // 执行扫描
             val scanStatus = doScan(workDir, task)
-            val result = result(
+            return result(
                 File(workDir, scanner.container.outputDir),
                 scanner.resultFilterRule,
                 scanStatus
             )
-            callback(result)
         } catch (e: Exception) {
             logger.error(logMsg(task, "scan failed"), e)
             throw e

@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.pojo
 
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import java.io.File
+import java.io.InputStream
 
 /**
  * 扫描执行器扫描任务
@@ -47,9 +47,9 @@ data class ScanExecutorTask(
      */
     val scanner: Scanner,
     /**
-     * 待扫描文件
+     * 待扫描文件流，由扫描执行器负责关闭
      */
-    val file: File,
+    val inputStream: InputStream,
     /**
      * 待扫描文件sha256
      */

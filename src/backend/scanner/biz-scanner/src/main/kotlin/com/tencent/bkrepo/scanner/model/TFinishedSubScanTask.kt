@@ -52,7 +52,7 @@ class TFinishedSubScanTask(
     repoType: String,
     packageKey: String? = null,
     version: String? = null,
-    fullPath: String? = null,
+    fullPath: String,
     artifactName: String,
 
     status: String,

@@ -43,8 +43,6 @@ data class ReportResultRequest(
     val finishedTimestamp: Long,
     @ApiModelProperty("扫描执行状态")
     val scanStatus: String,
-    @ApiModelProperty("文件类型")
-    val fileType: String?,
     @ApiModelProperty("扫描执行器扫描结果")
     val scanExecutorResult: ScanExecutorResult? = null
 )
