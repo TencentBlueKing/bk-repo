@@ -42,7 +42,6 @@ data class CreateScanPlanRequest(
     @ApiModelProperty("方案类型")
     val type: String,
     @ApiModelProperty("使用的扫描器")
-    // TODO 兼容旧接口，设置默认扫描器
     val scanner: String = "default",
     @ApiModelProperty("描述")
     val description: String = "",

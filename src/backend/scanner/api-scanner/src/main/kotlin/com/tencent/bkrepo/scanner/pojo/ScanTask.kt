@@ -64,5 +64,7 @@ data class ScanTask(
     @ApiModelProperty("扫描器版本")
     val scannerVersion: String,
     @ApiModelProperty("扫描结果统计数据")
-    val scanResultOverview: Map<String, Long>?
+    val scanResultOverview: Map<String, Long>?,
+    @ApiModelProperty("是否强制扫描")
+    val force: Boolean = false
 )

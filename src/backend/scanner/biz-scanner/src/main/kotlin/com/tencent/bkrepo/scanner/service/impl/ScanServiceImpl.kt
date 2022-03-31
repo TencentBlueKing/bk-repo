@@ -130,7 +130,7 @@ class ScanServiceImpl @Autowired constructor(
                     scannerVersion = scanner.version,
                     scanResultOverview = emptyMap()
                 )
-            ).run { Converter.convert(this, plan) }
+            ).run { Converter.convert(this, plan, force) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(scanTask)
             logger.info("create scan task[${scanTask.taskId}] success")

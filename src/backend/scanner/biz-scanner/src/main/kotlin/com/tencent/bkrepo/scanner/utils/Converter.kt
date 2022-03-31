@@ -62,7 +62,7 @@ object Converter {
         )
     }
 
-    fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null): ScanTask = with(scanTask) {
+    fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null, force: Boolean = false): ScanTask = with(scanTask) {
         ScanTask(
             taskId = id!!,
             createdBy = createdBy,
@@ -79,7 +79,8 @@ object Converter {
             scanner = scanner,
             scannerType = scannerType,
             scannerVersion = scannerVersion,
-            scanResultOverview = scanResultOverview
+            scanResultOverview = scanResultOverview,
+            force = force
         )
     }
 
@@ -132,7 +133,6 @@ object Converter {
         if (scannerType == ArrowheadScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
             detailReport as Page<CveSecItem>
             val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {
-                // TODO 添加漏洞详情
                 ArtifactVulnerabilityInfo(
                     cveId = it.cveId,
                     severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),

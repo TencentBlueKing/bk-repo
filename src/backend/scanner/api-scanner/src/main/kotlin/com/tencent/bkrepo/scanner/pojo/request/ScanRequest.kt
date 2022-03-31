@@ -38,5 +38,7 @@ data class ScanRequest(
     @ApiModelProperty("扫描方案名")
     val planId: String? = null,
     @ApiModelProperty("扫描文件匹配规则")
-    val rule: Rule? = null
+    val rule: Rule? = null,
+    @ApiModelProperty("是否强制扫描，为true时无论是否存在扫描结果都会执行扫描")
+    val force: Boolean = false
 )
