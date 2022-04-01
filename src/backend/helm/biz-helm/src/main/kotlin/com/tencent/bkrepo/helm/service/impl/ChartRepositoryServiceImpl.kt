@@ -228,7 +228,14 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         when (getRepositoryInfo(artifactInfo).category) {
-            RepositoryCategory.LOCAL -> {
+            RepositoryCategory.REMOTE -> {
+                helmOperationService.initPackageInfo(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    userId = SecurityUtils.getUserId()
+                )
+            }
+            else -> {
                 val nodeList = queryNodeList(artifactInfo, false)
                 logger.info(
                     "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
@@ -236,13 +243,6 @@ class ChartRepositoryServiceImpl(
                 )
                 val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
                 uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
-            }
-            else -> {
-                helmOperationService.initPackageInfo(
-                    projectId = artifactInfo.projectId,
-                    repoName = artifactInfo.repoName,
-                    userId = SecurityUtils.getUserId()
-                )
             }
         }
     }
