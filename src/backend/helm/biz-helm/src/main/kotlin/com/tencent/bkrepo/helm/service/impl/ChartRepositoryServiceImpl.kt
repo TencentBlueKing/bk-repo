@@ -69,7 +69,8 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ChartRepositoryServiceImpl(
-    private val helmProperties: HelmProperties
+    private val helmProperties: HelmProperties,
+    private val helmOperationService: HelmOperationService
 ) : AbstractChartService(), ChartRepositoryService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -237,7 +238,11 @@ class ChartRepositoryServiceImpl(
                 uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
             }
             else -> {
-                initIndexYaml(artifactInfo.projectId, artifactInfo.repoName)
+                helmOperationService.initPackageInfo(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    userId = SecurityUtils.getUserId()
+                )
             }
         }
     }
