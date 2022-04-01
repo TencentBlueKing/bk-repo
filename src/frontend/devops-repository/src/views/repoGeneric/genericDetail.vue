@@ -140,7 +140,7 @@
             codeList () {
                 const { projectId, repoName, path } = this.detailSlider
                 return [
-                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/generic/${projectId}/${repoName}${path}`
+                    `wget --user=${this.userInfo.username} --password=<PERSONAL_ACCESS_TOKEN> "${location.origin}/generic/${projectId}/${repoName}${path}"`
                 ]
             }
         },
