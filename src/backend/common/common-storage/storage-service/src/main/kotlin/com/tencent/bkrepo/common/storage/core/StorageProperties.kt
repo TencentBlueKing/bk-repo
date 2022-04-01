@@ -93,7 +93,12 @@ data class StorageProperties(
      * s3存储配置
      */
     @NestedConfigurationProperty
-    var s3: S3Credentials = S3Credentials()
+    var s3: S3Credentials = S3Credentials(),
+
+    /**
+     * polaris服务地址列表
+     */
+    var polarisAddresses: List<String> = emptyList()
 
 ) {
     fun defaultStorageCredentials(): StorageCredentials {
