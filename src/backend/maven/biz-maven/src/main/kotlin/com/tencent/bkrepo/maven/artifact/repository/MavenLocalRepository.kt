@@ -700,6 +700,10 @@ class MavenLocalRepository(
                     throw MavenArtifactNotFoundException("Artifact $fullPath could not find..")
                 }
             }
+            // 剔除类似-20190917.073536-2.jar路径，实际不存在的
+            if (!fullPath.isSnapshotNonUniqueUri()) {
+                throw MavenArtifactNotFoundException("Artifact $fullPath could not find..")
+            }
             val mavenArtifactInfo = context.artifactInfo as MavenArtifactInfo
             try {
                 mavenArtifactInfo.isSnapshot()
@@ -841,6 +845,11 @@ class MavenLocalRepository(
             mavenVersion.buildNo = this.buildNo
         }
         val uniqueName = mavenVersion.combineToUnique()
+        val nonUniqueName = mavenVersion.combineToNonUnique()
+        // 针对非正常路径： 获取后缀为-1.0.0-SNAPSHOT.jar， 但是版本和versionId不一致的
+        if (nonUniqueName != name) {
+            throw MavenArtifactNotFoundException("Artifact $fullPath could not find..")
+        }
         return fullPath.replace(name, uniqueName)
     }
 
