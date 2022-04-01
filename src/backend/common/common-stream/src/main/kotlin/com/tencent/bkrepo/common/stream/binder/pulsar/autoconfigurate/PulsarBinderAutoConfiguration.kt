@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.common.stream.binder.pulsar.autoconfigurate
 
 import com.tencent.bkrepo.common.stream.binder.pulsar.PulsarMessageChannelBinder
-import com.tencent.bkrepo.common.stream.binder.pulsar.actuator.PulsarBinderHealthIndicator
 import com.tencent.bkrepo.common.stream.binder.pulsar.error.exception.ClientInitException
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarBinderConfigurationProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarExtendedBindingProperties
@@ -40,9 +39,6 @@ import org.apache.pulsar.client.api.AuthenticationFactory
 import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.api.PulsarClientException
 import org.apache.pulsar.client.impl.auth.oauth2.AuthenticationFactoryOAuth2
-import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator
-import org.springframework.boot.actuate.health.HealthIndicator
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -130,13 +126,13 @@ class PulsarBinderAutoConfiguration {
         )
     }
 
-    @Configuration(proxyBeanMethods = false)
-    @ConditionalOnClass(HealthIndicator::class)
-    @ConditionalOnEnabledHealthIndicator("pulsar")
-    internal class PulsarBinderHealthIndicatorConfiguration {
-        @Bean
-        fun pulsarBinderHealthIndicator(): PulsarBinderHealthIndicator {
-            return PulsarBinderHealthIndicator()
-        }
-    }
+//    @Configuration(proxyBeanMethods = false)
+//    @ConditionalOnClass(HealthIndicator::class)
+//    @ConditionalOnEnabledHealthIndicator("pulsar")
+//    internal class PulsarBinderHealthIndicatorConfiguration {
+//        @Bean
+//        fun pulsarBinderHealthIndicator(): PulsarBinderHealthIndicator {
+//            return PulsarBinderHealthIndicator()
+//        }
+//    }
 }

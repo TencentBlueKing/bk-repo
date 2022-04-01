@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.integration.inbound
 
-import com.tencent.bkrepo.common.stream.binder.pulsar.metrics.Instrumentation
-import com.tencent.bkrepo.common.stream.binder.pulsar.metrics.InstrumentationManager
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarBinderConfigurationProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarConsumerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
@@ -79,64 +77,10 @@ class PulsarInboundChannelAdapter(
                 deadLetterTopic = extendedConsumerProperties.extension.deadLetterTopic,
                 retryLetterTopic = extendedConsumerProperties.extension.retryLetterTopic
             )
-            retryTemplate?.let {
-                Assert.state(
-                    errorChannel == null,
-                    "Cannot have an 'errorChannel' property when a 'RetryTemplate' is " +
-                        "provided; use an 'ErrorMessageSendingRecoverer' in the 'recoveryCallback' property to " +
-                        "send an error message when retries are exhausted"
-                )
-                retryTemplate!!.registerListener(object : RetryListener {
-                    override fun <T, E : Throwable?> open(
-                        context: RetryContext,
-                        callback: RetryCallback<T, E>
-                    ): Boolean {
-                        return true
-                    }
 
-                    override fun <T, E : Throwable?> close(
-                        context: RetryContext,
-                        callback: RetryCallback<T, E>,
-                        throwable: Throwable?
-                    ) = Unit
-
-                    override fun <T, E : Throwable?> onError(
-                        context: RetryContext,
-                        callback: RetryCallback<T, E>,
-                        throwable: Throwable?
-                    ) = Unit
-                })
-            }
+            createRetryTemplate()
             // TODO prepare register consumer message listener
-
-            val messageListener = { it: Consumer<*>, msg: Message<*> ->
-                try {
-                    if (logger.isDebugEnabled) {
-                        logger.debug("Message received $msg")
-                    }
-                    val message = PulsarMessageConverterSupport.convertMessage2Spring(msg)
-                    if (retryTemplate != null) {
-                        retryTemplate!!.execute(
-                            RetryCallback<Any, RuntimeException> { context: RetryContext? ->
-                                sendMessage(message)
-                                logger.info("will send acknowledge: ${msg.messageId}")
-                                it.acknowledge(msg)
-                                message
-                            },
-                            recoveryCallback
-                        )
-                    } else {
-                        sendMessage(message)
-                        logger.info("will send acknowledge: ${msg.messageId}")
-                        it.acknowledge(msg)
-                    }
-                    logger.info("Message ${msg.messageId} has been consumed")
-                } catch (e: Exception) {
-                    logger.warn("Error occurred during consume message ${msg.messageId}: $e")
-                    it.negativeAcknowledge(msg)
-                }
-            }
-
+            val messageListener = createListener()
             // TODO multi topic如何处理， batch 如何处理， 对于Subscription多种模式如何处理
             consumer = PulsarConsumerFactory.initPulsarConsumer(
                 topic = topic,
@@ -158,26 +102,93 @@ class PulsarInboundChannelAdapter(
         }
     }
 
+    private fun createRetryTemplate() {
+        retryTemplate?.let {
+            Assert.state(
+                errorChannel == null,
+                "Cannot have an 'errorChannel' property when a 'RetryTemplate' is " +
+                    "provided; use an 'ErrorMessageSendingRecoverer' in the 'recoveryCallback' property to " +
+                    "send an error message when retries are exhausted"
+            )
+            retryTemplate!!.registerListener(object : RetryListener {
+                override fun <T, E : Throwable?> open(
+                    context: RetryContext,
+                    callback: RetryCallback<T, E>
+                ): Boolean {
+                    return true
+                }
+
+                override fun <T, E : Throwable?> close(
+                    context: RetryContext,
+                    callback: RetryCallback<T, E>,
+                    throwable: Throwable?
+                ) = Unit
+
+                override fun <T, E : Throwable?> onError(
+                    context: RetryContext,
+                    callback: RetryCallback<T, E>,
+                    throwable: Throwable?
+                ) = Unit
+            })
+        }
+    }
+
+    private fun createListener(): (Consumer<*>, Message<*>) -> Unit {
+        return { it: Consumer<*>, msg: Message<*> ->
+            try {
+                if (logger.isDebugEnabled) {
+                    logger.debug("Message received $msg")
+                }
+                val message = PulsarMessageConverterSupport.convertMessage2Spring(msg)
+                if (retryTemplate != null) {
+                    retryTemplate!!.execute(
+                        RetryCallback<Any, RuntimeException> { context: RetryContext? ->
+                            sendMessage(message)
+                            if (logger.isDebugEnabled) {
+                                logger.info("will send acknowledge: ${msg.messageId}")
+                            }
+                            it.acknowledge(msg)
+                            message
+                        },
+                        recoveryCallback
+                    )
+                } else {
+                    sendMessage(message)
+                    if (logger.isDebugEnabled) {
+                        logger.info("will send acknowledge: ${msg.messageId}")
+                    }
+                    it.acknowledge(msg)
+                }
+                if (logger.isDebugEnabled) {
+                    logger.info("Message ${msg.messageId} has been consumed")
+                }
+            } catch (e: Exception) {
+                logger.warn("Error occurred during consume message ${msg.messageId}: $e")
+                it.negativeAcknowledge(msg)
+            }
+        }
+    }
+
     override fun doStart() {
         if (extendedConsumerProperties.extension == null) {
             return
         }
-        val instrumentation = Instrumentation(topic, this)
-        try {
-            instrumentation.markStartedSuccessfully()
-        } catch (e: java.lang.Exception) {
-            instrumentation.markStartFailed(e)
-            logger.error("PulsarConsumer init failed, Caused by " + e.message)
-            throw MessagingException(
-                MessageBuilder.withPayload(
-                    "PulsarConsumer init failed, Caused by " + e.message
-                )
-                    .build(),
-                e
-            )
-        } finally {
-            InstrumentationManager.addHealthInstrumentation(instrumentation)
-        }
+//        val instrumentation = Instrumentation(topic, this)
+//        try {
+//            instrumentation.markStartedSuccessfully()
+//        } catch (e: java.lang.Exception) {
+//            instrumentation.markStartFailed(e)
+//            logger.error("PulsarConsumer init failed, Caused by " + e.message)
+//            throw MessagingException(
+//                MessageBuilder.withPayload(
+//                    "PulsarConsumer init failed, Caused by " + e.message
+//                )
+//                    .build(),
+//                e
+//            )
+//        } finally {
+//            InstrumentationManager.addHealthInstrumentation(instrumentation)
+//        }
     }
 
     override fun doStop() {

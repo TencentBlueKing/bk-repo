@@ -49,10 +49,10 @@ object EventHandlerThreadPoolExecutor {
      * 创建线程池
      */
     private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("event-worker-%d").build()
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("helm-event-worker-%d").build()
         return ThreadPoolExecutor(
             20, 100, 30, TimeUnit.SECONDS,
-            LinkedBlockingQueue(100), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+            LinkedBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
         )
     }
 }

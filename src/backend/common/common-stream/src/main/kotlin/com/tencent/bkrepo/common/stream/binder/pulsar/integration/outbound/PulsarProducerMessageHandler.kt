@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.integration.outbound
 
-import com.tencent.bkrepo.common.stream.binder.pulsar.metrics.Instrumentation
-import com.tencent.bkrepo.common.stream.binder.pulsar.metrics.InstrumentationManager
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarBinderConfigurationProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
@@ -71,13 +69,13 @@ class PulsarProducerMessageHandler(
     }
 
     override fun start() {
-        val instrumentation = Instrumentation(
-            topic = topic,
-            actuator = this
-        )
+//        val instrumentation = Instrumentation(
+//            topic = topic,
+//            actuator = this
+//        )
         running = true
-        instrumentation.markStartedSuccessfully()
-        InstrumentationManager.addHealthInstrumentation(instrumentation)
+//        instrumentation.markStartedSuccessfully()
+//        InstrumentationManager.addHealthInstrumentation(instrumentation)
     }
 
     override fun handleMessageInternal(message: Message<*>) {
