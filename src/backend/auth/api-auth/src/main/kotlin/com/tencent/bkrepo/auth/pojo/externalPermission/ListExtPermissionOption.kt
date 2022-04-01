@@ -40,7 +40,7 @@ data class ListExtPermissionOption(
     val projectId: String? = null,
     @ApiModelProperty("仓库名")
     val repoName: String? = null,
-    @ApiModelProperty("生效微服务")
+    @ApiModelProperty("生效接口范围，支持通配符*")
     val scope: String? = null,
     @ApiModelProperty("是否启用")
     val enabled: Boolean? = null,

@@ -30,13 +30,16 @@ package com.tencent.bkrepo.generic.artifact
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -127,13 +130,25 @@ class GenericLocalRepository : LocalRepository() {
     }
 
     /**
-     * 支持目录下载
+     * 支持单文件、目录、批量文件下载
      * 目录下载会以zip包形式将目录下的文件打包下载
+     * 批量文件下载会以zip包形式将文件打包下载
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return if (context.artifacts.isNullOrEmpty()) {
+            downloadSingleNode(context)
+        } else {
+            downloadMultiNode(context)
+        }
+    }
+
+    /**
+     * 单节点下载，支持目录下载
+     */
+    private fun downloadSingleNode(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node =
-                nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data ?: return null
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+                ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             if (node.folder) {
                 return downloadFolder(this, node)
             }
@@ -142,6 +157,45 @@ class GenericLocalRepository : LocalRepository() {
             val responseName = artifactInfo.getResponseName()
 
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+        }
+    }
+
+    /**
+     * 多节点下载， 节点不允许为目录
+     */
+    private fun downloadMultiNode(context: ArtifactDownloadContext): ArtifactResource? {
+        with(context) {
+            var prefix = artifacts!!.first().getArtifactFullPath()
+            val fullPathList = artifacts!!.map { it.getArtifactFullPath() }
+            fullPathList.forEach {
+                prefix = PathUtils.getCommonPath(prefix, it)
+            }
+            val nodes = nodeClient.listNode(
+                projectId = artifacts!!.first().projectId,
+                repoName = artifacts!!.first().repoName,
+                path = prefix,
+                includeFolder = true,
+                deep = true
+            ).data?.filter {
+                fullPathList.contains(it.fullPath)
+            }?.map {
+                if (it.folder) {
+                    throw BadRequestException(GenericMessageCode.DOWNLOAD_DIR_NOT_ALLOWED)
+                }
+                NodeDetail(it)
+            } ?: return null
+            val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
+            if (notExistNodes.isNotEmpty()) {
+                throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
+            }
+            nodes.forEach { downloadIntercept(this, it) }
+            val nodeMap = nodes.associate {
+                val name = it.fullPath.removePrefix(prefix)
+                val inputStream = storageManager.loadArtifactInputStream(it, context.storageCredentials)
+                    ?: throw ArtifactNotFoundException(it.fullPath)
+                name to inputStream
+            }
+            return ArtifactResource(nodeMap, useDisposition = true)
         }
     }
 

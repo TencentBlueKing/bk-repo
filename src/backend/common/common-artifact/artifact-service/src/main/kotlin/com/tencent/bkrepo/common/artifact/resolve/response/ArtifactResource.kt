@@ -85,7 +85,7 @@ class ArtifactResource(
      * 是否包含多个构件资源
      */
     fun containsMultiArtifact(): Boolean {
-        return node?.folder == true || artifactMap.size > 1
+        return node?.folder == true || artifactMap.isNotEmpty()
     }
 
     /**
