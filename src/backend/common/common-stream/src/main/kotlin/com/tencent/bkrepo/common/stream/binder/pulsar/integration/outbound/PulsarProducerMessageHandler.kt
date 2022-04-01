@@ -95,7 +95,6 @@ class PulsarProducerMessageHandler(
     }
 
     override fun stop() {
-        this.producer?.close()
         if (running && null != producer) {
             producer!!.close()
         }
