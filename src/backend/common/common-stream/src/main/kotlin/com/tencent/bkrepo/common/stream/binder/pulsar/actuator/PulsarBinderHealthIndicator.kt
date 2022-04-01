@@ -52,7 +52,7 @@ class PulsarBinderHealthIndicator : AbstractHealthIndicator() {
             .filter { instrumentation -> !instrumentation.isStarted() }
             .forEach {
                 builder
-                    .withException(it.getFailedException())
+                    .withException(it.failedException)
             }
     }
 }
