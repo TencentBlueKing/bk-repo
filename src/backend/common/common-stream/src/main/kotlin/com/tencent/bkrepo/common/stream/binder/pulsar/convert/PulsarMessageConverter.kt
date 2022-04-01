@@ -90,6 +90,6 @@ class PulsarMessageConverter {
         /**
          * if you want to customize a bean, please use the BeanName.
          */
-        const val DEFAULT_NAME = "com.alibaba.cloud.stream.binder.pulsar.convert.PulsarMessageConverter"
+        const val DEFAULT_NAME = "com.tencent.bkrepo.common.stream.binder.pulsar.convert.PulsarMessageConverter"
     }
 }

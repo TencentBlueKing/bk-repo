@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.metrics
 
-import org.springframework.context.Lifecycle
 import java.util.Objects
 import java.util.concurrent.atomic.AtomicBoolean
+import org.springframework.context.Lifecycle
 
 class Instrumentation(
     val topic: String,
@@ -61,11 +61,6 @@ class Instrumentation(
 
     fun isStarted(): Boolean {
         return started.get()
-    }
-
-    @JvmName("getFailedException1")
-    fun getFailedException(): java.lang.Exception? {
-        return failedException
     }
 
     override fun hashCode(): Int {

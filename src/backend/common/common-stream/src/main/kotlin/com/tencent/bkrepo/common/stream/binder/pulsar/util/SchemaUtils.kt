@@ -30,10 +30,8 @@ package com.tencent.bkrepo.common.stream.binder.pulsar.util
 import com.google.protobuf.GeneratedMessageV3
 import com.tencent.bkrepo.common.stream.binder.pulsar.constant.Serialization
 import com.tencent.bkrepo.common.stream.binder.pulsar.error.exception.ProducerInitException
-import com.tencent.bkrepo.common.stream.binder.pulsar.util.SchemaUtils.getSchema
-import org.apache.pulsar.client.api.Schema
 import java.lang.reflect.Method
-import kotlin.reflect.jvm.jvmName
+import org.apache.pulsar.client.api.Schema
 
 object SchemaUtils {
     @Throws(RuntimeException::class)
@@ -87,9 +85,4 @@ object SchemaUtils {
     fun getParameterType(method: Method): Class<*>? {
         return method.parameterTypes[0]
     }
-}
-
-fun main() {
-    println(ByteArray::class.qualifiedName)
-    println(getSchema(Serialization.BYTE, ByteArray::class.jvmName))
 }

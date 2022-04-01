@@ -47,8 +47,7 @@ object PulsarUtils {
             for (b: Byte in utf8) {
                 if (!validateByte(b)) {
                     throw IllegalArgumentException(
-                        "Topic name can only have ASCII alphanumerics, '.', '_' and '-', but was: '" +
-                            topicName + "'"
+                        "Topic name can only have ASCII alphanumerics, '.', '_' and '-', but was: '$topicName'"
                     )
                 }
             }
