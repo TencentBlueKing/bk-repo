@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.storage.innercos.endpoint
 
 import com.tencent.bkrepo.common.storage.util.PolarisUtil
 import com.tencent.polaris.api.rpc.GetOneInstanceRequest
+import org.slf4j.LoggerFactory
 
 /**
  * 基于北极星的域名解析
@@ -45,11 +46,13 @@ class PolarisEndpointResolver(
             getInstanceRequest.service = "$modId:$cmdId"
             PolarisUtil.getOneInstance(getInstanceRequest)
         } catch (e: Exception) {
+            logger.warn("polaris resolve endpoint[$endpoint] error: $e")
             endpoint
         }
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(PolarisEndpointResolver::class.java)
         private const val NAMESPACE = "Production"
     }
 }

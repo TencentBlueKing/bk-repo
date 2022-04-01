@@ -28,16 +28,12 @@
 package com.tencent.bkrepo.common.storage.util
 
 import com.tencent.bkrepo.common.storage.core.StorageProperties
-import com.tencent.bkrepo.common.storage.innercos.endpoint.PolarisEndpointResolver
 import com.tencent.polaris.api.core.ConsumerAPI
 import com.tencent.polaris.api.rpc.GetOneInstanceRequest
-import com.tencent.polaris.api.rpc.InstancesResponse
 import com.tencent.polaris.factory.api.DiscoveryAPIFactory
 import com.tencent.polaris.factory.config.ConfigurationImpl
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
-@Component
 class PolarisUtil(
     storageProperties: StorageProperties
 ) {
