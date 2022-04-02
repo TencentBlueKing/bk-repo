@@ -34,7 +34,6 @@ import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Volume
-import com.tencent.bkrepo.common.api.constant.StringPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -49,7 +48,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExe
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ResultFilterRule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
@@ -65,7 +63,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlin.reflect.full.memberProperties
 import kotlin.system.measureTimeMillis
 
 @Component(ArrowheadScanner.TYPE)
@@ -101,7 +98,6 @@ class ArrowheadScanExecutor @Autowired constructor(
             val scanStatus = doScan(workDir, task)
             return result(
                 File(workDir, scanner.container.outputDir),
-                scanner.resultFilterRule,
                 scanStatus
             )
         } catch (e: Exception) {
@@ -235,7 +231,6 @@ class ArrowheadScanExecutor @Autowired constructor(
      */
     private fun result(
         outputDir: File,
-        resultFilterRule: ResultFilterRule?,
         scanStatus: SubScanTaskStatus
     ): ArrowheadScanExecutorResult {
         val cveSecItems =
@@ -248,16 +243,6 @@ class ArrowheadScanExecutor @Autowired constructor(
                 ?.map { ApplicationItem.normalize(it) }
                 ?: emptyList()
 
-//        val checkSecItems =
-//            readJsonString<List<CheckSecItem>>(File(outputDir, RESULT_FILE_NAME_CHECK_SEC_ITEMS)) ?: emptyList()
-//
-//        var sensitiveItems =
-//            readJsonString<List<SensitiveItem>>(File(outputDir, RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS)) ?: emptyList()
-//        if (resultFilterRule != null) {
-//            val excludes = resultFilterRule.sensitiveItemFilterRule.excludes
-//            sensitiveItems = sensitiveItems.filterNot { excludedSensitiveItem(it, excludes) }
-//        }
-
         val checkSecItems = emptyList<CheckSecItem>()
         val sensitiveItems = emptyList<SensitiveItem>()
 
@@ -269,39 +254,6 @@ class ArrowheadScanExecutor @Autowired constructor(
             sensitiveItems = sensitiveItems,
             cveSecItems = cveSecItems
         )
-    }
-
-    /**
-     * 属性值是否在过滤规则里
-     *
-     * @param sensitiveItem 待过滤对象
-     * @param excludes 过滤规则
-     *
-     * @return true 在过滤规则中， false 不在过滤规则中
-     */
-    private fun excludedSensitiveItem(
-        sensitiveItem: SensitiveItem,
-        excludes: Map<String, List<String>>
-    ): Boolean {
-        for (prop in SensitiveItem::class.memberProperties) {
-            val propValue = prop.get(sensitiveItem)
-
-            if (excludes[prop.name] != null && propValue in excludes[prop.name]!!) {
-                return true
-            }
-
-            if (propValue is Map<*, *>) {
-                val match = propValue.any {
-                    val rule = excludes["${prop.name}$DOT${it.key}"]
-                    rule != null && it.value in rule
-                }
-                if (match) {
-                    return true
-                }
-            }
-        }
-
-        return false
     }
 
     private fun overview(
@@ -368,19 +320,9 @@ class ArrowheadScanExecutor @Autowired constructor(
         private const val RESULT_FILE_NAME_APPLICATION_ITEMS = "application_items.json"
 
         /**
-         * 安全审计结果文件名
-         */
-        private const val RESULT_FILE_NAME_CHECK_SEC_ITEMS = "checksec_items.json"
-
-        /**
          * CVE扫描结果文件名
          */
         private const val RESULT_FILE_NAME_CVE_SEC_ITEMS = "cvesec_items.json"
-
-        /**
-         * 敏感信息扫描结果文件名
-         */
-        private const val RESULT_FILE_NAME_SENSITIVE_INFO_ITEMS = "sensitive_info_items.json"
 
         /**
          * 拉取镜像最大时间

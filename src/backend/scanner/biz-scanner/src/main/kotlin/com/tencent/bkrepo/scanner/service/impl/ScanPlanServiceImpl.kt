@@ -152,7 +152,6 @@ class ScanPlanServiceImpl(
             }
             val plan = scanPlanDao.find(projectId!!, id!!)
                 ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, request.toString())
-//            checkRunning(id!!)
 
             scanPlanDao.update(ScanPlanConverter.convert(request, plan.repoNames, plan.rule.readJsonString()))
             return scanPlanDao.findById(request.id!!)!!.let { ScanPlanConverter.convert(it) }

@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.PlanType
@@ -44,7 +43,6 @@ import org.springframework.stereotype.Component
  */
 @Component
 class IteratorManager(
-    private val projectClient: ProjectClient,
     private val nodeClient: NodeClient,
     private val packageClient: PackageClient
 ) {
@@ -63,7 +61,6 @@ class IteratorManager(
         require(rule is Rule.NestedRule)
         val projectIds = projectIdsFromRule(rule)
         val projectIdIterator = projectIds.iterator()
-//        ProjectIdIterator(projectClient)
 
         return if (scanTask.scanPlan != null && scanTask.scanPlan!!.type == PlanType.DEPENDENT.name) {
             PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))

@@ -34,7 +34,6 @@ import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.stereotype.Component
-import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
@@ -132,7 +131,7 @@ class ScannerMetrics(
         startTimestamp: Long,
         finishedTimestamp: Long
     ) {
-        val fileExtensionName = File(fullPath).extension.ifEmpty { UNKNOWN_EXTENSION }
+        val fileExtensionName = fullPath.substringAfterLast('.', UNKNOWN_EXTENSION)
         val summary = taskSpeedSummary(fileExtensionName, scanner)
         val elapsedSeconds = (finishedTimestamp - startTimestamp).toDouble() / 1000
         summary.record(fileSize / elapsedSeconds)
