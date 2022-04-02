@@ -30,14 +30,12 @@ package com.tencent.bkrepo.scanner.metrics
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.Timer
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -45,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 @Component
 class ScannerMetrics(
-    private val registryProvider: ObjectProvider<MeterRegistry>,
+    private val meterRegistry: MeterRegistry,
     // 一个任务可能被不同的服务实例处理，统计数据需要放到公共存储上才能保证数据准确
     private val redisOperation: RedisOperation
 ) {
@@ -55,12 +53,12 @@ class ScannerMetrics(
     private val localTaskCountMap = ConcurrentHashMap<String, AtomicLong>(ScanTaskStatus.values().size)
     private val taskCountMap = ConcurrentHashMap<String, RedisAtomicLong>(ScanTaskStatus.values().size)
     private val subtaskCounterMap = ConcurrentHashMap<String, RedisAtomicLong>(SubScanTaskStatus.values().size)
-    private val subtaskTimers = ConcurrentHashMap<String, List<Timer>>()
+    private val subtaskSpeedSummaryMap = ConcurrentHashMap<String, DistributionSummary>()
     private val reuseResultSubtaskCounters: RedisAtomicLong by lazy {
         // 统计重用扫描结果的子任务数量
         val atomicLong = RedisAtomicLong(redisOperation, SCANNER_SUBTASK_REUSE_RESULT_COUNT)
-        val gauge = Gauge.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT, atomicLong, RedisAtomicLong::toDouble)
-        registryProvider.forEach { gauge.register(it) }
+        Gauge.builder(SCANNER_SUBTASK_REUSE_RESULT_COUNT, atomicLong, RedisAtomicLong::toDouble)
+            .register(meterRegistry)
         atomicLong
     }
 
@@ -135,9 +133,9 @@ class ScannerMetrics(
         finishedTimestamp: Long
     ) {
         val fileExtensionName = File(fullPath).extension.ifEmpty { UNKNOWN_EXTENSION }
-        taskTimer(fileExtensionName, FileSizeLevel.fromSize(fileSize), scanner).forEach {
-            it.record(finishedTimestamp - startTimestamp, TimeUnit.MILLISECONDS)
-        }
+        val summary = taskSpeedSummary(fileExtensionName, scanner)
+        val elapsedSeconds = (finishedTimestamp - startTimestamp).toDouble() / 1000
+        summary.record(fileSize / elapsedSeconds)
     }
 
     private fun subtaskCounter(status: SubScanTaskStatus): RedisAtomicLong {
@@ -145,10 +143,10 @@ class ScannerMetrics(
             // 统计不同状态扫描任务数量
             val key = metricsKey(SCANNER_SUBTASK_COUNT, "status", status.name)
             val atomicLong = RedisAtomicLong(redisOperation, key)
-            val gauge = Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
+            Gauge.builder(SCANNER_SUBTASK_COUNT, atomicLong, RedisAtomicLong::toDouble)
                 .description("${status.name} subtask count")
                 .tag("status", status.name)
-            registryProvider.forEach { gauge.register(it) }
+                .register(meterRegistry)
             atomicLong
         }
     }
@@ -158,7 +156,7 @@ class ScannerMetrics(
             // 统计不同状态子任务数量
             val atomicLong = AtomicLong(0L)
             val gauge = taskGauge(atomicLong, AtomicLong::toDouble, status, true)
-            registryProvider.forEach { gauge.register(it) }
+            gauge.register(meterRegistry)
             atomicLong
         }
     }
@@ -168,8 +166,7 @@ class ScannerMetrics(
             // 统计不同状态子任务数量
             val key = metricsKey(SCANNER_TASK_COUNT, "status", status.name)
             val atomicLong = RedisAtomicLong(redisOperation, key)
-            val gauge = taskGauge(atomicLong, RedisAtomicLong::toDouble, status)
-            registryProvider.forEach { gauge.register(it) }
+            taskGauge(atomicLong, RedisAtomicLong::toDouble, status).register(meterRegistry)
             atomicLong
         }
     }
@@ -186,19 +183,19 @@ class ScannerMetrics(
             .tag("local", local.toString())
     }
 
-    private fun taskTimer(fileType: String, fileSizeLevel: FileSizeLevel, scanner: String): List<Timer> {
-        return subtaskTimers.getOrPut(timerCacheKey(fileType, fileSizeLevel, scanner)) {
-            val timer = Timer.builder(SCANNER_SUBTASK_TIME_SPENT)
-                .description("subtask time spent")
+    private fun taskSpeedSummary(fileType: String, scanner: String): DistributionSummary {
+        return subtaskSpeedSummaryMap.getOrPut(speedSummaryCacheKey(fileType, scanner)) {
+            DistributionSummary.builder(SCANNER_SUBTASK_SPEED)
+                .description("subtask speed")
+                .baseUnit("bytes/seconds")
                 .tag("fileType", fileType)
-                .tag("fileSizeLevel", fileSizeLevel.name)
                 .tag("scanner", scanner)
-            registryProvider.map { timer.register(it) }
+                .register(meterRegistry)
         }
     }
 
-    private fun timerCacheKey(fileType: String, fileSizeLevel: FileSizeLevel, scanner: String) =
-        "$fileType:$fileSizeLevel:$scanner"
+    private fun speedSummaryCacheKey(fileType: String, scanner: String) =
+        "$fileType:$scanner"
 
     private fun metricsKey(meterName: String, vararg tags: String): String {
         val newMeterName = meterName.removePrefix("scanner.").replace(".", ":")
@@ -224,7 +221,7 @@ class ScannerMetrics(
         /**
          * 子任务执行耗时
          */
-        private const val SCANNER_SUBTASK_TIME_SPENT = "scanner.subtask.spent.millis"
+        private const val SCANNER_SUBTASK_SPEED = "scanner.subtask.speed"
 
         /**
          * 未知扩展名
