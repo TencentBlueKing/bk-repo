@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -54,7 +55,12 @@ import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileAlreadyExistsException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
+import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
+import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
+import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
+import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.service.impl.HelmOperationService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
@@ -147,6 +153,14 @@ class HelmLocalRepository(
         }
     }
 
+    /**
+     * 下载前回调
+     */
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        context.putAttribute(FULL_PATH, context.artifactInfo.getArtifactFullPath())
+    }
+
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
         val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
@@ -194,8 +208,32 @@ class HelmLocalRepository(
     /**
      * 版本不存在时 status code 404
      */
+    @Suppress("IMPLICIT_CAST_TO_ANY")
     override fun remove(context: ArtifactRemoveContext) {
         helmOperationService.removeChartOrProv(context)
+        with(context.artifactInfo as HelmDeleteArtifactInfo) {
+            val event = if (version.isBlank()) {
+                ChartDeleteEvent(
+                    ChartPackageDeleteRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        name = PackageKeys.resolveHelm(packageName),
+                        operator = context.userId
+                    )
+                )
+            } else {
+                ChartVersionDeleteEvent(
+                    ChartVersionDeleteRequest(
+                        projectId = projectId,
+                        repoName = repoName,
+                        name = PackageKeys.resolveHelm(packageName),
+                        version = version,
+                        operator = context.userId
+                    )
+                )
+            }
+            publishEvent(event)
+        }
     }
 
     private fun parseMetaData(context: ArtifactUploadContext): Map<String, Any>? {

@@ -33,5 +33,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
 @ConfigurationProperties("job")
 data class JobProperties(
     @NestedConfigurationProperty
-    var fileReferenceCleanupJobProperties: MongodbJobProperties = MongodbJobProperties()
+    var fileReferenceCleanupJobProperties: MongodbJobProperties = MongodbJobProperties(),
+    @NestedConfigurationProperty
+    var repoRefreshJobProperties: RepoRefreshJobProperties = RepoRefreshJobProperties()
 )

@@ -36,9 +36,10 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 
 object HelmMetadataUtils {
+    private val keys: Array<String> = arrayOf("annotations", "maintainers")
 
     fun convertToMap(chartInfo: HelmChartMetadata): Map<String, Any> {
-        return chartInfo.toJsonString().readJsonString<Map<String, Any>>()
+        return chartInfo.toJsonString().readJsonString<Map<String, Any>>().minus(keys)
     }
 
     fun convertToObject(map: Map<String, Any>): HelmChartMetadata {
