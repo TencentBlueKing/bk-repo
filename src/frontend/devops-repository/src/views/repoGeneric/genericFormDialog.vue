@@ -112,7 +112,7 @@
                 if (data.type === 'scan') {
                     this.getScanAll({
                         projectId: this.projectId,
-                        type: 'MOBILE'
+                        type: 'GENERIC'
                     }).then(res => {
                         this.scanList = res
                     })

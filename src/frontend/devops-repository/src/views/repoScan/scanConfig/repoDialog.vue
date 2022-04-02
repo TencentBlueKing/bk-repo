@@ -46,17 +46,9 @@
             projectId () {
                 return this.$route.params.projectId
             },
-            repoTypeLimit () {
-                return {
-                    MOBILE: ['GENERIC'],
-                    DEPENDENT: ['MAVEN']
-                }[this.scanType]
-            },
             repoList () {
                 return this.repoListAll
-                    .filter(r => {
-                        return this.repoTypeLimit && this.repoTypeLimit.includes(r.type)
-                    })
+                    .filter(r => r.type === this.scanType.toLowerCase())
                     .sort((a, b) => {
                         return Boolean(a.type > b.type) || -1
                     })

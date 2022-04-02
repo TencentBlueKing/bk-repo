@@ -76,8 +76,8 @@ export const asyncPlanStatusEnum = {
 
 // 扫描方案类型
 export const scanTypeEnum = {
-    MOBILE: '移动端安装包扫描',
-    DEPENDENT: 'Maven依赖包扫描'
+    GENERIC: 'Generic仓库文件扫描',
+    MAVEN: 'Maven仓库依赖包扫描'
 }
 
 // 扫描方案执行状态

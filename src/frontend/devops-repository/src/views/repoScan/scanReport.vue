@@ -203,16 +203,7 @@
             },
             repoGroupList () {
                 return this.repoListAll
-                    .filter(r => {
-                        switch (this.baseInfo.planType) {
-                            case 'MOBILE':
-                                return r.type === 'GENERIC'
-                            case 'DEPENDENT':
-                                return r.type === 'MAVEN'
-                            default:
-                                return false
-                        }
-                    })
+                    .filter(r => r.type === this.baseInfo.planType.toLowerCase())
                     .reduce((target, repo) => {
                         if (!target[repo.type]) target[repo.type] = []
                         target[repo.type].push(repo)

@@ -98,7 +98,7 @@
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
                             <scan-tag class="mr5"
-                                v-if="!row.folder && /\.(ipa)|(apk)$/.test(row.name)"
+                                v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
                                 :status="row.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
@@ -137,7 +137,7 @@
                                     permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },
                                     permission.write && repoName !== 'pipeline' && { clickEvent: () => moveRes(row), label: $t('move') },
                                     permission.write && repoName !== 'pipeline' && { clickEvent: () => copyRes(row), label: $t('copy') },
-                                    !row.folder && /\.(ipa)|(apk)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' },
+                                    !row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' },
                                     permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ].filter(Boolean)">
                             </operation-list>

@@ -11,7 +11,7 @@
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn" class="rule-list">
-            <component :is="ruleType"
+            <component :is="`${scanType.toLowerCase()}-rule`"
                 class="mt10"
                 v-for="(rule, ind) in defaultRules"
                 :key="ind"
@@ -28,7 +28,10 @@
     import genericRule from './genericRule'
     export default {
         name: 'artiTable',
-        components: { packageRule, genericRule },
+        components: {
+            mavenRule: packageRule,
+            genericRule
+        },
         props: {
             initData: {
                 type: Array,
@@ -49,16 +52,6 @@
         computed: {
             projectId () {
                 return this.$route.params.projectId
-            },
-            ruleType () {
-                switch (this.scanType) {
-                    case 'MOBILE':
-                        return 'generic-rule'
-                    case 'DEPENDENT':
-                        return 'package-rule'
-                    default:
-                        return ''
-                }
             }
         },
         watch: {
