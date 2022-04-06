@@ -45,7 +45,6 @@ import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.model.TScanPlan
-import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
@@ -79,7 +78,7 @@ class ScanPlanServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "name cannot be empty or length > 32")
             }
 
-            if (!PlanType.contains(type)) {
+            if (!RepositoryType.values().map { it.name }.contains(type)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "invalid scan plan type[$type]")
             }
 
