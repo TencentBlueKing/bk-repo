@@ -39,11 +39,13 @@ class PolarisUtil(
 ) {
 
     init {
-        configuration = ConfigurationImpl()
-        configuration.setDefault()
-        configuration.global.serverConnector.addresses = storageProperties.polarisAddresses
-        configuration.consumer.localCache.persistDir = System.getProperty("java.io.tmpdir")
-        consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
+        if (storageProperties.polarisAddresses.isNotEmpty()) {
+            configuration = ConfigurationImpl()
+            configuration.setDefault()
+            configuration.global.serverConnector.addresses = storageProperties.polarisAddresses
+            configuration.consumer.localCache.persistDir = System.getProperty("java.io.tmpdir")
+            consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
+        }
     }
 
     companion object {
