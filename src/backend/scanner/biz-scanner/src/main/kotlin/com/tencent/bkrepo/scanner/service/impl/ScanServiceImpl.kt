@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.scanner.component.manager.Extra
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
@@ -387,7 +386,7 @@ class ScanServiceImpl @Autowired constructor(
 
             val scanner = scannerService.get(scanner)
             val scanResultDetail = scanExecutorResultManagers[scanner.type]?.load(
-                repo.storageCredentialsKey, node.sha256!!, scanner, reportType, pageLimit
+                repo.storageCredentialsKey, node.sha256!!, scanner, arguments
             )
             val status = if (scanResultDetail == null) {
                 subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
@@ -395,7 +394,7 @@ class ScanServiceImpl @Autowired constructor(
             } else {
                 SubScanTaskStatus.SUCCESS.name
             }
-            return FileScanResultDetail(status, node.sha256!!, scanResultDetail, reportType)
+            return FileScanResultDetail(status, node.sha256!!, scanResultDetail)
         }
     }
 
@@ -404,14 +403,10 @@ class ScanServiceImpl @Autowired constructor(
             val subtask = finishedSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
             val scanner = scannerService.get(subtask.scanner)
-            val pageLimit = PageLimit(pageNumber, pageSize)
-            val extra = HashMap<String, Any>()
-            leakType?.let { extra[Extra.EXTRA_VULNERABILITY_LEVEL] = listOf(it) }
-            cveId?.let { extra[Extra.EXTRA_CVE_ID] = listOf(it) }
-            val detailReport = scanExecutorResultManagers[subtask.scannerType]?.load(
-                subtask.credentialsKey, subtask.sha256, scanner, reportType, pageLimit, extra
-            )
-            return Converter.convert(detailReport, subtask.scannerType, reportType, pageLimit)
+            val arguments = Converter.convertToLoadArguments(request, scanner.type)
+            val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
+            val detailReport = scanResultManager?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
+            return Converter.convert(detailReport, subtask.scannerType, reportType, pageNumber, pageSize)
         }
     }
 

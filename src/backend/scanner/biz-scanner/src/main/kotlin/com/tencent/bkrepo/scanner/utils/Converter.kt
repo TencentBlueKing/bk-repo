@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
@@ -42,6 +44,7 @@ import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
@@ -123,14 +126,27 @@ object Converter {
         }
     }
 
+    fun convertToLoadArguments(request: ArtifactVulnerabilityRequest, scannerType: String): LoadResultArguments? {
+        if (scannerType == ArrowheadScanner.TYPE) {
+            return ArrowheadLoadResultArguments(
+                vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
+                cveIds = request.cveId?.let { listOf(it) } ?: emptyList(),
+                reportType = request.reportType,
+                pageLimit = PageLimit(request.pageNumber, request.pageSize)
+            )
+        }
+        return null
+    }
+
     @Suppress("UNCHECKED_CAST")
     fun convert(
         detailReport: Any?,
         scannerType: String,
         reportType: String,
-        pageLimit: PageLimit
+        pageNumber: Int,
+        pageSize: Int
     ): Page<ArtifactVulnerabilityInfo> {
-        val pageRequest = PageRequest.of(pageLimit.pageNumber, pageLimit.pageSize)
+        val pageRequest = PageRequest.of(pageNumber, pageSize)
         if (scannerType == ArrowheadScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
             detailReport as Page<CveSecItem>
             val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {

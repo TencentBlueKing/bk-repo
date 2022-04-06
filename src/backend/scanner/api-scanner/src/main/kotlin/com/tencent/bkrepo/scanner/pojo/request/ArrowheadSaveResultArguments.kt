@@ -27,16 +27,6 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 
-@ApiModel("文件详细扫描报告请求")
-data class FileScanResultDetailRequest(
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String,
-    @ApiModelProperty("扫描结果加载参数")
-    val arguments: LoadResultArguments,
-    @ApiModelProperty(hidden = true)
-    var artifactInfo: ArtifactInfo? = null
-)
+class ArrowheadSaveResultArguments : SaveResultArguments(ArrowheadScanner.TYPE)

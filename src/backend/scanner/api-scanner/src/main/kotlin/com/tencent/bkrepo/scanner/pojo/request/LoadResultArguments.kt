@@ -27,16 +27,18 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("文件详细扫描报告请求")
-data class FileScanResultDetailRequest(
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String,
-    @ApiModelProperty("扫描结果加载参数")
-    val arguments: LoadResultArguments,
-    @ApiModelProperty(hidden = true)
-    var artifactInfo: ArtifactInfo? = null
+@ApiModel("加载制品扫描结果时的参数")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = ArrowheadLoadResultArguments::class, name = ArrowheadScanner.TYPE)
+)
+open class LoadResultArguments(
+    @ApiModelProperty("扫描器类型")
+    val type: String
 )

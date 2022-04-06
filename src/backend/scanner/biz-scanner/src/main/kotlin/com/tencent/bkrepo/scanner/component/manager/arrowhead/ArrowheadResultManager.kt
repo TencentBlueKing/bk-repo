@@ -39,6 +39,8 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.SensitiveItem
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ApplicationItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CheckSecItemDao
@@ -54,6 +56,7 @@ import com.tencent.bkrepo.scanner.component.manager.knowledgebase.KnowledgeBase
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
 import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TLicense
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
+import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -73,7 +76,7 @@ class ArrowheadResultManager @Autowired constructor(
         sha256: String,
         scanner: Scanner,
         result: ScanExecutorResult,
-        extra: Map<String, Any>
+        arguments: SaveResultArguments?
     ) {
         result as ArrowheadScanExecutorResult
         scanner as ArrowheadScanner
@@ -96,18 +99,18 @@ class ArrowheadResultManager @Autowired constructor(
         credentialsKey: String?,
         sha256: String,
         scanner: Scanner,
-        type: String?,
-        pageLimit: PageLimit?,
-        extra: Map<String, Any>
+        arguments: LoadResultArguments?
     ): Any? {
         scanner as ArrowheadScanner
+        arguments as ArrowheadLoadResultArguments
+        val pageLimit = arguments.pageLimit
+        val type = arguments.reportType
 
-        require(pageLimit != null && type != null)
         val page = when (type) {
             CheckSecItem.TYPE -> checkSecItemDao
-            ApplicationItem.TYPE -> return loadApplicationItems(credentialsKey, sha256, scanner, pageLimit, extra)
+            ApplicationItem.TYPE -> return loadApplicationItems(credentialsKey, sha256, scanner, pageLimit, arguments)
             SensitiveItem.TYPE -> sensitiveItemDao
-            CveSecItem.TYPE -> return loadCveItems(credentialsKey, sha256, scanner, pageLimit, extra)
+            CveSecItem.TYPE -> return loadCveItems(credentialsKey, sha256, scanner, pageLimit, arguments)
             else -> {
                 throw ErrorCodeException(
                     messageCode = ScannerMessageCode.SCANNER_RESULT_TYPE_INVALID,
@@ -115,7 +118,7 @@ class ArrowheadResultManager @Autowired constructor(
                     params = arrayOf(type)
                 )
             }
-        }.run { pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra) }
+        }.run { pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments) }
 
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
@@ -125,9 +128,9 @@ class ArrowheadResultManager @Autowired constructor(
         sha256: String,
         scanner: Scanner,
         pageLimit: PageLimit,
-        extra: Map<String, Any>
+        arguments: ArrowheadLoadResultArguments
     ): Page<ApplicationItem> {
-        val page = applicationItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra)
+        val page = applicationItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
         val licenseNames = page.records.filter { it.data.licenseName != null }.map { it.data.licenseName!! }
         val licenses = knowledgeBase.findLicense(licenseNames).associateBy { it.name }
         val records = page.records.map { Converter.convert(it, licenses[it.data.licenseName]) }
@@ -168,9 +171,9 @@ class ArrowheadResultManager @Autowired constructor(
         sha256: String,
         scanner: Scanner,
         pageLimit: PageLimit,
-        extra: Map<String, Any>
+        arguments: ArrowheadLoadResultArguments
     ): Page<CveSecItem> {
-        val page = cveSecItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, extra)
+        val page = cveSecItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
         val cveIds = page.records.map { it.data.cveId }
         val cveMap = knowledgeBase.findCve(cveIds).associateBy { it.cveId }
         val records = page.records.map { Converter.convert(it, cveMap[it.data.cveId]) }

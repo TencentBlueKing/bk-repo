@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
 import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
 import org.springframework.data.domain.PageRequest
@@ -49,18 +50,18 @@ abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
         sha256: String,
         scanner: String,
         pageLimit: PageLimit,
-        extra: Map<String, Any>
+        arguments: ArrowheadLoadResultArguments
     ): Page<T> {
         val pageable = PageRequest.of(pageLimit.pageNumber - 1, pageLimit.pageSize)
         val criteria = buildCriteria(credentialsKey, sha256, scanner)
-        customizePageBy(criteria, extra)
+        customizePageBy(criteria, arguments)
         val query = Query(criteria).with(pageable)
         val total = count(Query.of(query).limit(0).skip(0))
         val data = find(query)
         return Page(pageLimit.pageNumber, pageLimit.pageSize, total, data)
     }
 
-    protected open fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
+    protected open fun customizePageBy(criteria: Criteria, arguments: ArrowheadLoadResultArguments): Criteria {
         return criteria
     }
 

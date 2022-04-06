@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
-import com.tencent.bkrepo.scanner.component.manager.Extra
+import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
 import org.springframework.data.mongodb.core.query.Criteria
@@ -36,14 +36,12 @@ import org.springframework.stereotype.Repository
 
 @Repository
 class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, extra: Map<String, Any>): Criteria {
-        val vulnerabilityLevels = extra[Extra.EXTRA_VULNERABILITY_LEVEL]
-        if (vulnerabilityLevels is List<*> && vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(vulnerabilityLevels)
+    override fun customizePageBy(criteria: Criteria, arguments: ArrowheadLoadResultArguments): Criteria {
+        if (arguments.vulnerabilityLevels.isNotEmpty()) {
+            criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(arguments.vulnerabilityLevels)
         }
-        val cveIds = extra[Extra.EXTRA_CVE_ID]
-        if (cveIds is List <*> && cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(cveIds)
+        if (arguments.cveIds.isNotEmpty()) {
+            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(arguments.cveIds)
         }
         return criteria
     }

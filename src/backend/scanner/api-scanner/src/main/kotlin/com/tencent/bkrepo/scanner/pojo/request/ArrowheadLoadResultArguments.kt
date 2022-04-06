@@ -27,16 +27,19 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("文件详细扫描报告请求")
-data class FileScanResultDetailRequest(
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String,
-    @ApiModelProperty("扫描结果加载参数")
-    val arguments: LoadResultArguments,
-    @ApiModelProperty(hidden = true)
-    var artifactInfo: ArtifactInfo? = null
-)
+@ApiModel("arrowhead扫描结果拉取参数")
+data class ArrowheadLoadResultArguments(
+    @ApiModelProperty("需要的cve列表")
+    val cveIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的漏洞严重性等级列表")
+    val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("扫描结果类型")
+    val reportType: String,
+    @ApiModelProperty("分页参数")
+    val pageLimit: PageLimit = PageLimit()
+) : LoadResultArguments(ArrowheadScanner.TYPE)
