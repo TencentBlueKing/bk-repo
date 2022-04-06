@@ -300,4 +300,24 @@ body {
             }
         }
     }
+
+    .bk-form {
+        .bk-form-item {
+            .bk-label {
+                padding-right: 10px;
+            }
+            &.is-required {
+                .bk-label {
+                    &:before {
+                        content: '*';
+                        margin-right: 3px;
+                        vertical-align: middle;
+                    }
+                    &:after {
+                        display: none;
+                    }
+                }
+            }
+        }
+    }
 }

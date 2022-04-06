@@ -134,9 +134,10 @@ export default {
     // 制品关联的扫描方案
     getArtiScanList (_, { projectId, repoType, repoName, packageKey, version, fullPath }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/plan/relation/artifact/${projectId}`,
+            `${prefix}/plan/relation/artifact`,
             {
                 params: {
+                    projectId,
                     repoType: repoType.toUpperCase() || undefined,
                     repoName,
                     packageKey: packageKey || undefined,
