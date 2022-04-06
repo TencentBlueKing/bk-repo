@@ -82,12 +82,8 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     val endpointResolver = createEndpointResolver()
 
     private fun createEndpointResolver(): EndpointResolver {
-        return if (
-            credentials.modId != null &&
-            credentials.cmdId != null &&
-            credentials.polarisAddresses.isNotEmpty()
-        ) {
-            PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!, credentials.polarisAddresses)
+        return if (credentials.modId != null && credentials.cmdId != null) {
+            PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)
         } else {
             DefaultEndpointResolver()
         }

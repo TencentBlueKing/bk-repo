@@ -25,34 +25,42 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.endpoint
+package com.tencent.bkrepo.common.storage.util
 
-import com.tencent.bkrepo.common.storage.util.PolarisUtil
+import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.polaris.api.core.ConsumerAPI
 import com.tencent.polaris.api.rpc.GetOneInstanceRequest
+import com.tencent.polaris.factory.api.DiscoveryAPIFactory
+import com.tencent.polaris.factory.config.ConfigurationImpl
 import org.slf4j.LoggerFactory
 
-/**
- * 基于北极星的域名解析
- */
-class PolarisEndpointResolver(
-    private val modId: Int,
-    private val cmdId: Int
-): EndpointResolver {
+class PolarisUtil(
+    storageProperties: StorageProperties
+) {
 
-    override fun resolveEndpoint(endpoint: String): String {
-        return try {
-            val getInstanceRequest = GetOneInstanceRequest()
-            getInstanceRequest.namespace = NAMESPACE
-            getInstanceRequest.service = "$modId:$cmdId"
-            PolarisUtil.getOneInstance(getInstanceRequest)
-        } catch (e: Exception) {
-            logger.warn("polaris resolve endpoint[$endpoint] error: $e")
-            endpoint
-        }
+    init {
+        configuration = ConfigurationImpl()
+        configuration.setDefault()
+        configuration.global.serverConnector.addresses = storageProperties.polarisAddresses
+        configuration.consumer.localCache.persistDir = System.getProperty("java.io.tmpdir")
+        consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PolarisEndpointResolver::class.java)
-        private const val NAMESPACE = "Production"
+        private val logger = LoggerFactory.getLogger(PolarisUtil::class.java)
+        lateinit var configuration: ConfigurationImpl
+        lateinit var consumerAPI: ConsumerAPI
+
+        fun getOneInstance(request: GetOneInstanceRequest): String {
+            val response = consumerAPI.getOneInstance(request)
+            check(response != null && response.instances.isNotEmpty()) {
+                "polaris resolve service failed: service ${request.service}"
+            }
+            val instance = response.instances.first()
+            if (logger.isDebugEnabled) {
+                logger.debug("polaris resolve success: ${instance.host}:${instance.port}")
+            }
+            return "${instance.host}:${instance.port}"
+        }
     }
 }
