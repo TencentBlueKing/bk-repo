@@ -97,34 +97,32 @@
                     <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
-                            <div class="flex-align-center flex-inline">
-                                <Icon size="20" :name="row.folder ? 'folder' : getIconName(row.name)" />
-                                <div class="ml10 flex-1 text-overflow" :title="row.name">{{row.name}}</div>
-                                <scan-tag class="ml10"
-                                    v-if="/\.(ipa)|(apk)$/.test(row.name)"
-                                    :status="row.scanStatus"
-                                    repo-type="generic"
-                                    :full-path="row.fullPath">
-                                </scan-tag>
-                            </div>
+                            <scan-tag class="mr5"
+                                v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
+                                :status="row.scanStatus"
+                                repo-type="generic"
+                                :full-path="row.fullPath">
+                            </scan-tag>
+                            <Icon class="table-svg" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
+                            <span class="ml10">{{row.name}}</span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column v-if="searchFileName" :label="$t('path')" prop="fullPath"></bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200" :render-header="renderHeader">
+                    <bk-table-column v-if="searchFileName" :label="$t('path')" prop="fullPath" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedBy')" width="120">
+                    <bk-table-column :label="$t('lastModifiedBy')" width="90" show-overflow-tooltip>
                         <template #default="{ row }">
                             {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('size')" width="100">
+                    <bk-table-column :label="$t('size')" width="90" show-overflow-tooltip>
                         <template #default="{ row }">
                             <bk-button text
-                                v-show="row.folder && !('folderSize' in row)"
+                                v-if="row.folder && !('folderSize' in row)"
                                 :disabled="row.sizeLoading"
                                 @click="calculateFolderSize(row)">{{ $t('calculate') }}</bk-button>
-                            <span v-show="!row.folder || ('folderSize' in row)">
+                            <span v-else>
                                 {{ convertFileSize(row.size || row.folderSize || 0) }}
                             </span>
                         </template>
@@ -139,7 +137,7 @@
                                     permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },
                                     permission.write && repoName !== 'pipeline' && { clickEvent: () => moveRes(row), label: $t('move') },
                                     permission.write && repoName !== 'pipeline' && { clickEvent: () => copyRes(row), label: $t('copy') },
-                                    !row.folder && /\.(ipa)|(apk)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' },
+                                    !row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' },
                                     permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
                                 ].filter(Boolean)">
                             </operation-list>
@@ -662,12 +660,6 @@
                 color: var(--fontPrimaryColor);
                 .icon-down-shape {
                     color: var(--primaryColor);
-                }
-            }
-            ::v-deep .devops-icon {
-                &.disabled {
-                    color: var(--fontDisableColor);
-                    cursor: not-allowed;
                 }
             }
         }

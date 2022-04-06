@@ -35,52 +35,39 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="同步节点" prop="remoteCluster" width="150"
-                :formatter="(row, column, cellValue) => `${masterNode.name} - ${cellValue}`">
+            <bk-table-column label="同步节点" show-overflow-tooltip>
+                <template #default="{ row }">{{ `${masterNode.name} - ${row.remoteCluster}` }}</template>
             </bk-table-column>
-            <bk-table-column label="同步仓库" width="150">
+            <bk-table-column label="同步仓库" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <div class="flex-align-center" :title="row.localRepoName">
-                        <Icon size="16" :name="row.repoType.toLowerCase()" />
-                        <span class="ml5 text-overflow" style="max-width: 95px;">{{ row.localRepoName }}</span>
-                    </div>
+                    <Icon class="table-svg" size="16" :name="row.repoType.toLowerCase()" />
+                    <span class="ml5">{{ row.localRepoName }}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="同步状态" width="100">
+            <bk-table-column label="同步状态" width="80">
                 <template #default="{ row }">
-                    <div class="flex-align-center">
-                        <i class="status-sign" :class="row.status"></i>
-                        <span class="ml5" :class="row.status">{{ asyncPlanStatusEnum[row.status] || '未执行' }}</span>
-                    </div>
+                    <div class="status-sign" :class="row.status" :data-name="asyncPlanStatusEnum[row.status] || '未执行'"></div>
                 </template>
             </bk-table-column>
             <template v-if="logDetail.replicaType === 'REAL_TIME' || logDetail.replicaObjectType !== 'REPOSITORY'">
-                <bk-table-column label="制品名称 / 文件路径" show-overflow-tooltip width="200">
-                    <template #default="{ row }">
-                        {{ row.packageKey || row.path || '--' }}
-                    </template>
+                <bk-table-column label="制品名称 / 文件路径" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.packageKey || row.path || '--' }}</template>
                 </bk-table-column>
-                <bk-table-column label="版本" prop="versions" show-overflow-tooltip width="120"
-                    :formatter="(row, column, cellValue) => (cellValue || ['--']).join('、')">
+                <bk-table-column label="版本" show-overflow-tooltip>
+                    <template #default="{ row }">{{ (row.versions || ['--']).join('、') }}</template>
                 </bk-table-column>
             </template>
             <bk-table-column label="开始时间" width="150">
-                <template #default="{ row }">
-                    {{formatDate(row.startTime)}}
-                </template>
+                <template #default="{ row }">{{formatDate(row.startTime)}}</template>
             </bk-table-column>
             <bk-table-column label="结束时间" width="150">
-                <template #default="{ row }">
-                    {{formatDate(row.endTime)}}
-                </template>
+                <template #default="{ row }">{{formatDate(row.endTime)}}</template>
             </bk-table-column>
-            <bk-table-column label="成功数量" prop="success" width="80"></bk-table-column>
-            <bk-table-column label="跳过数量" prop="skip" width="80"></bk-table-column>
-            <bk-table-column label="失败数量" prop="failed" width="80"></bk-table-column>
-            <bk-table-column label="备注">
-                <template #default="{ row }">
-                    <span :title="row.errorReason">{{row.errorReason || '--'}}</span>
-                </template>
+            <bk-table-column label="成功数量" prop="success"></bk-table-column>
+            <bk-table-column label="跳过数量" prop="skip"></bk-table-column>
+            <bk-table-column label="失败数量" prop="failed"></bk-table-column>
+            <bk-table-column label="备注" show-overflow-tooltip>
+                <template #default="{ row }">{{row.errorReason || '--'}}</template>
             </bk-table-column>
         </bk-table>
         <bk-pagination
@@ -212,15 +199,6 @@
         .search-group {
             min-width: 250px;
         }
-    }
-    .SUCCESS {
-        color: var(--successColor);
-    }
-    .FAILED {
-        color: var(--dangerColor);
-    }
-    .RUNNING {
-        color: var(--primaryColor);
     }
 }
 </style>

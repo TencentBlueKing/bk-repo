@@ -52,6 +52,31 @@ body {
 
 .devops-icon {
     font-size: 14px;
+    &.disabled {
+        color: var(--fontDisableColor);
+        cursor: not-allowed;
+    }
+    &.hover-btn {
+        padding: 5px;
+        border-radius: 2px;
+        &:not(.disabled):hover {
+            background-color: var(--bgHoverColor);
+        }
+    }
+}
+
+svg {
+    &.disabled {
+        color: var(--fontDisableColor);
+        cursor: not-allowed;
+    }
+    &.hover-btn {
+        padding: 5px;
+        border-radius: 2px;
+        &:not(.disabled):hover {
+            background-color: var(--bgHoverColor);
+        }
+    }
 }
 
 .hover-btn {
@@ -63,6 +88,10 @@ body {
     &.hover-danger:hover {
         color: var(--dangerColor);
     }
+}
+
+.inline-block {
+    display: inline-block;
 }
 
 .flex-column {
@@ -133,6 +162,9 @@ body {
     color: var(--primaryColor);
     background-color: var(--bgHoverLighterColor);
     border: 1px solid transparent;
+    &:before {
+        content: attr(data-name);
+    }
     &.SUCCESS {
         color: var(--successColor);
         background-color: var(--successBgColor);
@@ -152,29 +184,39 @@ body {
     }
 }
 
-
 .status-sign {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
     &.SUCCESS,
     &.HEALTHY {
-        background-color: var(--successColor);
+        --signColor: var(--successColor);
     }
     &.UNHEALTHY,
     &.HIGH {
-        background-color: var(--warningColor);
+        --signColor: var(--warningColor);
     }
     &.FAILED,
     &.CRITICAL {
-        background-color: var(--dangerColor);
+        --signColor: var(--dangerColor);
     }
     &.RUNNING,
     &.MEDIUM {
-        background-color: var(--primaryColor);
+        --signColor: var(--primaryColor);
     }
     &.LOW {
-        background-color: var(--fontSubsidiaryColor);
+        --signColor: var(--fontSubsidiaryColor);
+    }
+    &:before {
+        content: '';
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: var(--signColor);
+    }
+    &:after {
+        content: attr(data-name);
+        margin-left: 5px;
+        color: var(--signColor);
     }
 }
 
@@ -217,7 +259,7 @@ body {
             line-height: 2.5;
             text-align: center;
             cursor: pointer;
-            &:hover:not(.disabled) {
+            &:not(.disabled):hover {
                 background-color: var(--bgHoverColor);
             }
             &.disabled {
@@ -264,4 +306,10 @@ input[type=file] {
         font-size: 14px;
         font-weight: bold;
     }
+}
+
+// table中的svg图标，对齐文字并可以做到文字溢出省略
+.table-svg {
+    display: inline-block;
+    vertical-align: text-top;
 }

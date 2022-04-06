@@ -66,11 +66,12 @@
                                 <bk-button text @click="showAddMetadata">即刻添加</bk-button>
                             </empty-data>
                         </template>
-                        <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
-                        <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
+                        <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
                         <bk-table-column width="60">
                             <template #default="{ row }">
-                                <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteMetadataHandler(row)"></i>
+                                <Icon class="hover-btn flex-align-center" size="24" name="icon-delete"
+                                    @click.native.stop="deleteMetadataHandler(row)" />
                             </template>
                         </bk-table-column>
                     </bk-table>
@@ -139,7 +140,7 @@
             codeList () {
                 const { projectId, repoName, path } = this.detailSlider
                 return [
-                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/generic/${projectId}/${repoName}${path}`
+                    `wget --user=${this.userInfo.username} --password=<PERSONAL_ACCESS_TOKEN> "${location.origin}/generic/${projectId}/${repoName}${path}"`
                 ]
             }
         },
@@ -218,7 +219,11 @@
                     body: {
                         keyList: [row[0]]
                     }
-                }).finally(() => {
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: '删除元数据' + this.$t('success')
+                    })
                     this.getDetail()
                 })
             }
@@ -276,13 +281,6 @@
                 box-shadow: 0 3px 6px rgba(51, 60, 72, 0.4);
                 will-change: height;
                 transition: all .3s;
-            }
-            .icon-plus {
-                width: 100%;
-                height: 100%;
-                &:hover {
-                    background-color: var(--bgHoverColor);
-                }
             }
         }
     }

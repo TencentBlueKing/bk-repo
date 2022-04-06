@@ -21,32 +21,25 @@
                 <template #empty>
                     <empty-data :is-loading="isLoading"></empty-data>
                 </template>
-                <bk-table-column label="制品名称" show-overflow-tooltip min-width="250">
+                <bk-table-column label="制品名称" show-overflow-tooltip>
                     <template #default="{ row }">
-                        <span class="flex-align-center" style="display:inline-flex;">
-                            <span class="text-overflow" :style="row.groupId ? 'max-width:150px;' : ''">{{ row.name }}</span>
-                            <span v-if="row.groupId" class="ml5 repo-tag"> {{ row.groupId }} </span>
-                        </span>
+                        <span v-if="row.groupId" class="mr5 repo-tag" :data-name="row.groupId"></span>
+                        <span>{{ row.name }}</span>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="制品版本/存储路径" prop="version" show-overflow-tooltip>
-                    <template #default="{ row }">
-                        {{ row.version || row.fullPath }}
-                    </template>
+                <bk-table-column label="制品版本/存储路径" show-overflow-tooltip>
+                    <template #default="{ row }">{{ row.version || row.fullPath }}</template>
                 </bk-table-column>
-                <bk-table-column label="所属仓库">
+                <bk-table-column label="所属仓库" show-overflow-tooltip>
                     <template #default="{ row }">
-                        <div class="flex-align-center" :title="replaceRepoName(row.repoName)">
-                            <Icon size="20" :name="row.repoType.toLowerCase()" />
-                            <span class="ml10 text-overflow" style="max-width:400px">{{replaceRepoName(row.repoName)}}</span>
-                        </div>
+                        <Icon class="table-svg" size="16" :name="row.repoType.toLowerCase()" />
+                        <span class="ml10">{{replaceRepoName(row.repoName)}}</span>
                     </template>
                 </bk-table-column>
                 <bk-table-column label="风险等级">
                     <template #default="{ row }">
-                        <div v-if="row.highestLeakLevel" class="flex-align-center">
-                            <i class="status-sign" :class="row.highestLeakLevel"></i>
-                            <span class="ml5" :class="row.highestLeakLevel">{{ leakLevelEnum[row.highestLeakLevel] }}</span>
+                        <div v-if="row.highestLeakLevel" class="status-sign" :class="row.highestLeakLevel"
+                            :data-name="leakLevelEnum[row.highestLeakLevel]">
                         </div>
                     </template>
                 </bk-table-column>
@@ -55,10 +48,8 @@
                         <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="扫描完成时间">
-                    <template #default="{ row }">
-                        {{formatDate(row.finishTime)}}
-                    </template>
+                <bk-table-column label="扫描完成时间" width="150">
+                    <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
                 </bk-table-column>
                 <bk-table-column :label="$t('operation')" width="70">
                     <template #default="{ row }">
@@ -212,16 +203,7 @@
             },
             repoGroupList () {
                 return this.repoListAll
-                    .filter(r => {
-                        switch (this.baseInfo.planType) {
-                            case 'MOBILE':
-                                return r.type === 'GENERIC'
-                            case 'DEPENDENT':
-                                return r.type === 'MAVEN'
-                            default:
-                                return false
-                        }
-                    })
+                    .filter(r => r.type === this.baseInfo.planType.toLowerCase())
                     .reduce((target, repo) => {
                         if (!target[repo.type]) target[repo.type] = []
                         target[repo.type].push(repo)

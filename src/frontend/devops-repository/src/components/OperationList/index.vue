@@ -32,18 +32,11 @@
 </script>
 <style lang="scss">
 .operation-trigger {
-    width: 24px;
-    height: 24px;
     border-radius: 2px;
     cursor: pointer;
-    .bk-tooltip-ref,
     .icon-more {
+        padding: 3px;
         font-size: 18px;
-        width: 100%;
-        height: 100%;
-    }
-    &:hover {
-        background-color: var(--bgHoverLighterColor);
     }
 }
 </style>
