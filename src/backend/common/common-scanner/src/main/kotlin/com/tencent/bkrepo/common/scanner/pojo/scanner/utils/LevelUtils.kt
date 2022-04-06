@@ -27,20 +27,17 @@
 
 package com.tencent.bkrepo.common.scanner.pojo.scanner.utils
 
-const val LEVEL_CRITICAL = "critical"
-const val LEVEL_HIGH = "high"
-const val LEVEL_MID = "mid"
-const val LEVEL_LOW = "low"
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 
 /**
  * 标准化等级
  */
 fun normalizedLevel(level: String): String {
     return when (level.toLowerCase()) {
-        "严重", "critical" -> LEVEL_CRITICAL
-        "高危", "high" -> LEVEL_HIGH
-        "中危", "mid", "middle", "medium" -> LEVEL_MID
-        "低危", "low" -> LEVEL_LOW
+        "危急", "严重", "critical" -> Level.CRITICAL.levelName
+        "高危", "high" -> Level.HIGH.levelName
+        "中危", "mid", "middle", "medium" -> Level.MEDIUM.levelName
+        "低危", "low" -> Level.LOW.levelName
         else -> level
     }
 }

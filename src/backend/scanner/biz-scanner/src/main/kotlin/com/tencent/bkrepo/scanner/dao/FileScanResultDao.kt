@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TScanResult
@@ -43,7 +42,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
+class FileScanResultDao : ScannerSimpleMongoDao<TFileScanResult>() {
 
     /**
      * 查询文件使用指定扫描器的扫描结果
@@ -72,14 +71,14 @@ class FileScanResultDao : SimpleMongoDao<TFileScanResult>() {
     /**
      * 判断文件使用指定版本扫描器的扫描结果是否存在
      */
-    fun exists(credentialsKey: String?, sha256: String, scanner: String, scannerVersion: String): Boolean {
+    fun find(credentialsKey: String?, sha256: String, scanner: String, scannerVersion: String): TFileScanResult? {
         val scannerResultKey = scannerResultKey(scanner)
         val criteria = Criteria
             .where(TFileScanResult::credentialsKey.name).isEqualTo(credentialsKey)
             .and(TFileScanResult::sha256.name).isEqualTo(sha256)
             .and(scannerResultKey).exists(true)
             .and("$scannerResultKey.${TScanResult::scannerVersion.name}").isEqualTo(scannerVersion)
-        return exists(Query(criteria))
+        return findOne(Query(criteria))
     }
 
     /**

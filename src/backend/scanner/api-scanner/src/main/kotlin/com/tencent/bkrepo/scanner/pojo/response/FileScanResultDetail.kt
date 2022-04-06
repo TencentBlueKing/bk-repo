@@ -39,7 +39,5 @@ data class FileScanResultDetail(
     @ApiModelProperty("文件sha256")
     val sha256: String,
     @ApiModelProperty("扫描报告详情")
-    val detail: Any?,
-    @ApiModelProperty("扫描报告类型")
-    val type: String? = null
+    val detail: Any?
 )

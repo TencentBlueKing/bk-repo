@@ -89,7 +89,7 @@ class ScannerServiceImpl @Autowired constructor(
     }
 
     override fun list(): List<Scanner> {
-        return scannerDao.findAll().map { convert(it) }
+        return scannerDao.list().map { convert(it) }
     }
 
     override fun delete(name: String) {

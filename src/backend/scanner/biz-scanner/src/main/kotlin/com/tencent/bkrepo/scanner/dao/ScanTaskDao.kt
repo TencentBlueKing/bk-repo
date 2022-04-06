@@ -28,43 +28,51 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class ScanTaskDao : SimpleMongoDao<TScanTask>() {
+class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
     fun updateStatus(
         taskId: String,
-        status: ScanTaskStatus
+        status: ScanTaskStatus,
+        lastModifiedDate: LocalDateTime? = null
     ): UpdateResult {
-        val query = buildQuery(taskId)
+        val criteria = Criteria.where(ID).isEqualTo(taskId)
+        lastModifiedDate?.let { criteria.and(TScanTask::lastModifiedDate.name).isEqualTo(it) }
         val update = buildUpdate().set(TScanTask::status.name, status.name)
-        return updateFirst(query, update)
+        return updateFirst(Query(criteria), update)
     }
 
     /**
      * 将已提交所有子任务且都扫描完的任务设置为结束状态
+     *
+     * @param taskId 扫描结束的任务id
+     * @param finishedTime 扫描结束时间
+     * @param startDateTime 扫描开始时间，没有执行扫描子任务就结束的任务需要设置该参数
      */
     fun taskFinished(
         taskId: String,
-        status: ScanTaskStatus = ScanTaskStatus.FINISHED,
-        finishedTime: LocalDateTime = LocalDateTime.now()
+        finishedTime: LocalDateTime = LocalDateTime.now(),
+        startDateTime: LocalDateTime? = null
     ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(taskId)
             .and(TScanTask::status).isEqualTo(ScanTaskStatus.SCANNING_SUBMITTED)
             .and(TScanTask::scanning).isEqualTo(0L)
         val query = Query(criteria)
         val update = buildUpdate(finishedTime)
-            .set(TScanTask::status.name, status)
+            .set(TScanTask::status.name, ScanTaskStatus.FINISHED.name)
             .set(TScanTask::finishedDateTime.name, finishedTime)
+        startDateTime?.let { update.set(TScanTask::startDateTime.name, startDateTime) }
         return updateFirst(query, update)
     }
 
@@ -86,7 +94,7 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         val update = buildUpdate()
             .set(TScanTask::startDateTime.name, null)
             .set(TScanTask::finishedDateTime.name, null)
-            .set(TScanTask::scanResultOverview.name, null)
+            .set(TScanTask::scanResultOverview.name, emptyMap<String, Long>())
             .set(TScanTask::status.name, ScanTaskStatus.PENDING.name)
             .set(TScanTask::total.name, 0L)
             .set(TScanTask::scanning.name, 0L)
@@ -109,15 +117,31 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         return updateFirst(query, update)
     }
 
+    /**
+     * 更新扫描结果
+     *
+     * @param taskId 扫描任务id
+     * @param count 更新的结果数量,
+     * @param scanResultOverview 需要更新的预览结果
+     * @param success 是否更新扫描成功的任务数量
+     * @param reuseResult 是否是重用扫描结果的情况
+     *
+     */
     fun updateScanResult(
         taskId: String,
         count: Int,
         scanResultOverview: Map<String, Any?>,
-        success: Boolean = true
+        success: Boolean = true,
+        reuseResult: Boolean = false
     ): UpdateResult {
         val query = buildQuery(taskId)
         val update = buildUpdate()
-            .inc(TScanTask::scanning.name, -count)
+        if (reuseResult) {
+            update.inc(TScanTask::total.name, count)
+        } else {
+            // 不是重用扫描结果的情况才需要减去扫描中的任务数量
+            update.inc(TScanTask::scanning.name, -count)
+        }
         if (success) {
             update.inc(TScanTask::scanned.name, count)
         } else {
@@ -130,6 +154,24 @@ class ScanTaskDao : SimpleMongoDao<TScanTask>() {
         }
 
         return updateFirst(query, update)
+    }
+
+    fun findByPlanIdIn(planIds: List<String>): List<TScanTask> {
+        val query = Query(TScanTask::planId.inValues(planIds))
+        return find(query)
+    }
+
+    fun latestTask(planId: String): TScanTask? {
+        val query = Query(TScanTask::planId.isEqualTo(planId))
+            .with(Sort.by(TScanTask::startDateTime.name).descending())
+        return findOne(query)
+    }
+
+    fun existsByPlanIdAndStatus(planId: String, status: List<String>): Boolean {
+        val criteria = Criteria
+            .where(TScanTask::planId.name).isEqualTo(planId)
+            .and(TScanTask::status.name).inValues(status)
+        return exists(Query(criteria))
     }
 
     private fun buildQuery(taskId: String) = Query(Criteria.where(ID).isEqualTo(taskId))

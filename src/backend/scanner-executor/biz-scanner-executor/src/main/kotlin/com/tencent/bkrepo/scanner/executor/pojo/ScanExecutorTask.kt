@@ -47,7 +47,7 @@ data class ScanExecutorTask(
      */
     val scanner: Scanner,
     /**
-     * 待扫描文件
+     * 待扫描文件流，由扫描执行器负责关闭
      */
     val inputStream: InputStream,
     /**

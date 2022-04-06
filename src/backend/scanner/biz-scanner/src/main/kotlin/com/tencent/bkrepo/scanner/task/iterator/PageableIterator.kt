@@ -39,9 +39,18 @@ abstract class PageableIterator<T>(
 
     private var data: List<T> = emptyList()
 
+    /**
+     * 没有下一项标记位，true表示没有下一项，false表示未知或者还有下一项
+     */
+    private var noNext: Boolean = false
+
     override fun hasNext(): Boolean {
+        if (noNext) {
+            return false
+        }
         val pageData = pageData()
         if (pageData.isEmpty()) {
+            noNext = true
             return false
         }
         return true

@@ -1,3 +1,10 @@
+# 系统配置
+[sysauditor.poposs]
+# 腾讯云endpoint地址，也可以使用私有化镜像
+endpoint = "#{[knowledgeBaseEndpoint]}"
+secretid = "#{[knowledgeBaseSecretId]}"
+secretkey = "#{[knowledgeBaseSecretKey]}"
+
 [metadata]
 standalonemode = true
 # 任务ID，standalone模式可以忽略
@@ -9,10 +16,19 @@ analysistype = "Artifact"
 # 无需修改
 analysissubtype = "BinaryPackage"
 
+# 只能同时选择其中一项
 [toparse]
+include_text = true
+include_binary = true
+# 制品包
 [[toparse.binarypackage]]
 # filename 输入文件路径，相对地址
 filename = "./#{[inputFile]}"
+
+# docker 镜像
+[[toparse.docker]]
+# filename 输入文件路径，相对地址
+filename = "./#{[dockerInputFile]}"
 
 [output]
 [output.json]
@@ -25,14 +41,3 @@ blacklist = ["file_items"]
 [output.log]
 loglevel = "INFO"
 logfile = "./sysauditor.log"
-
-# 无需修改
-[auditor]
-include_text = true
-include_binary = true
-
-[sysauditor.nvtools]
-enabled = "#{[nvToolsEnabled]}"
-username = "#{[nvToolsUsername]}"
-key = "#{[nvToolsKey]}"
-host = "#{[nvToolsHost]}"
