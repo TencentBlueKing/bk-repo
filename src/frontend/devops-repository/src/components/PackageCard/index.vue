@@ -21,7 +21,7 @@
             </div>
         </div>
         <div class="card-operation flex-center">
-            <Icon v-if="!readonly" size="14" name="icon-delete" @click.native.stop="deleteCard" />
+            <Icon class="hover-btn" v-if="!readonly" size="24" name="icon-delete" @click.native.stop="deleteCard" />
             <operation-list
                 :list="[
                     !cardData.type && { label: '下载', clickEvent: () => download() },

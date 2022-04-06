@@ -9,7 +9,7 @@
             :disabled="disabled"
             @change="r => change(r)">
         </select-input>
-        <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="$emit('delete')" />
+        <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="$emit('delete')" />
     </div>
 </template>
 <script>

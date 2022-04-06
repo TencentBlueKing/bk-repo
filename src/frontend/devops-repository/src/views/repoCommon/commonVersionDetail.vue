@@ -59,24 +59,6 @@
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
             <div class="version-metadata display-block" :data-title="$t('metaData')">
-                <!-- <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
-                    <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
-                    <div class="version-metadata-add-board"
-                        :style="{ height: metadata.show ? '180px' : '0' }">
-                        <bk-form class="p20" :label-width="80" :model="metadata" :rules="rules" ref="metadatForm">
-                            <bk-form-item :label="$t('key')" :required="true" property="key">
-                                <bk-input size="small" v-model="metadata.key" :placeholder="$t('key')"></bk-input>
-                            </bk-form-item>
-                            <bk-form-item :label="$t('value')" :required="true" property="value">
-                                <bk-input size="small" v-model="metadata.value" :placeholder="$t('value')"></bk-input>
-                            </bk-form-item>
-                            <bk-form-item>
-                                <bk-button size="small" theme="default" @click.stop="hiddenAddMetadata">{{$t('cancel')}}</bk-button>
-                                <bk-button class="ml5" size="small" :loading="metadata.loading" theme="primary" @click="addMetadataHandler">{{$t('confirm')}}</bk-button>
-                            </bk-form-item>
-                        </bk-form>
-                    </div>
-                </div> -->
                 <bk-table
                     :data="Object.entries(detail.metadata || {})"
                     :outer-border="false"
@@ -86,14 +68,12 @@
                         <empty-data ex-style="margin-top:80px;"
                             :config="{
                                 imgSrc: '/ui/no-metadata.png',
-                                title: '暂无元数据',
-                                subTitle: '给制品添加任意自定义的属性，来跟踪整个制品的生产过程'
+                                title: '暂无数据'
                             }">
                         </empty-data>
                     </template>
-                    <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
-                    <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
-                    <bk-table-column label="" width="60"></bk-table-column>
+                    <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
                 </bk-table>
             </div>
         </bk-tab-panel>
@@ -112,9 +92,8 @@
                             }">
                         </empty-data>
                     </template>
-                    <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
-                    <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
-                    <bk-table-column label="" width="60"></bk-table-column>
+                    <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
                 </bk-table>
             </div>
         </bk-tab-panel>
@@ -403,13 +382,6 @@
                 box-shadow: 0 3px 6px rgba(51, 60, 72, 0.4);
                 will-change: height;
                 transition: all .3s;
-            }
-            .icon-plus {
-                width: 100%;
-                height: 100%;
-                &:hover {
-                    background-color: var(--bgHoverColor);
-                }
             }
         }
     }

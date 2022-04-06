@@ -44,42 +44,34 @@
                     }">
                 </empty-data>
             </template>
-            <bk-table-column :label="$t('repoName')">
+            <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <div class="flex-align-center" :title="replaceRepoName(row.name)">
-                        <Icon size="20" :name="row.repoType" />
-                        <span class="ml10 text-overflow hover-btn" style="max-width:400px">{{replaceRepoName(row.name)}}</span>
-                        <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
-                            class="ml10 repo-tag SUCCESS">内置</span>
-                        <span v-if="row.configuration.settings.system"
-                            class="ml10 repo-tag">系统</span>
-                        <span v-if="row.public"
-                            class="ml10 repo-tag WARNING">公开</span>
-                    </div>
+                    <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
+                        class="mr5 repo-tag SUCCESS" data-name="内置"></span>
+                    <span v-if="row.configuration.settings.system"
+                        class="mr5 repo-tag" data-name="系统"></span>
+                    <span v-if="row.public"
+                        class="mr5 repo-tag WARNING" data-name="公开"></span>
+                    <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
+                    <span class="hover-btn">{{replaceRepoName(row.name)}}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('repoQuota')" width="250">
                 <template #default="{ row }">
-                    <div class="repoQuota" v-if="row.quota">
-                        <bk-popover placement="top">
-                            <bk-progress size="large" :percent="((row.used || 0) / (row.quota || 1))" :show-text="false"></bk-progress>
-                            <div slot="content">
-                                <div>{{ $t('totalQuota') }}: {{ convertBytesToGb(row.quota) }}GB</div>
-                                <div>{{ $t('usedQuotaCapacity') }}: {{ convertBytesToGb(row.used) }}GB</div>
-                            </div>
-                        </bk-popover>
-                    </div>
-                    <div v-else>
-                        --
-                    </div>
+                    <bk-popover class="repo-quota" placement="top" :disabled="!row.quota">
+                        <bk-progress v-if="row.quota" size="large" :percent="((row.used || 0) / row.quota)" :show-text="false"></bk-progress>
+                        <span class="ml5" v-else>--</span>
+                        <div slot="content">
+                            <div>{{ $t('totalQuota') }}: {{ convertFileSize(row.quota) }}</div>
+                            <div>{{ $t('usedQuotaCapacity') }}: {{ convertFileSize(row.used) }}</div>
+                        </div>
+                    </bk-popover>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="250">
-                <template #default="{ row }">
-                    {{ formatDate(row.createdDate) }}
-                </template>
+            <bk-table-column :label="$t('createdDate')" width="150">
+                <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')" width="200">
+            <bk-table-column :label="$t('createdBy')" width="90">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
@@ -115,7 +107,7 @@
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
     import { mapState, mapActions } from 'vuex'
     import { repoEnum } from '@repository/store/publicEnum'
-    import { formatDate } from '@repository/utils'
+    import { formatDate, convertFileSize } from '@repository/utils'
     export default {
         name: 'repoList',
         components: { OperationList, createRepoDialog },
@@ -154,14 +146,11 @@
         },
         methods: {
             formatDate,
+            convertFileSize,
             ...mapActions([
                 'getRepoList',
                 'deleteRepoList'
             ]),
-            convertBytesToGb (bytes, decimals = 2) {
-                if (bytes === 0) return 0
-                return parseFloat((bytes / Math.pow(1024, 3)).toFixed(decimals))
-            },
             getListData () {
                 this.isLoading = true
                 this.getRepoList({
@@ -232,24 +221,19 @@
     }
 </script>
 <style lang="scss" scoped>
-.repoQuota {
-    width: 80%;
-    ::v-deep .bk-tooltip,
-    ::v-deep .bk-tooltip-ref {
-        display: block;
-    }
-}
-.quota-slider {
-    ::v-deep .bk-slider-bar {
-        background-color: #3a84ff;
-    }
-}
 .repo-list-container {
     height: 100%;
     background-color: white;
     ::v-deep .bk-table td,
     ::v-deep .bk-table th {
         height: 44px;
+    }
+    .repo-quota {
+        display: block;
+        margin-right: 20%;
+        ::v-deep .bk-tooltip-ref {
+            display: block;
+        }
     }
 }
 </style>

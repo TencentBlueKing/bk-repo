@@ -55,27 +55,23 @@
                     }">
                 </empty-data>
             </template>
-            <bk-table-column label="所属项目" width="200">
+            <bk-table-column label="所属项目" show-overflow-tooltip>
                 <template #default="{ row }">
                     {{ (projectList.find(p => p.id === row.projectId) || {}).name || '--' }}
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('repoName')">
+            <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <div class="flex-align-center" :title="replaceRepoName(row.name)">
-                        <Icon size="20" :name="row.repoType" />
-                        <span class="ml10 text-overflow hover-btn" style="max-width:400px">{{replaceRepoName(row.name)}}</span>
-                        <span v-if="row.public"
-                            class="ml10 repo-tag WARNING">公开</span>
-                    </div>
+                    <span v-if="row.public"
+                        class="mr5 repo-tag WARNING" data-name="公开"></span>
+                    <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
+                    <span class="hover-btn">{{replaceRepoName(row.name)}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="250">
-                <template #default="{ row }">
-                    {{ formatDate(row.createdDate) }}
-                </template>
+            <bk-table-column :label="$t('createdDate')" width="150">
+                <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')" width="200">
+            <bk-table-column :label="$t('createdBy')" width="90">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>

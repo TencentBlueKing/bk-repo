@@ -70,6 +70,9 @@
             projectId () {
                 return this.$route.params.projectId
             },
+            repoType () {
+                return this.$route.params.repoType || ''
+            },
             repoName () {
                 return this.$route.query.repoName
             },
@@ -91,7 +94,7 @@
                 if (data.type === 'scan') {
                     this.getScanAll({
                         projectId: this.projectId,
-                        type: 'DEPENDENT'
+                        type: this.repoType.toUpperCase()
                     }).then(res => {
                         this.scanList = res
                     })

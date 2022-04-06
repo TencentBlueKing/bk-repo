@@ -25,13 +25,11 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="用户组名称" prop="name" width="200"></bk-table-column>
-            <bk-table-column label="关联用户数" width="200">
-                <template #default="{ row }">
-                    {{ row.users.length }}
-                </template>
+            <bk-table-column label="用户组名称" prop="name" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="关联用户数" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.users.length }}</template>
             </bk-table-column>
-            <bk-table-column label="描述" prop="description"></bk-table-column>
+            <bk-table-column label="描述" prop="description" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
                     <operation-list
@@ -98,9 +96,7 @@
                     }">
                     <bk-table-column type="selection" width="60"></bk-table-column>
                     <bk-table-column label="用户">
-                        <template #default="{ row }">
-                            <div>{{userList[row] ? userList[row].name : row}}</div>
-                        </template>
+                        <template #default="{ row }">{{userList[row] ? userList[row].name : row}}</template>
                     </bk-table-column>
                 </bk-table>
             </template>

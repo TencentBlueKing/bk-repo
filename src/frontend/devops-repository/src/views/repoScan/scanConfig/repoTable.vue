@@ -16,7 +16,7 @@
                     <Icon size="16" :name="repo.type.toLowerCase()" />
                     <span class="repo-name text-overflow" :title="repo.name">{{ repo.name }}</span>
                 </div>
-                <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="defaultRepos.splice(ind, 1)" />
+                <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="defaultRepos.splice(ind, 1)" />
             </div>
         </div>
         <repo-dialog :show="showAddDialog"

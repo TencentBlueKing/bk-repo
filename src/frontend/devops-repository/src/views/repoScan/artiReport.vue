@@ -61,17 +61,14 @@
                         </div>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="漏洞ID" prop="cveId" show-overflow-tooltip min-width="200"></bk-table-column>
+                <bk-table-column label="漏洞ID" prop="cveId" show-overflow-tooltip></bk-table-column>
                 <bk-table-column label="漏洞等级">
                     <template #default="{ row }">
-                        <div class="flex-align-center">
-                            <i class="status-sign" :class="row.severity"></i>
-                            <span class="ml5" :class="row.severity">{{ leakLevelEnum[row.severity] }}</span>
-                        </div>
+                        <div class="status-sign" :class="row.severity" :data-name="leakLevelEnum[row.severity]"></div>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="所属依赖" prop="pkgName"></bk-table-column>
-                <bk-table-column label="引入版本" prop="installedVersion"></bk-table-column>
+                <bk-table-column label="所属依赖" prop="pkgName" show-overflow-tooltip></bk-table-column>
+                <bk-table-column label="引入版本" prop="installedVersion" show-overflow-tooltip></bk-table-column>
             </bk-table>
             <bk-pagination
                 class="p10"
