@@ -27,14 +27,13 @@
 
 package com.tencent.bkrepo.scanner.task.iterator
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.scanner.pojo.Node
-import com.tencent.bkrepo.scanner.pojo.PlanType
-import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import org.springframework.stereotype.Component
 
@@ -53,48 +52,18 @@ class IteratorManager(
      * @param resume 是否从之前的扫描进度恢复
      */
     fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
-        val rule = scanTask.scanPlan
-            ?.let { fromScanPlan(it, scanTask.rule) }
-            ?: scanTask.rule
+        val rule = scanTask.rule ?: scanTask.scanPlan?.rule
 
         // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
         require(rule is Rule.NestedRule)
         val projectIds = projectIdsFromRule(rule)
         val projectIdIterator = projectIds.iterator()
 
-        return if (scanTask.scanPlan != null && scanTask.scanPlan!!.type == PlanType.DEPENDENT.name) {
+        return if (scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name) {
             PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))
         } else {
             NodeIterator(projectIdIterator, nodeClient, NodeIterator.NodeIteratePosition(rule))
         }
-    }
-
-    private fun fromScanPlan(scanPlan: ScanPlan, customRule: Rule?): Rule {
-        val rule = customRule ?: scanPlan.rule!!
-        if (scanPlan.type == PlanType.MOBILE.name) {
-            return addMobilePackageRule(rule)
-        }
-        return rule
-    }
-
-    /**
-     * 添加ipa和apk文件过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
-     */
-    private fun addMobilePackageRule(rule: Rule): Rule {
-        val mobilePackageRule = Rule.NestedRule(
-            mutableListOf(
-                Rule.QueryRule(NodeDetail::fullPath.name, ".apk", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".apks", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".aab", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".ipa", OperationType.SUFFIX)
-            ),
-            Rule.NestedRule.RelationType.OR
-        )
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            rule.rules.add(mobilePackageRule)
-            return rule
-        }
-        return Rule.NestedRule(mutableListOf(rule, mobilePackageRule), Rule.NestedRule.RelationType.AND)
     }
 
     /**

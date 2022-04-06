@@ -32,7 +32,6 @@ package com.tencent.bkrepo.scanner.utils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
@@ -43,7 +42,6 @@ import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.LeakType
-import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
@@ -233,11 +231,7 @@ object ScanPlanConverter {
     }
 
     fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition): ArtifactPlanRelation {
-        val planType = if (subScanTask.repoType == RepositoryType.GENERIC.name) {
-            PlanType.MOBILE.name
-        } else {
-            PlanType.DEPENDENT.name
-        }
+        val planType = subScanTask.repoType
         return with(subScanTask) {
             ArtifactPlanRelation(
                 id = planId!!,

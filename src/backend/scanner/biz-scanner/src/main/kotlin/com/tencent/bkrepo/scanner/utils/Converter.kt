@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.utils
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
@@ -40,7 +41,6 @@ import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
-import com.tencent.bkrepo.scanner.pojo.PlanType
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
@@ -104,7 +104,7 @@ object Converter {
             require(fullPath != null || packageKey != null && version != null)
 
             // 创建rule
-            val rule = if (planType == PlanType.MOBILE.name) {
+            val rule = if (planType == RepositoryType.GENERIC.name) {
                 RuleConverter.convert(projectId, repoName, fullPath!!)
             } else {
                 RuleConverter.convert(projectId, repoName, packageKey!!, version!!)
