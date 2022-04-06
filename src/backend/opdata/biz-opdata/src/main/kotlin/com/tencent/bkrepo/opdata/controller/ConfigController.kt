@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.opdata.controller
 
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.config.client.ConfigClient
+import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.config.UpdateConfigRequest
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -46,13 +49,15 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/config")
 @Principal(PrincipalType.ADMIN)
 class ConfigController @Autowired constructor(
-    private val configClient: ConfigClient
+    private val configClientProvider: ObjectProvider<ConfigClient>
 ) {
     /**
      * 更新配置
      */
     @PatchMapping
     fun update(@RequestBody updateConfigRequest: UpdateConfigRequest): Response<Void> {
+        val configClient = configClientProvider.firstOrNull()
+            ?: throw SystemErrorException(OpDataMessageCode.CONFIG_CLIENT_NOT_FOUND)
         updateConfigRequest.values.forEach { it.validateValueType() }
         updateConfigRequest.run {
             configClient.put(updateConfigRequest.values, appName, profile)

@@ -19,35 +19,20 @@
                         </card-radio-group>
                     </bk-form-item>
                     <template v-if="repoType === 'generic'">
-                        <bk-form-item :label="$t('mobileDownload')" property="mobileDownload">
-                            <bk-radio-group v-model="repoBaseInfo.mobileDownload">
+                        <bk-form-item v-for="type in ['mobile', 'web']" :key="type"
+                            :label="$t(`${type}Download`)" :property="`${type}.enable`">
+                            <bk-radio-group v-model="repoBaseInfo[type].enable">
                                 <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                                 <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                             </bk-radio-group>
-                            <template v-if="repoBaseInfo.mobileDownload">
+                            <template v-if="repoBaseInfo[type].enable">
                                 <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
-                                    property="interceptorsRulesMap.mobile.filename" error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.mobile.filename"></bk-input>
+                                    :property="`${type}.filename`" required error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('metadata')" :label-width="60"
-                                    property="interceptorsRulesMap.mobile.metadata" error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.mobile.metadata"></bk-input>
-                                </bk-form-item>
-                            </template>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('webDownload')" property="webDownload">
-                            <bk-radio-group v-model="repoBaseInfo.webDownload">
-                                <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                                <bk-radio :value="false">{{ $t('close') }}</bk-radio>
-                            </bk-radio-group>
-                            <template v-if="repoBaseInfo.webDownload">
-                                <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
-                                    property="interceptorsRulesMap.web.filename" error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.web.filename"></bk-input>
-                                </bk-form-item>
-                                <bk-form-item :label="$t('metadata')" :label-width="60"
-                                    property="interceptorsRulesMap.web.metadata" error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo.interceptorsRulesMap.web.metadata"></bk-input>
+                                    :property="`${type}.metadata`" required error-display-type="normal">
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata"></bk-input>
                                 </bk-form-item>
                             </template>
                         </bk-form-item>
@@ -102,11 +87,30 @@
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
     // import permissionConfig from './permissionConfig'
-    import { mapActions } from 'vuex'
+    import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
         components: { CardRadioGroup, proxyConfig },
         data () {
+            const filenameRule = [
+                {
+                    required: true,
+                    message: this.$t('pleaseFileName'),
+                    trigger: 'blur'
+                }
+            ]
+            const metadataRule = [
+                {
+                    required: true,
+                    message: this.$t('pleaseMetadata'),
+                    trigger: 'blur'
+                },
+                {
+                    regex: /^[^\s]+:[^\s]+/,
+                    message: this.$t('metadataRule'),
+                    trigger: 'blur'
+                }
+            ]
             return {
                 tabName: 'baseInfo',
                 isLoading: false,
@@ -120,18 +124,15 @@
                     repodataDepth: 0,
                     groupXmlSet: [],
                     description: '',
-                    mobileDownload: false,
-                    webDownload: false,
-                    interceptors: [],
-                    interceptorsRulesMap: {
-                        mobile: {
-                            filename: '',
-                            metadata: ''
-                        },
-                        web: {
-                            filename: '',
-                            metadata: ''
-                        }
+                    mobile: {
+                        enable: false,
+                        filename: '',
+                        metadata: ''
+                    },
+                    web: {
+                        enable: false,
+                        filename: '',
+                        metadata: ''
                     }
                 },
                 rules: {
@@ -153,48 +154,15 @@
                             trigger: 'change'
                         }
                     ],
-                    'interceptorsRulesMap.mobile.filename': [
-                        {
-                            required: true,
-                            message: this.$t('pleaseFileName'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    'interceptorsRulesMap.mobile.metadata': [
-                        {
-                            required: true,
-                            message: this.$t('pleaseMetadata'),
-                            trigger: 'blur'
-                        },
-                        {
-                            regex: /^[^\s]+:[^\s]+/,
-                            message: this.$t('metadataRule'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    'interceptorsRulesMap.web.filename': [
-                        {
-                            required: true,
-                            message: this.$t('pleaseFileName'),
-                            trigger: 'blur'
-                        }
-                    ],
-                    'interceptorsRulesMap.web.metadata': [
-                        {
-                            required: true,
-                            message: this.$t('pleaseMetadata'),
-                            trigger: 'blur'
-                        },
-                        {
-                            regex: /^[^\s]+:[^\s]+/,
-                            message: this.$t('metadataRule'),
-                            trigger: 'blur'
-                        }
-                    ]
+                    'mobile.filename': filenameRule,
+                    'mobile.metadata': metadataRule,
+                    'web.filename': filenameRule,
+                    'web.metadata': metadataRule
                 }
             }
         },
         computed: {
+            ...mapState(['domain']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -208,7 +176,11 @@
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
             },
             repoAddress () {
-                return location.origin + `/${this.repoBaseInfo.repoType}/${this.projectId}/${this.repoBaseInfo.name}/`
+                const { repoType, name } = this.repoBaseInfo
+                if (repoType === 'docker') {
+                    return `${location.protocol}//${this.domain.docker}/${this.projectId}/${name}/`
+                }
+                return `${location.origin}/${repoType}/${this.projectId}/${name}/`
             },
             available: {
                 get () {
@@ -225,16 +197,17 @@
                 return [
                     { label: '项目内公开', value: 'project', tip: '项目内成员可以使用' },
                     // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: '对外公开', value: 'public', tip: '所有用户都可以使用' }
+                    { label: '可匿名下载', value: 'public', tip: '不鉴权，任意终端都可下载' }
                 ]
             }
         },
         created () {
+            !this.domain.docker && this.getDockerDomain()
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDockerDomain']),
             toRepoList () {
                 this.$router.push({
                     name: 'repoList'
@@ -255,17 +228,11 @@
                     }
                     
                     const { interceptors } = res.configuration.settings
-                    if (interceptors) {
+                    if (interceptors instanceof Array) {
                         interceptors.forEach(i => {
-                            if (i.type === 'MOBILE') {
-                                this.repoBaseInfo.mobileDownload = true
-                                this.repoBaseInfo.interceptorsRulesMap.mobile.filename = i.rules.filename
-                                this.repoBaseInfo.interceptorsRulesMap.mobile.metadata = i.rules.metadata
-                            }
-                            if (i.type === 'WEB') {
-                                this.repoBaseInfo.webDownload = true
-                                this.repoBaseInfo.interceptorsRulesMap.web.filename = i.rules.filename
-                                this.repoBaseInfo.interceptorsRulesMap.web.metadata = i.rules.metadata
+                            this.repoBaseInfo[i.type.toLowerCase()] = {
+                                enable: true,
+                                ...i.rules
                             }
                         })
                     }
@@ -275,18 +242,15 @@
             },
             async saveBaseInfo () {
                 ['generic', 'rpm'].includes(this.repoType) && await this.$refs.repoBaseInfo.validate()
-                const { mobileDownload, webDownload, interceptorsRulesMap } = this.repoBaseInfo
-                let { interceptors } = this.repoBaseInfo
-                interceptors = []
+                const interceptors = []
                 if (this.repoType === 'generic') {
-                    for (const [key, val] of Object.entries(interceptorsRulesMap)) {
-                        if ((key === 'mobile' && mobileDownload) || (key === 'web' && webDownload)) {
-                            interceptors.push({
-                                type: key.toLocaleUpperCase(),
-                                rules: val
-                            })
-                        }
-                    }
+                    ['mobile', 'web'].forEach(type => {
+                        const { enable, filename, metadata } = this.repoBaseInfo[type]
+                        enable && interceptors.push({
+                            type: type.toUpperCase(),
+                            rules: { filename, metadata }
+                        })
+                    })
                 }
                 const body = {
                     public: this.repoBaseInfo.public,
@@ -295,7 +259,7 @@
                         ...this.repoBaseInfo.configuration,
                         settings: {
                             system: this.repoBaseInfo.system,
-                            interceptors: this.repoType === 'generic' && interceptors.length ? interceptors : undefined,
+                            interceptors: interceptors.length ? interceptors : undefined,
                             ...(
                                 this.repoType === 'rpm'
                                     ? {
@@ -313,7 +277,7 @@
                     projectId: this.projectId,
                     name: this.repoName,
                     body
-                }).then(res => {
+                }).then(() => {
                     this.getRepoInfoHandler()
                     this.$bkMessage({
                         theme: 'success',

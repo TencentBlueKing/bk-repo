@@ -32,8 +32,6 @@
 package com.tencent.bkrepo.auth.controller
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
-import com.tencent.bkrepo.auth.permission.AuthPrincipal
-import com.tencent.bkrepo.auth.permission.AuthPrincipalType
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
@@ -67,7 +65,6 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("创建角色")
     @PostMapping("/create")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun createRole(@RequestBody request: CreateRoleRequest): Response<String?> {
         // todo check request
         val id = roleService.createRole(request)
@@ -76,7 +73,6 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun createProjectManage(@PathVariable projectId: String): Response<String?> {
         val request = buildProjectAdminRequest(projectId)
         val id = roleService.createRole(request)
@@ -85,7 +81,6 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("创建仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun createRepoManage(@PathVariable projectId: String, @PathVariable repoName: String): Response<String?> {
         val request = buildRepoAdminRequest(projectId, repoName)
         val id = roleService.createRole(request)
@@ -94,7 +89,6 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("删除角色")
     @DeleteMapping("/delete/{id}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun deleteRole(@PathVariable id: String): Response<Boolean> {
         roleService.deleteRoleByid(id)
         return ResponseBuilder.success(true)
@@ -108,7 +102,6 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("根据角色ID与项目Id查询角色")
     @GetMapping("/detail/{rid}/{projectId}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun detailByProject(@PathVariable rid: String, @PathVariable projectId: String): Response<Role?> {
         val result = roleService.detail(rid, projectId)
         return ResponseBuilder.success(result)
@@ -116,7 +109,6 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("根据角色ID与项目Id,仓库名查询角色")
     @GetMapping("/detail/{rid}/{projectId}/{repoName}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun detailByProjectAndRepo(
         @PathVariable rid: String,
         @PathVariable projectId: String,
@@ -128,21 +120,18 @@ class RoleController @Autowired constructor(
 
     @ApiOperation("根据类型和项目id查询角色")
     @GetMapping("/list")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun listRole(@PathVariable projectId: String, @PathVariable repoName: String?): Response<List<Role>> {
         return ResponseBuilder.success(roleService.listRoleByProject(projectId, repoName))
     }
 
     @ApiOperation("查询用户组下用户列表")
     @GetMapping("/users/{id}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun listUserByRole(@PathVariable id: String): Response<Set<UserResult>> {
         return ResponseBuilder.success(roleService.listUserByRoleId(id))
     }
 
     @ApiOperation("编辑用户组信息")
     @PutMapping("/{id}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     @Transactional(rollbackFor = [Exception::class])
     fun updateRoleInfo(
         @PathVariable id: String,

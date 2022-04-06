@@ -58,7 +58,9 @@
                 this.loading = true
                 const res = this.confirmFn()
                 if (res instanceof Promise) {
-                    res.then(this.cancel)
+                    res.then(this.cancel).finally(() => {
+                        this.loading = false
+                    })
                 } else {
                     this.cancel()
                 }

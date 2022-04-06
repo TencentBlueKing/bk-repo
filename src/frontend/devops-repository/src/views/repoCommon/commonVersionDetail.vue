@@ -7,7 +7,7 @@
         </template>
         <bk-tab-panel v-for="[tab, obj] in Object.entries(detail)" :key="tab" :name="tab" :label="getTabLabel(tab)">
             <template v-if="tab === 'basic'">
-                <div class="version-base-info base-info" :data-title="$t('baseInfo')">
+                <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')">
                     <div class="package-name grid-item">
                         <label>制品名称</label>
                         <span>
@@ -35,13 +35,13 @@
                         <span class="flex-1 text-overflow" :title="obj.description">{{ obj.description || '--' }}</span>
                     </div>
                 </div>
-                <div class="version-base-info base-info-guide" :data-title="$t('useTips')">
+                <div class="version-base-info base-info-guide display-block" :data-title="$t('useTips')">
                     <div class="sub-section" v-for="block in articleInstall[0].main" :key="block.subTitle">
                         <div class="mb10">{{ block.subTitle }}</div>
                         <code-area class="mb20" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
                     </div>
                 </div>
-                <div class="version-base-info base-info-checksums" data-title="Checksums">
+                <div class="version-base-info base-info-checksums display-block" data-title="Checksums">
                     <div v-if="obj.sha256" class="grid-item">
                         <label>SHA256</label>
                         <span class="flex-1 text-overflow" :title="obj.sha256">{{ obj.sha256 }}</span>
@@ -53,7 +53,7 @@
                 </div>
             </template>
             <template v-else-if="tab === 'metadata' || tab === 'manifest'">
-                <div class="version-metadata" :data-title="getTabLabel(tab)">
+                <div class="version-metadata display-block" :data-title="getTabLabel(tab)">
                     <!-- <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
                         <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
                         <div class="version-metadata-add-board"
@@ -93,7 +93,7 @@
                 </div>
             </template>
             <template v-else-if="tab === 'layers'">
-                <div class="version-layers" data-title="Layers">
+                <div class="version-layers display-block" data-title="Layers">
                     <div class="block-header grid-item">
                         <label>ID</label>
                         <span class="pl40">{{ $t('size') }}</span>
@@ -126,7 +126,7 @@
             </template>
             <template v-else-if="tab === 'dependencyInfo'">
                 <article class="version-dependencies">
-                    <section class="version-dependencies-main"
+                    <section class="version-dependencies-main display-block"
                         v-for="type in ['dependencies', 'devDependencies', 'dependents']"
                         :key="type"
                         :data-title="type">
@@ -136,9 +136,6 @@
                                 <div class="version-dependencies-key text-overflow" :key="name" :title="name">{{ name }}</div>
                                 <div v-if="type !== 'dependents'" class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
                             </template>
-                            <div class="version-dependencies-more" v-if="type === 'dependents' && dependentsPage">
-                                <bk-button text title="primary" @click="loadMore">{{ $t('loadMore') }}</bk-button>
-                            </div>
                         </template>
                         <empty-data v-else class="version-dependencies-empty"></empty-data>
                     </section>
@@ -162,14 +159,6 @@
                 isLoading: false,
                 detail: {
                     basic: {}
-                },
-                // 当前已请求页数，0代表没有更多
-                dependentsPage: 1,
-                pagination: {
-                    count: 0,
-                    current: 1,
-                    limit: 20,
-                    'limit-list': [10, 20, 40]
                 },
                 selectedHistory: {},
                 metadata: {
@@ -216,7 +205,7 @@
         },
         watch: {
             version: {
-                handler: function (version) {
+                handler (version) {
                     version && this.getDetail()
                 },
                 immediate: true
@@ -226,7 +215,6 @@
             convertFileSize,
             ...mapActions([
                 'getVersionDetail',
-                'getNpmDependents',
                 'addPackageMetadata'
             ]),
             getTabLabel (tab) {
@@ -267,32 +255,9 @@
                             lastModifiedDate: basic.lastModifiedDate && formatDate(basic.lastModifiedDate)
                         }
                     }
-                    if (this.repoType === 'npm') {
-                        const dependents = res.dependencyInfo.dependents
-                        this.detail.dependencyInfo.dependents = dependents.records
-                        if (dependents.totalRecords < 20) {
-                            this.dependentsPage = 0
-                        }
-                    }
                     if (this.repoType === 'docker') {
                         this.selectedHistory = res.history[0] || {}
                     }
-                }).finally(() => {
-                    this.isLoading = false
-                })
-            },
-            loadMore () {
-                if (this.isLoading) return
-                this.isLoading = true
-                this.getNpmDependents({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    packageKey: this.packageKey,
-                    current: this.dependentsPage + 1
-                }).then(({ records }) => {
-                    this.detail.dependencyInfo.dependents.push(...records)
-                    this.dependentsPage++
-                    if (records.length < 20) this.dependentsPage = 0
                 }).finally(() => {
                     this.isLoading = false
                 })
@@ -337,30 +302,6 @@
     }
 </script>
 <style lang="scss" scoped>
-@mixin display-block {
-    position: relative;
-    margin-top: 55px;
-    &:first-child {
-        margin-top: 35px;
-    }
-    &:before {
-        position: absolute;
-        top: -28px;
-        left: 0;
-        content: '';
-        width: 3px;
-        height: 12px;
-        background-color: var(--primaryColor);
-    }
-    &:after {
-        position: absolute;
-        top: -33px;
-        left: 10px;
-        content: attr(data-title);
-        font-size: 14px;
-        font-weight: bold;
-    }
-}
 .common-version-container {
     height: 100%;
     ::v-deep .bk-tab-section {
@@ -382,11 +323,6 @@
                 background-color: var(--bgColor);
             }
         }
-        &.base-info,
-        &.base-info-guide,
-        &.base-info-checksums {
-            @include display-block;
-        }
         &.base-info {
             display: grid;
             grid-template: auto / repeat(3, 1fr);
@@ -406,18 +342,17 @@
             }
         }
         &.base-info-guide {
-            padding: 20px 50px 0;
+            padding: 20px 20px 0;
             border: 1px dashed var(--borderWeightColor);
             border-radius: 4px;
         }
         &.base-info-checksums {
-            padding: 20px;
+            padding: 20px 10px;
             display: grid;
             background-color: var(--bgLighterColor);
         }
     }
     .version-metadata {
-        @include display-block;
         .version-metadata-add {
             position: absolute;
             display: flex;
@@ -450,10 +385,9 @@
         }
     }
     .version-layers {
-        @include display-block;
         padding: 20px;
         display: grid;
-        grid-gap: 20px;
+        gap: 20px;
         background-color: var(--bgHoverColor);
         .grid-item {
             display: flex;
@@ -512,7 +446,6 @@
         height: 100%;
         overflow-y: auto;
         &-main {
-            @include display-block;
             display: grid;
             grid-template: auto / repeat(4, 1fr);
             grid-gap: 1px;

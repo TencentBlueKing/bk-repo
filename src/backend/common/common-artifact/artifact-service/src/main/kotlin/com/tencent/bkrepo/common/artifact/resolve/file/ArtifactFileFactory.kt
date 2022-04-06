@@ -76,8 +76,10 @@ class ArtifactFileFactory(
          * 通过输入流构造artifact file
          * @param inputStream 输入流
          */
-        fun build(inputStream: InputStream): ArtifactFile {
-            return StreamArtifactFile(inputStream, getMonitor(), properties, getStorageCredentials()).apply {
+        fun build(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
+            return StreamArtifactFile(
+                inputStream, getMonitor(), properties, getStorageCredentials(), contentLength
+            ).apply {
                 track(this)
             }
         }

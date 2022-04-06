@@ -48,6 +48,9 @@ bkLogConfig:
 ## ingress配置
 ingress:
   enabled: true
+  tls: false
+  crt: ""
+  key: ""
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "10240m"
@@ -56,6 +59,8 @@ ingress:
 ## ref: https://github.com/bitnami/charts/tree/master/bitnami/nginx-ingress-controller
 nginx-ingress-controller:
   ## 是否部署nginx-ingress-controller
+  hostNetwork: false
+  replicaCount: 1
   enabled: true
   defaultBackend:
     enabled: false
@@ -74,7 +79,7 @@ mongodb:
   persistence:
     subPath: mongodb
     size: 20Gi
-        
+
 ## 如果mongodb.enabled为false，bkrepo将使用下面的参数连接外部mongodb
 externalMongodb:
   ## mongodb 标准连接字符串
@@ -107,7 +112,7 @@ init:
     image:
       registry: mirrors.tencent.com
       repository: blueking/bkrepo-init
-      tag: 1.0.42
+      tag: 1.1.0
       pullPolicy: IfNotPresent
       pullSecrets: []
 ## bkrepo公共配置
@@ -117,7 +122,7 @@ common:
   # bkrepo镜像tag全局配置, 具有最高优先级
   imageTag: ""
   ## 部署区域，可不填
-  region: 
+  region:
   ## jvm启动选项, 如-Xms1024M -Xmx1024M
   jvmOption: ""
   ## SpringBoot active profile
@@ -131,11 +136,32 @@ common:
   config:
     ## bkrepo存储配置
     storage:
-      ## 指定存储类型，支持filesystem/cos/s3/hdfs
+      ## 指定存储类型，支持filesystem/cos/s3/hdfs/innercos
       type: filesystem
       ## filesystem配置，使用文件系统
       filesystem:
         path: /data/storage/store
+      ## innercos，使用对象存储终端存储文件
+      innercos:
+        ## cos secretId
+        secretId: xxx
+        ## cos secretKey
+        secretKey: xxx
+        ## cos region
+        region: gzc
+        ## cos bucket ,比如test-00001
+        bucket: test-00001
+        ## lb modeId
+        modId: 000001
+        ## lb cmdId
+        cmdId: 0001
+        cache:
+          enabled: true
+          path: /data/storage/cached
+          expireDays: 14
+          loadCacheFirst: true
+        upload:
+          location: /data/storage/temp
       # 是否启用nfs挂载
       nfs:
         enabled: false
@@ -174,7 +200,7 @@ gateway:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-gateway
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -215,7 +241,7 @@ repository:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-repository
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -256,7 +282,7 @@ auth:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-auth
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -296,7 +322,87 @@ generic:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-generic
-    tag: 1.0.42
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## replication服务配置
+replication:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-replication
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## opdata服务配置
+opdata:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: mirrors.tencent.com
+    repository: blueking/bkrepo-opdata
+    tag: 1.1.3
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -336,7 +442,7 @@ docker:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-docker
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -376,7 +482,7 @@ npm:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-npm
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -416,7 +522,7 @@ pypi:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-pypi
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -456,7 +562,7 @@ helm:
   image:
     registry: mirrors.tencent.com
     repository: blueking/bkrepo-helm
-    tag: 1.0.42
+    tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1

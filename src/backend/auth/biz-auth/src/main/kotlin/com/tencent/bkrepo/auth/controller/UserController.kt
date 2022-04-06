@@ -34,8 +34,6 @@ package com.tencent.bkrepo.auth.controller
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.permission.AuthPrincipal
-import com.tencent.bkrepo.auth.permission.AuthPrincipalType
 import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
@@ -52,10 +50,13 @@ import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.RequestUtil.buildProjectAdminRequest
 import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
+import com.tencent.bkrepo.auth.util.RsaUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -88,7 +89,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("创建用户")
     @PostMapping("/create")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
         userService.createUser(request)
         return ResponseBuilder.success(true)
@@ -118,7 +118,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("用户列表")
     @GetMapping("/list")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun listUser(@RequestBody rids: List<String>?): Response<List<UserResult>> {
         val result = userService.listUser(rids.orEmpty()).map {
             UserResult(it.userId, it.name)
@@ -128,15 +127,12 @@ class UserController @Autowired constructor(
 
     @ApiOperation("权限用户列表")
     @GetMapping("/listall")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun listAllUser(@RequestBody rids: List<String>?): Response<List<User>> {
         return ResponseBuilder.success(userService.listUser(rids.orEmpty()))
     }
 
     @ApiOperation("删除用户")
     @DeleteMapping("/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
-//    @Principal(PrincipalType.ADMIN)
     fun deleteById(@PathVariable uid: String): Response<Boolean> {
         checkUserId(uid)
         userService.deleteById(uid)
@@ -145,7 +141,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("用户详情")
     @GetMapping("/detail/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun detail(@PathVariable uid: String): Response<User?> {
         checkUserId(uid)
         return ResponseBuilder.success(userService.getUserById(uid))
@@ -161,7 +156,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun addUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
         val result = userService.addUserToRole(uid, rid)
         return ResponseBuilder.success(result)
@@ -169,7 +163,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("删除用户所属角色")
     @DeleteMapping("/role/{uid}/{rid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun removeUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
         val result = userService.removeUserFromRole(uid, rid)
         return ResponseBuilder.success(result)
@@ -177,7 +170,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("批量新增用户所属角色")
     @PatchMapping("/role/add/{rid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun addUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
         userService.addUserToRoleBatch(request, rid)
         return ResponseBuilder.success(true)
@@ -185,7 +177,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("批量删除用户所属角色")
     @PatchMapping("/role/delete/{rid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun deleteUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
@@ -193,7 +184,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("新加用户token")
     @PostMapping("/token/{uid}/{name}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
+    @Principal(PrincipalType.ADMIN)
     fun addUserToken(
         @PathVariable("uid") uid: String,
         @PathVariable("name") name: String,
@@ -214,7 +205,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("查询用户token列表")
     @GetMapping("/list/token/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun listUserToken(@PathVariable("uid") uid: String): Response<List<TokenResult>> {
         checkUserId(uid)
         val result = userService.listUserToken(uid)
@@ -223,7 +213,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("删除用户token")
     @DeleteMapping("/token/{uid}/{name}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun deleteToken(@PathVariable uid: String, @PathVariable name: String): Response<Boolean> {
         checkUserId(uid)
         val result = userService.removeToken(uid, name)
@@ -236,6 +225,12 @@ class UserController @Autowired constructor(
         checkUserId(uid)
         userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
         return ResponseBuilder.success(true)
+    }
+
+    @ApiOperation("获取公钥")
+    @GetMapping("/rsa")
+    fun getPublicKey(): Response<String?> {
+        return ResponseBuilder.success(RsaUtils.publicKey)
     }
 
     @ApiOperation("校验用户会话token")
@@ -287,7 +282,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("用户分页列表")
     @GetMapping("page/{pageNumber}/{pageSize}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun userPage(
         @PathVariable pageNumber: Int,
         @PathVariable pageSize: Int,
@@ -301,14 +295,12 @@ class UserController @Autowired constructor(
 
     @ApiOperation("用户info ")
     @GetMapping("/userinfo/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun userInfoById(@PathVariable uid: String): Response<UserInfo?> {
         return ResponseBuilder.success(userService.getUserInfoById(uid))
     }
 
     @ApiOperation("修改用户密码")
     @PutMapping("/update/password/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun updatePassword(
         @PathVariable uid: String,
         @RequestParam oldPwd: String,
@@ -319,14 +311,12 @@ class UserController @Autowired constructor(
 
     @ApiOperation("用户info ")
     @GetMapping("/reset/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun resetPassword(@PathVariable uid: String): Response<Boolean> {
         return ResponseBuilder.success(userService.resetPassword(uid))
     }
 
     @ApiOperation("检验系统中是否存在同名userId ")
     @GetMapping("/repeat/{uid}")
-    @AuthPrincipal(AuthPrincipalType.ADMIN)
     fun repeatUid(@PathVariable uid: String): Response<Boolean> {
         return ResponseBuilder.success(userService.repeatUid(uid))
     }

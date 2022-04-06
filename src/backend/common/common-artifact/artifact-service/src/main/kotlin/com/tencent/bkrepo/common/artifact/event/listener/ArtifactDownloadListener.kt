@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.operate.api.OperateLogService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.context.event.EventListener
 
 class ArtifactDownloadListener(
@@ -45,36 +46,41 @@ class ArtifactDownloadListener(
         val repoName = event.context.repoName
         val fullPath = event.context.artifactInfo.getArtifactFullPath()
         val userId = event.context.userId
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data!!
-        if (node.folder) {
-            val nodeList =
-                nodeClient.listNode(projectId, repoName, node.path, includeFolder = false, deep = true).data!!
-            val eventList = nodeList.map {
-                val data = it.metadata?.toMutableMap() ?: mutableMapOf()
-                data[MD5] = it.md5 ?: ""
-                data[SHA256] = it.sha256 ?: ""
-                NodeDownloadedEvent(
-                    projectId = it.projectId,
-                    repoName = it.repoName,
-                    resourceKey = it.fullPath,
-                    userId = userId,
-                    data = data
-                )
-            }
-            operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
-        } else {
-            val data = node.metadata.toMutableMap()
-            data[MD5] = node.md5 ?: ""
-            data[SHA256] = node.sha256 ?: ""
+        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        if (node == null) {
             val downloadedEvent = NodeDownloadedEvent(
-                projectId = node.projectId,
-                repoName = node.repoName,
-                resourceKey = node.fullPath,
+                projectId = projectId,
+                repoName = repoName,
+                resourceKey = fullPath,
                 userId = userId,
-                data = data
+                data = emptyMap()
             )
             operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
+        } else if (node.folder) {
+            val nodeList =
+                nodeClient.listNode(projectId, repoName, node.path, includeFolder = false, deep = true).data!!
+            val eventList = nodeList.map { buildDownloadEvent(NodeDetail(it), userId) }
+            operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
+        } else {
+            val downloadedEvent = buildDownloadEvent(node, userId)
+            operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
         }
+    }
+
+    private fun buildDownloadEvent(
+        node: NodeDetail,
+        userId: String
+    ): NodeDownloadedEvent {
+        val data = node.metadata.toMutableMap()
+        data[MD5] = node.md5 ?: ""
+        data[SHA256] = node.sha256 ?: ""
+        return NodeDownloadedEvent(
+            projectId = node.projectId,
+            repoName = node.repoName,
+            resourceKey = node.fullPath,
+            userId = userId,
+            data = data
+        )
     }
 
     companion object {

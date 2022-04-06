@@ -86,6 +86,11 @@ object NodeQueryHelper {
         option: NodeListOption
     ): Query {
         val query = Query(nodeListCriteria(projectId, repoName, path, option))
+        if (option.sortProperty.isNotEmpty()) {
+            option.direction.zip(option.sortProperty).forEach {
+                query.with(Sort.by(Sort.Direction.valueOf(it.first), it.second))
+            }
+        }
         if (option.sort) {
             if (option.includeFolder) {
                 query.with(Sort.by(Sort.Direction.DESC, TNode::folder.name))
@@ -94,6 +99,11 @@ object NodeQueryHelper {
         }
         if (!option.includeMetadata) {
             query.fields().exclude(TNode::metadata.name)
+        }
+        if (option.deep) {
+            query.withHint(TNode.FULL_PATH_IDX)
+        } else {
+            query.withHint(TNode.PATH_IDX)
         }
         return query
     }

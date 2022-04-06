@@ -24,12 +24,12 @@ local bk_token, err = cookieUtil:get_cookie("bk_token")
 local bkrepo_token, bkrepo_err = cookieUtil:get_cookie("bkrepo_ticket")
 local ticket, token, username
 
-
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
     --- 跳过登录请求
     start_i = string.find(ngx.var.request_uri, "login")
-    if start_i ~= nil then
+    start_i2 = string.find(ngx.var.request_uri, "rsa")
+    if start_i ~= nil or start_i2 ~= nil then
         return
     end
     if bkrepo_token == nil then

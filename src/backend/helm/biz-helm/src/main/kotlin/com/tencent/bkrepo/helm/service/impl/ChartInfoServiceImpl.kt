@@ -55,13 +55,14 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartInfoService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
+import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
-import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
 class ChartInfoServiceImpl(
@@ -69,7 +70,20 @@ class ChartInfoServiceImpl(
 ) : AbstractChartService(), ChartInfoService {
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun allChartsList(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
-        val indexYamlMetadata = queryOriginalIndexYaml()
+        return lockAction(artifactInfo.projectId, artifactInfo.repoName) { chartListSearch(artifactInfo, startTime) }
+    }
+
+    private fun chartListSearch(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime?): ResponseEntity<Any> {
+        val indexYamlMetadata = if (!exist(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = HelmUtils.getIndexCacheYamlFullPath()
+            )
+        ) {
+            HelmUtils.initIndexYamlMetadata()
+        } else {
+            queryOriginalIndexYaml()
+        }
         val startDate = startTime ?: LocalDateTime.MIN
         return ResponseEntity.ok().body(
             ChartParserUtil.searchJson(indexYamlMetadata, artifactInfo.getArtifactFullPath(), startDate)

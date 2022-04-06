@@ -135,6 +135,8 @@ class ChunkedArtifactFile(
         return initialized
     }
 
+    override fun isInLocalDisk() = false
+
     /**
      * 写入分块数据
      * @param chunk 分块数据

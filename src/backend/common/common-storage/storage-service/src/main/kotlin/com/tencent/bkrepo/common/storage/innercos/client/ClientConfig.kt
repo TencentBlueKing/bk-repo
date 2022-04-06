@@ -32,12 +32,11 @@
 package com.tencent.bkrepo.common.storage.innercos.client
 
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.innercos.cl5.CL5Info
-import com.tencent.bkrepo.common.storage.innercos.endpoint.CL5EndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.EndpointBuilder
 import com.tencent.bkrepo.common.storage.innercos.endpoint.EndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.InnerCosEndpointBuilder
+import com.tencent.bkrepo.common.storage.innercos.endpoint.PolarisEndpointResolver
 import com.tencent.bkrepo.common.storage.innercos.endpoint.PublicCosEndpointBuilder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import org.springframework.util.unit.DataSize
@@ -84,8 +83,7 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
 
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
-            val cl5Info = CL5Info(credentials.modId!!, credentials.cmdId!!, credentials.timeout)
-            CL5EndpointResolver(cl5Info)
+            PolarisEndpointResolver(credentials.modId!!, credentials.cmdId!!)
         } else {
             DefaultEndpointResolver()
         }

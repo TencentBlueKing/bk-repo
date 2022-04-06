@@ -115,6 +115,17 @@ class GenericLocalRepository : LocalRepository() {
         }
     }
 
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        super.onDownloadBefore(context)
+        // 文件默认下载，设置Content-Dispostition响应头
+        // preview == true时不设置Content-Dispostition响应头
+        val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
+        context.useDisposition = preview == null || preview == false
+        if (context.repo.name == REPORT) {
+            context.useDisposition = false
+        }
+    }
+
     /**
      * 支持目录下载
      * 目录下载会以zip包形式将目录下的文件打包下载
@@ -130,10 +141,6 @@ class GenericLocalRepository : LocalRepository() {
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
 
-            // 文件默认下载，设置Content-Dispostition响应头
-            // preview == true时不设置Content-Dispostition响应头
-            val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
-            useDisposition = preview == null || preview == false
             return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
         }
     }
@@ -257,7 +264,7 @@ class GenericLocalRepository : LocalRepository() {
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim()
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().toLowerCase()
                 if (key.isNotBlank()) {
                     metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }
@@ -299,5 +306,7 @@ class GenericLocalRepository : LocalRepository() {
          * 目录下载，目录大小阈值
          */
         private val BATCH_DOWNLOAD_SIZE_THRESHOLD = DataSize.ofGigabytes(10).toBytes()
+
+        private const val REPORT = "report"
     }
 }

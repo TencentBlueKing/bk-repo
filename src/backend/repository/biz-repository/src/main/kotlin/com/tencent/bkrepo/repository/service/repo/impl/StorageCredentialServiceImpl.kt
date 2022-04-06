@@ -92,7 +92,11 @@ class StorageCredentialServiceImpl(
         val storageCredentials = tStorageCredentials.credentials.readJsonString<StorageCredentials>()
 
         storageCredentials.apply {
-            cache = cache.copy(loadCacheFirst = request.loadCacheFirst, expireDays = request.expireDays)
+            cache = cache.copy(
+                loadCacheFirst = request.credentials.cache.loadCacheFirst,
+                expireDays = request.credentials.cache.expireDays
+            )
+            upload = upload.copy(localPath = request.credentials.upload.localPath)
         }
 
         tStorageCredentials.credentials = storageCredentials.toJsonString()

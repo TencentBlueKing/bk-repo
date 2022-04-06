@@ -38,19 +38,18 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.FULL_PATH
-import com.tencent.bkrepo.helm.constants.NAME
 import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_NAME
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
-import com.tencent.bkrepo.helm.constants.VERSION
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
@@ -60,6 +59,7 @@ import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmUtils
+import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import java.time.LocalDateTime
 import org.slf4j.Logger
@@ -69,12 +69,41 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ChartRepositoryServiceImpl(
-    private val helmProperties: HelmProperties
+    private val helmProperties: HelmProperties,
+    private val helmOperationService: HelmOperationService
 ) : AbstractChartService(), ChartRepositoryService {
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     override fun queryIndexYaml(artifactInfo: HelmArtifactInfo) {
+        lockAction(artifactInfo.projectId, artifactInfo.repoName) { downloadIndex(artifactInfo) }
+    }
+
+    private fun downloadIndex(artifactInfo: HelmArtifactInfo) {
+        // 创建仓库后，index.yaml文件时没有生成的，需要生成默认的
+        if (!exist(artifactInfo.projectId, artifactInfo.repoName, HelmUtils.getIndexCacheYamlFullPath())) {
+            val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
+                indexYamlMetadata = HelmUtils.initIndexYamlMetadata(),
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                operator = SecurityUtils.getUserId()
+            )
+            uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
+        }
         downloadIndexYaml()
+    }
+
+    /**
+     * 下载index.yaml （local类型仓库index.yaml存储时使用的name时index-cache.yaml，remote需要转换）
+     */
+    private fun downloadIndexYaml() {
+        val context = ArtifactDownloadContext(null, ObjectBuilderUtil.buildIndexYamlRequest())
+        context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
+        try {
+            ArtifactContextHolder.getRepository().download(context)
+        } catch (e: Exception) {
+            logger.warn("Error occurred while downloading index.yaml, error: ${e.message}")
+            throw HelmFileNotFoundException(e.message.toString())
+        }
     }
 
     @Synchronized
@@ -173,13 +202,6 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun installTgz(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        when (context.repositoryDetail.category) {
-            RepositoryCategory.REMOTE -> context.putAttribute(
-                FULL_PATH,
-                findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
-            )
-            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
-        }
         context.putAttribute(FILE_TYPE, CHART)
         try {
             ArtifactContextHolder.getRepository().download(context)
@@ -189,46 +211,10 @@ class ChartRepositoryServiceImpl(
         }
     }
 
-    /**
-     * 通过chart包名以及版本号查出对应remote仓库下载地址
-     */
-    private fun findRemoteArtifactFullPath(name: String): String {
-        logger.info("get remote url for downloading...")
-        val helmIndexYamlMetadata = queryOriginalIndexYaml()
-        val chartName = ChartParserUtil.parseNameAndVersion(name)[NAME]
-        val chartVersion = ChartParserUtil.parseNameAndVersion(name)[VERSION]
-        val chartList =
-            helmIndexYamlMetadata.entries[chartName]
-                ?: throw HelmFileNotFoundException("File [$name] can not be found.")
-        val helmChartMetadataList = chartList.filter {
-            chartVersion == it.version
-        }.toList()
-        return if (helmChartMetadataList.isNotEmpty()) {
-            require(helmChartMetadataList.size == 1) {
-                "find more than one version [$chartVersion] in package [$chartName]."
-            }
-            val urls = helmChartMetadataList.first().urls
-            if (urls.isNotEmpty()) {
-                urls.first()
-            } else {
-                throw HelmFileNotFoundException("File [$name] can not be found.")
-            }
-        } else {
-            throw HelmFileNotFoundException("File [$name] can not be found.")
-        }
-    }
-
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @Transactional(rollbackFor = [Throwable::class])
     override fun installProv(artifactInfo: HelmArtifactInfo) {
         val context = ArtifactDownloadContext()
-        when (context.repositoryDetail.category) {
-            RepositoryCategory.REMOTE -> context.putAttribute(
-                FULL_PATH,
-                findRemoteArtifactFullPath(artifactInfo.getArtifactFullPath())
-            )
-            RepositoryCategory.LOCAL -> context.putAttribute(FULL_PATH, artifactInfo.getArtifactFullPath())
-        }
         context.putAttribute(FILE_TYPE, PROV)
         try {
             ArtifactContextHolder.getRepository().download(context)
@@ -242,7 +228,14 @@ class ChartRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun regenerateIndexYaml(artifactInfo: HelmArtifactInfo) {
         when (getRepositoryInfo(artifactInfo).category) {
-            RepositoryCategory.LOCAL -> {
+            RepositoryCategory.REMOTE -> {
+                helmOperationService.initPackageInfo(
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    userId = SecurityUtils.getUserId()
+                )
+            }
+            else -> {
                 val nodeList = queryNodeList(artifactInfo, false)
                 logger.info(
                     "query node list for full refresh index.yaml success in repo [${artifactInfo.getRepoIdentify()}]" +
@@ -251,7 +244,6 @@ class ChartRepositoryServiceImpl(
                 val indexYamlMetadata = buildIndexYamlMetadata(nodeList, artifactInfo, true)
                 uploadIndexYamlMetadata(indexYamlMetadata).also { logger.info("Full refresh index.yaml success！") }
             }
-            else -> initIndexYaml(artifactInfo.projectId, artifactInfo.repoName)
         }
     }
 
@@ -260,8 +252,8 @@ class ChartRepositoryServiceImpl(
     override fun batchInstallTgz(artifactInfo: HelmArtifactInfo, startTime: LocalDateTime) {
         val context = ArtifactQueryContext()
         when (context.repositoryDetail.category) {
-            RepositoryCategory.LOCAL -> batchInstallLocalTgz(artifactInfo, startTime)
             RepositoryCategory.REMOTE -> throw HelmBadRequestException("illegal request")
+            else -> batchInstallLocalTgz(artifactInfo, startTime)
         }
     }
 

@@ -49,7 +49,6 @@ import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
-import com.tencent.bkrepo.common.plugin.api.PluginManager
 import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
@@ -129,8 +128,7 @@ class AuthServiceConfig {
         projectClient: ProjectClient,
         bkAuthConfig: BkAuthConfig,
         bkAuthPipelineService: BkAuthPipelineService,
-        bkAuthProjectService: BkAuthProjectService,
-        pluginManager: PluginManager
+        bkAuthProjectService: BkAuthProjectService
     ): PermissionService {
         logger.debug("init BkAuthPermissionServiceImpl")
         return BkAuthPermissionServiceImpl(

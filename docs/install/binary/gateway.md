@@ -51,13 +51,13 @@ cd /usr/local/openresty/nginx && ./sbin/nginx -v
 
 网关主要是配置文件和lua脚本，所以只需要将网关gateway的外链到nginx的conf目录
 
-- 先配置$WORK_DIR/bkrepo/scripts/bkrepo.env相关参数
+- 先配置$WORK_DIR/bkrepo/scripts/repo.env相关参数
 - 执行render命令生成网关的模板文件
 
 ```shell
 cd $WORK_DIR/bkrepo/scripts
 chmod +x render_tpl
-./render_tpl -u -p /data/bkee -m bkrepo -e bkrepo.env $WORK_DIR/bkrepo/support-files/templates/gateway*
+./render_tpl -u -p /data/bkee -m bkrepo -e repo.env $WORK_DIR/bkrepo/support-files/templates/gateway*
 ```
 
 - 将`$WORK_DIR/bkrepo/gateway`的nginx配置目录软连到nginx的conf目录下

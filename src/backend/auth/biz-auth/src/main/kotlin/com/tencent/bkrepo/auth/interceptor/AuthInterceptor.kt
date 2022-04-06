@@ -31,10 +31,7 @@
 
 package com.tencent.bkrepo.auth.interceptor
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
-import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
-import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
-import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.constant.*
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -61,6 +58,7 @@ class AuthInterceptor : HandlerInterceptor {
         val basicAuthHeader = request.getHeader(AUTHORIZATION).orEmpty()
         val authFailStr = String.format(AUTH_FAILED_RESPONSE, basicAuthHeader)
         try {
+            val urlMatch = basicAuthApiList.filter { request.requestURI.contains(it) }.size
 
             // basic认证
             if (basicAuthHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
@@ -68,11 +66,18 @@ class AuthInterceptor : HandlerInterceptor {
                 val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
                 val parts = decodedHeader.split(COLON)
                 require(parts.size == 2)
-                userService.findUserByUserToken(parts[0], parts[1]) ?: run {
+                val user = userService.findUserByUserToken(parts[0], parts[1]) ?: run {
                     logger.warn("find no user [${parts[0]}]")
                     throw IllegalArgumentException("check credential fail")
                 }
+
                 request.setAttribute(USER_KEY, parts[0])
+
+                // 非项目内认证账号
+                if (urlMatch == 0 && !user.admin) {
+                    logger.warn("user [${parts[0]}] is not admin")
+                    throw IllegalArgumentException("check credential fail")
+                }
                 return true
             }
 
@@ -100,5 +105,13 @@ class AuthInterceptor : HandlerInterceptor {
 
     companion object {
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
+
+        private val basicAuthApiList = listOf(
+            AUTH_REPO_SUFFIX,
+            AUTH_PROJECT_SUFFIX,
+            AUTH_API_ACCOUNT_PREFIX,
+            AUTH_API_KEY_PREFIX,
+            AUTH_API_OAUTH_PREFIX
+        )
     }
 }

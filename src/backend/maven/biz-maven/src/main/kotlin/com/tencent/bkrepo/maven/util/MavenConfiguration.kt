@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
-import com.tencent.bkrepo.maven.CHECKSUM_POLICY
-import com.tencent.bkrepo.maven.MAX_UNIQUE_SNAPSHOTS
-import com.tencent.bkrepo.maven.SNAPSHOT_BEHAVIOR
+import com.tencent.bkrepo.maven.constants.CHECKSUM_POLICY
+import com.tencent.bkrepo.maven.constants.MAX_UNIQUE_SNAPSHOTS
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_BEHAVIOR
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotNonUniqueUri
@@ -48,7 +48,7 @@ object MavenConfiguration {
                 when (it) {
                     1 -> SnapshotBehaviorType.NON_UNIQUE
                     2 -> SnapshotBehaviorType.DEPLOYER
-                    // 建议配置为 0 
+                    // 建议配置为 0
                     else -> SnapshotBehaviorType.UNIQUE
                 }
             }

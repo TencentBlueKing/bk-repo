@@ -34,22 +34,16 @@ package com.tencent.bkrepo.helm.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
 import com.tencent.bkrepo.helm.constants.PROV
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
-import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
-import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
-import com.tencent.bkrepo.helm.pojo.chart.ChartPackageDeleteRequest
-import com.tencent.bkrepo.helm.pojo.chart.ChartVersionDeleteRequest
 import com.tencent.bkrepo.helm.service.ChartManipulationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -104,18 +98,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
                 )
             }
             val context = ArtifactRemoveContext()
-            repository.remove(context)
-            when (context.repositoryDetail.category) {
-                RepositoryCategory.LOCAL -> {
-                    publishEvent(
-                        ChartVersionDeleteEvent(
-                            ChartVersionDeleteRequest(
-                                projectId, repoName, PackageKeys.resolveHelm(packageName), version, userId
-                            )
-                        )
-                    )
-                }
-            }
+            ArtifactContextHolder.getRepository().remove(context)
         }
     }
 
@@ -128,16 +111,7 @@ class ChartManipulationServiceImpl : AbstractChartService(), ChartManipulationSe
                 throw HelmFileNotFoundException("remove package $packageName failed: no such file or directory")
             }
             val context = ArtifactRemoveContext()
-            repository.remove(context)
-            when (context.repositoryDetail.category) {
-                RepositoryCategory.LOCAL -> {
-                    publishEvent(
-                        ChartDeleteEvent(
-                            ChartPackageDeleteRequest(projectId, repoName, PackageKeys.resolveHelm(packageName), userId)
-                        )
-                    )
-                }
-            }
+            ArtifactContextHolder.getRepository().remove(context)
         }
     }
 

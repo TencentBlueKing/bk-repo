@@ -30,7 +30,10 @@
  */
 package com.tencent.bkrepo.oci.constant
 
-const val OCI_API_PREFIX = "v2"
+const val OCI_API_PREFIX = "v2/"
+const val OCI_FILTER_ENDPOINT = "/v2/"
+
+const val PROJECT_TYPE = "OCI"
 
 const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
 const val DOCKER_API_VERSION = "registry/2.0"
@@ -42,6 +45,21 @@ const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 
 const val MANIFEST = "manifest.json"
+const val MEDIA_TYPE = "mediaType"
+const val DIGEST = "oci_digest"
+const val SIZE = "size"
+const val SCHEMA_VERSION = "schemaVersion"
+const val IMAGE_VERSION = "blob_version"
+const val MANIFEST_DIGEST = "manifest_digest"
+const val FORCE = "force"
+const val MEDIA_TYPE_ALL = "*/*"
+const val FILE_EXTENSION = "tgz"
+const val CHART_YAML = "Chart.yaml"
+const val APP_VERSION = "appVersion"
+const val DESCRIPTION = "description"
+const val NAME = "name"
+const val PACKAGE_KEY = "packageKey"
+const val VERSION = "version"
 
 // OCIScheme is the URL scheme for OCI-based requests
 const val OCI_SCHEME = "oci"
@@ -62,3 +80,33 @@ const val PROV_LAYER_MEDIA_TYPE = "application/vnd.cncf.helm.chart.provenance.v1
 const val LEGACY_CHART_LAYER_MEDIA_TYPE = "application/tar+gzip"
 
 const val OCI_IMAGE_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json"
+
+// Content Descriptor
+const val CONTENT_DESCRIPTOR_MEDIA_TYPE = "application/vnd.oci.descriptor.v1+json"
+
+// OCI Layout
+const val LAYOUT_MEDIA_TYPE = "application/vnd.oci.layout.header.v1+json"
+
+// Image Index
+const val IMAGE_INDEX_MEDIA_TYPE = "application/vnd.oci.image.index.v1+json"
+
+// Image config
+const val IMAGE_CONFIG_MEDIA_TYPE = "application/vnd.oci.image.config.v1+json"
+
+// "Layer", as a tar archive
+const val LAYER_TAR_MEDIA_TYPE = "application/vnd.oci.image.layer.v1.tar"
+
+// "Layer", as a tar archive compressed with gzip
+const val LAYER_TAR_GZIP_MEDIA_TYPE = "application/vnd.oci.image.layer.v1.tar+gzip"
+
+// "Layer", as a tar archive compressed with zstd
+const val LAYER_TAR_ZSTD_MEDIA_TYPE = "application/vnd.oci.image.layer.v1.tar+zstd"
+
+// "Layer", as a tar archive with distribution restrictions
+const val LAYER_TAR_DISTRIBUTION_MEDIA_TYPE = "application/vnd.oci.image.layer.nondistributable.v1.tar"
+
+// "Layer", as a tar archive with distribution restrictions compressed with gzip
+const val LAYER_TAR_GZIP_DISTRIBUTION_MEDIA_TYPE = "application/vnd.oci.image.layer.nondistributable.v1.tar+gzip"
+
+// "Layer", as a tar archive with distribution restrictions compressed with zstd
+const val LAYER_TAR_ZSTD_DISTRIBUTION_MEDIA_TYPE = "application/vnd.oci.image.layer.nondistributable.v1.tar+zstd"

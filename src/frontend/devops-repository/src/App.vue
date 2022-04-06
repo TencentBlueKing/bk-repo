@@ -83,7 +83,13 @@
             }
         },
         methods: {
-            ...mapActions(['getProjectList', 'ajaxUserInfo', 'checkPM', 'getRepoUserList', 'getClusterList'])
+            ...mapActions([
+                'getProjectList',
+                'ajaxUserInfo',
+                'checkPM',
+                'getRepoUserList',
+                'getClusterList'
+            ])
         }
     }
 </script>

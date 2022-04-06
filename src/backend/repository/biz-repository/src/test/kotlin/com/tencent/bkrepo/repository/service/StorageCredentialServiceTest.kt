@@ -119,10 +119,27 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         assertEquals(10, storageCredentials.cache.expireDays)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, storageCredentials.key)
 
-        val updateReq = StorageCredentialsUpdateRequest(false, -1, UT_STORAGE_CREDENTIALS_KEY)
-        val updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
+        var updateCredentialsPayload = storageCredentials.apply {
+            cache = cache.copy(loadCacheFirst = false, expireDays = -1)
+        }
+        var updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
+        var updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
         assertEquals(false, updatedStorageCredentials.cache.loadCacheFirst)
         assertEquals(-1, updatedStorageCredentials.cache.expireDays)
+        assertEquals(storageCredentials.upload.localPath, updatedStorageCredentials.upload.localPath)
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
+
+        val localPath = "/test"
+        updateCredentialsPayload = storageCredentials.apply {
+            cache = cache.copy(loadCacheFirst = true, expireDays = 10)
+            upload = upload.copy(localPath = localPath)
+        }
+        updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
+        updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
+        assertEquals(localPath, updatedStorageCredentials.upload.localPath)
+        assertEquals(true, updatedStorageCredentials.cache.loadCacheFirst)
+        assertEquals(10, updatedStorageCredentials.cache.expireDays)
+        assertEquals(localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
     }
 

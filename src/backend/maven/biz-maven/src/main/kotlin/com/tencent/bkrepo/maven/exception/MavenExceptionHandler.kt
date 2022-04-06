@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
+import org.springframework.web.HttpMediaTypeNotAcceptableException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -63,6 +64,13 @@ class MavenExceptionHandler {
         mavenResponse(errorResponse, exception)
     }
 
+    @ExceptionHandler(MavenRequestForbiddenException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleException(exception: MavenRequestForbiddenException) {
+        val errorResponse = MavenExceptionResponse(HttpStatus.FORBIDDEN.toString(), exception.message)
+        mavenResponse(errorResponse, exception)
+    }
+
     @ExceptionHandler(MavenArtifactNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handleArtifactNotFoundException(exception: MavenArtifactNotFoundException) {
@@ -81,6 +89,13 @@ class MavenExceptionHandler {
     @ExceptionHandler(MavenArtifactFormatException::class)
     @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
     fun handleException(exception: MavenArtifactFormatException) {
+        val errorResponse = MavenExceptionResponse(HttpStatus.NOT_ACCEPTABLE.toString(), exception.message)
+        mavenResponse(errorResponse, exception)
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException::class)
+    @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+    fun handleException(exception: HttpMediaTypeNotAcceptableException) {
         val errorResponse = MavenExceptionResponse(HttpStatus.NOT_ACCEPTABLE.toString(), exception.message)
         mavenResponse(errorResponse, exception)
     }

@@ -41,7 +41,7 @@ import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
-import com.tencent.bkrepo.repository.util.PipelineRepoUtils
+import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 
@@ -52,7 +52,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class RepoNameRuleInterceptor(
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val repositoryService: RepositoryService
 ) : QueryRuleInterceptor {
 
     override fun match(rule: Rule): Boolean {
@@ -117,14 +118,14 @@ class RepoNameRuleInterceptor(
     ): Rule.QueryRule {
         val repoNameList = if (permissionManager.enableAuth()) {
             val userId = SecurityUtils.getUserId()
-            permissionManager.listPermissionRepo(
+            repositoryService.listPermissionRepo(
                 userId = userId,
                 projectId = projectId,
                 option = RepoListOption()
             )
         } else {
-            permissionManager.listRepo(projectId = projectId)
-        }.data?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
+            repositoryService.listRepo(projectId = projectId)
+        }?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
         return if (repoNameList.isNullOrEmpty()) {
             throw PermissionException(
                 "${SecurityUtils.getUserId()} hasn't any PermissionRepo in project [$projectId], " +
@@ -142,11 +143,9 @@ class RepoNameRuleInterceptor(
         repoName: String,
         repoPublic: Boolean? = null
     ): Boolean {
-        // 禁止查询pipeline仓库
         if (SecurityUtils.isServiceRequest()) {
             return true
         }
-        PipelineRepoUtils.checkPipeline(repoName)
         return try {
             permissionManager.checkRepoPermission(
                 action = PermissionAction.READ,

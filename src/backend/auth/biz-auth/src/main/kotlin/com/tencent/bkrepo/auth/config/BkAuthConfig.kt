@@ -31,23 +31,11 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthServiceCode
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
 @Component
 class BkAuthConfig {
-    /**
-     * auth 环境名称
-     */
-    @Value("\${auth.devops.envName:}")
-    var authEnvName: String = ""
-
-    /**
-     * auth 服务器地址
-     */
-    @Value("\${auth.devops.authServer:}")
-    private var authServer: String = ""
 
     /**
      * auth 服务器地址
@@ -60,18 +48,6 @@ class BkAuthConfig {
      */
     @Value("\${auth.devops.ciAuthToken:}")
     private var ciAuthToken: String = ""
-
-    /**
-     * 流水线资源 appSecret
-     */
-    @Value("\${auth.devops.pipelineSecret:}")
-    var pipelineSecret: String = ""
-
-    /**
-     * 版本仓库资源 appSecret
-     */
-    @Value("\${auth.devops.artifactorySecret:}")
-    var artifactorySecret: String = ""
 
     /**
      * 蓝盾平台appId集合
@@ -92,25 +68,10 @@ class BkAuthConfig {
     var bcsAppId: String = ""
 
     /**
-     * 是否允许蓝盾匿名用户请求
+     * bkrepo平台appId
      */
-    @Value("\${auth.devops.allowAnonymous:true}")
-    var devopsAllowAnonymous: Boolean = true
-
-    fun getAppSecret(serviceCode: BkAuthServiceCode): String {
-        return when (serviceCode) {
-            BkAuthServiceCode.PIPELINE -> pipelineSecret
-            BkAuthServiceCode.ARTIFACTORY -> artifactorySecret
-        }
-    }
-
-    fun getBkAuthServer(): String {
-        return if (authServer.startsWith("http://") || authServer.startsWith("https://")) {
-            authServer.removeSuffix("/")
-        } else {
-            "http://$authServer"
-        }
-    }
+    @Value("\${auth.devops.bkrepoAppId:}")
+    var bkrepoAppId: String = ""
 
     fun getBkciAuthServer(): String {
         return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {
@@ -118,10 +79,6 @@ class BkAuthConfig {
         } else {
             "http://$ciAuthServer"
         }
-    }
-
-    fun choseBkAuth(): Boolean {
-        return ciAuthServer.isBlank()
     }
 
     fun setBkciAuthServer(authServer: String) {

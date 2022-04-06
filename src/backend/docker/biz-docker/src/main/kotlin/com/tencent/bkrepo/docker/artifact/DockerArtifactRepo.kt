@@ -91,6 +91,9 @@ class DockerArtifactRepo @Autowired constructor(
     @Value("\${docker.domain: ''}")
     val domain: String = EMPTY
 
+    @Value("\${docker.http: false}")
+    val enableHttp: Boolean = false
+
     /**
      * start a append upload
      * @param context the request context params

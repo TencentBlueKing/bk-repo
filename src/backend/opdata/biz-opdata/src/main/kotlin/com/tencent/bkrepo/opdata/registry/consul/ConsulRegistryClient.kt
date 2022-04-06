@@ -29,7 +29,6 @@ package com.tencent.bkrepo.opdata.registry.consul
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.opdata.config.OkHttpConfiguration.Companion.OP_OKHTTP_CLIENT_NAME
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceNotFound
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
@@ -46,17 +45,10 @@ import com.tencent.bkrepo.opdata.util.throwExceptionOnRequestFailed
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.internal.Util.EMPTY_REQUEST
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.cloud.consul.ConditionalOnConsulEnabled
 import org.springframework.cloud.consul.ConsulProperties
-import org.springframework.stereotype.Component
 
-@Component
-@ConditionalOnConsulEnabled
-class ConsulRegistryClient @Autowired constructor(
-    @Qualifier(OP_OKHTTP_CLIENT_NAME) private val httpClient: OkHttpClient,
+class ConsulRegistryClient constructor(
+    private val httpClient: OkHttpClient,
     private val consulProperties: ConsulProperties
 ) : RegistryClient {
 
@@ -215,8 +207,6 @@ class ConsulRegistryClient @Autowired constructor(
         .port(consulProperties.port)
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ConsulRegistryClient::class.java)
-
         private const val CONSUL_DEFAULT_SCHEME = "http"
 
         private const val CONSUL_QUERY_PARAM_ENABLE = "enable"
