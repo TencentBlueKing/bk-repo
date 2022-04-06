@@ -54,7 +54,7 @@ class ScanController @Autowired constructor(
     }
 
     override fun pullSubTask(): Response<SubScanTask?> {
-        return ResponseBuilder.success(scanService.pullSubScanTask())
+        return ResponseBuilder.success(scanService.pull())
     }
 
     override fun updateSubScanTaskStatus(subScanTaskId: String, status: String): Response<Boolean> {

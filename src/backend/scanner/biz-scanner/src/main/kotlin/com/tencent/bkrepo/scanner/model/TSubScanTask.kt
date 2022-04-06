@@ -33,7 +33,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 /**
- * 扫描子任务
+ * 正在扫描的子任务，查询比较频繁，单独一张表
  */
 @Document("sub_scan_task")
 @CompoundIndexes(
@@ -48,36 +48,56 @@ import java.time.LocalDateTime
         background = true
     )
 )
-data class TSubScanTask(
-    val id: String? = null,
-    val createdDate: LocalDateTime,
-    val lastModifiedDate: LocalDateTime,
-    /**
-     * 所属扫描任务
-     */
-    val parentScanTaskId: String,
-    /**
-     * 子任务状态
-     */
-    val status: String,
-    /**
-     * 已经执行的次数
-     */
-    val executedTimes: Int,
-    /**
-     * 使用的扫描器
-     */
-    val scanner: String,
-    /**
-     * 文件sha256
-     */
-    val sha256: String,
-    /**
-     * 文件大小
-     */
-    val size: Long,
-    /**
-     * 文件所在存储使用的凭据
-     */
-    val credentialsKey: String?
+class TSubScanTask(
+    id: String? = null,
+    createdDate: LocalDateTime,
+    createdBy: String,
+    lastModifiedDate: LocalDateTime,
+    lastModifiedBy: String,
+    startDateTime: LocalDateTime? = null,
+
+    parentScanTaskId: String,
+    planId: String?,
+
+    projectId: String,
+    repoName: String,
+    repoType: String,
+    packageKey: String? = null,
+    version: String? = null,
+    fullPath: String,
+    artifactName: String,
+
+    status: String,
+    executedTimes: Int,
+    scanner: String,
+    scannerType: String,
+    sha256: String,
+    size: Long,
+    credentialsKey: String?
+) : SubScanTaskDefinition(
+    id = id,
+    createdDate = createdDate,
+    createdBy = createdBy,
+    lastModifiedDate = lastModifiedDate,
+    lastModifiedBy = lastModifiedBy,
+    startDateTime = startDateTime,
+    parentScanTaskId = parentScanTaskId,
+    planId = planId,
+
+    projectId = projectId,
+    repoName = repoName,
+    repoType = repoType,
+    packageKey = packageKey,
+    version = version,
+    fullPath = fullPath,
+    artifactName = artifactName,
+
+    status = status,
+    executedTimes = executedTimes,
+    scanner = scanner,
+    scannerType = scannerType,
+    sha256 = sha256,
+    size = size,
+    credentialsKey = credentialsKey,
+    scanResultOverview = null
 )

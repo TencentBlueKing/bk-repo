@@ -29,9 +29,8 @@ package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.CredentialsKeyFiles
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -43,7 +42,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
+class SubScanTaskDao : AbsSubScanTaskDao<TSubScanTask>() {
 
     fun findByCredentialsKeyAndSha256List(credentialsKeyFiles: List<CredentialsKeyFiles>): List<TSubScanTask> {
         val criteria = Criteria()
@@ -74,6 +73,7 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
      *
      * @param subTaskId 待更新的子任务id
      * @param status 更新后的任务状态
+     * @param oldStatus 更新前的任务状态，只有旧状态匹配时才会更新
      * @param lastModifiedDate 最后更新时间，用于充当乐观锁，只有最后修改时间匹配时候才更新
      *
      * @return 更新结果
@@ -81,17 +81,21 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
     fun updateStatus(
         subTaskId: String,
         status: SubScanTaskStatus,
+        oldStatus: SubScanTaskStatus? = null,
         lastModifiedDate: LocalDateTime? = null
     ): UpdateResult {
+        val now = LocalDateTime.now()
         val criteria = Criteria.where(ID).isEqualTo(subTaskId)
-        if (lastModifiedDate != null) {
-            criteria.and(TSubScanTask::lastModifiedDate.name).isEqualTo(lastModifiedDate)
-        }
+
+        oldStatus?.let { criteria.and(TSubScanTask::status.name).isEqualTo(it.name) }
+        lastModifiedDate?.let { criteria.and(TSubScanTask::lastModifiedDate.name).isEqualTo(it) }
+
         val query = Query(criteria)
         val update = Update()
-            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TSubScanTask::lastModifiedDate.name, now)
             .set(TSubScanTask::status.name, status.name)
         if (status == SubScanTaskStatus.EXECUTING) {
+            update.set(TSubScanTask::startDateTime.name, now)
             update.inc(TSubScanTask::executedTimes.name, 1)
         }
         return updateFirst(query, update)
@@ -123,4 +127,12 @@ class SubScanTaskDao : SimpleMongoDao<TSubScanTask>() {
         val criteria = TSubScanTask::lastModifiedDate.lt(beforeDate)
         return findOne(Query(criteria))
     }
+
+    override fun artifactPlanRelationAggregateResultClass(): Class<*> {
+        return ArtifactPlanRelationAggregateResult::class.java
+    }
+
+    class ArtifactPlanRelationAggregateResult(
+        artifactSubScanTasks: List<TSubScanTask>
+    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TSubScanTask>(artifactSubScanTasks)
 }

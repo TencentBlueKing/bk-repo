@@ -13,7 +13,7 @@
 
 ```json
 {
-  "scanner": "bin-auditor",
+  "scanner": "default",
   "rule": {
     "relation": "AND",
     "rules": [
@@ -81,8 +81,8 @@
     "scanning": 0,
     "failed": 0,
     "scanned": 0,
-    "scanner": "bin-auditor",
-    "scannerType": "BinAuditor",
+    "scanner": "default",
+    "scannerType": "arrowhead",
     "scannerVersion": "1::1",
     "scanResultOverview": null
   },
@@ -163,8 +163,8 @@
     "scanning": 0,
     "failed": 0,
     "scanned": 1307,
-    "scanner": "bin-auditor",
-    "scannerType": "BinAuditor",
+    "scanner": "default",
+    "scannerType": "arrowhead",
     "scannerVersion": "1::1",
     "scanResultOverview": {
       "sensitiveUriCount": 4
@@ -237,8 +237,8 @@
                 "scanning": 1,
                 "failed": 0,
                 "scanned": 0,
-                "scanner": "bin-auditor",
-                "scannerType": "BinAuditor",
+                "scanner": "default",
+                "scannerType": "arrowhead",
                 "scannerVersion": "1::1",
                 "scanResultOverview": null
             }

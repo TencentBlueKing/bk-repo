@@ -32,11 +32,15 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
+import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
+import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 
@@ -51,6 +55,28 @@ interface ScanService {
      * @param triggerType 触发类型
      */
     fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask
+
+    /**
+     * 扫描单个文件
+     *
+     * @param request 扫描请求
+     */
+    fun singleScan(request: SingleScanRequest): ScanTask
+
+    /**
+     * 停止子任务
+     *
+     * @param projectId 项目id
+     * @param subtaskId 子任务id
+     *
+     * @return true 停止成功，false 停止失败
+     */
+    fun stopSubtask(projectId: String, subtaskId: String): Boolean
+
+    /**
+     * 匹配文件扫描
+     */
+    fun matchPlanScan(request: MatchPlanSingleScanRequest): List<ScanTask>
 
     /**
      * 获取扫描任务
@@ -90,6 +116,11 @@ interface ScanService {
     fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail
 
     /**
+     * 获取文件扫描报告详情
+     */
+    fun resultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo>
+
+    /**
      * 更新子扫描任务状态
      *
      * @param subScanTaskId 子任务id
@@ -104,5 +135,5 @@ interface ScanService {
      *
      * @return 没有可执行的任务时返回null，否则返回一个待执行的任务
      */
-    fun pullSubScanTask(): SubScanTask?
+    fun pull(): SubScanTask?
 }

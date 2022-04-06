@@ -5,9 +5,9 @@ spring:
   task:
     execution:
       pool:
-        core-size: 8
-        max-size: 8
-        queue-capacity: 32
+        core-size: 16
+        max-size: 32
+        queue-capacity: 0
         allow-core-thread-timeout: true
       shutdown:
         await-termination: true

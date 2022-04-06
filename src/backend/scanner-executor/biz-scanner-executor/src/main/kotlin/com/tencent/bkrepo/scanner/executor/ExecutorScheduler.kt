@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.scanner.executor
 
+import com.sun.management.OperatingSystemMXBean
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
@@ -13,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
-import java.io.InputStream
+import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicInteger
 
 @Component
@@ -26,15 +29,24 @@ class ExecutorScheduler @Autowired constructor(
 ) {
 
     private val executingCount = AtomicInteger(0)
+    private val operatingSystemBean by lazy { ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean }
+
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun scan() {
-        if (allowExecute()) {
-            scanClient.pullSubTask().data?.let {
-                scanClient.updateSubScanTaskStatus(it.taskId, SubScanTaskStatus.EXECUTING.name)
-                executor.execute { doScan(it)  }
-                executingCount.incrementAndGet()
-                logger.info("executing task count ${executingCount.get()}")
+        while (allowExecute()) {
+            val subtask = scanClient.pullSubTask().data ?: break
+            scanClient.updateSubScanTaskStatus(subtask.taskId, SubScanTaskStatus.EXECUTING.name)
+
+            executingCount.incrementAndGet()
+            logger.info("task start, executing task count ${executingCount.get()}")
+            executor.execute {
+                try {
+                    doScan(subtask)
+                } finally {
+                    executingCount.decrementAndGet()
+                    logger.info("task finished, executing task count ${executingCount.get()}")
+                }
             }
         }
     }
@@ -43,49 +55,77 @@ class ExecutorScheduler @Autowired constructor(
      * 是否允许执行扫描
      */
     private fun allowExecute(): Boolean {
-        return executingCount.get() <= MAX_ALLOW_TASK_COUNT
+        return executingCount.get() < operatingSystemBean.totalPhysicalMemorySize / MEMORY_PER_TASK
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
     private fun doScan(subScanTask: SubScanTask) {
-        val storageCredentials = subScanTask.credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
-        val artifactInputStream =
-            storageService.load(subScanTask.sha256, Range.full(subScanTask.size), storageCredentials)
-        if (artifactInputStream == null) {
-            logger.warn(
-                "Load storage file failed: " +
-                        "sha256[${subScanTask.sha256}, credentials: [${subScanTask.credentialsKey}]"
-            )
-            return
-        }
+        with(subScanTask) {
+            val startTimestamp = System.currentTimeMillis()
 
-        artifactInputStream.use {
-            val executorTask = convert(subScanTask, it)
-            scanExecutorFactory.get(subScanTask.scanner.type).scan(executorTask) { result ->
-                val request = ReportResultRequest(subScanTask.taskId, subScanTask.parentScanTaskId, result)
-                scanClient.report(request)
+            // 1. 加载文件
+            logger.info("start load file[$sha256]")
+            val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
+            val artifactInputStream = storageService.load(sha256, Range.full(size), storageCredentials)
+            // 加载文件失败，直接返回
+            if (artifactInputStream == null) {
+                logger.warn("Load storage file failed: sha256[${sha256}, credentials: [${credentialsKey}]")
+                report(taskId, parentScanTaskId, startTimestamp)
+                return
             }
+            logger.info("load file[$sha256] success, elapse ${System.currentTimeMillis() - startTimestamp}")
+
+            // 2. 执行扫描任务
+            logger.info("start to scan file[$sha256]")
+            val executorTask = convert(subScanTask, artifactInputStream)
+            val executor = scanExecutorFactory.get(subScanTask.scanner.type)
+            val result = executor.scan(executorTask)
+            val finishedTimestamp = System.currentTimeMillis()
+            val timeSpent = finishedTimestamp - startTimestamp
+            logger.info("scan finished[${result.scanStatus}], time spent $timeSpent, reporting result")
+
+            // 3. 上报扫描结果
+            report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)
         }
-        executingCount.decrementAndGet()
-        logger.info("executing task count ${executingCount.get()}")
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun convert(subScanTask: SubScanTask, inputStream: InputStream): ScanExecutorTask {
+    private fun convert(subScanTask: SubScanTask, artifactInputStream: ArtifactInputStream): ScanExecutorTask {
         with(subScanTask) {
             return ScanExecutorTask(
                 taskId = taskId,
                 parentTaskId = parentScanTaskId,
-                inputStream = inputStream,
+                inputStream = artifactInputStream,
                 scanner = scanner,
                 sha256 = sha256
             )
         }
     }
 
+    private fun report(
+        subtaskId: String,
+        parentTaskId: String,
+        startTimestamp: Long,
+        finishedTimestamp: Long = System.currentTimeMillis(),
+        result: ScanExecutorResult? = null
+    ) {
+        val request = ReportResultRequest(
+            subTaskId = subtaskId,
+            parentTaskId = parentTaskId,
+            startTimestamp = startTimestamp,
+            finishedTimestamp = finishedTimestamp,
+            scanStatus = result?.scanStatus ?: SubScanTaskStatus.FAILED.name,
+            scanExecutorResult = result
+        )
+        scanClient.report(request)
+    }
+
     companion object {
         private const val FIXED_DELAY = 3000L
         private val logger = LoggerFactory.getLogger(ExecutorScheduler::class.java)
-        private const val MAX_ALLOW_TASK_COUNT = 4
+
+        /**
+         * 每个任务使用的内存大小未为2GiB
+         */
+        private const val MEMORY_PER_TASK = 2 * 1024 * 1024 * 1024L
     }
 }

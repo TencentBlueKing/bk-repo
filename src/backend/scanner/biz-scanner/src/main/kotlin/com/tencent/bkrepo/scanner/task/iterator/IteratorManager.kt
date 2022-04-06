@@ -27,11 +27,13 @@
 
 package com.tencent.bkrepo.scanner.task.iterator
 
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.ProjectClient
+import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import org.springframework.stereotype.Component
 
@@ -40,8 +42,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 class IteratorManager(
-    private val projectClient: ProjectClient,
-    private val nodeClient: NodeClient
+    private val nodeClient: NodeClient,
+    private val packageClient: PackageClient
 ) {
     /**
      * 创建待扫描文件迭代器
@@ -49,17 +51,19 @@ class IteratorManager(
      * @param scanTask 扫描任务
      * @param resume 是否从之前的扫描进度恢复
      */
-    fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): NodeIterator {
-        val rule = scanTask.rule
+    fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
+        val rule = scanTask.rule ?: scanTask.scanPlan?.rule
 
         // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
         require(rule is Rule.NestedRule)
         val projectIds = projectIdsFromRule(rule)
         val projectIdIterator = projectIds.iterator()
-//        ProjectIdIterator(projectClient)
 
-        val position = NodeIterator.NodeIteratePosition(rule)
-        return NodeIterator(projectIdIterator, nodeClient, position)
+        return if (scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name) {
+            PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))
+        } else {
+            NodeIterator(projectIdIterator, nodeClient, NodeIterator.NodeIteratePosition(rule))
+        }
     }
 
     /**

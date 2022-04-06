@@ -390,7 +390,8 @@ class DockerV2LocalRepoService @Autowired constructor(
             val mountDigest = DockerDigest(mount)
             val mountableBlob = BlobUtil.getBlobByName(artifactRepo, context, mountDigest.fileName())
             mountableBlob?.let {
-                val location = ResponseUtil.getDockerURI("${context.artifactName}$BLOB_PATTERN/$mount", httpHeaders)
+                val path = "${context.artifactName}$BLOB_PATTERN/$mount"
+                val location = ResponseUtil.getDockerURI(path, httpHeaders, artifactRepo.enableHttp)
                 logger.info("found accessible blob at [$mountableBlob] to mount  [$context,$mount]")
                 return ResponseEntity.status(HttpStatus.CREATED).apply {
                     header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
@@ -404,12 +405,13 @@ class DockerV2LocalRepoService @Autowired constructor(
             }
         }
         val uuid = artifactRepo.startAppend(context)
-        var startUrl: String
+        var path: String
         with(context) {
-            startUrl = "$projectId/$repoName/$artifactName/blobs/uploads/$uuid"
+            path = "$projectId/$repoName/$artifactName/blobs/uploads/$uuid"
         }
 
-        val location = ResponseUtil.getDockerURI(startUrl, httpHeaders)
+        val location = ResponseUtil.getDockerURI(path, httpHeaders, artifactRepo.enableHttp)
+        logger.info("upload location [$location]")
         return ResponseEntity.status(HttpStatus.ACCEPTED).apply {
             header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         }.apply {
@@ -442,7 +444,7 @@ class DockerV2LocalRepoService @Autowired constructor(
             logger.info("patch upload blob [$context, $uuid]")
             val appendId = artifactRepo.writeAppend(context, uuid, file)
             val url = "$projectId/$repoName/$artifactName/blobs/uploads/$uuid"
-            val location = ResponseUtil.getDockerURI(url, httpHeaders)
+            val location = ResponseUtil.getDockerURI(url, httpHeaders, artifactRepo.enableHttp)
             return ResponseEntity.status(HttpStatus.ACCEPTED).apply {
                 header(CONTENT_LENGTH, DOCKER_LENGTH_EMPTY)
             }.apply {
@@ -562,7 +564,8 @@ class DockerV2LocalRepoService @Autowired constructor(
             logger.warn("error upload blob [$blobPath]")
             return DockerV2Errors.blobUploadInvalid(context.artifactName)
         }
-        val location = ResponseUtil.getDockerURI("${context.artifactName}$BLOB_PATTERN/$digest", httpHeaders)
+        val path = "${context.artifactName}$BLOB_PATTERN/$digest"
+        val location = ResponseUtil.getDockerURI(path, httpHeaders, artifactRepo.enableHttp)
         return ResponseEntity.created(location).apply {
             header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         }.apply {
@@ -581,7 +584,7 @@ class DockerV2LocalRepoService @Autowired constructor(
         with(context) {
             url = "$projectId/$repoName/$artifactName$BLOB_PATTERN/$digest"
         }
-        val location = ResponseUtil.getDockerURI(url, httpHeaders)
+        val location = ResponseUtil.getDockerURI(url, httpHeaders, artifactRepo.enableHttp)
         return ResponseEntity.created(location).apply {
             header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         }.apply {
