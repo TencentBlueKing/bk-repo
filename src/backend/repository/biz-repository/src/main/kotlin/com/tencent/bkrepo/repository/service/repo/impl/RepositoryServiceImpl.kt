@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.RepositoryDao
@@ -71,6 +72,8 @@ import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.repository.util.RepoEventFactory.buildUpdatedEvent
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
@@ -83,8 +86,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * 仓库服务实现类
@@ -97,7 +98,8 @@ class RepositoryServiceImpl(
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties,
-    private val servicePermissionResource: ServicePermissionResource
+    private val servicePermissionResource: ServicePermissionResource,
+    private val eventSupplier: EventSupplier
 ) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
@@ -237,7 +239,13 @@ class RepositoryServiceImpl(
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
                 repositoryDao.insert(repository)
-                publishEvent(buildCreatedEvent(repoCreateRequest))
+                val event = buildCreatedEvent(repoCreateRequest)
+                publishEvent(event)
+                eventSupplier.delegateToSupplier(
+                    event = event,
+                    topic = event.topic,
+                    key = event.getFullResourceKey()
+                )
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository, storageCredential)!!
             } catch (exception: DuplicateKeyException) {

@@ -30,31 +30,37 @@ package com.tencent.bkrepo.scanner.task
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
+import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
+import com.tencent.bkrepo.scanner.model.TFileScanResult
+import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
+import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
 import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
+import com.tencent.bkrepo.scanner.utils.Converter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
-import java.util.Optional
+import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
-import kotlin.collections.ArrayList
 
 @Component
 class DefaultScanTaskScheduler @Autowired constructor(
@@ -63,6 +69,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scannerService: ScannerService,
     private val repositoryClient: RepositoryClient,
     private val subScanTaskDao: SubScanTaskDao,
+    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val executor: ThreadPoolTaskExecutor,
@@ -70,10 +77,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val credentialsCache: LoadingCache<String, Optional<String>> = CacheBuilder.newBuilder()
-        .maximumSize(DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE)
-        .expireAfterWrite(DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
-        .build(CacheLoader.from { key -> loadStorageCredentialsCache(key!!) })
+    private val repoInfoCache: LoadingCache<String, RepositoryInfo> = CacheBuilder.newBuilder()
+        .maximumSize(DEFAULT_REPO_INFO_CACHE_SIZE)
+        .expireAfterWrite(DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
+        .build(CacheLoader.from { key -> loadRepoInfo(key!!) })
 
     @Autowired
     private lateinit var self: DefaultScanTaskScheduler
@@ -96,29 +103,47 @@ class DefaultScanTaskScheduler @Autowired constructor(
     @Suppress("BlockingMethodInNonBlockingContext")
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
-        scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING)
+        val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
+        val updateResult = scanTaskDao.updateStatus(
+            scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING, lastModifiedDate
+        )
+        if (updateResult.modifiedCount == 0L) {
+            // 更新任务状态失败，表示任务已经被提交过，不再重复处理，直接返回
+            return
+        }
+
         scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTING)
         val scanner = scannerService.get(scanTask.scanner)
         logger.info("submitting sub tasks of task[${scanTask.taskId}], scanner: [${scanner.name}]")
 
         var submittedSubTaskCount = 0L
+        var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
+        val finishedSubScanTasks = ArrayList<TFinishedSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
-            val storageCredentialsKey = credentialsCache
+            val storageCredentialsKey = repoInfoCache
                 .get(generateKey(node.projectId, node.repoName))
-                .orElse(null)
+                .storageCredentialsKey
 
             // 文件已存在扫描结果，跳过扫描
-            if (fileScanResultDao.exists(storageCredentialsKey, node.sha256, scanner.name, scanner.version)) {
+            val existsFileScanResult =
+                fileScanResultDao.find(storageCredentialsKey, node.sha256, scanner.name, scanner.version)
+            if (existsFileScanResult != null && !scanTask.force) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
-                scannerMetrics.incReuseResultSubtaskCount()
-                continue
+                val finishedSubtask = createFinishedSubTask(scanTask, existsFileScanResult, node, storageCredentialsKey)
+                finishedSubScanTasks.add(finishedSubtask)
+            } else {
+                subScanTasks.add(createSubTask(scanTask, node, storageCredentialsKey))
             }
 
-            subScanTasks.add(
-                createSubTask(scanTask, node.sha256, node.size, storageCredentialsKey)
-            )
+            // 批量保存重用扫描结果的任务
+            if (finishedSubScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
+                self.save(finishedSubScanTasks)
+                scannerMetrics.incReuseResultSubtaskCount(finishedSubScanTasks.size.toLong())
+                reuseResultTaskCount += finishedSubScanTasks.size
+                finishedSubScanTasks.clear()
+            }
 
             // 批量提交子任务
             if (subScanTasks.size == BATCH_SIZE || !nodeIterator.hasNext()) {
@@ -129,14 +154,17 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
 
         // 更新任务状态为所有子任务已提交
-        logger.info("submit $submittedSubTaskCount sub tasks, " +
-                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED")
+        logger.info(
+            "submit $submittedSubTaskCount sub tasks, $reuseResultTaskCount sub tasks reuse result, " +
+                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED"
+        )
         scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
         scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTED)
 
         // 没有提交任何子任务，直接设置为任务扫描结束
         if (submittedSubTaskCount == 0L) {
-            scanTaskDao.taskFinished(scanTask.taskId)
+            val now = LocalDateTime.now()
+            scanTaskDao.taskFinished(scanTask.taskId, now, now)
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[${scanTask.taskId}]")
         }
@@ -159,19 +187,102 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
     }
 
-    fun createSubTask(scanTask: ScanTask, sha256: String, size: Long, credentialKey: String? = null): TSubScanTask {
-        val now = LocalDateTime.now()
-        return TSubScanTask(
-            createdDate = now,
-            lastModifiedDate = now,
-            parentScanTaskId = scanTask.taskId,
-            status = SubScanTaskStatus.CREATED.name,
-            executedTimes = 0,
-            scanner = scanTask.scanner,
-            sha256 = sha256,
-            size = size,
-            credentialsKey = credentialKey
-        )
+    @Transactional(rollbackFor = [Throwable::class])
+    fun save(finishedSubScanTasks: List<TFinishedSubScanTask>) {
+        if (finishedSubScanTasks.isEmpty()) {
+            return
+        }
+        val tasks = finishedSubScanTaskDao.insert(finishedSubScanTasks)
+
+        // 更新当前正在扫描的任务数
+        val overview = HashMap<String, Number>()
+        tasks.forEach { task ->
+            task.scanResultOverview?.forEach { (k, v) ->
+                overview[k] = overview.getOrDefault(k, 0L).toLong() + v.toLong()
+            }
+        }
+
+        val task = tasks.first()
+        scanTaskDao.updateScanResult(task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true)
+        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toLong())
+    }
+
+    fun createSubTask(scanTask: ScanTask, node: Node, credentialKey: String? = null): TSubScanTask {
+        with(node) {
+            val now = LocalDateTime.now()
+            val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
+            return TSubScanTask(
+                createdBy = scanTask.createdBy,
+                createdDate = now,
+                lastModifiedBy = scanTask.createdBy,
+                lastModifiedDate = now,
+
+                parentScanTaskId = scanTask.taskId,
+                planId = scanTask.scanPlan?.id,
+
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoInfo.type.name,
+                packageKey = packageKey,
+                version = packageVersion,
+                fullPath = fullPath,
+                artifactName = artifactName,
+
+                status = SubScanTaskStatus.CREATED.name,
+                executedTimes = 0,
+                scanner = scanTask.scanner,
+                scannerType = scanTask.scannerType,
+                sha256 = sha256,
+                size = size,
+                credentialsKey = credentialKey
+            )
+        }
+    }
+
+    fun createFinishedSubTask(
+        scanTask: ScanTask,
+        fileScanResult: TFileScanResult,
+        node: Node,
+        credentialKey: String? = null,
+        resultStatus: String = SubScanTaskStatus.SUCCESS.name
+    ): TFinishedSubScanTask {
+        with(node) {
+            val now = LocalDateTime.now()
+            val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
+            val overview = fileScanResult
+                .scanResult[scanTask.scanner]
+                ?.overview
+                ?.let { Converter.convert(it) }
+            return TFinishedSubScanTask(
+                createdBy = scanTask.createdBy,
+                createdDate = now,
+                lastModifiedBy = scanTask.createdBy,
+                lastModifiedDate = now,
+                startDateTime = now,
+                finishedDateTime = now,
+
+                parentScanTaskId = scanTask.taskId,
+                planId = scanTask.scanPlan?.id,
+
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoInfo.type.name,
+                packageKey = packageKey,
+                version = packageVersion,
+                fullPath = fullPath,
+                artifactName = artifactName,
+
+                status = resultStatus,
+                executedTimes = 0,
+                scanner = scanTask.scanner,
+                scannerType = scanTask.scannerType,
+                sha256 = sha256,
+                size = size,
+                credentialsKey = credentialKey,
+
+                scanResultOverview = overview
+            )
+        }
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -201,18 +312,17 @@ class DefaultScanTaskScheduler @Autowired constructor(
         TODO("Not yet implemented")
     }
 
-    private fun loadStorageCredentialsCache(key: String): Optional<String> {
+    private fun loadRepoInfo(key: String): RepositoryInfo {
         val (projectId, repoName) = fromKey(key)
         val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
         if (repoRes.isNotOk()) {
             logger.error(
                 "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                        " projectId[$projectId], repoName[$repoName]"
+                    " projectId[$projectId], repoName[$repoName]"
             )
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, repoRes.message ?: "")
         }
-        repoRes.data!!.storageCredentialsKey?.let { return Optional.of(it) }
-        return Optional.empty()
+        return repoRes.data ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
     }
 
     private fun generateKey(projectId: String, repoName: String) = "$projectId$REPO_SPLIT$repoName"
@@ -236,8 +346,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
     companion object {
         private const val REPO_SPLIT = "::repo::"
-        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_SIZE = 1000L
-        private const val DEFAULT_STORAGE_CREDENTIALS_CACHE_DURATION_MINUTES = 60L
+        private const val DEFAULT_REPO_INFO_CACHE_SIZE = 1000L
+        private const val DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES = 60L
 
         /**
          * 批量提交子任务数量

@@ -29,14 +29,14 @@ package com.tencent.bkrepo.common.scanner.pojo.scanner
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.tencent.bkrepo.common.scanner.pojo.scanner.binauditor.BinAuditorScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("扫描器配置")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = BinAuditorScanner::class, name = BinAuditorScanner.TYPE)
+    JsonSubTypes.Type(value = ArrowheadScanner::class, name = ArrowheadScanner.TYPE)
 )
 open class Scanner(
     @ApiModelProperty("扫描器名")

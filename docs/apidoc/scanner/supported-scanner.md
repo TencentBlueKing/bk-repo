@@ -8,7 +8,7 @@
 | type    | string | 是    | 无   | 扫描器类型 | scanner type    |
 | version | string | 是    | 无   | 扫描器版本 | scanner version |
 
-# Arrowhead(BinAuditor)扫描器
+# Arrowhead扫描器
 
 ## 扫描器配置
 
@@ -18,18 +18,17 @@
 | configFilePath   | string  | 是    | /standalone.toml | 扫描器配置存放路径，相对于扫描任务的工作目录                | scanner config file relative path       |
 | cleanWorkDir     | boolean | 否    | true             | 扫描结束后是否清理扫描任务的工作目录                    | clean scan task work dir after scanning |
 | maxScanDuration  | number  | 否    | 600000           | 扫描任务最长执行时间，超过后会终止扫描                   | max scan duration                       |
-| nvTools          | object  | 是    | 无                | 漏洞库配置                                 | nvTools config                          |
+| knowledgeBase    | object  | 是    | 无                | 漏洞库配置                                 | knowledge base config                   |
 | container        | object  | 是    | 无                | 扫描器容器配置                               | container config                        |
 | resultFilterRule | object  | 否    | 无                | 扫描器结果过滤规则                             | result filter rule                      |
 
-### nvTools
+### knowledgeBase
 
-| 字段       | 类型      | 是否必须 | 默认值   | 说明      | Description                       |
-|----------|---------|------|-------|---------|-----------------------------------|
-| enabled  | boolean | 否    | false | 是否使用漏洞库 | scanner root path                 |
-| username | string  | 否    | null  | 漏洞库用户名  | scanner config file relative path |
-| key      | string  | 否    | null  | 漏洞库凭据   | scanner config file relative path |
-| host     | string  | 否    | null  | 漏洞库地址   | scanner config file relative path |
+| 字段        | 类型      | 是否必须 | 默认值   | 说明      | Description                       |
+|-----------|---------|------|-------|---------|-----------------------------------|
+| secretId  | string  | 否    | null  | 漏洞库用户名  | scanner config file relative path |
+| secretKey | string  | 否    | null  | 漏洞库凭据   | scanner config file relative path |
+| endpoint  | string  | 否    | null  | 漏洞库地址   | scanner config file relative path |
 
 ### container
 
@@ -120,4 +119,4 @@
 | cvssV3Vector    | string | cvss V3 漏洞影响评价    | cvss v3 vector                              |
 | cvssV2Vector    | string | cvss V2 漏洞影响评价    | cvss v2 vector                              |
 | dynamicLevel    | string | dynamic level     | dynamic level                               |
-| level           | string | nvTools 漏洞评级      | leveL                                       |
+| level           | string | 知识库漏洞评级           | leveL                                       |

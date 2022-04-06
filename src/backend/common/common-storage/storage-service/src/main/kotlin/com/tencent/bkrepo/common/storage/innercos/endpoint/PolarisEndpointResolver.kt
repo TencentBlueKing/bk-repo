@@ -27,10 +27,8 @@
 
 package com.tencent.bkrepo.common.storage.innercos.endpoint
 
-import com.tencent.polaris.api.core.ConsumerAPI
+import com.tencent.bkrepo.common.storage.util.PolarisUtil
 import com.tencent.polaris.api.rpc.GetOneInstanceRequest
-import com.tencent.polaris.factory.api.DiscoveryAPIFactory
-import com.tencent.polaris.factory.config.ConfigurationImpl
 import org.slf4j.LoggerFactory
 
 /**
@@ -38,37 +36,23 @@ import org.slf4j.LoggerFactory
  */
 class PolarisEndpointResolver(
     private val modId: Int,
-    private val cmdId: Int,
-    private val addresses: List<String>
+    private val cmdId: Int
 ): EndpointResolver {
 
-    private val consumerAPI: ConsumerAPI
-    private val getInstanceRequest: GetOneInstanceRequest
-
-    init {
-        val configuration = ConfigurationImpl()
-        configuration.setDefault()
-        configuration.global.serverConnector.addresses = addresses
-        configuration.consumer.localCache.persistDir = cacheDir
-        consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
-        getInstanceRequest = GetOneInstanceRequest()
-        getInstanceRequest.namespace = NAMESPACE
-        getInstanceRequest.service = "$modId:$cmdId"
-    }
-
     override fun resolveEndpoint(endpoint: String): String {
-        val response = consumerAPI.getOneInstance(getInstanceRequest)
-        check(response != null && response.instances.isNotEmpty()) {
-            "polaris resolve service failed: service ${getInstanceRequest.service}"
+        return try {
+            val getInstanceRequest = GetOneInstanceRequest()
+            getInstanceRequest.namespace = NAMESPACE
+            getInstanceRequest.service = "$modId:$cmdId"
+            PolarisUtil.getOneInstance(getInstanceRequest)
+        } catch (e: Exception) {
+            logger.warn("polaris resolve endpoint[$endpoint] error: $e")
+            endpoint
         }
-        val instance = response.instances.first()
-        logger.debug("polaris resolve success: ${instance.host}:${instance.port}")
-        return "${instance.host}:${instance.port}"
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(PolarisEndpointResolver::class.java)
-        private val cacheDir = System.getProperty("java.io.tmpdir")
         private const val NAMESPACE = "Production"
     }
 }

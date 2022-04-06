@@ -13,7 +13,7 @@
 
 ```json
 {
-	"scanner": "bin-auditor",
+	"scanner": "default",
 	"credentialsKeyFiles": [
 		{
 			"credentialsKey": null,
@@ -96,7 +96,7 @@
 
 ```json
 {
-  "scanner": "bin-auditor",
+  "scanner": "default",
   "reportType": "SENSITIVE_ITEM",
   "pageLimit": {
     "pageNumber": 1,
@@ -107,15 +107,15 @@
 
 - 请求字段说明
 
-| 字段                   | 类型     | 是否必须 | 默认值 | 说明                                                                                      | Description     |
-|----------------------|--------|------|-----|-----------------------------------------------------------------------------------------|-----------------|
-| projectId            | string | 是    | 无   | 文件所属项目id                                                                                | project id      |
-| repoName             | string | 是    | 无   | 文件所属仓库名                                                                                 | repository name |
-| artifactUri          | string | 是    | 无   | 文件路径                                                                                    | artifact uri    |
-| scanner              | string | 是    | 无   | 扫描器名                                                                                    | scanner name    |
-| reportType           | string | 是    | 无   | 扫描报告类型，BinAuditor有CHECK_SEC_ITEM,APPLICATION_ITEM,CVE_SEC_ITEM,SENSITIVE_ITEM，4种类型的扫描报告 | report type     |
-| pageLimit.pageNumber | number | 否    | 1   | 分页页码                                                                                    | page number     |
-| pageLimit.pageSize   | number | 否    | 20  | 分页大小                                                                                    | page size       |
+| 字段                   | 类型     | 是否必须 | 默认值 | 说明                                                                                     | Description     |
+|----------------------|--------|------|-----|----------------------------------------------------------------------------------------|-----------------|
+| projectId            | string | 是    | 无   | 文件所属项目id                                                                               | project id      |
+| repoName             | string | 是    | 无   | 文件所属仓库名                                                                                | repository name |
+| artifactUri          | string | 是    | 无   | 文件路径                                                                                   | artifact uri    |
+| scanner              | string | 是    | 无   | 扫描器名                                                                                   | scanner name    |
+| reportType           | string | 是    | 无   | 扫描报告类型，arrowhead有CHECK_SEC_ITEM,APPLICATION_ITEM,CVE_SEC_ITEM,SENSITIVE_ITEM，4种类型的扫描报告 | report type     |
+| pageLimit.pageNumber | number | 否    | 1   | 分页页码                                                                                   | page number     |
+| pageLimit.pageSize   | number | 否    | 20  | 分页大小                                                                                   | page size       |
 
 - 响应体
 

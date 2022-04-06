@@ -28,18 +28,12 @@
 package com.tencent.bkrepo.scanner.task.iterator
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
-import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.scanner.pojo.Node
-import org.slf4j.LoggerFactory
-import java.lang.ClassCastException
+import com.tencent.bkrepo.scanner.utils.Request
 
 /**
  * 文件迭代器
@@ -53,7 +47,6 @@ class NodeIterator(
     private val nodeClient: NodeClient,
     override val position: NodeIteratePosition = NodeIteratePosition()
 ) : PageableIterator<Node>(position) {
-    private val logger = LoggerFactory.getLogger(javaClass)
 
     /**
      * 需要遍历的文件匹配规则
@@ -94,36 +87,7 @@ class NodeIterator(
 
         val projectIdRule = modifyRule(projectId, rule)
         // 获取下一页需要扫描的文件
-        val selected = listOf(
-            NodeDetail::sha256.name, NodeDetail::size.name, NodeDetail::fullPath.name, NodeDetail::repoName.name
-        )
-        val queryModel = QueryModel(
-            PageLimit(page, pageSize),
-            Sort(listOf(AbstractMongoDao.ID), Sort.Direction.ASC),
-            selected,
-            projectIdRule
-        )
-        val res = nodeClient.search(queryModel)
-        if (res.isNotOk()) {
-            logger.error("Search nodes failed: [${res.message}], queryModel:[$queryModel]")
-            throw SystemErrorException()
-        }
-
-        return res.data!!.records.map {
-            val repoName = it[NodeDetail::repoName.name]!! as String
-            val sha256 = it[NodeDetail::sha256.name]!! as String
-            val size = toLong(it[NodeDetail::size.name]!!)
-            val fullPath = it[NodeDetail::fullPath.name]!! as String
-            Node(projectId, repoName, fullPath, sha256, size)
-        }
-    }
-
-    private fun toLong(value: Any): Long {
-        return when (value) {
-            is Int -> value.toLong()
-            is Long -> value
-            else -> throw ClassCastException()
-        }
+        return Request.requestNodes(nodeClient, projectIdRule, page, pageSize)
     }
 
     /**
@@ -185,4 +149,3 @@ class NodeIterator(
         override var index: Int = INITIAL_INDEX
     ) : PageIteratePosition(page = page, pageSize = pageSize, index = index)
 }
-

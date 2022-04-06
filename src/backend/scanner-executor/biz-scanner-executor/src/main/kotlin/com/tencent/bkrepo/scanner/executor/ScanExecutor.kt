@@ -31,5 +31,5 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 
 interface ScanExecutor {
-    fun scan(task: ScanExecutorTask, callback: (ScanExecutorResult) -> Unit)
+    fun scan(task: ScanExecutorTask): ScanExecutorResult
 }

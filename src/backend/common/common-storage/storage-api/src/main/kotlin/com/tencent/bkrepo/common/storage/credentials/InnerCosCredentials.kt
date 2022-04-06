@@ -46,7 +46,6 @@ data class InnerCosCredentials(
     var cmdId: Int? = null,
     var timeout: Float = 0.5F,
     var public: Boolean = false,
-    var polarisAddresses: MutableList<String> = mutableListOf(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties()

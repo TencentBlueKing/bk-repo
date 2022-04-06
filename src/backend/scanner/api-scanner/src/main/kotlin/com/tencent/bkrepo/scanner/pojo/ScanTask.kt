@@ -37,6 +37,8 @@ data class ScanTask(
     val taskId: String,
     @ApiModelProperty("触发者")
     val createdBy: String,
+    @ApiModelProperty("最后修改时间")
+    val lastModifiedDateTime: String,
     @ApiModelProperty("任务触发时间")
     val triggerDateTime: String,
     @ApiModelProperty("任务开始执行时间")
@@ -45,6 +47,8 @@ data class ScanTask(
     val finishedDateTime: String?,
     @ApiModelProperty("任务状态")
     val status: String,
+    @ApiModelProperty("扫描方案")
+    val scanPlan: ScanPlan?,
     @ApiModelProperty("扫描文件匹配规则")
     val rule: Rule?,
     @ApiModelProperty("计划扫描文件总数")
@@ -62,5 +66,7 @@ data class ScanTask(
     @ApiModelProperty("扫描器版本")
     val scannerVersion: String,
     @ApiModelProperty("扫描结果统计数据")
-    val scanResultOverview: Map<String, Long>?
+    val scanResultOverview: Map<String, Long>?,
+    @ApiModelProperty("是否强制扫描")
+    val force: Boolean = false
 )
