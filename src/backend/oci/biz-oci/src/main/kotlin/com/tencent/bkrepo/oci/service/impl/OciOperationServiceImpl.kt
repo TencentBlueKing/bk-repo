@@ -310,7 +310,7 @@ class OciOperationServiceImpl(
     private fun getRepositoryInfo(artifactInfo: OciArtifactInfo): RepositoryDetail {
         with(artifactInfo) {
             val result = repositoryClient.getRepoDetail(projectId, repoName, PROJECT_TYPE).data ?: run {
-                logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+                logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
                 throw OciRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
             }
             return result
