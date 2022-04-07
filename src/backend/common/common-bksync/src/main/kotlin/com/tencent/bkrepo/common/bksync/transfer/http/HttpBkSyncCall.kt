@@ -96,7 +96,7 @@ class HttpBkSyncCall(
                 .url(deltaUrl)
                 .headers(headers)
                 .header(X_BKREPO_OLD_FILE_PATH, oldFilePath)
-                .post(body)
+                .patch(body)
                 .build()
             val nanos = measureNanoTime {
                 val patchResponse = client.newCall(patchRequest).execute()

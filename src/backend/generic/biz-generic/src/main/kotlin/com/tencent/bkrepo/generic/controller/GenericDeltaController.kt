@@ -9,7 +9,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_M
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.service.DeltaSyncService
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
@@ -24,7 +24,7 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
         return deltaSyncService.sign()
     }
 
-    @PostMapping(DELTA_MAPPING_URI)
+    @PatchMapping(DELTA_MAPPING_URI)
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun patch(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
