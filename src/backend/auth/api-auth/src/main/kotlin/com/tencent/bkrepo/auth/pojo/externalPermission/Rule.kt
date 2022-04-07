@@ -45,12 +45,6 @@ data class Rule(
             }
         }
 
-        fun checkPath(rule: Rule, path: String?): Boolean {
-            return when (rule.type) {
-                RuleType.REGEX -> path?.matches(Regex(rule.value)) ?: false
-            }
-        }
-
         fun checkPaths(rule: Rule, paths: List<String>?): Boolean {
             paths?.forEach {
                 if (!checkPath(rule, it)) {
@@ -58,6 +52,12 @@ data class Rule(
                 }
             }
             return true
+        }
+
+        private fun checkPath(rule: Rule, path: String?): Boolean {
+            return when (rule.type) {
+                RuleType.REGEX -> path?.matches(Regex(rule.value)) ?: false
+            }
         }
     }
 }

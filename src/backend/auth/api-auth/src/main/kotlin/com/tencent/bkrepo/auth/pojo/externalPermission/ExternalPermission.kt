@@ -47,6 +47,8 @@ data class ExternalPermission(
     val scope: String,
     @ApiModelProperty("规则")
     val rules: List<Rule>?,
+    @ApiModelProperty("平台账号是否启用")
+    val platformEnabled: Boolean,
     @ApiModelProperty("是否启用")
     val enabled: Boolean,
     @ApiModelProperty("创建日期")

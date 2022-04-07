@@ -46,6 +46,8 @@ data class UpdateExtPermissionRequest(
     val scope: String? = null,
     @ApiModelProperty("规则")
     val rules: List<Rule>? = null,
+    @ApiModelProperty("对平台账号是否启用")
+    val platformEnabled: Boolean? = null,
     @ApiModelProperty("是否启用")
     val enabled: Boolean? = null
 )

@@ -322,7 +322,7 @@ open class PermissionManager(
     /**
      * 匹配需要自定义鉴权的接口
      * 通过straceTrace获取接口名称, 例如com.tencent.bkrepo.generic.controller.GenericController.upload
-     * scope与接口名称匹配进行匹配
+     * 然后scope与接口名称匹配进行正则匹配
      */
     private fun matchApi(scope: String): Boolean {
         val stackTraceElements = Thread.currentThread().stackTrace.toList()
@@ -363,7 +363,8 @@ open class PermissionManager(
         val nodes: List<NodeDetail>? = if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
             null
         } else if (paths.size == 1){
-            val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data ?: throw NodeNotFoundException(paths.first())
+            val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data
+                ?: throw NodeNotFoundException(paths.first())
             listOf(node)
         } else {
             var prefix = paths.first()
@@ -380,6 +381,34 @@ open class PermissionManager(
                 paths.contains(it.fullPath)
             }?.map { NodeDetail(it) } ?: emptyList()
         }
+
+        val request = buildRequest(externalPermission, type, action, userId, projectId, repoName, nodes)
+        try {
+            httpClient.newCall(request).execute().use {
+                if (it.isSuccessful) {
+                    return
+                }
+
+                if (it.code() != HttpStatus.FORBIDDEN.value) {
+                    logger.info("check external permission error, url[$url], code[${it.code()}]")
+                }
+                throw PermissionException(errorMsg)
+            }
+        } catch (e: IOException) {
+            logger.error("check external permission error, url[$url], $e")
+            throw PermissionException(errorMsg)
+        }
+    }
+
+    private fun buildRequest(
+        externalPermission: ExternalPermission,
+        type: ResourceType,
+        action: PermissionAction,
+        userId: String,
+        projectId: String,
+        repoName: String?,
+        nodes: List<NodeDetail>?
+    ): Request {
         val headersBuilder = Headers.Builder()
         externalPermission.headers?.forEach { (k, v) ->
             headersBuilder[k] = v
@@ -400,29 +429,11 @@ open class PermissionManager(
                     )
                 )
             }
-            requestData["nodes"] = nodeMaps
+            requestData[NODES] = nodeMaps
         }
         val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), requestData.toJsonString())
         logger.debug("request data: ${requestData.toJsonString()}")
-        val request = Request.Builder().url(url).headers(headersBuilder.build()).post(requestBody).build()
-
-        try {
-            httpClient.newCall(request).execute().use {
-                if (it.isSuccessful) {
-                    return
-                }
-
-                if (it.code() != HttpStatus.FORBIDDEN.value) {
-                    logger.warn(
-                        "check external permission error, url[$url], code[${it.code()}]"
-                    )
-                }
-                throw PermissionException(errorMsg)
-            }
-        } catch (e: IOException) {
-            logger.error("check external permission error, url[$url], $e")
-            throw PermissionException(errorMsg)
-        }
+        return Request.Builder().url(externalPermission.url).headers(headersBuilder.build()).post(requestBody).build()
     }
 
     private fun checkRules(rules: List<Rule>?, projectId: String, repoName: String?, paths: List<String>?): Boolean {
@@ -462,11 +473,12 @@ open class PermissionManager(
         private const val USER_ID = "userId"
         private const val TYPE = "type"
         private const val ACTION = "action"
-        private const val PROJECT_ID = "project_id"
+        private const val PROJECT_ID = "projectId"
         private const val REPO_NAME = "repoName"
         private const val PATH = "path"
         private const val FULL_PATH = "fullPath"
         private const val METADATA = "metadata"
+        private const val NODES = "nodes"
 
         /**
          * 检查是否为匿名用户，如果是匿名用户则返回401并提示登录

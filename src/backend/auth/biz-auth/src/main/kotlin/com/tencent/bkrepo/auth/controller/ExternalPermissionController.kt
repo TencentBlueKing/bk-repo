@@ -52,7 +52,6 @@ import org.springframework.web.bind.annotation.RestController
 @Api("用户-外部权限接口")
 @RestController
 @RequestMapping(AUTH_API_EXT_PERMISSION_PREFIX)
-@Principal(PrincipalType.ADMIN)
 class ExternalPermissionController(
     private val externalPermissionService: ExternalPermissionService
 ) {

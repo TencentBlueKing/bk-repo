@@ -44,6 +44,8 @@ data class CreateExtPermissionRequest(
     val scope: String,
     @ApiModelProperty("规则")
     val rules: List<Rule>? = emptyList(),
+    @ApiModelProperty("对平台账号是否启用")
+    val platformEnabled: Boolean = false,
     @ApiModelProperty("是否启用")
     val enabled: Boolean = false
 )

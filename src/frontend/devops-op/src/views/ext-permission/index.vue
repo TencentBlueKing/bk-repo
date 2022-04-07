@@ -23,7 +23,7 @@
           placeholder="请输入外部权限url"
         />
       </el-form-item>
-      <el-form-item style="margin-left: 15px" label="适用微服务范围" prop="scope">
+      <el-form-item style="margin-left: 15px" label="适用接口范围" prop="scope">
         <el-input v-model="permissionQuery.scope" style="width: 200px;" placeholder="请输入适用范围" />
       </el-form-item>
       <el-form-item label="启用" prop="enabled">
@@ -38,25 +38,20 @@
       </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="permissions" style="width: 100%">
-      <el-table-column prop="projectId" label="项目Id" width="120px" />
-      <el-table-column prop="repoName" label="仓库名" width="120px" />
-      <el-table-column prop="url" label="url" width="430px" />
-      <el-table-column prop="headers" label="请求头" width="500px">
+      <el-table-column prop="projectId" label="项目Id" min-width="100px" />
+      <el-table-column prop="repoName" label="仓库名" min-width="120px" />
+      <el-table-column prop="url" label="url" min-width="200px" />
+      <el-table-column prop="headers" label="请求头" min-width="200px">
         <template slot-scope="scope">{{ JSON.stringify(scope.row.headers) }}</template>
       </el-table-column>
-      <el-table-column prop="scope" label="适用微服务范围" width="120px" />
-      <el-table-column prop="enabled" label="是否启用" width="120px">
+      <el-table-column prop="scope" label="适用接口范围" min-width="200px" />
+      <el-table-column prop="enabled" label="平台账号是否启用" min-width="100px">
+        <template slot-scope="scope">{{ String(scope.row.platformEnabled) }}</template>
+      </el-table-column>
+      <el-table-column prop="enabled" label="是否启用" min-width="100px">
         <template slot-scope="scope">{{ String(scope.row.enabled) }}</template>
       </el-table-column>
-      <el-table-column prop="createdBy" label="创建人" width="120px" />
-      <el-table-column prop="createdDate" label="创建时间" width="200px">
-        <template slot-scope="scope">{{ formatDate(scope.row.createdDate) }}</template>
-      </el-table-column>
-      <el-table-column prop="lastModifiedBy" label="修改人" width="120px" />
-      <el-table-column prop="lastModifiedDate" label="修改时间" width="200px">
-        <template slot-scope="scope">{{ formatDate(scope.row.lastModifiedDate) }}</template>
-      </el-table-column>
-      <el-table-column label="操作">
+      <el-table-column label="操作" min-width="120px">
         <template slot-scope="scope">
           <el-button size="mini" type="primary" @click="showPermissionDetail(scope.row)">修改</el-button>
           <el-button size="mini" type="danger" @click="showPermissionDelete(scope.row)">删除</el-button>
@@ -74,7 +69,7 @@
       @current-change="changeRouteQueryParams()"
     />
     <permission-create-dialog :visible.sync="showPermissionCreateDialog" @create-success="onCreateSuccess" />
-    <permission-detail-dialog :visible.sync="showPermissionDetailDialog" :permission="permissionOfDetailDialog" />
+    <permission-detail-dialog :visible.sync="showPermissionDetailDialog" :permission="permissionOfDetailDialog" @update-success="onUpdateSuccess"/>
     <permission-delete-dialog :visible.sync="showPermissionDeleteDialog" :permission="permissionToDelete" @delete-success="onDeleteSuccess" />
   </div>
 </template>
@@ -140,9 +135,9 @@ export default {
     queryPermission(permissionQuery) {
       this.loading = true
       const promise = listExtPermission(
-        permissionQuery.url,
         permissionQuery.projectId,
         permissionQuery.repoName,
+        permissionQuery.url,
         permissionQuery.scope,
         permissionQuery.enabled
       )
@@ -171,6 +166,9 @@ export default {
       this.queryPermission(this.permissionQuery)
     },
     onCreateSuccess() {
+      this.queryPermission(this.permissionQuery)
+    },
+    onUpdateSuccess() {
       this.queryPermission(this.permissionQuery)
     }
   }

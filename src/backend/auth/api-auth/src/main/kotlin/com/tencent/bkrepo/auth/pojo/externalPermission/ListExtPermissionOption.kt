@@ -42,6 +42,8 @@ data class ListExtPermissionOption(
     val repoName: String? = null,
     @ApiModelProperty("生效接口范围，支持通配符*")
     val scope: String? = null,
+    @ApiModelProperty("对平台账号是否启用")
+    val platformEnabled: Boolean? = null,
     @ApiModelProperty("是否启用")
     val enabled: Boolean? = null,
     @ApiModelProperty("页数")

@@ -1,7 +1,7 @@
 <template>
   <el-dialog v-loading="loading" title="修改权限" :visible.sync="showDialog" :before-close="close">
     <template v-if="!updateResult">
-      <el-form ref="form" :model="permissionDetail" label-width="80px">
+      <el-form ref="form" :model="permissionDetail" label-width="150px">
         <el-form-item label="项目Id">
           <el-input v-model="permissionDetail.projectId" />
         </el-form-item>
@@ -16,6 +16,12 @@
         </el-form-item>
         <el-form-item label="使用范围">
           <el-input v-model="permissionDetail.scope" />
+        </el-form-item>
+        <el-form-item label="平台账号是否启用" prop="enabled">
+          <el-select v-model="permissionDetail.platformEnabled" placeholder="请选择其否启用">
+            <el-option label="启用" :value="true" />
+            <el-option label="未启用" :value="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="是否启用" prop="enabled">
           <el-select v-model="permissionDetail.enabled" placeholder="请选择其否启用">
@@ -85,6 +91,7 @@ export default {
         this.permissionDetail.url,
         this.permissionDetail.headers,
         this.permissionDetail.scope,
+        this.permissionDetail.platformEnabled,
         this.permissionDetail.enabled
       )
       promise.then(() => {

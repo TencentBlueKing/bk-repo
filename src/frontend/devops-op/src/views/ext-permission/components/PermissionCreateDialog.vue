@@ -14,8 +14,14 @@
         <el-form-item label="请求头" prop="headers">
           <el-input v-model="permission.headers" />
         </el-form-item>
-        <el-form-item label="适用微服务范围">
+        <el-form-item label="适用接口范围">
           <el-input v-model="permission.scope" />
+        </el-form-item>
+        <el-form-item label="平台账号是否启用" prop="enabled">
+          <el-select v-model="permission.platformEnabled" placeholder="请选择其否启用">
+            <el-option label="启用" :value="true" />
+            <el-option label="未启用" :value="false" />
+          </el-select>
         </el-form-item>
         <el-form-item label="是否启用" prop="enabled">
           <el-select v-model="permission.enabled" placeholder="请选择其否启用">
@@ -96,6 +102,7 @@ export default {
         this.permission.url,
         this.permission.headers,
         this.permission.scope,
+        this.permission.platformEnabled,
         this.permission.enabled
       )
       promise.then(() => {

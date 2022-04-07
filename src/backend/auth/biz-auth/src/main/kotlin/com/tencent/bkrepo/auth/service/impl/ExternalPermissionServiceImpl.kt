@@ -62,6 +62,7 @@ class ExternalPermissionServiceImpl(
                 projectId = projectId,
                 repoName = repoName,
                 scope = scope,
+                platformEnabled = platformEnabled,
                 enabled = enabled,
                 createdDate = LocalDateTime.now(),
                 createdBy = userId,
@@ -84,6 +85,7 @@ class ExternalPermissionServiceImpl(
             repoName?.let { tExternalPermission.repoName = it }
             scope?.let { tExternalPermission.scope = it }
             rules?.let { tExternalPermission.rules = it }
+            platformEnabled?.let { tExternalPermission.platformEnabled = it }
             enabled?.let { tExternalPermission.enabled = it }
             tExternalPermission.lastModifiedDate = LocalDateTime.now()
             tExternalPermission.lastModifiedBy = userId
@@ -103,6 +105,9 @@ class ExternalPermissionServiceImpl(
             projectId?.let { query.addCriteria(where(TExternalPermission::projectId).isEqualTo(projectId)) }
             repoName?.let { query.addCriteria(where(TExternalPermission::repoName).isEqualTo(repoName)) }
             scope?.let { query.addCriteria(where(TExternalPermission::scope).isEqualTo(scope)) }
+            platformEnabled?.let {
+                query.addCriteria(where(TExternalPermission::platformEnabled).isEqualTo(platformEnabled))
+            }
             enabled?.let { query.addCriteria(where(TExternalPermission::enabled).isEqualTo(enabled)) }
             val total = mongoTemplate.count(query, TExternalPermission::class.java)
             val pageRequest = PageRequest.of(pageNumber - 1, pageSize)
@@ -132,6 +137,7 @@ class ExternalPermissionServiceImpl(
                     repoName = repoName,
                     scope = scope,
                     rules = rules,
+                    platformEnabled = platformEnabled,
                     enabled = enabled,
                     createdDate = createdDate,
                     createdBy = createdBy,

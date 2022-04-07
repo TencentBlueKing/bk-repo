@@ -23,7 +23,7 @@ export function listExtPermission(projectId, repoName, url, scope, enabled, page
   })
 }
 
-export function createExtPermission(projectId, repoName, url, headers, scope, enabled) {
+export function createExtPermission(projectId, repoName, url, headers, scope, platformEnabled, enabled) {
   return request({
     url: `${PREFIX_EXT_PERMISSION}`,
     method: 'post',
@@ -33,12 +33,13 @@ export function createExtPermission(projectId, repoName, url, headers, scope, en
       'url': url,
       'headers': headers,
       'scope': scope,
+      'platformEnabled': platformEnabled,
       'enabled': enabled
     }
   })
 }
 
-export function updateExtPermission(id, projectId, repoName, url, headers, scope, enabled) {
+export function updateExtPermission(id, projectId, repoName, url, headers, scope, platformEnabled, enabled) {
   return request({
     url: `${PREFIX_EXT_PERMISSION}`,
     method: 'put',
@@ -49,6 +50,7 @@ export function updateExtPermission(id, projectId, repoName, url, headers, scope
       'url': url,
       'headers': headers,
       'scope': scope,
+      'platformEnabled': platformEnabled,
       'enabled': enabled
     }
   })

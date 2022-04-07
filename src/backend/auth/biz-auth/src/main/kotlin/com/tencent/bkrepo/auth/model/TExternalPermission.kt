@@ -43,6 +43,7 @@ data class TExternalPermission(
     var repoName: String,
     var scope: String,
     var rules: List<Rule> = emptyList(),
+    var platformEnabled: Boolean,
     var enabled: Boolean,
     var createdDate: LocalDateTime,
     var createdBy: String,
