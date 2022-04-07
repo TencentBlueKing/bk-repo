@@ -110,8 +110,9 @@ class BkSyncArtifactFile(
         }
         val bkSync = BkSync(blockSize)
         try {
-            val outputStream = ChunkedFileOutputStream(chunkedArtifactFile)
+            val outputStream = ChunkedFileOutputStream(chunkedArtifactFile).buffered()
             bkSync.merge(blockInputStream, deltaInputStream, outputStream)
+            outputStream.flush()
             chunkedArtifactFile.finish()
         } catch (e: Exception) {
             chunkedArtifactFile.close()

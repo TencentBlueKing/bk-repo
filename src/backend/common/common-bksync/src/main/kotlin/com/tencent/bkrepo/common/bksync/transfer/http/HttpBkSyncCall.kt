@@ -52,7 +52,7 @@ class HttpBkSyncCall(
             // 请求sign
             logger.info("Request sign")
             val signStream = sign()
-            signStream.use { patch(it) }
+            signStream.buffered().use { patch(it) }
         }
     }
 
