@@ -46,6 +46,7 @@ allprojects {
             dependency("org.apache.skywalking:apm-toolkit-logback-1.x:6.6.0")
             dependency("org.apache.skywalking:apm-toolkit-trace:6.6.0")
             dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
+            dependency("org.springframework.cloud:spring-cloud-stream:3.0.11.RELEASE")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
             dependency("com.google.code.gson:gson:2.8.6")
             dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:5.11.0.202103091610-r")
