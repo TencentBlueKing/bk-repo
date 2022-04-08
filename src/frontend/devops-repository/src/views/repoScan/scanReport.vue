@@ -203,7 +203,7 @@
             },
             repoGroupList () {
                 return this.repoListAll
-                    .filter(r => r.type === this.baseInfo.planType.toLowerCase())
+                    .filter(r => r.type === this.baseInfo.planType)
                     .reduce((target, repo) => {
                         if (!target[repo.type]) target[repo.type] = []
                         target[repo.type].push(repo)

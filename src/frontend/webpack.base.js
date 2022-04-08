@@ -14,12 +14,12 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                 config: [__filename]
             }
         },
-        ...(isDev ? { devtool: 'source-map' } : {}),
+        ...(isDev ? { devtool: 'eval-cheap-module-source-map' } : {}),
         entry,
         output: {
             publicPath,
-            chunkFilename: !isDev ? '[name].[chunkhash].js' : '[name].js',
-            filename: !isDev ? '[name].[contenthash].min.js' : '[name].js',
+            chunkFilename: isDev ? '[name].js' : '[name].[chunkhash].js',
+            filename: isDev ? '[name].js' : '[name].[contenthash].min.js',
             path: buildDist,
             assetModuleFilename: '[name].[ext]?[contenthash]'
         },
@@ -40,26 +40,19 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                     ]
                 },
                 {
-                    test: /\.css$/,
-                    use: [MiniCssExtractPlugin.loader, {
-                        loader: 'css-loader',
-                        options: {
-                            url: {
-                                filter: url => !url.startsWith('/')
-                            }
-                        }
-                    }]
-                },
-                {
                     test: /\.scss$/,
-                    use: [MiniCssExtractPlugin.loader, {
-                        loader: 'css-loader',
-                        options: {
-                            url: {
-                                filter: url => !url.startsWith('/')
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        {
+                            loader: 'css-loader',
+                            options: {
+                                url: {
+                                    filter: url => !url.startsWith('/')
+                                }
                             }
-                        }
-                    }, 'sass-loader']
+                        },
+                        'sass-loader'
+                    ]
                 },
                 {
                     test: /\.(js|vue)$/,
@@ -77,8 +70,8 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
         plugins: [
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
-                filename: !isDev ? '[name].[contenthash].css' : '[name].css',
-                chunkFilename: '[id].[contenthash].css',
+                filename: isDev ? '[name].css' : '[name].[contenthash].css',
+                chunkFilename: isDev ? '[id].css' : '[id].[contenthash].css',
                 ignoreOrder: true
             }),
             new CopyWebpackPlugin({
