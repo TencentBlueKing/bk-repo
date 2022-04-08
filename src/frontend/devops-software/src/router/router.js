@@ -1,16 +1,16 @@
-const repoHome = () => import(/* webpackChunkName: "repoHome" */'@/views')
+const repoHome = () => import('@/views')
 
-const repoList = () => import(/* webpackChunkName: "repoList" */'@/views/repoList')
+const repoList = () => import('@/views/repoList')
 
-const repoGeneric = () => import(/* webpackChunkName: "repoGeneric" */'@repository/views/repoGeneric')
+const repoGeneric = () => import('@repository/views/repoGeneric')
 
-const commonPackageList = () => import(/* webpackChunkName: "repoCommon" */'@repository/views/repoCommon/commonPackageList')
-const commonPackageDetail = () => import(/* webpackChunkName: "repoCommon" */'@repository/views/repoCommon/commonPackageDetail')
+const commonPackageList = () => import('@repository/views/repoCommon/commonPackageList')
+const commonPackageDetail = () => import('@repository/views/repoCommon/commonPackageDetail')
 
-const repoSearch = () => import(/* webpackChunkName: "repoSearch" */'@/views/repoSearch')
+const repoSearch = () => import('@/views/repoSearch')
 
-const userCenter = () => import(/* webpackChunkName: "userCenter" */'@repository/views/userCenter')
-const repoToken = () => import(/* webpackChunkName: "repoToken" */'@repository/views/repoToken')
+const userCenter = () => import('@repository/views/userCenter')
+const repoToken = () => import('@repository/views/repoToken')
 
 const routes = [
     {

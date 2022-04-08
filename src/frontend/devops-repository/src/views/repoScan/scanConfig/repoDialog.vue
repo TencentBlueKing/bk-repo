@@ -48,7 +48,7 @@
             },
             repoList () {
                 return this.repoListAll
-                    .filter(r => r.type === this.scanType.toLowerCase())
+                    .filter(r => r.type === this.scanType)
                     .sort((a, b) => {
                         return Boolean(a.type > b.type) || -1
                     })
