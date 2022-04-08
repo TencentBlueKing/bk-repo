@@ -195,7 +195,7 @@ open class AbstractChartService : ArtifactService() {
     fun getRepositoryInfo(artifactInfo: ArtifactInfo): RepositoryDetail {
         with(artifactInfo) {
             val result = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
-                logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+                logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
                 throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
             }
             return result
@@ -222,7 +222,7 @@ open class AbstractChartService : ArtifactService() {
     fun checkRepositoryExistAndCategory(artifactInfo: ArtifactInfo) {
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
-                logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+                logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
                 throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
             }
             when (repo.category) {
@@ -438,7 +438,7 @@ open class AbstractChartService : ArtifactService() {
     ): HelmIndexYamlMetadata? {
         logger.info("repo [$projectId/$repoName] has been created, will download index.yaml...")
         val repoDetail = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
-            logger.error("check repository [$repoName] in projectId [$projectId] failed!")
+            logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
             throw HelmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
         }
         if (RepositoryCategory.LOCAL == repoDetail.category) {
