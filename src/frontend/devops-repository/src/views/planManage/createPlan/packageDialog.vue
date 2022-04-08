@@ -31,6 +31,7 @@
                             searchable
                             multiple
                             show-select-all
+                            ext-popover-cls="show-select-all"
                             display-tag
                             :value="checkedVersions[row.fid]"
                             @change="versions => selectVersions(row, versions)">

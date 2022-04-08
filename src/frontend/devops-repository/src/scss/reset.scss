@@ -1,6 +1,6 @@
 @charset 'utf-8';
 body {
-    /*  */
+    /* 分页 */
     .bk-page.bk-page-small {
         display: flex;
         align-items: center;
@@ -37,6 +37,15 @@ body {
         /* 列边距 */
         .cell {
             padding: 0 10px;
+        }
+        /* 替换图标 */ 
+        .bk-table-column-expand .bk-table-expand-icon .bk-icon {
+            font-size: 20px;
+            color: var(--fontSubsidiaryColor);
+            margin: -10px 0 0 -10px;
+            &:before {
+                content: '\e107'
+            }
         }
         /* 行高 */
         td, th {
@@ -256,6 +265,7 @@ body {
         height: calc(100% - 60px);
         overflow: hidden;
     }
+
     .bk-tag-selector{
         .bk-tag-input {
             height: 32px;
@@ -282,6 +292,21 @@ body {
         }
     }
 
+    .bk-select-tag-container {
+        &.is-small-size .bk-select-tag {
+            line-height: 20px;
+        }
+        &.is-available {
+            .bk-select-tag {
+                color: var(--primaryColor);
+                background-color: var(--bgLightColor);
+                &:hover {
+                    background-color: var(--bgHoverLighterColor);
+                }
+            }
+        }
+    }
+
     .bk-switcher {
         background-color: var(--fontSubsidiaryColor);
         &.bk-switcher-small {
@@ -297,6 +322,17 @@ body {
             .content {
                 max-height: initial;
                 margin: initial;
+                .bk-select {
+                    .icon-close-circle-shape {
+                        font-size: 14px;
+                    }
+                    .icon-angle-down {
+                        font-size: 22px;
+                    }
+                    .icon-close {
+                        font-size: 18px;
+                    }
+                }
             }
         }
     }
@@ -317,6 +353,17 @@ body {
                         display: none;
                     }
                 }
+            }
+        }
+    }
+
+    .bk-select-dropdown-content.show-select-all {
+        .bk-option:first-child {
+            .bk-option-name {
+                text-align: right;
+            }
+            &:hover {
+                background-color: transparent;
             }
         }
     }
