@@ -16,7 +16,7 @@
                 <div class="scan-item flex-between-center"
                     v-for="scan in scanList"
                     :key="scan.id">
-                    <span class="hover-btn text-overflow" style="max-width:150px;"
+                    <span class="text-overflow" :class="{ 'hover-btn': scan.status === 'SUCCESS' }" style="max-width:150px;"
                         @click="toReport(scan)" :title="scan.name">{{ scan.name }}</span>
                     <span class="repo-tag" :class="scan.status">{{scanStatusEnum[scan.status]}}</span>
                 </div>
@@ -79,18 +79,21 @@
             handleClickOutSide () {
                 this.visible = false
             },
-            toReport ({ id, recordId }) {
-                this.$router.push({
-                    name: 'artiReport',
-                    params: {
-                        planId: id,
-                        recordId
-                    },
-                    query: {
-                        ...this.$route.params,
-                        ...this.$route.query
-                    }
-                })
+            toReport ({ id, recordId, status }) {
+                if (status === 'SUCCESS') {
+                    this.$router.push({
+                        name: 'artiReport',
+                        params: {
+                            planId: id,
+                            recordId
+                        },
+                        query: {
+                            repoType: this.repoType,
+                            ...this.$route.params,
+                            ...this.$route.query
+                        }
+                    })
+                }
             }
         }
     }
