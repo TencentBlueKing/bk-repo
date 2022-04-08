@@ -57,6 +57,9 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.reflect.KMutableProperty
+import kotlin.reflect.KProperty
+import kotlin.reflect.full.memberProperties
 
 object ScanPlanConverter {
     fun convert(scanPlan: TScanPlan): ScanPlan {
@@ -267,6 +270,17 @@ object ScanPlanConverter {
             Level.MEDIUM.levelName -> LeakType.MEDIUM.name
             Level.LOW.levelName -> LeakType.LOW.name
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, level)
+        }
+    }
+
+    /**
+     * 除了[properties]中的字段，其余字段都设置为null
+     */
+    fun keepProps(scanPlan: ScanPlan, properties: List<KProperty<*>>) {
+        ScanPlan::class.memberProperties.forEach {
+            if (it is KMutableProperty<*> && it !in properties) {
+                it.setter.call(scanPlan, null)
+            }
         }
     }
 
