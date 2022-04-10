@@ -42,13 +42,12 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
-import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
-import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -91,7 +90,7 @@ class ScanServiceImpl @Autowired constructor(
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
     private val scanPlanDao: ScanPlanDao,
-    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
@@ -133,6 +132,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanResultOverview = emptyMap()
                 )
             ).run { Converter.convert(this, plan, force) }
+            plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
             scanTaskScheduler.schedule(scanTask)
             logger.info("create scan task[${scanTask.taskId}] success")
@@ -155,6 +155,13 @@ class ScanServiceImpl @Autowired constructor(
                 .filter { RuleMatcher.match(request, it) }
                 .map { scan(Converter.convert(request, it), ScanTriggerType.valueOf(triggerType)) }
         }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun stopByPlanArtifactLatestSubtaskId(projectId: String, subtaskId: String): Boolean {
+        val subtask = planArtifactLatestSubScanTaskDao.find(projectId, subtaskId)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
+        return subtask.latestSubScanTaskId?.let { stopSubtask(subtask.projectId, it) } ?: false
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -252,7 +259,9 @@ class ScanServiceImpl @Autowired constructor(
         if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
             return false
         }
-        finishedSubScanTaskDao.insert(TFinishedSubScanTask.from(subTask, resultSubTaskStatus, overview, modifiedBy))
+
+        planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, resultSubTaskStatus, overview, modifiedBy)
+
         scannerMetrics.subtaskStatusChange(
             SubScanTaskStatus.valueOf(subTask.status), SubScanTaskStatus.valueOf(resultSubTaskStatus)
         )
@@ -321,7 +330,6 @@ class ScanServiceImpl @Autowired constructor(
         // 任务超时后移除所有子任务，重置状态后重新提交执行
         if (task != null && scanTaskDao.resetTask(task.id!!, task.lastModifiedDate).modifiedCount == 1L) {
             subScanTaskDao.deleteByParentTaskId(task.id)
-            finishedSubScanTaskDao.deleteByParentTaskId(task.id)
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
             scanTaskScheduler.schedule(Converter.convert(task, plan))
@@ -403,7 +411,7 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun resultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo> {
         with(request) {
-            val subtask = finishedSubScanTaskDao.findById(subScanTaskId!!)
+            val subtask = planArtifactLatestSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
             permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
 

@@ -67,6 +67,16 @@ interface ScanService {
      * 停止子任务
      *
      * @param projectId 项目id
+     * @param subtaskId 使用特定扫描方案的制品最新一次扫描记录id
+     *
+     * @return true 停止成功，false 停止失败
+     */
+    fun stopByPlanArtifactLatestSubtaskId(projectId: String, subtaskId: String): Boolean
+
+    /**
+     * 停止子任务
+     *
+     * @param projectId 项目id
      * @param subtaskId 子任务id
      *
      * @return true 停止成功，false 停止失败

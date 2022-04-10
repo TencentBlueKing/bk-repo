@@ -38,12 +38,12 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
-import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TFileScanResult
-import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -69,7 +69,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scannerService: ScannerService,
     private val repositoryClient: RepositoryClient,
     private val subScanTaskDao: SubScanTaskDao,
-    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val executor: ThreadPoolTaskExecutor,
@@ -119,7 +119,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         var submittedSubTaskCount = 0L
         var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
-        val finishedSubScanTasks = ArrayList<TFinishedSubScanTask>()
+        val finishedSubScanTasks = ArrayList<TPlanArtifactLatestSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
             val storageCredentialsKey = repoInfoCache
@@ -188,11 +188,11 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun save(finishedSubScanTasks: List<TFinishedSubScanTask>) {
-        if (finishedSubScanTasks.isEmpty()) {
+    fun save(tasks: List<TPlanArtifactLatestSubScanTask>) {
+        if (tasks.isEmpty()) {
             return
         }
-        val tasks = finishedSubScanTaskDao.insert(finishedSubScanTasks)
+        planArtifactLatestSubScanTaskDao.replace(tasks)
 
         // 更新当前正在扫描的任务数
         val overview = HashMap<String, Number>()
@@ -245,7 +245,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         node: Node,
         credentialKey: String? = null,
         resultStatus: String = SubScanTaskStatus.SUCCESS.name
-    ): TFinishedSubScanTask {
+    ): TPlanArtifactLatestSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
             val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
@@ -253,7 +253,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 .scanResult[scanTask.scanner]
                 ?.overview
                 ?.let { Converter.convert(it) }
-            return TFinishedSubScanTask(
+            return TPlanArtifactLatestSubScanTask(
                 createdBy = scanTask.createdBy,
                 createdDate = now,
                 lastModifiedBy = scanTask.createdBy,
@@ -273,7 +273,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 artifactName = artifactName,
 
                 status = resultStatus,
-                executedTimes = 0,
                 scanner = scanTask.scanner,
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
@@ -291,6 +290,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
             return emptyList()
         }
         val tasks = subScanTaskDao.insert(subScanTasks)
+        planArtifactLatestSubScanTaskDao.replace(
+            tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
+        )
 
         // 更新当前正在扫描的任务数
         val task = tasks.first()

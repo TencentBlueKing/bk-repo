@@ -42,7 +42,9 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class SubScanTaskDao : AbsSubScanTaskDao<TSubScanTask>() {
+class SubScanTaskDao(
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao
+) : AbsSubScanTaskDao<TSubScanTask>() {
 
     fun findByCredentialsKeyAndSha256List(credentialsKeyFiles: List<CredentialsKeyFiles>): List<TSubScanTask> {
         val criteria = Criteria()
@@ -98,7 +100,13 @@ class SubScanTaskDao : AbsSubScanTaskDao<TSubScanTask>() {
             update.set(TSubScanTask::startDateTime.name, now)
             update.inc(TSubScanTask::executedTimes.name, 1)
         }
-        return updateFirst(query, update)
+
+        val updateResult = updateFirst(query, update)
+        if (updateResult.modifiedCount == 1L) {
+            planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, status.name, now = now)
+        }
+
+        return updateResult
     }
 
     fun updateStatus(
@@ -109,7 +117,9 @@ class SubScanTaskDao : AbsSubScanTaskDao<TSubScanTask>() {
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, status.name)
-        return updateFirst(query, update)
+        val updateResult = updateFirst(query, update)
+        planArtifactLatestSubScanTaskDao.updateStatus(subTaskIds, status.name)
+        return updateResult
     }
 
     fun firstTaskByStatusIn(status: List<String>): TSubScanTask? {
@@ -127,12 +137,4 @@ class SubScanTaskDao : AbsSubScanTaskDao<TSubScanTask>() {
         val criteria = TSubScanTask::lastModifiedDate.lt(beforeDate)
         return findOne(Query(criteria))
     }
-
-    override fun artifactPlanRelationAggregateResultClass(): Class<*> {
-        return ArtifactPlanRelationAggregateResult::class.java
-    }
-
-    class ArtifactPlanRelationAggregateResult(
-        artifactSubScanTasks: List<TSubScanTask>
-    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TSubScanTask>(artifactSubScanTasks)
 }

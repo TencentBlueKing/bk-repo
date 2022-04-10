@@ -141,13 +141,15 @@ object ScanPlanConverter {
         }
     }
 
-    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?): ScanPlanInfo {
+    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?, artifactCount: Long): ScanPlanInfo {
         with(scanPlan) {
-            val critical = latestScanTask?.let { getCveCount(Level.CRITICAL.levelName, latestScanTask) } ?: 0L
-            val high = latestScanTask?.let { getCveCount(Level.HIGH.levelName, latestScanTask) } ?: 0L
-            val medium = latestScanTask?.let { getCveCount(Level.MEDIUM.levelName, latestScanTask) } ?: 0L
-            val low = latestScanTask?.let { getCveCount(Level.LOW.levelName, latestScanTask) } ?: 0L
-            val artifactCount = latestScanTask?.total ?: 0L
+            val scannerType = latestScanTask?.scannerType
+            val overview = scanPlan.scanResultOverview
+
+            val critical = getCveCount(scannerType, Level.CRITICAL.levelName, overview)
+            val high = getCveCount(scannerType, Level.HIGH.levelName, overview)
+            val medium = getCveCount(scannerType, Level.MEDIUM.levelName, overview)
+            val low = getCveCount(scannerType, Level.LOW.levelName, overview)
             val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
 
             return ScanPlanInfo(
@@ -181,7 +183,7 @@ object ScanPlanConverter {
         return request
     }
 
-    fun convertToPlanArtifactInfo(subScanTask: SubScanTaskDefinition, createdBy: String): PlanArtifactInfo {
+    fun convertToPlanArtifactInfo(subScanTask: SubScanTaskDefinition): PlanArtifactInfo {
         return with(subScanTask) {
             val duration = if (startDateTime != null && finishedDateTime != null) {
                 Duration.between(startDateTime, finishedDateTime).toMillis()
@@ -327,15 +329,15 @@ object ScanPlanConverter {
         }
     }
 
-    private fun getCveCount(level: String, scanTask: TScanTask): Long {
-        return getCveCount(scanTask.scannerType, level, scanTask.scanResultOverview)
-    }
-
     private fun getCveCount(level: String, subtask: SubScanTaskDefinition): Long {
         return getCveCount(subtask.scannerType, level, subtask.scanResultOverview)
     }
 
-    private fun getCveCount(scannerType: String, level: String, overview: Map<String, Number>?): Long {
+    private fun getCveCount(scannerType: String?, level: String, overview: Map<String, Number>?): Long {
+        if (scannerType == null) {
+            return 0L
+        }
+
         val key = getCveOverviewKey(scannerType, level)
         return overview?.get(key)?.toLong() ?: 0L
     }

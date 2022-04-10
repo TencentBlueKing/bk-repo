@@ -30,7 +30,6 @@ package com.tencent.bkrepo.scanner.dao
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -41,7 +40,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
+class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<TScanTask>() {
     fun updateStatus(
         taskId: String,
         status: ScanTaskStatus,
@@ -152,19 +151,13 @@ class ScanTaskDao : ScannerSimpleMongoDao<TScanTask>() {
                 update.inc("${TScanTask::scanResultOverview.name}.$key", value)
             }
         }
+        scanPlanDao.updateScanResultOverview(taskId, scanResultOverview)
 
         return updateFirst(query, update)
     }
 
-    fun findByPlanIdIn(planIds: List<String>): List<TScanTask> {
-        val query = Query(TScanTask::planId.inValues(planIds))
-        return find(query)
-    }
-
-    fun latestTask(planId: String): TScanTask? {
-        val query = Query(TScanTask::planId.isEqualTo(planId))
-            .with(Sort.by(TScanTask::startDateTime.name).descending())
-        return findOne(query)
+    fun findByIds(ids: List<String>): List<TScanTask> {
+        return find(Query(Criteria.where(ID).inValues(ids)))
     }
 
     fun existsByPlanIdAndStatus(planId: String, status: List<String>): Boolean {

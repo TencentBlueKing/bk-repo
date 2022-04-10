@@ -36,16 +36,6 @@ import java.time.LocalDateTime
         name = "parentScanTaskId_idx",
         def = "{'parentScanTaskId': 1}",
         background = true
-    ),
-    CompoundIndex(
-        name = "projectId_repoName_fullPath_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}",
-        background = true
-    ),
-    CompoundIndex(
-        name = "projectId_repoName_packageKey_version_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'packageKey': 1, 'version': 1}",
-        background = true
     )
 )
 open class SubScanTaskDefinition(
@@ -106,10 +96,7 @@ open class SubScanTaskDefinition(
      * 子任务状态
      */
     val status: String,
-    /**
-     * 已经执行的次数
-     */
-    val executedTimes: Int,
+
     /**
      * 使用的扫描器
      */
