@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
 
     @GetMapping(DELTA_MAPPING_URI)
-    @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    @Permission(ResourceType.NODE, PermissionAction.READ)
     fun sign(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ) {

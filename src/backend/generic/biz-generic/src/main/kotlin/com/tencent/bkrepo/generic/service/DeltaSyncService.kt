@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.stream.CompositeOutputStream
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
@@ -76,7 +77,7 @@ class DeltaSyncService(
             }
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             if (node == null || node.folder) {
-                throw ArtifactNotFoundException(artifactInfo.toString())
+                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             // 计算出需要返回的大小
             val length = ceil(node.size.toDouble() / blockSize) * ChecksumIndex.CHECKSUM_SIZE
@@ -108,7 +109,7 @@ class DeltaSyncService(
         with(ArtifactContext()) {
             val node = nodeClient.getNodeDetail(projectId, repoName, oldFilePath).data
             if (node == null || node.folder) {
-                throw ArtifactNotFoundException(artifactInfo.toString())
+                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             val blockInputStream = getBlockInputStream(node, storageCredentials)
             blockInputStream.use {

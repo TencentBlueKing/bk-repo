@@ -62,6 +62,7 @@ class HttpBkSyncCall(
     private fun UploadRequest.sign(): InputStream {
         val signRequest = Request.Builder()
             .url(signUrl)
+            .headers(headers)
             .build()
         val response = client.newCall(signRequest).execute()
         if (!response.isSuccessful) {
