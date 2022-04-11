@@ -36,9 +36,7 @@ class TSignFile(
     var createdBy: String,
     var createdDate: LocalDateTime,
 
-    var nodeProjectId: String,
-    var nodeRepoName: String,
-    var nodeFullPath: String,
+    var srcSha256: String,
     var blockSize: Int,
     var projectId: String,
     var repoName: String,

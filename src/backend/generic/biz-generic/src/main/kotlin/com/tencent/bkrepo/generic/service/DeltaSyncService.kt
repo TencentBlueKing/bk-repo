@@ -68,16 +68,17 @@ class DeltaSyncService(
      * */
     fun sign() {
         with(ArtifactContext()) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            if (node == null || node.folder) {
+                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+            }
             // 查看是否已有sign文件，没有则生成。
-            signFileDao.findByDetail(projectId, repoName, artifactInfo.getArtifactFullPath(), blockSize)?.let {
+            val sha256 = node.sha256!!
+            signFileDao.findByDetail(sha256, blockSize)?.let {
                 val artifactInfo = GenericArtifactInfo(it.projectId, it.repoName, it.fullPath)
                 val downloadContext = ArtifactDownloadContext(repo = signRepo, artifact = artifactInfo)
                 repository.download(downloadContext)
                 return
-            }
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            if (node == null || node.folder) {
-                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             // 计算出需要返回的大小
             val length = ceil(node.size.toDouble() / blockSize) * ChecksumIndex.CHECKSUM_SIZE
@@ -87,7 +88,7 @@ class DeltaSyncService(
             val outputStream = CompositeOutputStream(chunkedFileOutputStream, response.outputStream).buffered()
             outputStream.use {
                 val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
-                    ?: throw ArtifactNotFoundException("file[${node.sha256}] not found in ${storageCredentials?.key}")
+                    ?: throw ArtifactNotFoundException("file[$sha256] not found in ${storageCredentials?.key}")
                 val nanoTime = measureNanoTime {
                     val bkSync = BkSync(blockSize)
                     artifactInputStream.buffered().use { bkSync.checksum(artifactInputStream, outputStream) }
@@ -132,9 +133,7 @@ class DeltaSyncService(
             val uploadContext = ArtifactUploadContext(signRepo, file, artifactInfo)
             uploadSignFile(uploadContext)
             val signFile = TSignFile(
-                nodeProjectId = projectId,
-                nodeRepoName = repoName,
-                nodeFullPath = fullPath,
+                srcSha256 = sha256!!,
                 projectId = signFileProjectId,
                 repoName = signFileRepoName,
                 fullPath = signFileFullPath,
