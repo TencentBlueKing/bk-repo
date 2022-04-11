@@ -27,17 +27,8 @@
 
 package com.tencent.bkrepo.scanner.model
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
-@CompoundIndexes(
-    CompoundIndex(
-        name = "parentScanTaskId_idx",
-        def = "{'parentScanTaskId': 1}",
-        background = true
-    )
-)
 open class SubScanTaskDefinition(
     var id: String? = null,
     val createdBy: String,

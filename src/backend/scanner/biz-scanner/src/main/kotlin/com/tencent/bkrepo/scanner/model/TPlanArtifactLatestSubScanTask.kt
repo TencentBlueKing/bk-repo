@@ -46,11 +46,6 @@ import java.time.LocalDateTime
         unique = true
     ),
     CompoundIndex(
-        name = "projectId_repoName_packageKey_version_planId_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'packageKey': 1, 'version': 1, 'planId': 1}",
-        background = true
-    ),
-    CompoundIndex(
         name = "planId_idx",
         def = "{'planId': 1}",
         background = true

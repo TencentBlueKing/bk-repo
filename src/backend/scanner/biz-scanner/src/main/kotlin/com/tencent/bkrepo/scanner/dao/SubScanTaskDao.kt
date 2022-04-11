@@ -32,6 +32,7 @@ import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.CredentialsKeyFiles
+import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -109,6 +110,42 @@ class SubScanTaskDao(
         return updateResult
     }
 
+    /**
+     * 唤醒[projectId]一个子任务为可执行状态
+     */
+    fun notify(projectId: String, count: Int = 1): UpdateResult? {
+        if(count <= 0) {
+            return null
+        }
+
+        val criteria = Criteria
+            .where(TSubScanTask::projectId.name).isEqualTo(projectId)
+            .and(TSubScanTask::status.name).isEqualTo(SubScanTaskStatus.BLOCKED.name)
+        val subtaskIds = find(Query(criteria).limit(count)).map { it.id!! }
+
+        if (subtaskIds.isEmpty()) {
+            return null
+        }
+
+        criteria.and(ID).inValues(subtaskIds)
+        val update = Update()
+            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TSubScanTask::status.name, SubScanTaskStatus.CREATED.name)
+
+        logger.info("notify subtasks$subtaskIds of project[$projectId]")
+        return updateMulti(Query(criteria), update)
+    }
+
+    /**
+     * 获取项目[projectId]扫描中的任务数量
+     */
+    fun scanningCount(projectId: String): Long {
+        val criteria = Criteria
+            .where(TSubScanTask::projectId.name).isEqualTo(projectId)
+            .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+        return count(Query(criteria))
+    }
+
     fun updateStatus(
         subTaskIds: List<String>,
         status: SubScanTaskStatus
@@ -136,5 +173,9 @@ class SubScanTaskDao(
         val beforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
         val criteria = TSubScanTask::lastModifiedDate.lt(beforeDate)
         return findOne(Query(criteria))
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SubScanTaskDao::class.java)
     }
 }

@@ -48,13 +48,13 @@ import java.time.LocalDateTime
         background = true
     ),
     CompoundIndex(
-        name = "projectId_repoName_fullPath_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}",
+        name = "projectId_status_idx",
+        def = "{'projectId': 1, 'status': 1}",
         background = true
     ),
     CompoundIndex(
-        name = "projectId_repoName_packageKey_version_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'packageKey': 1, 'version': 1}",
+        name = "parentScanTaskId_idx",
+        def = "{'parentScanTaskId': 1}",
         background = true
     )
 )

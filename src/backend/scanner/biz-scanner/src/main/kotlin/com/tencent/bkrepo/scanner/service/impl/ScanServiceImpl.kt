@@ -109,7 +109,9 @@ class ScanServiceImpl @Autowired constructor(
         with(scanRequest) {
             require(planId != null || scanner != null)
             val userId = SecurityUtils.getUserId()
+
             val plan = planId?.let { scanPlanDao.get(it) }
+
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
@@ -259,6 +261,8 @@ class ScanServiceImpl @Autowired constructor(
         if (subScanTaskDao.deleteById(subTaskId).deletedCount != 1L) {
             return false
         }
+        // 子任务执行结束后唤醒项目另一个子任务
+        scanTaskScheduler.notify(subTask.projectId)
 
         planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, resultSubTaskStatus, overview, modifiedBy)
 

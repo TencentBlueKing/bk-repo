@@ -108,21 +108,14 @@ class PlanArtifactLatestSubScanTaskDao(
                 .with(
                     Sort.by(
                         Sort.Direction.DESC,
-                        SubScanTaskDefinition::createdDate.name,
+                        SubScanTaskDefinition::lastModifiedDate.name,
                         SubScanTaskDefinition::repoName.name,
-                        SubScanTaskDefinition::fullPath.name,
-                        SubScanTaskDefinition::packageKey.name,
-                        SubScanTaskDefinition::version.name
+                        SubScanTaskDefinition::fullPath.name
                     )
                 )
             val count = count(query)
             val records = find(query.with(pageRequest))
-            return Page(
-                pageNumber = pageRequest.pageNumber + 1,
-                pageSize = pageRequest.pageSize,
-                totalRecords = count,
-                records = records
-            )
+            return Pages.ofResponse(pageRequest, count, records)
         }
     }
 

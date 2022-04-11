@@ -25,46 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task
+package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
 
-/**
- * 扫描任务调度器
- */
-interface ScanTaskScheduler {
-    /**
-     * 开始调度扫描任务
-     */
-    fun schedule(scanTask: ScanTask)
-
-    /**
-     * 调度子任务
-     *
-     * @return 调度是否成功
-     */
-    fun schedule(subScanTask: SubScanTask): Boolean
-
-    /**
-     * 唤醒项目[projectId]处于BLOCKED状态的扫描的子任务
-     *
-     * @return 唤醒的任务数量
-     */
-    fun notify(projectId: String): Int
-
-    /**
-     * 恢复执行扫描任务
-     */
-    fun resume(scanTask: ScanTask)
-
-    /**
-     * 暂停扫描任务
-     */
-    fun pause(scanTask: ScanTask)
-
-    /**
-     * 停止扫描任务
-     */
-    fun stop(scanTask: ScanTask)
+@Repository
+class ProjectScanConfigurationDao : ScannerSimpleMongoDao<TProjectScanConfiguration>() {
+    fun findByProjectId(projectId: String): TProjectScanConfiguration? {
+        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
+        return findOne(Query(criteria))
+    }
 }
