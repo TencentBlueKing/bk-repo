@@ -108,6 +108,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Component
 
 @Component
@@ -336,7 +337,15 @@ class MavenLocalRepository(
             if (isArtifact) createMavenVersion(context, mavenGavc, node.fullPath)
             // 更新包各模块版本最新记录
             logger.info("Prepare to create maven metadata....")
-            mavenMetadataService.update(node)
+            try {
+                mavenMetadataService.update(node)
+            } catch (e: DuplicateKeyException) {
+                logger.warn(
+                    "DuplicateKeyException occurred during updating metadata for " +
+                        "${context.artifactInfo.getArtifactFullPath()} " +
+                        "in repo ${context.artifactInfo.getRepoIdentify()}"
+                )
+            }
         } else {
             val artifactFullPath = context.artifactInfo.getArtifactFullPath()
             val isSnapShotUri = artifactFullPath.isSnapshotUri()
@@ -859,22 +868,29 @@ class MavenLocalRepository(
             "artifactId" to mavenGAVC.artifactId,
             "version" to mavenGAVC.version
         )
-        mavenGAVC.classifier?.let { metadata["classifier"] = it }
-        packageClient.createVersion(
-            PackageVersionCreateRequest(
-                context.projectId,
-                context.repoName,
-                packageName = mavenGAVC.artifactId,
-                packageKey = PackageKeys.ofGav(mavenGAVC.groupId, mavenGAVC.artifactId),
-                packageType = PackageType.MAVEN,
-                versionName = mavenGAVC.version,
-                size = context.getArtifactFile().getSize(),
-                artifactPath = fullPath,
-                overwrite = true,
-                createdBy = context.userId,
-                metadata = metadata
+        try {
+            mavenGAVC.classifier?.let { metadata["classifier"] = it }
+            packageClient.createVersion(
+                PackageVersionCreateRequest(
+                    context.projectId,
+                    context.repoName,
+                    packageName = mavenGAVC.artifactId,
+                    packageKey = PackageKeys.ofGav(mavenGAVC.groupId, mavenGAVC.artifactId),
+                    packageType = PackageType.MAVEN,
+                    versionName = mavenGAVC.version,
+                    size = context.getArtifactFile().getSize(),
+                    artifactPath = fullPath,
+                    overwrite = true,
+                    createdBy = context.userId,
+                    metadata = metadata
+                )
             )
-        )
+        } catch (ignore: DuplicateKeyException) {
+            logger.warn(
+                "The package info has been created for version[${mavenGAVC.version}] " +
+                    "and package[${mavenGAVC.artifactId}] in repo ${context.artifactInfo.getRepoIdentify()}"
+            )
+        }
     }
 
     fun updateMetadata(fullPath: String, metadataArtifact: ArtifactFile) {
