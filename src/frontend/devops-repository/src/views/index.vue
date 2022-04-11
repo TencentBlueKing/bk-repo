@@ -3,7 +3,7 @@
         <div class="nav-submain-list" :class="{ 'hidden-menu': hiddenMenu }">
             <router-link
                 class="nav-submain-item flex-align-center"
-                :class="{ 'active-link': $route.meta.breadcrumb.find(route => route.name === name) }"
+                :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
                 v-for="name in menuList.project"
                 :key="name"
                 :to="{ name }">
@@ -16,7 +16,7 @@
             <template v-if="userInfo.admin">
                 <router-link
                     class="nav-submain-item flex-align-center"
-                    :class="{ 'active-link': $route.meta.breadcrumb.find(route => route.name === name) }"
+                    :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
                     v-for="name in menuList.global"
                     :key="name"
                     :to="{ name }">
@@ -71,6 +71,9 @@
             },
             isMasterNode () {
                 return this.masterNode.url && this.masterNode.url.indexOf(location.origin) !== -1
+            },
+            breadcrumb () {
+                return this.$route.meta.breadcrumb || []
             }
         }
     }
