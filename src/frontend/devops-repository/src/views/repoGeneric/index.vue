@@ -131,7 +131,7 @@
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
-                                    { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                    (!row.scanStatus || (row.scanStatus === 'SUCCESS')) && { clickEvent: () => handlerDownload(row), label: $t('download') },
                                     !row.folder && { clickEvent: () => handlerShare(row), label: $t('share') },
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
                                     permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },

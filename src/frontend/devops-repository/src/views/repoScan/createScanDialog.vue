@@ -14,6 +14,13 @@
                     v-model="scanForm.type">
                     <bk-option v-for="[id, name] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="name"></bk-option>
                 </bk-select>
+                <div v-if="scanForm.type === 'GENERIC'" class="form-tip">支持apk、ipa、aab、jar格式的文件</div>
+            </bk-form-item>
+            <bk-form-item label="扫描器" :required="true" property="scanner" error-display-type="normal">
+                <bk-select
+                    v-model="scanForm.scanner">
+                    <bk-option v-for="scanner in scannerList" :key="scanner.name" :id="scanner.name" :name="scanner.name"></bk-option>
+                </bk-select>
             </bk-form-item>
             <bk-form-item :label="$t('description')" property="description">
                 <bk-input
@@ -43,9 +50,11 @@
                     show: false,
                     loading: false,
                     type: '',
+                    scanner: '',
                     name: '',
                     description: ''
                 },
+                scannerList: [],
                 rules: {
                     name: [
                         {
@@ -70,12 +79,15 @@
             }
         },
         methods: {
-            ...mapActions(['createScan']),
+            ...mapActions(['getScannerList', 'createScan']),
             setData (data) {
                 this.scanForm = {
                     ...this.scanForm,
                     ...data
                 }
+                this.getScannerList().then(res => {
+                    this.scannerList = res
+                })
             },
             cancel () {
                 this.$refs.scanForm.clearError()
@@ -88,11 +100,12 @@
             },
             submitScanForm () {
                 this.scanForm.loading = true
-                const { type, name, description } = this.scanForm
+                const { scanner, type, name, description } = this.scanForm
                 this.createScan({
                     projectId: this.projectId,
                     type,
                     name,
+                    scanner,
                     description
                 }).then(() => {
                     this.$emit('refresh')

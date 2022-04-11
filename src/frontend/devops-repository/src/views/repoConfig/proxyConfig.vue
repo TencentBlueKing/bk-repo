@@ -189,7 +189,7 @@
         padding: 5px 20px;
         font-size: 12px;
         color: var(--primaryHoverColor);
-        background-color: #3a84ff1a;
+        background-color: var(--bgHoverLighterColor);
     }
     .proxy-item,
     .proxy-head {

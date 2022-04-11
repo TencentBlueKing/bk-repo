@@ -6,9 +6,8 @@
                     <bk-form-item label="方案名称">
                         <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
                     </bk-form-item>
-                    <bk-form-item label="方案类型">
-                        <span>{{ scanTypeEnum[scanBaseInfo.type] }}</span>
-                    </bk-form-item>
+                    <bk-form-item label="方案类型">{{ scanTypeEnum[scanBaseInfo.type] }}</bk-form-item>
+                    <bk-form-item label="扫描器">{{ scanBaseInfo.scanner }}</bk-form-item>
                     <bk-form-item :label="$t('description')">
                         <bk-input type="textarea"
                             class="w480"
@@ -42,6 +41,7 @@
                 scanBaseInfo: {
                     name: '',
                     type: '',
+                    scanner: '',
                     description: '',
                     autoScan: false,
                     repoNameList: [],

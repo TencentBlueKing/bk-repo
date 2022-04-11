@@ -261,9 +261,25 @@ body {
         white-space: nowrap;
     }
     
-    .bk-sideslider-content {
-        height: calc(100% - 60px);
-        overflow: hidden;
+    .bk-sideslider {
+        .bk-sideslider-header {
+            display: flex;
+            align-items: center;
+            .bk-sideslider-closer {
+                float: none;
+            }
+            .bk-sideslider-title {
+                flex: 1;
+                padding: 0 20px!important;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+        }
+        .bk-sideslider-content {
+            height: calc(100% - 60px);
+            overflow: hidden;
+        }
     }
 
     .bk-tag-selector{
