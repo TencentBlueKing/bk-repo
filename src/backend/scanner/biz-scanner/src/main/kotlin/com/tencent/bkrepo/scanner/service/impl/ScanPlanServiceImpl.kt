@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.service.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -39,6 +40,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
@@ -68,7 +70,8 @@ class ScanPlanServiceImpl(
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
-    private val finishedSubScanTaskDao: FinishedSubScanTaskDao
+    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
+    private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) : ScanPlanService {
     override fun create(request: ScanPlan): ScanPlan {
         val operator = SecurityUtils.getUserId()
@@ -208,6 +211,7 @@ class ScanPlanServiceImpl(
         val subtask = finishedSubScanTaskDao.find(projectId, subScanTaskId)
             ?: subScanTaskDao.find(projectId, subScanTaskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, subScanTaskId)
+        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         return ScanPlanConverter.convert(subtask)
     }
 
@@ -215,7 +219,6 @@ class ScanPlanServiceImpl(
         with(request) {
             ScanParamUtil.checkParam(
                 repoType = RepositoryType.valueOf(repoType),
-                artifactName = fullPath ?: "",
                 packageKey = packageKey,
                 version = version,
                 fullPath = fullPath
@@ -225,6 +228,7 @@ class ScanPlanServiceImpl(
                     packageClient.findVersionByName(projectId, repoName, packageKey!!, version!!)
                 }?.contentPath ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
             }
+            permissionCheckHandler.checkNodePermission(projectId, repoName, fullPath!!, PermissionAction.READ)
             val subtasks = finishedSubScanTaskDao.findSubScanTasks(request) + subScanTaskDao.findSubScanTasks(request)
             return subtasks.map {
                 ScanPlanConverter.convertToArtifactPlanRelation(it)

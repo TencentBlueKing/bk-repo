@@ -88,7 +88,6 @@ class UserScanReportController(
 
     @ApiOperation("制品详情--漏洞数据")
     @GetMapping("/artifact/leak/{projectId}/{subScanTaskId}")
-    @Principal(PrincipalType.ADMIN)
     @Deprecated("切换为使用artifactReports接口", ReplaceWith("artifactReport"))
     fun artifactLeak(
         @ApiParam(value = "projectId") @PathVariable projectId: String,
@@ -103,7 +102,6 @@ class UserScanReportController(
 
     @ApiOperation("制品详情--漏洞数据")
     @GetMapping("/artifact/count/{projectId}/{subScanTaskId}")
-    @Principal(PrincipalType.ADMIN)
     @Deprecated("切换为使用artifactReports接口", ReplaceWith("artifactReport"))
     fun artifactCount(
         @ApiParam(value = "projectId") @PathVariable projectId: String,

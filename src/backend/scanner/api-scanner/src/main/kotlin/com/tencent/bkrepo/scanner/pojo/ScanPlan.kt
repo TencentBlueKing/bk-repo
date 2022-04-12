@@ -36,29 +36,29 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("扫描方案")
 data class ScanPlan(
     @ApiModelProperty("方案ID")
-    val id: String? = null,
+    var id: String? = null,
     @ApiModelProperty("项目ID")
-    val projectId: String? = null,
+    var projectId: String? = null,
     @ApiModelProperty("方案名称")
-    val name: String? = null,
+    var name: String? = null,
     @ApiModelProperty("方案类型")
-    val type: String? = null,
+    var type: String? = null,
     @ApiModelProperty("使用的扫描器")
-    val scanner: String? = null,
+    var scanner: String? = null,
     @ApiModelProperty("方案描述")
-    val description: String? = null,
+    var description: String? = null,
     @ApiModelProperty("是否有新制品上传时自动扫描")
-    val scanOnNewArtifact: Boolean? = null,
+    var scanOnNewArtifact: Boolean? = null,
     @ApiModelProperty("自动扫描仓库")
-    val repoNames: List<String>? = null,
+    var repoNames: List<String>? = null,
     @ApiModelProperty("自动扫描规则")
-    val rule: Rule? = null,
+    var rule: Rule? = null,
     @ApiModelProperty("创建者")
-    val createdBy: String? = null,
+    var createdBy: String? = null,
     @ApiModelProperty("创建时间")
-    val createdDate: String? = null,
+    var createdDate: String? = null,
     @ApiModelProperty("修改者")
-    val lastModifiedBy: String? = null,
+    var lastModifiedBy: String? = null,
     @ApiModelProperty("修改时间")
-    val lastModifiedDate: String? = null
+    var lastModifiedDate: String? = null
 )

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.service.impl
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
@@ -94,7 +96,8 @@ class ScanServiceImpl @Autowired constructor(
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
-    private val scannerMetrics: ScannerMetrics
+    private val scannerMetrics: ScannerMetrics,
+    private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) : ScanService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -402,6 +405,8 @@ class ScanServiceImpl @Autowired constructor(
         with(request) {
             val subtask = finishedSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
+
             val scanner = scannerService.get(subtask.scanner)
             val arguments = Converter.convertToLoadArguments(request, scanner.type)
             val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
