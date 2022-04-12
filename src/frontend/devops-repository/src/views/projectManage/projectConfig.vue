@@ -33,8 +33,8 @@
                             :name="option.name">
                         </bk-option>
                     </bk-select>
-                    <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')"><span class="mr5">{{ $t('add') }}</span></bk-button>
-                    <bk-button :disabled="!tab.delete.length" theme="warning" class="ml10" @click="confirmHandler(tab, 'delete')"><span class="mr5">批量删除</span></bk-button>
+                    <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')">{{ $t('add') }}</bk-button>
+                    <bk-button :disabled="!tab.delete.length" theme="warning" class="ml10" @click="confirmHandler(tab, 'delete')">批量删除</bk-button>
                 </div>
                 <bk-table
                     class="mt10"

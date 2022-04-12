@@ -14,7 +14,7 @@
                 </bk-radio-group>
                 <bk-table
                     class="mt10"
-                    :height="planData.replicaType !== 'REAL_TIME' ? 'calc(100% - 92px)' : 'calc(100% - 62px)'"
+                    :height="planData.replicaType !== 'REAL_TIME' ? 'calc(100% - 90px)' : 'calc(100% - 60px)'"
                     :data="logList"
                     :outer-border="false"
                     :row-border="false"
@@ -22,25 +22,19 @@
                     size="small"
                     @row-click="showLogDetailHandler">
                     <bk-table-column type="index" label="编号" width="60"></bk-table-column>
-                    <bk-table-column label="运行状态" width="100">
+                    <bk-table-column label="运行状态" width="80">
                         <template #default="{ row }">
                             <span class="repo-tag" :class="row.status">{{asyncPlanStatusEnum[row.status] || '未执行'}}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column label="开始执行时间" width="150">
-                        <template #default="{ row }">
-                            {{formatDate(row.startTime)}}
-                        </template>
+                        <template #default="{ row }">{{formatDate(row.startTime)}}</template>
                     </bk-table-column>
                     <bk-table-column v-if="planData.replicaType !== 'REAL_TIME'" label="结束执行时间" width="150">
-                        <template #default="{ row }">
-                            {{formatDate(row.endTime)}}
-                        </template>
+                        <template #default="{ row }">{{formatDate(row.endTime)}}</template>
                     </bk-table-column>
-                    <bk-table-column label="备注">
-                        <template #default="{ row }">
-                            <span :title="row.errorReason">{{row.errorReason || '--'}}</span>
-                        </template>
+                    <bk-table-column label="备注" show-overflow-tooltip>
+                        <template #default="{ row }">{{row.errorReason || '--'}}</template>
                     </bk-table-column>
                 </bk-table>
                 <bk-pagination

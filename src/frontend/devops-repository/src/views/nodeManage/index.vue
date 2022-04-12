@@ -1,7 +1,7 @@
 <template>
     <div class="node-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="showCreateNode"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="showCreateNode">{{ $t('create') }}</bk-button>
             <div class="node-search flex-align-center">
                 <bk-input
                     class="w250"
@@ -25,7 +25,7 @@
         </div>
         <bk-table
             class="mt10 node-table"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="filterClusterList"
             :outer-border="false"
             :row-border="false"
@@ -40,24 +40,19 @@
             </template>
             <bk-table-column label="状态" width="100">
                 <template #default="{ row }">
-                    <div class="flex-align-center">
-                        <i class="status-sign" :class="row.status"></i>
-                        <span class="ml5" :class="row.status">{{ row.status === 'HEALTHY' ? '正常' : '异常' }}</span>
-                    </div>
+                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? '正常' : '异常'"></div>
                 </template>
             </bk-table-column>
-            <bk-table-column label="节点名称" prop="name" width="250"></bk-table-column>
+            <bk-table-column label="节点名称" prop="name" width="250" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="节点类型" width="120">
-                <template #default="{ row }">
-                    {{ nodeTypeEnum[row.type] }}
-                </template>
+                <template #default="{ row }">{{ nodeTypeEnum[row.type] }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('address')">
                 <template #default="{ row }">
                     <a class="hover-btn" :href="row.url" target="_blank">{{ row.url }}</a>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('account')" prop="username" width="120"></bk-table-column>
+            <bk-table-column :label="$t('account')" prop="username" width="120" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('createdDate')" width="200">
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
@@ -299,13 +294,5 @@
     height: 100%;
     overflow: hidden;
     background-color: white;
-    .node-table {
-        .HEALTHY {
-            color: var(--successColor);
-        }
-        .UNHEALTHY {
-            color: var(--warningColor);
-        }
-    }
 }
 </style>

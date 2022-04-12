@@ -1,7 +1,7 @@
 <template>
     <div class="plan-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="$router.push({ name: 'createPlan' })"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="$router.push({ name: 'createPlan' })">{{ $t('create') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     class="w250"
@@ -31,7 +31,7 @@
         </div>
         <bk-table
             class="mt10 plan-table"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="planList"
             :outer-border="false"
             :row-border="false"
@@ -46,25 +46,19 @@
                 </empty-data>
             </template>
             <bk-table-column label="计划名称" prop="name" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="同步类型" width="100">
+            <bk-table-column label="同步类型" width="80">
                 <template #default="{ row }">
                     {{ { 'REPOSITORY': '同步仓库', 'PACKAGE': '同步制品', 'PATH': '同步文件' }[row.replicaObjectType] }}
                 </template>
             </bk-table-column>
-            <bk-table-column label="目标节点">
-                <template #default="{ row }">
-                    {{ row.remoteClusters.map(v => v.name).join('、') }}
-                </template>
+            <bk-table-column label="目标节点" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.remoteClusters.map(v => v.name).join('、') }}</template>
             </bk-table-column>
-            <bk-table-column label="同步策略" width="100">
-                <template #default="{ row }">
-                    {{ getExecutionStrategy(row) }}
-                </template>
+            <bk-table-column label="同步策略" width="80">
+                <template #default="{ row }">{{ getExecutionStrategy(row) }}</template>
             </bk-table-column>
             <bk-table-column label="上次执行时间" prop="LAST_EXECUTION_TIME" width="150" :render-header="renderHeader">
-                <template #default="{ row }">
-                    {{formatDate(row.lastExecutionTime)}}
-                </template>
+                <template #default="{ row }">{{formatDate(row.lastExecutionTime)}}</template>
             </bk-table-column>
             <bk-table-column label="上次执行状态" width="100">
                 <template #default="{ row }">
@@ -72,31 +66,22 @@
                 </template>
             </bk-table-column>
             <bk-table-column label="下次执行时间" prop="NEXT_EXECUTION_TIME" width="150" :render-header="renderHeader">
-                <template #default="{ row }">
-                    {{formatDate(row.nextExecutionTime)}}
-                </template>
+                <template #default="{ row }">{{formatDate(row.nextExecutionTime)}}</template>
             </bk-table-column>
-            <bk-table-column label="创建者" width="100">
-                <template #default="{ row }">
-                    {{userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy}}
-                </template>
+            <bk-table-column label="创建者" width="90" show-overflow-tooltip>
+                <template #default="{ row }">{{userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('createdDate')" prop="CREATED_TIME" width="150" :render-header="renderHeader">
+                <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
+            </bk-table-column>
+            <bk-table-column label="启用计划" width="70">
                 <template #default="{ row }">
-                    {{formatDate(row.createdDate)}}
+                    <bk-switcher class="m5" v-model="row.enabled" size="small" theme="primary" @change="changeEnabledHandler(row)"></bk-switcher>
                 </template>
             </bk-table-column>
-            <bk-table-column label="计划状态" width="120">
+            <bk-table-column label="执行" width="60">
                 <template #default="{ row }">
-                    <div class="flex-align-center" @click.stop="() => {}">
-                        <bk-switcher class="mr10" v-model="row.enabled" @change="changeEnabledHandler(row)"></bk-switcher>
-                        <div>{{row.enabled ? '启用' : '停用'}}</div>
-                    </div>
-                </template>
-            </bk-table-column>
-            <bk-table-column label="执行" width="70">
-                <template #default="{ row }">
-                    <i class="p5 devops-icon icon-play3 hover-btn"
+                    <i class="devops-icon icon-play3 hover-btn inline-block"
                         :class="{ 'disabled': row.lastExecutionStatus === 'RUNNING' || row.replicaType === 'REAL_TIME' }"
                         @click.stop="executePlanHandler(row)">
                     </i>
@@ -324,12 +309,6 @@
     .plan-table {
         ::v-deep .selected-header {
             color: var(--primaryColor);
-        }
-        ::v-deep .devops-icon {
-            &.disabled {
-                color: var(--fontDisableColor);
-                cursor: not-allowed;
-            }
         }
     }
 }

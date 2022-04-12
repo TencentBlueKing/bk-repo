@@ -128,7 +128,7 @@
 <style lang="scss" scoped>
 .artifactory-upload-container {
     position: relative;
-    min-height: 70px;
+    height: 150px;
     padding: 10px 20px;
     border: 1px dashed;
     border-radius: 10px;
@@ -143,6 +143,7 @@
     }
     .icon-close {
         position: absolute;
+        font-size: 12px;
         top: 10px;
         right: 10px;
     }

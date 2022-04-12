@@ -7,21 +7,21 @@
                 <span class="repo-tag" v-if="cardData.type === 'MAVEN'">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
             </div>
             <span class="package-card-description text-overflow" :title="cardData.description">{{ cardData.description }}</span>
-            <div class="package-card-data flex-align-center">
+            <div class="package-card-data">
                 <template v-if="cardData.type">
-                    <div class="flex-align-center" :title="`最新版本：${cardData.latest}`"></div>
-                    <div class="flex-align-center" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
-                    <div class="flex-align-center" :title="`版本数：${cardData.versions}`"></div>
-                    <div class="flex-align-center" :title="`下载统计：${cardData.downloads}`"></div>
+                    <div class="card-metadata" :title="`最新版本：${cardData.latest}`"></div>
+                    <div class="card-metadata" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="`版本数：${cardData.versions}`"></div>
+                    <div class="card-metadata" :title="`下载统计：${cardData.downloads}`"></div>
                 </template>
                 <template v-else>
-                    <div class="flex-align-center" :title="`文件大小：${convertFileSize(cardData.size)}`"></div>
-                    <div class="flex-align-center" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
+                    <div class="card-metadata" :title="`文件大小：${convertFileSize(cardData.size)}`"></div>
+                    <div class="card-metadata" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
                 </template>
             </div>
         </div>
         <div class="card-operation flex-center">
-            <Icon v-if="!readonly" size="14" name="icon-delete" @click.native.stop="deleteCard" />
+            <Icon class="hover-btn" v-if="!readonly" size="24" name="icon-delete" @click.native.stop="deleteCard" />
             <operation-list
                 :list="[
                     !cardData.type && { label: '下载', clickEvent: () => download() },
@@ -77,6 +77,7 @@
 </script>
 <style lang="scss" scoped>
 .package-card-container {
+    flex: 1;
     height: 100px;
     padding: 16px 20px;
     border-radius: 5px;
@@ -105,14 +106,18 @@
             font-size: 12px;
             color: var(--fontSubsidiaryColor);
         }
-        .package-card-data > div {
-            width: 300px;
-            color: var(--fontSubsidiaryColor);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            &:after {
-                content: attr(title);
+        .package-card-data {
+            display: grid;
+            grid-template: auto / repeat(4, 1fr);
+            .card-metadata {
+                padding: 0 5px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                &:after {
+                    content: attr(title);
+                    color: var(--fontSubsidiaryColor);
+                }
             }
         }
     }

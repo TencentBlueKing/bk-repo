@@ -204,7 +204,7 @@
             }
         },
         computed: {
-            ...mapState(['clusterList']),
+            ...mapState(['clusterList', 'repoListAll']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -216,9 +216,7 @@
             }
         },
         created () {
-            this.getRepoListAll({
-                projectId: this.projectId
-            })
+            this.getRepoListAll({ projectId: this.projectId })
             this.routeName !== 'createPlan' && this.handlePlanDetail()
         },
         methods: {

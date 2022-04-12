@@ -1,165 +1,174 @@
 <template>
     <bk-tab class="common-version-container" type="unborder-card" :active.sync="tabName" v-bkloading="{ isLoading }">
         <template #setting>
-            <bk-button v-if="permission.edit" :disabled="(detail.basic.stageTag || '').includes('@release')" outline class="mr10" @click="$emit('tag')">晋级</bk-button>
             <bk-button v-if="repoType !== 'docker'" outline class="mr10" @click="$emit('download')">下载</bk-button>
-            <bk-button v-if="permission.delete" outline class="mr20" @click="$emit('delete')">删除</bk-button>
+            <operation-list class="mr10"
+                :list="operationBtns">
+                <bk-button @click.stop="() => {}" icon="ellipsis"></bk-button>
+            </operation-list>
         </template>
-        <bk-tab-panel v-for="[tab, obj] in Object.entries(detail)" :key="tab" :name="tab" :label="getTabLabel(tab)">
-            <template v-if="tab === 'basic'">
-                <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')">
-                    <div class="package-name grid-item">
-                        <label>制品名称</label>
-                        <span>
-                            <span>{{ packageName }}</span>
-                            <span v-if="obj.groupId" class="ml5 repo-tag"> {{ obj.groupId }} </span>
-                        </span>
-                    </div>
-                    <div class="grid-item"
-                        v-for="{ name, label, value } in detailInfoMap"
-                        :key="name">
-                        <label>{{ label }}</label>
-                        <span class="flex-1 text-overflow" :title="value">
-                            <span>{{ value }}</span>
-                            <template v-if="name === 'version'">
-                                <span class="ml5 repo-tag"
-                                    v-for="tag in obj.stageTag"
-                                    :key="tag">
-                                    {{ tag }}
-                                </span>
-                            </template>
-                        </span>
-                    </div>
-                    <div class="package-description grid-item">
-                        <label>描述</label>
-                        <span class="flex-1 text-overflow" :title="obj.description">{{ obj.description || '--' }}</span>
-                    </div>
+        <bk-tab-panel v-if="detail.basic" name="basic" :label="$t('baseInfo')">
+            <div class="version-base-info base-info display-block" :data-title="$t('baseInfo')">
+                <div class="package-name grid-item">
+                    <label>制品名称</label>
+                    <span>
+                        <span>{{ packageName }}</span>
+                        <span v-if="detail.basic.groupId" class="ml5 repo-tag"> {{ detail.basic.groupId }} </span>
+                    </span>
                 </div>
-                <div class="version-base-info base-info-guide display-block" :data-title="$t('useTips')">
-                    <div class="sub-section" v-for="block in articleInstall[0].main" :key="block.subTitle">
-                        <div class="mb10">{{ block.subTitle }}</div>
-                        <code-area class="mb20" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
-                    </div>
-                </div>
-                <div class="version-base-info base-info-checksums display-block" data-title="Checksums">
-                    <div v-if="obj.sha256" class="grid-item">
-                        <label>SHA256</label>
-                        <span class="flex-1 text-overflow" :title="obj.sha256">{{ obj.sha256 }}</span>
-                    </div>
-                    <div v-if="obj.md5" class="grid-item">
-                        <label>MD5</label>
-                        <span class="flex-1 text-overflow" :title="obj.md5">{{ obj.md5 }}</span>
-                    </div>
-                </div>
-            </template>
-            <template v-else-if="tab === 'metadata' || tab === 'manifest'">
-                <div class="version-metadata display-block" :data-title="getTabLabel(tab)">
-                    <!-- <div class="version-metadata-add" v-bk-clickoutside="hiddenAddMetadata">
-                        <i @click="metadata.show ? hiddenAddMetadata() : showAddMetadata()" class="devops-icon icon-plus flex-center hover-btn"></i>
-                        <div class="version-metadata-add-board"
-                            :style="{ height: metadata.show ? '180px' : '0' }">
-                            <bk-form class="p20" :label-width="80" :model="metadata" :rules="rules" ref="metadatForm">
-                                <bk-form-item :label="$t('key')" :required="true" property="key">
-                                    <bk-input size="small" v-model="metadata.key" :placeholder="$t('key')"></bk-input>
-                                </bk-form-item>
-                                <bk-form-item :label="$t('value')" :required="true" property="value">
-                                    <bk-input size="small" v-model="metadata.value" :placeholder="$t('value')"></bk-input>
-                                </bk-form-item>
-                                <bk-form-item>
-                                    <bk-button size="small" theme="default" @click.stop="hiddenAddMetadata">{{$t('cancel')}}</bk-button>
-                                    <bk-button class="ml5" size="small" :loading="metadata.loading" theme="primary" @click="addMetadataHandler">{{$t('confirm')}}</bk-button>
-                                </bk-form-item>
-                            </bk-form>
-                        </div>
-                    </div> -->
-                    <bk-table
-                        :data="Object.entries(obj || {})"
-                        :outer-border="false"
-                        :row-border="false"
-                        size="small">
-                        <template #empty>
-                            <empty-data ex-style="margin-top:80px;"
-                                :config="{
-                                    imgSrc: '/ui/no-metadata.png',
-                                    title: '暂无元数据',
-                                    subTitle: '给制品添加任意自定义的属性，来跟踪整个制品的生产过程'
-                                }">
-                            </empty-data>
+                <div class="grid-item"
+                    v-for="{ name, label, value } in detailInfoMap"
+                    :key="name">
+                    <label>{{ label }}</label>
+                    <span class="flex-1 text-overflow" :title="value">
+                        <span>{{ value }}</span>
+                        <template v-if="name === 'version'">
+                            <span class="ml5 repo-tag"
+                                v-for="tag in detail.basic.stageTag"
+                                :key="tag">
+                                {{ tag }}
+                            </span>
+                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="detail.basic.scanStatus"></scan-tag>
                         </template>
-                        <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
-                        <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
-                        <bk-table-column label="" width="60"></bk-table-column>
-                    </bk-table>
+                    </span>
                 </div>
-            </template>
-            <template v-else-if="tab === 'layers'">
-                <div class="version-layers display-block" data-title="Layers">
-                    <div class="block-header grid-item">
-                        <label>ID</label>
-                        <span class="pl40">{{ $t('size') }}</span>
-                    </div>
-                    <div class="grid-item" v-for="layer in obj" :key="layer.digest">
-                        <label class="text-overflow" :title="layer.digest">{{ layer.digest }}</label>
-                        <span class="pl40">{{ convertFileSize(layer.size) }}</span>
+                <div class="package-description grid-item">
+                    <label>描述</label>
+                    <span class="flex-1 text-overflow" :title="detail.basic.description">{{ detail.basic.description || '--' }}</span>
+                </div>
+            </div>
+            <div class="version-base-info base-info-guide display-block" :data-title="$t('useTips')">
+                <div class="sub-section" v-for="block in articleInstall[0].main" :key="block.subTitle">
+                    <div class="mb10">{{ block.subTitle }}</div>
+                    <code-area class="mb20" v-if="block.codeList && block.codeList.length" :code-list="block.codeList"></code-area>
+                </div>
+            </div>
+            <div class="version-base-info base-info-checksums display-block" data-title="Checksums">
+                <div v-if="detail.basic.sha256" class="grid-item">
+                    <label>SHA256</label>
+                    <span class="flex-1 text-overflow" :title="detail.basic.sha256">{{ detail.basic.sha256 }}</span>
+                </div>
+                <div v-if="detail.basic.md5" class="grid-item">
+                    <label>MD5</label>
+                    <span class="flex-1 text-overflow" :title="detail.basic.md5">{{ detail.basic.md5 }}</span>
+                </div>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.basic.readme" name="readme" label="详细描述">
+            <div class="version-detail-readme" v-html="readmeContent"></div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
+            <div class="version-metadata display-block" :data-title="$t('metaData')">
+                <bk-table
+                    :data="Object.entries(detail.metadata || {})"
+                    :outer-border="false"
+                    :row-border="false"
+                    size="small">
+                    <template #empty>
+                        <empty-data ex-style="margin-top:80px;"
+                            :config="{
+                                imgSrc: '/ui/no-metadata.png',
+                                title: '暂无数据'
+                            }">
+                        </empty-data>
+                    </template>
+                    <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
+                </bk-table>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.manifest" name="manifest" label="Manifest">
+            <div class="version-metadata display-block" data-title="Manifest">
+                <bk-table
+                    :data="Object.entries(detail.manifest || {})"
+                    :outer-border="false"
+                    :row-border="false"
+                    size="small">
+                    <template #empty>
+                        <empty-data ex-style="margin-top:80px;"
+                            :config="{
+                                imgSrc: '/ui/no-metadata.png',
+                                title: '暂无数据'
+                            }">
+                        </empty-data>
+                    </template>
+                    <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
+                    <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
+                </bk-table>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.layers" name="layers" label="Layers">
+            <div class="version-layers display-block" data-title="Layers">
+                <div class="block-header grid-item">
+                    <label>ID</label>
+                    <span class="pl40">{{ $t('size') }}</span>
+                </div>
+                <div class="grid-item" v-for="layer in detail.layers" :key="layer.digest">
+                    <label class="text-overflow" :title="layer.digest">{{ layer.digest }}</label>
+                    <span class="pl40">{{ convertFileSize(layer.size) }}</span>
+                </div>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.history" name="history" label="IMAGE HISTORY">
+            <div class="version-history">
+                <div class="version-history-left">
+                    <div class="version-history-code hover-btn"
+                        v-for="(code, index) in detail.history"
+                        :key="index"
+                        :class="{ select: selectedHistory.created_by === code.created_by }"
+                        @click="selectedHistory = code">
+                        {{code.created_by}}
                     </div>
                 </div>
-            </template>
-            <template v-else-if="tab === 'history'">
-                <div class="version-history">
-                    <div class="version-history-left">
-                        <div class="version-history-code hover-btn"
-                            v-for="(code, index) in obj"
-                            :key="index"
-                            :class="{ select: selectedHistory.created_by === code.created_by }"
-                            @click="selectedHistory = code">
-                            {{code.created_by}}
-                        </div>
-                    </div>
-                    <div class="version-history-right">
-                        <header class="version-history-header">Command</header>
-                        <code-area class="mt20"
-                            :show-line-number="false"
-                            :code-list="[selectedHistory.created_by]">
-                        </code-area>
-                    </div>
+                <div class="version-history-right">
+                    <header class="version-history-header">Command</header>
+                    <code-area class="mt20"
+                        :show-line-number="false"
+                        :code-list="[selectedHistory.created_by]">
+                    </code-area>
                 </div>
-            </template>
-            <template v-else-if="tab === 'dependencyInfo'">
-                <article class="version-dependencies">
-                    <section class="version-dependencies-main display-block"
-                        v-for="type in ['dependencies', 'devDependencies', 'dependents']"
-                        :key="type"
-                        :data-title="type">
-                        <template v-if="obj[type].length">
-                            <template
-                                v-for="{ name, version } in obj[type]">
-                                <div class="version-dependencies-key text-overflow" :key="name" :title="name">{{ name }}</div>
-                                <div v-if="type !== 'dependents'" class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
-                            </template>
+            </div>
+        </bk-tab-panel>
+        <bk-tab-panel v-if="detail.dependencyInfo" name="dependencyInfo" :label="$t('dependencies')">
+            <article class="version-dependencies">
+                <section class="version-dependencies-main display-block"
+                    v-for="type in ['dependencies', 'devDependencies', 'dependents']"
+                    :key="type"
+                    :data-title="type">
+                    <template v-if="detail.dependencyInfo[type].length">
+                        <template
+                            v-for="{ name, version } in detail.dependencyInfo[type]">
+                            <div class="version-dependencies-key text-overflow" :key="name" :title="name">{{ name }}</div>
+                            <div v-if="type !== 'dependents'" class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
                         </template>
-                        <empty-data v-else class="version-dependencies-empty"></empty-data>
-                    </section>
-                </article>
-            </template>
+                    </template>
+                    <empty-data v-else class="version-dependencies-empty"></empty-data>
+                </section>
+            </article>
         </bk-tab-panel>
     </bk-tab>
 </template>
 <script>
     import CodeArea from '@repository/components/CodeArea'
+    import OperationList from '@repository/components/OperationList'
+    import ScanTag from '@repository/views/repoScan/scanTag'
     import { mapState, mapActions } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
     export default {
         name: 'commonVersionDetail',
-        components: { CodeArea },
+        components: { CodeArea, OperationList, ScanTag },
         mixins: [repoGuideMixin],
         data () {
             return {
                 tabName: 'basic',
                 isLoading: false,
                 detail: {
-                    basic: {}
+                    basic: {
+                        readme: ''
+                    }
                 },
+                readmeContent: '',
                 selectedHistory: {},
                 metadata: {
                     show: false,
@@ -201,6 +210,13 @@
                     { name: 'lastModifiedDate', label: this.$t('lastModifiedDate') }
                 ].filter(({ name }) => name in this.detail.basic)
                     .map(item => ({ ...item, value: this.detail.basic[item.name] }))
+            },
+            operationBtns () {
+                return [
+                    this.permission.edit && { clickEvent: () => this.$emit('tag'), label: '晋级', disabled: (this.detail.basic.stageTag || '').includes('@release') },
+                    this.repoType === 'maven' && { clickEvent: () => this.$emit('scan'), label: '安全扫描' },
+                    this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
+                ].filter(Boolean)
             }
         },
         watch: {
@@ -209,6 +225,14 @@
                     version && this.getDetail()
                 },
                 immediate: true
+            },
+            'detail.basic.readme' (val) {
+                if (val) {
+                    const promise = window.marked ? Promise.resolve() : window.loadLibScript('/ui/libs/marked.min.js')
+                    promise.then(() => {
+                        this.readmeContent = window.marked.parse(val)
+                    })
+                }
             }
         },
         methods: {
@@ -217,22 +241,6 @@
                 'getVersionDetail',
                 'addPackageMetadata'
             ]),
-            getTabLabel (tab) {
-                switch (tab) {
-                    case 'basic':
-                        return this.$t('baseInfo')
-                    case 'metadata':
-                        return this.$t('metaData')
-                    case 'manifest':
-                        return 'Manifest'
-                    case 'layers':
-                        return 'Layers'
-                    case 'history':
-                        return 'IMAGE HISTORY'
-                    case 'dependencyInfo':
-                        return this.$t('dependencies')
-                }
-            },
             getDetail () {
                 this.isLoading = true
                 this.getVersionDetail({
@@ -315,7 +323,7 @@
             height: 40px;
             overflow: hidden;
             > * {
-                padding-left: 10px;
+                padding: 0 10px;
             }
             > label {
                 line-height: 40px;
@@ -325,7 +333,7 @@
         }
         &.base-info {
             display: grid;
-            grid-template: auto / repeat(3, 1fr);
+            grid-template: auto / repeat(2, 1fr);
             border: solid var(--borderColor);
             border-width: 1px 0 0 1px;
             .grid-item {
@@ -338,7 +346,7 @@
             }
             .package-name,
             .package-description {
-                grid-column: 1 / 4;
+                grid-column: 1 / 3;
             }
         }
         &.base-info-guide {
@@ -374,13 +382,6 @@
                 box-shadow: 0 3px 6px rgba(51, 60, 72, 0.4);
                 will-change: height;
                 transition: all .3s;
-            }
-            .icon-plus {
-                width: 100%;
-                height: 100%;
-                &:hover {
-                    background-color: var(--bgHoverColor);
-                }
             }
         }
     }
@@ -473,6 +474,70 @@
             padding: 20px;
             grid-column: 1 / 5;
             background-color: white;
+        }
+    }
+}
+</style>
+<style lang="scss">
+.version-detail-readme {
+    font: initial;
+    color: initial;
+    line-height: initial;
+    ul {
+        padding-inline-start: 40px;
+    }
+
+    li {
+        list-style: inherit;
+    }
+
+    a {
+        color: var(--primaryColor);
+        text-decoration: underline;
+        &:hover {
+            color: var(--primaryHoverColor)
+        }
+    }
+
+    pre {
+        > * {
+            white-space: initial;
+        }
+    }
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-weight: 600;
+        line-height: 1.25;
+    }
+    blockquote, dl, ol, p, pre, table, ul {
+        margin-top: 0;
+        margin-bottom: 16px;
+    }
+    h1 {
+        font-size: 2rem;
+    }
+    h2 {
+        font-size: 1.5rem;
+    }
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    table {
+        overflow: auto;
+        word-break: normal;
+        word-break: keep-all;
+        border-collapse: collapse;
+        border-spacing: 0;
+        tr {
+            background-color: var(--bgColor);
+            border-top: 1px solid var(--borderColor);
+            th, td {
+                padding: 6px 13px;
+                text-align: left;
+                border: 1px solid var(--borderColor);
+            }
         }
     }
 }

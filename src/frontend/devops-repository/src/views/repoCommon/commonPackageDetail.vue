@@ -2,14 +2,14 @@
     <div class="common-package-detail">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
             <Icon class="package-img" size="70" :name="repoType" />
-            <div class="ml20 common-package-title flex-column">
-                <span class="mb5 repo-title text-overflow" :title="pkg.name">
+            <div class="ml20 common-package-title">
+                <div class="mb5 repo-title text-overflow" :title="pkg.name">
                     {{ pkg.name }}
-                </span>
-                <span class="repo-description text-overflow"
+                </div>
+                <div class="repo-description text-overflow"
                     :title="pkg.description">
                     {{ pkg.description || '【制品描述】' }}
-                </span>
+                </div>
             </div>
         </header>
         <div class="common-version-main flex-align-center">
@@ -43,6 +43,7 @@
                                 class="version-operation"
                                 :list="[
                                     permission.edit && { label: '晋级', clickEvent: () => changeStageTagHandler($version), disabled: ($version.stageTag || '').includes('@release') },
+                                    repoType === 'maven' && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) },
                                     repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
                                 ].filter(Boolean)"></operation-list>
@@ -54,41 +55,25 @@
                 <version-detail
                     ref="versionDetail"
                     @tag="changeStageTagHandler()"
+                    @scan="scanPackageHandler()"
                     @download="downloadPackageHandler()"
                     @delete="deleteVersionHandler()">
                 </version-detail>
             </div>
         </div>
         
-        <canway-dialog
-            v-model="formDialog.show"
-            width="400"
-            height-num="193"
-            :title="$t('upgrade')"
-            @cancel="cancelFormDialog">
-            <bk-form :label-width="100" :model="formDialog" :rules="rules" ref="formDialog">
-                <bk-form-item :label="$t('upgradeTo')" :required="true" property="tag" error-display-type="normal">
-                    <bk-radio-group v-model="formDialog.tag">
-                        <bk-radio :disabled="!!formDialog.default.length" value="@prerelease">@prerelease</bk-radio>
-                        <bk-radio class="ml20" value="@release">@release</bk-radio>
-                    </bk-radio-group>
-                </bk-form-item>
-            </bk-form>
-            <template #footer>
-                <bk-button theme="default" @click.stop="cancelFormDialog">{{$t('cancel')}}</bk-button>
-                <bk-button class="ml5" :loading="formDialog.loading" theme="primary" @click="submitFormDialog">{{$t('confirm')}}</bk-button>
-            </template>
-        </canway-dialog>
+        <common-form-dialog ref="commonFormDialog" @refresh="refresh"></common-form-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import VersionDetail from '@repository/views/repoCommon/commonVersionDetail'
+    import commonFormDialog from '@repository/views/repoCommon/commonFormDialog'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageDetail',
-        components: { OperationList, InfiniteScroll, VersionDetail },
+        components: { OperationList, InfiniteScroll, VersionDetail, commonFormDialog },
         data () {
             return {
                 tabName: 'commonVersion',
@@ -125,7 +110,7 @@
                     count: 0,
                     current: 1,
                     limit: 20,
-                    'limit-list': [10, 20, 40]
+                    limitList: [10, 20, 40]
                 }
             }
         },
@@ -225,43 +210,34 @@
                     }
                 })
             },
+            refresh (version) {
+                this.getVersionListHandler()
+                if (this.version === version) {
+                    this.$refs.versionDetail && this.$refs.versionDetail.getDetail()
+                }
+            },
             changeStageTagHandler (row = this.currentVersion) {
                 if ((row.stageTag || '').includes('@release')) return
-                this.formDialog = {
+                this.$refs.commonFormDialog.setData({
                     show: true,
                     loading: false,
+                    title: this.$t('upgrade'),
+                    type: 'upgrade',
                     version: row.name,
                     default: row.stageTag,
                     tag: ''
-                }
-            },
-            async submitFormDialog () {
-                await this.$refs.formDialog.validate()
-                this.formDialog.loading = true
-                this.changeStageTag({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    packageKey: this.packageKey,
-                    version: this.formDialog.version,
-                    tag: this.formDialog.tag
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('upgrade') + this.$t('success')
-                    })
-                    this.cancelFormDialog()
-                    this.getVersionListHandler()
-                    // 当前版本晋级，更新详情
-                    if (this.version === this.formDialog.version) {
-                        this.$refs.versionDetail && this.$refs.versionDetail.getDetail()
-                    }
-                }).finally(() => {
-                    this.formDialog.loading = false
                 })
             },
-            cancelFormDialog () {
-                this.$refs.formDialog.clearError()
-                this.formDialog.show = false
+            scanPackageHandler (row = this.currentVersion) {
+                this.$refs.commonFormDialog.setData({
+                    show: true,
+                    loading: false,
+                    title: '安全扫描',
+                    type: 'scan',
+                    id: '',
+                    name: this.pkg.name,
+                    version: row.name
+                })
             },
             downloadPackageHandler (row = this.currentVersion) {
                 if (this.repoType === 'docker') return
@@ -308,7 +284,6 @@
     height: 100%;
     .common-package-header{
         height: 90px;
-        color: var(--fontPrimaryColor);
         background-color: white;
         .package-img {
             padding: 15px;
@@ -323,7 +298,7 @@
             }
             .repo-description {
                 max-width: 70vw;
-                padding-left: 6px;
+                padding: 5px 15px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
             }

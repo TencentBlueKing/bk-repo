@@ -3,7 +3,7 @@
         <div class="nav-submain-list" :class="{ 'hidden-menu': hiddenMenu }">
             <router-link
                 class="nav-submain-item flex-align-center"
-                :class="{ 'active-link': $route.meta.breadcrumb.find(route => route.name === name) }"
+                :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
                 v-for="name in menuList.project"
                 :key="name"
                 :to="{ name }">
@@ -16,7 +16,7 @@
             <template v-if="userInfo.admin">
                 <router-link
                     class="nav-submain-item flex-align-center"
-                    :class="{ 'active-link': $route.meta.breadcrumb.find(route => route.name === name) }"
+                    :class="{ 'active-link': breadcrumb.find(route => route.name === name) }"
                     v-for="name in menuList.global"
                     :key="name"
                     :to="{ name }">
@@ -32,7 +32,7 @@
         </div>
         <div class="m10 bkrepo-view-main flex-column flex-1">
             <breadcrumb class="mb10 repo-breadcrumb">
-                <bk-breadcrumb-item :to="{ name: 'repoList' }">制品管理</bk-breadcrumb-item>
+                <bk-breadcrumb-item :to="{ name: 'repoList' }">制品库</bk-breadcrumb-item>
             </breadcrumb>
             <router-view class="flex-1"></router-view>
         </div>
@@ -57,6 +57,7 @@
                         (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoList',
                         (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoSearch',
                         // MODE_CONFIG === 'ci' && 'repoToken',
+                        (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.manage && 'repoScan',
                         (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.admin && this.isMasterNode && 'planManage',
                         (MODE_CONFIG === 'ci' || this.projectList.length) && !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
                     ].filter(Boolean),
@@ -70,6 +71,9 @@
             },
             isMasterNode () {
                 return this.masterNode.url && this.masterNode.url.indexOf(location.origin) !== -1
+            },
+            breadcrumb () {
+                return this.$route.meta.breadcrumb || []
             }
         }
     }
@@ -84,7 +88,7 @@
         overflow-y: auto;
         padding-top: 12px;
         font-size: 14px;
-        background-color: var(--deepBgColor);
+        background-color: white;
         will-change: width;
         transition: width .3s;
         &.hidden-menu {
@@ -93,22 +97,22 @@
         .split-line {
             height: 1px;
             margin: 6px 16px;
-            background-color: white;
+            background-color: var(--fontSubsidiaryColor);
             opacity: 0.2;
         }
         .nav-submain-item {
             height: 44px;
             margin-bottom: 4px;
             padding: 0 16px;
-            color: rgba(255, 255, 255, 0.8);
+            color: #7b7d8a;
             &:hover {
-                color: white;
-                background-color: #407BE0;
+                color: #3b97ff;
+                background-color: #ecf4ff;
             }
             &.router-link-active,
             &.active-link {
-                color: var(--primaryColor);
-                background-color: white;
+                color: #3b97ff;
+                background-color: #ecf4ff;
             }
             .menu-icon {
                 ::v-deep .bk-tooltip-ref {
@@ -123,7 +127,7 @@
             position: absolute;
             left: 16px;
             bottom: 24px;
-            color: white;
+            color: #7b7d8a;
             cursor: pointer;
         }
     }

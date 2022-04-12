@@ -42,6 +42,13 @@ export default {
             return totalRecords
         })
     },
+    // 批量查询所有文件数量（递归）
+    getMultiFileNumOfFolder (_, { projectId, repoName, paths }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/node/batch/${projectId}/${repoName}`,
+            paths
+        )
+    },
     // 请求文件夹下的子文件夹
     getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
         let request
@@ -139,7 +146,7 @@ export default {
                                 ? [
                                     {
                                         field: 'name',
-                                        value: `\*${name}\*`,
+                                        value: `*${name}*`,
                                         operation: 'MATCH'
                                     }
                                 ]
@@ -209,6 +216,15 @@ export default {
     deleteArtifactory (_, { projectId, repoName, fullPath = '' }) {
         return Vue.prototype.$ajax.delete(
             `${prefix}/node/delete/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
+        )
+    },
+    // 批量删除文件
+    deleteMultiArtifactory (_, { projectId, repoName, paths }) {
+        return Vue.prototype.$ajax.delete(
+            `${prefix}/node/batch/${projectId}/${repoName}`,
+            {
+                data: paths
+            }
         )
     },
     // 分享文件

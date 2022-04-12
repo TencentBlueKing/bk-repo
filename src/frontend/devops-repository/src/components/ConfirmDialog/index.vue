@@ -77,12 +77,14 @@
     min-height: 60px;
     padding-left: 26px;
     .confirm-main {
+        display: flex;
         font-size: 14px;
         font-weight: bold;
     }
     .devops-icon {
         width: 26px;
         height: 26px;
+        margin-top: -2px;
         color:white;
         border-radius: 50%;
         &.icon-exclamation {
