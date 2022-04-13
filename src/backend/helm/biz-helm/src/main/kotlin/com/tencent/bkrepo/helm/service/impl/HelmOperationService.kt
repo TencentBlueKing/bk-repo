@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -146,7 +148,8 @@ class HelmOperationService : AbstractChartService() {
      * 更新remote仓库index.yaml文件，并刷新对应的package信息
      */
     fun updatePackageForRemote(projectId: String, name: String, userId: String = SecurityUtils.getUserId()) {
-        logger.info("Will start to init package info for remote repo $projectId|$name")
+        logger.info("Will start to update package info for repo $projectId|$name")
+        val repoDetail = checkRepo(projectId, name) ?: return
         // 先判断本地存储中是否存在index.yaml，如不存在则认为是刚创建的repo
         val oldNodeDetail = getOriginalIndexNode(projectId, name)
         // 获取本地index文件
@@ -155,38 +158,79 @@ class HelmOperationService : AbstractChartService() {
         } catch (ignore: HelmFileNotFoundException) {
             HelmUtils.initIndexYamlMetadata()
         }
-
-        // 下载最新index文件
-        val newIndex = initIndexYaml(projectId, name, userId) ?: return
-        val newNodeDetail = getOriginalIndexNode(projectId, name)
-        // 先比较本地与远程两个index文件的checksum是否一样，一样则认为不需要更新
-        if (oldNodeDetail?.sha256 == newNodeDetail!!.sha256) {
-            logger.info("the index.yaml is exactly same with the old one in repo $projectId|$name")
-            return
-        }
-
-        val (deletedSet, addedSet) = ChartParserUtil.compareIndexYamlMetadata(oldIndex.entries, newIndex.entries)
-        // 对新增的chart进行插入
-        addedSet.forEach { element ->
-            element.value.forEach {
-                createVersion(
-                    userId = userId,
+        when (repoDetail.configuration) {
+            is CompositeConfiguration -> {
+                val config = repoDetail.configuration as CompositeConfiguration
+                val newIndex = forEachProxyRepo(config.proxy.channelList, repoDetail)
+                val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
+                    indexYamlMetadata = newIndex,
                     projectId = projectId,
                     repoName = name,
-                    chartInfo = it
+                    operator = userId
                 )
+                uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
+                val newNodeDetail = getOriginalIndexNode(projectId, name)
+                // 先比较本地与远程两个index文件的checksum是否一样，一样则认为不需要更新
+                if (oldNodeDetail?.sha256 == newNodeDetail!!.sha256) {
+                    logger.info("the index.yaml is exactly same with the old one in repo $projectId|$name")
+                    return
+                }
+
+                val (deletedSet, addedSet) = ChartParserUtil.compareIndexYamlMetadata(
+                    oldEntries = oldIndex.entries,
+                    newEntries = newIndex.entries
+                )
+                // 对新增的chart进行插入
+                addedSet.forEach { element ->
+                    element.value.forEach {
+                        createVersion(
+                            userId = userId,
+                            projectId = projectId,
+                            repoName = name,
+                            chartInfo = it
+                        )
+                    }
+                }
             }
-        }
-        // 对需要删除的chart进行删除
-        deletedSet.forEach { element ->
-            element.value.forEach {
-                removeVersion(
-                    projectId = projectId,
-                    repoName = name,
-                    version = it.version,
-                    packageKey = PackageKeys.ofHelm(it.name),
-                    userId = userId
+            is RemoteConfiguration -> {
+                // 下载最新index文件
+                val newIndex = initIndexYaml(projectId, name, userId) ?: return
+                val newNodeDetail = getOriginalIndexNode(projectId, name)
+                // 先比较本地与远程两个index文件的checksum是否一样，一样则认为不需要更新
+                if (oldNodeDetail?.sha256 == newNodeDetail!!.sha256) {
+                    logger.info("the index.yaml is exactly same with the old one in repo $projectId|$name")
+                    return
+                }
+
+                val (deletedSet, addedSet) = ChartParserUtil.compareIndexYamlMetadata(
+                    oldEntries = oldIndex.entries,
+                    newEntries = newIndex.entries
                 )
+                // 对新增的chart进行插入
+                addedSet.forEach { element ->
+                    element.value.forEach {
+                        createVersion(
+                            userId = userId,
+                            projectId = projectId,
+                            repoName = name,
+                            chartInfo = it
+                        )
+                    }
+                }
+                // 对需要删除的chart进行删除
+                deletedSet.forEach { element ->
+                    element.value.forEach {
+                        removeVersion(
+                            projectId = projectId,
+                            repoName = name,
+                            version = it.version,
+                            packageKey = PackageKeys.ofHelm(it.name),
+                            userId = userId
+                        )
+                    }
+                }
+            }
+            else -> {
             }
         }
     }
