@@ -41,6 +41,11 @@ import java.time.LocalDateTime
         name = "unique_index",
         def = "{'projectId': 1, 'name': 1, 'type': 1, 'deleted': 1}",
         unique = true, background = true
+    ),
+    CompoundIndex(
+        name = "latestScanTaskId_index",
+        def = "{'latestScanTaskId': 1}",
+        background = true
     )
 )
 data class TScanPlan(
@@ -89,5 +94,15 @@ data class TScanPlan(
     /**
      * 自动扫描规则
      */
-    val rule: String
+    val rule: String,
+
+    /**
+     * 最新一次扫描任务id
+     */
+    val latestScanTaskId: String? = null,
+
+    /**
+     * 扫描结果统计信息
+     */
+    val scanResultOverview: Map<String, Long> = emptyMap()
 )

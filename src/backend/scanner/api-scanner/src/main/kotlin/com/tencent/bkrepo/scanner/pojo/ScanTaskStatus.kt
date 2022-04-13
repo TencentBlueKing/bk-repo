@@ -55,5 +55,5 @@ enum class ScanTaskStatus{
     /**
      * 扫描结束
      */
-    FINISHED
+    FINISHED;
 }

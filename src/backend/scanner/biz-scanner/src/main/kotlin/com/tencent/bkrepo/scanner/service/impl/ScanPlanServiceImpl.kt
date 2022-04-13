@@ -37,14 +37,13 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
-import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
-import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.ScannerDao
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
@@ -67,10 +66,10 @@ import java.time.LocalDateTime
 @Service
 class ScanPlanServiceImpl(
     private val packageClient: PackageClient,
+    private val scannerDao: ScannerDao,
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
-    private val subScanTaskDao: SubScanTaskDao,
-    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) : ScanPlanService {
     override fun create(request: ScanPlan): ScanPlan {
@@ -120,13 +119,21 @@ class ScanPlanServiceImpl(
         pageLimit: PageLimit
     ): Page<ScanPlanInfo> {
         val page = scanPlanDao.page(projectId, type, planNameContains, pageLimit)
-        val scanTaskMap = scanTaskDao.findByPlanIdIn(page.records.map { it.id!! }).associateBy { it.planId }
-        return Page(
-            page.pageNumber,
-            page.pageSize,
-            page.totalRecords,
-            page.records.map { ScanPlanConverter.convert(it, scanTaskMap[it.id!!]) }
-        )
+
+        val scanTaskIds = page.records.filter { it.latestScanTaskId != null }.map { it.latestScanTaskId!! }
+        val scanTaskMap = scanTaskDao.findByIds(scanTaskIds).associateBy { it.id }
+
+        val planArtifactCountMap = planArtifactLatestSubScanTaskDao.planArtifactCount(page.records.map { it.id!! })
+
+        val scanPlanInfoList = page.records.map {
+            ScanPlanConverter.convert(
+                it,
+                scanTaskMap[it.latestScanTaskId],
+                planArtifactCountMap[it.id!!] ?: 0L
+            )
+        }
+
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, scanPlanInfoList)
     }
 
     override fun find(projectId: String, id: String): ScanPlan? {
@@ -163,53 +170,26 @@ class ScanPlanServiceImpl(
     override fun scanPlanInfo(projectId: String, id: String): ScanPlanInfo? {
         val scanPlan = scanPlanDao.find(projectId, id)
             ?: throw throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
-        val scanTask = scanTaskDao.latestTask(id)
-        return ScanPlanConverter.convert(scanPlan, scanTask)
+        val scanTask = scanPlan.latestScanTaskId?.let { scanTaskDao.findById(it) }
+        val artifactCount = planArtifactLatestSubScanTaskDao.planArtifactCount(scanPlan.id!!)
+        return ScanPlanConverter.convert(scanPlan, scanTask, artifactCount)
     }
 
     override fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo> {
         with(request) {
-            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-
-            // 获取扫描方案最新一次扫描任务
-            val scanTask = parentScanTaskId?.let { scanTaskDao.findById(it) }
-                ?: scanTaskDao.latestTask(id)
-                ?: return Pages.ofResponse(pageRequest, 0L, emptyList())
-            parentScanTaskId = scanTask.id
-
-            // 查询已结束的子任务
-            val containsFinishedStatus = subScanTaskStatus.isNullOrEmpty()
-                || subScanTaskStatus!!.firstOrNull { SubScanTaskStatus.finishedStatus(it) } != null
-            val finishedSubScanTasks = if (containsFinishedStatus) {
-                finishedSubScanTaskDao.findSubScanTasks(request, scanTask.scannerType)
-            } else {
-                null
-            }
-
-            // 查询执行中的子任务
-            val containsUnfinishedStatus = subScanTaskStatus.isNullOrEmpty()
-                || subScanTaskStatus?.firstOrNull { !SubScanTaskStatus.finishedStatus(it) } != null
-            val unfinishedSubScanTasks = if (containsUnfinishedStatus) {
-                subScanTaskDao.findSubScanTasks(request, scanTask.scannerType)
-            } else {
-                null
-            }
-
-            // 合并结果返回
-            val totalRecords = (finishedSubScanTasks?.totalRecords ?: 0L) + (unfinishedSubScanTasks?.totalRecords ?: 0L)
-            val subTasks = (finishedSubScanTasks?.records ?: emptyList()) + (unfinishedSubScanTasks?.records
-                ?: emptyList())
+            val plan = scanPlanDao.get(id)
+            val scanner = scannerDao.findByName(plan.scanner)!!
+            val page = planArtifactLatestSubScanTaskDao.pageBy(request, scanner.type)
             return Pages.ofResponse(
-                pageRequest,
-                totalRecords,
-                subTasks.map { ScanPlanConverter.convertToPlanArtifactInfo(it, scanTask.createdBy) }
+                Pages.ofRequest(pageNumber, pageSize),
+                page.totalRecords,
+                page.records.map { ScanPlanConverter.convertToPlanArtifactInfo(it) }
             )
         }
     }
 
     override fun planArtifact(projectId: String, subScanTaskId: String): ArtifactScanResultOverview {
-        val subtask = finishedSubScanTaskDao.find(projectId, subScanTaskId)
-            ?: subScanTaskDao.find(projectId, subScanTaskId)
+        val subtask = planArtifactLatestSubScanTaskDao.find(projectId, subScanTaskId)
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, subScanTaskId)
         permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
         return ScanPlanConverter.convert(subtask)
@@ -229,7 +209,7 @@ class ScanPlanServiceImpl(
                 }?.contentPath ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
             }
             permissionCheckHandler.checkNodePermission(projectId, repoName, fullPath!!, PermissionAction.READ)
-            val subtasks = finishedSubScanTaskDao.findSubScanTasks(request) + subScanTaskDao.findSubScanTasks(request)
+            val subtasks = planArtifactLatestSubScanTaskDao.findAll(projectId, repoName, fullPath!!)
             return subtasks.map {
                 ScanPlanConverter.convertToArtifactPlanRelation(it)
             }

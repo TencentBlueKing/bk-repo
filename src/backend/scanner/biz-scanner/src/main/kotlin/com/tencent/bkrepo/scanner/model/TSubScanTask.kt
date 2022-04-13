@@ -46,6 +46,16 @@ import java.time.LocalDateTime
         name = "lastModifiedDate_idx",
         def = "{'lastModifiedDate': 1}",
         background = true
+    ),
+    CompoundIndex(
+        name = "projectId_status_idx",
+        def = "{'projectId': 1, 'status': 1}",
+        background = true
+    ),
+    CompoundIndex(
+        name = "parentScanTaskId_idx",
+        def = "{'parentScanTaskId': 1}",
+        background = true
     )
 )
 class TSubScanTask(
@@ -68,7 +78,10 @@ class TSubScanTask(
     artifactName: String,
 
     status: String,
-    executedTimes: Int,
+    /**
+     * 已经执行的次数
+     */
+    val executedTimes: Int,
     scanner: String,
     scannerType: String,
     sha256: String,
@@ -93,7 +106,6 @@ class TSubScanTask(
     artifactName = artifactName,
 
     status = status,
-    executedTimes = executedTimes,
     scanner = scanner,
     scannerType = scannerType,
     sha256 = sha256,

@@ -27,16 +27,15 @@
 
 package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 @Repository
-class FinishedSubScanTaskDao : AbsSubScanTaskDao<TFinishedSubScanTask>() {
-    override fun artifactPlanRelationAggregateResultClass(): Class<*> {
-        return ArtifactPlanRelationAggregateResult::class.java
+class ProjectScanConfigurationDao : ScannerSimpleMongoDao<TProjectScanConfiguration>() {
+    fun findByProjectId(projectId: String): TProjectScanConfiguration? {
+        val criteria = TProjectScanConfiguration::projectId.isEqualTo(projectId)
+        return findOne(Query(criteria))
     }
-
-    class ArtifactPlanRelationAggregateResult(
-        artifactSubScanTasks: List<TFinishedSubScanTask>
-    ) : AbsSubScanTaskDao.ArtifactPlanRelationAggregateResult<TFinishedSubScanTask>(artifactSubScanTasks)
 }

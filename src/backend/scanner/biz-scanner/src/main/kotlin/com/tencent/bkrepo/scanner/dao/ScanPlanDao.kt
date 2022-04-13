@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -123,6 +124,69 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
 
             val query = Query(criteria)
             return updateFirst(query, update)
+        }
+    }
+
+    fun updateLatestScanTaskId(planId: String, scanTaskId: String): UpdateResult {
+        val query = Query(Criteria.where(ID).isEqualTo(planId))
+        val update = Update.update(TScanPlan::latestScanTaskId.name, scanTaskId)
+        return updateFirst(query, update)
+    }
+
+    /**
+     * 批量更新扫描方案扫描结果预览信息
+     *
+     * @param planOverviewMap key 为扫描方案id， value为扫描预览结果
+     */
+    fun decrementScanResultOverview(planOverviewMap: Map<String, Map<String, Number>>) {
+        val updates = ArrayList<org.springframework.data.util.Pair<Query, Update>>(planOverviewMap.size)
+        for (entry in planOverviewMap) {
+            val planId = entry.key
+            val overview = entry.value
+
+            val query = Query(Criteria.where(ID).isEqualTo(planId))
+            val update = buildOverviewUpdate(overview, true) ?: continue
+
+            updates.add(org.springframework.data.util.Pair.of(query, update))
+        }
+
+        // 没有更新时直接返回
+        if (updates.isEmpty()) {
+            return
+        }
+
+        determineMongoTemplate()
+            .bulkOps(BulkOperations.BulkMode.UNORDERED, determineCollectionName())
+            .updateOne(updates)
+            .execute()
+    }
+
+    fun updateScanResultOverview(latestScanTaskId: String, overview: Map<String, Any?>) {
+        val criteria = TScanPlan::latestScanTaskId.isEqualTo(latestScanTaskId)
+        val update = buildOverviewUpdate(overview) ?: return
+        updateFirst(Query(criteria), update)
+    }
+
+    private fun buildOverviewUpdate(overview: Map<String, Any?>, dec: Boolean = false): Update? {
+        val update = Update()
+        var hasUpdate = false
+
+        overview.forEach {
+            if (it.value is Number) {
+                val value = if (dec) {
+                    -(it.value as Number).toLong()
+                } else {
+                    it.value as Number
+                }
+                update.inc("${TScanPlan::scanResultOverview.name}.${it.key}", value)
+                hasUpdate = true
+            }
+        }
+
+        return if (hasUpdate) {
+            update
+        } else {
+            null
         }
     }
 

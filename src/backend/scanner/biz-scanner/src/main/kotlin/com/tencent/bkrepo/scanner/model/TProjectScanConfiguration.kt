@@ -25,46 +25,44 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.task
+package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 扫描任务调度器
+ * 项目扫描配置
  */
-interface ScanTaskScheduler {
-    /**
-     * 开始调度扫描任务
-     */
-    fun schedule(scanTask: ScanTask)
+@Document("project_scan_configuration")
+@CompoundIndexes(
+    CompoundIndex(name = "projectId_idx", def = "{'projectId': 1}", background = true, unique = true)
+)
+data class TProjectScanConfiguration(
+    val id: String? = null,
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    val lastModifiedBy: String,
+    val lastModifiedDate: LocalDateTime,
 
+    val projectId: String,
     /**
-     * 调度子任务
-     *
-     * @return 调度是否成功
+     * 项目优先级，值越小优先级越低
      */
-    fun schedule(subScanTask: SubScanTask): Boolean
-
+    val priority: Int = DEFAULT_PROJECT_SCAN_PRIORITY,
     /**
-     * 唤醒项目[projectId]处于BLOCKED状态的扫描的子任务
-     *
-     * @return 唤醒的任务数量
+     * 项目限制的扫描任务数量
      */
-    fun notify(projectId: String): Int
-
+    val scanTaskCountLimit: Int = DEFAULT_SCAN_TASK_COUNT_LIMIT,
     /**
-     * 恢复执行扫描任务
+     * 项目扫描子任务数量限制
      */
-    fun resume(scanTask: ScanTask)
-
-    /**
-     * 暂停扫描任务
-     */
-    fun pause(scanTask: ScanTask)
-
-    /**
-     * 停止扫描任务
-     */
-    fun stop(scanTask: ScanTask)
+    val subScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
+) {
+    companion object {
+        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
+        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
+        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
+    }
 }

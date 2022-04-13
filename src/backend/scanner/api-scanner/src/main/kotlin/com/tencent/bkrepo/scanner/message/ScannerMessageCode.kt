@@ -37,7 +37,8 @@ enum class ScannerMessageCode(
     SCANNER_EXISTS("scanner.scanner.exists", 1),
     SCAN_TASK_NOT_FOUND("scanner.task.not-found", 2),
     SCANNER_RESULT_TYPE_INVALID("scanner.result.type.invalid", 3),
-    SCAN_PLAN_DELETE_FAILED("scanner.plan.delete-failed", 4);
+    SCAN_PLAN_DELETE_FAILED("scanner.plan.delete-failed", 4),
+    SCAN_TASK_COUNT_EXCEED_LIMIT("scanner.task.count.exceed-limit", 5);
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key

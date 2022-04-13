@@ -81,7 +81,7 @@ class UserScanController @Autowired constructor(
         @ApiParam(value = "记录id")
         @RequestParam("recordId") subtaskId: String
     ): Response<Boolean> {
-        return ResponseBuilder.success(scanService.stopSubtask(projectId, subtaskId))
+        return ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
     }
 
     @ApiOperation("批量扫描")
