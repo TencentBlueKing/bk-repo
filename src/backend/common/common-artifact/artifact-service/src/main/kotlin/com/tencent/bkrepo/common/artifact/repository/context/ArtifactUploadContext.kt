@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.OCTET_STREAM
 import com.tencent.bkrepo.common.artifact.hash.HashAlgorithm
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -48,8 +49,9 @@ open class ArtifactUploadContext : ArtifactContext {
 
     constructor(
         repo: RepositoryDetail,
-        artifactFile: ArtifactFile
-    ) {
+        artifactFile: ArtifactFile,
+        artifactInfo: ArtifactInfo? = null
+    ) : super(repo, artifactInfo) {
         this.repositoryDetail = repo
         this.artifactFile = artifactFile
         this.artifactFileMap = ArtifactFileMap()

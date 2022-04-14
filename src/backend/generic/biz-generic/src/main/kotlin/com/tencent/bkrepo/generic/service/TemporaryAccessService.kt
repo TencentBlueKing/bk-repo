@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -72,7 +73,8 @@ class TemporaryAccessService(
     private val temporaryTokenClient: TemporaryTokenClient,
     private val repositoryClient: RepositoryClient,
     private val genericProperties: GenericProperties,
-    private val pluginManager: PluginManager
+    private val pluginManager: PluginManager,
+    private val deltaSyncService: DeltaSyncService
 ) {
 
     /**
@@ -197,6 +199,32 @@ class TemporaryAccessService(
         checkAuthorization(temporaryToken)
         checkAccessPermits(temporaryToken.permits)
         return temporaryToken
+    }
+
+    /**
+     * 增量签名
+     * */
+    fun sign(artifactInfo: GenericArtifactInfo) {
+        with(artifactInfo) {
+            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val request = HttpContextHolder.getRequest()
+            request.setAttribute(REPO_KEY, repo)
+            deltaSyncService.sign()
+        }
+    }
+
+    /**
+     * 合并
+     * */
+    fun patch(artifactInfo: GenericArtifactInfo, oldFilePath: String) {
+        with(artifactInfo) {
+            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val request = HttpContextHolder.getRequest()
+            request.setAttribute(REPO_KEY, repo)
+            deltaSyncService.patch(oldFilePath)
+        }
     }
 
     /**

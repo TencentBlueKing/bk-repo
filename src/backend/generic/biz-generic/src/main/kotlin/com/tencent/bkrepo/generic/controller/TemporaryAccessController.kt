@@ -33,7 +33,9 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
+import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
@@ -42,9 +44,11 @@ import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TokenType
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -95,6 +99,27 @@ class TemporaryAccessController(
     ) {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         temporaryAccessService.upload(artifactInfo, file)
+        temporaryAccessService.decrementPermits(tokenInfo)
+    }
+
+    @GetMapping("/sign/$DELTA_MAPPING_URI")
+    fun sign(
+        artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String
+    ) {
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
+        temporaryAccessService.sign(artifactInfo)
+        temporaryAccessService.decrementPermits(tokenInfo)
+    }
+
+    @PatchMapping("/patch/$DELTA_MAPPING_URI")
+    fun patch(
+        artifactInfo: GenericArtifactInfo,
+        @RequestHeader(HEADER_OLD_FILE_PATH) oldFilePath: String,
+        @RequestParam token: String
+    ) {
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        temporaryAccessService.patch(artifactInfo, oldFilePath)
         temporaryAccessService.decrementPermits(tokenInfo)
     }
 }
