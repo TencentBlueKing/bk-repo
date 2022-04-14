@@ -136,7 +136,7 @@ object ScanPlanConverter {
                 description = description,
                 scanOnNewArtifact = autoScan,
                 repoNames = repoNameList,
-                rule = RuleConverter.convert(projectId, repoNameList, artifactRules)
+                rule = RuleConverter.convert(projectId, repoNameList, artifactRules, type)
             )
         }
     }
