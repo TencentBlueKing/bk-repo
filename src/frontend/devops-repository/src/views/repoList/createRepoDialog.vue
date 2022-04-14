@@ -305,10 +305,6 @@
                 line-height: initial;
                 padding: 0;
                 border-radius: 2px;
-                &:hover {
-                    border-color: var(--primaryHoverColor);
-                    box-shadow: 0px 0px 6px 0px var(--primaryHoverColor);
-                }
             }
         }
         .repo-type-radio {

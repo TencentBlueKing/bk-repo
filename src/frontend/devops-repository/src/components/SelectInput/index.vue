@@ -15,7 +15,8 @@
             class="input-container"
             :value="input"
             @input="i => change('input', i)"
-            :disabled="disabled">
+            :disabled="disabled"
+            :placeholder="placeholder">
         </bk-input>
     </div>
 </template>
@@ -25,6 +26,7 @@
         props: {
             select: String,
             input: String,
+            placeholder: String,
             selectId: {
                 type: String,
                 default: 'id'

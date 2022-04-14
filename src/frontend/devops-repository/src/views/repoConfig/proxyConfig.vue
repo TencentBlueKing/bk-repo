@@ -170,7 +170,7 @@
                             }
                         }
                     }
-                }).then(res => {
+                }).then(() => {
                     this.$emit('refresh')
                     this.$bkMessage({
                         theme: 'success',
