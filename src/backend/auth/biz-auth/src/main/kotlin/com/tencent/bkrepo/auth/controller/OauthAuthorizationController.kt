@@ -25,38 +25,53 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.controller
 
+import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationResource
 import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.*
 
-@Api(tags = ["SERVICE_OAUTHAUTHORIZATION"], description = "服务-Oauth授权接口")
-@Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource")
-@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
-interface ServiceOauthAuthorizationResource {
+@RestController
+@RequestMapping(AUTH_API_OAUTH_PREFIX)
+class OauthAuthorizationController @Autowired constructor(
+    private val oauthAuthorizationService: OauthAuthorizationService
+) {
+
+    @ApiOperation("用户确认Oauth授权")
+    @PostMapping("/authorize")
+    fun authorize(clientId: String, state: String) {
+        oauthAuthorizationService.authorized(clientId, state)
+    }
 
     @ApiOperation("获取oauth token信息")
     @GetMapping("/token")
-    fun getToken(
-        @RequestParam accessToken: String
-    ): Response<OauthToken?>
+    fun getToken(accessToken: String): Response<OauthToken?> {
+        return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
+    }
+
+    @ApiOperation("创建oauth token")
+    @PostMapping("/token")
+    fun createToken(clientId: String, clientSecret: String, code: String) {
+        oauthAuthorizationService.createToken(clientId, clientSecret, code)
+    }
+
+    @ApiOperation("删除oauth token")
+    @DeleteMapping("/token")
+    fun deleteToken(clientId: String, clientSecret: String, accessToken: String): Response<Void> {
+        oauthAuthorizationService.deleteToken(clientId, clientSecret, accessToken)
+        return ResponseBuilder.success()
+    }
 
     @ApiOperation("验证oauth token")
     @GetMapping("/token/validate")
-    fun validateToken(
-        @RequestParam accessToken: String
-    ): Response<String?>
+    fun validateToken(accessToken: String): Response<String?> {
+        return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
+    }
 }

@@ -29,44 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.controller
 
 import com.tencent.bk.sdk.iam.dto.callback.request.CallbackRequestDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
 import com.tencent.bkrepo.auth.pojo.bkiam.BkResult
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
-import io.swagger.annotations.Api
+import com.tencent.bkrepo.auth.service.bkiam.BkiamCallbackService
 import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Api(tags = ["BKIAM_USER"], description = "蓝鲸权限中心回调接口")
-@Primary
-@FeignClient(AUTH_SERVICE_NAME, contextId = "BkiamUserResource")
+@RestController
 @RequestMapping("/external/bkiam/callback")
-interface BkiamCallbackResource {
+class BkiamCallbackController @Autowired constructor(private val bkiamCallbackService: BkiamCallbackService) {
 
     @ApiOperation("项目列表")
     @PostMapping("/project")
-    fun queryProject(
-        @RequestHeader(AUTHORIZATION) token: String,
-        @RequestBody request: CallbackRequestDTO
-    ): CallbackBaseResponseDTO?
+    fun queryProject(token: String, request: CallbackRequestDTO): CallbackBaseResponseDTO? {
+        return bkiamCallbackService.queryProject(token, request)
+    }
 
     @ApiOperation("仓库列表")
     @PostMapping("/repo")
-    fun queryRepo(
-        @RequestHeader(AUTHORIZATION) token: String,
-        @RequestBody request: CallbackRequestDTO
-    ): CallbackBaseResponseDTO?
+    fun queryRepo(token: String, request: CallbackRequestDTO): CallbackBaseResponseDTO? {
+        return bkiamCallbackService.queryRepo(token, request)
+    }
 
     @ApiOperation("健康检查")
     @GetMapping("/health")
-    fun health(): BkResult<Boolean>
+    fun health(): BkResult<Boolean> {
+        return BkResult(true)
+    }
 }

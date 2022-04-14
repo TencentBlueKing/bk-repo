@@ -40,21 +40,9 @@ class ServiceOauthAuthorizationResourceImpl @Autowired constructor(
     private val oauthAuthorizationService: OauthAuthorizationService
 ) : ServiceOauthAuthorizationResource {
 
-    override fun authorize(clientId: String, state: String) {
-        oauthAuthorizationService.authorized(clientId, state)
-    }
 
     override fun getToken(accessToken: String): Response<OauthToken?> {
         return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
-    }
-
-    override fun createToken(clientId: String, clientSecret: String, code: String) {
-        oauthAuthorizationService.createToken(clientId, clientSecret, code)
-    }
-
-    override fun deleteToken(clientId: String, clientSecret: String, accessToken: String): Response<Void> {
-        oauthAuthorizationService.deleteToken(clientId, clientSecret, accessToken)
-        return ResponseBuilder.success()
     }
 
     override fun validateToken(accessToken: String): Response<String?> {

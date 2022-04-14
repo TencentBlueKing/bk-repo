@@ -25,41 +25,41 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.controller
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_KEY_PREFIX
 import com.tencent.bkrepo.auth.pojo.Key
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
+import com.tencent.bkrepo.auth.service.KeyService
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.DeleteMapping
 
-@Api(tags = ["SERVICE_KEY"], description = "服务-密钥接口")
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceKeyResource")
+@RestController
 @RequestMapping(AUTH_API_KEY_PREFIX)
-interface ServiceKeyResource {
+class KeyController(private val keyService: KeyService) {
 
     @ApiOperation("新增密钥")
     @PostMapping("/create")
-    fun createKey(
-        @RequestParam name: String,
-        @RequestParam key: String
-    ): Response<Void>
+    fun createKey(name: String, key: String): Response<Void> {
+        keyService.createKey(name, key)
+        return ResponseBuilder.success()
+    }
 
     @ApiOperation("查询公钥列表")
     @GetMapping("/list")
-    fun listKey(): Response<List<Key>>
+    fun listKey(): Response<List<Key>> {
+        return ResponseBuilder.success(keyService.listKey())
+    }
 
     @ApiOperation("删除公钥")
     @DeleteMapping("/delete/{id}")
-    fun deleteKey(
-        @PathVariable id: String
-    ): Response<Void>
+    fun deleteKey(id: String): Response<Void> {
+        keyService.deleteKey(id)
+        return ResponseBuilder.success()
+    }
 }

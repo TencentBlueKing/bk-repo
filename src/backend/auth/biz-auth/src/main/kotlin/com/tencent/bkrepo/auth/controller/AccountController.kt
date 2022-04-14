@@ -63,6 +63,7 @@ class AccountController(private val accountService: AccountService) {
         return ResponseBuilder.success(accountList)
     }
 
+
     @ApiOperation("查询拥有的账号")
     @GetMapping("/own/list")
     fun listOwnAccount(): Response<List<Account>> {

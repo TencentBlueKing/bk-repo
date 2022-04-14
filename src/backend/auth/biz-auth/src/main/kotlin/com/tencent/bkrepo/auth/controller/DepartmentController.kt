@@ -29,23 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.controller
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_DEPARTMENT_PREFIX
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-@Api(tags = ["SERVICE_DEPARTMENT"], description = "服务-用户接口")
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceDepartmentResource")
+@RestController
 @RequestMapping(AUTH_API_DEPARTMENT_PREFIX)
-interface ServiceDepartmentResource {
+class DepartmentController {
 
     @ApiOperation("部门列表")
     @GetMapping("/list")
-    fun listDepartment(): Response<List<Map<Any, Any>>>
+    fun listDepartment(): Response<List<Map<Any, Any>>> {
+        return ResponseBuilder.success(emptyList())
+    }
 }
