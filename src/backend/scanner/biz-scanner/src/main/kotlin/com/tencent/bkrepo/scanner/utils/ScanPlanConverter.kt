@@ -235,7 +235,7 @@ object ScanPlanConverter {
         }
     }
 
-    fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition): ArtifactPlanRelation {
+    fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition, scanPlan: TScanPlan): ArtifactPlanRelation {
         val planType = subScanTask.repoType
         return with(subScanTask) {
             ArtifactPlanRelation(
@@ -243,7 +243,7 @@ object ScanPlanConverter {
                 planId = planId,
                 projectId = projectId,
                 planType = planType,
-                name = artifactName,
+                name = scanPlan.name,
                 status = convertToScanStatus(status).name,
                 recordId = id!!,
                 subTaskId = id!!
