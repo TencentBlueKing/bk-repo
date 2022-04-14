@@ -47,6 +47,9 @@ data class CveSecItem(
     @JsonAlias("version")
     val version: String,
 
+    @ApiModelProperty("库版本列表")
+    val versions: MutableSet<String> = HashSet(),
+
     @ApiModelProperty("漏洞影响版本")
     @JsonAlias("version_effected")
     val versionEffected: String,

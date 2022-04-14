@@ -59,7 +59,7 @@ data class TCveSecItemData(
     /**
      * 组件版本
      */
-    val version: String,
+    val versions: Set<String> = emptySet(),
     /**
      * 漏洞id
      */

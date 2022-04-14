@@ -278,9 +278,20 @@ class ArrowheadScanExecutor @Autowired constructor(
         }
 
         // cve count
+        val cveMap = HashMap<String, CveSecItem>()
         cveSecItems.forEach {
-            val overviewKey = overviewKeyOfCve(it.cvssRank)
-            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+            val key = "${it.component}-${it.cveId}"
+
+            // 按（组件-CVE）统计漏洞数量
+            var cveSecItem = cveMap[key]
+            if (cveSecItem == null) {
+                val overviewKey = overviewKeyOfCve(it.cvssRank)
+                overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
+                cveSecItem = it
+                cveMap[key] = cveSecItem
+            }
+
+            cveSecItem.versions.add(cveSecItem.version)
         }
 
         return overview
