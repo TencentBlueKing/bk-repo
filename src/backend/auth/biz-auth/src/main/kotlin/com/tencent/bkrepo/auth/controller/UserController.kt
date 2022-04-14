@@ -331,6 +331,12 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(userService.repeatUid(uid))
     }
 
+    @ApiOperation("判断用户是否为项目管理员")
+    @GetMapping("/admin/{projectId}")
+    fun isProjectAdmin(@PathVariable projectId: String): Response<Boolean> {
+        return ResponseBuilder.success(checkProjectAdmin(projectId))
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(UserController::class.java)
     }

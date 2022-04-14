@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.PathVariable
 
 open class OpenResourceImpl @Autowired constructor(private val permissionService: PermissionService) {
 
@@ -68,6 +69,18 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
             logger.warn("check user permission error [$checkRequest]")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
         }
+    }
+
+    fun checkProjectAdmin(@PathVariable projectId: String): Boolean {
+        val userId = SecurityUtils.getUserId()
+        return permissionService.checkPermission(
+            CheckPermissionRequest(
+                uid = userId,
+                resourceType = ResourceType.PROJECT.toString(),
+                projectId = projectId,
+                action = PermissionAction.MANAGE.toString()
+            )
+        )
     }
 
     companion object {

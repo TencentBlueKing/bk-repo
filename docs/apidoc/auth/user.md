@@ -600,3 +600,43 @@
 |message|result message|错误消息 |the failure message |
 |data | bool | result data |the data for response|
 |traceId|string|请求跟踪id|the trace id|
+
+### 判断用户是否为项目管理员
+
+- API:GET /auth/api/user/admin/{projectId}
+- API 名称: is_project_admin
+- 功能说明：
+    - 中文：查询用户是否为项目管理员
+    - English：query user is project admin or not
+
+- input body:
+
+``` json
+```
+
+- input 字段说明
+
+| 字段        | 类型     | 是否必须 | 默认值 | 说明   | Description |
+|-----------|--------|------|-----|------|-------------|
+| projectId | string | 是    | 无   | 项目id | project id  |
+
+- output:
+
+```
+{
+"code": 0,
+"message": null,
+"data": true,
+"traceId": ""
+}
+
+```
+
+- output 字段说明
+
+| 字段      | 类型             | 说明                        | Description                                    |
+|---------|----------------|---------------------------|------------------------------------------------|
+| code    | bool           | 错误编码。 0表示success，>0表示失败错误 | 0:success, other: failure                      |
+| message | result message | 错误消息                      | the failure message                            |
+| data    | bool           | 是否为项目管理员                  | true if user is project admin, false otherwise |
+| traceId | string         | 请求跟踪id                    | the trace id                                   |
