@@ -2,19 +2,19 @@
   <el-dialog v-loading="loading" title="新建权限" :visible.sync="showDialog" :before-close="close">
     <template v-if="!createResult">
       <el-form ref="form" :model="permission" :rules="rules" label-width="150px">
-        <el-form-item label="项目Id">
+        <el-form-item label="项目Id" prop="projectId">
           <el-input v-model="permission.projectId" />
         </el-form-item>
-        <el-form-item label="仓库名">
+        <el-form-item label="仓库名" prop="repoName">
           <el-input v-model="permission.repoName" />
         </el-form-item>
-        <el-form-item label="url">
+        <el-form-item label="url" prop="url">
           <el-input v-model="permission.url" />
         </el-form-item>
         <el-form-item label="请求头" prop="headers">
           <el-input v-model="permission.headers" />
         </el-form-item>
-        <el-form-item label="适用接口范围">
+        <el-form-item label="适用接口范围" prop="scope">
           <el-input v-model="permission.scope" />
         </el-form-item>
         <el-form-item label="平台账号是否启用" prop="enabled">
@@ -55,7 +55,6 @@ export default {
   data() {
     var validateHeaders = (rule, value, callback) => {
       try {
-        console.log(value)
         JSON.parse(value)
         callback()
       } catch (error) {
@@ -64,6 +63,10 @@ export default {
     }
     return {
       rules: {
+        projectId: [{ required: true, message: '请输入项目id', trigger: 'blur' }],
+        repoName: [{ required: true, message: '请输入仓库名称', trigger: 'blur' }],
+        url: [{ required: true, message: '请输入url', trigger: 'blur' }],
+        scope: [{ required: true, message: '请输入适用接口范围', trigger: 'blur' }],
         headers: [{ validator: validateHeaders, trigger: 'blur' }]
       },
       showDialog: this.visible,
@@ -88,12 +91,12 @@ export default {
   },
   methods: {
     createPermission() {
-      this.$refs['form'].validate((valid) => {
-        console.log(valid)
-        if (!valid) {
-          return
-        }
+      var valid = this.$refs['form'].validate((valid) => {
+        return valid
       })
+      if(!valid) {
+        return
+      }
       this.loading = true
       this.permission.headers = JSON.parse(this.permission.headers)
       const promise = createExtPermission(

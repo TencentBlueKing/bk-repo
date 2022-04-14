@@ -38,11 +38,11 @@ import com.tencent.bkrepo.auth.pojo.RegisterResourceRequest
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
-import com.tencent.bkrepo.auth.pojo.externalPermission.Rule
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -63,7 +63,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -79,17 +78,13 @@ open class PermissionManager(
     private val nodeClient: NodeClient
 ) {
 
-    @Value("\${service.name:}")
-    private var applicationName: String = ""
-
     private val externalPermissionList by lazy {
         externalPermissionResource.listExternalPermission().data!!
     }
 
     private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(5L, TimeUnit.SECONDS)
+        .connectTimeout(10L, TimeUnit.SECONDS)
         .readTimeout(10L, TimeUnit.SECONDS)
-        .writeTimeout(10L, TimeUnit.SECONDS)
         .build()
 
     /**
@@ -310,11 +305,13 @@ open class PermissionManager(
      * 获取当前项目、仓库的自定义外部权限
      */
     private fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
+        val platformId = SecurityUtils.getPlatformId()
         val ext = externalPermissionList.firstOrNull { p ->
             p.enabled
                 .and(projectId.matches(Regex(p.projectId.replace("*", ".*"))))
                 .and(repoName?.matches(Regex(p.repoName.replace("*", ".*"))) ?: true)
                 .and(matchApi(p.scope))
+                .and(p.platformEnabled || platformId.isNullOrBlank() )
         }
         return ext
     }
@@ -326,7 +323,7 @@ open class PermissionManager(
      */
     private fun matchApi(scope: String): Boolean {
         val stackTraceElements = Thread.currentThread().stackTrace.toList()
-            .filter { it.toString().startsWith("com.tencent.bkrepo.$applicationName") }
+            .filter { it.toString().startsWith("com.tencent.bkrepo") }
             .map {
                 it.toString().replace(Regex("\\\$\\\$(.*)\\\$\\\$[a-z0-9]+"), "")
                     .substringBefore("(")
@@ -355,14 +352,22 @@ open class PermissionManager(
         paths: List<String>?
     ) {
         var errorMsg = "user[$userId] does not have $action permission in project[$projectId] repo[$repoName]"
-        paths?.let { errorMsg = errorMsg.plus(" path[$paths]") }
-        if (!checkRules(externalPermission.rules, projectId, repoName, paths)) {
-            throw PermissionException(errorMsg)
-        }
-        val url = externalPermission.url
-        val nodes: List<NodeDetail>? = if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
+        paths?.let { errorMsg = errorMsg.plus(" path$paths") }
+
+        val nodes = getNodeDetailList(projectId, repoName, paths)
+
+        val request = buildRequest(externalPermission, type, action, userId, projectId, repoName, nodes)
+        callbackToAuth(request, projectId, repoName, paths, errorMsg)
+    }
+
+    private fun getNodeDetailList(
+        projectId: String,
+        repoName: String?,
+        paths: List<String>?
+    ): List<NodeDetail>? {
+        return if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
             null
-        } else if (paths.size == 1){
+        } else if (paths.size == 1) {
             val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data
                 ?: throw NodeNotFoundException(paths.first())
             listOf(node)
@@ -381,23 +386,47 @@ open class PermissionManager(
                 paths.contains(it.fullPath)
             }?.map { NodeDetail(it) } ?: emptyList()
         }
+    }
 
-        val request = buildRequest(externalPermission, type, action, userId, projectId, repoName, nodes)
+    private fun callbackToAuth(
+        request: Request,
+        projectId: String,
+        repoName: String?,
+        paths: List<String>?,
+        errorMsg: String
+    ) {
         try {
             httpClient.newCall(request).execute().use {
-                if (it.isSuccessful) {
+                val content = it.body()?.string()
+                if (it.isSuccessful && checkResponse(content)) {
                     return
                 }
-
-                if (it.code() != HttpStatus.FORBIDDEN.value) {
-                    logger.info("check external permission error, url[$url], code[${it.code()}]")
-                }
+                logger.info(
+                    "check external permission error, url[${request.url()}], project[$projectId], repo[$repoName]," +
+                        " nodes$paths, code[${it.code()}], response[$content]"
+                )
                 throw PermissionException(errorMsg)
             }
+
         } catch (e: IOException) {
-            logger.error("check external permission error, url[$url], $e")
+            logger.error(
+                "check external permission error," +
+                    "url[${request.url()}], project[$projectId], repo[$repoName], nodes$paths, $e"
+            )
             throw PermissionException(errorMsg)
         }
+    }
+
+    private fun checkResponse(content: String?): Boolean {
+        if (content.isNullOrBlank()) {
+            return true
+        }
+        logger.debug("response content: $content")
+        val data = content.readJsonString<Response<*>>()
+        if (data.isNotOk()) {
+            return false
+        }
+        return true
     }
 
     private fun buildRequest(
@@ -434,26 +463,6 @@ open class PermissionManager(
         val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), requestData.toJsonString())
         logger.debug("request data: ${requestData.toJsonString()}")
         return Request.Builder().url(externalPermission.url).headers(headersBuilder.build()).post(requestBody).build()
-    }
-
-    private fun checkRules(rules: List<Rule>?, projectId: String, repoName: String?, paths: List<String>?): Boolean {
-        if (rules.isNullOrEmpty()) {
-            return true
-        }
-
-        rules.forEach {
-             val pass = when(it.paramName) {
-                PROJECT_ID -> Rule.checkProjectId(it, projectId)
-                REPO_NAME -> Rule.checkRepoName(it, repoName)
-                PATH -> Rule.checkPaths(it, paths)
-                else -> true
-            }
-            if (!pass) {
-                return false
-            }
-        }
-
-        return true
     }
 
     /**

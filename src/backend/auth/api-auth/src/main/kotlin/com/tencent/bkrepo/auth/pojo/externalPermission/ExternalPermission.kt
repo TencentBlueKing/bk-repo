@@ -45,8 +45,6 @@ data class ExternalPermission(
     val repoName: String,
     @ApiModelProperty("生效微服务")
     val scope: String,
-    @ApiModelProperty("规则")
-    val rules: List<Rule>?,
     @ApiModelProperty("平台账号是否启用")
     val platformEnabled: Boolean,
     @ApiModelProperty("是否启用")

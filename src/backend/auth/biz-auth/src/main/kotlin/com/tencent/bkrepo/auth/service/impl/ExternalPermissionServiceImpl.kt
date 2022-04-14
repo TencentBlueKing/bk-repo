@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -84,7 +83,6 @@ class ExternalPermissionServiceImpl(
             projectId?.let { tExternalPermission.projectId = it }
             repoName?.let { tExternalPermission.repoName = it }
             scope?.let { tExternalPermission.scope = it }
-            rules?.let { tExternalPermission.rules = it }
             platformEnabled?.let { tExternalPermission.platformEnabled = it }
             enabled?.let { tExternalPermission.enabled = it }
             tExternalPermission.lastModifiedDate = LocalDateTime.now()
@@ -110,7 +108,7 @@ class ExternalPermissionServiceImpl(
             }
             enabled?.let { query.addCriteria(where(TExternalPermission::enabled).isEqualTo(enabled)) }
             val total = mongoTemplate.count(query, TExternalPermission::class.java)
-            val pageRequest = PageRequest.of(pageNumber - 1, pageSize)
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val records =
                 mongoTemplate.find(query.with(pageRequest), TExternalPermission::class.java).map { convert(it) }
             return Pages.ofResponse(pageRequest, total, records)
@@ -136,7 +134,6 @@ class ExternalPermissionServiceImpl(
                     projectId = projectId,
                     repoName = repoName,
                     scope = scope,
-                    rules = rules,
                     platformEnabled = platformEnabled,
                     enabled = enabled,
                     createdDate = createdDate,

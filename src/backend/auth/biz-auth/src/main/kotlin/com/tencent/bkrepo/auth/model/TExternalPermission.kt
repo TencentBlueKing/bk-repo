@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.auth.model
 
-import com.tencent.bkrepo.auth.pojo.externalPermission.Rule
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -42,7 +41,6 @@ data class TExternalPermission(
     var projectId: String,
     var repoName: String,
     var scope: String,
-    var rules: List<Rule> = emptyList(),
     var platformEnabled: Boolean,
     var enabled: Boolean,
     var createdDate: LocalDateTime,
