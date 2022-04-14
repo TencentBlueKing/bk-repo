@@ -233,10 +233,15 @@ class ArrowheadScanExecutor @Autowired constructor(
         outputDir: File,
         scanStatus: SubScanTaskStatus
     ): ArrowheadScanExecutorResult {
-        val cveSecItems =
-            readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
-                ?.map { CveSecItem.normalize(it) }
-                ?: emptyList()
+
+        val cveMap = HashMap<String, CveSecItem>()
+        readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
+            ?.forEach {
+                // 按（组件-CVE）对漏洞去重
+                val cveSecItem = cveMap.getOrPut("${it.component}-${it.cveId}") { CveSecItem.normalize(it) }
+                cveSecItem.versions.add(cveSecItem.version)
+            }
+        val cveSecItems = cveMap.values.toList()
 
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
@@ -278,20 +283,9 @@ class ArrowheadScanExecutor @Autowired constructor(
         }
 
         // cve count
-        val cveMap = HashMap<String, CveSecItem>()
         cveSecItems.forEach {
-            val key = "${it.component}-${it.cveId}"
-
-            // 按（组件-CVE）统计漏洞数量
-            var cveSecItem = cveMap[key]
-            if (cveSecItem == null) {
-                val overviewKey = overviewKeyOfCve(it.cvssRank)
-                overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
-                cveSecItem = it
-                cveMap[key] = cveSecItem
-            }
-
-            cveSecItem.versions.add(cveSecItem.version)
+            val overviewKey = overviewKeyOfCve(it.cvssRank)
+            overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
 
         return overview

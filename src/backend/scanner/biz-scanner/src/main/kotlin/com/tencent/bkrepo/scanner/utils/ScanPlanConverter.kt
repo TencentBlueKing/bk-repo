@@ -305,7 +305,7 @@ object ScanPlanConverter {
         }
     }
 
-    private fun convertToScanStatus(status: String?): ScanStatus {
+    fun convertToScanStatus(status: String?): ScanStatus {
         return when (status) {
             SubScanTaskStatus.BLOCKED.name,
             SubScanTaskStatus.CREATED.name,
