@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.scanner.pojo.response.ScannerBase
 import com.tencent.bkrepo.scanner.service.ScannerService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -50,13 +51,13 @@ import org.springframework.web.bind.annotation.RestController
 @Api("扫描器配置接口")
 @RestController
 @RequestMapping("/api/scanners")
-@Principal(PrincipalType.ADMIN)
 class UserScannerController @Autowired constructor(
     private val scannerService: ScannerService
 ) {
 
     @ApiOperation("创建扫描器接口")
     @PostMapping
+    @Principal(PrincipalType.ADMIN)
     fun create(
         @RequestBody scanner: Scanner
     ): Response<Scanner> {
@@ -65,18 +66,28 @@ class UserScannerController @Autowired constructor(
 
     @ApiOperation("获取扫描器列表")
     @GetMapping
+    @Principal(PrincipalType.ADMIN)
     fun list(): Response<List<Scanner>> {
         return ResponseBuilder.success(scannerService.list())
     }
 
+    @ApiOperation("获取扫描器基本信息列表")
+    @GetMapping("/base")
+    fun listBaseInf(): Response<List<ScannerBase>> {
+        val scannerBaseList = scannerService.list().map { ScannerBase(it.name, it.type) }
+        return ResponseBuilder.success(scannerBaseList)
+    }
+
     @ApiOperation("获取扫描器")
     @GetMapping("/{name}")
+    @Principal(PrincipalType.ADMIN)
     fun get(@PathVariable("name") name: String): Response<Scanner> {
         return ResponseBuilder.success(scannerService.get(name))
     }
 
     @ApiOperation("删除扫描器")
     @DeleteMapping("/{name}")
+    @Principal(PrincipalType.ADMIN)
     fun delete(@PathVariable("name") name: String): Response<Void> {
         scannerService.delete(name)
         return ResponseBuilder.success()
@@ -84,6 +95,7 @@ class UserScannerController @Autowired constructor(
 
     @ApiOperation("更新扫描器")
     @PutMapping("/{name}")
+    @Principal(PrincipalType.ADMIN)
     fun update(
         @PathVariable("name") name: String,
         @RequestBody scanner: Scanner
