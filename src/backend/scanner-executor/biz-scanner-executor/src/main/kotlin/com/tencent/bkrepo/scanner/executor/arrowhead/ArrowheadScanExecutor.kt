@@ -100,9 +100,6 @@ class ArrowheadScanExecutor @Autowired constructor(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
             )
-        } catch (e: Exception) {
-            logger.error(logMsg(task, "scan failed"), e)
-            throw e
         } finally {
             // 清理工作目录
             if (task.scanner.cleanWorkDir) {
@@ -233,10 +230,15 @@ class ArrowheadScanExecutor @Autowired constructor(
         outputDir: File,
         scanStatus: SubScanTaskStatus
     ): ArrowheadScanExecutorResult {
-        val cveSecItems =
-            readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
-                ?.map { CveSecItem.normalize(it) }
-                ?: emptyList()
+
+        val cveMap = HashMap<String, CveSecItem>()
+        readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
+            ?.forEach {
+                // 按（组件-CVE）对漏洞去重
+                val cveSecItem = cveMap.getOrPut("${it.component}-${it.cveId}") { CveSecItem.normalize(it) }
+                cveSecItem.versions.add(cveSecItem.version)
+            }
+        val cveSecItems = cveMap.values.toList()
 
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
@@ -295,7 +297,7 @@ class ArrowheadScanExecutor @Autowired constructor(
     }
 
     private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
     }
 
     companion object {

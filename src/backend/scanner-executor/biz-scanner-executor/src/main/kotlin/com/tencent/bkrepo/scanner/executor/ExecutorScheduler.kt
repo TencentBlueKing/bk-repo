@@ -76,15 +76,21 @@ class ExecutorScheduler @Autowired constructor(
             logger.info("load file[$sha256] success, elapse ${System.currentTimeMillis() - startTimestamp}")
 
             // 2. 执行扫描任务
-            logger.info("start to scan file[$sha256]")
-            val executorTask = convert(subScanTask, artifactInputStream)
-            val executor = scanExecutorFactory.get(subScanTask.scanner.type)
-            val result = executor.scan(executorTask)
-            val finishedTimestamp = System.currentTimeMillis()
-            val timeSpent = finishedTimestamp - startTimestamp
-            logger.info("scan finished[${result.scanStatus}], time spent $timeSpent, reporting result")
+            val result = try {
+                logger.info("start to scan file[$sha256]")
+                val executorTask = convert(subScanTask, artifactInputStream)
+                val executor = scanExecutorFactory.get(subScanTask.scanner.type)
+                executor.scan(executorTask)
+            } catch (e: Exception) {
+                logger.error("scan failed, parentTaskId[$parentScanTaskId], subTaskId[$taskId], " +
+                                 "sha256[$sha256], scanner[${scanner.name}]]", e)
+                null
+            }
 
             // 3. 上报扫描结果
+            val finishedTimestamp = System.currentTimeMillis()
+            val timeSpent = finishedTimestamp - startTimestamp
+            logger.info("scan finished[${result?.scanStatus}], time spent $timeSpent, reporting result")
             report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)
         }
     }

@@ -25,47 +25,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
+package com.tencent.bkrepo.scanner.event.listener
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
+import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
+import org.slf4j.LoggerFactory
+import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Async
+import org.springframework.stereotype.Component
 
-@Document("cve_sec_item")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "credentialsKey_sha256_scanner_idx",
-        def = "{'credentialsKey': 1, 'sha256': 1, 'scanner': 1}",
-        background = true
-    )
-)
-class TCveSecItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: TCveSecItemData
-) : ResultItem<TCveSecItemData>(id, credentialsKey, sha256, scanner, data)
+@Component
+class SubtaskStatusChangedEventListener(private val metadataClient: MetadataClient) {
+    @Async
+    @EventListener(SubtaskStatusChangedEvent::class)
+    fun listen(event: SubtaskStatusChangedEvent) {
+        with(event.subtask) {
+            // 更新扫描状态元数据
+            val request = MetadataSaveRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                metadata = mapOf(METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name)
+            )
+            metadataClient.saveMetadata(request)
+            logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] scanStatus[$status] success")
+        }
+    }
 
-data class TCveSecItemData(
-    /**
-     * 文件路径
-     */
-    val path: String,
-    /**
-     * 组件名
-     */
-    val component: String,
-    /**
-     * 组件版本
-     */
-    val versions: Set<String> = emptySet(),
-    /**
-     * 漏洞id
-     */
-    val cveId: String,
-    /**
-     * cvss等级， CRITICAL,HIGH,MEDIUM,LOW
-     */
-    val cvssRank: String
-)
+    companion object {
+        private val logger = LoggerFactory.getLogger(SubtaskStatusChangedEventListener::class.java)
+        const val METADATA_KEY_SCAN_STATUS = "scanStatus"
+    }
+}
