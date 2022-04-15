@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode.REPOSITORY_NOT_FOUND
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
@@ -54,10 +53,11 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publi
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
@@ -297,8 +297,8 @@ class RepositoryServiceImpl(
             // 删除关联的库
             if (repository.category == RepositoryCategory.COMPOSITE) {
                 val configuration = repository.configuration.readJsonString<CompositeConfiguration>()
-                configuration.proxy.channelList.filter { !it.public }.forEach {
-                    deleteProxyRepo(repository.projectId, repository.name, it.name!!)
+                configuration.proxy.channelList.forEach {
+                    deleteProxyRepo(repository, it)
                 }
             }
         }
@@ -378,89 +378,80 @@ class RepositoryServiceImpl(
     ) {
         // 校验
         new.proxy.channelList.forEach {
-            if (it.public) {
-                Preconditions.checkArgument(
-                    proxyChannelService.checkExistById(it.channelId!!, repository.type),
-                    "channelId"
-                )
-            } else {
-                Preconditions.checkNotBlank(it.name, "name")
-                Preconditions.checkNotBlank(it.url, "url")
-            }
+            Preconditions.checkNotBlank(it.name, "name")
+            Preconditions.checkNotBlank(it.url, "url")
         }
-        val newPrivateProxyRepos = new.proxy.channelList.filter { !it.public }
-        val existPrivateProxyRepos = old?.proxy?.channelList?.filter { !it.public }.orEmpty()
+        val newProxyProxyRepos = new.proxy.channelList
+        val existProxyProxyRepos = old?.proxy?.channelList ?: emptyList()
 
-        val newPrivateProxyRepoMap = newPrivateProxyRepos.associateBy { it.name.orEmpty() }
-        val existPrivateProxyRepoMap = existPrivateProxyRepos.associateBy { it.name.orEmpty() }
-        Preconditions.checkArgument(newPrivateProxyRepoMap.size == newPrivateProxyRepos.size, "channelList")
+        val newProxyRepoMap = newProxyProxyRepos.associateBy { it.name }
+        val existProxyRepoMap = existProxyProxyRepos.associateBy { it.name }
+        Preconditions.checkArgument(newProxyRepoMap.size == newProxyProxyRepos.size, "channelList")
 
         val toCreateList = mutableListOf<ProxyChannelSetting>()
         val toDeleteList = mutableListOf<ProxyChannelSetting>()
 
         // 查找要添加的代理库
-        newPrivateProxyRepoMap.forEach { (name, channel) ->
-            existPrivateProxyRepoMap[name]?.let {
+        newProxyRepoMap.forEach { (name, channel) ->
+            existProxyRepoMap[name]?.let {
                 // 确保用户未修改name和url，以及添加同名channel
                 if (channel.url != it.url) {
-                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, channel.name.orEmpty())
+                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, channel.name)
                 }
             } ?: run { toCreateList.add(channel) }
         }
         // 查找要删除的代理库
-        existPrivateProxyRepoMap.forEach { (name, channel) ->
-            if (!newPrivateProxyRepoMap.containsKey(name)) {
+        existProxyRepoMap.forEach { (name, channel) ->
+            if (!newProxyRepoMap.containsKey(name)) {
                 toDeleteList.add(channel)
             }
         }
         // 创建新的代理库
         toCreateList.forEach {
-            val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repository.name, it.name)
-            if (checkExist(repository.projectId, proxyRepoName, null)) {
-                logger.error("[$proxyRepoName] exist in project[${repository.projectId}], skip creating proxy repo.")
+            try {
+                createProxyRepo(repository, it, operator)
+            } catch (e: DuplicateKeyException) {
+                logger.warn("[${it.name}] exist in project[${repository.projectId}], skip creating proxy repo.")
             }
-            createProxyRepo(repository, proxyRepoName, operator)
         }
         // 删除旧的代理库
         toDeleteList.forEach {
-            deleteProxyRepo(repository.projectId, repository.name, it.name!!)
+            deleteProxyRepo(repository, it)
         }
     }
 
     /**
      * 删除关联的代理仓库
      */
-    private fun deleteProxyRepo(projectId: String, repoName: String, channelName: String) {
-        val proxyRepoName = PRIVATE_PROXY_REPO_NAME.format(repoName, channelName)
-        val proxyRepo = repositoryDao.findByNameAndType(projectId, proxyRepoName, null)
-        proxyRepo?.let { repo ->
-            // 删除仓库
-            nodeService.deleteByPath(repo.projectId, repo.name, ROOT, SYSTEM_USER)
-            repositoryDao.deleteById(repo.id)
-            logger.info("Success to delete private proxy repository[$proxyRepo]")
-        }
+    private fun deleteProxyRepo(repository: TRepository, proxy: ProxyChannelSetting) {
+        val proxyRepository = ProxyChannelDeleteRequest(
+            repoType = repository.type,
+            projectId = repository.projectId,
+            repoName = repository.name,
+            url = proxy.url,
+            name = proxy.name
+        )
+        proxyChannelService.deleteProxy(proxyRepository)
+        logger.info(
+            "Success to delete private proxy channel [${proxy.name}]" +
+                " in repo[${repository.projectId}|${repository.name}]"
+        )
     }
 
-    private fun createProxyRepo(repository: TRepository, proxyRepoName: String, operator: String) {
+    private fun createProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
         // 创建仓库
-        val proxyRepository = TRepository(
-            name = proxyRepoName,
-            type = repository.type,
-            category = RepositoryCategory.REMOTE,
-            public = false,
-            description = null,
-            configuration = RemoteConfiguration().toJsonString(),
-            credentialsKey = repository.credentialsKey,
-            display = false,
+        val proxyRepository = ProxyChannelCreateRequest(
+            repoType = repository.type,
             projectId = repository.projectId,
-            createdBy = operator,
-            createdDate = LocalDateTime.now(),
-            lastModifiedBy = operator,
-            lastModifiedDate = LocalDateTime.now(),
-            quota = repository.quota,
-            used = repository.used
+            repoName = repository.name,
+            url = proxy.url,
+            name = proxy.name,
+            username = proxy.username,
+            password = proxy.password,
+            public = proxy.public,
+            credentialKey = proxy.credentialKey
         )
-        repositoryDao.insert(proxyRepository)
+        proxyChannelService.createProxy(operator, proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
     }
 

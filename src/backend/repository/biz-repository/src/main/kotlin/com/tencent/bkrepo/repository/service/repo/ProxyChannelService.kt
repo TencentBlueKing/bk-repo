@@ -33,38 +33,33 @@ package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 
 /**
  * 代理源服务接口
  */
 interface ProxyChannelService {
-
-    /**
-     * 根据[id]查询代理源信息
-     */
-    fun findById(id: String): ProxyChannelInfo?
-
     /**
      * 根据[request]创建代理源
      */
     fun createProxy(userId: String, request: ProxyChannelCreateRequest)
 
     /**
-     * 判断id为[id]类型为[repoType]的代理源是否存在
+     * 查询代理源
      */
-    fun checkExistById(id: String, repoType: RepositoryType): Boolean
+    fun queryProxyChannel(
+        projectId: String,
+        repoName: String,
+        repoType: RepositoryType,
+        name: String,
+        url: String
+    ): ProxyChannelInfo?
 
     /**
-     * 判断名称为[name]类型为[repoType]的代理源是否存在
+     * 删除代理源
      */
-    fun checkExistByName(name: String, repoType: RepositoryType): Boolean
-
-    /**
-     * 判断url为[url]类型为[repoType]的代理源是否存在
-     */
-    fun checkExistByUrl(url: String, repoType: RepositoryType): Boolean
-
+    fun deleteProxy(request: ProxyChannelDeleteRequest)
     /**
      * 列表查询公有源
      */
