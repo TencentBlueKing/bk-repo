@@ -42,9 +42,11 @@
                         <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
                         <bk-option id="downloads" name="下载量排序"></bk-option>
                     </bk-select>
-                    <div class="ml10 sort-order flex-center hover-btn" @click="changeDirection">
-                        <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
-                    </div>
+                    <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
+                        <div class="ml10 sort-order flex-center" @click="changeDirection">
+                            <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
+                        </div>
+                    </bk-popover>
                 </div>
             </div>
             <div class="common-package-list">
@@ -231,12 +233,18 @@
         padding: 10px 20px;
         background-color: white;
         .sort-tool {
-            color: var(--boxShadowColor);
+            color: var(--fontSubsidiaryColor);
             .sort-order {
                 width: 32px;
                 height: 32px;
-                border: 1px solid currentColor;
+                border: 1px solid var(--borderWeightColor);
                 border-radius: 2px;
+                cursor: pointer;
+                &:hover {
+                    color: var(--primaryColor);
+                    border-color: currentColor;
+                    background-color: var(--bgHoverLighterColor);
+                }
             }
         }
     }

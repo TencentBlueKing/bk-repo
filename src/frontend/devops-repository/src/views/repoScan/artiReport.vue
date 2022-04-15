@@ -45,7 +45,7 @@
                 :data="leakList"
                 :outer-border="false"
                 :row-border="false"
-                row-key="cveId"
+                row-key="leakKey"
                 size="small">
                 <template #empty>
                     <empty-data :is-loading="isLoading"></empty-data>
@@ -171,7 +171,10 @@
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
-                    this.leakList = records
+                    this.leakList = records.map(v => ({
+                        ...v,
+                        leakKey: `${v.cveId}${v.pkgName}${v.installedVersion}`
+                    }))
                     this.pagination.count = totalRecords
                 }).finally(() => {
                     this.isLoading = false
