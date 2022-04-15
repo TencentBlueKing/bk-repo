@@ -30,6 +30,9 @@ package com.tencent.bkrepo.scanner.dao
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.ENQUEUED
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.EXECUTING
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.CredentialsKeyFiles
 import org.slf4j.LoggerFactory
@@ -97,7 +100,7 @@ class SubScanTaskDao(
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, now)
             .set(TSubScanTask::status.name, status.name)
-        if (status == SubScanTaskStatus.EXECUTING) {
+        if (status == EXECUTING) {
             update.set(TSubScanTask::startDateTime.name, now)
             update.inc(TSubScanTask::executedTimes.name, 1)
         }
@@ -114,7 +117,7 @@ class SubScanTaskDao(
      * 唤醒[projectId]一个子任务为可执行状态
      */
     fun notify(projectId: String, count: Int = 1): UpdateResult? {
-        if(count <= 0) {
+        if (count <= 0) {
             return null
         }
 
@@ -172,6 +175,7 @@ class SubScanTaskDao(
     fun firstTimeoutTask(timeoutSeconds: Long): TSubScanTask? {
         val beforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
         val criteria = TSubScanTask::lastModifiedDate.lt(beforeDate)
+            .and(TSubScanTask::status.name).inValues(PULLED.name, ENQUEUED.name, EXECUTING.name)
         return findOne(Query(criteria))
     }
 
