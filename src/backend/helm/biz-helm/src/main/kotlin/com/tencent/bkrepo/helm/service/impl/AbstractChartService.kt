@@ -35,9 +35,6 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.PRIVATE_PROXY_REPO_NAME
-import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_PROJECT
-import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -45,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -110,7 +108,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.ApplicationEventPublisher
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -126,9 +123,6 @@ open class AbstractChartService : ArtifactService() {
 
     @Autowired
     lateinit var packageClient: PackageClient
-
-    @Autowired
-    lateinit var eventPublisher: ApplicationEventPublisher
 
     @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
@@ -244,7 +238,7 @@ open class AbstractChartService : ArtifactService() {
     }
 
     /**
-     * 当helm 本地文件上传后，创建或更新包/包版本信息
+     * 当helm 本地文件上传后/或从远程代理下载后，创建或更新包/包版本信息
      */
     fun initPackageInfo(context: ArtifactContext) {
         with(context) {
@@ -431,14 +425,14 @@ open class AbstractChartService : ArtifactService() {
     }
 
     /**
-     * 针对remote仓库：下载index.yaml文件到本地存储
+     * 针对代理仓库：下载index.yaml文件到本地存储
      */
     fun initIndexYaml(
         projectId: String,
         repoName: String,
         userId: String = SecurityUtils.getUserId()
     ): HelmIndexYamlMetadata? {
-        logger.info("Repo [$projectId/$repoName] has been created, will start to init index.yaml...")
+        logger.info("Will start to get index.yaml for repo [$projectId/$repoName]...")
         val repoDetail = checkRepo(projectId, repoName) ?: return null
         val originalIndexYamlMetadata = when (repoDetail.configuration) {
             is CompositeConfiguration -> {
@@ -446,8 +440,8 @@ open class AbstractChartService : ArtifactService() {
                 forEachProxyRepo(config.proxy.channelList, repoDetail)
             }
             is RemoteConfiguration -> {
+                val config = repoDetail.configuration as RemoteConfiguration
                 try {
-                    val config = repoDetail.configuration as RemoteConfiguration
                     val inputStream = RemoteDownloadUtil.doHttpRequest(config, HelmUtils.getIndexYamlFullPath())
                     (inputStream as ArtifactInputStream).use {
                         it.readYamlString() as HelmIndexYamlMetadata
@@ -494,14 +488,14 @@ open class AbstractChartService : ArtifactService() {
     /**
      * 遍历代理仓库列表，获取对应index.yaml文件
      */
-    fun forEachProxyRepo(
+    private fun forEachProxyRepo(
         channelList: List<ProxyChannelSetting>,
         repositoryDetail: RepositoryDetail
     ): HelmIndexYamlMetadata {
         val oldIndex = HelmUtils.initIndexYamlMetadata()
         for (proxyChannel in channelList) {
             try {
-                val config = getConfigFromProxyChannel(repositoryDetail, proxyChannel)
+                val config = getRemoteConfigFromProxyChannel(repositoryDetail, proxyChannel)
                 val inputStream = RemoteDownloadUtil.doHttpRequest(config, HelmUtils.getIndexYamlFullPath())
                 val newIndex = (inputStream as ArtifactInputStream).use {
                     it.readYamlString() as HelmIndexYamlMetadata
@@ -518,52 +512,19 @@ open class AbstractChartService : ArtifactService() {
         return oldIndex
     }
 
-    private fun getConfigFromProxyChannel(
+    private fun getRemoteConfigFromProxyChannel(
         repositoryDetail: RepositoryDetail,
         setting: ProxyChannelSetting
     ): RemoteConfiguration {
-        return if (setting.public) {
-            getRemoteConfigFromPublicProxyChannel(setting)
-        } else {
-            getRemoteConfigFromPrivateProxyChannel(setting, repositoryDetail)
-        }
-    }
-
-    private fun getRemoteConfigFromPublicProxyChannel(
-        setting: ProxyChannelSetting
-    ): RemoteConfiguration {
-        // 查询公共源详情
-        val proxyChannel = proxyChannelClient.getById(setting.channelId!!).data!!
-        // 查询远程仓库
-        val repoType = proxyChannel.repoType.name
-        val projectId = PUBLIC_PROXY_PROJECT
-        val repoName = PUBLIC_PROXY_REPO_NAME.format(repoType, proxyChannel.name)
-        val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
-        // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoDetail.configuration
-        require(remoteConfiguration is RemoteConfiguration)
-        remoteConfiguration.url = proxyChannel.url
-        remoteConfiguration.credentials.username = proxyChannel.username
-        remoteConfiguration.credentials.password = proxyChannel.password
-        return remoteConfiguration
-    }
-
-    private fun getRemoteConfigFromPrivateProxyChannel(
-        setting: ProxyChannelSetting,
-        repositoryDetail: RepositoryDetail
-    ): RemoteConfiguration {
-        // 查询远程仓库
-        val projectId = repositoryDetail.projectId
-        val repoType = repositoryDetail.type.name
-        val repoName = PRIVATE_PROXY_REPO_NAME.format(repositoryDetail.name, setting.name)
-        val remoteRepoDetail = repositoryClient.getRepoDetail(projectId, repoName, repoType).data!!
-        // 构造proxyConfiguration
-        val remoteConfiguration = remoteRepoDetail.configuration
-        require(remoteConfiguration is RemoteConfiguration)
-        remoteConfiguration.url = setting.url!!
-        remoteConfiguration.credentials.username = setting.username
-        remoteConfiguration.credentials.password = setting.password
-        return remoteConfiguration
+        val proxyChannel = proxyChannelClient.getByUniqueId(
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
+            repoType = repositoryDetail.type.name,
+            name = setting.name,
+            url = setting.url
+        ).data!!
+        // 构造RemoteConfiguration
+        return (CompositeRepository.convertConfig(proxyChannel) as RemoteConfiguration)
     }
 
     companion object {

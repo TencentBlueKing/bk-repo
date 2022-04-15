@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,39 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.controller.service
+package com.tencent.bkrepo.repository.pojo.proxy
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.api.ProxyChannelClient
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@RestController
-class ProxyChannelController(
-    private val proxyChannelService: ProxyChannelService
-) : ProxyChannelClient {
-    override fun getByUniqueId(
-        projectId: String,
-        repoName: String,
-        repoType: String,
-        name: String,
-        url: String
-    ): Response<ProxyChannelInfo?> {
-        val type = try {
-            RepositoryType.valueOf(repoType)
-        } catch (ignored: IllegalArgumentException) {
-            return ResponseBuilder.success()
-        }
-        val proxy = proxyChannelService.queryProxyChannel(
-            projectId = projectId,
-            repoName = repoName,
-            repoType = type,
-            name = name,
-            url = url
-        )
-        return ResponseBuilder.success(proxy)
-    }
-}
+/**
+ * 代理源创建请求
+ */
+@ApiModel("代理源创建请求")
+data class ProxyChannelDeleteRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("代理源名称", required = true)
+    val name: String,
+    @ApiModelProperty("代理源url", required = true)
+    val url: String,
+    @ApiModelProperty("代理源仓库类型", required = true)
+    val repoType: RepositoryType
+)
