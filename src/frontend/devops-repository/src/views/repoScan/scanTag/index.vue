@@ -1,5 +1,5 @@
 <template>
-    <span class="repo-tag scan-tag-container" :class="status"
+    <span class="repo-tag scan-tag-container" :class="[status && 'hover-btn', status]"
         @click.stop="showScanList"
         v-bk-clickoutside="handleClickOutSide"
         :data-name="scanStatusEnum[status] || '未扫描'">
@@ -52,6 +52,7 @@
         methods: {
             ...mapActions(['getArtiScanList']),
             showScanList (e) {
+                if (!this.status) return
                 this.openScanList(e)
                 this.isLoading = true
                 const { projectId, repoType = this.repoType } = this.$route.params
@@ -100,7 +101,6 @@
 </script>
 <style lang="scss" scoped>
 .scan-tag-container {
-    cursor: pointer;
     &:before {
         content: attr(data-name);
     }

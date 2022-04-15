@@ -77,7 +77,7 @@
         .card-tip {
             margin-top: 10px;
             font-size: 12px;
-            color: var(--subsidiaryColor);
+            color: var(--fontSubsidiaryColor);
         }
         .top-right-selected {
             position: absolute;

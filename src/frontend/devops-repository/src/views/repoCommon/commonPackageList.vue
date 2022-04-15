@@ -12,10 +12,12 @@
                 </div>
             </div>
             <div class="flex-end-center flex-1">
-                <div class="ml10 repo-guide-btn flex-align-center" @click="showGuide = true">
-                    <Icon class="mr5" name="hand-guide" size="16" />
-                    {{$t('guide')}}
-                </div>
+                <bk-button class="ml10 flex-align-center" text theme="primary" @click="showGuide = true">
+                    <span class="flex-align-center">
+                        <Icon class="mr5" name="hand-guide" size="16" />
+                        {{$t('guide')}}
+                    </span>
+                </bk-button>
             </div>
         </header>
         <!-- 存在包, 加载中默认存在包 -->
@@ -222,15 +224,6 @@
                 padding: 5px 15px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
-            }
-        }
-        .repo-guide-btn {
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            &:hover {
-                color: white;
-                background-color: var(--primaryColor);
             }
         }
     }
