@@ -100,9 +100,6 @@ class ArrowheadScanExecutor @Autowired constructor(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
             )
-        } catch (e: Exception) {
-            logger.error(logMsg(task, "scan failed"), e)
-            throw e
         } finally {
             // 清理工作目录
             if (task.scanner.cleanWorkDir) {
@@ -300,7 +297,7 @@ class ArrowheadScanExecutor @Autowired constructor(
     }
 
     private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
     }
 
     companion object {
