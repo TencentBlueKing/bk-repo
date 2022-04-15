@@ -29,20 +29,41 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.model
+package com.tencent.bkrepo.auth.util
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
+import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 
-// 集群
-@Document("cluster")
-@CompoundIndexes(
-    CompoundIndex(name = "clusterId_idx", def = "{'clusterId': 1}", unique = true, background = true)
-)
-data class TCluster(
-    var clusterId: String,
-    var cert: String = "",
-    var clusterAddr: String,
-    val credentialStatus: Boolean? = false
-)
+object RequestUtil {
+
+    /**
+     * 构造创建项目管理员请求
+     */
+    fun buildProjectAdminRequest(projectId: String): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = PROJECT_MANAGE_ID,
+            name = PROJECT_MANAGE_NAME,
+            type = RoleType.PROJECT,
+            projectId = projectId,
+            admin = true
+        )
+    }
+
+    /**
+     * 构造仓库管理员请求
+     */
+    fun buildRepoAdminRequest(projectId: String, repoName: String): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = REPO_MANAGE_ID,
+            name = REPO_MANAGE_NAME,
+            type = RoleType.REPO,
+            projectId = projectId,
+            repoName = repoName,
+            admin = true
+        )
+    }
+}

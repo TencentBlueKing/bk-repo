@@ -29,15 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.pojo
+package com.tencent.bkrepo.auth.controller
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.constant.AUTH_API_DEPARTMENT_PREFIX
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-data class PermissionInstance(
-    val resourceType: ResourceType,
-    val action: PermissionAction,
-    val projectId: String,
-    val repoId: String?,
-    val node: String?
-)
+@RestController
+@RequestMapping(AUTH_API_DEPARTMENT_PREFIX)
+class DepartmentController {
+
+    @ApiOperation("部门列表")
+    @GetMapping("/list")
+    fun listDepartment(): Response<List<Map<Any, Any>>> {
+        return ResponseBuilder.success(emptyList())
+    }
+}

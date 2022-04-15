@@ -209,7 +209,6 @@ class BkAuthPermissionServiceImpl constructor(
         return devopsAppIdList.contains(appId)
     }
 
-
     companion object {
         private val logger = LoggerFactory.getLogger(BkAuthPermissionServiceImpl::class.java)
         private const val CUSTOM = "custom"

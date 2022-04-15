@@ -29,23 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.api
+package com.tencent.bkrepo.auth.pojo.enums
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_DEPARTMENT_PREFIX
-import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-
-@Api(tags = ["SERVICE_DEPARTMENT"], description = "服务-用户接口")
-@FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceDepartmentResource")
-@RequestMapping(AUTH_API_DEPARTMENT_PREFIX)
-interface ServiceDepartmentResource {
-
-    @ApiOperation("部门列表")
-    @GetMapping("/list")
-    fun listDepartment(): Response<List<Map<Any, Any>>>
+enum class AuthPermissionType(val value: String) {
+    REPO("repo"),
+    PROJECT("project"),
+    ADMIN("admin"),
+    PLAT("plat");
 }
