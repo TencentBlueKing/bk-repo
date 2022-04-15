@@ -31,13 +31,16 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarBinderCon
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
+import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Producer
 import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.api.TypedMessageBuilder
 import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.context.Lifecycle
 import org.springframework.integration.handler.AbstractMessageHandler
+import org.springframework.integration.support.MessageBuilder
 import org.springframework.messaging.Message
+import org.springframework.messaging.MessagingException
 
 class PulsarProducerMessageHandler(
     private val destination: ProducerDestination,
@@ -83,14 +86,33 @@ class PulsarProducerMessageHandler(
         if (logger.isDebugEnabled) {
             logger.debug("Message's header is ${message.headers} and payload is ${message.payload}")
         }
+        sendMessage(message)
+    }
+
+    private fun sendMessage(message: Message<*>) {
         val (properties, payload) = PulsarMessageConverterSupport.convertMessage2Pulsar(destination.name, message)
         val key = properties[PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_KEY)]
-        if (key.isNullOrEmpty()) {
-            producer!!.newMessage()
-                .value(payload).properties(properties).sendAsync()
-        } else {
-            producer!!.newMessage().key(key)
-                .value(payload).properties(properties).sendAsync()
+        val deliveryAfterSec = properties[
+            PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AFTER_SECONDS)
+        ]
+        val deliveryAt = properties[
+            PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AT)
+        ]
+        logger.info("deliveryAfterSec $deliveryAfterSec, deliveryAt $deliveryAt")
+        try {
+            val msg = producer!!.newMessage()
+                .value(payload).properties(properties)
+            key?.let { msg.key(key) }
+            deliveryAfterSec?.let { msg.deliverAfter(deliveryAfterSec.toLong(), TimeUnit.SECONDS) }
+            deliveryAt?.let { msg.deliverAt(deliveryAt.toLong()) }
+            msg.sendAsync()
+        } catch (e: Exception) {
+            throw MessagingException(
+                MessageBuilder.withPayload(
+                    "Error occurred whiling producing message " + e.message
+                ).build(),
+                e
+            )
         }
     }
 
