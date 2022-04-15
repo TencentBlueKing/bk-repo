@@ -169,6 +169,8 @@
                         lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                         lastModifiedDate: formatDate(data.lastModifiedDate)
                     }
+                    // todo 屏蔽扫描状态字段
+                    Reflect.deleteProperty(this.detailSlider.data.metadata || {}, 'scanStatus')
                 }).finally(() => {
                     this.detailSlider.loading = false
                 })
@@ -283,9 +285,6 @@
                 transition: all .3s;
             }
         }
-    }
-    .code-tip {
-        color: var(--fontSubsidiaryColor);
     }
 }
 </style>

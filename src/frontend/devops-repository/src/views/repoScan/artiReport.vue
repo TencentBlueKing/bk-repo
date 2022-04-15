@@ -6,7 +6,8 @@
                 <span class="arti-name text-overflow" :title="baseInfo.name">{{ baseInfo.name }}</span>
             </div>
             <div class="arti-meta">
-                <div v-for="item in metaBase.filter(v => baseInfo[v.key])" :key="item.key">
+                <div v-for="item in metaBase.filter(v => baseInfo[v.key])"
+                    :key="item.key" class="meta-content">
                     <span style="color:var(--fontSubsidiaryColor);">{{ item.label }}</span>
                     <span class="ml20">{{ baseInfo[item.key] }}</span>
                 </div>
@@ -233,6 +234,16 @@
             display: grid;
             gap: 20px;
             border-top: 1px solid var(--borderColor);
+            .meta-content {
+                display: flex;
+                span:first-child {
+                    flex-shrink: 0;
+                }
+                span:last-child {
+                    word-break: break-word;
+                    flex: 1
+                }
+            }
         }
     }
     .leak-list {
@@ -251,7 +262,7 @@
         }
         .leak-tip {
             padding: 0 20px 5px;
-            color: var(--subsidiaryColor);
+            color: var(--fontDisableColor);
         }
     }
 }

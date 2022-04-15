@@ -8,12 +8,11 @@
         <bk-form class="mr10 repo-generic-form" :label-width="90" :model="genericForm" :rules="rules" ref="genericForm">
             <template v-if="genericForm.type === 'add'">
                 <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path" error-display-type="normal">
-                    <label class="path-tip">支持 / 分隔符级联创建文件夹</label>
-                    <bk-input class="mt30"
-                        v-model.trim="genericForm.path"
+                    <bk-input v-model.trim="genericForm.path"
                         type="textarea" :rows="6"
                         :placeholder="$t('folderPathPlacehodler')">
                     </bk-input>
+                    <div class="form-tip">支持 / 分隔符级联创建文件夹</div>
                 </bk-form-item>
             </template>
             <template v-else-if="genericForm.type === 'rename'">
@@ -185,12 +184,3 @@
         }
     }
 </script>
-<style lang="scss" scoped>
-.repo-generic-form {
-    .path-tip {
-        position: absolute;
-        font-size: 12px;
-        color: var(--fontSubsidiaryColor);
-    }
-}
-</style>

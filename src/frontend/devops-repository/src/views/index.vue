@@ -51,20 +51,29 @@
         computed: {
             ...mapState(['userInfo', 'projectList']),
             ...mapGetters(['masterNode']),
+            serviceAvaliable () {
+                return MODE_CONFIG === 'ci' || this.projectList.length
+            },
             menuList () {
+                if (!this.serviceAvaliable) {
+                    return {
+                        project: [],
+                        global: []
+                    }
+                }
                 return {
                     project: [
-                        (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoList',
-                        (MODE_CONFIG === 'ci' || this.projectList.length) && 'repoSearch',
-                        // MODE_CONFIG === 'ci' && 'repoToken',
-                        (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.manage && 'repoScan',
-                        (MODE_CONFIG === 'ci' || this.projectList.length) && this.userInfo.admin && this.isMasterNode && 'planManage',
-                        (MODE_CONFIG === 'ci' || this.projectList.length) && !this.userInfo.admin && this.userInfo.manage && 'projectConfig'
+                        'repoList',
+                        'repoSearch',
+                        MODE_CONFIG === 'ci' && 'repoToken',
+                        (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
+                        (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                     ].filter(Boolean),
                     global: [
                         MODE_CONFIG !== 'ci' && 'projectManage',
                         'userManage',
                         'nodeManage',
+                        this.isMasterNode && 'planManage',
                         'repoAudit'
                     ].filter(Boolean)
                 }

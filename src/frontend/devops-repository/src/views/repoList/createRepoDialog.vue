@@ -17,12 +17,10 @@
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
-                <div class="flex-align-center">
-                    <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
-                        :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
-                    </bk-input>
-                    <span v-if="repoBaseInfo.type === 'docker'" class="ml10 form-tip">docker仓库仅能使用英文小写</span>
-                </div>
+                <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
+                    :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlacehodler' : 'repoNamePlacehodler')">
+                </bk-input>
+                <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">docker仓库名称不支持大写英文字母</div>
             </bk-form-item>
             <bk-form-item label="访问权限">
                 <card-radio-group
@@ -307,10 +305,6 @@
                 line-height: initial;
                 padding: 0;
                 border-radius: 2px;
-                &:hover {
-                    border-color: var(--primaryHoverColor);
-                    box-shadow: 0px 0px 6px 0px var(--primaryHoverColor);
-                }
             }
         }
         .repo-type-radio {
@@ -319,10 +313,6 @@
             width: 80px;
             height: 60px;
         }
-    }
-    .form-tip {
-        font-size: 12px;
-        color: var(--subsidiaryColor)
     }
 }
 </style>

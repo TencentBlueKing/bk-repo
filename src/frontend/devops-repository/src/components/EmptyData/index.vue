@@ -45,6 +45,7 @@
     .empty-data-title {
         font-size: 14px;
         font-weight: bold;
+        color: var(--fontPrimaryColor);
     }
     .empty-data-subtitle {
         color: var(--fontSubsidiaryColor);
