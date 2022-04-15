@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.common.bksync.transfer.http
 
+import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
+import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
@@ -24,7 +26,10 @@ class HttpBkSyncCall(
     // http客户端
     private val client: OkHttpClient,
     // 重复率阈值，只有大于该阈值时才会使用增量上传
-    private val reuseThreshold: Float = DEFAULT_THRESHOLD
+    private val reuseThreshold: Float = DEFAULT_THRESHOLD,
+    // 只有小于该带宽时才会增量上传,单位MB
+    private val allowUseMaxBandwidth: Int = -1,
+    private val speedTestSettings: SpeedTestSettings?
 ) {
     private val logger = LoggerFactory.getLogger(HttpBkSyncCall::class.java)
 
@@ -33,6 +38,17 @@ class HttpBkSyncCall(
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
+        if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
+            val speedTest = NetSpeedTest(speedTestSettings)
+            val avgBytes = speedTest.uploadTest()
+            logger.info("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
+            val base = 1024 * 1024
+            if (avgBytes / base > allowUseMaxBandwidth) {
+                logger.info("Faster internet,use common generic upload.")
+                request.genericUrl?.let { commonUpload(request) }
+                return
+            }
+        }
         try {
             val nanos = measureNanoTime { doUpload(request) }
             logger.info("Upload[${request.deltaUrl}] success,elapsed ${HumanReadable.time(nanos)}.")
