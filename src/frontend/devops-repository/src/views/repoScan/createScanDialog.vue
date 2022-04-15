@@ -69,6 +69,13 @@
                             message: '请选择方案类型',
                             trigger: 'blur'
                         }
+                    ],
+                    scanner: [
+                        {
+                            required: true,
+                            message: '请选择扫描器',
+                            trigger: 'blur'
+                        }
                     ]
                 }
             }
