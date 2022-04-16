@@ -111,7 +111,7 @@ object RuleConverter {
         return when (rule.type) {
             RuleType.EQ -> Rule.QueryRule(field, rule.value, OperationType.EQ)
             RuleType.IN -> Rule.QueryRule(field, "*${rule.value}*", OperationType.MATCH)
-            RuleType.REGEX -> Rule.QueryRule(field, rule.value, OperationType.MATCH)
+            RuleType.REGEX -> Rule.QueryRule(field, rule.value, OperationType.REGEX)
         }
     }
 
@@ -200,17 +200,25 @@ object RuleConverter {
     private fun convertRule(rule: Rule): com.tencent.bkrepo.scanner.pojo.rule.Rule {
         require(rule is Rule.QueryRule)
 
+        val value = rule.value.toString()
+        val ruleValue = if (rule.operation == OperationType.MATCH && value.length > 2) {
+            // MATCH匹配规则的value为‘*someValue*’,需要移除头尾的'*'
+            value.substring(1, value.length - 1)
+        } else {
+            value
+        }
+
         return com.tencent.bkrepo.scanner.pojo.rule.Rule(
             convertRuleOperationType(rule.operation),
-            rule.value.toString()
+            ruleValue
         )
     }
 
     private fun convertRuleOperationType(type: OperationType): RuleType {
         return when (type) {
             OperationType.EQ -> RuleType.EQ
-            OperationType.MATCH -> RuleType.REGEX
-            OperationType.IN -> RuleType.IN
+            OperationType.REGEX -> RuleType.REGEX
+            OperationType.MATCH -> RuleType.IN
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, type)
         }
     }
