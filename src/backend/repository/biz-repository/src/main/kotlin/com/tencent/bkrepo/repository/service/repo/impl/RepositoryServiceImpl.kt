@@ -98,8 +98,8 @@ class RepositoryServiceImpl(
     private val storageCredentialService: StorageCredentialService,
     private val proxyChannelService: ProxyChannelService,
     private val repositoryProperties: RepositoryProperties,
-    private val servicePermissionResource: ServicePermissionResource,
-    private val eventSupplier: EventSupplier
+    private val eventSupplier: EventSupplier,
+    private val servicePermissionResource: ServicePermissionResource
 ) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {

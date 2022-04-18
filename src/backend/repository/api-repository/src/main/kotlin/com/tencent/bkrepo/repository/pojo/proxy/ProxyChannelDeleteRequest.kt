@@ -38,7 +38,7 @@ import io.swagger.annotations.ApiModelProperty
 /**
  * 代理源创建请求
  */
-@ApiModel("代理源创建请求")
+@ApiModel("代理源删除请求")
 data class ProxyChannelDeleteRequest(
     @ApiModelProperty("所属项目id", required = true)
     val projectId: String,
