@@ -34,10 +34,12 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.model.TWebHook
 import org.slf4j.LoggerFactory
+import org.springframework.messaging.Message
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
+import java.util.regex.Pattern
 
 /**
  * 事件消息消费者
@@ -47,16 +49,16 @@ class ArtifactEventConsumer(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor
-) : Consumer<ArtifactEvent> {
+) : Consumer<Message<ArtifactEvent>> {
 
     private val systemWebHookCache = CacheBuilder.newBuilder()
         .maximumSize(100)
         .expireAfterWrite(10, TimeUnit.MINUTES)
         .build<EventType, List<TWebHook>>(CacheLoader.from { key -> webHookDao.findSystemWebHookByEventType(key) })
 
-    override fun accept(event: ArtifactEvent) {
-        logger.info("accept artifact event: $event")
-        val task = Runnable { triggerWebHooks(event) }
+    override fun accept(message: Message<ArtifactEvent>) {
+        logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
+        val task = Runnable { triggerWebHooks(message.payload) }
         threadPoolTaskExecutor.execute(task)
     }
 
@@ -72,7 +74,23 @@ class ArtifactEventConsumer(
         if (event.projectId.isNotBlank() && event.repoName.isNotBlank()) {
             webHookList.addAll(webHookDao.findRepoWebHookByEventType(event.projectId, event.repoName, event.type))
         }
+        webHookList.filter { matchResourceKey(it.resourceKeyPattern, event.resourceKey) }
+        logger.info("event: $event, webHookList: $webHookList")
         webHookExecutor.asyncExecutor(event, webHookList)
+    }
+
+    private fun matchResourceKey(resourceKeyPattern: String?, resourceKey: String): Boolean {
+        if (resourceKeyPattern.isNullOrBlank()) {
+            return true
+        }
+        return try {
+            val pattern = Pattern.compile(resourceKeyPattern)
+            val matcher = pattern.matcher(resourceKey)
+            matcher.matches()
+        } catch (e: Exception) {
+            logger.warn("match resourceKey[$resourceKey] by pattern[$resourceKeyPattern] error, $e")
+            false
+        }
     }
 
     companion object {

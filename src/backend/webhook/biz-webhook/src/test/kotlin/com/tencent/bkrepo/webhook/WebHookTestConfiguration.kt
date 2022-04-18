@@ -25,6 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.exception
+package com.tencent.bkrepo.webhook
 
-class WebHookException(message: String) : RuntimeException(message)
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+
+@SpringBootConfiguration
+@EnableAutoConfiguration
+class WebHookTestConfiguration

@@ -25,36 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.pojo
+package com.tencent.bkrepo.webhook.metrics
 
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.webhook.constant.AssociationType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-import java.time.LocalDateTime
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.stereotype.Component
+import java.util.concurrent.atomic.AtomicInteger
 
-@ApiModel("WebHook信息")
-data class WebHook(
-    @ApiModelProperty("id")
-    val id: String,
-    @ApiModelProperty("回调地址")
-    val url: String,
-    @ApiModelProperty("自定义请求头")
-    val headers: Map<String, String>? = null,
-    @ApiModelProperty("触发事件")
-    val triggers: List<EventType>,
-    @ApiModelProperty("关联对象类型")
-    val associationType: AssociationType,
-    @ApiModelProperty("关联对象id")
-    val associationId: String,
-    @ApiModelProperty("事件资源key正则模式")
-    val resourceKeyPattern: String? = null,
-    @ApiModelProperty("创建人")
-    val createdBy: String,
-    @ApiModelProperty("创建时间")
-    val createdDate: LocalDateTime,
-    @ApiModelProperty("最近修改人")
-    val lastModifiedBy: String,
-    @ApiModelProperty("最近修改时间")
-    val lastModifiedDate: LocalDateTime
-)
+@Component
+class WebHookMetrics : MeterBinder {
+
+    var executingCount = AtomicInteger(0)
+
+    override fun bindTo(registry: MeterRegistry) {
+        Gauge.builder(WEBHOOK_EXECUTING_COUNT, executingCount) { it.get().toDouble() }
+            .description(WEBHOOK_EXECUTING_COUNT_DESC)
+            .register(registry)
+    }
+}

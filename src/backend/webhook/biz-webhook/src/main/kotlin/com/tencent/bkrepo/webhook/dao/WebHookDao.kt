@@ -39,13 +39,10 @@ import org.springframework.stereotype.Repository
 @Repository
 class WebHookDao : SimpleMongoDao<TWebHook>() {
 
-    fun findByAssociationTypeAndAssociationId(type: AssociationType, id: String): List<TWebHook> {
-        if (id.isBlank()) {
-            return emptyList()
-        }
+    fun findByAssociationTypeAndAssociationId(type: AssociationType, id: String?): List<TWebHook> {
         val query = Query(
             Criteria.where(TWebHook::associationType.name).isEqualTo(type)
-                .and(TWebHook::associationId.name).isEqualTo(id)
+                .apply { id?.let { and(TWebHook::associationId.name).isEqualTo(id) } }
         )
         return this.find(query)
     }

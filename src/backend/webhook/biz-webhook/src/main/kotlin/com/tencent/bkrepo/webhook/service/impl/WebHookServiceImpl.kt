@@ -30,6 +30,7 @@ package com.tencent.bkrepo.webhook.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -59,35 +60,39 @@ class WebHookServiceImpl(
     private val permissionManager: PermissionManager
 ) : WebHookService {
 
-    override fun createWebHook(userId: String, request: CreateWebHookRequest) {
+    override fun createWebHook(userId: String, request: CreateWebHookRequest): WebHook {
         logger.info("create webhook, userId: $userId, request: $request")
         with(request) {
             checkPermission(userId, associationType, associationId)
             val webHook = TWebHook(
                 url = url,
-                token = token,
+                headers = headers,
                 triggers = triggers,
                 associationType = associationType,
                 associationId = associationId,
+                resourceKeyPattern = resourceKeyPattern,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
                 lastModifiedDate = LocalDateTime.now()
             )
-            webHookDao.insert(webHook)
+            val tWebHook = webHookDao.insert(webHook)
+            return transferWebHook(tWebHook)
         }
     }
 
-    override fun updateWebHook(userId: String, request: UpdateWebHookRequest) {
+    override fun updateWebHook(userId: String, request: UpdateWebHookRequest): WebHook {
         logger.info("update webhook, userId: $userId, request: $request")
         val webHook = findWebHookById(request.id)
         checkPermission(userId, webHook.associationType, webHook.associationId)
         webHook.url = request.url ?: webHook.url
         webHook.triggers = request.triggers ?: webHook.triggers
-        webHook.token = request.token ?: webHook.token
+        webHook.headers = request.headers ?: webHook.headers
+        webHook.resourceKeyPattern = request.resourceKeyPattern ?: webHook.resourceKeyPattern
         webHook.lastModifiedBy = userId
         webHook.lastModifiedDate = LocalDateTime.now()
-        webHookDao.save(webHook)
+        val tWebHook = webHookDao.save(webHook)
+        return transferWebHook(tWebHook)
     }
 
     override fun deleteWebHook(userId: String, id: String) {
@@ -104,7 +109,7 @@ class WebHookServiceImpl(
         return transferWebHook(webHook)
     }
 
-    override fun listWebHook(userId: String, associationType: AssociationType, associationId: String): List<WebHook> {
+    override fun listWebHook(userId: String, associationType: AssociationType, associationId: String?): List<WebHook> {
         logger.info("list webhook, userId: $userId, type: $associationType, id: $associationId")
         checkPermission(userId, associationType, associationId)
         val webHookList = webHookDao.findByAssociationTypeAndAssociationId(associationType, associationId)
@@ -133,7 +138,7 @@ class WebHookServiceImpl(
             ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_NOT_FOUND)
     }
 
-    private fun checkPermission(userId: String, type: AssociationType, associationId: String): Pair<String, String> {
+    private fun checkPermission(userId: String, type: AssociationType, associationId: String?): Pair<String, String> {
         val projectId: String
         val repoName: String
         when (type) {
@@ -143,12 +148,14 @@ class WebHookServiceImpl(
                 permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
             }
             AssociationType.PROJECT -> {
-                projectId = associationId
+                Preconditions.checkNotNull(associationId, "associationId")
+                projectId = associationId!!
                 repoName = ""
                 permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
             }
             AssociationType.REPO -> {
-                projectId = associationId.split(StringPool.COLON).first()
+                Preconditions.checkArgument(associationId?.split(StringPool.COLON)?.size == 2, "associationId")
+                projectId = associationId!!.split(StringPool.COLON).first()
                 repoName = associationId.split(StringPool.COLON).last()
                 permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName)
             }
@@ -161,9 +168,11 @@ class WebHookServiceImpl(
             return WebHook(
                 id = id!!,
                 url = url,
+                headers = headers,
                 triggers = triggers,
                 associationType = associationType,
                 associationId = associationId,
+                resourceKeyPattern = resourceKeyPattern,
                 createdBy = createdBy,
                 createdDate = createdDate,
                 lastModifiedBy = lastModifiedBy,
