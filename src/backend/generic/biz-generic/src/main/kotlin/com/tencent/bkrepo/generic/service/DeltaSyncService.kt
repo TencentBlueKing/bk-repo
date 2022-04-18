@@ -33,9 +33,15 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
+import org.springframework.http.MediaType
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
 import kotlin.system.measureNanoTime
 
@@ -50,11 +56,13 @@ class DeltaSyncService(
     val nodeClient: NodeClient,
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
-    val storageProperties: StorageProperties
+    val storageProperties: StorageProperties,
+    val taskExecutor: ThreadPoolTaskScheduler
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
     private val blockSize = deltaProperties.blockSize.toBytes().toInt()
+    private val patchTimeout = deltaProperties.patchTimeout.toMillis()
     val signFileProjectId = deltaProperties.projectId!!
     val signFileRepoName = deltaProperties.repoName!!
     val signRepo: RepositoryDetail by lazy {
@@ -106,17 +114,72 @@ class DeltaSyncService(
      * 基于旧文件和增量数据进行合并文件
      * @param oldFilePath 旧文件仓库完整路径
      * */
-    fun patch(oldFilePath: String) {
+    fun patch(oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(ArtifactContext()) {
             val node = nodeClient.getNodeDetail(projectId, repoName, oldFilePath).data
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
-            val blockInputStream = getBlockInputStream(node, storageCredentials)
-            blockInputStream.use {
-                val file = ArtifactFileFactory.buildBkSync(it, request.inputStream, blockSize)
-                val uploadContext = ArtifactUploadContext(file)
-                repository.upload(uploadContext)
+            val hasCompleted = AtomicBoolean(false)
+            val contentLength = request.contentLengthLong
+            val emitter = SseEmitter(patchTimeout)
+            val reportAction: (inputStream: CounterInputStream) -> Unit = {
+                if (!hasCompleted.get()) {
+                    val process = String.format("%.2f", (it.count.toFloat() / contentLength) * 100)
+                    val msg = "Current process $process%."
+                    val event = SseEmitter.event().name(PATCH_EVENT_TYPE_INFO).data(msg, MediaType.TEXT_PLAIN)
+                    emitter.send(event)
+                    logger.info(msg)
+                } else {
+                    logger.info("Patch has already completed.")
+                }
+            }
+            val counterInputStream = CounterInputStream(deltaFile.getInputStream())
+            val ackFuture = taskExecutor.scheduleAtFixedRate({ reportAction(counterInputStream) }, HEART_BEAT)
+            val requestAttributes = RequestContextHolder.getRequestAttributes()
+            taskExecutor.execute {
+                try {
+                    RequestContextHolder.setRequestAttributes(requestAttributes)
+                    doPatch(node, storageCredentials, counterInputStream, emitter)
+                    emitter.complete()
+                } catch (e: Exception) {
+                    emitter.completeWithError(e)
+                } finally {
+                    hasCompleted.set(true)
+                    ackFuture.cancel(true)
+                    RequestContextHolder.resetRequestAttributes()
+                }
+            }
+            return emitter
+        }
+    }
+
+    private fun doPatch(
+        node: NodeDetail,
+        storageCredentials: StorageCredentials?,
+        deltaInputStream: InputStream,
+        emitter: SseEmitter
+    ) {
+        val blockInputStream = getBlockInputStream(node, storageCredentials)
+        blockInputStream.use {
+            val file = ArtifactFileFactory.buildBkSync(it, deltaInputStream, blockSize)
+            val uploadContext = ArtifactUploadContext(file)
+            with(uploadContext) {
+                val request = NodeCreateRequest(
+                    projectId = repositoryDetail.projectId,
+                    repoName = repositoryDetail.name,
+                    folder = false,
+                    fullPath = artifactInfo.getArtifactFullPath(),
+                    size = file.getSize(),
+                    sha256 = getArtifactSha256(),
+                    md5 = getArtifactMd5(),
+                    operator = userId,
+                    overwrite = true
+                )
+                val nodeDetail = storageManager.storeArtifactFile(request, file, storageCredentials)
+                val event = SseEmitter.event().name(PATCH_EVENT_TYPE_DATA)
+                    .data(nodeDetail, MediaType.APPLICATION_JSON)
+                emitter.send(event)
             }
         }
     }
@@ -185,8 +248,35 @@ class DeltaSyncService(
         }
     }
 
+    private class CounterInputStream(
+        val inputStream: InputStream
+    ) : InputStream() {
+        var count = 0L
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            return inputStream.read(b, off, len).apply {
+                if (this > 0) {
+                    count += this
+                }
+            }
+        }
+
+        override fun read(): Int {
+            return inputStream.read().apply {
+                if (this > 0) {
+                    count += this
+                }
+            }
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(DeltaSyncService::class.java)
         private const val SUFFIX_SIGN = ".sign"
+        private const val PATCH_EVENT_TYPE_INFO = "INFO"
+        private const val PATCH_EVENT_TYPE_DATA = "DATA"
+
+        // patch 回复心跳时间，保持连接存活
+        private const val HEART_BEAT = 1000L
     }
 }

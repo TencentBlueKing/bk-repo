@@ -62,6 +62,8 @@ import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.repository.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.repository.pojo.token.TokenType
 import org.springframework.stereotype.Service
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -217,13 +219,13 @@ class TemporaryAccessService(
     /**
      * 合并
      * */
-    fun patch(artifactInfo: GenericArtifactInfo, oldFilePath: String) {
+    fun patch(artifactInfo: GenericArtifactInfo, oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
-            deltaSyncService.patch(oldFilePath)
+            return deltaSyncService.patch(oldFilePath, deltaFile)
         }
     }
 

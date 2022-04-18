@@ -52,6 +52,8 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 @RestController
 @RequestMapping("/temporary/")
@@ -116,10 +118,12 @@ class TemporaryAccessController(
     fun patch(
         artifactInfo: GenericArtifactInfo,
         @RequestHeader(HEADER_OLD_FILE_PATH) oldFilePath: String,
-        @RequestParam token: String
-    ) {
+        @RequestParam token: String,
+        deltaFile: ArtifactFile
+    ): SseEmitter {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
-        temporaryAccessService.patch(artifactInfo, oldFilePath)
+        val emitter = temporaryAccessService.patch(artifactInfo, oldFilePath, deltaFile)
         temporaryAccessService.decrementPermits(tokenInfo)
+        return emitter
     }
 }
