@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceRoleResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -43,6 +44,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
@@ -60,6 +62,7 @@ import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -94,6 +97,9 @@ open class ServiceBaseTest {
     @MockBean
     lateinit var permissionManager: PermissionManager
 
+    @MockBean
+    lateinit var eventSupplier: EventSupplier
+
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
@@ -120,6 +126,8 @@ open class ServiceBaseTest {
         whenever(servicePermissionResource.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success()
         )
+
+        whenever(eventSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull())).then{}
     }
 
     fun initRepoForUnitTest(
