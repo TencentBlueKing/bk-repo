@@ -3,17 +3,18 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.stream.CompositeOutputStream
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedFileOutputStream
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.BlockInputStream
 import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
@@ -33,9 +34,15 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
+import org.springframework.http.MediaType
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.InputStream
 import java.time.LocalDateTime
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.ceil
 import kotlin.system.measureNanoTime
 
@@ -50,11 +57,13 @@ class DeltaSyncService(
     val nodeClient: NodeClient,
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
-    val storageProperties: StorageProperties
+    val storageProperties: StorageProperties,
+    val taskExecutor: ThreadPoolTaskScheduler
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
     private val blockSize = deltaProperties.blockSize.toBytes().toInt()
+    private val patchTimeout = deltaProperties.patchTimeout.toMillis()
     val signFileProjectId = deltaProperties.projectId!!
     val signFileRepoName = deltaProperties.repoName!!
     val signRepo: RepositoryDetail by lazy {
@@ -106,19 +115,100 @@ class DeltaSyncService(
      * 基于旧文件和增量数据进行合并文件
      * @param oldFilePath 旧文件仓库完整路径
      * */
-    fun patch(oldFilePath: String) {
+    fun patch(oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(ArtifactContext()) {
             val node = nodeClient.getNodeDetail(projectId, repoName, oldFilePath).data
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
+            val hasCompleted = AtomicBoolean(false)
+            val clientError = AtomicBoolean(false)
+            val contentLength = request.contentLengthLong
+            val emitter = SseEmitter(patchTimeout)
+            emitter.onCompletion { hasCompleted.set(true) }
+            val counterInputStream = CounterInputStream(deltaFile.getInputStream())
+            val reportAction = { reportProcess(clientError, hasCompleted, counterInputStream, contentLength, emitter) }
+            val ackFuture = taskExecutor.scheduleWithFixedDelay(reportAction, HEART_BEAT)
             val blockInputStream = getBlockInputStream(node, storageCredentials)
-            blockInputStream.use {
-                val file = ArtifactFileFactory.buildBkSync(it, request.inputStream, blockSize)
-                val uploadContext = ArtifactUploadContext(file)
-                repository.upload(uploadContext)
+            val file = ArtifactFileFactory.buildBkSync(blockInputStream, counterInputStream, blockSize)
+            taskExecutor.execute {
+                try {
+                    val nodeDetail = upload(file, storageCredentials, repositoryDetail, artifactInfo, userId)
+                    val event = SseEmitter.event().name(PATCH_EVENT_TYPE_DATA)
+                        .data(nodeDetail, MediaType.APPLICATION_JSON)
+                    emitter.send(event)
+                    emitter.complete()
+                } catch (e: Exception) {
+                    emitter.completeWithError(e)
+                } finally {
+                    blockInputStream.close()
+                    ackFuture.cancel(true)
+                }
             }
+            return emitter
         }
+    }
+
+    /**
+     * 上报进度
+     * @param clientError 记录是否发生客户端错误
+     * @param hasCompleted 记录是否完成
+     * @param inputStream 可计数的输入流
+     * @param contentLength 增量文件总长度
+     * @param emitter 发送器
+     * */
+    private fun reportProcess(
+        clientError: AtomicBoolean,
+        hasCompleted: AtomicBoolean,
+        inputStream: CounterInputStream,
+        contentLength: Long,
+        emitter: SseEmitter
+    ) {
+        try {
+            if (clientError.get()) {
+                logger.info("Client has error,ignore report process.")
+                return
+            }
+            if (!hasCompleted.get()) {
+                val process = String.format("%.2f", (inputStream.count.toFloat() / contentLength) * 100)
+                val msg = "Current process $process%."
+                val event = SseEmitter.event().name(PATCH_EVENT_TYPE_INFO).data(msg, MediaType.TEXT_PLAIN)
+                emitter.send(event)
+                logger.info(msg)
+            } else {
+                logger.info("Patch has already completed.")
+            }
+        } catch (e: IOException) {
+            if (IOExceptionUtils.isClientBroken(e)) {
+                clientError.set(true)
+                return
+            }
+            logger.error("Send sse event failed.", e)
+        }
+    }
+
+    /**
+     * 上传文件
+     * */
+    private fun upload(
+        file: ArtifactFile,
+        storageCredentials: StorageCredentials?,
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ArtifactInfo,
+        userId: String
+    ): NodeDetail {
+        val request = NodeCreateRequest(
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
+            folder = false,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            size = file.getSize(),
+            sha256 = file.getFileSha256(),
+            md5 = file.getFileMd5(),
+            operator = userId,
+            overwrite = true
+        )
+        return storageManager.storeArtifactFile(request, file, storageCredentials)
     }
 
     /**
@@ -130,8 +220,7 @@ class DeltaSyncService(
         with(nodeDetail) {
             val signFileFullPath = "$projectId/$repoName/$blockSize/$fullPath$SUFFIX_SIGN"
             val artifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
-            val uploadContext = ArtifactUploadContext(signRepo, file, artifactInfo)
-            uploadSignFile(uploadContext)
+            upload(file, signRepo.storageCredentials, signRepo, artifactInfo, SecurityUtils.getUserId())
             val signFile = TSignFile(
                 srcSha256 = sha256!!,
                 projectId = signFileProjectId,
@@ -167,26 +256,35 @@ class DeltaSyncService(
         }
     }
 
-    private fun uploadSignFile(uploadContext: ArtifactUploadContext) {
-        with(uploadContext) {
-            val artifactFile = getArtifactFile()
-            val request = NodeCreateRequest(
-                projectId = repositoryDetail.projectId,
-                repoName = repositoryDetail.name,
-                folder = false,
-                fullPath = artifactInfo.getArtifactFullPath(),
-                size = artifactFile.getSize(),
-                sha256 = getArtifactSha256(),
-                md5 = getArtifactMd5(),
-                operator = userId,
-                overwrite = true
-            )
-            storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
+    private class CounterInputStream(
+        val inputStream: InputStream
+    ) : InputStream() {
+        var count = 0L
+
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            return inputStream.read(b, off, len).apply {
+                if (this > 0) {
+                    count += this
+                }
+            }
+        }
+
+        override fun read(): Int {
+            return inputStream.read().apply {
+                if (this > 0) {
+                    count += this
+                }
+            }
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(DeltaSyncService::class.java)
         private const val SUFFIX_SIGN = ".sign"
+        private const val PATCH_EVENT_TYPE_INFO = "INFO"
+        private const val PATCH_EVENT_TYPE_DATA = "DATA"
+
+        // 3s patch 回复心跳时间，保持连接存活
+        private const val HEART_BEAT = 3000L
     }
 }

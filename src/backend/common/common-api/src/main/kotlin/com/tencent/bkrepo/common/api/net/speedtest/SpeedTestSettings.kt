@@ -25,20 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.api.net.speedtest
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
-
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String? = null,
-    var repoName: String? = null
+data class SpeedTestSettings(
+    // 上传测试的url
+    val uploadUrl: String,
+    // 单个请求最大传输数据
+    val maxBlobMegabytes: Int = 20,
+    // 最大并发请求数
+    val concurrent: Int = 8,
+    // 测量超时时间
+    val timeoutInSecond: Int = 15
 )
