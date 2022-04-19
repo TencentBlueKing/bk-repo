@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.api.net.speedtest
 
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicLong
@@ -54,7 +55,7 @@ class Counter(
     }
 
     override fun read(): Int {
-        return inputStream.read()
+        throw MethodNotAllowedException()
     }
 
     override fun read(b: ByteArray): Int {

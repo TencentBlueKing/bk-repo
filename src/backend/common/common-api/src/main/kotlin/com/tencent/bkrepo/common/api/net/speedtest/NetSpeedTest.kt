@@ -72,7 +72,7 @@ class NetSpeedTest(
                 TimeUnit.MILLISECONDS.sleep(i * 200L)
             }
             countDownLatch.await(timeoutInSecond.toLong(), TimeUnit.SECONDS)
-            val totalBytes = total.incrementAndGet()
+            val totalBytes = total.get()
             return totalBytes / (System.currentTimeMillis() - start) * 1000
         }
     }
