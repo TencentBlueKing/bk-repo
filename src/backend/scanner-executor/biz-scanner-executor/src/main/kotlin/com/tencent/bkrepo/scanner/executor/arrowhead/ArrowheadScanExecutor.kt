@@ -230,15 +230,15 @@ class ArrowheadScanExecutor @Autowired constructor(
     private fun scanStatus(task: ScanExecutorTask, workDir: File): SubScanTaskStatus {
         val logFile = File(workDir, RESULT_FILE_NAME_LOG)
         if (!logFile.exists()) {
-            logMsg(task, "arrowhead log file not exists")
+            logger.info(logMsg(task, "arrowhead log file not exists"))
             return SubScanTaskStatus.FAILED
         }
 
         val lastLineLog = logFile.readLines().lastOrNull() ?: return SubScanTaskStatus.FAILED
-        if (lastLineLog.endsWith("Done")) {
+        if (lastLineLog.trimEnd().endsWith("Done")) {
             return SubScanTaskStatus.SUCCESS
         }
-        logMsg(task, "scan failed: $lastLineLog")
+        logger.info(logMsg(task, "scan failed: $lastLineLog"))
 
         return SubScanTaskStatus.FAILED
     }
@@ -254,8 +254,9 @@ class ArrowheadScanExecutor @Autowired constructor(
         val cveMap = HashMap<String, CveSecItem>()
         readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
             ?.forEach {
-                // 按（组件-CVE）对漏洞去重
-                val cveSecItem = cveMap.getOrPut("${it.component}-${it.cveId}") { CveSecItem.normalize(it) }
+                // 按（组件-POC_ID）对漏洞去重
+                // POC_ID为arrowhead使用的漏洞库内部漏洞编号，与CVE_ID、CNNVD_ID、CNVD_ID一一对应
+                val cveSecItem = cveMap.getOrPut("${it.component}-${it.pocId}") { CveSecItem.normalize(it) }
                 cveSecItem.versions.add(cveSecItem.version)
             }
         val cveSecItems = cveMap.values.toList()
