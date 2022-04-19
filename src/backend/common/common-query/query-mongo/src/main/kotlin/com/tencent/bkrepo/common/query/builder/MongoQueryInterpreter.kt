@@ -50,6 +50,7 @@ import com.tencent.bkrepo.common.query.handler.impl.NotEqualHandler
 import com.tencent.bkrepo.common.query.handler.impl.NotNullHandler
 import com.tencent.bkrepo.common.query.handler.impl.NullHandler
 import com.tencent.bkrepo.common.query.handler.impl.PrefixHandler
+import com.tencent.bkrepo.common.query.handler.impl.RegexHandler
 import com.tencent.bkrepo.common.query.handler.impl.SuffixHandler
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryModelInterceptor
@@ -87,6 +88,7 @@ open class MongoQueryInterpreter {
         defaultQueryRuleHandlerMap[OperationType.SUFFIX] = SuffixHandler()
         defaultQueryRuleHandlerMap[OperationType.MATCH] = MatchHandler()
         defaultQueryRuleHandlerMap[OperationType.MATCH_I] = MatchIHandler()
+        defaultQueryRuleHandlerMap[OperationType.REGEX] = RegexHandler()
         defaultQueryRuleHandlerMap[OperationType.NULL] = NullHandler()
         defaultQueryRuleHandlerMap[OperationType.NOT_NULL] = NotNullHandler()
     }
