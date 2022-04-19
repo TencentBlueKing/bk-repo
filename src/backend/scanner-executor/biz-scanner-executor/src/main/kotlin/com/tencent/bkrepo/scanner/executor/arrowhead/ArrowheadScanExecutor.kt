@@ -149,6 +149,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         val params = mapOf(
             TEMPLATE_KEY_INPUT_FILE to inputFilePath,
             TEMPLATE_KEY_OUTPUT_DIR to outputDir,
+            TEMPLATE_KEY_LOG_FILE to RESULT_FILE_NAME_LOG,
             TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID to knowledgeBase.secretId,
             TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY to knowledgeBase.secretKey,
             TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT to knowledgeBase.endpoint
@@ -217,10 +218,29 @@ class ArrowheadScanExecutor @Autowired constructor(
             if (!result) {
                 return SubScanTaskStatus.TIMEOUT
             }
-            return SubScanTaskStatus.SUCCESS
+            return scanStatus(task, workDir)
         } finally {
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
+    }
+
+    /**
+     * 解析arrowhead输出日志，判断扫描结果
+     */
+    private fun scanStatus(task: ScanExecutorTask, workDir: File): SubScanTaskStatus {
+        val logFile = File(workDir, RESULT_FILE_NAME_LOG)
+        if (!logFile.exists()) {
+            logMsg(task, "arrowhead log file not exists")
+            return SubScanTaskStatus.FAILED
+        }
+
+        val lastLineLog = logFile.readLines().lastOrNull() ?: return SubScanTaskStatus.FAILED
+        if (lastLineLog.endsWith("Done")) {
+            return SubScanTaskStatus.SUCCESS
+        }
+        logMsg(task, "scan failed: $lastLineLog")
+
+        return SubScanTaskStatus.FAILED
     }
 
     /**
@@ -311,9 +331,13 @@ class ArrowheadScanExecutor @Autowired constructor(
         // arrowhead配置文件模板key
         private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
         private const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
+        private const val TEMPLATE_KEY_LOG_FILE = "logFile"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
+
+        // arrowhead输出日志路径
+        private const val RESULT_FILE_NAME_LOG = "sysauditor.log"
 
         // arrowhead扫描结果文件名
         /**

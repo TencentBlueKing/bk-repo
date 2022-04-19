@@ -120,7 +120,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?: TProjectScanConfiguration.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
             val countToUpdate = (subtaskCountLimit - subScanTaskDao.scanningCount(projectId)).toInt()
             return if (countToUpdate > 0) {
-                subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
+                val notifiedCount = subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
+                scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, notifiedCount.toLong())
+                scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toLong())
+                notifiedCount
             } else {
                 0
             }
