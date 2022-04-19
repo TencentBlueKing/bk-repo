@@ -64,11 +64,11 @@ import com.tencent.bkrepo.repository.util.MetadataUtils
 import com.tencent.bkrepo.repository.util.PackageEventFactory
 import com.tencent.bkrepo.repository.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.repository.util.PackageQueryHelper
+import java.time.LocalDateTime
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class PackageServiceImpl(
@@ -179,7 +179,7 @@ class PackageServiceImpl(
             val tPackage = findOrCreatePackage(request)
             // 检查版本是否存在
             val oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
-            //检查本次上传是创建还是覆盖。
+            // 检查本次上传是创建还是覆盖。
             var isOverride = false
             val newVersion = if (oldVersion != null) {
                 if (!overwrite) {
@@ -219,24 +219,33 @@ class PackageServiceImpl(
                     extension = request.extension.orEmpty()
                 )
             }
-            packageVersionDao.save(newVersion)
-            // 更新包
-            tPackage.lastModifiedBy = newVersion.lastModifiedBy
-            tPackage.lastModifiedDate = newVersion.lastModifiedDate
-            tPackage.description = packageDescription?.let { packageDescription }
-            tPackage.latest = versionName
-            tPackage.extension = extension?.let { extension }
-            tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
-            tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
-            packageDao.save(tPackage)
+            try {
+                packageVersionDao.save(newVersion)
+                // 更新包
+                tPackage.lastModifiedBy = newVersion.lastModifiedBy
+                tPackage.lastModifiedDate = newVersion.lastModifiedDate
+                tPackage.description = packageDescription?.let { packageDescription }
+                tPackage.latest = versionName
+                tPackage.extension = extension?.let { extension }
+                tPackage.versionTag = mergeVersionTag(tPackage.versionTag, versionTag)
+                tPackage.historyVersion = tPackage.historyVersion.toMutableSet().apply { add(versionName) }
+                packageDao.save(tPackage)
 
-            if (!isOverride) {
-                publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
-            } else {
-                publishEvent((PackageEventFactory.buildUpdatedEvent(
-                    request, realIpAddress ?: HttpContextHolder.getClientAddress())))
+                if (!isOverride) {
+                    publishEvent((buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress())))
+                } else {
+                    publishEvent(
+                        (
+                            PackageEventFactory.buildUpdatedEvent(
+                                request, realIpAddress ?: HttpContextHolder.getClientAddress()
+                            )
+                            )
+                    )
+                }
+                logger.info("Create package version[$newVersion] success")
+            } catch (e: DuplicateKeyException) {
+                logger.warn("Create package version[$newVersion] error: [${e.message}]")
             }
-            logger.info("Create package version[$newVersion] success")
         }
     }
 
