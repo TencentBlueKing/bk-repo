@@ -5,6 +5,7 @@ export const ROUTER_NAME_SERVICE = 'Service'
 export const ROUTER_NAME_NODE = 'Node'
 export const ROUTER_NAME_INSTANCE = 'Instance'
 export const ROUTER_NAME_STORAGE_CREDENTIALS = 'StorageCredentials'
+export const ROUTER_NAME_WEBHOOK = 'Webhook'
 
 Vue.use(Router)
 
@@ -105,6 +106,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_STORAGE_CREDENTIALS,
         component: () => import('@/views/storage/Credential'),
         meta: { title: '凭据', icon: 'credentials' }
+      }
+    ]
+  },
+  {
+    path: '/webhook',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_WEBHOOK,
+        meta: { title: 'WebHook管理', icon: 'file' },
+        component: () => import('@/views/webhook/index')
       }
     ]
   },

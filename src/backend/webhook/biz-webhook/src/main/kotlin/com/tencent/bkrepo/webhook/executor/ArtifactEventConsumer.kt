@@ -31,6 +31,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.model.TWebHook
 import org.slf4j.LoggerFactory
@@ -48,7 +49,8 @@ import java.util.regex.Pattern
 class ArtifactEventConsumer(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     private val webHookDao: WebHookDao,
-    private val webHookExecutor: WebHookExecutor
+    private val webHookExecutor: WebHookExecutor,
+    private val webHookProperties: WebHookProperties
 ) : Consumer<Message<ArtifactEvent>> {
 
     private val systemWebHookCache = CacheBuilder.newBuilder()
@@ -65,6 +67,10 @@ class ArtifactEventConsumer(
     fun triggerWebHooks(event: ArtifactEvent) {
         val webHookList = mutableListOf<TWebHook>()
 
+        if (!checkIfNeedTrigger(event)) {
+            return
+        }
+
         webHookList.addAll(systemWebHookCache.get(event.type))
 
         if (event.projectId.isNotBlank()) {
@@ -77,6 +83,17 @@ class ArtifactEventConsumer(
         webHookList.filter { matchResourceKey(it.resourceKeyPattern, event.resourceKey) }
         logger.info("event: $event, webHookList: $webHookList")
         webHookExecutor.asyncExecutor(event, webHookList)
+    }
+
+    private fun checkIfNeedTrigger(event: ArtifactEvent): Boolean {
+        val projectRepoKey = "${event.projectId}:${event.repoName}"
+        webHookProperties.filterProjectRepoKey.forEach {
+            val regex = Regex(it.replace("*", ".*"))
+            if (projectRepoKey.matches(regex)) {
+                return false
+            }
+        }
+        return true
     }
 
     private fun matchResourceKey(resourceKeyPattern: String?, resourceKey: String): Boolean {
