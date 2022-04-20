@@ -2,20 +2,22 @@
     <div class="virtual-tree" @scroll="scrollTree($event)">
         <ul class="repo-tree-list">
             <li class="repo-tree-item" :key="item.roadMap" v-for="item of treeList">
-                <div class="repo-tree-title hover-btn"
-                    :title="item.displayName"
+                <div class="repo-tree-title"
                     :class="{ 'selected': selectedNode.roadMap === item.roadMap }"
-                    :style="{ 'padding-left': 20 * computedDepth(item) + 10 + 'px' }"
+                    :style="{ 'padding-left': 20 * computedDepth(item) + 'px' }"
                     @click.stop="itemClickHandler(item)">
                     <i v-if="item.loading" class="mr5 loading spin-icon"></i>
                     <i v-else-if="!item.leaf" class="mr5 devops-icon" @click.stop="iconClickHandler(item)"
-                        :class="openList.includes(item.roadMap) ? 'icon-down-shape' : 'icon-right-shape'"></i>
+                        :class="openList.includes(item.roadMap) ? 'icon-angle-down' : 'icon-angle-right'"></i>
                     <slot name="icon" :item="item" :open-list="openList">
                         <Icon class="mr5" size="14" :name="openList.includes(item.roadMap) ? 'folder-open' : 'folder'" />
                     </slot>
                     <slot name="text" :item="item">
-                        <div class="node-text" :title="item.displayName" v-html="importantTransform(item.displayName)"></div>
+                        <div class="mr10 node-text" :title="item.displayName" v-html="importantTransform(item.displayName)"></div>
                     </slot>
+                    <div class="mr10 node-operation flex-align-center">
+                        <slot name="operation" :item="item"></slot>
+                    </div>
                 </div>
             </li>
         </ul>
@@ -115,7 +117,7 @@
                 }, 400)
             },
             computedDepth (node) {
-                return node.roadMap.split(',').length - 1
+                return node.roadMap.split(',').length
             },
             /**
              *  点击icon的回调函数
@@ -184,9 +186,15 @@
         .devops-icon {
             color: var(--fontSubsidiaryColor);
             z-index: 1;
+            &.icon-angle-right,
+            &.icon-angle-down {
+                font-size: 12px;
+                font-weight: bold;
+                transform: scale(0.8)
+            }
         }
         .node-text {
-            max-width: 150px;
+            flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -196,18 +204,24 @@
                 background-color: var(--warningColor);
             }
         }
-        &:hover {
-            background-color: var(--bgLightColor);
+        .node-operation {
+            visibility: hidden;
+        }
+        &:hover,
+        &.selected {
             .devops-icon {
                 color: var(--primaryColor);
+            }
+            .node-operation {
+                visibility: visible;
             }
         }
         &.selected {
-            background-color: var(--bgHoverLighterColor);
+            background-color: var(--bgLightColor);
             color: var(--primaryColor);
-            .devops-icon {
-                color: var(--primaryColor);
-            }
+        }
+        &:hover {
+            background-color: var(--bgHoverLighterColor);
         }
     }
 }

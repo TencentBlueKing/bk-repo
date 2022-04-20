@@ -38,7 +38,6 @@ object ScanParamUtil {
 
     fun checkParam(
         repoType: RepositoryType,
-        artifactName: String,
         packageKey: String?,
         version: String?,
         fullPath: String?
@@ -56,11 +55,6 @@ object ScanParamUtil {
             RepositoryType.GENERIC -> {
                 if (fullPath.isNullOrEmpty()) {
                     throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "fullPath[$fullPath]")
-                }
-
-                //只支持ipa/apk类型包
-                if (!artifactName.endsWith(".apk") && !artifactName.endsWith(".ipa")) {
-                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "name[$artifactName]")
                 }
             }
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "repoType[${repoType.name}]")

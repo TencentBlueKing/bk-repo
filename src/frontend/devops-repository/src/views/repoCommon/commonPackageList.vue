@@ -2,20 +2,22 @@
     <div class="common-package-container" v-bkloading="{ isLoading }">
         <header class="mb10 pl20 pr20 common-package-header flex-align-center">
             <Icon class="package-img" size="70" :name="repoType" />
-            <div class="ml20 common-package-title flex-column">
-                <span class="mb5 repo-title text-overflow" :title="repoName">
+            <div class="ml20 common-package-title">
+                <div class="mb5 repo-title text-overflow" :title="repoName">
                     {{ repoName }}
-                </span>
-                <span class="repo-description text-overflow"
+                </div>
+                <div class="repo-description text-overflow"
                     :title="currentRepo.description">
                     {{ currentRepo.description || '【仓库描述】' }}
-                </span>
+                </div>
             </div>
             <div class="flex-end-center flex-1">
-                <div class="ml10 repo-guide-btn flex-align-center" @click="showGuide = true">
-                    <Icon class="mr5" name="hand-guide" size="16" />
-                    {{$t('guide')}}
-                </div>
+                <bk-button class="ml10 flex-align-center" text theme="primary" @click="showGuide = true">
+                    <span class="flex-align-center">
+                        <Icon class="mr5" name="hand-guide" size="16" />
+                        {{$t('guide')}}
+                    </span>
+                </bk-button>
             </div>
         </header>
         <!-- 存在包, 加载中默认存在包 -->
@@ -40,9 +42,11 @@
                         <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
                         <bk-option id="downloads" name="下载量排序"></bk-option>
                     </bk-select>
-                    <div class="ml10 sort-order flex-center hover-btn" @click="changeDirection">
-                        <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
-                    </div>
+                    <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
+                        <div class="ml10 sort-order flex-center" @click="changeDirection">
+                            <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
+                        </div>
+                    </bk-popover>
                 </div>
             </div>
             <div class="common-package-list">
@@ -120,7 +124,7 @@
             }
         },
         created () {
-            !this.repoListAll.length && this.getRepoListAll({ projectId: this.projectId })
+            this.getRepoListAll({ projectId: this.projectId })
             this.handlerPaginationChange()
         },
         methods: {
@@ -205,7 +209,6 @@
     height: 100%;
     .common-package-header{
         height: 90px;
-        color: var(--fontPrimaryColor);
         background-color: white;
         .package-img {
             padding: 15px;
@@ -220,18 +223,9 @@
             }
             .repo-description {
                 max-width: 70vw;
-                padding-left: 6px;
+                padding: 5px 15px;
                 background-color: var(--bgWeightColor);
                 border-radius: 2px;
-            }
-        }
-        .repo-guide-btn {
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            &:hover {
-                color: white;
-                background-color: var(--primaryColor);
             }
         }
     }
@@ -239,12 +233,18 @@
         padding: 10px 20px;
         background-color: white;
         .sort-tool {
-            color: var(--boxShadowColor);
+            color: var(--fontSubsidiaryColor);
             .sort-order {
                 width: 32px;
                 height: 32px;
-                border: 1px solid currentColor;
+                border: 1px solid var(--borderWeightColor);
                 border-radius: 2px;
+                cursor: pointer;
+                &:hover {
+                    color: var(--primaryColor);
+                    border-color: currentColor;
+                    background-color: var(--bgHoverLighterColor);
+                }
             }
         }
     }

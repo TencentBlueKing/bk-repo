@@ -1,94 +1,77 @@
-/*!
- * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
- *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
- *
- * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
- *
- * A copy of the MIT License is included in this file.
- *
- *
- * Terms of the MIT License:
- * ---------------------------------------------------
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-
- @charset 'utf-8';
- @import './conf';
- @import './reset';
+@charset 'utf-8';
+@import './conf';
+@import './reset';
 
 html,
 body {
     height: 100%;
+	margin: 0;
+    padding: 0;
     font-family: Microsoft Yahei,PingFang SC,Helvetica Neue,Arial,Hiragino Sans GB,WenQuanYi Micro Hei,sans-serif;
     font-size: 12px;
     line-height: 1.6;
     color: var(--fontPrimaryColor);
+    ul,
+    li {
+        margin: 0;
+        padding: 0;
+    }
+
+    li {
+        list-style: none;
+    }
+
+    a {
+        text-decoration: none;
+        color: var(--primaryColor);
+        &:hover {
+            color: var(--primaryWeightColor);
+        }
+    }
 }
 
 .devops-icon {
     font-size: 14px;
+    &.disabled {
+        color: var(--fontDisableColor);
+        cursor: not-allowed;
+    }
+    &.hover-btn {
+        padding: 5px;
+        border-radius: 2px;
+        &:not(.disabled):hover {
+            background-color: var(--bgHoverColor);
+        }
+    }
 }
 
-html,
-body,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-ul,
-li,
-dl,
-dt,
-dd,
-p,
-td,
-th{
-	margin: 0;
-    padding: 0;
-}
-
-ul,
-li {
-	list-style: none;
-}
-
-a {
-	text-decoration: none;
-	color: var(--fontPrimaryColor);
-	&:hover {
-		color: var(--primaryColor);
-	}
-}
-
-button,
-label {
-	outline: none;
+svg {
+    &.disabled {
+        color: var(--fontDisableColor);
+        cursor: not-allowed;
+    }
+    &.hover-btn {
+        padding: 5px;
+        border-radius: 2px;
+        &:not(.disabled):hover {
+            background-color: var(--bgHoverColor);
+        }
+    }
 }
 
 .hover-btn {
     user-select: none;
     cursor: pointer;
     &:hover {
-        color: var(--primaryColor);
+        color: var(--primaryWeightColor);
     }
     &.hover-danger:hover {
         color: var(--dangerColor);
     }
 }
 
-.router-link {
-    color: var(--primaryColor);
-    &:hover {
-        color: var(--primaryHoverColor);
-    }
+.inline-block {
+    display: inline-block;
 }
 
 .flex-column {
@@ -124,6 +107,10 @@ label {
     overflow: hidden;
 }
 
+.flex-inline {
+    display: inline-flex;
+}
+
 .text-overflow {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -155,6 +142,9 @@ label {
     color: var(--primaryColor);
     background-color: var(--bgHoverLighterColor);
     border: 1px solid transparent;
+    &:before {
+        content: attr(data-name);
+    }
     &.SUCCESS {
         color: var(--successColor);
         background-color: var(--successBgColor);
@@ -174,29 +164,39 @@ label {
     }
 }
 
-
 .status-sign {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
     &.SUCCESS,
     &.HEALTHY {
-        background-color: var(--successColor);
+        --signColor: var(--successColor);
     }
     &.UNHEALTHY,
     &.HIGH {
-        background-color: var(--warningColor);
+        --signColor: var(--warningColor);
     }
     &.FAILED,
     &.CRITICAL {
-        background-color: var(--dangerColor);
+        --signColor: var(--dangerColor);
     }
     &.RUNNING,
     &.MEDIUM {
-        background-color: var(--primaryColor);
+        --signColor: var(--primaryColor);
     }
     &.LOW {
-        background-color: var(--fontSubsidiaryColor);
+        --signColor: var(--fontSubsidiaryColor);
+    }
+    &:before {
+        content: '';
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: var(--signColor);
+    }
+    &:after {
+        content: attr(data-name);
+        margin-left: 5px;
+        color: var(--signColor);
     }
 }
 
@@ -239,7 +239,7 @@ label {
             line-height: 2.5;
             text-align: center;
             cursor: pointer;
-            &:hover:not(.disabled) {
+            &:not(.disabled):hover {
                 background-color: var(--bgHoverColor);
             }
             &.disabled {
@@ -286,4 +286,16 @@ input[type=file] {
         font-size: 14px;
         font-weight: bold;
     }
+}
+
+// table中的svg图标，对齐文字并可以做到文字溢出省略
+.table-svg {
+    display: inline-block;
+    vertical-align: text-top;
+}
+
+.form-tip {
+    font-size: 12px;
+    line-height: initial;
+    color: var(--fontSubsidiaryColor)
 }

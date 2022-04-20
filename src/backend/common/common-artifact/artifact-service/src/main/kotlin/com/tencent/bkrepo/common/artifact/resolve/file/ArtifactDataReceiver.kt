@@ -184,6 +184,26 @@ class ArtifactDataReceiver(
     }
 
     /**
+     * 接受单个字节数据
+     * @param b 字节数据
+     * */
+    fun receive(b: Int) {
+        require(!finished) { "Receiver is close" }
+        if (startTime == 0L) {
+            startTime = System.nanoTime()
+        }
+        try {
+            checkFallback()
+            outputStream.write(b)
+            listener.data(b)
+            received += 1
+            checkThreshold()
+        } catch (exception: IOException) {
+            handleIOException(exception)
+        }
+    }
+
+    /**
      * 接收数据流
      * @param source 数据流
      */

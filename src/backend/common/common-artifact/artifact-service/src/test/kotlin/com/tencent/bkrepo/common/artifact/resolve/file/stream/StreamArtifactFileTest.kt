@@ -44,6 +44,7 @@ import org.springframework.util.unit.DataSize
 import java.io.InputStream
 import java.nio.charset.Charset
 
+// TODO 现在Mockito版本不能mock静态方法，需要升级框架版本
 class StreamArtifactFileTest {
 
     private val tempDir = System.getProperty("java.io.tmpdir")

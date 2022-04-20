@@ -29,7 +29,7 @@
                     <div class="pl30">
                         <bk-button text theme="primary" @click="createToken">{{ $t('createToken') }}</bk-button>
                         {{ $t('tokenSubTitle') }}
-                        <router-link class="router-link" :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
+                        <router-link :to="{ name: 'repoToken' }">{{ $t('token') }}</router-link>
                     </div>
                     <code-area class="mt10" :code-list="codeList"></code-area>
                     <create-token-dialog ref="createToken"></create-token-dialog>
@@ -66,11 +66,12 @@
                                 <bk-button text @click="showAddMetadata">即刻添加</bk-button>
                             </empty-data>
                         </template>
-                        <bk-table-column :label="$t('key')" prop="0" width="250"></bk-table-column>
-                        <bk-table-column :label="$t('value')" prop="1"></bk-table-column>
+                        <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
+                        <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
                         <bk-table-column width="60">
                             <template #default="{ row }">
-                                <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteMetadataHandler(row)"></i>
+                                <Icon class="hover-btn flex-align-center" size="24" name="icon-delete"
+                                    @click.native.stop="deleteMetadataHandler(row)" />
                             </template>
                         </bk-table-column>
                     </bk-table>
@@ -139,7 +140,7 @@
             codeList () {
                 const { projectId, repoName, path } = this.detailSlider
                 return [
-                    `curl -u ${this.userInfo.username}:<PERSONAL_ACCESS_TOKEN> ${location.origin}/generic/${projectId}/${repoName}${path}`
+                    `wget --user=${this.userInfo.username} --password=<PERSONAL_ACCESS_TOKEN> "${location.origin}/generic/${projectId}/${repoName}${path}"`
                 ]
             }
         },
@@ -168,6 +169,8 @@
                         lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                         lastModifiedDate: formatDate(data.lastModifiedDate)
                     }
+                    // todo 屏蔽扫描状态字段
+                    Reflect.deleteProperty(this.detailSlider.data.metadata || {}, 'scanStatus')
                 }).finally(() => {
                     this.detailSlider.loading = false
                 })
@@ -218,7 +221,11 @@
                     body: {
                         keyList: [row[0]]
                     }
-                }).finally(() => {
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: '删除元数据' + this.$t('success')
+                    })
                     this.getDetail()
                 })
             }
@@ -277,17 +284,7 @@
                 will-change: height;
                 transition: all .3s;
             }
-            .icon-plus {
-                width: 100%;
-                height: 100%;
-                &:hover {
-                    background-color: var(--bgHoverColor);
-                }
-            }
         }
-    }
-    .code-tip {
-        color: var(--fontSubsidiaryColor);
     }
 }
 </style>

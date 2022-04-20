@@ -1,12 +1,12 @@
 module.exports = {
-    'extends': ['@commitlint/config-conventional'],
-    'rules': {
+    extends: ['@commitlint/config-conventional'],
+    rules: {
         'type-enum': [2, 'always', ['feature', 'feat', 'bug', 'fix', 'bugfix', 'refactor', 'perf', 'test', 'docs', 'info', 'format', 'merge', 'depend', 'chore', 'del', 'upgrade']]
         // 'subject-valid': [2, 'always']
     },
-    'plugins': [
+    plugins: [
         {
-            'rules': {
+            rules: {
                 // 'subject-valid': function ({ subject }) {
                 //     console.log('it is a subject', subject)
                 //     return [

@@ -33,21 +33,28 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.redis.RedisLock
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
-import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TFileScanResult
-import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
+import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.FINISHED
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTED
+import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
@@ -55,6 +62,7 @@ import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
 import com.tencent.bkrepo.scanner.utils.Converter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -69,11 +77,14 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scannerService: ScannerService,
     private val repositoryClient: RepositoryClient,
     private val subScanTaskDao: SubScanTaskDao,
-    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
+    private val projectScanConfigurationDao: ProjectScanConfigurationDao,
     private val executor: ThreadPoolTaskExecutor,
-    private val scannerMetrics: ScannerMetrics
+    private val scannerMetrics: ScannerMetrics,
+    private val redisOperation: RedisOperation,
+    private val publisher: ApplicationEventPublisher
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -97,6 +108,28 @@ class DefaultScanTaskScheduler @Autowired constructor(
         return enqueued
     }
 
+    override fun notify(projectId: String): Int {
+        // 加锁避免多个进程唤醒项目子任务导致唤醒的任务数量超过配额
+        // 此处不要求锁绝对可靠，极端情况下有两个进程同时持有锁时只会导致project执行的任务数量超过配额
+        val lockKey = notifySubtaskLockKey(projectId)
+        val lock = RedisLock(redisOperation, lockKey, DEFAULT_NOTIFY_SUBTASK_LOCK_TIMEOUT_SECONDS)
+
+        lock.use {
+            it.lock()
+            val subtaskCountLimit = projectScanConfigurationDao.findByProjectId(projectId)?.subScanTaskCountLimit
+                ?: TProjectScanConfiguration.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
+            val countToUpdate = (subtaskCountLimit - subScanTaskDao.scanningCount(projectId)).toInt()
+            return if (countToUpdate > 0) {
+                val notifiedCount = subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
+                scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, notifiedCount.toLong())
+                scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toLong())
+                notifiedCount
+            } else {
+                0
+            }
+        }
+    }
+
     /**
      * 创建扫描子任务，并提交到扫描队列
      */
@@ -104,22 +137,60 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private fun enqueueAllSubScanTask(scanTask: ScanTask) {
         // 设置扫描任务状态为提交子任务中
         val lastModifiedDate = LocalDateTime.parse(scanTask.lastModifiedDateTime, DateTimeFormatter.ISO_DATE_TIME)
-        val updateResult = scanTaskDao.updateStatus(
-            scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTING, lastModifiedDate
-        )
-        if (updateResult.modifiedCount == 0L) {
-            // 更新任务状态失败，表示任务已经被提交过，不再重复处理，直接返回
+        // 更新任务状态失败，表示任务已经被提交过，不再重复处理，直接返回
+        if (scanTaskDao.updateStatus(scanTask.taskId, SCANNING_SUBMITTING, lastModifiedDate).modifiedCount == 0L) {
             return
         }
 
-        scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTING)
+        scannerMetrics.incTaskCountAndGet(SCANNING_SUBMITTING)
+
+        // 加锁避免有其他任务正在提交这个project的任务，导致project执行中的任务数量统计错误
+        // 此处不要求锁绝对可靠，极端情况下有两个进程同时持有锁时只会导致project执行的任务数量超过配额
+        val lock = scanTask.scanPlan?.projectId?.let {
+            val lockKey = submitScanTaskLockKey(it)
+            RedisLock(redisOperation, lockKey, DEFAULT_SUBMIT_PROJECT_SUBTASK_LOCK_TIMEOUT_SECONDS)
+        }
+
+        val (submittedSubTaskCount, reuseResultTaskCount) = try {
+            lock?.lock()
+            submit(scanTask)
+        } finally {
+            lock?.unlock()
+        }
+
+        // 更新任务状态为所有子任务已提交
+        logger.info(
+            "submit $submittedSubTaskCount sub tasks, $reuseResultTaskCount sub tasks reuse result, " +
+                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED"
+        )
+        scanTaskDao.updateStatus(scanTask.taskId, SCANNING_SUBMITTED)
+        scannerMetrics.incTaskCountAndGet(SCANNING_SUBMITTED)
+
+        // 没有提交任何子任务，直接设置为任务扫描结束
+        if (submittedSubTaskCount == 0L) {
+            val now = LocalDateTime.now()
+            scanTaskDao.taskFinished(scanTask.taskId, now, now)
+            scannerMetrics.incTaskCountAndGet(FINISHED)
+            logger.info("scan finished, task[${scanTask.taskId}]")
+        }
+    }
+
+    /**
+     * 遍历[scanTask]指定的所有制品，提交子任务
+     *
+     * @return first 提交的子任务数量 second 复用扫描结果的子任务数量
+     */
+    private fun submit(scanTask: ScanTask): Pair<Long, Long> {
         val scanner = scannerService.get(scanTask.scanner)
+        val projectId = scanTask.scanPlan?.projectId
+        val projectScanConfiguration = projectId?.let { projectScanConfigurationDao.findByProjectId(it) }
         logger.info("submitting sub tasks of task[${scanTask.taskId}], scanner: [${scanner.name}]")
 
+        var scanningCount = projectId?.let { subScanTaskDao.scanningCount(it) } ?: 0L
         var submittedSubTaskCount = 0L
         var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
-        val finishedSubScanTasks = ArrayList<TFinishedSubScanTask>()
+        val finishedSubScanTasks = ArrayList<TPlanArtifactLatestSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
             val storageCredentialsKey = repoInfoCache
@@ -134,7 +205,12 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 val finishedSubtask = createFinishedSubTask(scanTask, existsFileScanResult, node, storageCredentialsKey)
                 finishedSubScanTasks.add(finishedSubtask)
             } else {
-                subScanTasks.add(createSubTask(scanTask, node, storageCredentialsKey))
+                // 添加到扫描任务队列
+                val status = status(scanningCount, projectId, projectScanConfiguration)
+                subScanTasks.add(createSubTask(scanTask, node, storageCredentialsKey, status))
+                if (status == SubScanTaskStatus.CREATED) {
+                    scanningCount++
+                }
             }
 
             // 批量保存重用扫描结果的任务
@@ -153,21 +229,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
             }
         }
 
-        // 更新任务状态为所有子任务已提交
-        logger.info(
-            "submit $submittedSubTaskCount sub tasks, $reuseResultTaskCount sub tasks reuse result, " +
-                "update task[${scanTask.taskId}] status to SCANNING_SUBMITTED"
-        )
-        scanTaskDao.updateStatus(scanTask.taskId, ScanTaskStatus.SCANNING_SUBMITTED)
-        scannerMetrics.incTaskCountAndGet(ScanTaskStatus.SCANNING_SUBMITTED)
+        // 任务提交结束后尝试唤醒一个任务，避免全部任务都处于BLOCK状态
+        projectId?.let { self.notify(it) }
 
-        // 没有提交任何子任务，直接设置为任务扫描结束
-        if (submittedSubTaskCount == 0L) {
-            val now = LocalDateTime.now()
-            scanTaskDao.taskFinished(scanTask.taskId, now, now)
-            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
-            logger.info("scan finished, task[${scanTask.taskId}]")
-        }
+        return Pair(submittedSubTaskCount, reuseResultTaskCount)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -176,7 +241,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
             return
         }
         val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
-        logger.info("${subTasks.size} subTasks saved")
         val enqueuedTasks = subScanTaskQueue.enqueue(subTasks)
         logger.info("${enqueuedTasks.size} subTasks enqueued")
 
@@ -188,11 +252,12 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun save(finishedSubScanTasks: List<TFinishedSubScanTask>) {
-        if (finishedSubScanTasks.isEmpty()) {
+    fun save(tasks: List<TPlanArtifactLatestSubScanTask>) {
+        if (tasks.isEmpty()) {
             return
         }
-        val tasks = finishedSubScanTaskDao.insert(finishedSubScanTasks)
+        planArtifactLatestSubScanTaskDao.replace(tasks)
+        tasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 更新当前正在扫描的任务数
         val overview = HashMap<String, Number>()
@@ -207,7 +272,12 @@ class DefaultScanTaskScheduler @Autowired constructor(
         scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toLong())
     }
 
-    fun createSubTask(scanTask: ScanTask, node: Node, credentialKey: String? = null): TSubScanTask {
+    fun createSubTask(
+        scanTask: ScanTask,
+        node: Node,
+        credentialKey: String? = null,
+        status: SubScanTaskStatus = SubScanTaskStatus.CREATED
+    ): TSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
             val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
@@ -228,7 +298,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 fullPath = fullPath,
                 artifactName = artifactName,
 
-                status = SubScanTaskStatus.CREATED.name,
+                status = status.name,
                 executedTimes = 0,
                 scanner = scanTask.scanner,
                 scannerType = scanTask.scannerType,
@@ -245,7 +315,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         node: Node,
         credentialKey: String? = null,
         resultStatus: String = SubScanTaskStatus.SUCCESS.name
-    ): TFinishedSubScanTask {
+    ): TPlanArtifactLatestSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
             val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
@@ -253,7 +323,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 .scanResult[scanTask.scanner]
                 ?.overview
                 ?.let { Converter.convert(it) }
-            return TFinishedSubScanTask(
+            return TPlanArtifactLatestSubScanTask(
                 createdBy = scanTask.createdBy,
                 createdDate = now,
                 lastModifiedBy = scanTask.createdBy,
@@ -273,7 +343,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 artifactName = artifactName,
 
                 status = resultStatus,
-                executedTimes = 0,
                 scanner = scanTask.scanner,
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
@@ -292,12 +361,25 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
         val tasks = subScanTaskDao.insert(subScanTasks)
 
+        // 保存方案制品最新扫描记录
+        val planArtifactLatestSubScanTasks = tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
+        planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubScanTasks)
+        planArtifactLatestSubScanTasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
+
         // 更新当前正在扫描的任务数
         val task = tasks.first()
         scanTaskDao.updateScanningCount(task.parentScanTaskId, tasks.size)
-        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, tasks.size.toLong())
 
-        return tasks
+        // 统计BLOCKED与CREATED任务数量
+        val createdTasks = tasks.filter { it.status == SubScanTaskStatus.CREATED.name }
+        val blockedTaskCount = tasks.size - createdTasks.size
+        if (blockedTaskCount != 0) {
+            scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, blockedTaskCount.toLong())
+        }
+        scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, createdTasks.size.toLong())
+        logger.info("${createdTasks.size} created subtasks and $blockedTaskCount blocked subtasks saved")
+
+        return createdTasks
     }
 
     override fun resume(scanTask: ScanTask) {
@@ -333,6 +415,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         return Pair(projectId, repoName)
     }
 
+    private fun submitScanTaskLockKey(projectId: String) = "scanner:lock:submit:$projectId"
+    private fun notifySubtaskLockKey(projectId: String) = "scanner:lock:notify:$projectId:subtask"
+
     private fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask {
         return SubScanTask(
             taskId = subScanTask.id!!,
@@ -344,10 +429,33 @@ class DefaultScanTaskScheduler @Autowired constructor(
         )
     }
 
+    /**
+     * 根据扫描数量是否超过限制返回扫描状态
+     *
+     * @param scanningCount 正在扫描的任务数量
+     * @param projectId 扫描配置的项目id，为null时表示无限制
+     * @param projectConfiguration 项目扫描配置
+     *
+     */
+    private fun status(
+        scanningCount: Long,
+        projectId: String?,
+        projectConfiguration: TProjectScanConfiguration?
+    ): SubScanTaskStatus {
+        val limitSubScanTaskCount = projectConfiguration?.subScanTaskCountLimit
+            ?: TProjectScanConfiguration.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
+        if (projectId != null && scanningCount >= limitSubScanTaskCount.toLong()) {
+            return SubScanTaskStatus.BLOCKED
+        }
+        return SubScanTaskStatus.CREATED
+    }
+
     companion object {
         private const val REPO_SPLIT = "::repo::"
         private const val DEFAULT_REPO_INFO_CACHE_SIZE = 1000L
         private const val DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES = 60L
+        private const val DEFAULT_SUBMIT_PROJECT_SUBTASK_LOCK_TIMEOUT_SECONDS = 1200L
+        private const val DEFAULT_NOTIFY_SUBTASK_LOCK_TIMEOUT_SECONDS = 30L
 
         /**
          * 批量提交子任务数量

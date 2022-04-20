@@ -6,7 +6,7 @@
         <template #tools>
             <div class="canway-dialog-header flex-align-center">
                 <span class="mr20 canway-dialog-title text-overflow" :title="title">{{ title }}</span>
-                <i class="devops-icon icon-close" @click="$emit('cancel')"></i>
+                <i class="bk-icon icon-close hover-btn" @click="$emit('cancel')"></i>
             </div>
         </template>
         <slot></slot>
@@ -39,7 +39,8 @@
             top () {
                 // 25 = ci顶部导航高度 / 2
                 const offset = MODE_CONFIG === 'ci' ? 25 : 0
-                const top = (this.bodyHeight - this.heightNum) / 2 - offset
+                const dialogHeight = this.heightNum > 280 ? this.heightNum : 280
+                const top = (this.bodyHeight - dialogHeight) / 2 - offset
                 return top > 0 ? top : 0
             }
         },
@@ -57,9 +58,9 @@
         }
     }
 </script>
-<style lang="scss" scoped>
+<style lang="scss">
 .canway-dialog-header {
-    height: 50px;
+    height: 56px;
     margin-bottom: 27px;
     padding: 0 20px;
     justify-content: space-between;
@@ -67,11 +68,26 @@
     cursor: default;
     .canway-dialog-title {
         font-size: 16px;
-        font-weight: bold;
+        font-weight: 500;
     }
     .icon-close {
-        padding: 5px;
-        cursor: pointer;
+        color: var(--fontSubsidiaryColor);
+        font-size: 22px;
+        font-weight: 400;
+        &:hover {
+            color: var(--primaryColor);
+            background-color: var(--bgHoverLighterColor);
+        }
+    }
+}
+
+.bk-dialog-wrapper {
+    .bk-dialog-body {
+        min-height: 148px;
+        color: var(--fontPrimaryColor);
+    }
+    .bk-dialog-footer {
+        padding: 15px 20px;
     }
 }
 </style>

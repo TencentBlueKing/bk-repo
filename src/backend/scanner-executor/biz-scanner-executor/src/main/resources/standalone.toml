@@ -40,4 +40,4 @@ blacklist = ["file_items"]
 # 无需修改
 [output.log]
 loglevel = "INFO"
-logfile = "./sysauditor.log"
+logfile = "./#{[logFile]}"

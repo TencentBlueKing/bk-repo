@@ -36,7 +36,9 @@ import com.tencent.bk.sdk.iam.dto.expression.ExpressionDTO
 import com.tencent.bkrepo.auth.exception.BkiamException
 
 object BkiamUtils {
+
     fun buildAction(resourceType: String, action: String) = "${resourceType}_$action"
+
     fun getProjects(content: ExpressionDTO): List<String> {
         if (content.field != "project.id") {
             if (content.operator != ExpressionOperationEnum.ANY) {

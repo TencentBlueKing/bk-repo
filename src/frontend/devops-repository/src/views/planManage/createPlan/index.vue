@@ -5,7 +5,8 @@
                 <bk-input class="w480" v-model.trim="planForm.name" maxlength="32" show-word-limit :disabled="disabled"></bk-input>
             </bk-form-item>
             <bk-form-item label="同步策略"
-                :property="{ 'SPECIFIED_TIME': 'time', 'CRON_EXPRESSION': 'cron' }[planForm.executionStrategy]">
+                :property="{ 'SPECIFIED_TIME': 'time', 'CRON_EXPRESSION': 'cron' }[planForm.executionStrategy]"
+                error-display-type="normal">
                 <bk-radio-group
                     class="radio-flex"
                     v-model="planForm.executionStrategy"
@@ -44,14 +45,9 @@
             </bk-form-item>
             <bk-form-item label="冲突策略" property="conflictStrategy">
                 <bk-radio-group v-model="planForm.conflictStrategy">
-                    <bk-radio v-for="strategy in conflictStrategyList" :key="strategy.value" :value="strategy.value" :disabled="disabled">
-                        <div class="flex-align-center">
-                            {{ strategy.label }}
-                            <i v-if="planForm.conflictStrategy === strategy.value" class="ml5 devops-icon icon-question-circle-shape" v-bk-tooltips="{
-                                content: strategy.tip,
-                                placements: ['bottom']
-                            }"></i>
-                        </div>
+                    <bk-radio v-for="strategy in conflictStrategyList" :key="strategy.value"
+                        :value="strategy.value" :disabled="disabled">
+                        <span v-bk-tooltips="{ content: strategy.tip, placements: ['top'] }">{{ strategy.label }}</span>
                     </bk-radio>
                 </bk-radio-group>
             </bk-form-item>
@@ -204,7 +200,7 @@
             }
         },
         computed: {
-            ...mapState(['clusterList']),
+            ...mapState(['clusterList', 'repoListAll']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -216,9 +212,7 @@
             }
         },
         created () {
-            this.getRepoListAll({
-                projectId: this.projectId
-            })
+            this.getRepoListAll({ projectId: this.projectId })
             this.routeName !== 'createPlan' && this.handlePlanDetail()
         },
         methods: {

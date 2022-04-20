@@ -73,7 +73,6 @@ class BkAuthConfig {
     @Value("\${auth.devops.bkrepoAppId:}")
     var bkrepoAppId: String = ""
 
-
     fun getBkciAuthServer(): String {
         return if (ciAuthServer.startsWith("http://") || ciAuthServer.startsWith("https://")) {
             ciAuthServer.removeSuffix("/")

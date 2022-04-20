@@ -9,10 +9,13 @@ enum class SubScanTaskStatus {
      */
     NEVER_SCANNED,
     /**
+     * 因项目配额不足任务阻塞
+     */
+    BLOCKED,
+    /**
      * 子任务已创建
      */
     CREATED,
-
     /**
      * 已被拉取
      */
@@ -46,6 +49,7 @@ enum class SubScanTaskStatus {
     SUCCESS;
 
     companion object {
+        val RUNNING_STATUS = listOf(CREATED.name, PULLED.name, ENQUEUED.name, EXECUTING.name)
         /**
          * 判断[status]是否是已结束的状态
          */

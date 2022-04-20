@@ -192,6 +192,7 @@ class PulsarInboundChannelAdapter(
     }
 
     override fun doStop() {
+        // 2.8.1版本调用会出错，所以升级https://github.com/apache/pulsar/issues/12024
         consumer?.close()
     }
 

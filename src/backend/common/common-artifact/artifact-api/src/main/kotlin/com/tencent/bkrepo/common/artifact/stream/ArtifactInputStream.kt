@@ -38,7 +38,7 @@ import java.io.InputStream
  * @param delegate 实际操作的输入流
  * @param range 输入流在文件中的范围
  */
-class ArtifactInputStream(
+open class ArtifactInputStream(
     delegate: InputStream,
     val range: Range
 ) : DelegateInputStream(delegate) {

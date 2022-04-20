@@ -1,6 +1,6 @@
 <template>
     <div class="repo-token-container" v-bkloading="{ isLoading }">
-        <bk-button class="ml20 mt10" icon="plus" theme="primary" @click="createToken"><span class="mr5">{{ $t('create') }}</span></bk-button>
+        <bk-button class="ml20 mt10" icon="plus" theme="primary" @click="createToken">{{ $t('create') }}</bk-button>
         <bk-table
             class="mt10"
             :data="tokenList"
@@ -14,20 +14,17 @@
                     <bk-button text @click="createToken">即刻创建</bk-button>
                 </empty-data>
             </template>
-            <bk-table-column :label="$t('name')" prop="name"></bk-table-column>
+            <bk-table-column :label="$t('name')" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
-                <template #default="{ row }">
-                    {{ formatDate(row.createdAt) }}
-                </template>
+                <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('expiress')">
-                <template #default="{ row }">
-                    {{ transformFormatDate(row.expiredAt) }}
-                </template>
+                <template #default="{ row }">{{ transformFormatDate(row.expiredAt) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
-                    <i class="devops-icon icon-delete hover-btn hover-danger" @click="deleteTokenHandler(row)"></i>
+                    <Icon class="hover-btn flex-align-center" size="24" name="icon-delete"
+                        @click.native.stop="deleteTokenHandler(row)" />
                 </template>
             </bk-table-column>
         </bk-table>

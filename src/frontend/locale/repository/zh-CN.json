@@ -188,8 +188,8 @@
         "6": "五",
         "7": "六"
     },
-    "mobileDownload": "移动端下载",
-    "webDownload": "Web端下载",
+    "mobileDownload": "移动端下载限制",
+    "webDownload": "Web端下载限制",
     "open": "开启",
     "close": "关闭",
     "pleaseFileName": "请输入文件名",

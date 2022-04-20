@@ -57,6 +57,9 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.reflect.KMutableProperty
+import kotlin.reflect.KProperty
+import kotlin.reflect.full.memberProperties
 
 object ScanPlanConverter {
     fun convert(scanPlan: TScanPlan): ScanPlan {
@@ -133,18 +136,20 @@ object ScanPlanConverter {
                 description = description,
                 scanOnNewArtifact = autoScan,
                 repoNames = repoNameList,
-                rule = RuleConverter.convert(projectId, repoNameList, artifactRules)
+                rule = RuleConverter.convert(projectId, repoNameList, artifactRules, type)
             )
         }
     }
 
-    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?): ScanPlanInfo {
+    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?, artifactCount: Long): ScanPlanInfo {
         with(scanPlan) {
-            val critical = latestScanTask?.let { getCveCount(Level.CRITICAL.levelName, latestScanTask) } ?: 0L
-            val high = latestScanTask?.let { getCveCount(Level.HIGH.levelName, latestScanTask) } ?: 0L
-            val medium = latestScanTask?.let { getCveCount(Level.MEDIUM.levelName, latestScanTask) } ?: 0L
-            val low = latestScanTask?.let { getCveCount(Level.LOW.levelName, latestScanTask) } ?: 0L
-            val artifactCount = latestScanTask?.total ?: 0L
+            val scannerType = latestScanTask?.scannerType
+            val overview = scanPlan.scanResultOverview
+
+            val critical = getCveCount(scannerType, Level.CRITICAL.levelName, overview)
+            val high = getCveCount(scannerType, Level.HIGH.levelName, overview)
+            val medium = getCveCount(scannerType, Level.MEDIUM.levelName, overview)
+            val low = getCveCount(scannerType, Level.LOW.levelName, overview)
             val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
 
             return ScanPlanInfo(
@@ -178,7 +183,7 @@ object ScanPlanConverter {
         return request
     }
 
-    fun convertToPlanArtifactInfo(subScanTask: SubScanTaskDefinition, createdBy: String): PlanArtifactInfo {
+    fun convertToPlanArtifactInfo(subScanTask: SubScanTaskDefinition): PlanArtifactInfo {
         return with(subScanTask) {
             val duration = if (startDateTime != null && finishedDateTime != null) {
                 Duration.between(startDateTime, finishedDateTime).toMillis()
@@ -230,7 +235,7 @@ object ScanPlanConverter {
         }
     }
 
-    fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition): ArtifactPlanRelation {
+    fun convertToArtifactPlanRelation(subScanTask: SubScanTaskDefinition, scanPlan: TScanPlan): ArtifactPlanRelation {
         val planType = subScanTask.repoType
         return with(subScanTask) {
             ArtifactPlanRelation(
@@ -238,7 +243,7 @@ object ScanPlanConverter {
                 planId = planId,
                 projectId = projectId,
                 planType = planType,
-                name = artifactName,
+                name = scanPlan.name,
                 status = convertToScanStatus(status).name,
                 recordId = id!!,
                 subTaskId = id!!
@@ -270,6 +275,17 @@ object ScanPlanConverter {
         }
     }
 
+    /**
+     * 除了[properties]中的字段，其余字段都设置为null
+     */
+    fun keepProps(scanPlan: ScanPlan, properties: List<KProperty<*>>) {
+        ScanPlan::class.memberProperties.forEach {
+            if (it is KMutableProperty<*> && it !in properties) {
+                it.setter.call(scanPlan, null)
+            }
+        }
+    }
+
     private fun highestLeakLevel(scannerType: String, overview: Map<String, Number>): String? {
         Level.values().forEach {
             if (overview.keys.contains(getCveOverviewKey(scannerType, it.levelName))) {
@@ -289,8 +305,9 @@ object ScanPlanConverter {
         }
     }
 
-    private fun convertToScanStatus(status: String?): ScanStatus {
+    fun convertToScanStatus(status: String?): ScanStatus {
         return when (status) {
+            SubScanTaskStatus.BLOCKED.name,
             SubScanTaskStatus.CREATED.name,
             SubScanTaskStatus.PULLED.name,
             SubScanTaskStatus.ENQUEUED.name,
@@ -313,15 +330,15 @@ object ScanPlanConverter {
         }
     }
 
-    private fun getCveCount(level: String, scanTask: TScanTask): Long {
-        return getCveCount(scanTask.scannerType, level, scanTask.scanResultOverview)
-    }
-
     private fun getCveCount(level: String, subtask: SubScanTaskDefinition): Long {
         return getCveCount(subtask.scannerType, level, subtask.scanResultOverview)
     }
 
-    private fun getCveCount(scannerType: String, level: String, overview: Map<String, Number>?): Long {
+    private fun getCveCount(scannerType: String?, level: String, overview: Map<String, Number>?): Long {
+        if (scannerType == null) {
+            return 0L
+        }
+
         val key = getCveOverviewKey(scannerType, level)
         return overview?.get(key)?.toLong() ?: 0L
     }

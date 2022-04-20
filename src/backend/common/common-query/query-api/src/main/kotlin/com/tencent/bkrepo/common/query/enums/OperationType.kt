@@ -52,6 +52,7 @@ enum class OperationType(val valueType: KClass<*>) {
     SUFFIX(String::class),
     MATCH(String::class),
     MATCH_I(String::class),
+    REGEX(String::class),
     NULL(Void::class),
     NOT_NULL(Void::class);
 

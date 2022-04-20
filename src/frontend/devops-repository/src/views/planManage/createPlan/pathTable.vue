@@ -26,7 +26,7 @@
         <div class="mt10 path-list" v-show="pathConstraints.length">
             <div class="pl10 pr10 path-item flex-between-center" v-for="(path, ind) in pathConstraints" :key="path">
                 <span class="path-name text-overflow" :title="path">{{ path }}</span>
-                <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="pathConstraints.splice(ind, 1)" />
+                <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="pathConstraints.splice(ind, 1)" />
             </div>
         </div>
         <path-dialog :show="showAddDialog" :path-constraints="pathConstraints" @confirm="confirm" @cancel="showAddDialog = false"></path-dialog>

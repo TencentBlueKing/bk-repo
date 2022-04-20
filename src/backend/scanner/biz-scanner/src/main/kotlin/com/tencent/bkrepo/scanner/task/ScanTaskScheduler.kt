@@ -47,6 +47,13 @@ interface ScanTaskScheduler {
     fun schedule(subScanTask: SubScanTask): Boolean
 
     /**
+     * 唤醒项目[projectId]处于BLOCKED状态的扫描的子任务
+     *
+     * @return 唤醒的任务数量
+     */
+    fun notify(projectId: String): Int
+
+    /**
      * 恢复执行扫描任务
      */
     fun resume(scanTask: ScanTask)

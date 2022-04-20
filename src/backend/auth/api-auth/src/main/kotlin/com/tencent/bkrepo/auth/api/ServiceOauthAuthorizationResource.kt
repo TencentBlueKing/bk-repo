@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
@@ -36,46 +35,21 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @Api(tags = ["SERVICE_OAUTHAUTHORIZATION"], description = "服务-Oauth授权接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource")
-@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX, AUTH_API_OAUTH_PREFIX)
+@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
 interface ServiceOauthAuthorizationResource {
-
-    @ApiOperation("用户确认Oauth授权")
-    @PostMapping("/authorize")
-    fun authorize(
-        @RequestParam("client_id") clientId: String,
-        @RequestParam state: String
-    )
 
     @ApiOperation("获取oauth token信息")
     @GetMapping("/token")
     fun getToken(
         @RequestParam accessToken: String
     ): Response<OauthToken?>
-
-    @ApiOperation("创建oauth token")
-    @PostMapping("/token")
-    fun createToken(
-        @RequestParam("client_id") clientId: String,
-        @RequestParam("client_secret") clientSecret: String,
-        @RequestParam code: String
-    )
-
-    @ApiOperation("删除oauth token")
-    @DeleteMapping("/token")
-    fun deleteToken(
-        @RequestParam("client_id") clientId: String,
-        @RequestParam("client_secret") clientSecret: String,
-        @RequestParam("access_token") accessToken: String
-    ): Response<Void>
 
     @ApiOperation("验证oauth token")
     @GetMapping("/token/validate")

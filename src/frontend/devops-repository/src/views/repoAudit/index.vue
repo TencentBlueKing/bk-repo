@@ -19,8 +19,8 @@
                 v-model="query.time"
                 class="mr10 w250"
                 :shortcuts="shortcuts"
-                type="datetimerange"
-                placeholder="请选择操作日期时间范围"
+                type="daterange"
+                placeholder="请选择日期范围"
                 @change="handlerPaginationChange()">
             </bk-date-picker>
             <bk-tag-input
@@ -39,7 +39,7 @@
         </div>
         <bk-table
             class="mt10"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="auditList"
             :outer-border="false"
             :row-border="false"
@@ -51,39 +51,31 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="项目" width="200">
+            <bk-table-column label="项目" show-overflow-tooltip>
+                <template #default="{ row }">{{ getProjectName(row.content.projectId) }}</template>
+            </bk-table-column>
+            <bk-table-column label="操作时间" width="150">
+                <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
+            </bk-table-column>
+            <bk-table-column label="操作用户" show-overflow-tooltip>
+                <template #default="{ row }"> {{ userList[row.userId] ? userList[row.userId].name : row.userId }}</template>
+            </bk-table-column>
+            <bk-table-column label="操作事件" show-overflow-tooltip>
+                <template #default="{ row }">{{ row.operate }}</template>
+            </bk-table-column>
+            <bk-table-column label="操作对象" show-overflow-tooltip>
                 <template #default="{ row }">
-                    {{ getProjectName(row.content.projectId) }}
+                    <Icon class="mr5 table-svg" v-if="row.content.repoType"
+                        :name="row.content.repoType.toLowerCase()" size="16">
+                    </Icon>
+                    <span class="mr20" v-for="item in row.content.resKey.split('::').filter(Boolean)" :key="item">
+                        {{ row.content.repoType ? item : (userList[item] ? userList[item].name : item) }}
+                    </span>
+                    <span>{{ row.content.des }}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="操作时间" width="200">
-                <template #default="{ row }">
-                    {{ formatDate(row.createdDate) }}
-                </template>
-            </bk-table-column>
-            <bk-table-column label="操作用户" width="100">
-                <template #default="{ row }">
-                    {{ userList[row.userId] ? userList[row.userId].name : row.userId }}
-                </template>
-            </bk-table-column>
-            <bk-table-column label="操作事件" width="150">
-                <template #default="{ row }">
-                    {{ row.operate }}
-                </template>
-            </bk-table-column>
-            <bk-table-column label="操作对象">
-                <template #default="{ row }">
-                    <div class="flex-align-center">
-                        <Icon class="mr5" v-if="row.content.repoType" :name="row.content.repoType.toLowerCase()" size="16"></Icon>
-                        <span class="mr20" v-for="item in row.content.resKey.split('::').filter(Boolean)" :key="item">
-                            {{ row.content.repoType ? item : (userList[item] ? userList[item].name : item) }}
-                        </span>
-                        <span>{{ row.content.des }}</span>
-                    </div>
-                </template>
-            </bk-table-column>
-            <bk-table-column label="客户端IP" prop="clientAddress" width="130"></bk-table-column>
-            <bk-table-column label="结果" width="100">
+            <bk-table-column label="客户端IP" prop="clientAddress"></bk-table-column>
+            <bk-table-column label="结果" width="80">
                 <template #default="{ row }">
                     <span class="repo-tag" :class="[row.result ? 'SUCCESS' : 'FAILED']">{{ row.result ? '成功' : '失败' }}</span>
                 </template>

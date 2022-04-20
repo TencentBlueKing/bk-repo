@@ -11,7 +11,7 @@
                     <li class="operation-item hover-btn" @click.stop="downloadTemplate">下载模板</li>
                 </ul></template>
             </bk-popover> -->
-            <bk-button class="ml20" icon="plus" theme="primary" @click="showCreateUser"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button class="ml20" icon="plus" theme="primary" @click="showCreateUser">{{ $t('create') }}</bk-button>
             <div class="mr20 flex-align-center">
                 <bk-input
                     v-model.trim="userInput"
@@ -27,14 +27,14 @@
                     v-model="showAdmin"
                     placeholder="账号权限"
                     @change="handlerPaginationChange()">
-                    <bk-option id="true" name="管理员"></bk-option>
+                    <bk-option id="true" name="系统管理员"></bk-option>
                     <bk-option id="false" name="普通用户"></bk-option>
                 </bk-select>
             </div>
         </div>
         <bk-table
             class="mt10"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :data="userListPages"
             :outer-border="false"
             :row-border="false"
@@ -48,32 +48,29 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column :label="$t('account')" prop="userId" width="200"></bk-table-column>
+            <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
             <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
             <bk-table-column label="电话" prop="phone"></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
+                <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
+            </bk-table-column>
+            <bk-table-column label="系统管理员">
                 <template #default="{ row }">
-                    {{formatDate(row.createdDate)}}
+                    <bk-switcher class="m5" v-model="row.admin" size="small" theme="primary" @change="changeAdminStatus(row)"></bk-switcher>
                 </template>
             </bk-table-column>
-            <bk-table-column label="账号权限">
-                <template #default="{ row }"><div class="flex-align-center">
-                    <bk-switcher class="mr10" :key="row.id" v-model="row.admin" @change="changeAdminStatus(row)"></bk-switcher>
-                    <div>{{row.admin ? '系统管理员' : '普通用户'}}</div>
-                </div></template>
-            </bk-table-column>
-            <bk-table-column :label="$t('account') + $t('status')">
-                <template #default="{ row }"><div class="flex-align-center">
-                    <bk-switcher class="mr10" :key="row.id" :value="!row.locked" @change="changeUserStatus(row)"></bk-switcher>
-                    <div>{{row.locked ? '已禁用' : '已启用'}}</div>
-                </div></template>
+            <bk-table-column label="启用账号">
+                <template #default="{ row }">
+                    <bk-switcher class="m5" :value="!row.locked" size="small" theme="primary" @change="changeUserStatus(row)"></bk-switcher>
+                </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
                     <operation-list
                         :list="[
                             { label: '编辑', clickEvent: () => showEditUser(row) },
+                            { label: '重置密码', clickEvent: () => resetUserPwd(row) },
                             { label: '删除', clickEvent: () => deleteUserHandler(row) }
                         ]"></operation-list>
                 </template>
@@ -227,6 +224,7 @@
                 'createUser',
                 'editUser',
                 'deleteUser',
+                'resetPwd',
                 'checkUserId',
                 'getUserInfo',
                 'importUsers'
@@ -407,6 +405,20 @@
                     }
                 })
             },
+            resetUserPwd (row) {
+                this.$confirm({
+                    theme: 'danger',
+                    message: `确认重置账户 ${row.name} 的密码为默认密码？`,
+                    confirmFn: () => {
+                        return this.resetPwd(row.userId).then(() => {
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: '重置密码' + this.$t('success')
+                            })
+                        })
+                    }
+                })
+            },
             changeUserStatus ({ userId, locked }) {
                 this.editUser({
                     body: {
@@ -431,7 +443,7 @@
                 }).then(res => {
                     this.$bkMessage({
                         theme: 'success',
-                        message: `设置为${admin ? '管理员' : '普通用户'}`
+                        message: `设置为${admin ? '系统管理员' : '普通用户'}`
                     })
                 }).finally(() => {
                     this.getUserListHandler()

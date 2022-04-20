@@ -30,7 +30,7 @@
                     <span class="ml5 package-meta text-overflow" :title="pkg.key">{{ pkg.key }}</span>
                 </div>
                 <span class="ml10 package-meta text-overflow flex-1" :title="pkg.versions.join(',')">{{ pkg.versions.join(',') }}</span>
-                <Icon v-show="!disabled" class="ml10 hover-btn" size="14" name="icon-delete" @click.native="packageConstraints.splice(ind, 1)" />
+                <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="packageConstraints.splice(ind, 1)" />
             </div>
         </div>
         <package-dialog

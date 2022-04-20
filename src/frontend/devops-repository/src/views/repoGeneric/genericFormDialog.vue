@@ -5,20 +5,28 @@
         width="450"
         :height-num="311"
         @cancel="cancel">
-        <bk-form class="repo-generic-form" :label-width="100" :model="genericForm" :rules="rules" ref="genericForm">
+        <bk-form class="mr10 repo-generic-form" :label-width="90" :model="genericForm" :rules="rules" ref="genericForm">
             <template v-if="genericForm.type === 'add'">
                 <bk-form-item :label="$t('createFolderLabel')" :required="true" property="path" error-display-type="normal">
-                    <label class="path-tip">支持 / 分隔符级联创建文件夹</label>
-                    <bk-input class="mt30"
-                        v-model.trim="genericForm.path"
+                    <bk-input v-model.trim="genericForm.path"
                         type="textarea" :rows="6"
                         :placeholder="$t('folderPathPlacehodler')">
                     </bk-input>
+                    <div class="form-tip">支持 / 分隔符级联创建文件夹</div>
                 </bk-form-item>
             </template>
             <template v-else-if="genericForm.type === 'rename'">
                 <bk-form-item :label="$t('file') + $t('name')" :required="true" property="name" error-display-type="normal">
                     <bk-input v-model.trim="genericForm.name" :placeholder="$t('folderNamePlacehodler')" maxlength="50" show-word-limit></bk-input>
+                </bk-form-item>
+            </template>
+            <template v-else-if="genericForm.type === 'scan'">
+                <bk-form-item label="扫描方案" :required="true" property="id" error-display-type="normal">
+                    <bk-select
+                        v-model="genericForm.id"
+                        placeholder="请选择扫描方案">
+                        <bk-option v-for="scan in scanList" :key="scan.id" :id="scan.id" :name="scan.name"></bk-option>
+                    </bk-select>
                 </bk-form-item>
             </template>
         </bk-form>
@@ -40,7 +48,8 @@
                     title: '',
                     type: '',
                     path: '',
-                    name: ''
+                    name: '',
+                    id: ''
                 },
                 // genericForm Rules
                 rules: {
@@ -67,8 +76,16 @@
                             message: this.$t('folderNamePlacehodler'),
                             trigger: 'blur'
                         }
+                    ],
+                    id: [
+                        {
+                            required: true,
+                            message: this.$t('pleaseSelect') + '扫描方案',
+                            trigger: 'change'
+                        }
                     ]
-                }
+                },
+                scanList: []
             }
         },
         computed: {
@@ -80,11 +97,24 @@
             }
         },
         methods: {
-            ...mapActions(['createFolder', 'renameNode']),
+            ...mapActions([
+                'createFolder',
+                'renameNode',
+                'startScanSingle',
+                'getScanAll'
+            ]),
             setData (data) {
                 this.genericForm = {
                     ...this.genericForm,
                     ...data
+                }
+                if (data.type === 'scan') {
+                    this.getScanAll({
+                        projectId: this.projectId,
+                        type: 'GENERIC'
+                    }).then(res => {
+                        this.scanList = res
+                    })
                 }
             },
             cancel () {
@@ -111,6 +141,17 @@
                     newFullPath: this.genericForm.path.replace(/[^/]*$/, this.genericForm.name)
                 })
             },
+            submitScanFile () {
+                const { id, name, path } = this.genericForm
+                return this.startScanSingle({
+                    id,
+                    name,
+                    projectId: this.projectId,
+                    repoType: 'GENERIC',
+                    repoName: this.repoName,
+                    fullPath: path
+                })
+            },
             submitGenericForm () {
                 this.genericForm.loading = true
                 let message = ''
@@ -123,6 +164,10 @@
                     case 'rename':
                         fn = this.submitRenameNode()
                         message = this.$t('rename')
+                        break
+                    case 'scan':
+                        fn = this.submitScanFile()
+                        message = '加入扫描队列'
                         break
                 }
                 fn.then(() => {
@@ -139,12 +184,3 @@
         }
     }
 </script>
-<style lang="scss" scoped>
-.repo-generic-form {
-    .path-tip {
-        position: absolute;
-        font-size: 12px;
-        color: var(--fontSubsidiaryColor);
-    }
-}
-</style>

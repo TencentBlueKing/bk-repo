@@ -28,23 +28,9 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.DeleteResult
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
-import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
-import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
-import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
-import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.aggregation.Aggregation
-import org.springframework.data.mongodb.core.aggregation.Aggregation.group
-import org.springframework.data.mongodb.core.aggregation.Aggregation.match
-import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
-import org.springframework.data.mongodb.core.aggregation.Aggregation.project
-import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 
 abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongoDao<E>() {
@@ -55,106 +41,8 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongo
         return findOne(Query(criteria))
     }
 
-    fun findSubScanTasks(request: PlanArtifactRequest, scannerType: String): Page<E> {
-        with(request) {
-            val criteria = Criteria
-                .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
-                .and(SubScanTaskDefinition::parentScanTaskId.name).`is`(parentScanTaskId)
-
-            name?.let {
-                criteria.and(SubScanTaskDefinition::artifactName.name).regex(".*$name.*")
-            }
-            highestLeakLevel?.let { addHighestVulnerabilityLevel(scannerType, it, criteria) }
-            repoType?.let { criteria.and(SubScanTaskDefinition::repoType.name).isEqualTo(repoType) }
-            repoName?.let { criteria.and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName) }
-            subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
-            startTime?.let { criteria.and(SubScanTaskDefinition::createdDate.name).gte(it) }
-            endTime?.let { criteria.and(SubScanTaskDefinition::finishedDateTime.name).lte(it) }
-
-            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val query = Query(criteria)
-                .with(
-                    Sort.by(
-                        Sort.Direction.DESC,
-                        SubScanTaskDefinition::createdDate.name,
-                        SubScanTaskDefinition::repoName.name,
-                        SubScanTaskDefinition::fullPath.name,
-                        SubScanTaskDefinition::packageKey.name,
-                        SubScanTaskDefinition::version.name
-                    )
-                )
-            val count = count(query)
-            val records = find(query.with(pageRequest))
-            return Page(
-                pageNumber = pageRequest.pageNumber + 1,
-                pageSize = pageRequest.pageSize,
-                totalRecords = count,
-                records = records
-            )
-        }
-    }
-
-    @Suppress("SpreadOperator")
-    fun findSubScanTasks(request: ArtifactPlanRelationRequest): List<E> {
-        with(request) {
-            //多个方案扫描过相同项目-仓库-同一个制品
-            val groupFields = ArrayList<String>()
-            val criteria = Criteria
-                .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
-                .and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName)
-            groupFields.add(SubScanTaskDefinition::projectId.name)
-            groupFields.add(SubScanTaskDefinition::repoName.name)
-            criteria.and(SubScanTaskDefinition::fullPath.name).`is`(fullPath)
-            groupFields.add(SubScanTaskDefinition::fullPath.name)
-
-            val aggregation = newAggregation(
-                match(criteria),
-                group(*groupFields.toTypedArray()).push(Aggregation.ROOT).`as`(FIELD_ALIAS_ARTIFACT_SUB_SCAN_TASKS),
-                project(FIELD_ALIAS_ARTIFACT_SUB_SCAN_TASKS).andExclude(ID)
-            )
-            val aggregateResult = aggregate(aggregation, artifactPlanRelationAggregateResultClass())
-            return artifactPlanRelationAggregateResult(aggregateResult)
-        }
-    }
-
     fun deleteByParentTaskId(parentTaskId: String): DeleteResult {
         val query = Query(SubScanTaskDefinition::parentScanTaskId.isEqualTo(parentTaskId))
         return remove(query)
-    }
-
-    protected abstract fun artifactPlanRelationAggregateResultClass(): Class<*>
-
-    private fun addHighestVulnerabilityLevel(scannerType: String, level: String, criteria: Criteria): Criteria {
-        Level.values().forEach {
-            val isHighest = level == it.levelName
-            criteria.and(resultOverviewKey(scannerType, it.levelName)).exists(isHighest)
-            if (isHighest) {
-                return criteria
-            }
-        }
-        return criteria
-    }
-
-    private fun resultOverviewKey(scannerType: String, level: String): String {
-        val overviewKey = ScanPlanConverter.getCveOverviewKey(scannerType, level)
-        return "${SubScanTaskDefinition::scanResultOverview.name}.$overviewKey"
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun artifactPlanRelationAggregateResult(aggregateResult: AggregationResults<*>): List<E> {
-        val results = aggregateResult.mappedResults as List<ArtifactPlanRelationAggregateResult<SubScanTaskDefinition>>
-        return results
-            .asSequence()
-            .filter { it.artifactSubScanTasks.isNotEmpty() }
-            .map { it.artifactSubScanTasks.maxBy { task -> task.createdDate }!! }
-            .toList() as List<E>
-    }
-
-    open class ArtifactPlanRelationAggregateResult<T : SubScanTaskDefinition>(
-        open val artifactSubScanTasks: List<T>
-    )
-
-    companion object {
-        private const val FIELD_ALIAS_ARTIFACT_SUB_SCAN_TASKS = "artifactSubScanTasks"
     }
 }

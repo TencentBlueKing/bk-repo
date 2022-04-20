@@ -1,7 +1,7 @@
 <template>
     <div class="project-manage-container">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="showProjectDialog()"><span class="mr5">{{ $t('create') }}</span></bk-button>
+            <bk-button icon="plus" theme="primary" @click="showProjectDialog()">{{ $t('create') }}</bk-button>
             <bk-input
                 v-model.trim="projectInput"
                 class="w250"
@@ -14,7 +14,7 @@
         <bk-table
             class="mt10"
             :data="filterProjectList"
-            height="calc(100% - 104px)"
+            height="calc(100% - 102px)"
             :outer-border="false"
             :row-border="false"
             size="small">
@@ -26,15 +26,13 @@
                     </template>
                 </empty-data>
             </template>
-            <bk-table-column label="项目标识" prop="id" width="150"></bk-table-column>
+            <bk-table-column label="项目标识" prop="id" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="项目名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="项目描述" prop="description" show-overflow-tooltip></bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="200">
-                <template #default="{ row }">
-                    {{ formatDate(row.createdDate) }}
-                </template>
+            <bk-table-column :label="$t('createdDate')">
+                <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')" width="150">
+            <bk-table-column :label="$t('createdBy')">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>
