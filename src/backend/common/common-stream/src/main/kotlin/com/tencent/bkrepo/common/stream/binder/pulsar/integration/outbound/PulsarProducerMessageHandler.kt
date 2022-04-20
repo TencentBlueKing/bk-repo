@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.integration.outbound
 
+import com.tencent.bkrepo.common.stream.binder.pulsar.constant.X_DELAY
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
@@ -90,9 +91,12 @@ class PulsarProducerMessageHandler(
     private fun sendMessage(message: Message<*>) {
         val (properties, payload) = PulsarMessageConverterSupport.convertMessage2Pulsar(destination.name, message)
         val key = properties[PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_KEY)]
-        val deliveryAfterSec = properties[
-            PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AFTER_SECONDS)
-        ]
+        var deliveryAfterSec = properties[X_DELAY]
+        if (deliveryAfterSec.isNullOrEmpty()) {
+            deliveryAfterSec = properties[
+                PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AFTER_SECONDS)
+            ]
+        }
         val deliveryAt = properties[
             PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AT)
         ]
@@ -101,7 +105,7 @@ class PulsarProducerMessageHandler(
             val msg = producer!!.newMessage()
                 .value(payload).properties(properties)
             key?.let { msg.key(key) }
-            deliveryAfterSec?.let { msg.deliverAfter(deliveryAfterSec.toLong(), TimeUnit.SECONDS) }
+            deliveryAfterSec?.let { msg.deliverAfter(deliveryAfterSec.toLong() * 1000, TimeUnit.MILLISECONDS) }
             deliveryAt?.let { msg.deliverAt(deliveryAt.toLong()) }
             msg.sendAsync()
         } catch (e: Exception) {
