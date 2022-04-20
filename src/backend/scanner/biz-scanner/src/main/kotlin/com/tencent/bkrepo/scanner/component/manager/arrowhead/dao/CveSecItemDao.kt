@@ -40,10 +40,41 @@ class CveSecItemDao : ResultItemDao<TCveSecItem>() {
         if (arguments.vulnerabilityLevels.isNotEmpty()) {
             criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(arguments.vulnerabilityLevels)
         }
-        if (arguments.cveIds.isNotEmpty()) {
-            criteria.and(dataKey(TCveSecItemData::cveId.name)).inValues(arguments.cveIds)
+        if (arguments.vulIds.isNotEmpty()) {
+            criteria.andOperator(buildVulIdCriteria(arguments.vulIds))
         }
         return criteria
+    }
+
+    private fun buildVulIdCriteria(vulIds: List<String>): Criteria {
+        val cveIds = HashSet<String>()
+        val cnnvdIds = HashSet<String>()
+        val cnvdIds = HashSet<String>()
+        val pocIds = HashSet<String>()
+
+        vulIds.forEach { vulId ->
+            val prefix = vulId.substring(0, vulId.indexOf('-')).toLowerCase()
+            when(prefix) {
+                "cve" -> cveIds.add(vulId)
+                "cnnvd" -> cnnvdIds.add(vulId)
+                "cnvd" -> cnvdIds.add(vulId)
+                else -> pocIds.add(vulId)
+            }
+        }
+
+        val criteria = Criteria()
+        orVulIdsIn(criteria, dataKey(TCveSecItemData::cveId.name), cveIds)
+        orVulIdsIn(criteria, dataKey(TCveSecItemData::cnnvdId.name), cnnvdIds)
+        orVulIdsIn(criteria, dataKey(TCveSecItemData::cnvdId.name), cnvdIds)
+        orVulIdsIn(criteria, dataKey(TCveSecItemData::pocId.name), pocIds)
+
+        return criteria
+    }
+
+    private fun orVulIdsIn(criteria: Criteria, key: String, vulIds: Set<String>) {
+        if (vulIds.isNotEmpty()) {
+            criteria.orOperator(Criteria.where(key).inValues(vulIds))
+        }
     }
 
     private fun dataKey(name: String) = "${TCveSecItem::data.name}.$name"

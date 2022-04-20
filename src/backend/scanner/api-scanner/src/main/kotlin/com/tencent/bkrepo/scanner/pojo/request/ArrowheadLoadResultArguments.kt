@@ -35,7 +35,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("arrowhead扫描结果拉取参数")
 data class ArrowheadLoadResultArguments(
     @ApiModelProperty("需要的cve列表")
-    val cveIds: List<String> = emptyList(),
+    val vulIds: List<String> = emptyList(),
     @ApiModelProperty("需要的漏洞严重性等级列表")
     val vulnerabilityLevels: List<String> = emptyList(),
     @ApiModelProperty("扫描结果类型")
