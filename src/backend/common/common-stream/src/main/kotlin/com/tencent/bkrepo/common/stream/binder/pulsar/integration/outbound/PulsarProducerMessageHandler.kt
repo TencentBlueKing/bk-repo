@@ -27,26 +27,24 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.integration.outbound
 
-import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarBinderConfigurationProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
+import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
 import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Producer
-import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.api.TypedMessageBuilder
 import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.context.Lifecycle
 import org.springframework.integration.handler.AbstractMessageHandler
-import org.springframework.integration.support.MessageBuilder
 import org.springframework.messaging.Message
 import org.springframework.messaging.MessagingException
+import org.springframework.messaging.support.MessageBuilder
 
 class PulsarProducerMessageHandler(
     private val destination: ProducerDestination,
     private val producerProperties: PulsarProducerProperties? = null,
-    private val pulsarClient: PulsarClient,
-    private val pulsarProperties: PulsarBinderConfigurationProperties
+    private val pulsarProperties: PulsarProperties
 ) : AbstractMessageHandler(), Lifecycle {
     private var producer: Producer<Any>? = null
 
@@ -67,7 +65,7 @@ class PulsarProducerMessageHandler(
         producer = PulsarProducerFactory.initPulsarProducer(
             topic = topic,
             producerProperties = producerProperties,
-            pulsarClient = pulsarClient
+            pulsarProperties = pulsarProperties
         )
     }
 
