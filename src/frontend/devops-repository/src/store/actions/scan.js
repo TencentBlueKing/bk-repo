@@ -104,12 +104,12 @@ export default {
         )
     },
     // 制品扫描报告漏洞列表
-    getLeakList (_, { projectId, recordId, cveId, severity, current = 1, limit = 20 }) {
+    getLeakList (_, { projectId, recordId, vulId, severity, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/artifact/leak/${projectId}/${recordId}`,
             {
                 params: {
-                    cveId: cveId || undefined,
+                    vulId: vulId || undefined,
                     leakType: severity || undefined,
                     pageNumber: current,
                     pageSize: limit

@@ -7,7 +7,7 @@
             <Icon size="24" :name="repoType" />
             <span style="margin-top: -5px;">{{repoType}}</span>
         </div>
-        <i class="ml10 devops-icon" :class="showDropdown ? 'icon-up-shape' : 'icon-down-shape'"></i>
+        <i class="ml10 devops-icon" :class="showDropdown ? 'icon-angle-up' : 'icon-angle-down'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
             <bk-radio-group :value="repoType" class="repo-type-radio-group" @change="changeType">
                 <bk-radio-button v-for="repo in repoList" :key="repo" :value="repo">
@@ -62,6 +62,13 @@
         color: var(--primaryColor);
         border-color: var(--primaryColor);
         z-index: 1;
+    }
+    .icon-angle-up,
+    .icon-angle-down {
+        font-size: 12px;
+        font-weight: bold;
+        color: var(--fontSubsidiaryColor);
+        transform: scale(0.8)
     }
     .dropdown-list {
         position: absolute;
