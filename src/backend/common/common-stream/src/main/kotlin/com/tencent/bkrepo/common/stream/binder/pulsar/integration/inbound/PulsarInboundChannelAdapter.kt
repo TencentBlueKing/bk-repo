@@ -31,7 +31,9 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarConsumerP
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Consumer
 import org.apache.pulsar.client.api.Message
 import org.slf4j.LoggerFactory
@@ -53,10 +55,11 @@ class PulsarInboundChannelAdapter(
     private var extendedConsumerProperties: ExtendedConsumerProperties<PulsarConsumerProperties>,
     private val pulsarProperties: PulsarProperties
 ) : MessageProducerSupport(), OrderlyShutdownCapable {
-    val consumers: MutableList<CompletableFuture<Consumer<Any>>> = mutableListOf()
+    private val consumers: MutableList<Consumer<Any>> = mutableListOf()
     var retryTemplate: RetryTemplate? = null
     var recoveryCallback: RecoveryCallback<Any>? = null
     private var topic: String = ""
+    private var consumerExecutor: ThreadPoolExecutor? = null
     override fun onInit() {
         if (extendedConsumerProperties.extension == null) {
             return
@@ -76,14 +79,28 @@ class PulsarInboundChannelAdapter(
                 deadLetterTopic = extendedConsumerProperties.extension.deadLetterTopic,
                 retryLetterTopic = extendedConsumerProperties.extension.retryLetterTopic
             )
-
-            createRetryTemplate()
             // TODO prepare register consumer message listener
             val messageListener = createListener()
-            // TODO multi topic如何处理， batch 如何处理， 对于Subscription多种模式如何处理
-            println("#####${extendedConsumerProperties.concurrency}")
-            for (i in 1..extendedConsumerProperties.concurrency) {
-                println("@@@@@@@@@")
+            if (extendedConsumerProperties.concurrency > 1) {
+                consumerExecutor = ConsumerHandlerThreadPoolExecutor
+                    .buildThreadPoolExecutor(extendedConsumerProperties.concurrency)
+                createRetryTemplate()
+                // TODO multi topic如何处理， batch 如何处理， 对于Subscription多种模式如何处理
+                for (i in 1..extendedConsumerProperties.concurrency) {
+                    consumerExecutor?.submit {
+                        val consumer = PulsarConsumerFactory.initPulsarConsumer(
+                            topic = topic,
+                            group = group,
+                            consumerProperties = extendedConsumerProperties,
+                            messageListener = messageListener,
+                            deadLetterTopic = deadLetter,
+                            retryLetterTopic = retryLetter,
+                            pulsarProperties = pulsarProperties
+                        )
+                        consumers.add(consumer)
+                    }
+                }
+            } else {
                 val consumer = PulsarConsumerFactory.initPulsarConsumer(
                     topic = topic,
                     group = group,
@@ -142,13 +159,12 @@ class PulsarInboundChannelAdapter(
         return { it: Consumer<*>, msg: Message<*> ->
             try {
                 if (logger.isDebugEnabled) {
-                    println("******${it.consumerName}")
                     logger.debug("Message received $msg")
                 }
                 val message = PulsarMessageConverterSupport.convertMessage2Spring(msg)
                 if (retryTemplate != null) {
                     retryTemplate!!.execute(
-                        RetryCallback<Any, RuntimeException> { context: RetryContext? ->
+                        RetryCallback<Any, RuntimeException> { _: RetryContext? ->
                             sendMessage(message)
                             if (logger.isDebugEnabled) {
                                 logger.info("will send acknowledge: ${msg.messageId}")
@@ -201,9 +217,12 @@ class PulsarInboundChannelAdapter(
         // 2.8.1版本调用会出错，所以升级https://github.com/apache/pulsar/issues/12024
         consumers.forEach {
             try {
-                it.get().close()
-            } catch (ingore: Exception) {
+                it.close()
+            } catch (ignore: Exception) {
             }
+        }
+        consumerExecutor?.let {
+            shutdownGracefully(consumerExecutor!!)
         }
     }
 
@@ -214,6 +233,25 @@ class PulsarInboundChannelAdapter(
 
     override fun afterShutdown(): Int {
         return 0
+    }
+
+    private fun shutdownGracefully(
+        executor: ExecutorService,
+        timeout: Long = 1000,
+        timeUnit: TimeUnit = TimeUnit.MILLISECONDS
+    ) {
+        executor.shutdown()
+        try {
+            if (!executor.awaitTermination(timeout, timeUnit)) {
+                executor.shutdownNow()
+                if (!executor.awaitTermination(timeout, timeUnit)) {
+                    logger.warn("$executor didn't terminate!")
+                }
+            }
+        } catch (var5: InterruptedException) {
+            executor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
     }
 
     companion object {

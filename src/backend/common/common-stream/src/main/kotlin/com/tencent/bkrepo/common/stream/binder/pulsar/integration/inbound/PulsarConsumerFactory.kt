@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarPropertie
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarClientUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.SchemaUtils
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Consumer
 import org.apache.pulsar.client.api.ConsumerCryptoFailureAction
@@ -61,7 +60,7 @@ object PulsarConsumerFactory {
         retryLetterTopic: String,
         deadLetterTopic: String,
         pulsarProperties: PulsarProperties
-    ): CompletableFuture<Consumer<Any>> {
+    ): Consumer<Any> {
         with(consumerProperties.extension) {
             val topics = mutableListOf<String>()
             topics.addAll(topicNames)
@@ -102,7 +101,7 @@ object PulsarConsumerFactory {
                 .autoUpdatePartitions(autoUpdatePartitions)
                 .replicateSubscriptionState(replicateSubscriptionState)
             consumer.messageListener(messageListener)
-            return consumer.subscribeAsync() as CompletableFuture<Consumer<Any>>
+            return consumer.subscribe() as Consumer<Any>
         }
     }
 }
