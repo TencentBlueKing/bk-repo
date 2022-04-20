@@ -311,7 +311,7 @@ open class PermissionManager(
                 .and(projectId.matches(Regex(p.projectId.replace("*", ".*"))))
                 .and(repoName?.matches(Regex(p.repoName.replace("*", ".*"))) ?: true)
                 .and(matchApi(p.scope))
-                .and(p.platformEnabled || platformId.isNullOrBlank() )
+                .and(p.platformWhiteList.isNullOrEmpty() || !p.platformWhiteList!!.contains(platformId))
         }
         return ext
     }

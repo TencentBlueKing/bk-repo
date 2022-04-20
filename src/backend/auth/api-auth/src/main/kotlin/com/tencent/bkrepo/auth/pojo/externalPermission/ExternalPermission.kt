@@ -45,8 +45,8 @@ data class ExternalPermission(
     val repoName: String,
     @ApiModelProperty("生效微服务")
     val scope: String,
-    @ApiModelProperty("平台账号是否启用")
-    val platformEnabled: Boolean,
+    @ApiModelProperty("平台账号白名单，白名单内不会校验外部权限")
+    val platformWhiteList: List<String>? = emptyList(),
     @ApiModelProperty("是否启用")
     val enabled: Boolean,
     @ApiModelProperty("创建日期")

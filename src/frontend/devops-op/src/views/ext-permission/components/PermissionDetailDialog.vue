@@ -17,11 +17,8 @@
         <el-form-item label="使用范围">
           <el-input v-model="permissionDetail.scope" />
         </el-form-item>
-        <el-form-item label="平台账号是否启用" prop="enabled">
-          <el-select v-model="permissionDetail.platformEnabled" placeholder="请选择其否启用">
-            <el-option label="启用" :value="true" />
-            <el-option label="未启用" :value="false" />
-          </el-select>
+        <el-form-item label="平台账号白名单" prop="enabled">
+          <el-input v-model="permissionDetail.platformWhiteList" placeholder="请输入平台账号白名单" />
         </el-form-item>
         <el-form-item label="是否启用" prop="enabled">
           <el-select v-model="permissionDetail.enabled" placeholder="请选择其否启用">
@@ -91,7 +88,7 @@ export default {
         this.permissionDetail.url,
         this.permissionDetail.headers,
         this.permissionDetail.scope,
-        this.permissionDetail.platformEnabled,
+        this.permissionDetail.platformWhiteList,
         this.permissionDetail.enabled
       )
       promise.then(() => {

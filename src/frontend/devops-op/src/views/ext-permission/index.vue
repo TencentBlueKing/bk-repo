@@ -45,8 +45,8 @@
         <template slot-scope="scope">{{ JSON.stringify(scope.row.headers) }}</template>
       </el-table-column>
       <el-table-column prop="scope" label="适用接口范围" min-width="200px" />
-      <el-table-column prop="enabled" label="平台账号是否启用" min-width="100px">
-        <template slot-scope="scope">{{ String(scope.row.platformEnabled) }}</template>
+      <el-table-column prop="enabled" label="平台账号白名单" min-width="100px">
+        <template slot-scope="scope">{{ scope.row.platformWhiteList.join(',') }}</template>
       </el-table-column>
       <el-table-column prop="enabled" label="是否启用" min-width="100px">
         <template slot-scope="scope">{{ String(scope.row.enabled) }}</template>
@@ -69,7 +69,7 @@
       @current-change="changeRouteQueryParams()"
     />
     <permission-create-dialog :visible.sync="showPermissionCreateDialog" @create-success="onCreateSuccess" />
-    <permission-detail-dialog :visible.sync="showPermissionDetailDialog" :permission="permissionOfDetailDialog" @update-success="onUpdateSuccess"/>
+    <permission-detail-dialog :visible.sync="showPermissionDetailDialog" :permission="permissionOfDetailDialog" @update-success="onUpdateSuccess" />
     <permission-delete-dialog :visible.sync="showPermissionDeleteDialog" :permission="permissionToDelete" @delete-success="onDeleteSuccess" />
   </div>
 </template>

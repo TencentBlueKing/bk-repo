@@ -23,7 +23,14 @@ export function listExtPermission(projectId, repoName, url, scope, enabled, page
   })
 }
 
-export function createExtPermission(projectId, repoName, url, headers, scope, platformEnabled, enabled) {
+export function createExtPermission(projectId, repoName, url, headers, scope, platformWhiteList, enabled) {
+  if (platformWhiteList === undefined || platformWhiteList.length === 0) {
+    platformWhiteList = []
+  } else {
+    platformWhiteList = platformWhiteList.split(',')
+    platformWhiteList = platformWhiteList.map(element => element.trim())
+  }
+  console.log(platformWhiteList)
   return request({
     url: `${PREFIX_EXT_PERMISSION}`,
     method: 'post',
@@ -33,13 +40,24 @@ export function createExtPermission(projectId, repoName, url, headers, scope, pl
       'url': url,
       'headers': headers,
       'scope': scope,
-      'platformEnabled': platformEnabled,
+      'platformWhiteList': platformWhiteList,
       'enabled': enabled
     }
   })
 }
 
-export function updateExtPermission(id, projectId, repoName, url, headers, scope, platformEnabled, enabled) {
+export function updateExtPermission(id, projectId, repoName, url, headers, scope, platformWhiteList, enabled) {
+  if (platformWhiteList === undefined || platformWhiteList.length === 0) {
+    platformWhiteList = []
+  } else {
+    if (typeof (platformWhiteList) === 'string') {
+      platformWhiteList = platformWhiteList.split(',')
+    } else {
+      platformWhiteList = Object.values(platformWhiteList)
+    }
+    console.log(platformWhiteList)
+    platformWhiteList = platformWhiteList.map(element => element.trim())
+  }
   return request({
     url: `${PREFIX_EXT_PERMISSION}`,
     method: 'put',
@@ -50,7 +68,7 @@ export function updateExtPermission(id, projectId, repoName, url, headers, scope
       'url': url,
       'headers': headers,
       'scope': scope,
-      'platformEnabled': platformEnabled,
+      'platformWhiteList': platformWhiteList,
       'enabled': enabled
     }
   })

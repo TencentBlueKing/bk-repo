@@ -44,8 +44,8 @@ data class UpdateExtPermissionRequest(
     val repoName: String? = null,
     @ApiModelProperty("生效微服务")
     val scope: String? = null,
-    @ApiModelProperty("对平台账号是否启用")
-    val platformEnabled: Boolean? = null,
+    @ApiModelProperty("平台账号白名单，白名单内不会校验外部权限")
+    val platformWhiteList: List<String>? = null,
     @ApiModelProperty("是否启用")
     val enabled: Boolean? = null
 )

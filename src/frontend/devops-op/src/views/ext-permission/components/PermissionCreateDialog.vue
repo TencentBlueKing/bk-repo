@@ -17,11 +17,8 @@
         <el-form-item label="适用接口范围" prop="scope">
           <el-input v-model="permission.scope" />
         </el-form-item>
-        <el-form-item label="平台账号是否启用" prop="enabled">
-          <el-select v-model="permission.platformEnabled" placeholder="请选择其否启用">
-            <el-option label="启用" :value="true" />
-            <el-option label="未启用" :value="false" />
-          </el-select>
+        <el-form-item label="平台账号白名单" prop="enabled">
+          <el-input v-model="permission.platformWhiteList" placeholder="请输入平台账号白名单" />
         </el-form-item>
         <el-form-item label="是否启用" prop="enabled">
           <el-select v-model="permission.enabled" placeholder="请选择其否启用">
@@ -91,34 +88,33 @@ export default {
   },
   methods: {
     createPermission() {
-      var valid = this.$refs['form'].validate((valid) => {
-        return valid
-      })
-      if(!valid) {
-        return
-      }
-      this.loading = true
-      this.permission.headers = JSON.parse(this.permission.headers)
-      const promise = createExtPermission(
-        this.permission.projectId,
-        this.permission.repoName,
-        this.permission.url,
-        this.permission.headers,
-        this.permission.scope,
-        this.permission.platformEnabled,
-        this.permission.enabled
-      )
-      promise.then(() => {
-        this.createResult = true
-        this.resultTitle = '创建成功'
-        this.resultIcon = 'success'
-        this.$emit('create-success')
-      }).catch(_ => {
-        this.createResult = {}
-        this.resultTitle = '创建失败'
-        this.resultIcon = 'error'
-      }).finally(() => {
-        this.loading = false
+      this.$refs['form'].validate((valid) => {
+        if (!valid) {
+          return
+        }
+        this.loading = true
+        this.permission.headers = JSON.parse(this.permission.headers)
+        const promise = createExtPermission(
+          this.permission.projectId,
+          this.permission.repoName,
+          this.permission.url,
+          this.permission.headers,
+          this.permission.scope,
+          this.permission.platformWhiteList,
+          this.permission.enabled
+        )
+        promise.then(() => {
+          this.createResult = true
+          this.resultTitle = '创建成功'
+          this.resultIcon = 'success'
+          this.$emit('create-success')
+        }).catch(_ => {
+          this.createResult = {}
+          this.resultTitle = '创建失败'
+          this.resultIcon = 'error'
+        }).finally(() => {
+          this.loading = false
+        })
       })
     },
     close() {

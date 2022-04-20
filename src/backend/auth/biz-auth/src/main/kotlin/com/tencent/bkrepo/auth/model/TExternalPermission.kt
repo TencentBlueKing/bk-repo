@@ -41,7 +41,7 @@ data class TExternalPermission(
     var projectId: String,
     var repoName: String,
     var scope: String,
-    var platformEnabled: Boolean,
+    var platformWhiteList: List<String>? = emptyList(),
     var enabled: Boolean,
     var createdDate: LocalDateTime,
     var createdBy: String,
