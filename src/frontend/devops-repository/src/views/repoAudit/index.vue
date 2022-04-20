@@ -19,8 +19,8 @@
                 v-model="query.time"
                 class="mr10 w250"
                 :shortcuts="shortcuts"
-                type="datetimerange"
-                placeholder="请选择操作日期时间范围"
+                type="daterange"
+                placeholder="请选择日期范围"
                 @change="handlerPaginationChange()">
             </bk-date-picker>
             <bk-tag-input

@@ -24,7 +24,7 @@
             <div class="flex-align-center">
                 <bk-input
                     class="w250"
-                    v-model.trim="filter.cveId"
+                    v-model.trim="filter.vulId"
                     clearable
                     placeholder="请输入漏洞ID, 按Enter键搜索"
                     right-icon="bk-icon icon-search"
@@ -45,7 +45,7 @@
                 :data="leakList"
                 :outer-border="false"
                 :row-border="false"
-                row-key="cveId"
+                row-key="leakKey"
                 size="small">
                 <template #empty>
                     <empty-data :is-loading="isLoading"></empty-data>
@@ -62,7 +62,7 @@
                         </div>
                     </template>
                 </bk-table-column>
-                <bk-table-column label="漏洞ID" prop="cveId" show-overflow-tooltip></bk-table-column>
+                <bk-table-column label="漏洞ID" prop="vulId" show-overflow-tooltip></bk-table-column>
                 <bk-table-column label="漏洞等级">
                     <template #default="{ row }">
                         <div class="status-sign" :class="row.severity" :data-name="leakLevelEnum[row.severity]"></div>
@@ -120,7 +120,7 @@
                     limitList: [10, 20, 40]
                 },
                 filter: {
-                    cveId: '',
+                    vulId: '',
                     severity: ''
                 }
             }
@@ -166,12 +166,15 @@
                 return this.getLeakList({
                     projectId: this.projectId,
                     recordId: this.recordId,
-                    cveId: this.filter.cveId,
+                    vulId: this.filter.vulId,
                     severity: this.filter.severity,
                     current: this.pagination.current,
                     limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
-                    this.leakList = records
+                    this.leakList = records.map(v => ({
+                        ...v,
+                        leakKey: `${v.vulId}${v.pkgName}${v.installedVersion}`
+                    }))
                     this.pagination.count = totalRecords
                 }).finally(() => {
                     this.isLoading = false
@@ -184,7 +187,7 @@
             reset () {
                 this.filter = {
                     show: true,
-                    cveId: '',
+                    vulId: '',
                     severity: ''
                 }
             },
