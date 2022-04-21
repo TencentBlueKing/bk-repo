@@ -57,8 +57,6 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -186,7 +184,6 @@ class UserController @Autowired constructor(
 
     @ApiOperation("新加用户token")
     @PostMapping("/token/{uid}/{name}")
-    @Principal(PrincipalType.ADMIN)
     fun addUserToken(
         @PathVariable("uid") uid: String,
         @PathVariable("name") name: String,
