@@ -112,39 +112,40 @@ class WebHookExecutor(
     }
 
     fun asyncExecutor(event: ArtifactEvent, webHook: TWebHook) {
-        try {
-            webHookMetrics.executingCount.incrementAndGet()
-            val payload = eventPayloadFactory.build(event)
-            val request = buildRequest(webHook, payload)
-            val startTimestamp = System.currentTimeMillis()
-            val log = buildWebHookLog(webHook, request, payload)
-            httpClient.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, exception: IOException) {
+        val payload = try {
+            eventPayloadFactory.build(event)
+        }catch (e :Exception) {
+            logger.warn("webhook build payload error, event[$event], error: ${e.message}")
+            webHookLogDao.insert(buildWebHookErrorLog(event, webHook, e))
+            return
+        }
+        val request = buildRequest(webHook, payload)
+        val startTimestamp = System.currentTimeMillis()
+        val log = buildWebHookLog(webHook, request, payload)
+        webHookMetrics.executingCount.incrementAndGet()
+        httpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, exception: IOException) {
+                logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
+                buildWebHookFailedLog(log, startTimestamp, exception.message)
+                webHookLogDao.insert(log)
+                webHookMetrics.executingCount.decrementAndGet()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                try {
+                    response.use {
+                        if (!it.isSuccessful) throw IOException("unexpected code $it")
+                        logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] success.")
+                        buildWebHookSuccessLog(log, startTimestamp, it)
+                    }
+                } catch (exception: IOException) {
                     logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
                     buildWebHookFailedLog(log, startTimestamp, exception.message)
-                    webHookLogDao.insert(log)
                 }
-
-                override fun onResponse(call: Call, response: Response) {
-                    try {
-                        response.use {
-                            if (!it.isSuccessful) throw IOException("unexpected code $it")
-                            logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] success.")
-                            buildWebHookSuccessLog(log, startTimestamp, it)
-                        }
-                    } catch (exception: IOException) {
-                        logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
-                        buildWebHookFailedLog(log, startTimestamp, exception.message)
-                    }
-                    webHookLogDao.insert(log)
-                }
-            })
-        } catch (e: Exception) {
-            logger.error("event[$event] | webhook execute error", e)
-            throw e
-        } finally {
-            webHookMetrics.executingCount.decrementAndGet()
-        }
+                webHookLogDao.insert(log)
+                webHookMetrics.executingCount.decrementAndGet()
+            }
+        })
     }
 
     private fun buildWebHookLog(
@@ -161,6 +162,20 @@ class WebHookExecutor(
             requestDuration = 0L,
             requestTime = LocalDateTime.now(),
             status = WebHookRequestStatus.FAIL
+        )
+    }
+
+    private fun buildWebHookErrorLog(event: ArtifactEvent, webHook: TWebHook, e: Exception): TWebHookLog {
+        return TWebHookLog(
+            webHookId = webHook.id!!,
+            webHookUrl = webHook.url,
+            triggeredEvent = event.type,
+            requestDuration = 0,
+            requestTime = LocalDateTime.now(),
+            status = WebHookRequestStatus.ERROR,
+            errorMsg = e.message,
+            requestHeaders = emptyMap(),
+            requestPayload = ""
         )
     }
 

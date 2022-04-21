@@ -53,7 +53,7 @@ data class PulsarConsumerProperties(
      * A value higher than the default value increases consumer throughput,
      * though at the expense of more memory utilization.
      */
-    var receiverQueueSize: Int = 10000,
+    var receiverQueueSize: Int = 1000,
     /**
      * Group a consumer acknowledgment for a specified time.
      * By default, a consumer uses 100ms grouping time to send out acknowledgments to a broker.

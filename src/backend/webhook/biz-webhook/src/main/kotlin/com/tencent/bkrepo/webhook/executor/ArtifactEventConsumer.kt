@@ -58,7 +58,7 @@ class ArtifactEventConsumer(
         100,
         200,
         60,
-        TimeUnit.SECONDS, LinkedBlockingQueue<Runnable>(50),
+        TimeUnit.SECONDS, LinkedBlockingQueue<Runnable>(1024),
         ThreadFactoryBuilder().setNameFormat("webhook-event-worker-%d").build(),
         ThreadPoolExecutor.CallerRunsPolicy()
     )
