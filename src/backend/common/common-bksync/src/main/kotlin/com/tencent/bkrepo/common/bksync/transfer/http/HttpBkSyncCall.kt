@@ -14,10 +14,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import okhttp3.internal.sse.RealEventSource
+import okhttp3.sse.EventSource
+import okhttp3.sse.EventSourceListener
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.concurrent.CountDownLatch
 
 /**
  * bksync http实现
@@ -31,7 +35,9 @@ class HttpBkSyncCall(
     private val allowUseMaxBandwidth: Int = -1,
     private val speedTestSettings: SpeedTestSettings?
 ) {
-    private val logger = LoggerFactory.getLogger(HttpBkSyncCall::class.java)
+
+    @Volatile
+    private var patchSuccess = true
 
     /**
      * 增量上传
@@ -53,7 +59,7 @@ class HttpBkSyncCall(
             val nanos = measureNanoTime { doUpload(request) }
             logger.info("Upload[${request.deltaUrl}] success,elapsed ${HumanReadable.time(nanos)}.")
         } catch (e: Exception) {
-            logger.error(e.message, e)
+            logger.error("Upload failed: ", e)
             request.genericUrl?.let { commonUpload(request) }
         }
     }
@@ -116,11 +122,21 @@ class HttpBkSyncCall(
                 .patch(body)
                 .build()
             val nanos = measureNanoTime {
-                val patchResponse = client.newCall(patchRequest).execute()
-                if (!patchResponse.isSuccessful) {
-                    throw PatchRequestException("delta[$deltaUrl] upload failed: ${patchResponse.message()}.")
+                val countDownLatch = CountDownLatch(1)
+                var errorMsg: String? = null
+                val errorCallback = object : PatchErrorCallback {
+                    override fun onFailure(msg: String) {
+                        patchSuccess = false
+                        errorMsg = msg
+                    }
                 }
-                patchResponse.print()
+                val eventListener = PatchEventListener(countDownLatch, errorCallback)
+                val realEventSource = RealEventSource(patchRequest, eventListener)
+                realEventSource.connect(client)
+                countDownLatch.await()
+                if (!patchSuccess) {
+                    throw PatchRequestException("Delta[$deltaUrl] upload failed: ${errorMsg.orEmpty()}")
+                }
             }
             logger.info("Delta data upload success,elapsed ${HumanReadable.time(nanos)}.")
         } finally {
@@ -165,7 +181,7 @@ class HttpBkSyncCall(
             val nanos = measureNanoTime {
                 val response = client.newCall(commonRequest).execute()
                 if (!response.isSuccessful) {
-                    logger.info("Generic upload[$genericUrl] failed.")
+                    throw PatchRequestException("Generic upload[$genericUrl] failed.")
                 }
             }
             logger.info("Generic upload[$genericUrl] success, elapsed ${HumanReadable.time(nanos)}.")
@@ -180,16 +196,42 @@ class HttpBkSyncCall(
         return this
     }
 
-    private fun Response.print() {
-        this.body()?.byteStream()?.use {
-            it.readBytes().let { res -> logger.info("response: ${String(res)}") }
+    private class PatchEventListener(val countDownLatch: CountDownLatch, val errorCallback: PatchErrorCallback) :
+        EventSourceListener() {
+        override fun onOpen(eventSource: EventSource, response: Response) {
+            logger.info("Begin patch.")
+        }
+
+        override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
+            if (type == PATCH_EVENT_TYPE_ERROR) {
+                errorCallback.onFailure(data)
+                countDownLatch.countDown()
+            }
+            logger.info("Receive event[$type]: $data")
+        }
+
+        override fun onClosed(eventSource: EventSource) {
+            countDownLatch.countDown()
+            logger.info("End patch")
+        }
+
+        override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
+            logger.error("Patch failed", t)
+            errorCallback.onFailure(t?.message.orEmpty())
+            countDownLatch.countDown()
         }
     }
 
+    private interface PatchErrorCallback {
+        fun onFailure(msg: String)
+    }
+
     companion object {
+        private val logger = LoggerFactory.getLogger(HttpBkSyncCall::class.java)
         private const val APPLICATION_OCTET_STREAM = "application/octet-stream"
         private const val X_BKREPO_OLD_FILE_PATH = "X-BKREPO-OLD-FILE-PATH"
         private const val DEFAULT_THRESHOLD = 0.2f
         private const val BLOCK_SIZE = 2048
+        private const val PATCH_EVENT_TYPE_ERROR = "ERROR"
     }
 }

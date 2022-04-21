@@ -1,18 +1,23 @@
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.stream.CompositeOutputStream
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedFileOutputStream
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.bksync.BkSync
@@ -21,11 +26,17 @@ import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
 import com.tencent.bkrepo.common.bksync.ChecksumIndex
 import com.tencent.bkrepo.common.bksync.FileBlockInputStream
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
+import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
+import com.tencent.bkrepo.generic.constant.HEADER_MD5
+import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.dao.SignFileDao
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -38,6 +49,7 @@ import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
+import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -100,13 +112,30 @@ class DeltaSyncService(
                     ?: throw ArtifactNotFoundException("file[$sha256] not found in ${storageCredentials?.key}")
                 val nanoTime = measureNanoTime {
                     val bkSync = BkSync(blockSize)
-                    artifactInputStream.buffered().use { bkSync.checksum(artifactInputStream, outputStream) }
+                    generateSignFile(artifactInputStream, bkSync, outputStream)
                 }
                 val throughput = Throughput(chunkedArtifactFile.getSize(), nanoTime)
                 logger.info("Success to generate artifact sign file [${node.fullPath}], $throughput.")
                 outputStream.flush()
                 chunkedArtifactFile.finish()
                 saveSignFile(node, chunkedArtifactFile)
+            }
+        }
+    }
+
+    private fun generateSignFile(
+        artifactInputStream: ArtifactInputStream,
+        bkSync: BkSync,
+        outputStream: BufferedOutputStream
+    ) {
+        try {
+            artifactInputStream.buffered().use { bkSync.checksum(artifactInputStream, outputStream) }
+        } catch (exception: IOException) {
+            if (IOExceptionUtils.isClientBroken(exception)) {
+                val message = exception.message.orEmpty()
+                val status = if (IOExceptionUtils.isClientBroken(exception))
+                    HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
+                throw ArtifactResponseException(message, status)
             }
         }
     }
@@ -121,22 +150,51 @@ class DeltaSyncService(
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
+            val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
+            if (!overwrite) {
+                nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data?.let {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.NODE_EXISTED, artifactInfo.getArtifactName()
+                    )
+                }
+            }
             val hasCompleted = AtomicBoolean(false)
             val clientError = AtomicBoolean(false)
             val contentLength = request.contentLengthLong
             val emitter = SseEmitter(patchTimeout)
             emitter.onCompletion { hasCompleted.set(true) }
             val counterInputStream = CounterInputStream(deltaFile.getInputStream())
-            val reportAction = { reportProcess(clientError, hasCompleted, counterInputStream, contentLength, emitter) }
-            val ackFuture = taskExecutor.scheduleWithFixedDelay(reportAction, HEART_BEAT)
             val blockInputStream = getBlockInputStream(node, storageCredentials)
             val file = ArtifactFileFactory.buildBkSync(blockInputStream, counterInputStream, blockSize)
+            val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
+            val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
+            val expires = HeaderUtils.getLongHeader(HEADER_EXPIRES)
+            val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL)
+            val metadata = (repository as GenericLocalRepository).resolveMetadata(request)
+            val reportAction = { reportProcess(clientError, hasCompleted, counterInputStream, contentLength, emitter) }
+            val ackFuture = taskExecutor.scheduleWithFixedDelay(reportAction, HEART_BEAT)
             taskExecutor.execute {
                 try {
-                    val nodeDetail = upload(file, storageCredentials, repositoryDetail, artifactInfo, userId)
+                    verifyCheckSum(uploadMd5, uploadSha256, file)
+                    val nodeCreateRequest =
+                        buildPatchNewNodeCreateRequest(
+                            repositoryDetail,
+                            artifactInfo,
+                            userId,
+                            file,
+                            expires,
+                            overwrite,
+                            metadata
+                        )
+                    val nodeDetail = storageManager.storeArtifactFile(nodeCreateRequest, file, storageCredentials)
                     val event = SseEmitter.event().name(PATCH_EVENT_TYPE_DATA)
                         .data(nodeDetail, MediaType.APPLICATION_JSON)
                     emitter.send(event)
+                    emitter.complete()
+                } catch (e: ErrorCodeException) {
+                    val msg = SseEmitter.event().name(PATCH_EVENT_TYPE_ERROR)
+                        .data(e.message.orEmpty())
+                    emitter.send(msg)
                     emitter.complete()
                 } catch (e: Exception) {
                     emitter.completeWithError(e)
@@ -188,16 +246,56 @@ class DeltaSyncService(
     }
 
     /**
-     * 上传文件
+     * 验证校验和
      * */
-    private fun upload(
-        file: ArtifactFile,
-        storageCredentials: StorageCredentials?,
+    private fun verifyCheckSum(md5: String?, sha256: String?, file: ArtifactFile) {
+        val calculatedSha256 = file.getFileSha256()
+        val calculatedMd5 = file.getFileMd5()
+        if (sha256 != null && !calculatedSha256.equals(sha256, true)) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
+        }
+        if (md5 != null && !calculatedMd5.equals(md5, true)) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
+        }
+    }
+
+    /**
+     * 构建合并节点请求
+     * */
+    private fun buildPatchNewNodeCreateRequest(
         repositoryDetail: RepositoryDetail,
         artifactInfo: ArtifactInfo,
-        userId: String
-    ): NodeDetail {
-        val request = NodeCreateRequest(
+        userId: String,
+        file: ArtifactFile,
+        expires: Long,
+        overwrite: Boolean,
+        metadata: Map<String, Any>
+    ): NodeCreateRequest {
+        return NodeCreateRequest(
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
+            folder = false,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            size = file.getSize(),
+            sha256 = file.getFileSha256(),
+            md5 = file.getFileMd5(),
+            operator = userId,
+            expires = expires,
+            overwrite = overwrite,
+            metadata = metadata
+        )
+    }
+
+    /**
+     * 构建sign文件节点请求
+     * */
+    private fun buildSignFileNodeCreateRequest(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ArtifactInfo,
+        userId: String,
+        file: ArtifactFile
+    ): NodeCreateRequest {
+        return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
             repoName = repositoryDetail.name,
             folder = false,
@@ -208,7 +306,6 @@ class DeltaSyncService(
             operator = userId,
             overwrite = true
         )
-        return storageManager.storeArtifactFile(request, file, storageCredentials)
     }
 
     /**
@@ -220,7 +317,9 @@ class DeltaSyncService(
         with(nodeDetail) {
             val signFileFullPath = "$projectId/$repoName/$blockSize/$fullPath$SUFFIX_SIGN"
             val artifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
-            upload(file, signRepo.storageCredentials, signRepo, artifactInfo, SecurityUtils.getUserId())
+            val nodeCreateRequest =
+                buildSignFileNodeCreateRequest(signRepo, artifactInfo, SecurityUtils.getUserId(), file)
+            storageManager.storeArtifactFile(nodeCreateRequest, file, signRepo.storageCredentials)
             val signFile = TSignFile(
                 srcSha256 = sha256!!,
                 projectId = signFileProjectId,
@@ -282,6 +381,7 @@ class DeltaSyncService(
         private val logger = LoggerFactory.getLogger(DeltaSyncService::class.java)
         private const val SUFFIX_SIGN = ".sign"
         private const val PATCH_EVENT_TYPE_INFO = "INFO"
+        private const val PATCH_EVENT_TYPE_ERROR = "ERROR"
         private const val PATCH_EVENT_TYPE_DATA = "DATA"
 
         // 3s patch 回复心跳时间，保持连接存活
