@@ -31,5 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("scanner.executor")
 data class ScannerExecutorProperties(
-    var workDir: String = System.getProperty("java.io.tmpdir")
+    var workDir: String = System.getProperty("java.io.tmpdir"),
+    var maxTaskCount: Int = 20
 )

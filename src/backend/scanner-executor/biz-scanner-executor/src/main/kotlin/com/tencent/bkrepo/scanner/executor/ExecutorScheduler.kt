@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.scanner.api.ScanClient
+import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
@@ -25,7 +26,8 @@ class ExecutorScheduler @Autowired constructor(
     private val storageCredentialsClient: StorageCredentialsClient,
     private val scanClient: ScanClient,
     private val storageService: StorageService,
-    private val executor: ThreadPoolTaskExecutor
+    private val executor: ThreadPoolTaskExecutor,
+    private val scannerExecutorProperties: ScannerExecutorProperties
 ) {
 
     private val executingCount = AtomicInteger(0)
@@ -55,7 +57,9 @@ class ExecutorScheduler @Autowired constructor(
      * 是否允许执行扫描
      */
     private fun allowExecute(): Boolean {
-        return executingCount.get() < operatingSystemBean.totalPhysicalMemorySize / MEMORY_PER_TASK
+        val executingCount = executingCount.get()
+        return executingCount < scannerExecutorProperties.maxTaskCount
+            && executingCount < operatingSystemBean.totalPhysicalMemorySize / MEMORY_PER_TASK
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")

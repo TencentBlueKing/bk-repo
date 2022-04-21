@@ -31,7 +31,6 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.Bind
-import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
@@ -95,7 +94,8 @@ class ArrowheadScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "load config success"))
 
             // 执行扫描
-            val scanStatus = doScan(workDir, task)
+            val maxScanDuration = maxScanDuration(scanner, scannerInputFile.length())
+            val scanStatus = doScan(workDir, task, maxScanDuration)
             return result(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
@@ -106,6 +106,14 @@ class ArrowheadScanExecutor @Autowired constructor(
                 workDir.deleteRecursively()
             }
         }
+    }
+
+    /**
+     * 获取文件最大允许扫描时间
+     */
+    private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
+        val fileSizeMb = fileSize / 1024
+        return scanner.maxScanDuration * fileSizeMb
     }
 
     /**
@@ -195,15 +203,18 @@ class ArrowheadScanExecutor @Autowired constructor(
      *
      * @return true 扫描成功， false 扫描失败
      */
-    private fun doScan(workDir: File, task: ScanExecutorTask): SubScanTaskStatus {
+    private fun doScan(workDir: File, task: ScanExecutorTask, maxScanDuration: Long): SubScanTaskStatus {
         require(task.scanner is ArrowheadScanner)
         val containerConfig = task.scanner.container
         pullImage(containerConfig.image)
 
-        val bind = Volume(containerConfig.workDir)
-        val binds = Binds(Bind(workDir.absolutePath, bind))
+        // 容器内tmp目录
+        val tmpBind = Bind("${workDir.absolutePath}${File.separator}tmp", Volume("/tmp"))
+        // 容器内工作目录
+        val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
+        val hostConfig = HostConfig().withBinds(tmpBind, bind)
         val containerId = dockerClient.createContainerCmd(containerConfig.image)
-            .withHostConfig(HostConfig().withBinds(binds))
+            .withHostConfig(hostConfig)
             .withCmd(containerConfig.args)
             .withTty(true)
             .withStdinOpen(true)
@@ -213,7 +224,7 @@ class ArrowheadScanExecutor @Autowired constructor(
             dockerClient.startContainerCmd(containerId).exec()
             val resultCallback = WaitContainerResultCallback()
             dockerClient.waitContainerCmd(containerId).exec(resultCallback)
-            val result = resultCallback.awaitCompletion(task.scanner.maxScanDuration, TimeUnit.MILLISECONDS)
+            val result = resultCallback.awaitCompletion(maxScanDuration, TimeUnit.MILLISECONDS)
             logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
             if (!result) {
                 return SubScanTaskStatus.TIMEOUT

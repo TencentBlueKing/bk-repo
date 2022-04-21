@@ -25,30 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.scanner.pojo
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Query
+import com.tencent.bkrepo.common.query.model.Rule
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
-    @Suppress("LateinitUsage")
-    @Autowired
-    @Qualifier(MultipleMongoConfig.BEAN_NAME_SCANNER_MONGO_TEMPLATE)
-    private lateinit var mongoTemplate: MongoTemplate
-
-    override fun determineMongoTemplate(): MongoTemplate {
-        return mongoTemplate
-    }
-
-    fun page(query: Query, pageRequest: PageRequest): Page<T> {
-        val count = count(query)
-        val records = find(query.with(pageRequest))
-        return Page(pageRequest.pageNumber + 1, pageRequest.pageSize, count, records)
-    }
-}
+@ApiModel("自动扫描配置")
+data class AutoScanConfiguration(
+    @ApiModelProperty("自动扫描的仓库")
+    val autoScanRepoNames: List<String> = emptyList(),
+    @ApiModelProperty("自动扫描制品匹配规则")
+    val autoScanMatchRule: Rule? = null
+)

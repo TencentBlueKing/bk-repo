@@ -25,30 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.scanner.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Query
+import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
+import com.tencent.bkrepo.scanner.pojo.request.ProjectScanConfigurationPageRequest
 
-abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
-    @Suppress("LateinitUsage")
-    @Autowired
-    @Qualifier(MultipleMongoConfig.BEAN_NAME_SCANNER_MONGO_TEMPLATE)
-    private lateinit var mongoTemplate: MongoTemplate
+/**
+ * 项目扫描配置
+ */
+interface ProjectScanConfigurationService {
+    /**
+     * 创建项目扫描配置
+     *
+     * @param request 项目扫描配置创建请求
+     *
+     * @return 创建后的项目扫描配置
+     */
+    fun create(request: ProjectScanConfiguration): ProjectScanConfiguration
 
-    override fun determineMongoTemplate(): MongoTemplate {
-        return mongoTemplate
-    }
+    /**
+     * 更新项目扫描配置
+     *
+     * @param request 项目扫描配置更新请求
+     *
+     * @return 更新后的项目扫描配置
+     */
+    fun update(request: ProjectScanConfiguration): ProjectScanConfiguration
 
-    fun page(query: Query, pageRequest: PageRequest): Page<T> {
-        val count = count(query)
-        val records = find(query.with(pageRequest))
-        return Page(pageRequest.pageNumber + 1, pageRequest.pageSize, count, records)
-    }
+    /**
+     * 分页获取项目扫描配置
+     */
+    fun page(request: ProjectScanConfigurationPageRequest): Page<ProjectScanConfiguration>
+
+    /**
+     * 获取项目扫描配置
+     *
+     * @param projectId 要获取的扫描配置所属项目ID
+     *
+     * @return 项目扫描配置
+     */
+    fun get(projectId: String): ProjectScanConfiguration
 }

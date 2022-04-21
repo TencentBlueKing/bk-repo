@@ -35,7 +35,6 @@ import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
-import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
@@ -82,11 +81,6 @@ interface ScanService {
      * @return true 停止成功，false 停止失败
      */
     fun stopSubtask(projectId: String, subtaskId: String): Boolean
-
-    /**
-     * 匹配文件扫描
-     */
-    fun matchPlanScan(request: MatchPlanSingleScanRequest): List<ScanTask>
 
     /**
      * 获取扫描任务

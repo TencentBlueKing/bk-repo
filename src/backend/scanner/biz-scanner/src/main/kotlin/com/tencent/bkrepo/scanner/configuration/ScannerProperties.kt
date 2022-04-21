@@ -25,30 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.dao
+package com.tencent.bkrepo.scanner.configuration
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Query
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
-    @Suppress("LateinitUsage")
-    @Autowired
-    @Qualifier(MultipleMongoConfig.BEAN_NAME_SCANNER_MONGO_TEMPLATE)
-    private lateinit var mongoTemplate: MongoTemplate
-
-    override fun determineMongoTemplate(): MongoTemplate {
-        return mongoTemplate
-    }
-
-    fun page(query: Query, pageRequest: PageRequest): Page<T> {
-        val count = count(query)
-        val records = find(query.with(pageRequest))
-        return Page(pageRequest.pageNumber + 1, pageRequest.pageSize, count, records)
+@ConfigurationProperties("scanner")
+data class ScannerProperties(
+    /**
+     * 默认项目扫描子任务数量限制
+     */
+    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
+) {
+    companion object {
+        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
+        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
+        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
     }
 }

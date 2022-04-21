@@ -27,30 +27,18 @@
 
 package com.tencent.bkrepo.scanner.utils
 
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.util.MongoEscapeUtils
-import com.tencent.bkrepo.scanner.model.TScanPlan
-import com.tencent.bkrepo.scanner.pojo.request.MatchPlanSingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import java.io.File
 
 object RuleMatcher {
-    fun match(request: MatchPlanSingleScanRequest, plan: TScanPlan): Boolean {
-        return with(request) {
-            if (fullPath != null) {
-                matchFullPath(fullPath!!, plan.rule.readJsonString())
-            } else {
-                nameVersionMatch(packageName!!, version!!, plan.rule.readJsonString())
-            }
-        }
-    }
 
-    private fun matchFullPath(fullPath: String, rule: Rule): Boolean {
+    fun matchFullPath(fullPath: String, rule: Rule): Boolean {
         require(rule is Rule.NestedRule)
         val name = File(fullPath).name
-        return nameVersionMatch(name, null, rule)
+        return matchNameVersion(name, null, rule)
     }
 
     /**
@@ -62,13 +50,13 @@ object RuleMatcher {
      *
      * @return true 匹配， false 不匹配， [rule]中没有限制[name]和[version]相关规则时候返回true
      */
-    fun nameVersionMatch(name: String?, version: String?, rule: Rule.NestedRule): Boolean {
+    fun matchNameVersion(name: String?, version: String?, rule: Rule.NestedRule): Boolean {
         if (rule.relation == Rule.NestedRule.RelationType.AND && rule.rules.isNotEmpty()) {
             return matchAnd(name, version, rule)
         }
 
         if (rule.relation == Rule.NestedRule.RelationType.OR && rule.rules.isNotEmpty()) {
-            return rule.rules.any { it is Rule.NestedRule && nameVersionMatch(name, version, it) }
+            return rule.rules.any { it is Rule.NestedRule && matchNameVersion(name, version, it) }
         }
 
         return true
@@ -88,7 +76,7 @@ object RuleMatcher {
             return rule.rules
                 .asSequence()
                 .filterIsInstance<Rule.NestedRule>()
-                .all { nameVersionMatch(name, version, it) }
+                .all { matchNameVersion(name, version, it) }
         }
 
         val nameMatchFailed = name == null && nameRule != null
@@ -123,6 +111,7 @@ object RuleMatcher {
     private fun match(value: String, rule: Rule.QueryRule): Boolean {
         return when (rule.operation) {
             OperationType.EQ -> value == rule.value
+            OperationType.REGEX -> rule.value.toString().toRegex().matches(value)
             OperationType.MATCH -> {
                 val escapedValue = MongoEscapeUtils.escapeRegexExceptWildcard(rule.value.toString())
                 val regexPattern = escapedValue.replace("*", ".*")
