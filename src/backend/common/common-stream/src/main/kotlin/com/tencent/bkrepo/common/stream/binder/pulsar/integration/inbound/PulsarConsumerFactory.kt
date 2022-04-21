@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Consumer
 import org.apache.pulsar.client.api.ConsumerCryptoFailureAction
 import org.apache.pulsar.client.api.Message
+import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.api.RegexSubscriptionMode
 import org.apache.pulsar.client.api.SubscriptionInitialPosition
 import org.apache.pulsar.client.api.SubscriptionType
@@ -60,13 +61,15 @@ object PulsarConsumerFactory {
         retryLetterTopic: String,
         deadLetterTopic: String,
         pulsarProperties: PulsarProperties,
-        concurrency: Int? = null
+        concurrency: Int? = null,
+        pulsarClient: PulsarClient? = null
     ): Consumer<Any> {
         with(consumerProperties.extension) {
             val topics = mutableListOf<String>()
             topics.addAll(topicNames)
             topics.add(topic)
-            val consumer = PulsarClientUtils.pulsarClient(pulsarProperties, concurrency).newConsumer(
+            val client = pulsarClient ?: PulsarClientUtils.pulsarClient(pulsarProperties, concurrency)
+            val consumer = client.newConsumer(
                 SchemaUtils.getSchema(Serialization.valueOf(serialType), serialClass)
             ).topics(topics)
             if (!topicsPattern.isNullOrEmpty()) {

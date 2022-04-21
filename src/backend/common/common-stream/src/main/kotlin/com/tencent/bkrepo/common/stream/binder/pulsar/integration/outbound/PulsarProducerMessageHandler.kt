@@ -91,21 +91,16 @@ class PulsarProducerMessageHandler(
     private fun sendMessage(message: Message<*>) {
         val (properties, payload) = PulsarMessageConverterSupport.convertMessage2Pulsar(destination.name, message)
         val key = properties[PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_KEY)]
-        var deliveryAfterSec = properties[X_DELAY]
-        if (deliveryAfterSec.isNullOrEmpty()) {
-            deliveryAfterSec = properties[
-                PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AFTER_SECONDS)
-            ]
-        }
+        val deliveryAfterMillis = properties[X_DELAY]
         val deliveryAt = properties[
             PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AT)
         ]
-        logger.info("deliveryAfterSec $deliveryAfterSec, deliveryAt $deliveryAt")
+        logger.info("deliveryAfterMillis $deliveryAfterMillis, deliveryAt $deliveryAt")
         try {
             val msg = producer!!.newMessage()
                 .value(payload).properties(properties)
             key?.let { msg.key(key) }
-            deliveryAfterSec?.let { msg.deliverAfter(deliveryAfterSec.toLong() * 1000, TimeUnit.MILLISECONDS) }
+            deliveryAfterMillis?.let { msg.deliverAfter(deliveryAfterMillis.toLong(), TimeUnit.MILLISECONDS) }
             deliveryAt?.let { msg.deliverAt(deliveryAt.toLong()) }
             msg.sendAsync()
         } catch (e: Exception) {

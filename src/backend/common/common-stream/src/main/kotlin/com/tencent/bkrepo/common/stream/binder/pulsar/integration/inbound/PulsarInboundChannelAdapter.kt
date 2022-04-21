@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.stream.binder.pulsar.integration.inbound
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarConsumerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
+import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarClientUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
@@ -81,6 +82,10 @@ class PulsarInboundChannelAdapter(
             val messageListener = createListener()
             createRetryTemplate()
             if (extendedConsumerProperties.concurrency > 1) {
+                val client = PulsarClientUtils.pulsarClient(
+                    pulsarProperties = pulsarProperties,
+                    concurrency = extendedConsumerProperties.concurrency
+                )
                 // TODO multi topic如何处理， batch 如何处理， 对于Subscription多种模式如何处理
                 for (i in 1..extendedConsumerProperties.concurrency) {
                     val consumer = PulsarConsumerFactory.initPulsarConsumer(
@@ -91,7 +96,8 @@ class PulsarInboundChannelAdapter(
                         deadLetterTopic = deadLetter,
                         retryLetterTopic = retryLetter,
                         pulsarProperties = pulsarProperties,
-                        concurrency = extendedConsumerProperties.concurrency
+                        concurrency = extendedConsumerProperties.concurrency,
+                        pulsarClient = client
                     )
                     consumers.add(consumer)
                 }
