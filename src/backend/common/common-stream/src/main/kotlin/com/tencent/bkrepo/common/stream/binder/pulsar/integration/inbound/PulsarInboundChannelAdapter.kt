@@ -32,8 +32,6 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarPropertie
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarClientUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Consumer
 import org.apache.pulsar.client.api.Message
 import org.slf4j.LoggerFactory
@@ -230,25 +228,6 @@ class PulsarInboundChannelAdapter(
 
     override fun afterShutdown(): Int {
         return 0
-    }
-
-    private fun shutdownGracefully(
-        executor: ExecutorService,
-        timeout: Long = 1000,
-        timeUnit: TimeUnit = TimeUnit.MILLISECONDS
-    ) {
-        executor.shutdown()
-        try {
-            if (!executor.awaitTermination(timeout, timeUnit)) {
-                executor.shutdownNow()
-                if (!executor.awaitTermination(timeout, timeUnit)) {
-                    logger.warn("$executor didn't terminate!")
-                }
-            }
-        } catch (var5: InterruptedException) {
-            executor.shutdownNow()
-            Thread.currentThread().interrupt()
-        }
     }
 
     companion object {
