@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,47 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
+package com.tencent.bkrepo.common.api.net.speedtest
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-
-@Document("cve_sec_item")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "credentialsKey_sha256_scanner_idx",
-        def = "{'credentialsKey': 1, 'sha256': 1, 'scanner': 1}",
-        background = true
-    )
-)
-class TCveSecItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: TCveSecItemData
-) : ResultItem<TCveSecItemData>(id, credentialsKey, sha256, scanner, data)
-
-data class TCveSecItemData(
-    /**
-     * 文件路径
-     */
-    val path: String,
-    /**
-     * 组件名
-     */
-    val component: String,
-    /**
-     * 组件版本
-     */
-    val versions: Set<String> = emptySet(),
-    /**
-     * 漏洞id
-     */
-    val cveId: String,
-    /**
-     * cvss等级， CRITICAL,HIGH,MEDIUM,LOW
-     */
-    val cvssRank: String
+data class SpeedTestSettings(
+    // 上传测试的url
+    val uploadUrl: String,
+    // 单个请求最大传输数据
+    val maxBlobMegabytes: Int = 20,
+    // 最大并发请求数
+    val concurrent: Int = 8,
+    // 测量超时时间
+    val timeoutInSecond: Int = 15
 )

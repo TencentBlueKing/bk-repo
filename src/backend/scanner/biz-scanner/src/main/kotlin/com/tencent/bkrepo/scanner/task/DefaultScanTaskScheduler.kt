@@ -44,6 +44,7 @@ import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
@@ -61,6 +62,7 @@ import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
 import com.tencent.bkrepo.scanner.utils.Converter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -81,7 +83,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
     private val executor: ThreadPoolTaskExecutor,
     private val scannerMetrics: ScannerMetrics,
-    private val redisOperation: RedisOperation
+    private val redisOperation: RedisOperation,
+    private val publisher: ApplicationEventPublisher
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -117,7 +120,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?: TProjectScanConfiguration.DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
             val countToUpdate = (subtaskCountLimit - subScanTaskDao.scanningCount(projectId)).toInt()
             return if (countToUpdate > 0) {
-                subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
+                val notifiedCount = subScanTaskDao.notify(projectId, countToUpdate)?.modifiedCount?.toInt() ?: 0
+                scannerMetrics.decSubtaskCountAndGet(SubScanTaskStatus.BLOCKED, notifiedCount.toLong())
+                scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.CREATED, notifiedCount.toLong())
+                notifiedCount
             } else {
                 0
             }
@@ -251,6 +257,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             return
         }
         planArtifactLatestSubScanTaskDao.replace(tasks)
+        tasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 更新当前正在扫描的任务数
         val overview = HashMap<String, Number>()
@@ -357,6 +364,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         // 保存方案制品最新扫描记录
         val planArtifactLatestSubScanTasks = tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubScanTasks)
+        planArtifactLatestSubScanTasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 更新当前正在扫描的任务数
         val task = tasks.first()

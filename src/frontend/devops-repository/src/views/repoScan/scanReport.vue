@@ -55,7 +55,7 @@
                     <template #default="{ row }">
                         <operation-list
                             :list="[
-                                row.status === 'RUNNING' && { label: '中止', clickEvent: () => stopScanHandler(row) },
+                                (row.status === 'INIT' || row.status === 'RUNNING') && { label: '中止', clickEvent: () => stopScanHandler(row) },
                                 row.status === 'SUCCESS' && { label: '详情', clickEvent: () => showArtiReport(row) },
                                 (row.status === 'SUCCESS' || row.status === 'STOP' || row.status === 'FAILED') && { label: '扫描', clickEvent: () => startScanSingleHandler(row) }
                             ].filter(Boolean)"></operation-list>
@@ -116,12 +116,12 @@
                     </bk-form-item>
                     <bk-form-item label="扫描完成时间">
                         <bk-date-picker
-                            style="--long-width:360px;"
+                            style="--long-width:360px;width:100%;"
                             v-model="filter.time"
                             :shortcuts="shortcuts"
-                            type="datetimerange"
+                            type="daterange"
                             transfer
-                            placeholder="请选择日期时间范围">
+                            placeholder="请选择日期范围">
                         </bk-date-picker>
                     </bk-form-item>
                     <bk-form-item>

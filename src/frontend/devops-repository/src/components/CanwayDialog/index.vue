@@ -60,7 +60,7 @@
 </script>
 <style lang="scss">
 .canway-dialog-header {
-    height: 50px;
+    height: 56px;
     margin-bottom: 27px;
     padding: 0 20px;
     justify-content: space-between;
@@ -75,11 +75,19 @@
         font-size: 22px;
         font-weight: 400;
         &:hover {
+            color: var(--primaryColor);
             background-color: var(--bgHoverLighterColor);
         }
     }
 }
-.bk-dialog-body {
-    min-height: 148px;
+
+.bk-dialog-wrapper {
+    .bk-dialog-body {
+        min-height: 148px;
+        color: var(--fontPrimaryColor);
+    }
+    .bk-dialog-footer {
+        padding: 15px 20px;
+    }
 }
 </style>

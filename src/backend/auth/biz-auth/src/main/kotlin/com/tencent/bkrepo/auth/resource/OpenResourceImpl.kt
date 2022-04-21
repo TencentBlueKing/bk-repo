@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.PathVariable
 
 open class OpenResourceImpl @Autowired constructor(private val permissionService: PermissionService) {
 
@@ -48,7 +49,7 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
         val userId = SecurityUtils.getUserId()
         if (userId.isNotEmpty() && userId != pathUid) {
             logger.warn("use not match [$userId, $pathUid]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_USER_TOKEN_EXIST)
+            throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
     }
 
@@ -68,6 +69,18 @@ open class OpenResourceImpl @Autowired constructor(private val permissionService
             logger.warn("check user permission error [$checkRequest]")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
         }
+    }
+
+    fun checkProjectAdmin(@PathVariable projectId: String): Boolean {
+        val userId = SecurityUtils.getUserId()
+        return permissionService.checkPermission(
+            CheckPermissionRequest(
+                uid = userId,
+                resourceType = ResourceType.PROJECT.toString(),
+                projectId = projectId,
+                action = PermissionAction.MANAGE.toString()
+            )
+        )
     }
 
     companion object {

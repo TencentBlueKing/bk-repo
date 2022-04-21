@@ -154,7 +154,7 @@ object Converter {
                     cveId = it.cveId,
                     severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),
                     pkgName = it.component,
-                    installedVersion = it.version,
+                    installedVersion = it.versions,
                     title = it.name,
                     vulnerabilityName = it.name,
                     description = it.description,

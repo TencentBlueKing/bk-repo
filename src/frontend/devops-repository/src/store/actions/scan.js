@@ -4,10 +4,10 @@ const prefix = 'scanner/api/scan'
 
 export default {
     // 创建扫描方案
-    createScan (_, { projectId, name, type, description }) {
+    createScan (_, body) {
         return Vue.prototype.$ajax.post(
             `${prefix}/plan/create`,
-            { projectId, name, type, description }
+            body
         )
     },
     // 扫描方案列表
@@ -104,12 +104,12 @@ export default {
         )
     },
     // 制品扫描报告漏洞列表
-    getLeakList (_, { projectId, recordId, cveId, severity, current = 1, limit = 20 }) {
+    getLeakList (_, { projectId, recordId, vulId, severity, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/artifact/leak/${projectId}/${recordId}`,
             {
                 params: {
-                    cveId: cveId || undefined,
+                    vulId: vulId || undefined,
                     leakType: severity || undefined,
                     pageNumber: current,
                     pageSize: limit
@@ -146,5 +146,9 @@ export default {
                 }
             }
         )
+    },
+    // 获取扫描器列表
+    getScannerList () {
+        return Vue.prototype.$ajax.get('/scanner/api/scanners/base')
     }
 }

@@ -63,10 +63,16 @@ class PackageIterator(
             return emptyList()
         }
 
+        // packages填充版本后列表大小会超过pageSize，需要拆分列表，剩余的packages留在下次遍历
         val fromIndex = position.packageIndex + 1
         val toIndex = min(position.packages.size, position.packageIndex + position.pageSize + 1)
-        val populatedPackages = position.packages.subList(fromIndex, toIndex).map { pkg -> populatePackage(pkg) }
-        position.packageIndex += position.pageSize
+        val populatedPackages = position.packages
+            .subList(fromIndex, toIndex)
+            .asSequence()
+            .map { pkg -> populatePackage(pkg) }
+            .filter { it.fullPath != null }
+            .toList()
+        position.packageIndex = position.packageIndex + (toIndex - fromIndex)
         return requestNode(populatedPackages)
     }
 
@@ -186,7 +192,7 @@ class PackageIterator(
             val packageVersion = Request.request {
                 packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
             } ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey, packageVersion!!)
-            pkg.fullPath = packageVersion.contentPath!!
+            pkg.fullPath = packageVersion.contentPath
         }
         return pkg
     }

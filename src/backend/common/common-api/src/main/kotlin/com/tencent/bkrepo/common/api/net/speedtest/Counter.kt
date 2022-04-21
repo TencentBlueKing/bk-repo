@@ -25,20 +25,61 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.api.net.speedtest
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import java.io.ByteArrayInputStream
+import java.io.InputStream
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.random.Random
 
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String? = null,
-    var repoName: String? = null
-)
+/**
+ * 流量计数器
+ * */
+class Counter(
+    val maxSendSize: Long,
+    val totalBytes: AtomicLong
+) : InputStream() {
+    private val blob: ByteArray = Random.nextBytes(MB)
+    private val inputStream = ByteArrayInputStream(blob)
+    private var pos = 0
+    var total: Long = 0
+    private var start: Long = 0
+
+    fun start() {
+        start = System.currentTimeMillis()
+    }
+
+    fun avgBytes(): Long {
+        return total / (System.currentTimeMillis() - start) * 1000
+    }
+
+    override fun read(): Int {
+        throw MethodNotAllowedException()
+    }
+
+    override fun read(b: ByteArray): Int {
+        if (total == maxSendSize) {
+            return -1
+        }
+        val len = (maxSendSize - total).coerceAtMost(b.size.toLong())
+        val read = inputStream.read(b, 0, len.toInt())
+        total += read
+        pos += read
+        totalBytes.addAndGet(read.toLong())
+        if (pos == blob.size) {
+            resetReader()
+        }
+        return read
+    }
+
+    private fun resetReader() {
+        pos = 0
+        inputStream.reset()
+    }
+
+    companion object {
+        const val KB = 1024
+        const val MB = 1024 * KB
+    }
+}

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.controller
 
+import cn.hutool.crypto.CryptoException
 import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.message.AuthMessageCode
@@ -54,6 +55,7 @@ import com.tencent.bkrepo.auth.util.RsaUtils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -236,7 +238,15 @@ class UserController @Autowired constructor(
     @ApiOperation("校验用户会话token")
     @PostMapping("/login")
     fun loginUser(@RequestParam("uid") uid: String, @RequestParam("token") token: String): Response<Boolean> {
-        userService.findUserByUserToken(uid, token) ?: run {
+        val decryptToken: String?
+        try {
+            decryptToken = RsaUtils.decrypt(token)
+        } catch (e: CryptoException) {
+            logger.warn("token decrypt failed token [$uid]")
+            throw AuthenticationException(messageCode = AuthMessageCode.AUTH_LOGIN_FAILED)
+        }
+
+        userService.findUserByUserToken(uid, decryptToken) ?: run {
             logger.info("user not match [$uid]")
             return ResponseBuilder.success(false)
         }
@@ -319,6 +329,12 @@ class UserController @Autowired constructor(
     @GetMapping("/repeat/{uid}")
     fun repeatUid(@PathVariable uid: String): Response<Boolean> {
         return ResponseBuilder.success(userService.repeatUid(uid))
+    }
+
+    @ApiOperation("判断用户是否为项目管理员")
+    @GetMapping("/admin/{projectId}")
+    fun isProjectAdmin(@PathVariable projectId: String): Response<Boolean> {
+        return ResponseBuilder.success(checkProjectAdmin(projectId))
     }
 
     companion object {

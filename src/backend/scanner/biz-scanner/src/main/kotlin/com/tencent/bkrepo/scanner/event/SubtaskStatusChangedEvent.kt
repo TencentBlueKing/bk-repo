@@ -25,47 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
+package com.tencent.bkrepo.scanner.event
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 
-@Document("cve_sec_item")
-@CompoundIndexes(
-    CompoundIndex(
-        name = "credentialsKey_sha256_scanner_idx",
-        def = "{'credentialsKey': 1, 'sha256': 1, 'scanner': 1}",
-        background = true
-    )
-)
-class TCveSecItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: TCveSecItemData
-) : ResultItem<TCveSecItemData>(id, credentialsKey, sha256, scanner, data)
-
-data class TCveSecItemData(
-    /**
-     * 文件路径
-     */
-    val path: String,
-    /**
-     * 组件名
-     */
-    val component: String,
-    /**
-     * 组件版本
-     */
-    val versions: Set<String> = emptySet(),
-    /**
-     * 漏洞id
-     */
-    val cveId: String,
-    /**
-     * cvss等级， CRITICAL,HIGH,MEDIUM,LOW
-     */
-    val cvssRank: String
+data class SubtaskStatusChangedEvent(
+    val oldStatus: SubScanTaskStatus? = null,
+    val subtask: TPlanArtifactLatestSubScanTask
 )
