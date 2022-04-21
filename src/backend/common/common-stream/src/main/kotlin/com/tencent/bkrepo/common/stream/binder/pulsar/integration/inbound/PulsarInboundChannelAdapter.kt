@@ -114,7 +114,6 @@ class PulsarInboundChannelAdapter(
                 consumers.add(consumer)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
             logger.error("DefaultPulsarConsumer init failed, Caused by " + e.message)
             throw MessagingException(
                 MessageBuilder.withPayload(
