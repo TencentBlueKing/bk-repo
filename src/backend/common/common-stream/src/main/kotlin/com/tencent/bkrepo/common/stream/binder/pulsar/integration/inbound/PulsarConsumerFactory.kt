@@ -59,13 +59,14 @@ object PulsarConsumerFactory {
         messageListener: (Consumer<*>, Message<*>) -> Unit,
         retryLetterTopic: String,
         deadLetterTopic: String,
-        pulsarProperties: PulsarProperties
+        pulsarProperties: PulsarProperties,
+        concurrency: Int? = null
     ): Consumer<Any> {
         with(consumerProperties.extension) {
             val topics = mutableListOf<String>()
             topics.addAll(topicNames)
             topics.add(topic)
-            val consumer = PulsarClientUtils.pulsarClient(pulsarProperties).newConsumer(
+            val consumer = PulsarClientUtils.pulsarClient(pulsarProperties, concurrency).newConsumer(
                 SchemaUtils.getSchema(Serialization.valueOf(serialType), serialClass)
             ).topics(topics)
             if (!topicsPattern.isNullOrEmpty()) {

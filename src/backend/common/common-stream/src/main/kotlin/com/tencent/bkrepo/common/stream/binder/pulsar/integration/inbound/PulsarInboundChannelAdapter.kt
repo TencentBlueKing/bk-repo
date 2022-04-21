@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarPropertie
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Consumer
 import org.apache.pulsar.client.api.Message
@@ -59,7 +58,6 @@ class PulsarInboundChannelAdapter(
     var retryTemplate: RetryTemplate? = null
     var recoveryCallback: RecoveryCallback<Any>? = null
     private var topic: String = ""
-    private var consumerExecutor: ThreadPoolExecutor? = null
     override fun onInit() {
         if (extendedConsumerProperties.extension == null) {
             return
@@ -81,24 +79,21 @@ class PulsarInboundChannelAdapter(
             )
             // TODO prepare register consumer message listener
             val messageListener = createListener()
+            createRetryTemplate()
             if (extendedConsumerProperties.concurrency > 1) {
-                consumerExecutor = ConsumerHandlerThreadPoolExecutor
-                    .buildThreadPoolExecutor(extendedConsumerProperties.concurrency)
-                createRetryTemplate()
                 // TODO multi topic如何处理， batch 如何处理， 对于Subscription多种模式如何处理
                 for (i in 1..extendedConsumerProperties.concurrency) {
-                    consumerExecutor?.submit {
-                        val consumer = PulsarConsumerFactory.initPulsarConsumer(
-                            topic = topic,
-                            group = group,
-                            consumerProperties = extendedConsumerProperties,
-                            messageListener = messageListener,
-                            deadLetterTopic = deadLetter,
-                            retryLetterTopic = retryLetter,
-                            pulsarProperties = pulsarProperties
-                        )
-                        consumers.add(consumer)
-                    }
+                    val consumer = PulsarConsumerFactory.initPulsarConsumer(
+                        topic = topic,
+                        group = group,
+                        consumerProperties = extendedConsumerProperties,
+                        messageListener = messageListener,
+                        deadLetterTopic = deadLetter,
+                        retryLetterTopic = retryLetter,
+                        pulsarProperties = pulsarProperties,
+                        concurrency = extendedConsumerProperties.concurrency
+                    )
+                    consumers.add(consumer)
                 }
             } else {
                 val consumer = PulsarConsumerFactory.initPulsarConsumer(
@@ -220,9 +215,6 @@ class PulsarInboundChannelAdapter(
                 it.close()
             } catch (ignore: Exception) {
             }
-        }
-        consumerExecutor?.let {
-            shutdownGracefully(consumerExecutor!!)
         }
     }
 

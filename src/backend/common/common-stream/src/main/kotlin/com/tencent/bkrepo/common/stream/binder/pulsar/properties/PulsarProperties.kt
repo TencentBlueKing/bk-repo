@@ -32,8 +32,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "spring.pulsar")
 data class PulsarProperties(
     var serviceUrl: String = "pulsar://localhost:6650",
-    var ioThreads: Int = 10,
-    var listenerThreads: Int = 10,
+    var ioThreads: Int = 1,
+    var listenerThreads: Int = 1,
     var enableTcpNoDelay: Boolean = false,
     var keepAliveIntervalSec: Int = 20,
     var connectionTimeoutSec: Int = 10,

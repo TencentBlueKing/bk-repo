@@ -36,16 +36,21 @@ import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.impl.auth.oauth2.AuthenticationFactoryOAuth2
 
 object PulsarClientUtils {
-    fun pulsarClient(pulsarProperties: PulsarProperties): PulsarClient {
+    fun pulsarClient(pulsarProperties: PulsarProperties, concurrency: Int? = null): PulsarClient {
         if (!pulsarProperties.tlsAuthCertFilePath.isNullOrEmpty() &&
             !pulsarProperties.tlsAuthKeyFilePath.isNullOrEmpty() &&
             !pulsarProperties.tokenAuthValue.isNullOrEmpty()
         ) throw ClientInitException("You cannot use multiple auth options.")
         val pulsarClientBuilder = PulsarClient.builder()
             .serviceUrl(pulsarProperties.serviceUrl)
-            .ioThreads(pulsarProperties.ioThreads)
-            .listenerThreads(pulsarProperties.listenerThreads)
-            .enableTcpNoDelay(pulsarProperties.enableTcpNoDelay)
+        if (concurrency != null) {
+            pulsarClientBuilder.ioThreads(concurrency)
+                .listenerThreads(concurrency)
+        } else {
+            pulsarClientBuilder.ioThreads(pulsarProperties.ioThreads)
+                .listenerThreads(pulsarProperties.listenerThreads)
+        }
+        pulsarClientBuilder.enableTcpNoDelay(pulsarProperties.enableTcpNoDelay)
             .keepAliveInterval(pulsarProperties.keepAliveIntervalSec, TimeUnit.SECONDS)
             .connectionTimeout(pulsarProperties.connectionTimeoutSec, TimeUnit.SECONDS)
             .operationTimeout(pulsarProperties.operationTimeoutSec, TimeUnit.SECONDS)
