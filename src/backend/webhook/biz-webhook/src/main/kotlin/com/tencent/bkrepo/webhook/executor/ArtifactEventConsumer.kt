@@ -29,6 +29,7 @@ package com.tencent.bkrepo.webhook.executor
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.webhook.config.WebHookProperties
@@ -36,8 +37,9 @@ import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.model.TWebHook
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 import java.util.regex.Pattern
@@ -47,11 +49,19 @@ import java.util.regex.Pattern
  */
 @Component("artifactEvent")
 class ArtifactEventConsumer(
-    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor,
     private val webHookProperties: WebHookProperties
 ) : Consumer<Message<ArtifactEvent>> {
+
+    private val executors = ThreadPoolExecutor(
+        100,
+        200,
+        60,
+        TimeUnit.SECONDS, LinkedBlockingQueue<Runnable>(10240),
+        ThreadFactoryBuilder().setNameFormat("webhook-event-worker-%d").build(),
+        ThreadPoolExecutor.CallerRunsPolicy()
+    )
 
     private val systemWebHookCache = CacheBuilder.newBuilder()
         .maximumSize(100)
@@ -61,7 +71,7 @@ class ArtifactEventConsumer(
     override fun accept(message: Message<ArtifactEvent>) {
         logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
         val task = Runnable { triggerWebHooks(message.payload) }
-        threadPoolTaskExecutor.execute(task)
+        executors.execute(task)
     }
 
     fun triggerWebHooks(event: ArtifactEvent) {
