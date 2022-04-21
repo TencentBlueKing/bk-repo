@@ -27,9 +27,6 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.properties
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties(prefix = "spring.cloud.stream.pulsar.binder")
 data class PulsarBinderConfigurationProperties(
     val pulsarProperties: PulsarProperties?
 )

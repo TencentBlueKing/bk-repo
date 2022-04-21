@@ -95,7 +95,6 @@ class PulsarProducerMessageHandler(
         val deliveryAt = properties[
             PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AT)
         ]
-        logger.info("deliveryAfterMillis $deliveryAfterMillis, deliveryAt $deliveryAt")
         try {
             val msg = producer!!.newMessage()
                 .value(payload).properties(properties)
