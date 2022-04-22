@@ -71,10 +71,6 @@ class LogServiceImpl(
         }
     }
 
-    override fun deleteLogBeforeDate(date: LocalDateTime): Long {
-        return webHookLogDao.deleteByRequestTimeBefore(date).deletedCount
-    }
-
     private fun transfer(tWebHookLog: TWebHookLog): WebHookLog {
         return WebHookLog(
             id = tWebHookLog.id!!,

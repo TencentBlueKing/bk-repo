@@ -175,7 +175,7 @@ class WebHookExecutor(
             status = WebHookRequestStatus.ERROR,
             errorMsg = e.message,
             requestHeaders = emptyMap(),
-            requestPayload = ""
+            requestPayload = event.toJsonString()
         )
     }
 

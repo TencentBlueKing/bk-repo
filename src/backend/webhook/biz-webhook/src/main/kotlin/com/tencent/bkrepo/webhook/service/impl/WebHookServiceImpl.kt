@@ -32,9 +32,11 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.webhook.constant.AssociationType
+import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
 import com.tencent.bkrepo.webhook.event.WebHookTestEvent
@@ -42,11 +44,11 @@ import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.executor.WebHookExecutor
 import com.tencent.bkrepo.webhook.model.TWebHook
 import com.tencent.bkrepo.webhook.model.TWebHookLog
+import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
 import com.tencent.bkrepo.webhook.pojo.CreateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.UpdateWebHookRequest
 import com.tencent.bkrepo.webhook.pojo.WebHook
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import com.tencent.bkrepo.webhook.service.WebHookService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -57,7 +59,8 @@ class WebHookServiceImpl(
     private val webHookDao: WebHookDao,
     private val webHookLogDao: WebHookLogDao,
     private val webHookExecutor: WebHookExecutor,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val eventPayloadFactory: EventPayloadFactory
 ) : WebHookService {
 
     override fun createWebHook(userId: String, request: CreateWebHookRequest): WebHook {
@@ -129,7 +132,12 @@ class WebHookServiceImpl(
             ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_LOG_NOT_FOUND)
         val webHook = webHookDao.findById(log.webHookId)
             ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_NOT_FOUND)
-        val payload = log.requestPayload.readJsonString<CommonEventPayload>()
+        val payload = if (log.status == WebHookRequestStatus.ERROR) {
+            val event = log.requestPayload.readJsonString<ArtifactEvent>()
+            eventPayloadFactory.build(event)
+        } else {
+            log.requestPayload.readJsonString()
+        }
         return transferLog(webHookExecutor.execute(payload, webHook))
     }
 

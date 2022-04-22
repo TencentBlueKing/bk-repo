@@ -33,6 +33,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.webhook.config.WebHookProperties
+import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.model.TWebHook
 import org.slf4j.LoggerFactory
@@ -66,7 +67,11 @@ class ArtifactEventConsumer(
     private val systemWebHookCache = CacheBuilder.newBuilder()
         .maximumSize(100)
         .expireAfterWrite(10, TimeUnit.MINUTES)
-        .build<EventType, List<TWebHook>>(CacheLoader.from { key -> webHookDao.findSystemWebHookByEventType(key) })
+        .build<EventType, List<TWebHook>>(CacheLoader.from { key ->
+            webHookDao.findByAssociationTypeAndAssociationId(
+                AssociationType.SYSTEM, null
+            )
+        })
 
     override fun accept(message: Message<ArtifactEvent>) {
         logger.info("accept artifact event: ${message.payload}, header: ${message.headers}")
@@ -84,13 +89,27 @@ class ArtifactEventConsumer(
         webHookList.addAll(systemWebHookCache.get(event.type))
 
         if (event.projectId.isNotBlank()) {
-            webHookList.addAll(webHookDao.findProjectWebHookByEventType(event.projectId, event.type))
+            webHookList.addAll(
+                webHookDao.findByAssociationTypeAndAssociationId(
+                    AssociationType.PROJECT, event.projectId
+                )
+            )
         }
 
         if (event.projectId.isNotBlank() && event.repoName.isNotBlank()) {
-            webHookList.addAll(webHookDao.findRepoWebHookByEventType(event.projectId, event.repoName, event.type))
+            val associationId = "${event.projectId}:${event.repoName}"
+            webHookList.addAll(
+                webHookDao.findByAssociationTypeAndAssociationId(
+                    AssociationType.REPO, associationId
+                )
+            )
         }
-        webHookList.filter { matchResourceKey(it.resourceKeyPattern, event.resourceKey) }
+        webHookList.filter {
+            it.triggers.contains(event.type) && matchResourceKey(
+                it.resourceKeyPattern,
+                event.resourceKey
+            )
+        }
         logger.info("event: $event, webHookList: $webHookList")
         webHookExecutor.asyncExecutor(event, webHookList)
     }
