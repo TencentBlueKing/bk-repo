@@ -130,7 +130,7 @@ object Converter {
         if (scannerType == ArrowheadScanner.TYPE) {
             return ArrowheadLoadResultArguments(
                 vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
-                cveIds = request.cveId?.let { listOf(it) } ?: emptyList(),
+                vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
                 reportType = request.reportType,
                 pageLimit = PageLimit(request.pageNumber, request.pageSize)
             )
@@ -151,7 +151,7 @@ object Converter {
             detailReport as Page<CveSecItem>
             val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {
                 ArtifactVulnerabilityInfo(
-                    cveId = it.cveId,
+                    vulId = getVulId(it),
                     severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),
                     pkgName = it.component,
                     installedVersion = it.versions,
@@ -183,5 +183,22 @@ object Converter {
             }
         }
         return numberOverview
+    }
+
+    private fun getVulId(cveSecItem: CveSecItem): String {
+        with(cveSecItem) {
+            if (cveId.isNotEmpty()) {
+                return cveId
+            }
+
+            if (cnnvdId.isNotEmpty()) {
+                return cnnvdId
+            }
+
+            if (cnvdId.isNotEmpty()) {
+                return cnvdId
+            }
+            return pocId
+        }
     }
 }

@@ -258,7 +258,7 @@ class GenericLocalRepository : LocalRepository() {
     /**
      * 从header中提取metadata
      */
-    private fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
+    fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
         val metadata = mutableMapOf<String, String>()
         // case insensitive
         val headerNames = request.headerNames

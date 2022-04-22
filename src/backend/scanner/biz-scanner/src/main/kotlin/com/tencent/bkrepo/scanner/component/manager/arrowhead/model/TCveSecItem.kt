@@ -63,7 +63,11 @@ data class TCveSecItemData(
     /**
      * 漏洞id
      */
-    val cveId: String,
+    val pocId: String = "",
+    val cveId: String = "",
+    val cweId: String = "",
+    val cnnvdId: String = "",
+    val cnvdId: String = "",
     /**
      * cvss等级， CRITICAL,HIGH,MEDIUM,LOW
      */
