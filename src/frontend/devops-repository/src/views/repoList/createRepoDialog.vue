@@ -42,7 +42,7 @@
                         </bk-form-item>
                         <bk-form-item :label="$t('metadata')" :label-width="60"
                             :property="`${type}.metadata`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata"></bk-input>
+                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
                         </bk-form-item>
                     </template>
                 </bk-form-item>
