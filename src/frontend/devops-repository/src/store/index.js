@@ -64,7 +64,7 @@ const storeObject = {
                 return {
                     ...item,
                     children,
-                    displayName: (item.metadata && item.metadata.displayName) || item.name
+                    displayName: item.metadata?.displayName || item.name
                 }
             })
             tree.splice(0, tree.length, ...list)
