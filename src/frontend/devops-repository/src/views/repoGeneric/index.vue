@@ -359,9 +359,10 @@
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
                         return {
+                            metadata: {},
                             ...v,
                             // 流水线文件夹名称替换
-                            name: (v.metadata && v.metadata.displayName) || v.name
+                            name: v.metadata?.displayName || v.name
                         }
                     })
                 }).finally(() => {
