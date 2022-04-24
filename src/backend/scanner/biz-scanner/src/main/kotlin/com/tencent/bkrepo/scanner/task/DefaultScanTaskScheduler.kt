@@ -57,11 +57,13 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.service.ScannerService
+import com.tencent.bkrepo.scanner.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
 import com.tencent.bkrepo.scanner.task.queue.SubScanTaskQueue
 import com.tencent.bkrepo.scanner.utils.Converter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -81,6 +83,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
+    @Qualifier(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
     private val executor: ThreadPoolTaskExecutor,
     private val scannerMetrics: ScannerMetrics,
     private val redisOperation: RedisOperation,
