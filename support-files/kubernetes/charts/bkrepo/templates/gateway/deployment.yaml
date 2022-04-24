@@ -84,7 +84,7 @@ spec:
             - name: BK_REPO_HELM_HOST
               value: {{ .Values.gateway.helmHost }}
             - name: BK_REPO_PAAS_FQDN
-              value: {{ .Values.gateway.passUrl }}
+              value: {{ .Values.gateway.paasUrl }}
             - name: BK_REPO_PAAS_LOGIN_URL
               value: {{ .Values.gateway.loginUrl }}
           ports:
