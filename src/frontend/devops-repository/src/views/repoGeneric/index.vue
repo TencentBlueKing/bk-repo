@@ -403,6 +403,14 @@
                 // 更新子文件夹
                 if (node.loading) return
                 this.updateGenericTreeNode(node)
+
+                // 更新url参数
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        path: `${node.fullPath}/default`
+                    }
+                })
             },
             iconClickHandler (node) {
                 // 更新已展开文件夹数据
