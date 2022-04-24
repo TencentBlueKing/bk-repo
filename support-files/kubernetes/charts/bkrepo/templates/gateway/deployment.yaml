@@ -87,6 +87,20 @@ spec:
               value: {{ .Values.gateway.paasUrl }}
             - name: BK_REPO_PAAS_LOGIN_URL
               value: {{ .Values.gateway.loginUrl }}
+            - name: BK_REPO_SSM_IP0
+              value: {{ .Values.gateway.ssmIP0 }}
+            - name: BK_REPO_SSM_HOST
+              value: {{ .Values.gateway.ssmHost }}
+            - name: BK_REPO_SSM_HTTP_PORT
+              value: {{ .Values.gateway.ssmPort }}
+            - name: BK_REPO_SSM_TOKEN_URL
+              value: {{ .Values.gateway.ssmTokenUrl }}
+            - name: BK_REPO_SSM_ENV
+              value: {{ .Values.gateway.ssmEnv }}
+            - name: BK_REPO_APP_CODE
+              value: {{ .Values.gateway.appCode }}
+            - name: BK_REPO_APP_TOKEN
+              value: {{ .Values.gateway.appToken }}
           ports:
             - name: http
               containerPort: 80
