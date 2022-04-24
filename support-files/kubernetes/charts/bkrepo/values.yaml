@@ -189,6 +189,10 @@ gateway:
   authorization: "Platform MThiNjFjOWMtOTAxYi00ZWEzLTg5YzMtMWY3NGJlOTQ0YjY2OlVzOFpHRFhQcWs4NmN3TXVrWUFCUXFDWkxBa00zSw=="
   ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式
   deployMode: standalone
+  ## 蓝鲸paas域名
+  paasUrl: paas.example.com
+  ## 登录地址
+  loginUrl: http://login.paas.example.com/
   ## bkrepo gateway service配置
   service:
     type: ClusterIP

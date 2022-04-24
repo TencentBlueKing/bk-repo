@@ -83,6 +83,10 @@ spec:
               value: "80"
             - name: BK_REPO_HELM_HOST
               value: {{ .Values.gateway.helmHost }}
+            - name: BK_REPO_PAAS_FQDN
+              value: {{ .Values.gateway.passUrl }}
+            - name: BK_REPO_PAAS_LOGIN_URL
+              value: {{ .Values.gateway.loginUrl }}
           ports:
             - name: http
               containerPort: 80
