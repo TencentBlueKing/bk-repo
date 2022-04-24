@@ -92,7 +92,7 @@ spec:
             - name: BK_REPO_SSM_HOST
               value: {{ .Values.gateway.ssmHost }}
             - name: BK_REPO_SSM_HTTP_PORT
-              value: {{ .Values.gateway.ssmPort }}
+              value: {{ .Values.gateway.ssmPort | quote }}
             - name: BK_REPO_SSM_TOKEN_URL
               value: {{ .Values.gateway.ssmTokenUrl }}
             - name: BK_REPO_SSM_ENV
