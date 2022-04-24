@@ -41,6 +41,7 @@
                         <div v-if="row.highestLeakLevel" class="status-sign" :class="row.highestLeakLevel"
                             :data-name="leakLevelEnum[row.highestLeakLevel]">
                         </div>
+                        <span v-else>--</span>
                     </template>
                 </bk-table-column>
                 <bk-table-column label="扫描状态">

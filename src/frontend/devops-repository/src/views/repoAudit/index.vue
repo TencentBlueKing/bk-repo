@@ -193,7 +193,7 @@
             },
             getProjectName (id) {
                 const project = this.projectList.find(project => project.id === id)
-                return project ? project.name : '--'
+                return project ? project.name : '/'
             }
         }
     }

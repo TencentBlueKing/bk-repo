@@ -57,7 +57,7 @@
             </template>
             <bk-table-column label="所属项目" show-overflow-tooltip>
                 <template #default="{ row }">
-                    {{ (projectList.find(p => p.id === row.projectId) || {}).name || '--' }}
+                    {{ (projectList.find(p => p.id === row.projectId) || {}).name || '/' }}
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('repoName')" show-overflow-tooltip>

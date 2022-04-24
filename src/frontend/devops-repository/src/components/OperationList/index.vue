@@ -11,7 +11,7 @@
         </slot>
         <template #content><ul class="operation-list">
             <li v-for="li in list" :key="li.label"
-                class="operation-item hover-btn"
+                class="operation-item"
                 :class="{ 'disabled': li.disabled }"
                 @click.stop="li.clickEvent()">
                 {{ li.label }}

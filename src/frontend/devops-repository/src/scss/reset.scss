@@ -281,10 +281,6 @@ body {
         }
     }
 
-    .bk-message-icon {
-        min-width: 20px !important;
-    }
-
     .bk-option-name {
         width: 100%;
         overflow: hidden;
@@ -356,9 +352,6 @@ body {
 
     .bk-switcher {
         background-color: var(--fontSubsidiaryColor);
-        &.bk-switcher-small {
-            width: 32px;
-        }
     }
 
     .bk-transfer {
@@ -390,8 +383,16 @@ body {
                 max-height: initial;
                 margin: initial;
                 li {
+                    padding: 0 10px 0 20px;
                     color: var(--fontPrimaryColor);
                     font-size: 12px;
+                    // todo
+                    > div > .bk-icon {
+                        visibility: hidden;
+                    }
+                    &:hover .bk-icon {
+                        visibility: visible;
+                    }
                 }
                 .bk-select {
                     .icon-close-circle-shape {
@@ -560,6 +561,43 @@ body {
                     width: 286px!important;
                 }
             }
+        }
+    }
+
+    .bk-message {
+        min-width: 220px;
+        padding: 10px 16px;
+        .bk-message-icon {
+            margin-right: 4px;
+        }
+        .bk-message-content {
+            min-width: initial;
+            max-width: 512px;
+        }
+        .bk-message-close .bk-icon {
+            color: var(--fontSubsidiaryColor);
+        }
+        &.bk-message-success {
+            background-color: var(--successBgColor);
+            .bk-message-content {
+                color: var(--successColor);
+            }
+        }
+        &.bk-message-error {
+            background-color: var(--dangerBgColor);
+            .bk-message-content {
+                color: var(--dangerColor);
+            }
+        }
+    }
+    
+    .bk-dialog-wrapper {
+        .bk-dialog-body {
+            min-height: 148px;
+            color: var(--fontPrimaryColor);
+        }
+        .bk-dialog-footer {
+            padding: 15px 20px;
         }
     }
 }

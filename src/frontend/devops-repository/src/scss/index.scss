@@ -30,43 +30,33 @@ body {
     }
 }
 
-.devops-icon {
-    font-size: 14px;
-    &.disabled {
-        color: var(--fontDisableColor);
-        cursor: not-allowed;
-    }
-    &.hover-btn {
-        padding: 5px;
-        border-radius: 2px;
-        &:not(.disabled):hover {
-            background-color: var(--bgHoverColor);
-        }
-    }
-}
-
-svg {
-    &.disabled {
-        color: var(--fontDisableColor);
-        cursor: not-allowed;
-    }
-    &.hover-btn {
-        padding: 5px;
-        border-radius: 2px;
-        &:not(.disabled):hover {
-            background-color: var(--bgHoverColor);
-        }
-    }
-}
-
 .hover-btn {
     user-select: none;
     cursor: pointer;
-    &:hover {
+    &.disabled {
+        color: var(--fontDisableColor);
+        cursor: not-allowed;
+    }
+    &:not(.disabled):hover {
         color: var(--primaryWeightColor);
     }
-    &.hover-danger:hover {
+    &:not(.disabled).hover-danger:hover {
         color: var(--dangerColor);
+    }
+}
+
+.cell svg.hover-btn {
+    display: inherit;
+}
+:is(.devops-icon, svg) {
+    font-size: 14px;
+    &.hover-btn {
+        padding: 5px;
+        border-radius: 2px;
+        color: var(--fontSubsidiaryColor);
+        &:not(.disabled):hover {
+            background-color: var(--bgHoverColor);
+        }
     }
 }
 
@@ -236,15 +226,19 @@ svg {
             position: relative;
             width: 90px;
             padding: 0 14px;
-            line-height: 2.5;
+            height: 40px;
+            line-height: 40px;
             text-align: center;
+            color: var(--fontPrimaryColor);
+            user-select: none;
             cursor: pointer;
-            &:not(.disabled):hover {
-                background-color: var(--bgHoverColor);
-            }
             &.disabled {
                 color: var(--fontDisableColor);
                 cursor: not-allowed;
+            }
+            &:not(.disabled):hover {
+                color: var(--primaryWeightColor);
+                background-color: var(--bgHoverColor);
             }
         }
     }
@@ -260,6 +254,9 @@ input[type=file] {
     z-index: 10;
     opacity: 0;
     cursor: pointer;
+    &::-webkit-file-upload-button {
+        cursor: pointer;
+    }
 }
 
 // 内容块标题展示

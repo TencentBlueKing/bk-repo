@@ -51,10 +51,10 @@
             </bk-table-column>
             <template v-if="logDetail.replicaType === 'REAL_TIME' || logDetail.replicaObjectType !== 'REPOSITORY'">
                 <bk-table-column label="制品名称 / 文件路径" show-overflow-tooltip>
-                    <template #default="{ row }">{{ row.packageKey || row.path || '--' }}</template>
+                    <template #default="{ row }">{{ row.packageKey || row.path || '/' }}</template>
                 </bk-table-column>
                 <bk-table-column label="版本" show-overflow-tooltip>
-                    <template #default="{ row }">{{ (row.versions || ['--']).join('、') }}</template>
+                    <template #default="{ row }">{{ (row.versions || ['/']).join('、') }}</template>
                 </bk-table-column>
             </template>
             <bk-table-column label="开始时间" width="150">
@@ -67,7 +67,7 @@
             <bk-table-column label="跳过数量" prop="skip"></bk-table-column>
             <bk-table-column label="失败数量" prop="failed"></bk-table-column>
             <bk-table-column label="备注" show-overflow-tooltip>
-                <template #default="{ row }">{{row.errorReason || '--'}}</template>
+                <template #default="{ row }">{{row.errorReason || '/'}}</template>
             </bk-table-column>
         </bk-table>
         <bk-pagination

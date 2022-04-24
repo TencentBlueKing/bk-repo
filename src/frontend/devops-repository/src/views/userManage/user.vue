@@ -1,17 +1,14 @@
 <template>
     <div class="user-container" v-bkloading="{ isLoading }">
         <div class="mt10 flex-between-center">
-            <!-- <bk-popover class="ml20" placement="bottom-start" theme="light" ext-cls="operation-container">
-                <bk-button icon="plus" theme="primary" @click="showCreateUser"><span class="mr5">{{ $t('create') }}</span></bk-button>
-                <template #content><ul class="operation-list">
-                    <li class="operation-item hover-btn">
-                        <label for="importUsersInput" class="hover-btn">批量导入</label>
-                        <input id="importUsersInput" type="file" accept=".xlsx" @change="importUsersHandler" title="" placeholder="">
-                    </li>
-                    <li class="operation-item hover-btn" @click.stop="downloadTemplate">下载模板</li>
-                </ul></template>
-            </bk-popover> -->
-            <bk-button class="ml20" icon="plus" theme="primary" @click="showCreateUser">{{ $t('create') }}</bk-button>
+            <div class="ml20 flex-align-center">
+                <bk-button icon="plus" theme="primary" @click="showCreateUser">{{ $t('create') }}</bk-button>
+                <!-- <bk-button class="ml10" @click="downloadTemplate">下载模板</bk-button>
+                <bk-button class="ml10">
+                    <span>批量导入</span>
+                    <input type="file" accept=".xlsx" @change="importUsersHandler" title="" placeholder="">
+                </bk-button> -->
+            </div>
             <div class="mr20 flex-align-center">
                 <bk-input
                     v-model.trim="userInput"
@@ -51,7 +48,9 @@
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
             <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
-            <bk-table-column label="电话" prop="phone"></bk-table-column>
+            <bk-table-column label="电话" prop="phone">
+                <template #default="{ row }">{{row.phone || '/'}}</template>
+            </bk-table-column>
             <bk-table-column :label="$t('createdDate')">
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
