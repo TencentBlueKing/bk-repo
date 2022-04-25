@@ -310,6 +310,7 @@ auth:
       ciAuthServer:
       # bkci auth token
       ciAuthToken:
+      # 开启reporter模式
       enableSuperAdmin: true
   ## Kubernetes 通用配置
   image:
