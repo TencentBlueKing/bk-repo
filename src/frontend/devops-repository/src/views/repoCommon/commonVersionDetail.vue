@@ -28,7 +28,7 @@
                                 :key="tag">
                                 {{ tag }}
                             </span>
-                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="detail.basic.scanStatus"></scan-tag>
+                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="detail.metadata.scanStatus"></scan-tag>
                         </template>
                     </span>
                 </div>
@@ -80,7 +80,7 @@
         <bk-tab-panel v-if="detail.manifest" name="manifest" label="Manifest">
             <div class="version-metadata display-block" data-title="Manifest">
                 <bk-table
-                    :data="Object.entries(detail.manifest || {})"
+                    :data="Object.entries(detail.manifest)"
                     :outer-border="false"
                     :row-border="false"
                     size="small">
@@ -166,7 +166,8 @@
                 detail: {
                     basic: {
                         readme: ''
-                    }
+                    },
+                    metadata: {}
                 },
                 readmeContent: '',
                 selectedHistory: {},

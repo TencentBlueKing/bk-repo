@@ -12,10 +12,12 @@
                 </div>
             </div>
             <div class="flex-end-center flex-1">
-                <div class="ml10 repo-guide-btn flex-align-center" @click="showGuide = true">
-                    <Icon class="mr5" name="hand-guide" size="16" />
-                    {{$t('guide')}}
-                </div>
+                <bk-button class="ml10 flex-align-center" text theme="primary" @click="showGuide = true">
+                    <span class="flex-align-center">
+                        <Icon class="mr5" name="hand-guide" size="16" />
+                        {{$t('guide')}}
+                    </span>
+                </bk-button>
             </div>
         </header>
         <!-- 存在包, 加载中默认存在包 -->
@@ -40,9 +42,11 @@
                         <bk-option id="lastModifiedDate" name="时间排序"></bk-option>
                         <bk-option id="downloads" name="下载量排序"></bk-option>
                     </bk-select>
-                    <div class="ml10 sort-order flex-center hover-btn" @click="changeDirection">
-                        <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
-                    </div>
+                    <bk-popover :content="`切换为${direction === 'ASC' ? '降序' : '升序'}`" placement="top">
+                        <div class="ml10 sort-order flex-center" @click="changeDirection">
+                            <Icon :name="`order-${direction.toLowerCase()}`" size="16"></Icon>
+                        </div>
+                    </bk-popover>
                 </div>
             </div>
             <div class="common-package-list">
@@ -224,26 +228,23 @@
                 border-radius: 2px;
             }
         }
-        .repo-guide-btn {
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            &:hover {
-                color: white;
-                background-color: var(--primaryColor);
-            }
-        }
     }
     .package-search-tools {
         padding: 10px 20px;
         background-color: white;
         .sort-tool {
-            color: var(--boxShadowColor);
+            color: var(--fontSubsidiaryColor);
             .sort-order {
                 width: 32px;
                 height: 32px;
-                border: 1px solid currentColor;
+                border: 1px solid var(--borderWeightColor);
                 border-radius: 2px;
+                cursor: pointer;
+                &:hover {
+                    color: var(--primaryColor);
+                    border-color: currentColor;
+                    background-color: var(--bgHoverLighterColor);
+                }
             }
         }
     }

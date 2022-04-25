@@ -28,12 +28,17 @@
 package com.tencent.bkrepo.generic.config
 
 import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 class DeltaProperties(
     /**
      * 增量同步的块大小
      * */
     var blockSize: DataSize = DataSize.ofBytes(2048),
+    /**
+     * patch 超时时间
+     * */
+    var patchTimeout: Duration = Duration.ofMinutes(30),
     var projectId: String? = null,
     var repoName: String? = null
 )

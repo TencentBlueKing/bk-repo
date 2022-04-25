@@ -41,6 +41,7 @@
             <bk-table-column label="扫描类型">
                 <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
             </bk-table-column>
+            <!-- <bk-table-column label="扫描器" prop="scanner" show-overflow-tooltip></bk-table-column> -->
             <bk-table-column
                 v-for="column in [
                     { label: '累计扫描制品', prop: 'artifactCount' },

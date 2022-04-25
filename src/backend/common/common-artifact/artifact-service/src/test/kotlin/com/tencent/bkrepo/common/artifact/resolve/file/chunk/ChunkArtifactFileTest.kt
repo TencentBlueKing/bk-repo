@@ -40,6 +40,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.util.unit.DataSize
 import java.nio.charset.Charset
 
+// TODO 现在Mockito版本不能mock静态方法，需要升级框架版本
 class ChunkArtifactFileTest {
 
     private val tempDir = System.getProperty("java.io.tmpdir")

@@ -56,7 +56,7 @@
                         </div>
                     </div>
                     <bk-table
-                        :data="Object.entries(detailSlider.data.metadata || {})"
+                        :data="Object.entries(detailSlider.data.metadata)"
                         :outer-border="false"
                         :row-border="false"
                         size="small">
@@ -161,6 +161,7 @@
                     fullPath: this.detailSlider.path
                 }).then(data => {
                     this.detailSlider.data = {
+                        metadata: {},
                         ...data,
                         name: data.name || this.repoName,
                         size: convertFileSize(data.size),
@@ -169,6 +170,8 @@
                         lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                         lastModifiedDate: formatDate(data.lastModifiedDate)
                     }
+                    // todo 屏蔽扫描状态字段
+                    Reflect.deleteProperty(this.detailSlider.data.metadata, 'scanStatus')
                 }).finally(() => {
                     this.detailSlider.loading = false
                 })
@@ -283,9 +286,6 @@
                 transition: all .3s;
             }
         }
-    }
-    .code-tip {
-        color: var(--fontSubsidiaryColor);
     }
 }
 </style>

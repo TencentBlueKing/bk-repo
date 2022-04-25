@@ -6,9 +6,8 @@
                     <bk-form-item label="方案名称">
                         <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
                     </bk-form-item>
-                    <bk-form-item label="方案类型">
-                        <span>{{ scanTypeEnum[scanBaseInfo.type] }}</span>
-                    </bk-form-item>
+                    <bk-form-item label="方案类型">{{ scanTypeEnum[scanBaseInfo.type] }}</bk-form-item>
+                    <bk-form-item label="扫描器">{{ scanBaseInfo.scanner }}</bk-form-item>
                     <bk-form-item :label="$t('description')">
                         <bk-input type="textarea"
                             class="w480"
@@ -22,19 +21,19 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <!-- <bk-tab-panel render-directive="if" name="autoConfig" label="监控设置">
+            <bk-tab-panel render-directive="if" name="autoConfig" label="监控设置">
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
-            </bk-tab-panel> -->
+            </bk-tab-panel>
         </bk-tab>
     </div>
 </template>
 <script>
-    // import autoScanConfig from './autoScanConfig'
+    import autoScanConfig from './autoScanConfig'
     import { mapActions } from 'vuex'
     import { scanTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'scanConfig',
-        // components: { autoScanConfig },
+        components: { autoScanConfig },
         data () {
             return {
                 scanTypeEnum,
@@ -42,6 +41,7 @@
                 scanBaseInfo: {
                     name: '',
                     type: '',
+                    scanner: '',
                     description: '',
                     autoScan: false,
                     repoNameList: [],

@@ -71,8 +71,8 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return find(Query(criteria))
     }
 
-    fun findByIds(ids: List<String>): List<TScanPlan> {
-        val query = Query(criteria().and(ID).inValues(ids))
+    fun findByIds(ids: List<String>, includeDeleted: Boolean = false): List<TScanPlan> {
+        val query = Query(criteria(includeDeleted).and(ID).inValues(ids))
         return find(query)
     }
 

@@ -100,9 +100,6 @@ class ArrowheadScanExecutor @Autowired constructor(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
             )
-        } catch (e: Exception) {
-            logger.error(logMsg(task, "scan failed"), e)
-            throw e
         } finally {
             // 清理工作目录
             if (task.scanner.cleanWorkDir) {
@@ -152,6 +149,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         val params = mapOf(
             TEMPLATE_KEY_INPUT_FILE to inputFilePath,
             TEMPLATE_KEY_OUTPUT_DIR to outputDir,
+            TEMPLATE_KEY_LOG_FILE to RESULT_FILE_NAME_LOG,
             TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID to knowledgeBase.secretId,
             TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY to knowledgeBase.secretKey,
             TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT to knowledgeBase.endpoint
@@ -220,10 +218,29 @@ class ArrowheadScanExecutor @Autowired constructor(
             if (!result) {
                 return SubScanTaskStatus.TIMEOUT
             }
-            return SubScanTaskStatus.SUCCESS
+            return scanStatus(task, workDir)
         } finally {
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
+    }
+
+    /**
+     * 解析arrowhead输出日志，判断扫描结果
+     */
+    private fun scanStatus(task: ScanExecutorTask, workDir: File): SubScanTaskStatus {
+        val logFile = File(workDir, RESULT_FILE_NAME_LOG)
+        if (!logFile.exists()) {
+            logger.info(logMsg(task, "arrowhead log file not exists"))
+            return SubScanTaskStatus.FAILED
+        }
+
+        val lastLineLog = logFile.readLines().lastOrNull() ?: return SubScanTaskStatus.FAILED
+        if (lastLineLog.trimEnd().endsWith("Done")) {
+            return SubScanTaskStatus.SUCCESS
+        }
+        logger.info(logMsg(task, "scan failed: $lastLineLog"))
+
+        return SubScanTaskStatus.FAILED
     }
 
     /**
@@ -233,10 +250,16 @@ class ArrowheadScanExecutor @Autowired constructor(
         outputDir: File,
         scanStatus: SubScanTaskStatus
     ): ArrowheadScanExecutorResult {
-        val cveSecItems =
-            readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
-                ?.map { CveSecItem.normalize(it) }
-                ?: emptyList()
+
+        val cveMap = HashMap<String, CveSecItem>()
+        readJsonString<List<CveSecItem>>(File(outputDir, RESULT_FILE_NAME_CVE_SEC_ITEMS))
+            ?.forEach {
+                // 按（组件-POC_ID）对漏洞去重
+                // POC_ID为arrowhead使用的漏洞库内部漏洞编号，与CVE_ID、CNNVD_ID、CNVD_ID一一对应
+                val cveSecItem = cveMap.getOrPut("${it.component}-${it.pocId}") { CveSecItem.normalize(it) }
+                cveSecItem.versions.add(cveSecItem.version)
+            }
+        val cveSecItems = cveMap.values.toList()
 
         val applicationItems =
             readJsonString<List<ApplicationItem>>(File(outputDir, RESULT_FILE_NAME_APPLICATION_ITEMS))
@@ -295,7 +318,7 @@ class ArrowheadScanExecutor @Autowired constructor(
     }
 
     private fun logMsg(task: ScanExecutorTask, msg: String) = with(task) {
-        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]]"
+        "$msg, parentTaskId[$parentTaskId], subTaskId[$taskId], sha256[$sha256], scanner[${scanner.name}]"
     }
 
     companion object {
@@ -309,9 +332,13 @@ class ArrowheadScanExecutor @Autowired constructor(
         // arrowhead配置文件模板key
         private const val TEMPLATE_KEY_INPUT_FILE = "inputFile"
         private const val TEMPLATE_KEY_OUTPUT_DIR = "outputDir"
+        private const val TEMPLATE_KEY_LOG_FILE = "logFile"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_ID = "knowledgeBaseSecretId"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_SECRET_KEY = "knowledgeBaseSecretKey"
         private const val TEMPLATE_KEY_KNOWLEDGE_BASE_ENDPOINT = "knowledgeBaseEndpoint"
+
+        // arrowhead输出日志路径
+        private const val RESULT_FILE_NAME_LOG = "sysauditor.log"
 
         // arrowhead扫描结果文件名
         /**

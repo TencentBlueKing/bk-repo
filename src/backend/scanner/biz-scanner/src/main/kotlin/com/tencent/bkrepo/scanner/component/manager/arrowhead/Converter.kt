@@ -88,8 +88,8 @@ object Converter {
             defenseSolution = defenseSolution,
             references = references,
             cveYear = cveYear,
-            cveId = cveId,
             pocId = pocId,
+            cveId = cveId,
             cnvdId = cnvdId,
             cnnvdId = cnnvdId,
             cweId = cweId,
@@ -101,14 +101,25 @@ object Converter {
     }
 
     fun convert(cveSecItem: CveSecItem): TCveSecItemData = with(cveSecItem) {
-        TCveSecItemData(path = path, component = component, version = version, cveId = cveId, cvssRank = cvssRank)
+        TCveSecItemData(
+            path = path,
+            component = component,
+            versions = versions,
+            pocId = pocId,
+            cveId = cveId,
+            cweId = cweId,
+            cnnvdId = cnnvdId,
+            cnvdId = cnvdId,
+            cvssRank = cvssRank
+        )
     }
 
     fun convert(cveSecItem: TCveSecItem, cve: TCve?): CveSecItem {
         return CveSecItem(
             path = cveSecItem.data.path,
-            component = orEmpty(cve?.component),
-            version = cveSecItem.data.version,
+            component = orEmpty(cveSecItem.data.component),
+            version = cveSecItem.data.versions.firstOrNull() ?: "",
+            versions = cveSecItem.data.versions.toMutableSet(),
             versionEffected = orEmpty(cve?.versionEffected),
             versionFixed = orEmpty(cve?.versionFixed),
             name = orEmpty(cve?.name),

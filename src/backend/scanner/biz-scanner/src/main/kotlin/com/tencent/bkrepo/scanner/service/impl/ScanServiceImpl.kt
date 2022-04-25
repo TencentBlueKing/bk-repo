@@ -46,8 +46,10 @@ import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
+import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -72,6 +74,7 @@ import com.tencent.bkrepo.scanner.utils.Converter
 import com.tencent.bkrepo.scanner.utils.RuleMatcher
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -96,7 +99,8 @@ class ScanServiceImpl @Autowired constructor(
     private val scanTaskScheduler: ScanTaskScheduler,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerMetrics: ScannerMetrics,
-    private val permissionCheckHandler: ScannerPermissionCheckHandler
+    private val permissionCheckHandler: ScannerPermissionCheckHandler,
+    private val publisher: ApplicationEventPublisher
 ) : ScanService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -265,6 +269,12 @@ class ScanServiceImpl @Autowired constructor(
         scanTaskScheduler.notify(subTask.projectId)
 
         planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, resultSubTaskStatus, overview, modifiedBy)
+        publisher.publishEvent(
+            SubtaskStatusChangedEvent(
+                SubScanTaskStatus.valueOf(subTask.status),
+                TPlanArtifactLatestSubScanTask.convert(subTask, resultSubTaskStatus, overview)
+            )
+        )
 
         scannerMetrics.subtaskStatusChange(
             SubScanTaskStatus.valueOf(subTask.status), SubScanTaskStatus.valueOf(resultSubTaskStatus)
@@ -305,6 +315,12 @@ class ScanServiceImpl @Autowired constructor(
                 scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.EXECUTING)
                 // 更新任务实际开始扫描的时间
                 scanTaskDao.updateStartedDateTimeIfNotExists(subScanTask.parentScanTaskId, LocalDateTime.now())
+                publisher.publishEvent(
+                    SubtaskStatusChangedEvent(
+                        SubScanTaskStatus.valueOf(subScanTask.status),
+                        TPlanArtifactLatestSubScanTask.convert(subScanTask, SubScanTaskStatus.EXECUTING.name)
+                    )
+                )
             }
             return modified
         }

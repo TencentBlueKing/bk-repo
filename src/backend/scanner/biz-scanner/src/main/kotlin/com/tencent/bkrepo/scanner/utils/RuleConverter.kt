@@ -29,6 +29,7 @@ package com.tencent.bkrepo.scanner.utils
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Rule.NestedRule
@@ -42,8 +43,8 @@ import com.tencent.bkrepo.scanner.pojo.rule.RuleType
 
 object RuleConverter {
 
-    fun convert(projectId: String, repoNames: List<String>, rules: List<ArtifactRule>): Rule {
-        val rule = createProjectIdAdnRepoRule(projectId, repoNames)
+    fun convert(projectId: String, repoNames: List<String>, rules: List<ArtifactRule>, repoType: String? = null): Rule {
+        val rule = createProjectIdAdnRepoRule(projectId, repoNames, repoType)
 
         if (rules.isEmpty()) {
             return rule
@@ -107,20 +108,29 @@ object RuleConverter {
     }
 
     private fun convertRule(field: String, rule: com.tencent.bkrepo.scanner.pojo.rule.Rule): Rule.QueryRule {
-        return when(rule.type) {
+        return when (rule.type) {
             RuleType.EQ -> Rule.QueryRule(field, rule.value, OperationType.EQ)
             RuleType.IN -> Rule.QueryRule(field, "*${rule.value}*", OperationType.MATCH)
-            RuleType.REGEX -> Rule.QueryRule(field, rule.value, OperationType.MATCH)
+            RuleType.REGEX -> Rule.QueryRule(field, rule.value, OperationType.REGEX)
         }
     }
 
     /**
      * 添加projectId和repoName规则
      */
-    private fun createProjectIdAdnRepoRule(projectId: String, repoNames: List<String>): NestedRule {
+    private fun createProjectIdAdnRepoRule(
+        projectId: String,
+        repoNames: List<String>,
+        repoType: String? = null
+    ): NestedRule {
         val rules = mutableListOf<Rule>(
             Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
         )
+
+        if (repoType != null && repoType != RepositoryType.GENERIC.name) {
+            rules.add(Rule.QueryRule(PackageSummary::type.name, repoType, OperationType.EQ))
+        }
+
         if (repoNames.isNotEmpty()) {
             rules.add(Rule.QueryRule(NodeDetail::repoName.name, repoNames, OperationType.IN))
         }
@@ -190,17 +200,25 @@ object RuleConverter {
     private fun convertRule(rule: Rule): com.tencent.bkrepo.scanner.pojo.rule.Rule {
         require(rule is Rule.QueryRule)
 
+        val value = rule.value.toString()
+        val ruleValue = if (rule.operation == OperationType.MATCH && value.length > 2) {
+            // MATCH匹配规则的value为‘*someValue*’,需要移除头尾的'*'
+            value.substring(1, value.length - 1)
+        } else {
+            value
+        }
+
         return com.tencent.bkrepo.scanner.pojo.rule.Rule(
             convertRuleOperationType(rule.operation),
-            rule.value.toString()
+            ruleValue
         )
     }
 
     private fun convertRuleOperationType(type: OperationType): RuleType {
         return when (type) {
             OperationType.EQ -> RuleType.EQ
-            OperationType.MATCH -> RuleType.REGEX
-            OperationType.IN -> RuleType.IN
+            OperationType.REGEX -> RuleType.REGEX
+            OperationType.MATCH -> RuleType.IN
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, type)
         }
     }

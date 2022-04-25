@@ -2,6 +2,7 @@ package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 @RestController
 class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
@@ -28,8 +30,9 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun patch(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-        @RequestHeader(HEADER_OLD_FILE_PATH) oldFilePath: String
-    ) {
-        deltaSyncService.patch(oldFilePath)
+        @RequestHeader(HEADER_OLD_FILE_PATH) oldFilePath: String,
+        deltaFile: ArtifactFile
+    ): SseEmitter {
+        return deltaSyncService.patch(oldFilePath, deltaFile)
     }
 }

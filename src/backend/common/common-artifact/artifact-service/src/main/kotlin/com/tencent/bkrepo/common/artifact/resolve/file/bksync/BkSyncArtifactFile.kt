@@ -110,8 +110,10 @@ class BkSyncArtifactFile(
         }
         val bkSync = BkSync(blockSize)
         try {
+            // outputStream不能close,因为close后会删除临时文件。这里统一通过请求拦截器进行清理
             val outputStream = ChunkedFileOutputStream(chunkedArtifactFile).buffered()
             bkSync.merge(blockInputStream, deltaInputStream, outputStream)
+            // buffered stream所以需要flush
             outputStream.flush()
             chunkedArtifactFile.finish()
         } catch (e: Exception) {

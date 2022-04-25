@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_USER_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
@@ -84,4 +85,10 @@ interface ServiceUserResource {
         @ApiParam(value = "用户token")
         @RequestParam token: String
     ): Response<Boolean>
+
+    @ApiOperation("用户info ")
+    @GetMapping("/userinfo/{uid}")
+    fun userInfoById(
+        @PathVariable uid: String
+    ): Response<UserInfo?>
 }

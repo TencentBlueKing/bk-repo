@@ -99,7 +99,7 @@
                         <template #default="{ row }">
                             <scan-tag class="mr5"
                                 v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
-                                :status="row.scanStatus"
+                                :status="row.metadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>
@@ -131,7 +131,7 @@
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
-                                    { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                    (!row.metadata.scanStatus || (row.metadata.scanStatus === 'SUCCESS')) && { clickEvent: () => handlerDownload(row), label: $t('download') },
                                     !row.folder && { clickEvent: () => handlerShare(row), label: $t('share') },
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
                                     permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },
@@ -359,9 +359,10 @@
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
                         return {
+                            metadata: {},
                             ...v,
                             // 流水线文件夹名称替换
-                            name: (v.metadata && v.metadata.displayName) || v.name
+                            name: v.metadata?.displayName || v.name
                         }
                     })
                 }).finally(() => {

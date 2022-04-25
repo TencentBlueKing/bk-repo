@@ -39,7 +39,8 @@ import java.time.LocalDateTime
  */
 @Document("cve")
 @CompoundIndexes(
-    CompoundIndex(name = "cveId_idx", def = "{'cveId': 1}", unique = true)
+    CompoundIndex(name = "pocId_idx", def = "{'pocId': 1}", unique = true),
+    CompoundIndex(name = "cveId_idx", def = "{'cveId': 1}")
 )
 data class TCve(
     val id: String? = null,
@@ -104,14 +105,14 @@ data class TCve(
     val cveYear: String,
 
     /**
-     * cve id
-     */
-    val cveId: String,
-
-    /**
      * poc id
      */
-    val pocId: String? = null,
+    val pocId: String,
+
+    /**
+     * cve id
+     */
+    val cveId: String? = null,
 
     /**
      * cnvd id
