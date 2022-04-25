@@ -38,6 +38,7 @@ import org.apache.pulsar.client.api.HashingScheme
 import org.apache.pulsar.client.api.MessageRoutingMode
 import org.apache.pulsar.client.api.Producer
 import org.apache.pulsar.client.api.ProducerCryptoFailureAction
+import org.apache.pulsar.client.api.PulsarClient
 
 object PulsarProducerFactory {
 
@@ -51,14 +52,15 @@ object PulsarProducerFactory {
     fun initPulsarProducer(
         topic: String,
         producerProperties: PulsarProducerProperties,
-        pulsarProperties: PulsarProperties
+        pulsarProperties: PulsarProperties,
+        pulsarClient: PulsarClient? = null
     ): Producer<Any> {
         with(producerProperties) {
             // TODO 消息序列化方式需要调整， producer需要缓存
-            val producer = PulsarClientUtils.pulsarClient(pulsarProperties).newProducer(
+            val client = pulsarClient ?: PulsarClientUtils.pulsarClient(pulsarProperties)
+            val producer = client.newProducer(
                 SchemaUtils.getSchema(Serialization.valueOf(serialType), serialClass)
-            )
-                .topic(topic)
+            ).topic(topic)
             if (!producerName.isNullOrBlank()) {
                 producer.producerName(producerName)
             }

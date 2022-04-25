@@ -31,9 +31,11 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.constant.X_DELAY
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
+import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarClientUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
 import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Producer
+import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.api.TypedMessageBuilder
 import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.context.Lifecycle
@@ -48,7 +50,7 @@ class PulsarProducerMessageHandler(
     private val pulsarProperties: PulsarProperties
 ) : AbstractMessageHandler(), Lifecycle {
     private var producer: Producer<Any>? = null
-
+    var pulsarClient: PulsarClient? = null
     @Volatile
     private var running = false
     private var topic: String = ""
@@ -63,11 +65,7 @@ class PulsarProducerMessageHandler(
             namespace = pulsarProperties.namespace,
             topic = destination.name
         )
-        producer = PulsarProducerFactory.initPulsarProducer(
-            topic = topic,
-            producerProperties = producerProperties,
-            pulsarProperties = pulsarProperties
-        )
+        pulsarClient = PulsarClientUtils.pulsarClient(pulsarProperties)
     }
 
     override fun start() {
@@ -75,6 +73,16 @@ class PulsarProducerMessageHandler(
 //            topic = topic,
 //            actuator = this
 //        )
+        try {
+            producer = PulsarProducerFactory.initPulsarProducer(
+                topic = topic,
+                producerProperties = producerProperties!!,
+                pulsarProperties = pulsarProperties,
+                pulsarClient = pulsarClient
+            )
+        } catch (e: Exception) {
+            logger.error("Error occurred while creating producer $e")
+        }
         running = true
 //        instrumentation.markStartedSuccessfully()
 //        InstrumentationManager.addHealthInstrumentation(instrumentation)
