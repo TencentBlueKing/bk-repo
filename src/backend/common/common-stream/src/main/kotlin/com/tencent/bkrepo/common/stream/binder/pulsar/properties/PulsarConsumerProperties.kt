@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.stream.binder.pulsar.properties
 
 import java.util.SortedMap
 import java.util.TreeMap
-import java.util.concurrent.TimeUnit
 
 data class PulsarConsumerProperties(
     var topicNames: Set<String> = emptySet(),
@@ -62,13 +61,13 @@ data class PulsarConsumerProperties(
      * A longer ack group time is more efficient at the expense of a
      * slight increase in message re-deliveries after a failure.
      */
-    var acknowledgementsGroupTimeMicros: Long = TimeUnit.MILLISECONDS.toMicros(100),
+    var acknowledgementsGroupTimeMicros: Long = 100,
     /**
      * Delay to wait before redelivering messages that failed to be processed.
      * When an application uses {@link Consumer#negativeAcknowledge(Message)},
      * failed messages are redelivered after a fixed timeout.
      */
-    var negativeAckRedeliveryDelayMicros: Long = TimeUnit.MINUTES.toMicros(1),
+    var negativeAckRedeliveryDelayMicros: Long = 1,
     /**
      * The max total receiver queue size across partitions.
      * This setting reduces the receiver queue size for individual partitions
