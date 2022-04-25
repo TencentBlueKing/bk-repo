@@ -296,6 +296,21 @@ auth:
   config:
     ## 指定realm类型，支持local/devops
     realm: local
+    ## realm 指定为devops配置
+    devops:
+      # bkci accountId in bkrepo
+      appId: bkdevops
+      # bkci appId set
+      appIdSet: bkdevops,bkrepo,codecc,bcs
+      # bcs appId
+      bcsAppId: bcs
+      # bkrepo appId
+      bkrepoAppId: bkrepo
+      # bkci auth server url
+      ciAuthServer:
+      # bkci auth token
+      ciAuthToken:
+      enableSuperAdmin: true
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
