@@ -40,5 +40,10 @@ class DeltaProperties(
      * */
     var patchTimeout: Duration = Duration.ofMinutes(30),
     var projectId: String? = null,
-    var repoName: String? = null
-)
+    var repoName: String? = null,
+    var whiteList: List<String> = listOf(ALL)
+) {
+    companion object {
+        const val ALL = "all"
+    }
+}
