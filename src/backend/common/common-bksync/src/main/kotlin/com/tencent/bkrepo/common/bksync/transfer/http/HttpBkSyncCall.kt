@@ -68,6 +68,9 @@ class HttpBkSyncCall(
         try {
             val nanos2 = measureNanoTime { uploadSignFile(request) }
             logger.info("Upload[${request.deltaUrl}] sign file  success,elapsed ${HumanReadable.time(nanos2)}.")
+        } catch (e: SocketException) {
+            // 因为一个上传文件的请求，如果服务端拒绝，客户端仍在发送数据，
+            // 则会发生socket异常，这种情况需要忽略掉。
         } catch (e: Exception) {
             logger.warn("Upload sign file error", e)
         }
@@ -92,7 +95,7 @@ class HttpBkSyncCall(
             val tempFile = createTempFile()
             try {
                 val req = Request.Builder()
-                    .url(deltaUrl)
+                    .url(signUrl)
                     .head()
                     .headers(headers)
                     .build()
@@ -116,9 +119,6 @@ class HttpBkSyncCall(
                 if (!response.isSuccessful) {
                     throw UploadSignFileException("Upload sign file error: ${response.message()}.")
                 }
-            } catch (e: SocketException) {
-                // 因为一个上传文件的请求，如果服务端拒绝，客户端仍在发送数据，
-                // 则会发生socket异常，这种情况需要忽略掉。
             } finally {
                 tempFile.delete()
                 logger.info("Delete temp sign file ${tempFile.absolutePath} success.")

@@ -28,9 +28,12 @@
 package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_MAPPING_URI
@@ -124,5 +127,17 @@ class TemporaryAccessController(
         val emitter = temporaryAccessService.patch(artifactInfo, oldFilePath, deltaFile)
         temporaryAccessService.decrementPermits(tokenInfo)
         return emitter
+    }
+
+    @PutMapping("/sign/$DELTA_MAPPING_URI")
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    fun uploadSignFile(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam token: String,
+        signFile: ArtifactFile
+    ) {
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
+        temporaryAccessService.uploadSignFile(signFile, artifactInfo)
+        temporaryAccessService.decrementPermits(tokenInfo)
     }
 }

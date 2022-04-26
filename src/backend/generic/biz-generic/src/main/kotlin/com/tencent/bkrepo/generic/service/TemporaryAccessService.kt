@@ -229,6 +229,13 @@ class TemporaryAccessService(
     }
 
     /**
+     * 上传sign file
+     * */
+    fun uploadSignFile(signFile: ArtifactFile, artifactInfo: GenericArtifactInfo) {
+        deltaSyncService.uploadSignFile(signFile, artifactInfo)
+    }
+
+    /**
      * 根据token生成url
      */
     private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
