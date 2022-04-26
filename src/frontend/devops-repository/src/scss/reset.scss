@@ -169,7 +169,9 @@ body {
     .bk-select .bk-select-clear,
     .bk-select .bk-select-clear:hover,
     .bk-form-control .control-icon .clear-icon,
-    .bk-form-control .control-icon .clear-icon:hover {
+    .bk-tag-selector .bk-tag-input .clear-icon,
+    .bk-form-control .control-icon .clear-icon:hover,
+    .bk-tag-selector .bk-tag-input .clear-icon:hover {
         color: var(--fontDisableColor);
     }
     ::placeholder {
@@ -422,7 +424,6 @@ body {
     }
 
     .bk-select-dropdown-content {
-        border: 0 none;
         .bk-select-search-wrapper {
             margin: 15px 10px;
             border: 1px solid var(--borderWeightColor);
@@ -465,7 +466,6 @@ body {
     .bk-date-picker-dropdown {
         margin-top: 6px;
         padding: 0;
-        border: 0 none;
         .bk-picker-panel-body-wrapper {
             .bk-picker-panel-body {
                 &:not(.bk-picker-panel-body-date) {
@@ -600,4 +600,8 @@ body {
             padding: 15px 20px;
         }
     }
+}
+
+ul {
+    border: 0 none!important;
 }
