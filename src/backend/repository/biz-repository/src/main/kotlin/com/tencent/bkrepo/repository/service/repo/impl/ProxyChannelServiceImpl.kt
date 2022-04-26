@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.repository.dao.ProxyChannelDao
 import com.tencent.bkrepo.repository.model.TProxyChannel
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
@@ -54,6 +55,11 @@ class ProxyChannelServiceImpl(
 
     override fun createProxy(userId: String, request: ProxyChannelCreateRequest) {
         with(request) {
+            val pw = if (password.isNullOrEmpty()) {
+                password
+            } else {
+                RsaUtils.encrypt(password!!)
+            }
             val tProxyChannel = TProxyChannel(
                 public = public,
                 name = name.trim(),
@@ -61,7 +67,7 @@ class ProxyChannelServiceImpl(
                 repoType = repoType,
                 credentialKey = credentialKey,
                 username = username,
-                password = password,
+                password = pw,
                 projectId = projectId,
                 repoName = repoName,
                 createdBy = userId,
@@ -118,6 +124,11 @@ class ProxyChannelServiceImpl(
 
         private fun convert(tProxyChannel: TProxyChannel?): ProxyChannelInfo? {
             return tProxyChannel?.let {
+                val pw = if (it.password.isNullOrEmpty()) {
+                    it.password
+                } else {
+                    RsaUtils.decrypt(it.password!!)
+                }
                 ProxyChannelInfo(
                     id = it.id!!,
                     public = it.public,
@@ -126,7 +137,7 @@ class ProxyChannelServiceImpl(
                     repoType = it.repoType,
                     credentialKey = it.credentialKey,
                     username = it.username,
-                    password = it.password,
+                    password = pw,
                     projectId = it.projectId,
                     repoName = it.repoName
                 )
