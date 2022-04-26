@@ -43,6 +43,17 @@ Return the mongodb connection uri
 {{- end -}}
 
 {{/*
+Return the bcs account
+*/}}
+{{- define "bkrepo.auth.bcs.token" -}}
+{{- if or (empty .Values.auth.bcs.accessKey) (empty .Values.auth.bcs.secretKey) -}}
+{{- "" -}}
+{{- else -}}
+{{- printf "$s:%s" .Values.auth.bcs.accessKey .Values.auth.bcs.secretKey | b64enc  -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Return the label key of bk-repo scope
 */}}
 {{- define "bkrepo.labelValues.scope" -}}
