@@ -213,7 +213,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         val tmpBind = Bind("${workDir.absolutePath}${File.separator}tmp", Volume("/tmp"))
         // 容器内工作目录
         val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
-        val hostConfig = HostConfig().withBinds(tmpBind, bind)
+        val hostConfig = HostConfig().withBinds(tmpBind, bind).apply { configCpu(this) }
         val containerId = dockerClient.createContainerCmd(containerConfig.image)
             .withHostConfig(hostConfig)
             .withCmd(containerConfig.args)
@@ -233,6 +233,17 @@ class ArrowheadScanExecutor @Autowired constructor(
             return scanStatus(task, workDir)
         } finally {
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+        }
+    }
+
+    private fun configCpu(hostConfig: HostConfig) {
+        // 降低容器CPU优先级，限制可用的核心，避免调用DockerDaemon获其他系统服务时超时
+        hostConfig.withCpuShares(CONTAINER_CPU_SHARES)
+        val processorCount = Runtime.getRuntime().availableProcessors()
+        if (processorCount > 2) {
+            hostConfig.withCpusetCpus("0-${processorCount - 2}")
+        } else if (processorCount == 2) {
+            hostConfig.withCpusetCpus("0")
         }
     }
 
@@ -367,5 +378,10 @@ class ArrowheadScanExecutor @Autowired constructor(
          * 拉取镜像最大时间
          */
         private const val DEFAULT_PULL_IMAGE_DURATION = 15 * 60 * 1000L
+
+        /**
+         * 默认为1024，降低此值可降低容器在CPU时间分配中的优先级
+         */
+        private const val CONTAINER_CPU_SHARES = 512
     }
 }
