@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.executor.configuration
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 @ConfigurationProperties("scanner.executor")
@@ -44,6 +45,10 @@ data class ScannerExecutorProperties(
      * 单机最大允许执行的任务数量
      */
     var maxTaskCount: Int = 20,
+    /**
+     * 最大支持扫描的文件大小
+     */
+    var fileSizeLimit: DataSize = DataSize.ofGigabytes(10),
     /**
      * 机器当前空闲内存占比，小于这个值后不再认领任务
      */

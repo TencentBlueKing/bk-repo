@@ -79,6 +79,14 @@ class ExecutorScheduler @Autowired constructor(
 
             // 1. 加载文件
             logger.info("start load file[$sha256]")
+            // 文件大小超过限制直接返回
+            val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
+            if (size > fileSizeLimit) {
+                logger.warn("file too large, sha256[${sha256}, credentials: [${credentialsKey}]" +
+                                ", size[$size], limit[$fileSizeLimit]")
+                report(taskId, parentScanTaskId, startTimestamp)
+                return
+            }
             val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
             val artifactInputStream = storageService.load(sha256, Range.full(size), storageCredentials)
             // 加载文件失败，直接返回
