@@ -6,7 +6,7 @@ metadata:
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     app.kubernetes.io/component: init-mongodb
     {{- if .Values.commonLabels }}
-      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
   annotations:
     "helm.sh/hook": post-install,post-upgrade
@@ -52,8 +52,8 @@ spec:
             - name: BK_REPO_BCS_TOKEN
               value: {{ include "bkrepo.auth.bcs.token" . }}
             - name: BK_REPO_BCS_ACCESSKEY
-              value: {{ include "Values.auth.bcs.accessKey" . }}
+              value: {{  ."Values.auth.bcs.accessKey" . }}
             - name: BK_REPO_BCS_SECRETKEY
-              value: {{ include "Values.auth.bcs.secretKey" . }}
+              value: {{  ."Values.auth.bcs.secretKey" . }}
       restartPolicy: OnFailure
-{{- end }}
+  {{- end }}
