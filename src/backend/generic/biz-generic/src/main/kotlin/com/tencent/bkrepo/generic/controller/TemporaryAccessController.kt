@@ -129,7 +129,7 @@ class TemporaryAccessController(
         return emitter
     }
 
-    @PutMapping("/sign/$DELTA_MAPPING_URI")
+    @PutMapping("/patch/$DELTA_MAPPING_URI")
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun uploadSignFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
