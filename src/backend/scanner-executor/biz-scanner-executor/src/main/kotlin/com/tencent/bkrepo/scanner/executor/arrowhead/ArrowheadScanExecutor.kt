@@ -52,6 +52,7 @@ import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -103,7 +104,7 @@ class ArrowheadScanExecutor @Autowired constructor(
         } finally {
             // 清理工作目录
             if (task.scanner.cleanWorkDir) {
-                workDir.deleteRecursively()
+                deleteRecursively(workDir)
             }
         }
     }
