@@ -49,6 +49,8 @@ spec:
               value: {{ .Values.common.password }}
             - name: BK_REPO_MONGODB_URI
               value: {{ include "bkrepo.mongodbUri" . }}
+            - name: BK_REPO_BCS_TOKEN
+              value: {{ include "bkrepo.auth.bcs.token" . }}
             - name: BK_REPO_BCS_ACCESSKEY
               value: {{ .Values.auth.bcs.accessKey }}
             - name: BK_REPO_BCS_SECRETKEY
