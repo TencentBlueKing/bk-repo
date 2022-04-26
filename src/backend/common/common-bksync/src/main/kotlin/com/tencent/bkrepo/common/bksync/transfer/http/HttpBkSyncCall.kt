@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.bksync.DiffResult
+import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
 import kotlin.system.measureNanoTime
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.SocketException
 import java.util.concurrent.CountDownLatch
 
 /**
@@ -62,6 +64,13 @@ class HttpBkSyncCall(
             logger.error("Upload failed: ", e)
             request.genericUrl?.let { commonUpload(request) }
         }
+        // 对文件进行sign，并上传
+        try {
+            val nanos2 = measureNanoTime { uploadSignFile(request) }
+            logger.info("Upload[${request.deltaUrl}] sign file  success,elapsed ${HumanReadable.time(nanos2)}.")
+        } catch (e: Exception) {
+            logger.warn("Upload sign file error", e)
+        }
     }
 
     /**
@@ -75,6 +84,45 @@ class HttpBkSyncCall(
             logger.info("Request sign")
             val signStream = sign()
             signStream.buffered().use { patch(it) }
+        }
+    }
+
+    private fun uploadSignFile(request: UploadRequest) {
+        with(request) {
+            val tempFile = createTempFile()
+            try {
+                val req = Request.Builder()
+                    .url(deltaUrl)
+                    .head()
+                    .headers(headers)
+                    .build()
+                val resp = client.newCall(req).execute()
+                if (resp.isSuccessful) {
+                    logger.info("Sign file already existed.")
+                    return
+                }
+                logger.info("Start sign file.")
+                tempFile.outputStream().use {
+                    BkSync(BLOCK_SIZE).checksum(file, it)
+                }
+                logger.info("Start upload sign file.")
+                val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), tempFile)
+                val signRequest = Request.Builder()
+                    .url(deltaUrl)
+                    .put(signFileBody)
+                    .headers(headers)
+                    .build()
+                val response = client.newCall(signRequest).execute()
+                if (!response.isSuccessful) {
+                    throw UploadSignFileException("Upload sign file error: ${response.message()}.")
+                }
+            } catch (e: SocketException) {
+                // 因为一个上传文件的请求，如果服务端拒绝，客户端仍在发送数据，
+                // 则会发生socket异常，这种情况需要忽略掉。
+            } finally {
+                tempFile.delete()
+                logger.info("Delete temp sign file ${tempFile.absolutePath} success.")
+            }
         }
     }
 

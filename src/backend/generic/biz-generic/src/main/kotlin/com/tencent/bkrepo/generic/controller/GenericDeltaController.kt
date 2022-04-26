@@ -15,6 +15,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.service.DeltaSyncService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
@@ -27,7 +28,16 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     fun sign(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ) {
-        return deltaSyncService.sign()
+        deltaSyncService.sign()
+    }
+
+    @PutMapping(DELTA_MAPPING_URI)
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    fun uploadSignFile(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        signFile: ArtifactFile
+    ) {
+        deltaSyncService.uploadSignFile(signFile, artifactInfo)
     }
 
     @PatchMapping(DELTA_MAPPING_URI)

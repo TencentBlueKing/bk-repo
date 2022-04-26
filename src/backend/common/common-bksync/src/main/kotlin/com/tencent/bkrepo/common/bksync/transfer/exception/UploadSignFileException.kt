@@ -25,25 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.model
+package com.tencent.bkrepo.common.bksync.transfer.exception
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
-
-@Document("sign_file")
-@CompoundIndexes(
-    CompoundIndex(name = "srcSha256_blockSize_idx", def = "{'srcSha256': 1, 'blockSize': 1}", unique = true)
-)
-class TSignFile(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-
-    var srcSha256: String,
-    var blockSize: Int,
-    var projectId: String,
-    var repoName: String,
-    var fullPath: String
-)
+class UploadSignFileException(message: String) : RuntimeException(message)

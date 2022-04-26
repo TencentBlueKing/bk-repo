@@ -1,12 +1,10 @@
 package com.tencent.bkrepo.generic.service
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.stream.CompositeOutputStream
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -16,22 +14,20 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedFileOutputStream
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.BlockInputStream
 import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
-import com.tencent.bkrepo.common.bksync.ChecksumIndex
 import com.tencent.bkrepo.common.bksync.FileBlockInputStream
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -44,6 +40,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
@@ -51,11 +49,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStream
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.ceil
-import kotlin.system.measureNanoTime
 
 /**
  * 增量同步实现类
@@ -94,56 +89,29 @@ class DeltaSyncService(
             }
             // 查看是否已有sign文件，没有则生成。
             val sha256 = node.sha256!!
-            signFileDao.findByDetail(sha256, blockSize)?.let {
-                val artifactInfo = GenericArtifactInfo(it.projectId, it.repoName, it.fullPath)
-                val downloadContext = ArtifactDownloadContext(repo = signRepo, artifact = artifactInfo)
-                repository.download(downloadContext)
+            val signNode = signFileDao.findByDetail(sha256, blockSize)
+                ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, sha256)
+            if (request.method == HttpMethod.HEAD.name) {
                 return
             }
-            // 计算出需要返回的大小
-            val length = ceil(node.size.toDouble() / blockSize) * ChecksumIndex.CHECKSUM_SIZE
-            response.setContentLength(length.toInt())
-            val chunkedArtifactFile = ArtifactFileFactory.buildChunked()
-            val chunkedFileOutputStream = ChunkedFileOutputStream(chunkedArtifactFile)
-            val outputStream = CompositeOutputStream(chunkedFileOutputStream, response.outputStream).buffered()
-            val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)?.buffered()
-                ?: throw ArtifactNotFoundException("file[$sha256] not found in ${storageCredentials?.key}")
-            val nanoTime = measureNanoTime {
-                try {
-                    generateSignFile(artifactInputStream, outputStream)
-                } finally {
-                    // chunkedFileOutputStream close 会删除掉临时文件，
-                    // 由于用了buffered stream,所以这里需要flush,而且不能使用close
-                    outputStream.flush()
-                    artifactInputStream.close()
-                }
-            }
-            chunkedArtifactFile.finish()
-            val throughput = Throughput(chunkedArtifactFile.getSize(), nanoTime)
-            logger.info("Success to generate artifact sign file [${node.fullPath}], $throughput.")
-            saveSignFile(node, chunkedArtifactFile)
+            val artifactInfo = GenericArtifactInfo(signNode.projectId, signNode.repoName, signNode.fullPath)
+            val downloadContext = ArtifactDownloadContext(repo = signRepo, artifact = artifactInfo)
+            repository.download(downloadContext)
         }
     }
 
-    /**
-     * 生成sign file
-     * @param inputStream 需要签名的文件输入流
-     * @param outputStream sign file的输出流
-     * */
-    private fun generateSignFile(
-        inputStream: InputStream,
-        outputStream: OutputStream
-    ) {
-        try {
-            val bkSync = BkSync(blockSize)
-            bkSync.checksum(inputStream, outputStream)
-        } catch (exception: IOException) {
-            if (IOExceptionUtils.isClientBroken(exception)) {
-                val message = exception.message.orEmpty()
-                val status = if (IOExceptionUtils.isClientBroken(exception))
-                    HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
-                throw ArtifactResponseException(message, status)
+    fun uploadSignFile(file: ArtifactFile, artifactInfo: GenericArtifactInfo) {
+        with(artifactInfo) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            if (node == null || node.folder) {
+                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
+            val sha256 = node.sha256!!
+            signFileDao.findByDetail(sha256, blockSize)?.let {
+                logger.info("Src[$sha256] sign file already existed.")
+                return
+            }
+            saveSignFile(node, file)
         }
     }
 
@@ -347,8 +315,7 @@ class DeltaSyncService(
             size = file.getSize(),
             sha256 = file.getFileSha256(),
             md5 = file.getFileMd5(),
-            operator = userId,
-            overwrite = true
+            operator = userId
         )
     }
 
@@ -363,18 +330,24 @@ class DeltaSyncService(
             val artifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
             val nodeCreateRequest =
                 buildSignFileNodeCreateRequest(signRepo, artifactInfo, SecurityUtils.getUserId(), file)
-            storageManager.storeArtifactFile(nodeCreateRequest, file, signRepo.storageCredentials)
-            val signFile = TSignFile(
-                srcSha256 = sha256!!,
-                projectId = signFileProjectId,
-                repoName = signFileRepoName,
-                fullPath = signFileFullPath,
-                blockSize = blockSize,
-                createdBy = SecurityUtils.getUserId(),
-                createdDate = LocalDateTime.now()
-            )
-            signFileDao.save(signFile)
-            logger.info("Success to save sign file[$signFileFullPath].")
+            try {
+                storageManager.storeArtifactFile(nodeCreateRequest, file, signRepo.storageCredentials)
+                val signFile = TSignFile(
+                    srcSha256 = sha256!!,
+                    projectId = signFileProjectId,
+                    repoName = signFileRepoName,
+                    fullPath = signFileFullPath,
+                    blockSize = blockSize,
+                    createdBy = SecurityUtils.getUserId(),
+                    createdDate = LocalDateTime.now()
+                )
+                signFileDao.save(signFile)
+                logger.info("Success to save sign file[$signFileFullPath].")
+            } catch (e: RemoteErrorCodeException) {
+                logger.warn("Store[$sha256] sign file error", e)
+            } catch (ignore: DuplicateKeyException) {
+                // 说明文件已存在，可以忽略
+            }
         }
     }
 

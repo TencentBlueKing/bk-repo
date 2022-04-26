@@ -38,7 +38,8 @@ import com.tencent.bkrepo.common.api.message.MessageCode
  */
 enum class GenericMessageCode(private val businessCode: Int, private val key: String) : MessageCode {
     UPLOAD_ID_NOT_FOUND(1, "generic.uploadId.notfound"),
-    LIST_DIR_NOT_ALLOWED(2, "generic.dir.not-allowed");
+    LIST_DIR_NOT_ALLOWED(2, "generic.dir.not-allowed"),
+    SIGN_FILE_NOT_FOUND(3, "generic.delta.sign-file.notfound");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
