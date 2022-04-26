@@ -46,7 +46,7 @@ Return the mongodb connection uri
 Return the bcs account
 */}}
 {{- define "bkrepo.auth.bcs.token" -}}
-{{- if or (empty .Values.auth.bcs.accessKey) (empty .Values.auth.bcs.secretKey) -}}
+{{- if or  .Values.auth.bcs.accessKey  .Values.auth.bcs.secretKey -}}
 {{- "" -}}
 {{- else -}}
 {{- printf "$s:%s" .Values.auth.bcs.accessKey .Values.auth.bcs.secretKey | b64enc  -}}

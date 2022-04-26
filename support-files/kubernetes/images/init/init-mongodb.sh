@@ -14,6 +14,7 @@ bcsSecretKey=$BK_REPO_BCS_SECRETKEY
 if [ -n "$bcsToken" ]; then
     sed -i "s/609f9939e6944c5c8a842d88acf85edc/$bcsAccessKey/g" init-data-ext.js
     sed -i "s/e041dd34cd89466648a9b196150f75/$bcsSecretKey/g" init-data-ext.js
-    mongo $BK_REPO_MONGODB_URI init-data-ext.js
+    echo "aaaaaa"
+#    mongo $BK_REPO_MONGODB_URI init-data-ext.js
 fi
 
