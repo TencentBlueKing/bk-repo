@@ -29,6 +29,7 @@ package com.tencent.bkrepo.scanner.executor.util
 
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.Files
 
 object FileUtils {
@@ -37,8 +38,10 @@ object FileUtils {
         return file.walkBottomUp().fold(true) { res, it ->
             try {
                 Files.deleteIfExists(it.toPath())
+            } catch (e: DirectoryNotEmptyException) {
+                logger.warn("directory [${it.absolutePath}] is not empty")
             } catch (e: Exception) {
-                logger.error("delete file[${it.absolutePath}] failed", e)
+                logger.error("delete file[${it.absolutePath}] failed: ${e.message}")
             }
             !it.exists() && res
         }
