@@ -61,6 +61,7 @@ import org.springframework.core.io.Resource
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
@@ -113,8 +114,7 @@ class ArrowheadScanExecutor @Autowired constructor(
      * 获取文件最大允许扫描时间
      */
     private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
-        val fileSizeMb = fileSize / 1024
-        return scanner.maxScanDuration * fileSizeMb
+        return scanner.maxScanDuration * DataSize.ofBytes(fileSize).toMegabytes()
     }
 
     /**

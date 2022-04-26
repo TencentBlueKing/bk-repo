@@ -62,14 +62,22 @@ class ExecutorScheduler @Autowired constructor(
 
         val freeMem = operatingSystemBean.freePhysicalMemorySize
         val totalMem = operatingSystemBean.totalPhysicalMemorySize
-        val freeMemPercent = freeMem / totalMem
+        val freeMemPercent = freeMem.toDouble() / totalMem.toDouble()
+        val memAvailable = freeMemPercent > scannerExecutorProperties.atLeastFreeMemPercent
 
         val workDir = File(scannerExecutorProperties.workDir)
+        if (!workDir.exists()) {
+            workDir.mkdirs()
+        }
         val usableDiskSpacePercent = workDir.usableSpace.toDouble() / workDir.totalSpace
+        val diskAvailable = usableDiskSpacePercent > scannerExecutorProperties.atLeastUsableDiskSpacePercent
 
-        return executingCount < scannerExecutorProperties.maxTaskCount
-            && freeMemPercent > scannerExecutorProperties.atLeastFreeMemPercent
-            && usableDiskSpacePercent > scannerExecutorProperties.atLeastUsableDiskSpacePercent
+        if (!memAvailable || !diskAvailable) {
+            logger.warn("memory[$freeMemPercent]: $freeMem / $totalMem, " +
+                            "disk space[$usableDiskSpacePercent]: $usableDiskSpacePercent / ${workDir.totalSpace}")
+        }
+
+        return executingCount < scannerExecutorProperties.maxTaskCount && memAvailable && diskAvailable
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
