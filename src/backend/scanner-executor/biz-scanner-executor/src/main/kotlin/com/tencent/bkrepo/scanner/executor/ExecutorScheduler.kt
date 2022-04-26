@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.io.File
 import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -58,8 +59,17 @@ class ExecutorScheduler @Autowired constructor(
      */
     private fun allowExecute(): Boolean {
         val executingCount = executingCount.get()
+
+        val freeMem = operatingSystemBean.freePhysicalMemorySize
+        val totalMem = operatingSystemBean.totalPhysicalMemorySize
+        val freeMemPercent = freeMem / totalMem
+
+        val workDir = File(scannerExecutorProperties.workDir)
+        val usableDiskSpacePercent = workDir.usableSpace.toDouble() / workDir.totalSpace
+
         return executingCount < scannerExecutorProperties.maxTaskCount
-            && executingCount < operatingSystemBean.totalPhysicalMemorySize / MEMORY_PER_TASK
+            && freeMemPercent > scannerExecutorProperties.atLeastFreeMemPercent
+            && usableDiskSpacePercent > scannerExecutorProperties.atLeastUsableDiskSpacePercent
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
@@ -132,10 +142,5 @@ class ExecutorScheduler @Autowired constructor(
     companion object {
         private const val FIXED_DELAY = 3000L
         private val logger = LoggerFactory.getLogger(ExecutorScheduler::class.java)
-
-        /**
-         * 每个任务使用的内存大小未为2GiB
-         */
-        private const val MEMORY_PER_TASK = 2 * 1024 * 1024 * 1024L
     }
 }

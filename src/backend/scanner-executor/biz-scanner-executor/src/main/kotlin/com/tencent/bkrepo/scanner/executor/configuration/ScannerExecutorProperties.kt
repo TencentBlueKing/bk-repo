@@ -43,5 +43,13 @@ data class ScannerExecutorProperties(
     /**
      * 单机最大允许执行的任务数量
      */
-    var maxTaskCount: Int = 20
+    var maxTaskCount: Int = 20,
+    /**
+     * 机器当前空闲内存占比，小于这个值后不再认领任务
+     */
+    var atLeastFreeMemPercent: Double = 0.2,
+    /**
+     * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
+     */
+    var atLeastUsableDiskSpacePercent: Double = 0.3
 )
