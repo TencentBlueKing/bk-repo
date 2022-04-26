@@ -52,8 +52,8 @@ spec:
             - name: BK_REPO_BCS_TOKEN
               value: {{ include "bkrepo.auth.bcs.token" . }}
             - name: BK_REPO_BCS_ACCESSKEY
-              value: {{ include "bkrepo.auth.bcs.accessKey" . }}
+              value: {{ include "Values.auth.bcs.accessKey" . }}
             - name: BK_REPO_BCS_SECRETKEY
-              value: {{ include "bkrepo.auth.bcs.secretKey" . }}
+              value: {{ include "Values.auth.bcs.secretKey" . }}
       restartPolicy: OnFailure
 {{- end }}
