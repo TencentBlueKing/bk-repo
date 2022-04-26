@@ -2,11 +2,15 @@ package com.tencent.bkrepo.generic.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_MAPPING_URI
+import com.tencent.bkrepo.generic.config.DeltaProperties
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.service.DeltaSyncService
 import org.springframework.web.bind.annotation.GetMapping
@@ -34,5 +38,13 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
         deltaFile: ArtifactFile
     ): SseEmitter {
         return deltaSyncService.patch(oldFilePath, deltaFile)
+    }
+
+    @GetMapping("delta/permit")
+    fun permit(): Response<Boolean> {
+        val clientIp = HttpContextHolder.getClientAddress()
+        val whiteList = deltaSyncService.whiteList()
+        val hasPermit = whiteList.contains(clientIp) || whiteList.contains(DeltaProperties.ALL)
+        return ResponseBuilder.success(hasPermit)
     }
 }

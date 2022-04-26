@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarConsumerP
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarExtendedBindingProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.provisioning.PulsarMessageQueueProvisioner
-import org.apache.pulsar.client.api.PulsarClient
 import org.springframework.cloud.stream.binder.AbstractMessageChannelBinder
 import org.springframework.cloud.stream.binder.BinderSpecificPropertiesProvider
 import org.springframework.cloud.stream.binder.ExtendedConsumerProperties
@@ -47,7 +46,6 @@ import org.springframework.messaging.MessageChannel
 import org.springframework.messaging.MessageHandler
 
 class PulsarMessageChannelBinder(
-    private val pulsarClient: PulsarClient,
     messageBinderProvisioner: PulsarMessageQueueProvisioner,
     private val extendedBindingProperties: PulsarExtendedBindingProperties,
     private val pulsarProperties: PulsarBinderConfigurationProperties
@@ -78,9 +76,8 @@ class PulsarMessageChannelBinder(
     ): MessageHandler {
         val messageHandler = PulsarProducerMessageHandler(
             destination = destination,
-            pulsarClient = pulsarClient,
             producerProperties = producerProperties.extension,
-            pulsarProperties = pulsarProperties
+            pulsarProperties = pulsarProperties.pulsarProperties!!
         )
         messageHandler.setApplicationContext(this.applicationContext)
         if (errorChannel != null) {
@@ -107,9 +104,8 @@ class PulsarMessageChannelBinder(
 
         val inboundChannelAdapter = PulsarInboundChannelAdapter(
             destination = destination!!.name,
-            pulsarClient = pulsarClient,
             extendedConsumerProperties = properties,
-            pulsarProperties = pulsarProperties,
+            pulsarProperties = pulsarProperties.pulsarProperties!!,
             group = group
         )
         val errorInfrastructure = registerErrorInfrastructure(

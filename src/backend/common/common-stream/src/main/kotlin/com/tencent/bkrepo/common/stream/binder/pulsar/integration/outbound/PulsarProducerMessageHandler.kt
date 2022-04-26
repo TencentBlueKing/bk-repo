@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.integration.outbound
 
-import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarBinderConfigurationProperties
+import com.tencent.bkrepo.common.stream.binder.pulsar.constant.X_DELAY
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
+import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
 import com.tencent.bkrepo.common.stream.binder.pulsar.support.PulsarMessageConverterSupport
+import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarClientUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarUtils
+import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.Producer
 import org.apache.pulsar.client.api.PulsarClient
 import org.apache.pulsar.client.api.TypedMessageBuilder
@@ -38,15 +41,16 @@ import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.context.Lifecycle
 import org.springframework.integration.handler.AbstractMessageHandler
 import org.springframework.messaging.Message
+import org.springframework.messaging.MessagingException
+import org.springframework.messaging.support.MessageBuilder
 
 class PulsarProducerMessageHandler(
     private val destination: ProducerDestination,
     private val producerProperties: PulsarProducerProperties? = null,
-    private val pulsarClient: PulsarClient,
-    private val pulsarProperties: PulsarBinderConfigurationProperties
+    private val pulsarProperties: PulsarProperties
 ) : AbstractMessageHandler(), Lifecycle {
     private var producer: Producer<Any>? = null
-
+    var pulsarClient: PulsarClient? = null
     @Volatile
     private var running = false
     private var topic: String = ""
@@ -61,11 +65,7 @@ class PulsarProducerMessageHandler(
             namespace = pulsarProperties.namespace,
             topic = destination.name
         )
-        producer = PulsarProducerFactory.initPulsarProducer(
-            topic = topic,
-            producerProperties = producerProperties,
-            pulsarClient = pulsarClient
-        )
+        pulsarClient = PulsarClientUtils.pulsarClient(pulsarProperties)
     }
 
     override fun start() {
@@ -73,6 +73,16 @@ class PulsarProducerMessageHandler(
 //            topic = topic,
 //            actuator = this
 //        )
+        try {
+            producer = PulsarProducerFactory.initPulsarProducer(
+                topic = topic,
+                producerProperties = producerProperties!!,
+                pulsarProperties = pulsarProperties,
+                pulsarClient = pulsarClient
+            )
+        } catch (e: Exception) {
+            logger.error("Error occurred while creating producer $e")
+        }
         running = true
 //        instrumentation.markStartedSuccessfully()
 //        InstrumentationManager.addHealthInstrumentation(instrumentation)
@@ -83,14 +93,30 @@ class PulsarProducerMessageHandler(
         if (logger.isDebugEnabled) {
             logger.debug("Message's header is ${message.headers} and payload is ${message.payload}")
         }
+        sendMessage(message)
+    }
+
+    private fun sendMessage(message: Message<*>) {
         val (properties, payload) = PulsarMessageConverterSupport.convertMessage2Pulsar(destination.name, message)
         val key = properties[PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_KEY)]
-        if (key.isNullOrEmpty()) {
-            producer!!.newMessage()
-                .value(payload).properties(properties).sendAsync()
-        } else {
-            producer!!.newMessage().key(key)
-                .value(payload).properties(properties).sendAsync()
+        val deliveryAfterMillis = properties[X_DELAY]
+        val deliveryAt = properties[
+            PulsarMessageConverterSupport.toPulsarHeaderKey(TypedMessageBuilder.CONF_DELIVERY_AT)
+        ]
+        try {
+            val msg = producer!!.newMessage()
+                .value(payload).properties(properties)
+            key?.let { msg.key(key) }
+            deliveryAfterMillis?.let { msg.deliverAfter(deliveryAfterMillis.toLong(), TimeUnit.MILLISECONDS) }
+            deliveryAt?.let { msg.deliverAt(deliveryAt.toLong()) }
+            msg.sendAsync()
+        } catch (e: Exception) {
+            throw MessagingException(
+                MessageBuilder.withPayload(
+                    "Error occurred whiling producing message " + e.message
+                ).build(),
+                e
+            )
         }
     }
 
