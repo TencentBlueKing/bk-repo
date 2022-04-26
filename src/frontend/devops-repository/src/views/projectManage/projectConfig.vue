@@ -1,6 +1,6 @@
 <template>
     <div class="project-detail-container">
-        <bk-tab class="project-detail-tab" type="unborder-card" :active.sync="tabName">
+        <bk-tab class="project-detail-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="basic" label="基础信息">
                 <bk-form class="ml10 mr10" :label-width="75">
                     <bk-form-item label="项目标识">
@@ -222,7 +222,7 @@
     .project-detail-tab {
         height: 100%;
         ::v-deep .bk-tab-section {
-            height: calc(100% - 50px);
+            height: calc(100% - 60px);
             .bk-tab-content {
                 height: 100%;
             }

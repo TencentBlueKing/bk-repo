@@ -1,6 +1,6 @@
 <template>
     <div class="repo-config-container" v-bkloading="{ isLoading }">
-        <bk-tab class="repo-config-tab" type="unborder-card" :active.sync="tabName">
+        <bk-tab class="repo-config-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
                 <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules">
                     <bk-form-item :label="$t('repoName')">
@@ -299,7 +299,7 @@
     .repo-config-tab {
         height: 100%;
         ::v-deep .bk-tab-section {
-            height: calc(100% - 42px);
+            height: calc(100% - 52px);
             overflow-y: auto;
         }
         .repo-base-info {

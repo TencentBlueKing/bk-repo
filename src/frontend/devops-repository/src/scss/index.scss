@@ -296,3 +296,18 @@ input[type=file] {
     line-height: initial;
     color: var(--fontSubsidiaryColor)
 }
+
+.bk-tab.page-tab {
+    .bk-tab-header {
+        background-image: none!important;
+        margin-bottom: 10px;
+        &:before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 10px;
+            bottom: -10px;
+            background-color: var(--bgWeightColor);
+        }
+    }
+}
