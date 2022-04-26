@@ -124,6 +124,30 @@ db.repository.updateOne(
 db.repository.updateOne(
     {
         projectId: "blueking",
+        name: "public-cr"
+    },
+    {
+        $setOnInsert: {
+            projectId: "blueking",
+            name: "public-cr",
+            type: "DOCKER",
+            category: "LOCAL",
+            public: true,
+            description: "public docker cr repository",
+            configuration: "{}",
+            display: true,
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.repository.updateOne(
+    {
+        projectId: "blueking",
         name: "npm-local"
     },
     {
@@ -182,6 +206,30 @@ db.repository.updateOne(
             category: "LOCAL",
             public: false,
             description: "helm local repository",
+            configuration: "{}",
+            display: true,
+            createdBy: "admin",
+            createdDate: new Date(),
+            lastModifiedBy: "admin",
+            lastModifiedDate: new Date()
+        }
+    },
+    { upsert: true }
+);
+
+db.repository.updateOne(
+    {
+        projectId: "blueking",
+        name: "public-charts"
+    },
+    {
+        $setOnInsert: {
+            projectId: "blueking",
+            name: "public-charts",
+            type: "HELM",
+            category: "LOCAL",
+            public: true,
+            description: "helm public local repository",
             configuration: "{}",
             display: true,
             createdBy: "admin",

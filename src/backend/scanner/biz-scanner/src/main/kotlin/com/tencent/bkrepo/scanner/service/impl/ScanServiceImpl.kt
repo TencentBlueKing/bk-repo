@@ -346,13 +346,14 @@ class ScanServiceImpl @Autowired constructor(
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     @Transactional(rollbackFor = [Throwable::class])
     fun enqueueTimeoutTask() {
-        val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS)
+        val task = scanTaskDao.timeoutTask(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS) ?: return
         // 任务超时后移除所有子任务，重置状态后重新提交执行
-        if (task != null && scanTaskDao.resetTask(task.id!!, task.lastModifiedDate).modifiedCount == 1L) {
+        val resetTask = scanTaskDao.resetTask(task.id!!, task.lastModifiedDate)
+        if (resetTask != null) {
             subScanTaskDao.deleteByParentTaskId(task.id)
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
-            scanTaskScheduler.schedule(Converter.convert(task, plan))
+            scanTaskScheduler.schedule(Converter.convert(resetTask, plan))
         }
     }
 

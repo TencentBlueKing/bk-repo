@@ -185,6 +185,10 @@ class DeltaSyncService(
         }
     }
 
+    fun whiteList(): List<String> {
+        return deltaProperties.whiteList
+    }
+
     /**
      * 执行patch
      * @param patchContext patch上下文

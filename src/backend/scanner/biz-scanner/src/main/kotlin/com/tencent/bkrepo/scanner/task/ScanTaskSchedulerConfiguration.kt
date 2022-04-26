@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,25 +25,33 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.scanner.task
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.concurrent.ThreadPoolExecutor.DiscardPolicy
 
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String? = null,
-    var repoName: String? = null,
-    var whiteList: List<String> = listOf(ALL)
-) {
+@Configuration(proxyBeanMethods = false)
+class ScanTaskSchedulerConfiguration {
+    @Bean(SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME)
+    fun scanTaskSchedulerThreadPool(): ThreadPoolTaskExecutor {
+        return ThreadPoolTaskExecutor().apply {
+            corePoolSize = Runtime.getRuntime().availableProcessors() + 1
+            maxPoolSize = corePoolSize
+            setQueueCapacity(DEFAULT_QUEUE_CAPACITY)
+            setAllowCoreThreadTimeOut(true)
+            setWaitForTasksToCompleteOnShutdown(true)
+            setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS)
+            threadNamePrefix = SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX
+            setRejectedExecutionHandler(DiscardPolicy())
+        }
+    }
+
     companion object {
-        const val ALL = "all"
+        const val SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME = "scanTaskSchedulerThreadPool"
+        private const val DEFAULT_AWAIT_TERMINATION_SECONDS = 300
+        private const val DEFAULT_QUEUE_CAPACITY = 200
+        private const val SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX = "scanner-task-scheduler-"
     }
 }
