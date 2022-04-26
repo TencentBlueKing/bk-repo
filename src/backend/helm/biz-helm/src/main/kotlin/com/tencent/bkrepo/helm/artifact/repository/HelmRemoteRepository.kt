@@ -92,8 +92,9 @@ class HelmRemoteRepository(
         if (result == null) {
             logger.info("store the new helm file to replace the old version..")
             parseAttribute(context, artifactFile)
+            val stream = artifactFile.getInputStream().artifactStream(Range.full(size))
             cacheArtifactFile(context, artifactFile)
-            return artifactFile.getInputStream().artifactStream(Range.full(size))
+            return stream
         }
         return result
     }
