@@ -207,7 +207,23 @@
                         theme: 'success',
                         message: '已添加到扫描队列'
                     })
-                    this.$router.back()
+                    this.back()
+                })
+            },
+            back () {
+                const { repoType, repoName } = this.baseInfo
+                const { scanName, path, packageKey, version } = this.$route.query
+                this.$router.push({
+                    name: scanName ? 'scanReport' : (this.packageKey ? 'commonPackage' : 'repoGeneric'),
+                    params: {
+                        projectId: this.projectId,
+                        [this.planId ? 'planId' : 'repoType']: this.planId || repoType
+                    },
+                    query: scanName
+                        ? { scanName }
+                        : (this.packageKey
+                            ? { repoName, packageKey, version }
+                            : { repoName, path })
                 })
             }
         }

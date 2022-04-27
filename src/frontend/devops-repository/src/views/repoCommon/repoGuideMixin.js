@@ -12,7 +12,7 @@ export default {
             return this.$route.query.repoName || ''
         },
         packageKey () {
-            return this.$route.query.package || ''
+            return this.$route.query.packageKey || ''
         },
         version () {
             return this.$route.query.version || ''

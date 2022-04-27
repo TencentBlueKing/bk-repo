@@ -77,7 +77,7 @@
                 return this.$route.query.repoName
             },
             packageKey () {
-                return this.$route.query.package
+                return this.$route.query.packageKey
             }
         },
         methods: {

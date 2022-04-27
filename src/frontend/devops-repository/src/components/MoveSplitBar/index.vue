@@ -1,10 +1,16 @@
 <template>
-    <div class="move-split-bar"
+    <div class="move-split-bar flex-center"
         draggable="false"
         :style="{
-            width: !Number(width) ? width : `${width}px`,
+            [left ? 'width' : 'height']: !Number(width) ? width : `${width}px`,
             [left ? 'height' : 'width']: '100%'
         }">
+        <div
+            :style="{
+                [left ? 'width' : 'height']: '40%',
+                [left ? 'height' : 'width']: '5%'
+            }">
+        </div>
     </div>
 </template>
 <script>
@@ -55,10 +61,8 @@
 <style lang="scss" scoped>
 .move-split-bar {
     cursor: col-resize;
-    will-change: background-color;
-    transition: background-color 1s;
-    &:hover {
-        background-color: var(--primaryHoverColor);
+    &:hover div {
+        background-color: var(--primaryColor);
     }
 }
 </style>

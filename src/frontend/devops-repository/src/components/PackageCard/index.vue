@@ -23,10 +23,11 @@
         <div class="card-operation flex-center">
             <Icon class="hover-btn" v-if="!readonly" size="24" name="icon-delete" @click.native.stop="deleteCard" />
             <operation-list
+                v-if="!cardData.type"
                 :list="[
-                    !cardData.type && { label: '下载', clickEvent: () => download() },
-                    !cardData.type && { label: '共享', clickEvent: () => share() }
-                ].filter(Boolean)"></operation-list>
+                    { label: '下载', clickEvent: () => download() },
+                    { label: '共享', clickEvent: () => share() }
+                ]"></operation-list>
         </div>
     </div>
 </template>

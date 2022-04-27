@@ -34,7 +34,7 @@
                         </bk-option>
                     </bk-select>
                     <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')">{{ $t('add') }}</bk-button>
-                    <bk-button :disabled="!tab.delete.length" theme="danger" class="ml10" @click="confirmHandler(tab, 'delete')">批量移除</bk-button>
+                    <bk-button :disabled="!tab.delete.length" theme="default" class="ml10" @click="confirmHandler(tab, 'delete')">批量移除</bk-button>
                 </div>
                 <bk-table
                     class="mt10"

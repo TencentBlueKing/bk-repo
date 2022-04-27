@@ -63,7 +63,7 @@
                         :list="[
                             // { label: '编辑', clickEvent: () => showEditNode(row) },
                             { label: '删除', clickEvent: () => deleteClusterHandler(row) }
-                        ].filter(Boolean)">
+                        ]">
                     </operation-list>
                 </template>
             </bk-table-column>

@@ -259,7 +259,7 @@
                     },
                     query: {
                         repoName: pkg.repoName,
-                        package: pkg.key
+                        packageKey: pkg.key
                     }
                 })
             },

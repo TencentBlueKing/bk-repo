@@ -197,7 +197,7 @@
                     name: 'commonPackage',
                     query: {
                         repoName: this.repoName,
-                        package: pkg.key
+                        packageKey: pkg.key
                     }
                 })
             }

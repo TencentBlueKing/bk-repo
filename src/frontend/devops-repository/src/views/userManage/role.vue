@@ -82,7 +82,7 @@
                         allow-create>
                     </bk-tag-input>
                     <bk-button :disabled="!editRoleUsers.addUsers.length" theme="primary" class="ml10" @click="handleAddUsers">添加</bk-button>
-                    <bk-button :disabled="!editRoleUsers.deleteUsers.length" theme="warning" class="ml10" @click="handleDeleteUsers">批量移除</bk-button>
+                    <bk-button :disabled="!editRoleUsers.deleteUsers.length" theme="default" class="ml10" @click="handleDeleteUsers">批量移除</bk-button>
                 </div>
                 <bk-table
                     :data="editRoleUsers.users"

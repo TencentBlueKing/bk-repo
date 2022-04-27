@@ -42,7 +42,7 @@
                 <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
             </bk-table-column>
             <!-- <bk-table-column label="扫描器" prop="scanner" show-overflow-tooltip></bk-table-column> -->
-            <bk-table-column
+            <!-- <bk-table-column
                 v-for="column in [
                     { label: '累计扫描制品', prop: 'artifactCount' },
                     { label: '危急漏洞', prop: 'critical' },
@@ -55,7 +55,7 @@
                 :prop="column.prop"
                 align="right">
                 <template #default="{ row }">{{ segmentNumberThree(row[column.prop]) }}</template>
-            </bk-table-column>
+            </bk-table-column> -->
             <bk-table-column label="扫描状态">
                 <template #default="{ row }">
                     <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
@@ -70,6 +70,7 @@
                         :list="[
                             { label: '报告', clickEvent: () => showScanReport(row) },
                             { label: '设置', clickEvent: () => showScanConfig(row) },
+                            { label: '中止', clickEvent: () => stopScanHandler(row) },
                             { label: '扫描', clickEvent: () => startScanHandler(row) },
                             { label: '删除', clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>
@@ -214,6 +215,9 @@
                         scanName: name
                     }
                 })
+            },
+            stopScanHandler ({ id }) {
+
             }
         }
     }
