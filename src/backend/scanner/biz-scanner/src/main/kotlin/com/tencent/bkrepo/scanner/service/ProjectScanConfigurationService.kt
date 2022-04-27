@@ -25,36 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.configuration
+package com.tencent.bkrepo.scanner.service
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
+import com.tencent.bkrepo.scanner.pojo.request.ProjectScanConfigurationPageRequest
 
-@ConfigurationProperties("scanner.executor")
-data class ScannerExecutorProperties(
+/**
+ * 项目扫描配置
+ */
+interface ProjectScanConfigurationService {
     /**
-     * 扫描执行器工作目录
+     * 创建项目扫描配置
+     *
+     * @param request 项目扫描配置创建请求
+     *
+     * @return 创建后的项目扫描配置
      */
-    var workDir: String = System.getProperty("java.io.tmpdir"),
+    fun create(request: ProjectScanConfiguration): ProjectScanConfiguration
+
     /**
-     * [workDir]目录下文件过期时间，文件最后修改时间离当前时间超过[fileExpiredMinutes]时将被删除
+     * 更新项目扫描配置
+     *
+     * @param request 项目扫描配置更新请求
+     *
+     * @return 更新后的项目扫描配置
      */
-    var fileExpiredMinutes: Duration = Duration.ofMinutes(60),
+    fun update(request: ProjectScanConfiguration): ProjectScanConfiguration
+
     /**
-     * 单机最大允许执行的任务数量
+     * 分页获取项目扫描配置
      */
-    var maxTaskCount: Int = 20,
+    fun page(request: ProjectScanConfigurationPageRequest): Page<ProjectScanConfiguration>
+
     /**
-     * 最大支持扫描的文件大小
+     * 获取项目扫描配置
+     *
+     * @param projectId 要获取的扫描配置所属项目ID
+     *
+     * @return 项目扫描配置
      */
-    var fileSizeLimit: DataSize = DataSize.ofGigabytes(10),
-    /**
-     * 机器当前空闲内存占比，小于这个值后不再认领任务
-     */
-    var atLeastFreeMemPercent: Double = 0.2,
-    /**
-     * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
-     */
-    var atLeastUsableDiskSpacePercent: Double = 0.3
-)
+    fun get(projectId: String): ProjectScanConfiguration
+}

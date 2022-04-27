@@ -25,36 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.configuration
+package com.tencent.bkrepo.scanner.pojo
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.fasterxml.jackson.annotation.JsonInclude
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@ConfigurationProperties("scanner.executor")
-data class ScannerExecutorProperties(
-    /**
-     * 扫描执行器工作目录
-     */
-    var workDir: String = System.getProperty("java.io.tmpdir"),
-    /**
-     * [workDir]目录下文件过期时间，文件最后修改时间离当前时间超过[fileExpiredMinutes]时将被删除
-     */
-    var fileExpiredMinutes: Duration = Duration.ofMinutes(60),
-    /**
-     * 单机最大允许执行的任务数量
-     */
-    var maxTaskCount: Int = 20,
-    /**
-     * 最大支持扫描的文件大小
-     */
-    var fileSizeLimit: DataSize = DataSize.ofGigabytes(10),
-    /**
-     * 机器当前空闲内存占比，小于这个值后不再认领任务
-     */
-    var atLeastFreeMemPercent: Double = 0.2,
-    /**
-     * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
-     */
-    var atLeastUsableDiskSpacePercent: Double = 0.3
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@ApiModel("项目扫描配置")
+data class ProjectScanConfiguration(
+    @ApiModelProperty("项目ID")
+    val projectId: String,
+    @ApiModelProperty("项目优先级，值越小优先级越低")
+    val priority: Int? = null,
+    @ApiModelProperty("项目限制的扫描任务数量")
+    val scanTaskCountLimit: Int? = null,
+    @ApiModelProperty("项目扫描子任务数量限制")
+    val subScanTaskCountLimit: Int? = null,
+    @ApiModelProperty("自动扫描配置")
+    val autoScanConfiguration: Map<String, AutoScanConfiguration>? = null
 )

@@ -25,36 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.executor.configuration
+package com.tencent.bkrepo.scanner.configuration
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.util.unit.DataSize
-import java.time.Duration
 
-@ConfigurationProperties("scanner.executor")
-data class ScannerExecutorProperties(
+@ConfigurationProperties("scanner")
+data class ScannerProperties(
     /**
-     * 扫描执行器工作目录
+     * 默认项目扫描子任务数量限制
      */
-    var workDir: String = System.getProperty("java.io.tmpdir"),
-    /**
-     * [workDir]目录下文件过期时间，文件最后修改时间离当前时间超过[fileExpiredMinutes]时将被删除
-     */
-    var fileExpiredMinutes: Duration = Duration.ofMinutes(60),
-    /**
-     * 单机最大允许执行的任务数量
-     */
-    var maxTaskCount: Int = 20,
-    /**
-     * 最大支持扫描的文件大小
-     */
-    var fileSizeLimit: DataSize = DataSize.ofGigabytes(10),
-    /**
-     * 机器当前空闲内存占比，小于这个值后不再认领任务
-     */
-    var atLeastFreeMemPercent: Double = 0.2,
-    /**
-     * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
-     */
-    var atLeastUsableDiskSpacePercent: Double = 0.3
-)
+    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT
+) {
+    companion object {
+        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
+        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
+        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
+    }
+}

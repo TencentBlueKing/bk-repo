@@ -31,7 +31,6 @@ import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.Bind
-import com.github.dockerjava.api.model.Binds
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
@@ -53,6 +52,7 @@ import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -61,6 +61,7 @@ import org.springframework.core.io.Resource
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
@@ -95,7 +96,8 @@ class ArrowheadScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "load config success"))
 
             // 执行扫描
-            val scanStatus = doScan(workDir, task)
+            val maxScanDuration = maxScanDuration(scanner, scannerInputFile.length())
+            val scanStatus = doScan(workDir, task, maxScanDuration)
             return result(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
@@ -103,9 +105,16 @@ class ArrowheadScanExecutor @Autowired constructor(
         } finally {
             // 清理工作目录
             if (task.scanner.cleanWorkDir) {
-                workDir.deleteRecursively()
+                deleteRecursively(workDir)
             }
         }
+    }
+
+    /**
+     * 获取文件最大允许扫描时间
+     */
+    private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
+        return scanner.maxScanDuration * DataSize.ofBytes(fileSize).toMegabytes()
     }
 
     /**
@@ -195,15 +204,18 @@ class ArrowheadScanExecutor @Autowired constructor(
      *
      * @return true 扫描成功， false 扫描失败
      */
-    private fun doScan(workDir: File, task: ScanExecutorTask): SubScanTaskStatus {
+    private fun doScan(workDir: File, task: ScanExecutorTask, maxScanDuration: Long): SubScanTaskStatus {
         require(task.scanner is ArrowheadScanner)
         val containerConfig = task.scanner.container
         pullImage(containerConfig.image)
 
-        val bind = Volume(containerConfig.workDir)
-        val binds = Binds(Bind(workDir.absolutePath, bind))
+        // 容器内tmp目录
+        val tmpBind = Bind("${workDir.absolutePath}${File.separator}tmp", Volume("/tmp"))
+        // 容器内工作目录
+        val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
+        val hostConfig = HostConfig().withBinds(tmpBind, bind).apply { configCpu(this) }
         val containerId = dockerClient.createContainerCmd(containerConfig.image)
-            .withHostConfig(HostConfig().withBinds(binds))
+            .withHostConfig(hostConfig)
             .withCmd(containerConfig.args)
             .withTty(true)
             .withStdinOpen(true)
@@ -213,7 +225,7 @@ class ArrowheadScanExecutor @Autowired constructor(
             dockerClient.startContainerCmd(containerId).exec()
             val resultCallback = WaitContainerResultCallback()
             dockerClient.waitContainerCmd(containerId).exec(resultCallback)
-            val result = resultCallback.awaitCompletion(task.scanner.maxScanDuration, TimeUnit.MILLISECONDS)
+            val result = resultCallback.awaitCompletion(maxScanDuration, TimeUnit.MILLISECONDS)
             logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
             if (!result) {
                 return SubScanTaskStatus.TIMEOUT
@@ -221,6 +233,17 @@ class ArrowheadScanExecutor @Autowired constructor(
             return scanStatus(task, workDir)
         } finally {
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+        }
+    }
+
+    private fun configCpu(hostConfig: HostConfig) {
+        // 降低容器CPU优先级，限制可用的核心，避免调用DockerDaemon获其他系统服务时超时
+        hostConfig.withCpuShares(CONTAINER_CPU_SHARES)
+        val processorCount = Runtime.getRuntime().availableProcessors()
+        if (processorCount > 2) {
+            hostConfig.withCpusetCpus("0-${processorCount - 2}")
+        } else if (processorCount == 2) {
+            hostConfig.withCpusetCpus("0")
         }
     }
 
@@ -355,5 +378,10 @@ class ArrowheadScanExecutor @Autowired constructor(
          * 拉取镜像最大时间
          */
         private const val DEFAULT_PULL_IMAGE_DURATION = 15 * 60 * 1000L
+
+        /**
+         * 默认为1024，降低此值可降低容器在CPU时间分配中的优先级
+         */
+        private const val CONTAINER_CPU_SHARES = 512
     }
 }
