@@ -10,8 +10,10 @@ class UploadRequest(
     val deltaUrl: String,
     // 增量上传文件
     val file: File,
-    // 请求校验和url
+    // 签名url
     val signUrl: String,
+    // 新文件签名url
+    val newFileSignUrl: String,
     // 旧文件路径
     val oldFilePath: String
 ) {

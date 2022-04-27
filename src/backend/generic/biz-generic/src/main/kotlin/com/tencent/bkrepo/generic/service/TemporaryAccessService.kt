@@ -211,7 +211,7 @@ class TemporaryAccessService(
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
-            deltaSyncService.sign()
+            deltaSyncService.downloadSignFile()
         }
     }
 
@@ -231,8 +231,8 @@ class TemporaryAccessService(
     /**
      * 上传sign file
      * */
-    fun uploadSignFile(signFile: ArtifactFile, artifactInfo: GenericArtifactInfo) {
-        deltaSyncService.uploadSignFile(signFile, artifactInfo)
+    fun uploadSignFile(signFile: ArtifactFile, artifactInfo: GenericArtifactInfo, md5: String) {
+        deltaSyncService.uploadSignFile(signFile, artifactInfo, md5)
     }
 
     /**

@@ -20,7 +20,6 @@ import com.tencent.bkrepo.common.bksync.BlockInputStream
 import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
 import com.tencent.bkrepo.common.bksync.FileBlockInputStream
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -81,16 +80,16 @@ class DeltaSyncService(
     /**
      * 签名文件
      * */
-    fun sign() {
+    fun downloadSignFile() {
         with(ArtifactContext()) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             // 查看是否已有sign文件，没有则生成。
-            val sha256 = node.sha256!!
-            val signNode = signFileDao.findByDetail(sha256, blockSize)
-                ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, sha256)
+            val md5 = node.md5!!
+            val signNode = signFileDao.findByDetail(projectId, repoName, md5, blockSize)
+                ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, md5)
             if (request.method == HttpMethod.HEAD.name) {
                 return
             }
@@ -100,18 +99,16 @@ class DeltaSyncService(
         }
     }
 
-    fun uploadSignFile(file: ArtifactFile, artifactInfo: GenericArtifactInfo) {
+    fun uploadSignFile(file: ArtifactFile, artifactInfo: GenericArtifactInfo, md5: String) {
         with(artifactInfo) {
             val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
-            val sha256 = node.sha256!!
-            signFileDao.findByDetail(sha256, blockSize)?.let {
-                logger.info("Src[$sha256] sign file already existed.")
-                return
+            if (md5 != node.md5) {
+                throw ErrorCodeException(GenericMessageCode.NODE_DATA_HAS_CHANGED)
             }
-            saveSignFile(node, file)
+            signFileDao.findByDetail(projectId, repoName, md5, blockSize) ?: saveSignFile(node, file)
         }
     }
 
@@ -315,25 +312,29 @@ class DeltaSyncService(
             size = file.getSize(),
             sha256 = file.getFileSha256(),
             md5 = file.getFileMd5(),
-            operator = userId
+            operator = userId,
+            overwrite = true
         )
     }
 
     /**
      * 保存sign文件到指定仓库
-     * @param nodeDetail 节点信息
+     * @param md5 校验和md5
      * @param file 节点sign文件
      * */
-    private fun saveSignFile(nodeDetail: NodeDetail, file: ArtifactFile) {
-        with(nodeDetail) {
-            val signFileFullPath = "$projectId/$repoName/$blockSize/$fullPath$SUFFIX_SIGN"
+    private fun saveSignFile(node: NodeDetail, file: ArtifactFile) {
+        with(node) {
+            val md5 = node.md5!!
+            val signFileFullPath = "$projectId/$repoName/$blockSize/$md5$SUFFIX_SIGN"
             val artifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
             val nodeCreateRequest =
                 buildSignFileNodeCreateRequest(signRepo, artifactInfo, SecurityUtils.getUserId(), file)
             try {
                 storageManager.storeArtifactFile(nodeCreateRequest, file, signRepo.storageCredentials)
                 val signFile = TSignFile(
-                    srcSha256 = sha256!!,
+                    srcProjectId = projectId,
+                    srcRepoName = repoName,
+                    srcMd5 = md5,
                     projectId = signFileProjectId,
                     repoName = signFileRepoName,
                     fullPath = signFileFullPath,
@@ -343,8 +344,6 @@ class DeltaSyncService(
                 )
                 signFileDao.save(signFile)
                 logger.info("Success to save sign file[$signFileFullPath].")
-            } catch (e: RemoteErrorCodeException) {
-                logger.warn("Store[$sha256] sign file error", e)
             } catch (ignore: DuplicateKeyException) {
                 // 说明文件已存在，可以忽略
             }

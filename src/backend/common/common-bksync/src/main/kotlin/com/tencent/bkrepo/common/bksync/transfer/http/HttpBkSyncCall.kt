@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.bksync.transfer.http
 
+import com.google.common.hash.HashCode
 import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
 import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
 import com.tencent.bkrepo.common.bksync.BkSync
@@ -9,6 +10,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.bksync.DiffResult
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
+import okhttp3.HttpUrl
 import kotlin.system.measureNanoTime
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
@@ -19,10 +21,12 @@ import okhttp3.internal.sse.RealEventSource
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.SocketException
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.util.concurrent.CountDownLatch
 
 /**
@@ -49,7 +53,7 @@ class HttpBkSyncCall(
         if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
             val speedTest = NetSpeedTest(speedTestSettings)
             val avgBytes = speedTest.uploadTest()
-            logger.info("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
+            logger.debug("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
             val base = 1024 * 1024
             if (avgBytes / base > allowUseMaxBandwidth) {
                 logger.info("Faster internet,use common generic upload.")
@@ -57,23 +61,19 @@ class HttpBkSyncCall(
                 return
             }
         }
+        val existNewFileSign = existNewFileSign(request)
+        var newSignFileData: ByteArray? = null
+        if (!existNewFileSign) {
+            newSignFileData = signNewFile(request)
+        }
         try {
             val nanos = measureNanoTime { doUpload(request) }
-            logger.info("Upload[${request.deltaUrl}] success,elapsed ${HumanReadable.time(nanos)}.")
+            logger.info("Upload[${request.file}] success,elapsed ${HumanReadable.time(nanos)}.")
         } catch (e: Exception) {
-            logger.error("Upload failed: ", e)
+            logger.debug("Upload failed: ", e)
             request.genericUrl?.let { commonUpload(request) }
         }
-        // 对文件进行sign，并上传
-        try {
-            val nanos2 = measureNanoTime { uploadSignFile(request) }
-            logger.info("Upload[${request.deltaUrl}] sign file  success,elapsed ${HumanReadable.time(nanos2)}.")
-        } catch (e: SocketException) {
-            // 因为一个上传文件的请求，如果服务端拒绝，客户端仍在发送数据，
-            // 则会发生socket异常，这种情况需要忽略掉。
-        } catch (e: Exception) {
-            logger.warn("Upload sign file error", e)
-        }
+        newSignFileData?.let { uploadSignFile(request, newSignFileData) }
     }
 
     /**
@@ -85,51 +85,77 @@ class HttpBkSyncCall(
         with(request) {
             // 请求sign
             logger.info("Request sign")
-            val signStream = sign()
+            val signStream = downloadSign()
             signStream.buffered().use { patch(it) }
         }
     }
 
-    private fun uploadSignFile(request: UploadRequest) {
+    private fun uploadSignFile(request: UploadRequest, newSignFileData: ByteArray) {
         with(request) {
-            val tempFile = createTempFile()
             try {
-                val req = Request.Builder()
-                    .url(signUrl)
-                    .head()
-                    .headers(headers)
-                    .build()
-                val resp = client.newCall(req).execute()
-                if (resp.isSuccessful) {
-                    logger.info("Sign file already existed.")
-                    return
-                }
-                logger.info("Start sign file.")
-                tempFile.outputStream().use {
-                    BkSync(BLOCK_SIZE).checksum(file, it)
-                }
                 logger.info("Start upload sign file.")
-                val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), tempFile)
+                val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), newSignFileData)
+                val uploadUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
+                    QUERY_PARAM_MD5, headers[HEADER_MD5]
+                ).build()
                 val signRequest = Request.Builder()
-                    .url(deltaUrl)
+                    .url(uploadUrl)
                     .put(signFileBody)
                     .headers(headers)
                     .build()
                 val response = client.newCall(signRequest).execute()
                 if (!response.isSuccessful) {
-                    throw UploadSignFileException("Upload sign file error: ${response.message()}.")
+                    throw UploadSignFileException(response.message())
                 }
-            } finally {
-                tempFile.delete()
-                logger.info("Delete temp sign file ${tempFile.absolutePath} success.")
+                logger.info("Upload[$file] sign file success.")
+            } catch (e: Exception) {
+                logger.debug("Upload sign file failed", e)
             }
+        }
+    }
+
+    /**
+     * 对新文件进行签名,并且添加X-BKREPO-MD5 http头进行文件内容校验
+     * */
+    @Suppress("UnstableApiUsage")
+    private fun signNewFile(request: UploadRequest): ByteArray {
+        with(request) {
+            logger.info("Start sign file.")
+            val md5DigestInputStream = DigestInputStream(file.inputStream(), MessageDigest.getInstance("MD5"))
+            val byteOutputStream = ByteArrayOutputStream()
+            BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
+            val md5Data = md5DigestInputStream.messageDigest.digest()
+            val md5 = HashCode.fromBytes(md5Data).toString()
+            // 添加md5 header，方便在上传时进行md5校验
+            headers[HEADER_MD5] = md5
+            logger.info("End sign file.")
+            return byteOutputStream.toByteArray()
+        }
+    }
+
+    /**
+     * 判断新文件的签名文件是否存在
+     * */
+    private fun existNewFileSign(request: UploadRequest): Boolean {
+        with(request) {
+            val req = Request.Builder()
+                .url(newFileSignUrl)
+                .head()
+                .headers(headers)
+                .build()
+            val resp = client.newCall(req).execute()
+            if (resp.isSuccessful) {
+                logger.info("Sign file already existed.")
+                return true
+            }
+            return false
         }
     }
 
     /**
      * 获取sign数据流
      * */
-    private fun UploadRequest.sign(): InputStream {
+    private fun UploadRequest.downloadSign(): InputStream {
         val signRequest = Request.Builder()
             .url(signUrl)
             .headers(headers)
@@ -183,13 +209,13 @@ class HttpBkSyncCall(
                 realEventSource.connect(client)
                 countDownLatch.await()
                 if (!patchSuccess) {
-                    throw PatchRequestException("Delta[$deltaUrl] upload failed: ${errorMsg.orEmpty()}")
+                    throw PatchRequestException("Delta upload failed: ${errorMsg.orEmpty()}")
                 }
             }
             logger.info("Delta data upload success,elapsed ${HumanReadable.time(nanos)}.")
         } finally {
             deltaFile.delete()
-            logger.info("Delete temp deltaFile ${deltaFile.absolutePath} success.")
+            logger.info("Delete temp deltaFile [$deltaFile] success.")
         }
     }
 
@@ -219,6 +245,7 @@ class HttpBkSyncCall(
      * */
     private fun commonUpload(request: UploadRequest) {
         with(request) {
+            logger.info("Start use generic upload.")
             genericUrl ?: throw IllegalArgumentException("No genericUrl.")
             val body = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), file)
             val commonRequest = Request.Builder()
@@ -232,7 +259,7 @@ class HttpBkSyncCall(
                     throw PatchRequestException("Generic upload[$genericUrl] failed.")
                 }
             }
-            logger.info("Generic upload[$genericUrl] success, elapsed ${HumanReadable.time(nanos)}.")
+            logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
         }
     }
 
@@ -281,5 +308,7 @@ class HttpBkSyncCall(
         private const val DEFAULT_THRESHOLD = 0.2f
         private const val BLOCK_SIZE = 2048
         private const val PATCH_EVENT_TYPE_ERROR = "ERROR"
+        private const val QUERY_PARAM_MD5 = "md5"
+        private const val HEADER_MD5 = "X-BKREPO-MD5"
     }
 }

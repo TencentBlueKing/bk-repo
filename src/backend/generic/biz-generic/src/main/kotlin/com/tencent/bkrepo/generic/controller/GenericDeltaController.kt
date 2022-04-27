@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
@@ -25,19 +26,20 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
 
     @GetMapping(DELTA_MAPPING_URI)
     @Permission(ResourceType.NODE, PermissionAction.READ)
-    fun sign(
+    fun downloadSignFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo
     ) {
-        deltaSyncService.sign()
+        deltaSyncService.downloadSignFile()
     }
 
     @PutMapping(DELTA_MAPPING_URI)
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun uploadSignFile(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam md5: String,
         signFile: ArtifactFile
     ) {
-        deltaSyncService.uploadSignFile(signFile, artifactInfo)
+        deltaSyncService.uploadSignFile(signFile, artifactInfo, md5)
     }
 
     @PatchMapping(DELTA_MAPPING_URI)
