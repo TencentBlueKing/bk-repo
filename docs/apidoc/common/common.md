@@ -6,9 +6,16 @@
 
 ## 公共请求头
 
+### 对接个人账号(通用)
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |Authorization|string|是|无|Basic Auth认证头，Basic base64(username:password)|Basic Auth header|
+
+### 对接合作系统，需要先申请bkrepo appId
+|字段|类型|是否必须|默认值|说明|Description|
+|---|---|---|---|---|---|
+|Authorization|string|是|无|自定义Auth认证头，Platform base64(accessKey:secretKey)|Platform Auth header|
+|X-BKREPO-UID|string|是|无|实际操作用户，需要有对应资源的操作权限|operate user|
 
 ## 统一响应格式
 
