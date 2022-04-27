@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.bksync.transfer.http
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.hash.HashCode
 import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
 import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
@@ -7,8 +8,10 @@ import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.bksync.DiffResult
+import com.tencent.bkrepo.common.bksync.transfer.exception.ReportSpeedException
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
 import okhttp3.HttpUrl
 import kotlin.system.measureNanoTime
@@ -50,23 +53,29 @@ class HttpBkSyncCall(
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
-        if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-            val speedTest = NetSpeedTest(speedTestSettings)
-            val avgBytes = speedTest.uploadTest()
-            logger.debug("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
-            val base = 1024 * 1024
-            if (avgBytes / base > allowUseMaxBandwidth) {
-                logger.info("Faster internet,use common generic upload.")
-                request.genericUrl?.let { commonUpload(request) }
-                return
-            }
-        }
-        val existNewFileSign = existNewFileSign(request)
         var newSignFileData: ByteArray? = null
-        if (!existNewFileSign) {
-            newSignFileData = signNewFile(request)
-        }
         try {
+            if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
+                val speed = getSpeed(request.speedReportUrl)
+                val avgMb = if (speed == -1) {
+                    val speedTest = NetSpeedTest(speedTestSettings)
+                    val avgBytes = speedTest.uploadTest()
+                    logger.debug("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
+                    val base = 1024 * 1024
+                    val avgMb = avgBytes / base
+                    reportSpeed(request.speedReportUrl, avgMb.toInt())
+                    avgMb.toInt()
+                } else speed
+                if (avgMb > allowUseMaxBandwidth) {
+                    logger.info("Faster internet,use common generic upload.")
+                    request.genericUrl?.let { commonUpload(request) }
+                    return
+                }
+            }
+            val existNewFileSign = existNewFileSign(request)
+            if (!existNewFileSign) {
+                newSignFileData = signNewFile(request)
+            }
             val nanos = measureNanoTime { doUpload(request) }
             logger.info("Upload[${request.file}] success,elapsed ${HumanReadable.time(nanos)}.")
         } catch (e: Exception) {
@@ -74,6 +83,46 @@ class HttpBkSyncCall(
             request.genericUrl?.let { commonUpload(request) }
         }
         newSignFileData?.let { uploadSignFile(request, newSignFileData) }
+    }
+
+    private fun reportSpeed(url: String, speed: Int) {
+        try {
+            val reportUrl = HttpUrl.get(url).newBuilder()
+                .addQueryParameter("speed", "$speed")
+                .addQueryParameter("action", UPLOAD_ACTION).build()
+            val request = Request.Builder()
+                .url(reportUrl)
+                .put(RequestBody.create(null, ByteArray(0)))
+                .build()
+            val response = client.newCall(request).execute()
+            response.use {
+                if (!it.isSuccessful) {
+                    throw ReportSpeedException("Report speed failed:${response.message()}")
+                }
+            }
+        } catch (e: Exception) {
+            logger.debug("Report speed error", e)
+        }
+    }
+
+    private fun getSpeed(url: String): Int {
+        val reportUrl = HttpUrl.get(url).newBuilder()
+            .addQueryParameter("action", UPLOAD_ACTION).build()
+        val request = Request.Builder().url(reportUrl).build()
+        val response = client.newCall(request).execute()
+        response.use {
+            if (it.isSuccessful) {
+                val byteStream = it.body()?.byteStream()!!
+                val result = JsonUtils.objectMapper.readValue(
+                    byteStream,
+                    object : TypeReference<com.tencent.bkrepo.common.api.pojo.Response<Int>>() {}
+                )
+                val data = result.data!!
+                logger.debug("Get speed from server: $data MB/s.")
+                return data
+            }
+        }
+        return -1
     }
 
     /**
@@ -85,8 +134,13 @@ class HttpBkSyncCall(
         with(request) {
             // 请求sign
             logger.info("Request sign")
-            val signStream = downloadSign()
-            signStream.buffered().use { patch(it) }
+            val signResponse = downloadSign()
+            signResponse.use {
+                val signStream = signResponse.body()?.byteStream() ?: let {
+                    throw SignRequestException("Sign stream broken: ${signResponse.message()}.")
+                }
+                patch(signStream.buffered())
+            }
         }
     }
 
@@ -104,8 +158,10 @@ class HttpBkSyncCall(
                     .headers(headers)
                     .build()
                 val response = client.newCall(signRequest).execute()
-                if (!response.isSuccessful) {
-                    throw UploadSignFileException(response.message())
+                response.use {
+                    if (!it.isSuccessful) {
+                        throw UploadSignFileException(response.message())
+                    }
                 }
                 logger.info("Upload[$file] sign file success.")
             } catch (e: Exception) {
@@ -144,9 +200,11 @@ class HttpBkSyncCall(
                 .headers(headers)
                 .build()
             val resp = client.newCall(req).execute()
-            if (resp.isSuccessful) {
-                logger.info("Sign file already existed.")
-                return true
+            resp.use {
+                if (it.isSuccessful) {
+                    logger.info("Sign file already existed.")
+                    return true
+                }
             }
             return false
         }
@@ -155,7 +213,7 @@ class HttpBkSyncCall(
     /**
      * 获取sign数据流
      * */
-    private fun UploadRequest.downloadSign(): InputStream {
+    private fun UploadRequest.downloadSign(): Response {
         val signRequest = Request.Builder()
             .url(signUrl)
             .headers(headers)
@@ -164,9 +222,7 @@ class HttpBkSyncCall(
         if (!response.isSuccessful) {
             throw SignRequestException("Request sign error: ${response.message()}.")
         }
-        return response.body()?.byteStream() ?: let {
-            throw SignRequestException("Sign stream broken: ${response.message()}.")
-        }
+        return response
     }
 
     /**
@@ -255,8 +311,10 @@ class HttpBkSyncCall(
                 .build()
             val nanos = measureNanoTime {
                 val response = client.newCall(commonRequest).execute()
-                if (!response.isSuccessful) {
-                    throw PatchRequestException("Generic upload[$genericUrl] failed.")
+                response.use {
+                    if (!it.isSuccessful) {
+                        throw PatchRequestException("Generic upload[$genericUrl] failed.")
+                    }
                 }
             }
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
@@ -294,6 +352,7 @@ class HttpBkSyncCall(
             logger.error("Patch failed", t)
             errorCallback.onFailure(t?.message.orEmpty())
             countDownLatch.countDown()
+            response?.close()
         }
     }
 
@@ -310,5 +369,6 @@ class HttpBkSyncCall(
         private const val PATCH_EVENT_TYPE_ERROR = "ERROR"
         private const val QUERY_PARAM_MD5 = "md5"
         private const val HEADER_MD5 = "X-BKREPO-MD5"
+        private const val UPLOAD_ACTION = "UPLOAD"
     }
 }

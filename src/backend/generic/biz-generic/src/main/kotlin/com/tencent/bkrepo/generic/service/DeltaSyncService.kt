@@ -19,6 +19,7 @@ import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.bksync.BlockInputStream
 import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
 import com.tencent.bkrepo.common.bksync.FileBlockInputStream
+import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageProperties
@@ -32,6 +33,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.dao.SignFileDao
+import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -63,7 +65,8 @@ class DeltaSyncService(
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
     storageProperties: StorageProperties,
-    val taskExecutor: ThreadPoolTaskScheduler
+    val taskExecutor: ThreadPoolTaskScheduler,
+    private val redisOperation: RedisOperation
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
@@ -152,6 +155,17 @@ class DeltaSyncService(
 
     fun whiteList(): List<String> {
         return deltaProperties.whiteList
+    }
+
+    fun recordSpeed(ip: String, action: GenericAction, speed: Int) {
+        val key = "$SPEED_KEY_PREFIX$ip:$action"
+        val expiredInSecond = deltaProperties.speedTestExpired.seconds
+        redisOperation.set(key, speed.toString(), expiredInSecond)
+    }
+
+    fun getSpeed(ip: String, action: GenericAction): Int {
+        val key = "$SPEED_KEY_PREFIX$ip:$action"
+        return redisOperation.get(key)?.toInt() ?: -1
     }
 
     /**
@@ -424,5 +438,6 @@ class DeltaSyncService(
 
         // 3s patch 回复心跳时间，保持连接存活
         private const val HEART_BEAT_INTERVAL = 3000L
+        private const val SPEED_KEY_PREFIX = "delta:speed:"
     }
 }

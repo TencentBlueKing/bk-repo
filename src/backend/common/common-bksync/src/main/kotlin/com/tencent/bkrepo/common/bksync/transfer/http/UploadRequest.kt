@@ -15,7 +15,9 @@ class UploadRequest(
     // 新文件签名url
     val newFileSignUrl: String,
     // 旧文件路径
-    val oldFilePath: String
+    val oldFilePath: String,
+    // 测速上报
+    val speedReportUrl: String
 ) {
     val headers = mutableMapOf<String, String>()
     var genericUrl: String? = null

@@ -25,26 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.bksync.transfer.exception
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
-
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String? = null,
-    var repoName: String? = null,
-    var whiteList: List<String> = listOf(ALL),
-    var speedTestExpired: Duration = Duration.ofMinutes(10)
-) {
-    companion object {
-        const val ALL = "all"
-    }
-}
+class ReportSpeedException(message: String) : RuntimeException(message)

@@ -12,6 +12,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.DELTA_MAPPING_URI
 import com.tencent.bkrepo.generic.config.DeltaProperties
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
+import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.service.DeltaSyncService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -58,5 +59,21 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
         val whiteList = deltaSyncService.whiteList()
         val hasPermit = whiteList.contains(clientIp) || whiteList.contains(DeltaProperties.ALL)
         return ResponseBuilder.success(hasPermit)
+    }
+
+    @PutMapping("delta/speed")
+    fun recordSpeed(
+        @RequestParam speed: Int,
+        @RequestParam action: GenericAction
+    ) {
+        val clientIp = HttpContextHolder.getClientAddress()
+        deltaSyncService.recordSpeed(clientIp, action, speed)
+    }
+
+    @GetMapping("delta/speed")
+    fun getSpeed(@RequestParam action: GenericAction): Response<Int> {
+        val clientIp = HttpContextHolder.getClientAddress()
+        val speed = deltaSyncService.getSpeed(clientIp, action)
+        return ResponseBuilder.success(speed)
     }
 }
