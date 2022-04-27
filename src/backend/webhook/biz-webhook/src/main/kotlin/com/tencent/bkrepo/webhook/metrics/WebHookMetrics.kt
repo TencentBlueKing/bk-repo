@@ -25,6 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.exception
+package com.tencent.bkrepo.webhook.metrics
 
-class WebHookException(message: String) : RuntimeException(message)
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.stereotype.Component
+import java.util.concurrent.atomic.AtomicInteger
+
+@Component
+class WebHookMetrics : MeterBinder {
+
+    var executingCount = AtomicInteger(0)
+
+    override fun bindTo(registry: MeterRegistry) {
+        Gauge.builder(WEBHOOK_EXECUTING_COUNT, executingCount) { it.get().toDouble() }
+            .description(WEBHOOK_EXECUTING_COUNT_DESC)
+            .register(registry)
+    }
+}

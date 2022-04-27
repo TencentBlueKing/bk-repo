@@ -29,12 +29,7 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":webhook:api-webhook"))
-    api(project(":common:common-job"))
-    api(project(":common:common-stream"))
-    api(project(":common:common-artifact:artifact-service"))
+package com.tencent.bkrepo.webhook.metrics
 
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
-}
+const val WEBHOOK_EXECUTING_COUNT = "webhook.executing.count"
+const val WEBHOOK_EXECUTING_COUNT_DESC = "webhook执行中数量"

@@ -25,7 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.constant
+package com.tencent.bkrepo.webhook
 
-const val WEBHOOK_AUTH_HEADER = "X-TOKEN"
-const val WEBHOOK_EVENT_HEADER = "X-EVENT"
+const val UT_PROJECT_ID = "ut-project"
+const val UT_PROJECT_DISPLAY = "ut-project-display"
+const val UT_PROJECT_DESC = "ut-project-desc"
+const val UT_REPO_NAME = "ut-repo"
+const val UT_REPO_DISPLAY = "ut-repo-display"
+const val UT_REPO_DESC = "ut-repo-desc"
+const val UT_USER = "system"
