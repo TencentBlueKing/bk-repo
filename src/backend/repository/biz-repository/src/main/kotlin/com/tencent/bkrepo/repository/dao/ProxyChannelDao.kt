@@ -58,7 +58,7 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
         val query = buildSingleQuery(
             projectId = projectId,
             repoName = repoName,
-            repoType = repoType,
+            repoType = repoType.name,
             name = name,
             url = url
         )
@@ -86,7 +86,7 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
         val query = buildSingleQuery(
             projectId = projectId,
             repoName = repoName,
-            repoType = repoType,
+            repoType = repoType.name,
             name = name,
             url = url
         )
@@ -99,7 +99,7 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
     private fun buildSingleQuery(
         projectId: String,
         repoName: String,
-        repoType: RepositoryType,
+        repoType: String,
         name: String,
         url: String
     ): Query {

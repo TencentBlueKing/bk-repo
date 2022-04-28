@@ -51,7 +51,7 @@ class ProxyChannelController(
         url: String
     ): Response<ProxyChannelInfo?> {
         val type = try {
-            RepositoryType.valueOf(repoType)
+            RepositoryType.ofValueOrDefault(repoType)
         } catch (ignored: IllegalArgumentException) {
             return ResponseBuilder.success()
         }

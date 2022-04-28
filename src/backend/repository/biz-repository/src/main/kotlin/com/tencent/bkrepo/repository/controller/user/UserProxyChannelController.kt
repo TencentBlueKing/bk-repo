@@ -42,6 +42,7 @@ import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Api("代理源用户接口")
@@ -50,18 +51,33 @@ import org.springframework.web.bind.annotation.RestController
 class UserProxyChannelController(
     private val proxyChannelService: ProxyChannelService
 ) {
-
-    @ApiOperation("列表查询代理源")
-    @GetMapping("/list/public/{type}")
-    fun listProxyChannel(
-        @ApiParam("仓库类型", required = true)
-        @PathVariable type: String
-    ): Response<List<ProxyChannelInfo>> {
+    @ApiOperation("查询代理源信息")
+    @GetMapping("/{projectId}/{repoName}")
+    fun getByUniqueId(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "type", required = true)
+        @RequestParam repoType: String,
+        @ApiParam(value = "name", required = true)
+        @RequestParam name: String,
+        @ApiParam(value = "url", required = true)
+        @RequestParam url: String
+    ): Response<ProxyChannelInfo?> {
         val repoType = try {
-            RepositoryType.valueOf(type)
+            RepositoryType.ofValueOrDefault(repoType)
         } catch (ignored: IllegalArgumentException) {
-            return ResponseBuilder.success(emptyList())
+            return ResponseBuilder.success(null)
         }
-        return ResponseBuilder.success(proxyChannelService.listPublicChannel(repoType))
+        return ResponseBuilder.success(
+            proxyChannelService.queryProxyChannel(
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoType,
+                name = name,
+                url = url
+            )
+        )
     }
 }
