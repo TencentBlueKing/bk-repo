@@ -27,7 +27,10 @@
 
 dependencies {
     implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
+    implementation(project(":common:common-service")){
+        exclude("org.springframework.boot","spring-boot-starter-webflux")
+    }
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation(project(":common:common-redis"))
     implementation(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-security"))

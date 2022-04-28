@@ -180,6 +180,13 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         updateFirst(Query(criteria), update)
     }
 
+
+    fun updateScanPlanQuality(scanId: String, quality: Map<String, Any?>) {
+        val criteria = TScanPlan::id.isEqualTo(scanId)
+        val update = buildQualityUpdate(quality) ?: return
+        upsert(Query(criteria), update)
+    }
+
     private fun buildOverviewUpdate(overview: Map<String, Any?>, dec: Boolean = false): Update? {
         val update = Update()
         var hasUpdate = false
@@ -201,6 +208,14 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         } else {
             null
         }
+    }
+
+    private fun buildQualityUpdate(quality: Map<String, Any?>): Update {
+        val update = Update()
+        quality.forEach { entry ->
+                update.set("${TScanPlan::scanQuality.name}.${entry.key}", entry.value)
+        }
+        return update
     }
 
     private fun projectCriteria(projectId: String, includeDeleted: Boolean = false): Criteria {
