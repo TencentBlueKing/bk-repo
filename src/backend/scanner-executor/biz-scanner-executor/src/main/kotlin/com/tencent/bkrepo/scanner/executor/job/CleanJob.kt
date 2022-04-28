@@ -29,7 +29,9 @@ package com.tencent.bkrepo.scanner.executor.job
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.PruneType
+import com.tencent.bkrepo.scanner.executor.arrowhead.ArrowheadScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
+import com.tencent.bkrepo.scanner.executor.util.CommandUtil
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -62,13 +64,27 @@ class CleanJob(
             try {
                 val notModifiedMinutes = (now - it.lastModified()) / 1000L / 60L
                 if (it.exists() && notModifiedMinutes > expiredMinutes) {
+                    tryUnmountArrowheadTmpDir(it)
                     Files.deleteIfExists(it.toPath())
                 }
             } catch (e: DirectoryNotEmptyException) {
-                logger.warn("directory [${it.absolutePath}] is not empty")
+                logger.warn(
+                    "directory [${it.absolutePath}] is not empty[${it.listFiles()?.joinToString(",")}]"
+                )
             } catch (e: Exception) {
                 logger.error("delete file[${it.absolutePath}] failed", e)
             }
+        }
+    }
+
+    /**
+     * arrowhead不支持限制硬盘可用空间大小，临时方案为挂载一个格式化为ext4的文件，需要定时扫描清理unmount失败的目录
+     *
+     * 临时方案，arrowhead支持限制可用空间大小后移除
+     */
+    private fun tryUnmountArrowheadTmpDir(file: File) {
+        if (file.name == ArrowheadScanExecutor.TMP_DIR_NAME && file.isDirectory) {
+            CommandUtil.unmount(file)
         }
     }
 

@@ -52,7 +52,9 @@ import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
+import com.tencent.bkrepo.scanner.executor.util.CommandUtil
 import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
+import org.apache.commons.lang.SystemUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -210,7 +212,8 @@ class ArrowheadScanExecutor @Autowired constructor(
         pullImage(containerConfig.image)
 
         // 容器内tmp目录
-        val tmpBind = Bind("${workDir.absolutePath}${File.separator}tmp", Volume("/tmp"))
+        val tmpDir = createTmpDir(workDir, DataSize.ofGigabytes(DEFAULT_TMP_DIR_SIZE_GB))
+        val tmpBind = Bind(tmpDir.absolutePath, Volume("/tmp"))
         // 容器内工作目录
         val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
         val hostConfig = HostConfig().withBinds(tmpBind, bind).apply { configCpu(this) }
@@ -232,8 +235,22 @@ class ArrowheadScanExecutor @Autowired constructor(
             }
             return scanStatus(task, workDir)
         } finally {
+            CommandUtil.unmount(tmpDir)
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
+    }
+
+    /**
+     * 创建一个[size]大小的目录
+     */
+    private fun createTmpDir(workDir: File, size: DataSize): File {
+        val tmpDir = File(workDir, TMP_DIR_NAME)
+        tmpDir.mkdirs()
+        if (SystemUtils.IS_OS_LINUX) {
+            val tmpImage = File(workDir, "tmp.image")
+            CommandUtil.createExt4ImageAndMount(size.toBytes(), tmpImage, tmpDir)
+        }
+        return tmpDir
     }
 
     private fun configCpu(hostConfig: HostConfig) {
@@ -383,5 +400,12 @@ class ArrowheadScanExecutor @Autowired constructor(
          * 默认为1024，降低此值可降低容器在CPU时间分配中的优先级
          */
         private const val CONTAINER_CPU_SHARES = 512
+
+        /**
+         * 默认arrowhead使用的tmp目录大小
+         */
+        private const val DEFAULT_TMP_DIR_SIZE_GB = 16L
+
+        const val TMP_DIR_NAME = "tmp"
     }
 }
