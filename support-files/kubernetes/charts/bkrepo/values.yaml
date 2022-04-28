@@ -312,6 +312,10 @@ auth:
       ciAuthToken:
       # 开启reporter模式
       enableSuperAdmin: true
+  ## bcs account配置
+  bcs:
+    accessKey: ""
+    secretKey: ""
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
