@@ -55,20 +55,9 @@ class HttpBkSyncCall(
     fun upload(request: UploadRequest) {
         try {
             if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-                val speed = getSpeed(request.speedReportUrl)
-                val avgMb = if (speed == -1) {
-                    val speedTest = NetSpeedTest(speedTestSettings)
-                    val avgBytes = speedTest.uploadTest()
-                    logger.debug("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
-                    val base = 1024 * 1024
-                    val avgMb = avgBytes / base
-                    reportSpeed(request.speedReportUrl, avgMb.toInt())
-                    avgMb.toInt()
-                } else speed
-                if (avgMb > allowUseMaxBandwidth) {
+                if (!checkSpeed(request, speedTestSettings)) {
                     logger.info("Faster internet,use common generic upload.")
                     request.genericUrl?.let { commonUpload(request) }
-                    return
                 }
             }
             val nanos = measureNanoTime { doUpload(request) }
@@ -85,6 +74,30 @@ class HttpBkSyncCall(
                 afterUpload(request)
             }
         }
+    }
+
+    /**
+     * 检查网络速度
+     * @return true为低于允许使用的最大带宽，反之则大于允许的最大带宽
+     * */
+    private fun checkSpeed(
+        request: UploadRequest,
+        speedTestSettings: SpeedTestSettings
+    ): Boolean {
+        val speed = getSpeed(request.speedReportUrl)
+        val avgMb = if (speed == -1) {
+            val speedTest = NetSpeedTest(speedTestSettings)
+            val avgBytes = speedTest.uploadTest()
+            logger.debug("Internet speed is measured as ${HumanReadable.size(avgBytes)}/s")
+            val base = 1024 * 1024
+            val avgMb = avgBytes / base
+            reportSpeed(request.speedReportUrl, avgMb.toInt())
+            avgMb.toInt()
+        } else speed
+        if (avgMb > allowUseMaxBandwidth) {
+            return false
+        }
+        return true
     }
 
     /**
@@ -174,27 +187,23 @@ class HttpBkSyncCall(
             val md5 = HashCode.fromBytes(md5Data).toString()
             logger.info("End sign file.")
             val newSignFileData = byteOutputStream.toByteArray()
-            try {
-                logger.info("Start upload sign file.")
-                val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), newSignFileData)
-                val uploadUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
-                    QUERY_PARAM_MD5, md5
-                ).build()
-                val signRequest = Request.Builder()
-                    .url(uploadUrl)
-                    .put(signFileBody)
-                    .headers(headers)
-                    .build()
-                val response = client.newCall(signRequest).execute()
-                response.use {
-                    if (!it.isSuccessful) {
-                        throw UploadSignFileException(response.message())
-                    }
+            logger.info("Start upload sign file.")
+            val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), newSignFileData)
+            val uploadUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
+                QUERY_PARAM_MD5, md5
+            ).build()
+            val signRequest = Request.Builder()
+                .url(uploadUrl)
+                .put(signFileBody)
+                .headers(headers)
+                .build()
+            val response = client.newCall(signRequest).execute()
+            response.use {
+                if (!it.isSuccessful) {
+                    throw UploadSignFileException(response.message())
                 }
-                logger.info("Upload[$file] sign file success.")
-            } catch (e: Exception) {
-                logger.debug("Upload sign file failed", e)
             }
+            logger.info("Upload[$file] sign file success.")
         }
     }
 
