@@ -225,6 +225,7 @@ class HttpBkSyncCall(
             .build()
         val response = client.newCall(signRequest).execute()
         if (!response.isSuccessful) {
+            response.close()
             throw SignRequestException("Request sign error: ${response.message()}.")
         }
         return response
