@@ -2,7 +2,7 @@
     <div class="repo-config-container" v-bkloading="{ isLoading }">
         <bk-tab class="repo-config-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
-                <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules">
+                <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="120" :model="repoBaseInfo" :rules="rules">
                     <bk-form-item :label="$t('repoName')">
                         <div class="flex-align-center">
                             <icon size="20" :name="repoBaseInfo.repoType || repoType" />

@@ -150,5 +150,13 @@ export default {
     // 获取扫描器列表
     getScannerList () {
         return Vue.prototype.$ajax.get('/scanner/api/scanners/base')
+    },
+    // 获取质量规则
+    getQualityRule (_, { id }) {
+        return Vue.prototype.$ajax.get(`/scanner/api/scan/quality/${id}`)
+    },
+    // 更新质量规则
+    saveQualityRule (_, { id, body }) {
+        return Vue.prototype.$ajax.post(`/scanner/api/scan/quality/${id}`, body)
     }
 }

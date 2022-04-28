@@ -2,7 +2,7 @@
     <div class="scan-config-container" v-bkloading="{ isLoading }">
         <bk-tab class="scan-config-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="baseInfo" label="基础设置">
-                <bk-form :label-width="150">
+                <bk-form :label-width="120">
                     <bk-form-item label="方案名称">
                         <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
                     </bk-form-item>
@@ -24,16 +24,23 @@
             <bk-tab-panel render-directive="if" name="autoConfig" label="监控设置">
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
             </bk-tab-panel>
+            <!-- <bk-tab-panel render-directive="if" name="qualityRule" label="质量规则">
+                <scan-quality-rule></scan-quality-rule>
+            </bk-tab-panel> -->
         </bk-tab>
     </div>
 </template>
 <script>
     import autoScanConfig from './autoScanConfig'
+    // import scanQualityRule from './scanQualityRule'
     import { mapActions } from 'vuex'
     import { scanTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'scanConfig',
-        components: { autoScanConfig },
+        components: {
+            autoScanConfig
+            // scanQualityRule
+        },
         data () {
             return {
                 scanTypeEnum,

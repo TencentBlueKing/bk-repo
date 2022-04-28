@@ -1,5 +1,5 @@
 <template>
-    <bk-form style="max-width: 1080px;" :label-width="150" :model="config" :rules="rules" ref="scanForm">
+    <bk-form style="max-width: 1080px;" :label-width="120" :model="config" :rules="rules" ref="scanForm">
         <bk-form-item label="自动扫描">
             <bk-switcher v-model="config.autoScan" size="small" theme="primary"></bk-switcher>
             <div style="color:var(--fontSubsidiaryColor);">符合方案类型要求并且满足以下规则的制品，在新入库时会使用本方案进行扫描</div>

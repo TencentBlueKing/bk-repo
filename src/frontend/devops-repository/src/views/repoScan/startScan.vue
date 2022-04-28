@@ -1,6 +1,6 @@
 <template>
     <div class="start-scan-container">
-        <bk-form style="max-width: 1080px;" :label-width="150" :model="config" :rules="rules" ref="scanForm">
+        <bk-form style="max-width: 1080px;" :label-width="120" :model="config" :rules="rules" ref="scanForm">
             <bk-form-item label="方案名称">
                 <span>{{ config.name }}</span>
             </bk-form-item>
