@@ -30,7 +30,7 @@
     "sameProxyExist": "存在同名代理源",
     "fileExist": "同名文件已存在",
     "fileError": "服务端异常，文件下载失败",
-    "fileDownloadError": "下载被禁止",
+    "fileDownloadError": "你正在下载的制品不符合下载规则，请联系 ({0}) 项目管理员",
     "origin": "来源",
     "address": "地址",
     "operation": "操作",
@@ -189,5 +189,7 @@
     "metadata": "元数据",
     "metadataRule": "请输入格式为 'key: value' 的数据",
     "repoQuota": "仓库配额",
-    "unlimited": "无配额限制"
+    "unlimited": "无配额限制",
+    "fileNameRule": "* wildcard is supported. For example, only signed APK can be downloaded: *_sign.apk",
+    "viewMetadataDocument": "View the metadata specification documentation"
 }
