@@ -75,7 +75,11 @@ class HttpBkSyncCall(
             logger.info("Upload[${request.file}] success,elapsed ${HumanReadable.time(nanos)}.")
             afterUpload(request)
         } catch (e: Exception) {
-            logger.debug("Upload failed: ", e)
+            if (e is SignRequestException) {
+                logger.debug("Upload failed: ${e.message}")
+            } else {
+                logger.debug("Upload failed: ", e)
+            }
             request.genericUrl?.let {
                 commonUpload(request)
                 afterUpload(request)
