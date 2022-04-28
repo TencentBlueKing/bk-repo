@@ -65,7 +65,10 @@ import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.io.File
+import java.io.UncheckedIOException
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
 @Component(ArrowheadScanner.TYPE)
@@ -116,7 +119,7 @@ class ArrowheadScanExecutor @Autowired constructor(
      * 获取文件最大允许扫描时间
      */
     private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
-        return scanner.maxScanDuration * DataSize.ofBytes(fileSize).toMegabytes()
+        return scanner.maxScanDuration * max(1L, DataSize.ofBytes(fileSize).toMegabytes())
     }
 
     /**
@@ -234,6 +237,12 @@ class ArrowheadScanExecutor @Autowired constructor(
                 return SubScanTaskStatus.TIMEOUT
             }
             return scanStatus(task, workDir)
+        } catch (e: UncheckedIOException) {
+            if (e.cause is SocketTimeoutException) {
+                logMsg(task, "call docker daemon api timeout[${e.message}]")
+                return SubScanTaskStatus.TIMEOUT
+            }
+            throw e
         } finally {
             CommandUtil.unmount(tmpDir)
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
