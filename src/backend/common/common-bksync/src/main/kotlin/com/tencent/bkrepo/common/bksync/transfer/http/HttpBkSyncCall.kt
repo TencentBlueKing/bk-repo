@@ -53,7 +53,6 @@ class HttpBkSyncCall(
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
-        var newSignFileData: ByteArray? = null
         try {
             if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
                 val speed = getSpeed(request.speedReportUrl)
@@ -72,17 +71,30 @@ class HttpBkSyncCall(
                     return
                 }
             }
-            val existNewFileSign = existNewFileSign(request)
-            if (!existNewFileSign) {
-                newSignFileData = signNewFile(request)
-            }
             val nanos = measureNanoTime { doUpload(request) }
             logger.info("Upload[${request.file}] success,elapsed ${HumanReadable.time(nanos)}.")
+            afterUpload(request)
         } catch (e: Exception) {
             logger.debug("Upload failed: ", e)
-            request.genericUrl?.let { commonUpload(request) }
+            request.genericUrl?.let {
+                commonUpload(request)
+                afterUpload(request)
+            }
         }
-        newSignFileData?.let { uploadSignFile(request, newSignFileData) }
+    }
+
+    /**
+     * 上传结束后行为
+     * */
+    private fun afterUpload(request: UploadRequest) {
+        try {
+            val existNewFileSign = existNewFileSign(request)
+            if (!existNewFileSign) {
+                uploadNewSignFile(request)
+            }
+        } catch (e: Exception) {
+            logger.debug("Upload sign file error.", e)
+        }
     }
 
     private fun reportSpeed(url: String, speed: Int) {
@@ -144,13 +156,25 @@ class HttpBkSyncCall(
         }
     }
 
-    private fun uploadSignFile(request: UploadRequest, newSignFileData: ByteArray) {
+    /**
+     * 上传新文件的sign file
+     * */
+    @Suppress("UnstableApiUsage")
+    private fun uploadNewSignFile(request: UploadRequest) {
         with(request) {
+            logger.info("Start sign file.")
+            val md5DigestInputStream = DigestInputStream(file.inputStream(), MessageDigest.getInstance("MD5"))
+            val byteOutputStream = ByteArrayOutputStream()
+            BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
+            val md5Data = md5DigestInputStream.messageDigest.digest()
+            val md5 = HashCode.fromBytes(md5Data).toString()
+            logger.info("End sign file.")
+            val newSignFileData = byteOutputStream.toByteArray()
             try {
                 logger.info("Start upload sign file.")
                 val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), newSignFileData)
                 val uploadUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
-                    QUERY_PARAM_MD5, headers[HEADER_MD5]
+                    QUERY_PARAM_MD5, md5
                 ).build()
                 val signRequest = Request.Builder()
                     .url(uploadUrl)
@@ -167,25 +191,6 @@ class HttpBkSyncCall(
             } catch (e: Exception) {
                 logger.debug("Upload sign file failed", e)
             }
-        }
-    }
-
-    /**
-     * 对新文件进行签名,并且添加X-BKREPO-MD5 http头进行文件内容校验
-     * */
-    @Suppress("UnstableApiUsage")
-    private fun signNewFile(request: UploadRequest): ByteArray {
-        with(request) {
-            logger.info("Start sign file.")
-            val md5DigestInputStream = DigestInputStream(file.inputStream(), MessageDigest.getInstance("MD5"))
-            val byteOutputStream = ByteArrayOutputStream()
-            BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
-            val md5Data = md5DigestInputStream.messageDigest.digest()
-            val md5 = HashCode.fromBytes(md5Data).toString()
-            // 添加md5 header，方便在上传时进行md5校验
-            headers[HEADER_MD5] = md5
-            logger.info("End sign file.")
-            return byteOutputStream.toByteArray()
         }
     }
 
