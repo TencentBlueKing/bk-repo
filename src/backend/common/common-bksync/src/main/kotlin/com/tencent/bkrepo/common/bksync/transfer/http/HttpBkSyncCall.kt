@@ -55,9 +55,9 @@ class HttpBkSyncCall(
     fun upload(request: UploadRequest) {
         try {
             if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-                if (!checkSpeed(request, speedTestSettings)) {
+                if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
                     logger.info("Faster internet,use common generic upload.")
-                    request.genericUrl?.let { commonUpload(request) }
+                    commonUpload(request)
                 }
             }
             val nanos = measureNanoTime { doUpload(request) }
