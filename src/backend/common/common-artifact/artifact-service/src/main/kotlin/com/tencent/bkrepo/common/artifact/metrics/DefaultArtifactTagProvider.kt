@@ -28,8 +28,6 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
-import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_MEMORY
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_REMOTE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -73,10 +71,7 @@ class DefaultArtifactTagProvider(
                 )
             }
             return Tags.of(
-                PROJECT_ID,
-                this?.projectId ?: StringPool.UNKNOWN,
-                REPO_NAME,
-                this?.name ?: StringPool.UNKNOWN,
+                REPO_TAG, getRepoTagValue(this),
                 PATH,
                 this?.let { getTagPath(getStorageCredentials(storageCredentials), path) }
                     ?: path
@@ -110,7 +105,17 @@ class DefaultArtifactTagProvider(
         return credentials ?: storageProperties.defaultStorageCredentials()
     }
 
+    private fun getRepoTagValue(repositoryDetail: RepositoryDetail?): String {
+        if (repositoryDetail == null) {
+            return StringPool.UNKNOWN
+        }
+        with(repositoryDetail) {
+            return "$projectId/$name"
+        }
+    }
+
     companion object {
         private const val PATH = "path"
+        const val REPO_TAG = "repo"
     }
 }

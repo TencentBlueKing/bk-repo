@@ -39,8 +39,6 @@ import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
-import org.slf4j.LoggerFactory
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
@@ -51,58 +49,33 @@ class ArtifactMetrics(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     tagProvider: ArtifactTransferTagProvider,
     meterRegistry: MeterRegistry,
-    val properties: ArtifactMetricsProperties
+    properties: ArtifactMetricsProperties
 ) : MeterBinder {
 
-    private val logger = LoggerFactory.getLogger(ArtifactMetrics::class.java)
-    private val customMeterNames = listOf(
-        ARTIFACT_DOWNLOADING_TIME,
-        ARTIFACT_DOWNLOADING_SIZE,
-        ARTIFACT_UPLOADING_TIME,
-        ARTIFACT_UPLOADING_SIZE,
-        ARTIFACT_UPLOADED_SIZE,
-        ARTIFACT_DOWNLOADED_SIZE
-    )
     var uploadingCount = AtomicInteger(0)
     var downloadingCount = AtomicInteger(0)
 
     init {
         Companion.tagProvider = tagProvider
         Companion.meterRegistry = meterRegistry
-    }
-
-    @Scheduled(fixedDelay = 60 * 1000)
-    fun gc() {
-        logger.info("Start gc in meter registry.")
-        var cleans = 0
-        val total = meterRegistry.meters.size
-        if (total > properties.maxMeters) {
-            meterRegistry.meters.forEach {
-                val name = it.id.name
-                // 清理自定义meter,只清理timer和counter,gauge是在一开始注册且数量固定
-                if (customMeterNames.contains(name)) {
-                    meterRegistry.remove(it)
-                    cleans++
-                }
-            }
-            logger.info("Clean $cleans/$total meters.")
-        }
+        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, meterRegistry, properties.maxMeters)
+        meterRegistry.config().meterFilter(lruMeterFilter)
     }
 
     override fun bindTo(meterRegistry: MeterRegistry) {
-        Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount, { it.get().toDouble() })
+        Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount) { it.get().toDouble() }
             .description(ARTIFACT_UPLOADING_COUNT_DESC)
             .register(meterRegistry)
 
-        Gauge.builder(ARTIFACT_DOWNLOADING_COUNT, downloadingCount, { it.get().toDouble() })
+        Gauge.builder(ARTIFACT_DOWNLOADING_COUNT, downloadingCount) { it.get().toDouble() }
             .description(ARTIFACT_DOWNLOADING_COUNT_DESC)
             .register(meterRegistry)
 
-        Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor.threadPoolExecutor, { it.activeCount.toDouble() })
+        Gauge.builder(ASYNC_TASK_ACTIVE_COUNT, threadPoolTaskExecutor.threadPoolExecutor) { it.activeCount.toDouble() }
             .description(ASYNC_TASK_ACTIVE_COUNT_DESC)
             .register(meterRegistry)
 
-        Gauge.builder(ASYNC_TASK_QUEUE_SIZE, threadPoolTaskExecutor.threadPoolExecutor, { it.queue.size.toDouble() })
+        Gauge.builder(ASYNC_TASK_QUEUE_SIZE, threadPoolTaskExecutor.threadPoolExecutor) { it.queue.size.toDouble() }
             .description(ASYNC_TASK_QUEUE_SIZE_DESC)
             .register(meterRegistry)
     }
@@ -110,6 +83,7 @@ class ArtifactMetrics(
     companion object {
         private lateinit var tagProvider: ArtifactTransferTagProvider
         private lateinit var meterRegistry: MeterRegistry
+        private lateinit var lruMeterFilter: LruMeterFilter
         private const val BYTES = "bytes"
 
         /**
@@ -146,6 +120,7 @@ class ArtifactMetrics(
                 .tags(tagProvider.getTags(receiver, true))
                 .baseUnit(BYTES)
                 .register(meterRegistry)
+                .apply { lruMeterFilter.access(this.id) }
         }
 
         /**
@@ -155,7 +130,7 @@ class ArtifactMetrics(
         fun getUploadingTimer(receiver: ArtifactDataReceiver): Timer {
             return Timer.builder(ARTIFACT_UPLOADING_TIME)
                 .description(ARTIFACT_UPLOADING_TIME_DESC)
-                .tags(tagProvider.getTags(receiver, false))
+                .tags(tagProvider.getTags(receiver))
                 .register(meterRegistry)
         }
 
@@ -169,6 +144,7 @@ class ArtifactMetrics(
                 .baseUnit(BYTES)
                 .tags(tagProvider.getTags(inputStream, true))
                 .register(meterRegistry)
+                .apply { lruMeterFilter.access(this.id) }
         }
 
         /**
@@ -178,7 +154,7 @@ class ArtifactMetrics(
         fun getDownloadingTimer(inputStream: ArtifactInputStream): Timer {
             return Timer.builder(ARTIFACT_DOWNLOADING_TIME)
                 .description(ARTIFACT_DOWNLOADING_TIME_DESC)
-                .tags(tagProvider.getTags(inputStream, false))
+                .tags(tagProvider.getTags(inputStream))
                 .register(meterRegistry)
         }
     }

@@ -27,14 +27,25 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import io.micrometer.core.instrument.Tag
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Test
 
-/**
- * 为构件传输提供tag
- * */
-interface ArtifactTransferTagProvider {
-    fun getTags(inputStream: ArtifactInputStream, includeRepoInfo: Boolean = false): Iterable<Tag>
-    fun getTags(receiver: ArtifactDataReceiver, includeRepoInfo: Boolean = false): Iterable<Tag>
+class LruMeterFilterTest {
+
+    @Test
+    fun testEvict() {
+        val registry = SimpleMeterRegistry()
+        val lruMeterFilter = LruMeterFilter(meterNamePrefix = "id", registry = registry, capacity = 2)
+        registry.config().meterFilter(lruMeterFilter)
+        val counter1 = Counter.builder("id1").register(registry)
+        val counter2 = Counter.builder("id2").register(registry)
+        // 访问了id1，所以根据LRU策略,再加入时应该淘汰id2
+        lruMeterFilter.access(counter1.id)
+        Counter.builder("id3").register(registry)
+
+        Assertions.assertEquals(2, registry.meters.size)
+        Assertions.assertEquals(false, registry.meters.contains(counter2))
+    }
 }
