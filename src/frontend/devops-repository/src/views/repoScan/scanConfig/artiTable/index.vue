@@ -57,7 +57,12 @@
         watch: {
             initData: {
                 handler (data) {
-                    this.defaultRules = data.map(r => ({ nameRule: r.nameRule || undefined, versionRule: r.versionRule || undefined }))
+                    this.defaultRules = data.map(r => {
+                        return r.rules?.reduce((target, item) => {
+                            target[item.field] = item
+                            return target
+                        }, {})
+                    })
                     this.showAddBtn = Boolean(data.length)
                 },
                 immediate: true
@@ -69,13 +74,16 @@
                     if (!this.showAddBtn) resolve([])
                     else {
                         const rules = this.defaultRules
-                            .map(({ nameRule, versionRule }) => {
+                            .map(({ name, version }) => {
                                 return {
-                                    nameRule: nameRule?.value ? nameRule : null,
-                                    versionRule: versionRule?.value ? versionRule : null
+                                    rules: [
+                                        name?.value ? name : undefined,
+                                        version?.value ? version : undefined
+                                    ].filter(Boolean),
+                                    relation: 'AND'
                                 }
                             })
-                            .filter(rule => Boolean(rule.nameRule || rule.versionRule))
+                            .filter(rule => Boolean(rule.rules.length))
                         rules.length ? resolve(rules) : reject(new Error())
                     }
                 })

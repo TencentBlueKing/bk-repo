@@ -44,10 +44,11 @@
                             <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                         </bk-form-item>
                         <bk-form-item :label="$t('repodataDepth')" property="repodataDepth" error-display-type="normal">
-                            <bk-input v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
+                            <bk-input class="w480" v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
                         </bk-form-item>
                         <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet" error-display-type="normal">
                             <bk-tag-input
+                                class="w480"
                                 :value="repoBaseInfo.groupXmlSet"
                                 @change="(val) => {
                                     repoBaseInfo.groupXmlSet = val.map(v => {
@@ -76,7 +77,7 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <bk-tab-panel v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
+            <bk-tab-panel render-directive="if" v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
                 <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
             <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">

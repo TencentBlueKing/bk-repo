@@ -125,10 +125,63 @@ export default {
         )
     },
     // 单个扫描
-    startScanSingle (_, body) {
+    startScanSingle (_, { projectId, id, repoName, name, version, packageKey, fullPath }) {
+        // return Vue.prototype.$ajax.post(
+        //     `${prefix}/single`,
+        //     body
+        // )
         return Vue.prototype.$ajax.post(
-            `${prefix}/single`,
-            body
+            `${prefix}/batch`,
+            {
+                projectId,
+                id,
+                rule: {
+                    rules: [
+                        {
+                            field: 'repoName',
+                            value: [repoName],
+                            operation: 'IN'
+                        },
+                        {
+                            rules: [
+                                {
+                                    rules: [
+                                        {
+                                            field: 'name',
+                                            operation: 'EQ',
+                                            value: name
+                                        },
+                                        version
+                                            ? {
+                                                field: 'version',
+                                                operation: 'EQ',
+                                                value: version
+                                            }
+                                            : undefined,
+                                        packageKey
+                                            ? {
+                                                field: 'key',
+                                                operation: 'EQ',
+                                                value: packageKey
+                                            }
+                                            : undefined,
+                                        fullPath
+                                            ? {
+                                                field: 'fullPath',
+                                                operation: 'EQ',
+                                                value: fullPath
+                                            }
+                                            : undefined
+                                    ],
+                                    relation: 'AND'
+                                }
+                            ],
+                            relation: 'OR'
+                        }
+                    ],
+                    relation: 'AND'
+                }
+            }
         )
     },
     // 制品关联的扫描方案

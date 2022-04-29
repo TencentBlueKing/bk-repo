@@ -1,7 +1,7 @@
 <template>
     <bk-form style="max-width: 1080px;" :label-width="120" :model="config" :rules="rules" ref="scanForm">
         <bk-form-item label="自动扫描">
-            <bk-switcher v-model="config.autoScan" size="small" theme="primary"></bk-switcher>
+            <bk-switcher v-model="config.scanOnNewArtifact" size="small" theme="primary"></bk-switcher>
             <div style="color:var(--fontSubsidiaryColor);">符合方案类型要求并且满足以下规则的制品，在新入库时会使用本方案进行扫描</div>
         </bk-form-item>
         <bk-form-item label="仓库范围" :required="true" property="repo" error-display-type="normal">
@@ -9,7 +9,7 @@
                 ref="repoConfig"
                 :init-data="config.repoNameList"
                 :scan-type="config.type"
-                :disabled="!config.autoScan"
+                :disabled="!config.scanOnNewArtifact"
                 @clearError="clearError">
             </repo-table>
         </bk-form-item>
@@ -18,7 +18,7 @@
                 ref="artiConfig"
                 :init-data="config.artifactRules"
                 :scan-type="config.type"
-                :disabled="!config.autoScan"
+                :disabled="!config.scanOnNewArtifact"
                 @clearError="clearError">
             </arti-table>
         </bk-form-item>
@@ -38,16 +38,16 @@
                 type: Object,
                 default: () => ({
                     type: '',
-                    autoScan: false,
-                    repoNameList: [],
-                    artifactRules: []
+                    scanOnNewArtifact: false,
+                    rule: {}
                 })
             }
         },
         data () {
             return {
                 config: {
-                    autoScan: false,
+                    type: '',
+                    scanOnNewArtifact: false,
                     repoNameList: [],
                     artifactRules: []
                 },
@@ -84,7 +84,11 @@
         watch: {
             data: {
                 handler (val) {
-                    this.config = JSON.parse(JSON.stringify(val))
+                    const copyData = JSON.parse(JSON.stringify(val))
+                    this.config.type = copyData.type
+                    this.config.scanOnNewArtifact = copyData.scanOnNewArtifact
+                    this.config.repoNameList = copyData.rule.rules.find(i => i.field === 'repoName')?.value || []
+                    this.config.artifactRules = copyData.rule.rules.find(i => Boolean(i.rules))?.rules || []
                 },
                 deep: true,
                 immediate: true
@@ -95,17 +99,33 @@
                 this.$refs.scanForm.clearError()
             },
             async save () {
-                if (this.config.autoScan) {
+                if (this.config.scanOnNewArtifact) {
                     await this.$refs.scanForm.validate()
                     const repoNameList = await this.$refs.repoConfig.getConfig()
                     const artifactRules = await this.$refs.artiConfig.getConfig()
                     this.$emit('save', {
-                        autoScan: this.config.autoScan,
-                        repoNameList,
-                        artifactRules
+                        scanOnNewArtifact: this.config.scanOnNewArtifact,
+                        rule: {
+                            rules: [
+                                repoNameList.length
+                                    ? {
+                                        field: 'repoName',
+                                        value: repoNameList,
+                                        operation: 'IN'
+                                    }
+                                    : undefined,
+                                artifactRules.length
+                                    ? {
+                                        rules: artifactRules,
+                                        relation: 'OR'
+                                    }
+                                    : undefined
+                            ].filter(Boolean),
+                            relation: 'AND'
+                        }
                     })
                 } else {
-                    this.$emit('save', { autoScan: this.config.autoScan })
+                    this.$emit('save', { scanOnNewArtifact: this.config.scanOnNewArtifact })
                 }
             }
         }

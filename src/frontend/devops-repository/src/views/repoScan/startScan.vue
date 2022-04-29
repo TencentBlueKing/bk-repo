@@ -103,8 +103,24 @@
                 this.startScan({
                     projectId: this.projectId,
                     id: this.planId,
-                    repoNameList,
-                    artifactRules
+                    rule: {
+                        rules: [
+                            repoNameList.length
+                                ? {
+                                    field: 'repoName',
+                                    value: repoNameList,
+                                    operation: 'IN'
+                                }
+                                : undefined,
+                            artifactRules.length
+                                ? {
+                                    rules: artifactRules,
+                                    relation: 'OR'
+                                }
+                                : undefined
+                        ].filter(Boolean),
+                        relation: 'AND'
+                    }
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
