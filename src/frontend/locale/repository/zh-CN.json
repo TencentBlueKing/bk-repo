@@ -200,6 +200,6 @@
     "unlimited": "无配额限制",
     "totalQuota": "仓库配额总量",
     "usedQuotaCapacity": "仓库已使用配额容量",
-    "fileNameRule": "支持*通配，比如只允111许下载已签名的APK：*_sign.apk",
+    "fileNameRule": "支持*通配，比如只允许下载已签名的APK：*_sign.apk",
     "viewMetadataDocument": "查看元数据规范文档"
 }
