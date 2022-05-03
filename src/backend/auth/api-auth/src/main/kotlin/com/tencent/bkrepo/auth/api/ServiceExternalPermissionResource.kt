@@ -33,12 +33,10 @@ import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.annotations.Api
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
 @Api(tags = ["SERVICE_EXTERNAL_PERMISSION"], description = "服务-外部权限接口")
-@Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceExternalPermissionResource")
 @RequestMapping(AUTH_SERVICE_EXT_PERMISSION_PREFIX)
 interface ServiceExternalPermissionResource {

@@ -136,7 +136,7 @@ class GenericController(
     ) {
         val artifacts = path.distinct().map { GenericArtifactInfo(projectId, repoName, it) }
         permissionManager.checkNodesPermission(
-            action = PermissionAction.WRITE,
+            action = PermissionAction.READ,
             projectId = projectId,
             repoName = repoName,
             paths = artifacts.map { it.getArtifactFullPath() }

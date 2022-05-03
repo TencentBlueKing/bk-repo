@@ -318,12 +318,17 @@ open class PermissionManager(
 
     /**
      * 匹配需要自定义鉴权的接口
-     * 通过straceTrace获取接口名称, 例如com.tencent.bkrepo.generic.controller.GenericController.upload
+     * 通过straceTrace获取接口名称
+     *   1. 过滤包名为com.tencent.bkrepo的接口
+     *   2. 使用注解鉴权的接口是由Spring cglib生成的，类名中包含$$EnhancerBySpringCGLIB$$xxxx, 需要替换掉
+     *      例如com.tencent.bkrepo.generic.controller.GenericController$$EnhancerBySpringCGLIB$$bccb61f5.download()
+     *   3. 去掉括号，得到接口名称
+     *      例如com.tencent.bkrepo.generic.controller.GenericController.download
      * 然后scope与接口名称匹配进行正则匹配
      */
     private fun matchApi(scope: String): Boolean {
         val stackTraceElements = Thread.currentThread().stackTrace.toList()
-            .filter { it.toString().startsWith("com.tencent.bkrepo") }
+            .filter { it.toString().startsWith(PACKAGE_NAME_PREFIX) }
             .map {
                 it.toString().replace(Regex("\\\$\\\$(.*)\\\$\\\$[a-z0-9]+"), "")
                     .substringBefore("(")
@@ -484,10 +489,10 @@ open class PermissionManager(
         private const val ACTION = "action"
         private const val PROJECT_ID = "projectId"
         private const val REPO_NAME = "repoName"
-        private const val PATH = "path"
         private const val FULL_PATH = "fullPath"
         private const val METADATA = "metadata"
         private const val NODES = "nodes"
+        private const val PACKAGE_NAME_PREFIX = "com.tencent.bkrepo"
 
         /**
          * 检查是否为匿名用户，如果是匿名用户则返回401并提示登录
