@@ -89,7 +89,6 @@ class DeltaSyncService(
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
-            // 查看是否已有sign文件，没有则生成。
             val md5 = node.md5!!
             val signNode = signFileDao.findByDetail(projectId, repoName, md5, blockSize)
                 ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, md5)
