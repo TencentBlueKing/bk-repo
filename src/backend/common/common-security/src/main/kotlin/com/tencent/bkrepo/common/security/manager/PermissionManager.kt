@@ -31,6 +31,9 @@
 
 package com.tencent.bkrepo.common.security.manager
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionResource
 import com.tencent.bkrepo.auth.api.ServicePermissionResource
 import com.tencent.bkrepo.auth.api.ServiceUserResource
@@ -53,9 +56,13 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import okhttp3.Headers
 import okhttp3.MediaType
@@ -78,14 +85,18 @@ open class PermissionManager(
     private val nodeClient: NodeClient
 ) {
 
-    private val externalPermissionList by lazy {
-        externalPermissionResource.listExternalPermission().data!!
-    }
-
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(10L, TimeUnit.SECONDS)
         .readTimeout(10L, TimeUnit.SECONDS)
         .build()
+
+    private val externalPermissionCache: LoadingCache<String, List<ExternalPermission>> by lazy {
+        val cacheLoader = object : CacheLoader<String, List<ExternalPermission>>() {
+            override fun load(key: String): List<ExternalPermission> =
+                externalPermissionResource.listExternalPermission().data!!
+        }
+        CacheBuilder.newBuilder().maximumSize(100).build(cacheLoader)
+    }
 
     /**
      * 校验项目权限
@@ -139,52 +150,24 @@ open class PermissionManager(
         action: PermissionAction,
         projectId: String,
         repoName: String,
-        path: String,
+        vararg path: String,
         public: Boolean? = null,
         anonymous: Boolean = false
     ) {
         if (isReadPublicRepo(action, projectId, repoName, public)) {
             return
         }
-        checkPermission(
-            type = ResourceType.NODE,
-            action = action,
-            projectId = projectId,
-            repoName = repoName,
-            paths = listOf(path),
-            anonymous = anonymous
-        )
-    }
-
-    /**
-     * 校验多节点权限
-     * @param action 动作
-     * @param projectId 项目id
-     * @param repoName 仓库名称
-     * @param paths 节点路径列表
-     * @param public 仓库是否为public
-     * @param anonymous 是否允许匿名
-     */
-    open fun checkNodesPermission(
-        action: PermissionAction,
-        projectId: String,
-        repoName: String,
-        paths: List<String>,
-        public: Boolean? = null,
-        anonymous: Boolean = false
-    ) {
-        if (repoName == PIPELINE) {
+        // 禁止批量下载流水线节点
+        if (path.size > 1 && repoName == PIPELINE) {
             throw PermissionException()
         }
-        if (isReadPublicRepo(action, projectId, repoName, public)) {
-            return
-        }
+
         checkPermission(
             type = ResourceType.NODE,
             action = action,
             projectId = projectId,
             repoName = repoName,
-            paths = paths,
+            paths = path.toList(),
             anonymous = anonymous
         )
     }
@@ -305,6 +288,7 @@ open class PermissionManager(
      * 获取当前项目、仓库的自定义外部权限
      */
     private fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
+        val externalPermissionList = externalPermissionCache.get(SYSTEM_USER)
         val platformId = SecurityUtils.getPlatformId()
         val ext = externalPermissionList.firstOrNull { p ->
             p.enabled
@@ -370,28 +354,52 @@ open class PermissionManager(
         repoName: String?,
         paths: List<String>?
     ): List<NodeDetail>? {
-        return if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
+        val nodeDetailList = if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
             null
         } else if (paths.size == 1) {
             val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data
                 ?: throw NodeNotFoundException(paths.first())
             listOf(node)
         } else {
-            var prefix = paths.first()
-            paths.forEach {
-                prefix = PathUtils.getCommonPath(prefix, it)
-            }
-            nodeClient.listNode(
-                projectId = projectId,
-                repoName = repoName,
-                path = prefix,
-                includeFolder = false,
-                deep = true
-            ).data?.filter {
-                paths.contains(it.fullPath)
-            }?.map { NodeDetail(it) } ?: emptyList()
+            queryNodeDetailList(projectId, repoName, paths)
         }
+        if (!nodeDetailList.isNullOrEmpty()) {
+            HttpContextHolder.getRequest().setAttribute(NODE_DETAIL_LIST_KEY, nodeDetailList)
+        }
+        return nodeDetailList
     }
+
+    private fun queryNodeDetailList(
+        projectId: String,
+        repoName: String,
+        paths: List<String>
+    ): List<NodeDetail> {
+        var prefix = paths.first()
+        paths.forEach {
+            prefix = PathUtils.getCommonPath(prefix, it)
+        }
+        var pageNumber = 1
+        val nodeDetailList = mutableListOf<NodeDetail>()
+        do {
+            val option = NodeListOption(
+                pageNumber = pageNumber,
+                pageSize = 1000,
+                includeFolder = true,
+                includeMetadata = true,
+                deep = true
+            )
+            val records = nodeClient.listNodePage(projectId, repoName, prefix, option).data?.records
+            if (records.isNullOrEmpty()) {
+                break
+            }
+            nodeDetailList.addAll(
+                records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
+            )
+            pageNumber ++
+        } while (nodeDetailList.size < paths.size)
+        return nodeDetailList
+    }
+
 
     private fun callbackToAuth(
         request: Request,

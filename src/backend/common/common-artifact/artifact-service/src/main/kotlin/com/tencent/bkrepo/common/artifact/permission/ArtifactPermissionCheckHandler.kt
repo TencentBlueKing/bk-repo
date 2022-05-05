@@ -57,10 +57,10 @@ class ArtifactPermissionCheckHandler(
             val path = ArtifactContextHolder.getArtifactInfo()!!.getArtifactFullPath()
             with(ArtifactContextHolder.getRepoDetail()!!) {
                 permissionManager.checkNodePermission(
-                    action = permission.action,
-                    projectId = projectId,
-                    repoName = name,
-                    path = path,
+                    permission.action,
+                    projectId,
+                    name,
+                    path,
                     public = public,
                     anonymous = permission.anonymous
                 )

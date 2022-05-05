@@ -44,6 +44,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_M
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
@@ -54,8 +55,8 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -132,14 +133,15 @@ class GenericController(
     fun batchDownload(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam path: List<String>
+        @RequestBody batchDownloadPaths: BatchDownloadPaths
     ) {
-        val artifacts = path.distinct().map { GenericArtifactInfo(projectId, repoName, it) }
-        permissionManager.checkNodesPermission(
+        val artifacts = batchDownloadPaths.paths.map { GenericArtifactInfo(projectId, repoName, it) }
+            .distinctBy { it.getArtifactFullPath() }
+        permissionManager.checkNodePermission(
             action = PermissionAction.READ,
             projectId = projectId,
             repoName = repoName,
-            paths = artifacts.map { it.getArtifactFullPath() }
+            path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray()
         )
         downloadService.batchDownload(artifacts)
     }

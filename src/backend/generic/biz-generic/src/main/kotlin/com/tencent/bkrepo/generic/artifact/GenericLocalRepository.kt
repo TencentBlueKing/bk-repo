@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
@@ -57,8 +58,10 @@ import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -147,8 +150,9 @@ class GenericLocalRepository : LocalRepository() {
      */
     private fun downloadSingleNode(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-                ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+            val node = getNodeDetailsFromReq(true)?.firstOrNull()
+                ?: nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+                ?: return null
             if (node.folder) {
                 return downloadFolder(this, node)
             }
@@ -170,20 +174,13 @@ class GenericLocalRepository : LocalRepository() {
             fullPathList.forEach {
                 prefix = PathUtils.getCommonPath(prefix, it)
             }
-            val nodes = nodeClient.listNode(
-                projectId = artifacts!!.first().projectId,
-                repoName = artifacts!!.first().repoName,
-                path = prefix,
-                includeFolder = true,
-                deep = true
-            ).data?.filter {
-                fullPathList.contains(it.fullPath)
-            }?.map {
-                if (it.folder) {
-                    throw BadRequestException(GenericMessageCode.DOWNLOAD_DIR_NOT_ALLOWED)
-                }
-                NodeDetail(it)
-            } ?: return null
+            val nodes = getNodeDetailsFromReq(false)
+                ?: queryNodeDetailList(
+                    projectId = artifacts!!.first().projectId,
+                    repoName = artifacts!!.first().repoName,
+                    paths = fullPathList,
+                    prefix = prefix
+                )
             val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
             if (notExistNodes.isNotEmpty()) {
                 throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
@@ -197,6 +194,39 @@ class GenericLocalRepository : LocalRepository() {
             }
             return ArtifactResource(nodeMap, useDisposition = true)
         }
+    }
+
+    private fun queryNodeDetailList(
+        projectId: String,
+        repoName: String,
+        paths: List<String>,
+        prefix: String
+    ): List<NodeDetail> {
+        var pageNumber = 1
+        val nodeDetailList = mutableListOf<NodeDetail>()
+        do {
+            val option = NodeListOption(
+                pageNumber = pageNumber,
+                pageSize = 1000,
+                includeFolder = true,
+                includeMetadata = true,
+                deep = true
+            )
+            val records = nodeClient.listNodePage(projectId, repoName, prefix, option).data?.records
+            if (records.isNullOrEmpty()) {
+                break
+            }
+            nodeDetailList.addAll(
+                records.filter { paths.contains(it.fullPath) }.map {
+                    if (it.folder) {
+                        throw BadRequestException(GenericMessageCode.DOWNLOAD_DIR_NOT_ALLOWED)
+                    }
+                    NodeDetail(it)
+                }
+            )
+            pageNumber ++
+        } while (nodeDetailList.size < paths.size)
+        return nodeDetailList
     }
 
     /**
@@ -236,6 +266,15 @@ class GenericLocalRepository : LocalRepository() {
         interceptors.forEach { it.intercept(nodeDetail) }
     }
 
+    private fun getNodeDetailsFromReq(allowFolder: Boolean): List<NodeDetail>? {
+        val nodeDetailList = HttpContextHolder.getRequest().getAttribute(NODE_DETAIL_LIST_KEY) as? List<NodeDetail>
+        nodeDetailList?.forEach {
+            if (!allowFolder && it.folder) {
+                throw BadRequestException(GenericMessageCode.DOWNLOAD_DIR_NOT_ALLOWED)
+            }
+        }
+        return nodeDetailList
+    }
     /**
      * 检查文件数量是否超过阈值
      * @throws ErrorCodeException 超过阈值抛出NODE_LIST_TOO_LARGE类型ErrorCodeException
