@@ -95,7 +95,7 @@ open class PermissionManager(
             override fun load(key: String): List<ExternalPermission> =
                 externalPermissionResource.listExternalPermission().data!!
         }
-        CacheBuilder.newBuilder().maximumSize(100).build(cacheLoader)
+        CacheBuilder.newBuilder().maximumSize(1).expireAfterWrite(30L, TimeUnit.MINUTES).build(cacheLoader)
     }
 
     /**
