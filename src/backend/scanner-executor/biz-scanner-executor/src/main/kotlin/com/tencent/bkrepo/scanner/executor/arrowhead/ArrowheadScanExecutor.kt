@@ -32,6 +32,7 @@ import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.HostConfig
+import com.github.dockerjava.api.model.Ulimit
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
@@ -52,9 +53,7 @@ import com.tencent.bkrepo.scanner.executor.ScanExecutor
 import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Companion.SCANNER_EXECUTOR_DOCKER_ENABLED
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
-import com.tencent.bkrepo.scanner.executor.util.CommandUtil
 import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
-import org.apache.commons.lang.SystemUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -101,8 +100,7 @@ class ArrowheadScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "load config success"))
 
             // 执行扫描
-            val maxScanDuration = maxScanDuration(scanner, scannerInputFile.length())
-            val scanStatus = doScan(workDir, task, maxScanDuration)
+            val scanStatus = doScan(workDir, task, scannerInputFile.length())
             return result(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
@@ -119,7 +117,14 @@ class ArrowheadScanExecutor @Autowired constructor(
      * 获取文件最大允许扫描时间
      */
     private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
-        return scanner.maxScanDuration * max(1L, DataSize.ofBytes(fileSize).toMegabytes())
+        return max(DEFAULT_MIN_SCAN_DURATION, scanner.maxScanDuration * DataSize.ofBytes(fileSize).toMegabytes())
+    }
+
+    private fun maxFileSize(fileSize: Long): Long {
+        // 最大允许的单文件大小为待扫描文件大小3倍，先除以3，防止long溢出
+        val maxFileSize = (Long.MAX_VALUE / 3L).coerceAtMost(fileSize) * 3L
+        // 单文件大小限制最少为8GiB，避免扫描器文件创建失败
+        return max(DataSize.ofGigabytes(DEFAULT_MIN_LIMIT_FILE_SIZE_GB).toBytes(), maxFileSize)
     }
 
     /**
@@ -209,17 +214,28 @@ class ArrowheadScanExecutor @Autowired constructor(
      *
      * @return true 扫描成功， false 扫描失败
      */
-    private fun doScan(workDir: File, task: ScanExecutorTask, maxScanDuration: Long): SubScanTaskStatus {
+    private fun doScan(workDir: File, task: ScanExecutorTask, fileSize: Long): SubScanTaskStatus {
         require(task.scanner is ArrowheadScanner)
+
+        val maxScanDuration = maxScanDuration(task.scanner, fileSize)
+        // 容器内单文件大小限制为待扫描文件大小的3倍
+        val maxFilesSize = maxFileSize(fileSize)
         val containerConfig = task.scanner.container
+
+        // 拉取镜像
         pullImage(containerConfig.image)
 
         // 容器内tmp目录
-        val tmpDir = createTmpDir(workDir, DataSize.ofGigabytes(DEFAULT_TMP_DIR_SIZE_GB))
+        val tmpDir = createTmpDir(workDir)
         val tmpBind = Bind(tmpDir.absolutePath, Volume("/tmp"))
         // 容器内工作目录
         val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
-        val hostConfig = HostConfig().withBinds(tmpBind, bind).apply { configCpu(this) }
+        val hostConfig = HostConfig().apply {
+            withBinds(tmpBind, bind)
+            withUlimits(arrayOf(Ulimit("fsize", maxFilesSize, maxFilesSize)))
+            configCpu(this)
+        }
+
         val containerId = dockerClient.createContainerCmd(containerConfig.image)
             .withHostConfig(hostConfig)
             .withCmd(containerConfig.args)
@@ -239,26 +255,18 @@ class ArrowheadScanExecutor @Autowired constructor(
             return scanStatus(task, workDir)
         } catch (e: UncheckedIOException) {
             if (e.cause is SocketTimeoutException) {
-                logMsg(task, "call docker daemon api timeout[${e.message}]")
+                logger.error(logMsg(task, "socket timeout[${e.message}]"))
                 return SubScanTaskStatus.TIMEOUT
             }
             throw e
         } finally {
-            CommandUtil.unmount(tmpDir)
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
     }
 
-    /**
-     * 创建一个[size]大小的目录
-     */
-    private fun createTmpDir(workDir: File, size: DataSize): File {
+    private fun createTmpDir(workDir: File): File {
         val tmpDir = File(workDir, TMP_DIR_NAME)
         tmpDir.mkdirs()
-        if (SystemUtils.IS_OS_LINUX) {
-            val tmpImage = File(workDir, "tmp.image")
-            CommandUtil.createExt4ImageAndMount(size.toBytes(), tmpImage, tmpDir)
-        }
         return tmpDir
     }
 
@@ -411,9 +419,14 @@ class ArrowheadScanExecutor @Autowired constructor(
         private const val CONTAINER_CPU_SHARES = 512
 
         /**
-         * 默认arrowhead使用的tmp目录大小
+         * 默认单文件大小限制，最少为8GiB
          */
-        private const val DEFAULT_TMP_DIR_SIZE_GB = 16L
+        private const val DEFAULT_MIN_LIMIT_FILE_SIZE_GB = 8L
+
+        /**
+         * 默认至少允许扫描的时间
+         */
+        private const val DEFAULT_MIN_SCAN_DURATION = 3 * 60L * 1000L
 
         const val TMP_DIR_NAME = "tmp"
     }

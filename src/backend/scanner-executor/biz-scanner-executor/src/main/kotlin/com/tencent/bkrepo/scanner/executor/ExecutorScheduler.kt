@@ -34,7 +34,6 @@ class ExecutorScheduler @Autowired constructor(
     private val executingCount = AtomicInteger(0)
     private val operatingSystemBean by lazy { ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean }
 
-
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun scan() {
         while (allowExecute()) {
