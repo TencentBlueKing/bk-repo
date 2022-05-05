@@ -38,12 +38,7 @@
             row-key="userId"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(planInput || lastExecutionStatus || showEnabled)">
-                    <template v-if="!Boolean(planInput || lastExecutionStatus || showEnabled)">
-                        <span class="ml10">暂无计划数据，</span>
-                        <bk-button text @click="$router.push({ name: 'createPlan' })">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(planInput || lastExecutionStatus || showEnabled)"></empty-data>
             </template>
             <bk-table-column label="计划名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="同步类型" width="80">

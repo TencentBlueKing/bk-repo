@@ -38,12 +38,7 @@
             row-key="userId"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(isSearching)">
-                    <template v-if="!Boolean(isSearching)">
-                        <span class="ml10">暂无用户数据，</span>
-                        <bk-button text @click="showCreateUser">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(isSearching)"></empty-data>
             </template>
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>

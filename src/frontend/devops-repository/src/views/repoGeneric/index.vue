@@ -87,12 +87,7 @@
                     @row-dblclick="openFolder"
                     @selection-change="selectMultiRow">
                     <template #empty>
-                        <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)">
-                            <template v-if="!Boolean(searchFileName) && permission.write && repoName !== 'pipeline'">
-                                <span class="ml10">暂无文件，</span>
-                                <bk-button text @click="handlerUpload(selectedTreeNode)">即刻上传</bk-button>
-                            </template>
-                        </empty-data>
+                        <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
                     <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">

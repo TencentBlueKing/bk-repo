@@ -30,12 +30,7 @@
             row-key="id"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(scanName)">
-                    <template v-if="!scanName">
-                        <span class="ml10">暂无扫描方案，</span>
-                        <bk-button text @click="showCreateDialog">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(scanName)"></empty-data>
             </template>
             <bk-table-column label="方案名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="扫描类型">

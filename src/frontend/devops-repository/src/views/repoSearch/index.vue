@@ -72,13 +72,7 @@
                     </package-card>
                 </infinite-scroll>
             </template>
-            <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:80px;"
-                :config="{
-                    imgSrc: '/ui/no-search.png',
-                    title: '搜索结果为空',
-                    subTitle: '请尝试修改搜索条件'
-                }">
-            </empty-data>
+            <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:80px;"></empty-data>
         </main>
         <generic-detail ref="genericDetail"></generic-detail>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>

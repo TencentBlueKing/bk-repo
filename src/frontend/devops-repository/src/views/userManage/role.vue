@@ -18,12 +18,7 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(role)">
-                    <template v-if="!Boolean(role)">
-                        <span class="ml10">暂无用户组数据，</span>
-                        <bk-button text @click="createRoleHandler">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(role)"></empty-data>
             </template>
             <bk-table-column label="用户组名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="关联用户数" show-overflow-tooltip>

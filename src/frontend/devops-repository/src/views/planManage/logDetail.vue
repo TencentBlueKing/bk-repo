@@ -29,11 +29,7 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(searchGroup.length || status)">
-                    <template v-if="!Boolean(searchGroup.length || status)">
-                        <span class="ml10">暂无同步记录</span>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(searchGroup.length || status)"></empty-data>
             </template>
             <bk-table-column label="同步节点" show-overflow-tooltip>
                 <template #default="{ row }">{{ `${masterNode.name} - ${row.remoteCluster}` }}</template>
