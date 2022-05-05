@@ -292,8 +292,8 @@ open class PermissionManager(
         val platformId = SecurityUtils.getPlatformId()
         val ext = externalPermissionList.firstOrNull { p ->
             p.enabled
-                .and(projectId.matches(Regex(p.projectId.replace("*", ".*"))))
-                .and(repoName?.matches(Regex(p.repoName.replace("*", ".*"))) ?: true)
+                .and(projectId.matches(wildcardToRegex(p.projectId)))
+                .and(repoName?.matches(wildcardToRegex(p.repoName)) ?: true)
                 .and(matchApi(p.scope))
                 .and(p.platformWhiteList.isNullOrEmpty() || !p.platformWhiteList!!.contains(platformId))
         }
@@ -318,7 +318,7 @@ open class PermissionManager(
                     .substringBefore("(")
             }
         logger.debug("stack trace elements: $stackTraceElements")
-        val pattern = Regex(scope.replace("*", ".*"))
+        val pattern = wildcardToRegex(scope)
         stackTraceElements.forEach {
             if (pattern.matches(it)) {
                 logger.debug("scope[$scope] match api: $it")
@@ -492,6 +492,8 @@ open class PermissionManager(
     companion object {
 
         private val logger = LoggerFactory.getLogger(PermissionManager::class.java)
+        private val keywordList = listOf("\\", "$", "(", ")", "+", ".", "[", "]", "?", "^", "{", "}", "|", "?", "&")
+
         private const val USER_ID = "userId"
         private const val TYPE = "type"
         private const val ACTION = "action"
@@ -509,6 +511,19 @@ open class PermissionManager(
             if (userId == ANONYMOUS_USER && platformId == null) {
                 throw AuthenticationException()
             }
+        }
+
+        private fun wildcardToRegex(input: String): Regex {
+            var escapedString = input.trim()
+            if (escapedString.isNotBlank()) {
+                keywordList.forEach {
+                    if (escapedString.contains(it)) {
+                        escapedString = escapedString.replace(it, "\\$it")
+                    }
+                }
+            }
+            return Regex(escapedString.replace("*", ".*"))
+
         }
     }
 }
