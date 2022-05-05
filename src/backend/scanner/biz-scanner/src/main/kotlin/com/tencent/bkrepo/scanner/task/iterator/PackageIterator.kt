@@ -96,7 +96,7 @@ class PackageIterator(
                     .ifEmpty { listOf(pkg.latestVersion) }
                     .asSequence()
                     .filter { version ->
-                        RuleMatcher.nameVersionMatch(pkg.artifactName, version, position.rule as Rule.NestedRule)
+                        RuleMatcher.matchNameVersion(pkg.artifactName, version, position.rule as Rule.NestedRule)
                     }
                     .map { version -> pkg.copy(packageVersion = version) }
                     .toList()

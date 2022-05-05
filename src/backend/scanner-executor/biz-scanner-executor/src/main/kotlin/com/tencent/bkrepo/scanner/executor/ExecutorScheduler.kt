@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.scanner.api.ScanClient
+import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
+import java.io.File
 import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -25,7 +27,8 @@ class ExecutorScheduler @Autowired constructor(
     private val storageCredentialsClient: StorageCredentialsClient,
     private val scanClient: ScanClient,
     private val storageService: StorageService,
-    private val executor: ThreadPoolTaskExecutor
+    private val executor: ThreadPoolTaskExecutor,
+    private val scannerExecutorProperties: ScannerExecutorProperties
 ) {
 
     private val executingCount = AtomicInteger(0)
@@ -55,7 +58,26 @@ class ExecutorScheduler @Autowired constructor(
      * 是否允许执行扫描
      */
     private fun allowExecute(): Boolean {
-        return executingCount.get() < operatingSystemBean.totalPhysicalMemorySize / MEMORY_PER_TASK
+        val executingCount = executingCount.get()
+
+        val freeMem = operatingSystemBean.freePhysicalMemorySize
+        val totalMem = operatingSystemBean.totalPhysicalMemorySize
+        val freeMemPercent = freeMem.toDouble() / totalMem.toDouble()
+        val memAvailable = freeMemPercent > scannerExecutorProperties.atLeastFreeMemPercent
+
+        val workDir = File(scannerExecutorProperties.workDir)
+        if (!workDir.exists()) {
+            workDir.mkdirs()
+        }
+        val usableDiskSpacePercent = workDir.usableSpace.toDouble() / workDir.totalSpace
+        val diskAvailable = usableDiskSpacePercent > scannerExecutorProperties.atLeastUsableDiskSpacePercent
+
+        if (!memAvailable || !diskAvailable) {
+            logger.warn("memory[$freeMemPercent]: $freeMem / $totalMem, " +
+                            "disk space[$usableDiskSpacePercent]: $usableDiskSpacePercent / ${workDir.totalSpace}")
+        }
+
+        return executingCount < scannerExecutorProperties.maxTaskCount && memAvailable && diskAvailable
     }
 
     @Suppress("BlockingMethodInNonBlockingContext")
@@ -65,6 +87,14 @@ class ExecutorScheduler @Autowired constructor(
 
             // 1. 加载文件
             logger.info("start load file[$sha256]")
+            // 文件大小超过限制直接返回
+            val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
+            if (size > fileSizeLimit) {
+                logger.warn("file too large, sha256[${sha256}, credentials: [${credentialsKey}]" +
+                                ", size[$size], limit[$fileSizeLimit]")
+                report(taskId, parentScanTaskId, startTimestamp)
+                return
+            }
             val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
             val artifactInputStream = storageService.load(sha256, Range.full(size), storageCredentials)
             // 加载文件失败，直接返回
@@ -128,10 +158,5 @@ class ExecutorScheduler @Autowired constructor(
     companion object {
         private const val FIXED_DELAY = 3000L
         private val logger = LoggerFactory.getLogger(ExecutorScheduler::class.java)
-
-        /**
-         * 每个任务使用的内存大小未为2GiB
-         */
-        private const val MEMORY_PER_TASK = 2 * 1024 * 1024 * 1024L
     }
 }

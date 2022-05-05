@@ -35,9 +35,12 @@ import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.scanner.constant.Constant.SUPPORT_FILE_NAME_EXTENSION
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
+import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.utils.Request
 import org.springframework.stereotype.Component
 
@@ -66,7 +69,8 @@ class IteratorManager(
         val projectIds = projectIdsFromRule(rule)
         val projectIdIterator = projectIds.iterator()
 
-        return if (scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name) {
+        val isPackageScanPlanType = scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name
+        return if (isPackageScanPlanType || packageRule(rule)) {
             PackageIterator(packageClient, nodeClient, PackageIterator.PackageIteratePosition(rule))
         } else {
             NodeIterator(projectIdIterator, nodeClient, NodeIterator.NodeIteratePosition(rule))
@@ -88,19 +92,11 @@ class IteratorManager(
      * 添加ipa和apk文件过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
      */
     private fun addMobilePackageRule(rule: Rule): Rule {
-        val mobilePackageRule = Rule.NestedRule(
-            mutableListOf(
-                Rule.QueryRule(NodeDetail::fullPath.name, ".apk", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".apks", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".aab", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".exe", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".so", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".ipa", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".dmg", OperationType.SUFFIX),
-                Rule.QueryRule(NodeDetail::fullPath.name, ".jar", OperationType.SUFFIX)
-            ),
-            Rule.NestedRule.RelationType.OR
-        )
+        val fileNameExtensionRules = SUPPORT_FILE_NAME_EXTENSION
+            .map { Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX) }
+            .toMutableList<Rule>()
+        val mobilePackageRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)
+
         if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
             rule.rules.add(mobilePackageRule)
             return rule
@@ -145,5 +141,21 @@ class IteratorManager(
         } else {
             Rule.NestedRule(mutableListOf(rule, repoRule))
         }
+    }
+
+    /**
+     * 判断[rule]是否为请求package的rule
+     */
+    private fun packageRule(rule: Rule): Boolean {
+        if (rule is Rule.QueryRule &&
+            (rule.field == PackageSummary::key.name || rule.field == RuleArtifact::version.name)) {
+            return true
+        }
+
+        if (rule is Rule.NestedRule) {
+            return rule.rules.any { packageRule(it) }
+        }
+
+        return false
     }
 }

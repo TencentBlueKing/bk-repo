@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.constant
+package com.tencent.bkrepo.scanner.pojo.request
 
-const val WEBHOOK_AUTH_HEADER = "X-TOKEN"
-const val WEBHOOK_EVENT_HEADER = "X-EVENT"
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("分页获取项目扫描配置请求")
+data class ProjectScanConfigurationPageRequest(
+    @ApiModelProperty("用于匹配的项目ID")
+    val projectId: String? = null,
+    @ApiModelProperty("分页页码")
+    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
+    @ApiModelProperty("分页大小")
+    val pageSize: Int = DEFAULT_PAGE_SIZE
+)

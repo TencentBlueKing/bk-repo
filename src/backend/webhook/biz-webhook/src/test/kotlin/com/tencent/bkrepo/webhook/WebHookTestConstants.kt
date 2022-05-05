@@ -25,33 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.job
+package com.tencent.bkrepo.webhook
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.webhook.service.LogService
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
-import java.time.LocalDateTime
-
-/**
- * WebHook日志定期清理任务
- */
-@Component
-class LogCleanUpJob(
-    private val logService: LogService
-) {
-
-    @Scheduled(cron = "00 30 00 * * ?")
-    @SchedulerLock(name = "WebHookLogCleanUpJob", lockAtMostFor = "PT1M")
-    fun cleanUp() {
-        logger.info("WebHook log clean up job start")
-        val date = LocalDateTime.now().minusDays(30L)
-        val deletedCount = logService.deleteLogBeforeDate(date)
-        logger.info("WebHook log clean up job end, deleted count: $deletedCount")
-    }
-
-    companion object {
-        private val logger = LoggerHolder.jobLogger
-    }
-}
+const val UT_PROJECT_ID = "ut-project"
+const val UT_PROJECT_DISPLAY = "ut-project-display"
+const val UT_PROJECT_DESC = "ut-project-desc"
+const val UT_REPO_NAME = "ut-repo"
+const val UT_REPO_DISPLAY = "ut-repo-display"
+const val UT_REPO_DESC = "ut-repo-desc"
+const val UT_USER = "system"
