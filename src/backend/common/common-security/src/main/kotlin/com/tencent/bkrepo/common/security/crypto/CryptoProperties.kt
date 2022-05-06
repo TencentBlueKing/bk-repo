@@ -29,30 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security
+package com.tencent.bkrepo.common.security.crypto
 
-import com.tencent.bkrepo.common.security.actuator.ActuatorAuthConfiguration
-import com.tencent.bkrepo.common.security.crypto.CryptoConfiguration
-import com.tencent.bkrepo.common.security.exception.SecurityExceptionHandler
-import com.tencent.bkrepo.common.security.http.HttpAuthConfiguration
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.security.permission.PermissionConfiguration
-import com.tencent.bkrepo.common.security.service.ServiceAuthConfiguration
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Configuration
-@ConditionalOnWebApplication
-@Import(
-    SecurityExceptionHandler::class,
-    AuthenticationManager::class,
-    PermissionManager::class,
-    PermissionConfiguration::class,
-    HttpAuthConfiguration::class,
-    ServiceAuthConfiguration::class,
-    ActuatorAuthConfiguration::class,
-    CryptoConfiguration::class
+@ConfigurationProperties("security.crypto")
+data class CryptoProperties(
+    var rsaAlgorithm: String = "RSA/ECB/PKCS1Padding",
+    // 公私钥必须配置，不然多实例部署时会存在无法解析出加密内容的问题
+    var privateKeyStr: String? = null,
+    var publicKeyStr: String? = null
 )
-class SecurityAutoConfiguration

@@ -29,28 +29,53 @@ package com.tencent.bkrepo.common.security.util
 
 import cn.hutool.crypto.asymmetric.KeyType
 import cn.hutool.crypto.asymmetric.RSA
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 
 /**
  * RSA 非对称加密工具类
  */
-object RsaUtils {
-    private val rsa = RSA()
-    var privateKey = rsa.privateKeyBase64!!
-    var publicKey = rsa.publicKeyBase64!!
-
-    /**
-     * 公钥加密
-     * @param password 需要解密的密码
-     */
-    fun encrypt(password: String): String {
-        return rsa.encryptBcd(password, KeyType.PublicKey)
+class RsaUtils(
+    cryptoProperties: CryptoProperties
+) {
+    init {
+        if (cryptoProperties.publicKeyStr.isNullOrEmpty() || cryptoProperties.privateKeyStr.isNullOrEmpty()) {
+            rsa = RSA()
+            publicKey = rsa.publicKeyBase64
+            privateKey = rsa.privateKeyBase64
+        } else {
+            publicKey = cryptoProperties.publicKeyStr!!
+            privateKey = cryptoProperties.privateKeyStr!!
+            rsa = RSA(
+                cryptoProperties.rsaAlgorithm,
+                cryptoProperties.privateKeyStr,
+                cryptoProperties.publicKeyStr
+            )
+        }
     }
 
-    /**
-     * 私钥解密，返回解密后的密码
-     * @param password 前端加密后的密码
-     */
-    fun decrypt(password: String): String {
-        return rsa.decryptStr(password, KeyType.PrivateKey)
+    companion object {
+        lateinit var rsa: RSA
+        lateinit var publicKey: String
+        lateinit var privateKey: String
+        /**
+         * 公钥加密
+         * @param password 需要解密的密码
+         */
+        fun encrypt(password: String): String {
+            return rsa.encryptBcd(password, KeyType.PublicKey)
+        }
+
+        /**
+         * 私钥解密，返回解密后的密码
+         * @param password 前端加密后的密码
+         */
+        fun decrypt(password: String): String {
+            return rsa.decryptStr(password, KeyType.PrivateKey)
+        }
     }
+}
+
+fun main() {
+    //
+//    KeyUtil.generatePrivateKey("RSA/ECB/PKCS1Padding")
 }
