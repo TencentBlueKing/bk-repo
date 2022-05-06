@@ -257,8 +257,14 @@ class UserController @Autowired constructor(
 
     @ApiOperation("获取用户信息")
     @GetMapping("/info")
-    fun userInfo(@CookieValue(value = "bkrepo_ticket") bkrepoToken: String?): Response<Map<String, Any>> {
+    fun userInfo(
+        @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?,
+        @CookieValue(value = "bk_uid") bkUserId: String?
+    ): Response<Map<String, Any>> {
         try {
+            bkUserId?.let {
+                return ResponseBuilder.success(mapOf("userId" to bkUserId))
+            }
             bkrepoToken ?: run {
                 throw IllegalArgumentException("ticket can not be null")
             }
