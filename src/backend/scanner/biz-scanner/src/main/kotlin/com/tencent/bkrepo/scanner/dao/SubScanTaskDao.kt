@@ -81,6 +81,7 @@ class SubScanTaskDao(
      * @param status 更新后的任务状态
      * @param oldStatus 更新前的任务状态，只有旧状态匹配时才会更新
      * @param lastModifiedDate 最后更新时间，用于充当乐观锁，只有最后修改时间匹配时候才更新
+     * @param timeoutDateTime 扫描执行超时时间点
      *
      * @return 更新结果
      */
@@ -88,7 +89,8 @@ class SubScanTaskDao(
         subTaskId: String,
         status: SubScanTaskStatus,
         oldStatus: SubScanTaskStatus? = null,
-        lastModifiedDate: LocalDateTime? = null
+        lastModifiedDate: LocalDateTime? = null,
+        timeoutDateTime: LocalDateTime? = null
     ): UpdateResult {
         val now = LocalDateTime.now()
         val criteria = Criteria.where(ID).isEqualTo(subTaskId)
@@ -101,12 +103,19 @@ class SubScanTaskDao(
             .set(TSubScanTask::lastModifiedDate.name, now)
             .set(TSubScanTask::status.name, status.name)
         if (status == EXECUTING) {
+            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
             update.set(TSubScanTask::startDateTime.name, now)
             update.inc(TSubScanTask::executedTimes.name, 1)
+        } else {
+            update.unset(TSubScanTask::timeoutDateTime.name)
         }
 
         val updateResult = updateFirst(query, update)
         if (updateResult.modifiedCount == 1L) {
+            logger.debug(
+                "update status success, subTaskId[$subTaskId], newStatus[$status]," +
+                    " oldStatus[$oldStatus], lastModifiedDate[$lastModifiedDate], newModifiedDate[$now]"
+            )
             planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, status.name, now = now)
         }
 
@@ -173,9 +182,22 @@ class SubScanTaskDao(
      * @param timeoutSeconds 允许执行的最长时间
      */
     fun firstTimeoutTask(timeoutSeconds: Long): TSubScanTask? {
-        val beforeDate = LocalDateTime.now().minusSeconds(timeoutSeconds)
-        val criteria = TSubScanTask::lastModifiedDate.lt(beforeDate)
-            .and(TSubScanTask::status.name).inValues(PULLED.name, ENQUEUED.name, EXECUTING.name)
+        val now = LocalDateTime.now()
+
+        val lastModifiedCriteria = Criteria
+            .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
+            .and(TSubScanTask::timeoutDateTime.name).exists(false)
+
+        val timeoutCriteria = Criteria().orOperator(
+            TSubScanTask::timeoutDateTime.lt(now),
+            lastModifiedCriteria
+        )
+
+        val criteria = Criteria().andOperator(
+            timeoutCriteria,
+            TSubScanTask::status.inValues(PULLED.name, ENQUEUED.name, EXECUTING.name)
+        )
+
         return findOne(Query(criteria))
     }
 

@@ -113,13 +113,6 @@ class ArrowheadScanExecutor @Autowired constructor(
         }
     }
 
-    /**
-     * 获取文件最大允许扫描时间
-     */
-    private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
-        return max(DEFAULT_MIN_SCAN_DURATION, scanner.maxScanDuration * DataSize.ofBytes(fileSize).toMegabytes())
-    }
-
     private fun maxFileSize(fileSize: Long): Long {
         // 最大允许的单文件大小为待扫描文件大小3倍，先除以3，防止long溢出
         val maxFileSize = (Long.MAX_VALUE / 3L).coerceAtMost(fileSize) * 3L
@@ -217,7 +210,7 @@ class ArrowheadScanExecutor @Autowired constructor(
     private fun doScan(workDir: File, task: ScanExecutorTask, fileSize: Long): SubScanTaskStatus {
         require(task.scanner is ArrowheadScanner)
 
-        val maxScanDuration = maxScanDuration(task.scanner, fileSize)
+        val maxScanDuration = task.scanner.maxScanDuration(fileSize)
         // 容器内单文件大小限制为待扫描文件大小的3倍
         val maxFilesSize = maxFileSize(fileSize)
         val containerConfig = task.scanner.container
@@ -422,11 +415,6 @@ class ArrowheadScanExecutor @Autowired constructor(
          * 默认单文件大小限制，最少为8GiB
          */
         private const val DEFAULT_MIN_LIMIT_FILE_SIZE_GB = 8L
-
-        /**
-         * 默认至少允许扫描的时间
-         */
-        private const val DEFAULT_MIN_SCAN_DURATION = 3 * 60L * 1000L
 
         const val TMP_DIR_NAME = "tmp"
     }

@@ -42,9 +42,15 @@ import java.time.LocalDateTime
         def = "{'credentialsKey': 1, 'sha256': 1}",
         background = true
     ),
+    // TODO 旧数据清除后移除该索引和查询
     CompoundIndex(
         name = "lastModifiedDate_idx",
         def = "{'lastModifiedDate': 1}",
+        background = true
+    ),
+    CompoundIndex(
+        name = "timeoutDateTime_idx",
+        def = "{'timeoutDateTime': 1}",
         background = true
     ),
     CompoundIndex(
@@ -65,6 +71,10 @@ class TSubScanTask(
     lastModifiedDate: LocalDateTime,
     lastModifiedBy: String,
     startDateTime: LocalDateTime? = null,
+    /**
+     * 执行超时时间点
+     */
+    val timeoutDateTime: LocalDateTime? = null,
 
     parentScanTaskId: String,
     planId: String?,

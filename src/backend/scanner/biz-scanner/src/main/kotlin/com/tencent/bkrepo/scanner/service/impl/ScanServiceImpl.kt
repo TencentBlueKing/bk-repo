@@ -83,6 +83,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_DATE_TIME
+import java.time.temporal.ChronoUnit
 
 @Service
 class ScanServiceImpl @Autowired constructor(
@@ -295,8 +296,12 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             val oldStatus = SubScanTaskStatus.valueOf(subScanTask.status)
+            val scanner = scannerService.get(subScanTask.scanner)
+            val maxScanDuration = scanner.maxScanDuration(subScanTask.size)
+            // 多加1分钟，避免执行器超时后正在上报结果又被重新触发
+            val timeoutDateTime = LocalDateTime.now().plus(maxScanDuration, ChronoUnit.MILLIS).plusMinutes(1L)
             val updateResult = subScanTaskDao.updateStatus(
-                subScanTaskId, SubScanTaskStatus.EXECUTING, oldStatus, subScanTask.lastModifiedDate
+                subScanTaskId, SubScanTaskStatus.EXECUTING, oldStatus, subScanTask.lastModifiedDate, timeoutDateTime
             )
             val modified = updateResult.modifiedCount == 1L
             if (modified) {
