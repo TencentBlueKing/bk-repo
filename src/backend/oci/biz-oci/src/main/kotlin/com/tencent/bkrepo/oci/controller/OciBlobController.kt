@@ -43,7 +43,8 @@ import com.tencent.bkrepo.oci.service.OciBlobService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -74,7 +75,7 @@ class OciBlobController(
      * 上传blob文件或者是完成上传，通过请求头[User-Agent]来判断
      * 如果正则匹配成功，则进行上传，执行完成则完成；否则使用的是追加上传的方式，完成最后一块的上传进行合并。
      */
-    @PutMapping(BOLBS_UPLOAD_SECOND_STEP_URL)
+    @RequestMapping(method = [RequestMethod.PATCH, RequestMethod.PUT], value = [BOLBS_UPLOAD_SECOND_STEP_URL])
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun uploadBlob(
         artifactInfo: OciBlobArtifactInfo,
