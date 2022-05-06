@@ -66,6 +66,7 @@ import org.springframework.util.unit.DataSize
 import java.io.File
 import java.io.UncheckedIOException
 import java.net.SocketTimeoutException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.system.measureTimeMillis
@@ -79,6 +80,7 @@ class ArrowheadScanExecutor @Autowired constructor(
 
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var arrowheadConfigTemplate: Resource
+    private val taskContainerIdMap = ConcurrentHashMap<String, String>()
 
     override fun scan(task: ScanExecutorTask): ScanExecutorResult {
         require(task.scanner is ArrowheadScanner)
@@ -111,6 +113,12 @@ class ArrowheadScanExecutor @Autowired constructor(
                 deleteRecursively(workDir)
             }
         }
+    }
+
+    override fun stop(taskId: String): Boolean {
+        val containerId = taskContainerIdMap[taskId] ?: return false
+        dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+        return true
     }
 
     private fun maxFileSize(fileSize: Long): Long {
@@ -235,6 +243,7 @@ class ArrowheadScanExecutor @Autowired constructor(
             .withTty(true)
             .withStdinOpen(true)
             .exec().id
+        taskContainerIdMap[task.taskId] = containerId
         logger.info(logMsg(task, "run container instance Id [$workDir, $containerId]"))
         try {
             dockerClient.startContainerCmd(containerId).exec()
@@ -253,6 +262,7 @@ class ArrowheadScanExecutor @Autowired constructor(
             }
             throw e
         } finally {
+            taskContainerIdMap.remove(task.taskId)
             dockerClient.removeContainerCmd(containerId).withForce(true).exec()
         }
     }
