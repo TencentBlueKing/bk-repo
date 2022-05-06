@@ -131,7 +131,8 @@ class ExecutorScheduler @Autowired constructor(
             // 3. 上报扫描结果
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
-            logger.info("scan finished[${result?.scanStatus}], time spent $timeSpent, reporting result")
+            logger.info("scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$size], " +
+                            "subtaskId[$taskId], sha256[$sha256], reporting result")
             report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)
         }
     }

@@ -263,7 +263,21 @@ class ArrowheadScanExecutor @Autowired constructor(
             throw e
         } finally {
             taskContainerIdMap.remove(task.taskId)
-            dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+            ignoreExceptionExecute(logMsg(task, "stop container failed")) {
+                dockerClient.stopContainerCmd(containerId).withTimeout(DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS).exec()
+                dockerClient.killContainerCmd(containerId).withSignal(SIGNAL_KILL).exec()
+            }
+            ignoreExceptionExecute(logMsg(task, "remove container failed")) {
+                dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+            }
+        }
+    }
+
+    private fun ignoreExceptionExecute(failedMsg: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: Exception) {
+            logger.warn("$failedMsg, ${e.message}")
         }
     }
 
@@ -427,5 +441,9 @@ class ArrowheadScanExecutor @Autowired constructor(
         private const val DEFAULT_MIN_LIMIT_FILE_SIZE_GB = 8L
 
         const val TMP_DIR_NAME = "tmp"
+
+        private const val DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS = 30
+
+        private const val SIGNAL_KILL = "KILL"
     }
 }
