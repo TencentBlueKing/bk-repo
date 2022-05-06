@@ -25,6 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.exception
+package com.tencent.bkrepo.webhook
 
-class WebHookException(message: String) : RuntimeException(message)
+const val UT_PROJECT_ID = "ut-project"
+const val UT_PROJECT_DISPLAY = "ut-project-display"
+const val UT_PROJECT_DESC = "ut-project-desc"
+const val UT_REPO_NAME = "ut-repo"
+const val UT_REPO_DISPLAY = "ut-repo-display"
+const val UT_REPO_DESC = "ut-repo-desc"
+const val UT_USER = "system"

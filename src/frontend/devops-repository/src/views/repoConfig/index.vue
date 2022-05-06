@@ -29,10 +29,12 @@
                                 <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
                                     :property="`${type}.filename`" required error-display-type="normal">
                                     <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
+                                    <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
                                 </bk-form-item>
                                 <bk-form-item :label="$t('metadata')" :label-width="60"
                                     :property="`${type}.metadata`" required error-display-type="normal">
-                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata"></bk-input>
+                                    <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
+                                    <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
                                 </bk-form-item>
                             </template>
                         </bk-form-item>

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,33 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.job
+package com.tencent.bkrepo.scanner.configuration
 
-import com.tencent.bkrepo.common.service.log.LoggerHolder
-import com.tencent.bkrepo.webhook.service.LogService
-import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.springframework.scheduling.annotation.Scheduled
-import org.springframework.stereotype.Component
-import java.time.LocalDateTime
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
+import org.springframework.boot.task.TaskExecutorBuilder
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
+import org.springframework.context.annotation.Primary
+import org.springframework.scheduling.annotation.AsyncAnnotationBeanPostProcessor
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
-/**
- * WebHook日志定期清理任务
- */
-@Component
-class LogCleanUpJob(
-    private val logService: LogService
-) {
-
-    @Scheduled(cron = "00 30 00 * * ?")
-    @SchedulerLock(name = "WebHookLogCleanUpJob", lockAtMostFor = "PT1M")
-    fun cleanUp() {
-        logger.info("WebHook log clean up job start")
-        val date = LocalDateTime.now().minusDays(30L)
-        val deletedCount = logService.deleteLogBeforeDate(date)
-        logger.info("WebHook log clean up job end, deleted count: $deletedCount")
-    }
-
-    companion object {
-        private val logger = LoggerHolder.jobLogger
+@Configuration(proxyBeanMethods = false)
+class ThreadPoolTaskExecutorConfiguration {
+    @Lazy
+    @Bean(
+        name = [
+            TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME,
+            AsyncAnnotationBeanPostProcessor.DEFAULT_TASK_EXECUTOR_BEAN_NAME
+        ]
+    )
+    @Primary
+    fun applicationTaskExecutor(builder: TaskExecutorBuilder): ThreadPoolTaskExecutor {
+        return builder.build()
     }
 }

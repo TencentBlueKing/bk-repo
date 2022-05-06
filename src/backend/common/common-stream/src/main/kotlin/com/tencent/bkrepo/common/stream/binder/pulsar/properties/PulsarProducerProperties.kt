@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.stream.binder.pulsar.properties
 
-import java.util.concurrent.TimeUnit
-
 data class PulsarProducerProperties(
     /**
      * Whether the producer is synchronous.
@@ -86,7 +84,7 @@ data class PulsarProducerProperties(
     /**
      * Batching time period of sending messages.
      */
-    var batchingMaxPublishDelayMicros: Long = TimeUnit.MILLISECONDS.toMicros(1),
+    var batchingMaxPublishDelayMicros: Long = 1,
     /**
      * The maximum number of messages permitted in a batch.
      */

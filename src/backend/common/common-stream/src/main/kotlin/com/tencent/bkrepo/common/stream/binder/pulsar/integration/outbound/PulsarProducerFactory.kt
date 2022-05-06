@@ -29,14 +29,16 @@ package com.tencent.bkrepo.common.stream.binder.pulsar.integration.outbound
 
 import com.tencent.bkrepo.common.stream.binder.pulsar.constant.Serialization
 import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProducerProperties
+import com.tencent.bkrepo.common.stream.binder.pulsar.properties.PulsarProperties
+import com.tencent.bkrepo.common.stream.binder.pulsar.util.PulsarClientUtils
 import com.tencent.bkrepo.common.stream.binder.pulsar.util.SchemaUtils
+import java.util.concurrent.TimeUnit
 import org.apache.pulsar.client.api.CompressionType
 import org.apache.pulsar.client.api.HashingScheme
 import org.apache.pulsar.client.api.MessageRoutingMode
 import org.apache.pulsar.client.api.Producer
 import org.apache.pulsar.client.api.ProducerCryptoFailureAction
 import org.apache.pulsar.client.api.PulsarClient
-import java.util.concurrent.TimeUnit
 
 object PulsarProducerFactory {
 
@@ -50,14 +52,15 @@ object PulsarProducerFactory {
     fun initPulsarProducer(
         topic: String,
         producerProperties: PulsarProducerProperties,
-        pulsarClient: PulsarClient
+        pulsarProperties: PulsarProperties,
+        pulsarClient: PulsarClient? = null
     ): Producer<Any> {
         with(producerProperties) {
             // TODO 消息序列化方式需要调整， producer需要缓存
-            val producer = pulsarClient.newProducer(
+            val client = pulsarClient ?: PulsarClientUtils.pulsarClient(pulsarProperties)
+            val producer = client.newProducer(
                 SchemaUtils.getSchema(Serialization.valueOf(serialType), serialClass)
-            )
-                .topic(topic)
+            ).topic(topic)
             if (!producerName.isNullOrBlank()) {
                 producer.producerName(producerName)
             }

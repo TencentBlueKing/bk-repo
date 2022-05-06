@@ -27,11 +27,14 @@
 
 package com.tencent.bkrepo.scanner.dao
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.scanner.configuration.MultipleMongoConfig
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.query.Query
 
 abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
     @Suppress("LateinitUsage")
@@ -41,5 +44,11 @@ abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
 
     override fun determineMongoTemplate(): MongoTemplate {
         return mongoTemplate
+    }
+
+    fun page(query: Query, pageRequest: PageRequest): Page<T> {
+        val count = count(query)
+        val records = find(query.with(pageRequest))
+        return Page(pageRequest.pageNumber + 1, pageRequest.pageSize, count, records)
     }
 }

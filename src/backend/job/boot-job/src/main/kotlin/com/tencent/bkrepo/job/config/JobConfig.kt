@@ -31,7 +31,9 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.job.batch.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.RemoteRepoRefreshJob
+import com.tencent.bkrepo.job.batch.SignFileCleanupJob
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -82,6 +84,19 @@ class JobConfig {
         return RemoteRepoRefreshJob(
             properties = jobProperties.repoRefreshJobProperties,
             eventSupplier = eventSupplier
+        )
+    }
+
+    @Bean
+    fun signFileCleanupJob(
+        mongoTemplate: MongoTemplate,
+        nodeClient: NodeClient,
+        jobProperties: JobProperties
+    ): SignFileCleanupJob {
+        return SignFileCleanupJob(
+            nodeClient = nodeClient,
+            mongoTemplate = mongoTemplate,
+            properties = jobProperties.signFileCleanupJobProperties
         )
     }
 }

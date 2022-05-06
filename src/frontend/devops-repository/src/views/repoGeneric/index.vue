@@ -359,9 +359,10 @@
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
                         return {
+                            metadata: {},
                             ...v,
                             // 流水线文件夹名称替换
-                            name: (v.metadata && v.metadata.displayName) || v.name
+                            name: v.metadata?.displayName || v.name
                         }
                     })
                 }).finally(() => {
@@ -561,7 +562,7 @@
                         '_self'
                     )
                 }).catch(e => {
-                    const message = e.status === 403 ? this.$t('fileDownloadError') : this.$t('fileError')
+                    const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
                     this.$bkMessage({
                         theme: 'error',
                         message

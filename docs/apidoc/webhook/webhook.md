@@ -2,7 +2,7 @@
 
 ### Webhook公共请求参数说明
 
-####  触发器类型
+#### 触发器类型
 
 | 枚举值           | 说明        |
 | ---------------- | ----------- |
@@ -31,7 +31,7 @@
 
 association_type为PROJECT时，association_id为{projectId}
 
-association_type为REPO时，association_id为{projectId}-{repoName}
+association_type为REPO时，association_id为{projectId}:{repoName}
 
 ### 创建webhook
 
@@ -41,30 +41,31 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：创建webhook
-  - English：create webhook
+    - 中文：创建webhook
+    - English：create webhook
 
 - 请求体
 
   ```json
   {
-  	"url": "string",
-      "token": "string",
-      "triggers": ["NODE_CREATED"],
-      "association_type": "REPO",
-      "association_id": "string"
+    "url": "string",
+    "headers": {"key": "value"},
+    "triggers": ["NODE_CREATED"],
+    "resourceKeyPattern": "regex pattern",
+    "association_type": "REPO",
+    "association_id": "string"
   }
   ```
 
   | 字段             | 是否必须 | 说明            | 示例                      |
-  | ---------------- | -------- | --------------- | ------------------------- |
-  | url              | 是       | webhook请求地址 | http://bkrepo.example.com |
-  | token            | 否       | 认证请求token   | random_token              |
-  | triggers         | 是       | 触发事件        | ["NODE_CREATED"]          |
-  | association_type | 是       | 关联对象类型    | REPO                      |
-  | association_id   | 否       | 关联对象id      | projectId-repoName        |
+  | ---------------- |----------| --------------- | ------------------------- |
+  | url              | 是       | webhook请求地址   | http://bkrepo.example.com |
+  | headers                | 否       | 自定义请求头        | {"key" : "value"}     |
+  | triggers         | 是       | 触发事件          | ["NODE_CREATED"]          |
+  | resourceKeyPattern | 否 | 事件资源key正则匹配模型 | (.*).apk                   |
+  | association_type | 是       | 关联对象类型        | REPO                      |
+  | association_id   | 否       | 关联对象id        | projectId:repoName        |
 
-  
 
 - 响应体
 
@@ -85,15 +86,15 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：更新webhook
-  - English：update webhook
+    - 中文：更新webhook
+    - English：update webhook
 
 - 请求体
 
   ```json
   {
       "id": "string",
-  	"url": "string",
+      "url": "string",
       "token": "string",
       "triggers": ["NODE_CREATED"]
   }
@@ -118,8 +119,8 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：删除webhook
-  - English：delete webhook
+    - 中文：删除webhook
+    - English：delete webhook
 
 - 请求参数
 
@@ -146,8 +147,8 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：创建webhook
-  - English：create webhook
+    - 中文：创建webhook
+    - English：create webhook
 
 - 请求参数
 
@@ -185,8 +186,8 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：查询webhook列表
-  - English：list webhook
+    - 中文：查询webhook列表
+    - English：list webhook
 
 - 请求参数
 
@@ -225,8 +226,8 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：测试webhook
-  - English：test webhook
+    - 中文：测试webhook
+    - English：test webhook
 
 - 请求参数
 
@@ -269,8 +270,8 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：重试webhook请求
-  - English：retry webhook request
+    - 中文：重试webhook请求
+    - English：retry webhook request
 
 - 请求参数
 
@@ -292,7 +293,7 @@ association_type为REPO时，association_id为{projectId}-{repoName}
           "key": "value"
       },
       "requestPayload": "string",
-      "status": "SUCCESS" / "FAIL",
+      "status": "SUCCESS",
       "responseHeaders": {
           "key": "value"
       },
@@ -313,8 +314,8 @@ association_type为REPO时，association_id为{projectId}-{repoName}
 
 - 功能说明：
 
-  - 中文：查询webhook请求日志列表
-  - English：list webhook log
+    - 中文：查询webhook请求日志列表
+    - English：list webhook log
 
 - 请求参数
 

@@ -209,11 +209,15 @@ class ScanPlanServiceImpl(
                 }?.contentPath ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, packageKey!!, version!!)
             }
             permissionCheckHandler.checkNodePermission(projectId, repoName, fullPath!!, PermissionAction.READ)
-            val subtasks = planArtifactLatestSubScanTaskDao.findAll(projectId, repoName, fullPath!!, true)
-            val planIds = subtasks.map { it.planId!! }
+            val subtasks = planArtifactLatestSubScanTaskDao.findAll(projectId, repoName, fullPath!!)
+            val planIds = subtasks.filter { it.planId != null }.map { it.planId!! }
             val scanPlanMap = scanPlanDao.findByIds(planIds, true).associateBy { it.id!! }
             return subtasks.map {
-                ScanPlanConverter.convertToArtifactPlanRelation(it, scanPlanMap[it.planId!!]!!)
+                if (it.planId == null) {
+                    ScanPlanConverter.convertToArtifactPlanRelation(it, "_${it.scanner}")
+                } else {
+                    ScanPlanConverter.convertToArtifactPlanRelation(it, scanPlanMap[it.planId]!!.name)
+                }
             }
         }
     }

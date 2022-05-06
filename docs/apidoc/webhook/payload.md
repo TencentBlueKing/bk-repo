@@ -13,10 +13,9 @@
 
 ### 公共请求头
 
-| 名称    | 说明            |
-| ------- | --------------- |
-| X-EVENT | 触发WebHook事件 |
-| X-TOKEN | 请求令牌        |
+| 名称           | 说明            |
+| -------------- | --------------- |
+| X-BKREPO-EVENT | 触发WebHook事件 |
 
 ## 测试事件
 
@@ -244,22 +243,6 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "admin" : false
   },
   "node" : {
-    "nodeInfo" : {
-      "createdBy" : "string",
-      "createdDate" : "2021-09-15T14:48:40.73",
-      "lastModifiedBy" : "string",
-      "lastModifiedDate" : "2021-09-15T14:48:40.73",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.txt",
-      "fullPath" : "/test.txt",
-      "size" : 32,
-      "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
-      "md5" : "156c8805787b870939a80c708b64c946",
-      "metadata" : { },
-      "projectId" : "project",
-      "repoName" : "repo"
-    },
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",
     "lastModifiedBy" : "string",
@@ -306,22 +289,6 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "admin" : false
   },
   "node" : {
-    "nodeInfo" : {
-      "createdBy" : "string",
-      "createdDate" : "2021-09-15T14:48:40.73",
-      "lastModifiedBy" : "string",
-      "lastModifiedDate" : "2021-09-15T14:48:40.73",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.txt",
-      "fullPath" : "/test.txt",
-      "size" : 32,
-      "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
-      "md5" : "156c8805787b870939a80c708b64c946",
-      "metadata" : { },
-      "projectId" : "project",
-      "repoName" : "repo"
-    },
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",
     "lastModifiedBy" : "string",
@@ -369,22 +336,6 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "admin" : false
   },
   "node" : {
-    "nodeInfo" : {
-      "createdBy" : "string",
-      "createdDate" : "2021-09-15T14:48:40.73",
-      "lastModifiedBy" : "string",
-      "lastModifiedDate" : "2021-09-15T14:48:40.73",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.txt",
-      "fullPath" : "/test.txt",
-      "size" : 32,
-      "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
-      "md5" : "156c8805787b870939a80c708b64c946",
-      "metadata" : { },
-      "projectId" : "project",
-      "repoName" : "repo"
-    },
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",
     "lastModifiedBy" : "string",
@@ -432,22 +383,6 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "admin" : false
   },
   "node" : {
-    "nodeInfo" : {
-      "createdBy" : "string",
-      "createdDate" : "2021-09-15T14:48:40.73",
-      "lastModifiedBy" : "string",
-      "lastModifiedDate" : "2021-09-15T14:48:40.73",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.txt",
-      "fullPath" : "/test.txt",
-      "size" : 32,
-      "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
-      "md5" : "156c8805787b870939a80c708b64c946",
-      "metadata" : { },
-      "projectId" : "project",
-      "repoName" : "repo"
-    },
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",
     "lastModifiedBy" : "string",
@@ -527,22 +462,6 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "admin" : false
   },
   "node" : {
-    "nodeInfo" : {
-      "createdBy" : "string",
-      "createdDate" : "2021-09-15T14:48:40.73",
-      "lastModifiedBy" : "string",
-      "lastModifiedDate" : "2021-09-15T14:48:40.73",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.txt",
-      "fullPath" : "/test.txt",
-      "size" : 32,
-      "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
-      "md5" : "156c8805787b870939a80c708b64c946",
-      "metadata" : { },
-      "projectId" : "project",
-      "repoName" : "repo"
-    },
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",
     "lastModifiedBy" : "string",
@@ -588,22 +507,6 @@ WebHook服务提供测试事件，方便用户添加WebHook后测试连通性
     "admin" : false
   },
   "node" : {
-    "nodeInfo" : {
-      "createdBy" : "string",
-      "createdDate" : "2021-09-15T14:48:40.73",
-      "lastModifiedBy" : "string",
-      "lastModifiedDate" : "2021-09-15T14:48:40.73",
-      "folder" : false,
-      "path" : "/",
-      "name" : "test.txt",
-      "fullPath" : "/test.txt",
-      "size" : 32,
-      "sha256" : "28eb526a0b9e4a022cce7e9c6dffb11699c3c19a11b419d1b13873271a3c099e",
-      "md5" : "156c8805787b870939a80c708b64c946",
-      "metadata" : { },
-      "projectId" : "project",
-      "repoName" : "repo"
-    },
     "createdBy" : "string",
     "createdDate" : "2021-09-15T14:48:40.73",
     "lastModifiedBy" : "string",
