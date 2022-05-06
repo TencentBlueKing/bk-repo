@@ -135,6 +135,7 @@ export default {
             {
                 projectId,
                 id,
+                force: true,
                 rule: {
                     rules: [
                         {

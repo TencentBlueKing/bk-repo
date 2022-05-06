@@ -15,6 +15,7 @@
                     <div class="card-metadata" :title="`下载统计：${cardData.downloads}`"></div>
                 </template>
                 <template v-else>
+                    <div class="card-metadata" :title="`所属仓库：${cardData.repoName}`"></div>
                     <div class="card-metadata" :title="`文件大小：${convertFileSize(cardData.size)}`"></div>
                     <div class="card-metadata" :title="`最后修改：${formatDate(cardData.lastModifiedDate)}`"></div>
                 </template>
@@ -25,6 +26,7 @@
             <operation-list
                 v-if="!cardData.type"
                 :list="[
+                    { label: '详情', clickEvent: () => detail() },
                     { label: '下载', clickEvent: () => download() },
                     { label: '共享', clickEvent: () => share() }
                 ]"></operation-list>
@@ -54,6 +56,9 @@
             getIconName,
             deleteCard () {
                 this.$emit('delete-card')
+            },
+            detail () {
+                this.$emit('show-detail', this.cardData)
             },
             download () {
                 const url = `/generic/${this.cardData.projectId}/${this.cardData.repoName}/${this.cardData.fullPath}?download=true`

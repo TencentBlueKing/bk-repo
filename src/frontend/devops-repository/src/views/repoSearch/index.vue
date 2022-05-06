@@ -67,6 +67,7 @@
                         :key="pkg.repoName + (pkg.key || pkg.fullPath)"
                         :card-data="pkg"
                         readonly
+                        @show-detail="showDetail"
                         @share="handlerShare"
                         @click.native="showCommonPackageDetail(pkg)">
                     </package-card>
@@ -234,20 +235,30 @@
             },
             showCommonPackageDetail (pkg) {
                 if (pkg.fullPath) {
-                    this.showDetail(pkg)
-                    return
+                    // generic
+                    this.$router.push({
+                        name: 'repoGeneric',
+                        params: {
+                            projectId: pkg.projectId
+                        },
+                        query: {
+                            repoName: pkg.repoName,
+                            path: pkg.fullPath
+                        }
+                    })
+                } else {
+                    this.$router.push({
+                        name: 'commonPackage',
+                        params: {
+                            projectId: pkg.projectId,
+                            repoType: pkg.type.toLowerCase()
+                        },
+                        query: {
+                            repoName: pkg.repoName,
+                            packageKey: pkg.key
+                        }
+                    })
                 }
-                this.$router.push({
-                    name: 'commonPackage',
-                    params: {
-                        projectId: pkg.projectId,
-                        repoType: pkg.type.toLowerCase()
-                    },
-                    query: {
-                        repoName: pkg.repoName,
-                        packageKey: pkg.key
-                    }
-                })
             },
             showDetail (pkg) {
                 this.$refs.genericDetail.setData({
