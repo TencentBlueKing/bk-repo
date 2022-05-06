@@ -126,6 +126,10 @@ class SubScanTaskDao(
         return updateResult
     }
 
+    fun countStatus(status: SubScanTaskStatus): Long {
+        return count(Query(TSubScanTask::status.isEqualTo(status.name)))
+    }
+
     /**
      * 唤醒[projectId]一个子任务为可执行状态
      */
