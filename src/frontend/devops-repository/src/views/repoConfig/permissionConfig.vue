@@ -61,7 +61,7 @@
     </bk-collapse>
 </template>
 <script>
-    import { mapState, mapActions } from 'vuex'
+    import { mapActions } from 'vuex'
     export default {
         name: 'permissionConfig',
         data () {
@@ -157,7 +157,6 @@
             }
         },
         computed: {
-            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
