@@ -39,6 +39,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.FileAlreadyExistsException
+import java.nio.file.StandardCopyOption
 
 /**
  * 本地文件存储客户端
@@ -99,17 +100,42 @@ class FileSystemClient(private val root: String) {
         }
         if (!Files.exists(target)) {
             try {
+                val parent = target.parent
+                if (!Files.exists(parent)) {
+                    Files.createDirectories(parent)
+                }
                 // 不能使用REPLACE_EXISTING/ATOMIC_MOVE，因为会删除其他客户端move的文件，
                 // 且由于NFS的非强一致性，即使本客户端move成功，也会导致其他客户端发生文件找不到错误
                 Files.move(source, target)
             } catch (ignore: FileAlreadyExistsException) {
                 logger.info("File[$file] already exists")
             } catch (ex: IOException) {
-                val message = ex.message.orEmpty()
-                logger.warn("Failed to move file by Files.move(source, target), fallback to use file channel: $message")
+                logger.warn("Failed to move file by Files.move(source, target), fallback to use file channel", ex)
                 copyByChannel(source, target)
                 Files.deleteIfExists(source)
             }
+        }
+        return target.toFile()
+    }
+
+    fun copy(dir: String, filename: String, file: File, overwrite: Boolean = false): File {
+        val source = file.toPath()
+        val target = Paths.get(this.root, dir, filename)
+        try {
+            val parent = target.parent
+            if (!Files.exists(parent)) {
+                Files.createDirectories(parent)
+            }
+            if (overwrite) {
+                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING)
+            } else {
+                Files.copy(source, target)
+            }
+        } catch (ignore: FileAlreadyExistsException) {
+            logger.info("File[$file] already exists")
+        } catch (ex: IOException) {
+            logger.warn("Failed to copy file by Files.copy(source, target), fallback to use file channel", ex)
+            copyByChannel(source, target)
         }
         return target.toFile()
     }

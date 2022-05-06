@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.nio.file.Files
 import java.nio.file.Paths
 
 /**
@@ -60,10 +61,13 @@ class CacheStorageService(
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {
-                val cachedFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
+                val file = artifactFile.flushToFile()
+                val stagingFilePath = getStagingClient(credentials).copy(path, filename, file).toPath()
+                val cachedFile = getCacheClient(credentials).move(path, filename, file)
                 threadPoolTaskExecutor.execute {
                     try {
                         fileStorage.store(path, filename, cachedFile, credentials)
+                        Files.deleteIfExists(stagingFilePath)
                     } catch (ignored: Exception) {
                         // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
                         logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
@@ -121,9 +125,9 @@ class CacheStorageService(
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val tempPath = Paths.get(credentials.cache.path, TEMP)
-        val visitor = FileSynchronizeVisitor(tempPath, fileLocator, fileStorage, credentials)
-        getCacheClient(credentials).walk(visitor)
+        val rootPath = Paths.get(credentials.upload.stagingPath)
+        val visitor = FileSynchronizeVisitor(rootPath, fileLocator, fileStorage, credentials)
+        getStagingClient(credentials).walk(visitor)
         return visitor.result
     }
 
@@ -153,6 +157,10 @@ class CacheStorageService(
 
     private fun getCacheClient(credentials: StorageCredentials): FileSystemClient {
         return FileSystemClient(credentials.cache.path)
+    }
+
+    private fun getStagingClient(credentials: StorageCredentials): FileSystemClient {
+        return FileSystemClient(credentials.upload.stagingPath)
     }
 
     companion object {

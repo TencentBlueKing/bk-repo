@@ -55,6 +55,11 @@ class StorageCredentialsController(
         }
         return StorageCredentialsResponse.success(credentials)
     }
+
+    override fun list(region: String?): Response<List<StorageCredentials>> {
+        return StorageCredentialsListResponse.success(storageCredentialService.list(region))
+    }
+
     /**
      * 原来的ResponseBuilder是泛型，会导致类型擦出，致使在序列化的时候抽象JsonTypeInfo注解无效，
      * type字段不会序列化，使用StorageCredentialsClient的接收方反序列化时就会报错。
@@ -65,6 +70,15 @@ class StorageCredentialsController(
         companion object {
             fun success(data: StorageCredentials?): StorageCredentialsResponse {
                 return StorageCredentialsResponse(CommonMessageCode.SUCCESS.getCode(), data)
+            }
+        }
+    }
+
+    class StorageCredentialsListResponse(code: Int, data: List<StorageCredentials>) :
+        Response<List<StorageCredentials>>(code, data = data) {
+        companion object {
+            fun success(data: List<StorageCredentials>): StorageCredentialsListResponse {
+                return StorageCredentialsListResponse(CommonMessageCode.SUCCESS.getCode(), data)
             }
         }
     }
