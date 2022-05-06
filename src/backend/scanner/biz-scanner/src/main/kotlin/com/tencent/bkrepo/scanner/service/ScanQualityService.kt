@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.scanner.service
 
 import com.tencent.bkrepo.scanner.pojo.request.ScanQualityCreateRequest
+import com.tencent.bkrepo.scanner.pojo.response.ScanQualityCheckedDetail
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
 
 interface ScanQualityService {
@@ -11,5 +12,7 @@ interface ScanQualityService {
     fun updateScanQuality(scanId: String, request: ScanQualityCreateRequest): Boolean
 
     fun checkScanQualityRedLine(scanId: String, scanResultOverview: Map<String, Long>): Boolean
+
+    fun checkScanQualityRedLineDetail(scanId: String, scanResultOverview: Map<String, Long>): ScanQualityCheckedDetail
 
 }

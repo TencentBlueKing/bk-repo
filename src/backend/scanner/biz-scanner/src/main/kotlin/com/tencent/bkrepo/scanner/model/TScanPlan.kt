@@ -109,5 +109,5 @@ data class TScanPlan(
     /**
      * 质量规则
      */
-    val scanQuality: Map<String, Long> = emptyMap()
+    val scanQuality: Map<String, Any> = emptyMap()
 )
