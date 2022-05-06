@@ -29,6 +29,10 @@ package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.ENQUEUED
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus.EXECUTING
@@ -199,6 +203,17 @@ class SubScanTaskDao(
         )
 
         return findOne(Query(criteria))
+    }
+
+    /**
+     * 获取处于阻塞状态超时的任务
+     */
+    fun blockedTimeoutTasks(timeoutSeconds: Long): Page<TSubScanTask> {
+        val now = LocalDateTime.now()
+        val criteria = Criteria
+            .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
+            .and(TSubScanTask::status.name).isEqualTo(SubScanTaskStatus.BLOCKED.name)
+        return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
     }
 
     companion object {

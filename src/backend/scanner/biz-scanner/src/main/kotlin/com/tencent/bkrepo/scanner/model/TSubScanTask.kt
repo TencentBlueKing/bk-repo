@@ -42,7 +42,6 @@ import java.time.LocalDateTime
         def = "{'credentialsKey': 1, 'sha256': 1}",
         background = true
     ),
-    // TODO 旧数据清除后移除该索引和查询
     CompoundIndex(
         name = "lastModifiedDate_idx",
         def = "{'lastModifiedDate': 1}",

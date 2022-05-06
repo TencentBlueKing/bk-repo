@@ -350,6 +350,17 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
+    /**
+     * 结束处于blocked状态超时的子任务
+     */
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    fun finishBlockTimeoutSubScanTask() {
+        subScanTaskDao.blockedTimeoutTasks(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS).records.forEach { subtask ->
+            logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
+            self.updateScanTaskResult(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name, emptyMap())
+        }
+    }
+
     fun pullSubScanTask(): TSubScanTask? {
         var count = 0
         while (true) {
