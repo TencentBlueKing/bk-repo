@@ -36,7 +36,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.scanner.constant.Constant.SUPPORT_FILE_NAME_EXTENSION
+import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.pojo.Node
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -51,7 +51,8 @@ import org.springframework.stereotype.Component
 class IteratorManager(
     private val nodeClient: NodeClient,
     private val repositoryClient: RepositoryClient,
-    private val packageClient: PackageClient
+    private val packageClient: PackageClient,
+    private val scannerProperties: ScannerProperties
 ) {
     /**
      * 创建待扫描文件迭代器
@@ -92,7 +93,11 @@ class IteratorManager(
      * 添加ipa和apk文件过滤规则，不放到ScanPlan中，文件名后缀限制可能被移除或修改
      */
     private fun addMobilePackageRule(rule: Rule): Rule {
-        val fileNameExtensionRules = SUPPORT_FILE_NAME_EXTENSION
+        if (scannerProperties.supportFileNameExt.isEmpty()) {
+            return rule
+        }
+
+        val fileNameExtensionRules = scannerProperties.supportFileNameExt
             .map { Rule.QueryRule(NodeDetail::fullPath.name, ".$it", OperationType.SUFFIX) }
             .toMutableList<Rule>()
         val mobilePackageRule = Rule.NestedRule(fileNameExtensionRules, Rule.NestedRule.RelationType.OR)
