@@ -89,13 +89,9 @@ object Converter {
         )
     }
 
-    fun convert(request: BatchScanRequest): ScanRequest {
+    fun convert(request: BatchScanRequest, planType: String): ScanRequest {
         with(request) {
-            val rule = if (repoNames.isEmpty() && artifactRules.isEmpty()) {
-                null
-            } else {
-                RuleConverter.convert(projectId, repoNames, artifactRules)
-            }
+            val rule = RuleConverter.convert(projectId, repoNames, artifactRules, planType)
             return ScanRequest(null, request.planId, rule)
         }
     }
