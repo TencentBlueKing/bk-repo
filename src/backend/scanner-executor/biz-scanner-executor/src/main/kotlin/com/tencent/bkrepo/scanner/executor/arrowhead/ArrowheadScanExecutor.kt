@@ -252,13 +252,13 @@ class ArrowheadScanExecutor @Autowired constructor(
             val result = resultCallback.awaitCompletion(maxScanDuration, TimeUnit.MILLISECONDS)
             logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
             if (!result) {
-                return SubScanTaskStatus.TIMEOUT
+                return scanStatus(task, workDir, SubScanTaskStatus.TIMEOUT)
             }
             return scanStatus(task, workDir)
         } catch (e: UncheckedIOException) {
             if (e.cause is SocketTimeoutException) {
                 logger.error(logMsg(task, "socket timeout[${e.message}]"))
-                return SubScanTaskStatus.TIMEOUT
+                return scanStatus(task, workDir, SubScanTaskStatus.TIMEOUT)
             }
             throw e
         } finally {
@@ -301,20 +301,24 @@ class ArrowheadScanExecutor @Autowired constructor(
     /**
      * 解析arrowhead输出日志，判断扫描结果
      */
-    private fun scanStatus(task: ScanExecutorTask, workDir: File): SubScanTaskStatus {
+    private fun scanStatus(
+        task: ScanExecutorTask,
+        workDir: File,
+        status: SubScanTaskStatus = SubScanTaskStatus.FAILED
+    ): SubScanTaskStatus {
         val logFile = File(workDir, RESULT_FILE_NAME_LOG)
         if (!logFile.exists()) {
             logger.info(logMsg(task, "arrowhead log file not exists"))
-            return SubScanTaskStatus.FAILED
+            return status
         }
 
-        val lastLineLog = logFile.readLines().lastOrNull() ?: return SubScanTaskStatus.FAILED
+        val lastLineLog = logFile.readLines().lastOrNull() ?: return status
         if (lastLineLog.trimEnd().endsWith("Done")) {
             return SubScanTaskStatus.SUCCESS
         }
         logger.info(logMsg(task, "scan failed: $lastLineLog"))
 
-        return SubScanTaskStatus.FAILED
+        return status
     }
 
     /**
