@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import org.slf4j.LoggerFactory
 import kotlin.math.max
 
 @ApiModel("扫描器配置")
@@ -58,15 +59,20 @@ open class Scanner(
      */
     open fun maxScanDuration(size: Long): Long {
         val sizeMib = size / 1024L / 1024L
+        if (sizeMib == 0L) {
+            return DEFAULT_MIN_SCAN_DURATION
+        }
         val maxScanDuration = if (Long.MAX_VALUE / sizeMib > maxScanDurationPerMb) {
             maxScanDurationPerMb * sizeMib
         } else {
+            logger.warn("file too large size[$size]")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
         }
         return max(DEFAULT_MIN_SCAN_DURATION, maxScanDuration)
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(Scanner::class.java)
         private const val DEFAULT_MAX_SCAN_DURATION = 6 * 1000L
         /**
          * 默认至少允许扫描的时间
