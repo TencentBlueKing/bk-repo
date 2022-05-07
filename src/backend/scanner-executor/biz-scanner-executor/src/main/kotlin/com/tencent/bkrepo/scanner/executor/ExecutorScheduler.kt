@@ -98,7 +98,7 @@ class ExecutorScheduler @Autowired constructor(
             val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
             if (size > fileSizeLimit) {
                 logger.warn(
-                    "file too large, sha256[${sha256}, credentials: [${credentialsKey}]" +
+                    "file too large, sha256[${sha256}, credentials: [${credentialsKey}], subtaskId[$taskId]" +
                         ", size[$size], limit[$fileSizeLimit]"
                 )
                 report(taskId, parentScanTaskId, startTimestamp)

@@ -62,7 +62,6 @@ import org.springframework.core.io.Resource
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
-import org.springframework.util.unit.DataSize
 import java.io.File
 import java.io.UncheckedIOException
 import java.net.SocketTimeoutException
@@ -124,8 +123,8 @@ class ArrowheadScanExecutor @Autowired constructor(
     private fun maxFileSize(fileSize: Long): Long {
         // 最大允许的单文件大小为待扫描文件大小3倍，先除以3，防止long溢出
         val maxFileSize = (Long.MAX_VALUE / 3L).coerceAtMost(fileSize) * 3L
-        // 单文件大小限制最少为8GiB，避免扫描器文件创建失败
-        return max(DataSize.ofGigabytes(DEFAULT_MIN_LIMIT_FILE_SIZE_GB).toBytes(), maxFileSize)
+        // 限制单文件大小，避免扫描器文件创建的文件过大
+        return max(scannerExecutorProperties.fileSizeLimit.toBytes(), maxFileSize)
     }
 
     /**
@@ -438,11 +437,6 @@ class ArrowheadScanExecutor @Autowired constructor(
          * 默认为1024，降低此值可降低容器在CPU时间分配中的优先级
          */
         private const val CONTAINER_CPU_SHARES = 512
-
-        /**
-         * 默认单文件大小限制，最少为8GiB
-         */
-        private const val DEFAULT_MIN_LIMIT_FILE_SIZE_GB = 8L
 
         const val TMP_DIR_NAME = "tmp"
 
