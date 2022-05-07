@@ -53,26 +53,23 @@ class HttpBkSyncCall(
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
-        try {
-            if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-                if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
-                    logger.info("Faster internet,use common generic upload.")
-                    commonUpload(request)
-                }
+        if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
+            if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
+                logger.info("Faster internet,use common generic upload.")
+                commonUpload(request)
+                return
             }
+        }
+        try {
             val nanos = measureNanoTime { doUpload(request) }
             logger.info("Upload[${request.file}] success,elapsed ${HumanReadable.time(nanos)}.")
-            afterUpload(request)
         } catch (e: Exception) {
             if (e is SignRequestException) {
                 logger.debug("Upload failed: ${e.message}")
             } else {
                 logger.debug("Upload failed: ", e)
             }
-            request.genericUrl?.let {
-                commonUpload(request)
-                afterUpload(request)
-            }
+            commonUpload(request)
         }
     }
 
@@ -170,6 +167,7 @@ class HttpBkSyncCall(
                 }
                 patch(signStream.buffered())
             }
+            afterUpload(request)
         }
     }
 
@@ -321,7 +319,10 @@ class HttpBkSyncCall(
     private fun commonUpload(request: UploadRequest) {
         with(request) {
             logger.info("Start use generic upload.")
-            genericUrl ?: throw IllegalArgumentException("No genericUrl.")
+            genericUrl ?: let {
+                logger.info("Generic url not set,skip upload.")
+                return
+            }
             val body = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), file)
             val commonRequest = Request.Builder()
                 .url(genericUrl!!)
@@ -337,6 +338,7 @@ class HttpBkSyncCall(
                 }
             }
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
+            afterUpload(request)
         }
     }
 
