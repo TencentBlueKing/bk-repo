@@ -2,6 +2,7 @@ package com.tencent.bkrepo.common.bksync.transfer.http
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.hash.HashCode
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
 import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
 import com.tencent.bkrepo.common.bksync.BkSync
@@ -31,10 +32,14 @@ import java.io.OutputStream
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * bksync http实现
  * */
+@Suppress("UnstableApiUsage")
 class HttpBkSyncCall(
     // http客户端
     private val client: OkHttpClient,
@@ -53,15 +58,18 @@ class HttpBkSyncCall(
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
+        // 异步计算md5,sign数据
+        val signFuture = executor.submit<ByteArray> { signFile(request) }
+        val context = UploadContext(request, signFuture)
         if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
             if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
                 logger.info("Faster internet,use common generic upload.")
-                commonUpload(request)
+                commonUpload(context)
                 return
             }
         }
         try {
-            val nanos = measureNanoTime { doUpload(request) }
+            val nanos = measureNanoTime { doUpload(context) }
             logger.info("Upload[${request.file}] success,elapsed ${HumanReadable.time(nanos)}.")
         } catch (e: Exception) {
             if (e is SignRequestException) {
@@ -69,7 +77,7 @@ class HttpBkSyncCall(
             } else {
                 logger.debug("Upload failed: ", e)
             }
-            commonUpload(request)
+            commonUpload(context)
         }
     }
 
@@ -97,14 +105,27 @@ class HttpBkSyncCall(
         return true
     }
 
+    private fun signFile(request: UploadRequest): ByteArray {
+        logger.info("Start sign file.")
+        val md5DigestInputStream = DigestInputStream(request.file.inputStream(), MessageDigest.getInstance("MD5"))
+        val byteOutputStream = ByteArrayOutputStream()
+        BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
+        val md5Data = md5DigestInputStream.messageDigest.digest()
+        val md5 = HashCode.fromBytes(md5Data).toString()
+        // 设置md5 header,做服务器校验
+        request.headers[HEADER_MD5] = md5
+        logger.info("End sign file.")
+        return byteOutputStream.toByteArray()
+    }
+
     /**
      * 上传结束后行为
      * */
-    private fun afterUpload(request: UploadRequest) {
+    private fun afterUpload(request: UploadRequest, signData: ByteArray) {
         try {
             val existNewFileSign = existNewFileSign(request)
             if (!existNewFileSign) {
-                uploadNewSignFile(request)
+                uploadNewSignFile(request, signData)
             }
         } catch (e: Exception) {
             logger.debug("Upload sign file error.", e)
@@ -155,8 +176,10 @@ class HttpBkSyncCall(
      * 上传具体实现
      * 1. 请求sign
      * 2. 计算diff并且patch
+     * 3. 上传新文件的sign数据
      * */
-    private fun doUpload(request: UploadRequest) {
+    private fun doUpload(context: UploadContext) {
+        val request = context.request
         with(request) {
             // 请求sign
             logger.info("Request sign")
@@ -165,30 +188,22 @@ class HttpBkSyncCall(
                 val signStream = signResponse.body()?.byteStream() ?: let {
                     throw SignRequestException("Sign stream broken: ${signResponse.message()}.")
                 }
-                patch(signStream.buffered())
+                val signData = context.signFuture.get()
+                patch(signStream.buffered(), context)
+                afterUpload(request, signData)
             }
-            afterUpload(request)
         }
     }
 
     /**
      * 上传新文件的sign file
      * */
-    @Suppress("UnstableApiUsage")
-    private fun uploadNewSignFile(request: UploadRequest) {
+    private fun uploadNewSignFile(request: UploadRequest, signData: ByteArray) {
         with(request) {
-            logger.info("Start sign file.")
-            val md5DigestInputStream = DigestInputStream(file.inputStream(), MessageDigest.getInstance("MD5"))
-            val byteOutputStream = ByteArrayOutputStream()
-            BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
-            val md5Data = md5DigestInputStream.messageDigest.digest()
-            val md5 = HashCode.fromBytes(md5Data).toString()
-            logger.info("End sign file.")
-            val newSignFileData = byteOutputStream.toByteArray()
             logger.info("Start upload sign file.")
-            val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), newSignFileData)
+            val signFileBody = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), signData)
             val uploadUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
-                QUERY_PARAM_MD5, md5
+                QUERY_PARAM_MD5, headers[HEADER_MD5]
             ).build()
             val signRequest = Request.Builder()
                 .url(uploadUrl)
@@ -245,7 +260,7 @@ class HttpBkSyncCall(
     /**
      * 根据传人的sign数据流，进行diff计算，并且发起patch请求
      * */
-    private fun UploadRequest.patch(signStream: InputStream) {
+    private fun UploadRequest.patch(signStream: InputStream, context: UploadContext) {
         val deltaFile = createTempFile()
         try {
             deltaFile.outputStream().buffered().use {
@@ -256,7 +271,7 @@ class HttpBkSyncCall(
                         "Current reuse hit rate[${result.hitRate}]" +
                             " less than threshold[$reuseThreshold],use common upload."
                     )
-                    commonUpload(this)
+                    commonUpload(context)
                     return
                 }
             }
@@ -316,7 +331,8 @@ class HttpBkSyncCall(
     /**
      * 普通上传
      * */
-    private fun commonUpload(request: UploadRequest) {
+    private fun commonUpload(context: UploadContext) {
+        val request = context.request
         with(request) {
             logger.info("Start use generic upload.")
             genericUrl ?: let {
@@ -338,7 +354,8 @@ class HttpBkSyncCall(
                 }
             }
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
-            afterUpload(request)
+            val signData = context.signFuture.get()
+            afterUpload(request, signData)
         }
     }
 
@@ -391,5 +408,10 @@ class HttpBkSyncCall(
         private const val QUERY_PARAM_MD5 = "md5"
         private const val HEADER_MD5 = "X-BKREPO-MD5"
         private const val UPLOAD_ACTION = "UPLOAD"
+        private val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("BkSync Signer-%d").build()
+        private val executor = ThreadPoolExecutor(
+            0, Integer.MAX_VALUE, 0, TimeUnit.SECONDS,
+            SynchronousQueue(), namedThreadFactory
+        )
     }
 }
