@@ -29,7 +29,6 @@
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
                 this.ajaxUserInfo().then((userInfo) => {
-                    this.checkPM({ projectId: this.projectId })
                     userInfo.admin && this.getClusterList()
                 })
             } else {
@@ -79,8 +78,6 @@
                                 projectId
                             }
                         })
-
-                        projectId && this.checkPM({ projectId })
                     }
                     
                     userInfo.admin && this.getClusterList()
@@ -91,7 +88,6 @@
             ...mapActions([
                 'getProjectList',
                 'ajaxUserInfo',
-                'checkPM',
                 'getRepoUserList',
                 'getClusterList'
             ])
