@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -39,14 +40,18 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.config.OciProperties
+import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciRepoNotFoundException
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
+import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
+import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -54,7 +59,8 @@ import org.springframework.stereotype.Service
 class OciBlobServiceImpl(
     private val ociProperties: OciProperties,
     private val storage: StorageService,
-    private val repoClient: RepositoryClient
+    private val repoClient: RepositoryClient,
+    private val nodeClient: NodeClient
 ) : OciBlobService {
 
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
@@ -93,8 +99,38 @@ class OciBlobServiceImpl(
                     HttpContextHolder.getResponse()
                 )
             } else {
-                // TODO 如果mount不为空，这里需要处理
+                mountBlob(artifactInfo)
             }
+        }
+    }
+
+    private fun mountBlob(artifactInfo: OciBlobArtifactInfo) {
+        with(artifactInfo) {
+            val ociDigest = OciDigest(digest)
+            val fileName = ociDigest.fileName()
+            val queryModel = NodeQueryBuilder()
+                .select(NODE_FULL_PATH)
+                .projectId(projectId)
+                .repoName(repoName)
+                .name(fileName)
+                .sortByAsc(NODE_FULL_PATH)
+            nodeClient.search(queryModel.build()).data ?: run {
+                logger.warn("Could not find $fileName in repo ${getRepoIdentify()} to mount")
+                OciResponseUtils.buildBlobMountResponse(
+                    domain = ociProperties.domain,
+                    locationStr = "",
+                    status = HttpStatus.ACCEPTED,
+                    response = HttpContextHolder.getResponse()
+                )
+                return
+            }
+            val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
+            OciResponseUtils.buildBlobMountResponse(
+                domain = ociProperties.domain,
+                locationStr = blobLocation,
+                status = HttpStatus.CREATED,
+                response = HttpContextHolder.getResponse()
+            )
         }
     }
 

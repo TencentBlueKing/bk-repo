@@ -99,6 +99,20 @@ object OciResponseUtils {
         )
     }
 
+    fun buildBlobMountResponse(
+        domain: String,
+        locationStr: String,
+        status: HttpStatus = HttpStatus.ACCEPTED,
+        response: HttpServletResponse
+    ) {
+        uploadResponse(
+            domain = domain,
+            response = response,
+            status = status,
+            locationStr = locationStr
+        )
+    }
+
     fun buildDownloadResponse(digest: OciDigest, response: HttpServletResponse, size: Long? = null) {
         downloadResponse(
             response,
