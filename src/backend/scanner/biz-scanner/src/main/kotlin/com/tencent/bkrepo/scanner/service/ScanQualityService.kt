@@ -11,8 +11,11 @@ interface ScanQualityService {
 
     fun updateScanQuality(scanId: String, request: ScanQualityCreateRequest): Boolean
 
-    fun checkScanQualityRedLine(scanId: String, scanResultOverview: Map<String, Long>): Boolean
+    /**
+     * 检查是否通过质量规则
+     */
+    fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean
 
-    fun checkScanQualityRedLineDetail(scanId: String, scanResultOverview: Map<String, Long>): ScanQualityCheckedDetail
+    fun checkScanQualityRedLineDetail(planId: String, scanResultOverview: Map<String, Number>): ScanQualityCheckedDetail
 
 }

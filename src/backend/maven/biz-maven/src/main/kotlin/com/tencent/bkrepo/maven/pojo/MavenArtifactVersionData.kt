@@ -33,5 +33,7 @@ package com.tencent.bkrepo.maven.pojo
 
 data class MavenArtifactVersionData(
     val basic: Basic,
-    val metadata: Map<String, Any>
+    val metadata: Map<String, Any>,
+    // 系统元数据，只读
+    val systemMetadata: Map<String, Any>?
 )

@@ -50,6 +50,8 @@ data class MetadataSaveRequest(
     override val fullPath: String,
     @ApiModelProperty("元数据key-value数据", required = true)
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("只读", required = false)
+    val readOnly: Boolean = false,
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER
 ) : NodeRequest, ServiceRequest

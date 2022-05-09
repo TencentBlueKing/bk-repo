@@ -13,12 +13,12 @@ data class ScanQualityResponse (
     val forbidScanUnFinished: Boolean,
     val forbidQualityUnPass: Boolean
 ){
-    fun getScanQualityRedLineByLevel(level: String): Int {
+    fun getScanQualityRedLineByLevel(level: String): Int? {
         return when (level) {
-            CVE_CRITICAL_COUNT -> critical ?: 0
-            CVE_HIGH_COUNT -> high ?: 0
-            CVE_MEDIUM_COUNT -> medium ?: 0
-            CVE_LOW_COUNT -> low ?: 0
+            CVE_CRITICAL_COUNT -> critical
+            CVE_HIGH_COUNT -> high
+            CVE_MEDIUM_COUNT -> medium
+            CVE_LOW_COUNT -> low
             else -> 0
         }
     }

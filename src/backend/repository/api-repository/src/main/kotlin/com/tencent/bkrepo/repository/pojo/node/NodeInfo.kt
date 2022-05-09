@@ -65,6 +65,8 @@ data class NodeInfo(
     val md5: String? = null,
     @ApiModelProperty("元数据")
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("系统元数据，只读")
+    val systemMetadata: Map<String, Any>? = null,
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")

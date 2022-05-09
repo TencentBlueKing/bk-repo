@@ -280,6 +280,7 @@ abstract class NodeBaseService(
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
                 val metadata = MetadataUtils.toMap(it.metadata)
+                val systemMetadata = MetadataUtils.toMap(it.systemMetadata)
                 NodeInfo(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -295,6 +296,7 @@ abstract class NodeBaseService(
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
+                    systemMetadata = systemMetadata,
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)

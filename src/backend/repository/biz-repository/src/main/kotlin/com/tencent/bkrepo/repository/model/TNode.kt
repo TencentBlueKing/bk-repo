@@ -81,6 +81,8 @@ data class TNode(
     var copyFromCredentialsKey: String? = null,
     var copyIntoCredentialsKey: String? = null,
     var metadata: MutableList<TMetadata>? = null,
+    //系统元数据，只读
+    var systemMetadata : MutableList<TMetadata>? = null,
 
     @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,

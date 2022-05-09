@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class ScanQualityServiceImpl(
-        private val scanPlanDao: ScanPlanDao
+    private val scanPlanDao: ScanPlanDao
 ) : ScanQualityService {
     override fun getScanQuality(scanId: String): ScanQualityResponse {
         val scanPlan = scanPlanDao.get(scanId)
@@ -50,54 +50,57 @@ class ScanQualityServiceImpl(
         return true
     }
 
-    override fun checkScanQualityRedLine(scanId: String, scanResultOverview: Map<String, Long>): Boolean {
-        val scanPlan = scanPlanDao.get(scanId)
-        val scanQuality = scanPlan.scanQuality.convertToScanQualityResponse()
-        if (!scanQuality.forbidQualityUnPass) return true
+    override fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean {
+        val scanQuality = getScanQuality(planId)
         scanQualityRedLineList.forEach { redLine ->
-            scanResultOverview[redLine]?.let {
-                if (it > scanQuality.getScanQualityRedLineByLevel(redLine)) {
-                    return false
-                } } }
+            val scanIndex = scanResultOverview[redLine]
+            val qualityIndex = scanQuality.getScanQualityRedLineByLevel(redLine)
+            if (scanIndex != null && qualityIndex != null
+                && scanIndex.toInt() > qualityIndex) {
+                return false
+            }
+        }
         return true
     }
 
     override fun checkScanQualityRedLineDetail(
-            scanId: String,
-            scanResultOverview: Map<String, Long>
+        planId: String,
+        scanResultOverview: Map<String, Number>
     ): ScanQualityCheckedDetail {
-        val scanPlan = scanPlanDao.get(scanId)
+        val scanPlan = scanPlanDao.get(planId)
         val scanQuality = scanPlan.scanQuality.convertToScanQualityResponse()
         if (!scanQuality.forbidQualityUnPass) return ScanQualityCheckedDetail(qualityStatus = true)
         val detailsMap = mutableMapOf<String, ScanQualityCheckedDetail.ScanQualityCheckedStatus>()
         scanQualityRedLineList.forEach { redLine ->
-            scanResultOverview[redLine]?.let {
+            val scanIndex = scanResultOverview[redLine]
+            val qualityIndex = scanQuality.getScanQualityRedLineByLevel(redLine)
+            if (scanIndex != null && qualityIndex != null) {
                 detailsMap[redLine] = ScanQualityCheckedDetail.ScanQualityCheckedStatus(
-                        status = it <= scanQuality.getScanQualityRedLineByLevel(redLine),
-                        require = scanQuality.getScanQualityRedLineByLevel(redLine),
-                        actual = it.toInt()
+                    status = scanIndex.toInt() <= qualityIndex,
+                    require = scanQuality.getScanQualityRedLineByLevel(redLine),
+                    actual = scanIndex.toInt()
                 )
             }
         }
         return ScanQualityCheckedDetail(
-                criticalStatus = detailsMap[CVE_CRITICAL_COUNT],
-                highStatus = detailsMap[CVE_HIGH_COUNT],
-                mediumStatus = detailsMap[CVE_MEDIUM_COUNT],
-                lowStatus = detailsMap[CVE_LOW_COUNT],
-                qualityStatus = (
-                        detailsMap[CVE_CRITICAL_COUNT]?.status
-                                ?: true
-                                && detailsMap[CVE_HIGH_COUNT]?.status
-                                ?: true
-                                && detailsMap[CVE_MEDIUM_COUNT]?.status
-                                ?: true
-                                && detailsMap[CVE_LOW_COUNT]?.status
-                                ?: true
-                        )
+            criticalStatus = detailsMap[CVE_CRITICAL_COUNT],
+            highStatus = detailsMap[CVE_HIGH_COUNT],
+            mediumStatus = detailsMap[CVE_MEDIUM_COUNT],
+            lowStatus = detailsMap[CVE_LOW_COUNT],
+            qualityStatus = (
+                detailsMap[CVE_CRITICAL_COUNT]?.status
+                    ?: true
+                    && detailsMap[CVE_HIGH_COUNT]?.status
+                    ?: true
+                    && detailsMap[CVE_MEDIUM_COUNT]?.status
+                    ?: true
+                    && detailsMap[CVE_LOW_COUNT]?.status
+                    ?: true
+                )
         )
     }
 
-    companion object{
+    companion object {
         val scanQualityRedLineList = listOf(CVE_CRITICAL_COUNT, CVE_HIGH_COUNT, CVE_MEDIUM_COUNT, CVE_LOW_COUNT)
         fun ScanQualityCreateRequest.convertToMap(): Map<String, Any?> {
             val map = mutableMapOf<String, Any?>()
@@ -105,22 +108,26 @@ class ScanQualityServiceImpl(
                 if (it != null) {
                     require(it >= 0) { throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, CRITICAL) }
                 }
-                map[CRITICAL] = it }
+                map[CRITICAL] = it
+            }
             this.high.let {
                 if (it != null) {
                     require(it >= 0) { throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, HIGH) }
                 }
-                map[HIGH] = it }
+                map[HIGH] = it
+            }
             this.medium.let {
                 if (it != null) {
                     require(it >= 0) { throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, MEDIUM) }
                 }
-                map[MEDIUM] = it }
+                map[MEDIUM] = it
+            }
             this.low.let {
                 if (it != null) {
                     require(it >= 0) { throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, LOW) }
                 }
-                map[LOW] = it }
+                map[LOW] = it
+            }
             this.forbidScanUnFinished?.let { map[FORBID_SCAN_UNFINISHED] = it }
             this.forbidQualityUnPass?.let { map[FORBID_QUALITY_UNPASS] = it }
             return map
@@ -128,12 +135,12 @@ class ScanQualityServiceImpl(
 
         fun Map<String, Any>.convertToScanQualityResponse(): ScanQualityResponse {
             return ScanQualityResponse(
-                    critical = this[CRITICAL] as? Int,
-                    high = this[HIGH] as? Int,
-                    medium =  this[MEDIUM] as? Int,
-                    low = this[LOW] as? Int,
-                    forbidScanUnFinished = this[FORBID_SCAN_UNFINISHED] as? Boolean ?: false,
-                    forbidQualityUnPass = this[FORBID_QUALITY_UNPASS] as? Boolean ?: false
+                critical = this[CRITICAL] as? Int,
+                high = this[HIGH] as? Int,
+                medium = this[MEDIUM] as? Int,
+                low = this[LOW] as? Int,
+                forbidScanUnFinished = this[FORBID_SCAN_UNFINISHED] as? Boolean ?: false,
+                forbidQualityUnPass = this[FORBID_QUALITY_UNPASS] as? Boolean ?: false
             )
         }
     }

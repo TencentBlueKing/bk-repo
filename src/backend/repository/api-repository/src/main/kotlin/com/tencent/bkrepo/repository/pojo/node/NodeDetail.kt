@@ -68,6 +68,8 @@ data class NodeDetail(
     val md5: String? = nodeInfo.md5,
     @ApiModelProperty("元数据")
     val metadata: Map<String, Any> = nodeInfo.metadata.orEmpty(),
+    @ApiModelProperty("系统元数据，只读")
+    val systemMetadata: Map<String, Any> = nodeInfo.systemMetadata.orEmpty(),
     @ApiModelProperty("所属项目id")
     val projectId: String = nodeInfo.projectId,
     @ApiModelProperty("所属仓库名称")

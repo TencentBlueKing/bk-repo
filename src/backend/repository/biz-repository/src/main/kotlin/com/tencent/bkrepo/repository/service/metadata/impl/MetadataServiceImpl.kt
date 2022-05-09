@@ -75,9 +75,17 @@ class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            val originalMetadata = MetadataUtils.toMap(node.metadata).toMutableMap()
+            val originalMetadata = if (readOnly) {
+                MetadataUtils.toMap(node.systemMetadata).toMutableMap()
+            } else {
+                MetadataUtils.toMap(node.metadata).toMutableMap()
+            }
             metadata!!.forEach { (key, value) -> originalMetadata[key] = value }
-            node.metadata = MetadataUtils.fromMap(originalMetadata)
+            if (readOnly) {
+                node.systemMetadata = MetadataUtils.fromMap(originalMetadata)
+            } else {
+                node.metadata = MetadataUtils.fromMap(originalMetadata)
+            }
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
             logger.info("Save metadata[$metadata] on node[/$projectId/$repoName$fullPath] success.")

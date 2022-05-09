@@ -151,6 +151,9 @@ class NodeSearchServiceImpl(
             it[NodeInfo::metadata.name]?.let { metadata ->
                 it[NodeInfo::metadata.name] = convert(metadata as List<Map<String, Any>>)
             }
+            it[NodeInfo::systemMetadata.name]?.let { systemMetadata ->
+                it[NodeInfo::systemMetadata.name] = convert(systemMetadata as List<Map<String, Any>>)
+            }
         }
         val countQuery = Query.of(query).limit(0).skip(0)
         val totalRecords = nodeDao.count(countQuery)
