@@ -34,5 +34,5 @@ import java.util.concurrent.Future
  * */
 data class UploadContext(
     val request: UploadRequest,
-    val signFuture: Future<ByteArray>
+    val signFuture: Future<Unit>
 )

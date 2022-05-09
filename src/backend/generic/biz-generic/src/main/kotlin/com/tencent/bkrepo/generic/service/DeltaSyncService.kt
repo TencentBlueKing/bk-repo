@@ -103,14 +103,8 @@ class DeltaSyncService(
 
     fun uploadSignFile(file: ArtifactFile, artifactInfo: GenericArtifactInfo, md5: String) {
         with(artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            if (node == null || node.folder) {
-                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-            }
-            if (md5 != node.md5) {
-                throw ErrorCodeException(GenericMessageCode.NODE_DATA_HAS_CHANGED)
-            }
-            signFileDao.findByDetail(projectId, repoName, md5, blockSize) ?: saveSignFile(node, file)
+            signFileDao.findByDetail(projectId, repoName, md5, blockSize)
+                ?: saveSignFile(artifactInfo, file, md5)
         }
     }
 
@@ -332,16 +326,16 @@ class DeltaSyncService(
 
     /**
      * 保存sign文件到指定仓库
+     * @param artifactInfo 构件信息
      * @param md5 校验和md5
      * @param file 节点sign文件
      * */
-    private fun saveSignFile(node: NodeDetail, file: ArtifactFile) {
-        with(node) {
-            val md5 = node.md5!!
+    private fun saveSignFile(artifactInfo: GenericArtifactInfo, file: ArtifactFile, md5: String) {
+        with(artifactInfo) {
             val signFileFullPath = "$projectId/$repoName/$blockSize/$md5$SUFFIX_SIGN"
-            val artifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
+            val signFileArtifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
             val nodeCreateRequest =
-                buildSignFileNodeCreateRequest(signRepo, artifactInfo, SecurityUtils.getUserId(), file)
+                buildSignFileNodeCreateRequest(signRepo, signFileArtifactInfo, SecurityUtils.getUserId(), file)
             try {
                 storageManager.storeArtifactFile(nodeCreateRequest, file, signRepo.storageCredentials)
                 val signFile = TSignFile(

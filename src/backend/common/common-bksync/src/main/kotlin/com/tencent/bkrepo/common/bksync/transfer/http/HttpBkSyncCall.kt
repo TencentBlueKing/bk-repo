@@ -58,13 +58,24 @@ class HttpBkSyncCall(
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
-        // 异步计算md5,sign数据
-        val signFuture = executor.submit<ByteArray> { signFile(request) }
+        // 异步计算和上传md5,sign数据
+        val signFuture = executor.submit<Unit> {
+            try {
+                val signData = signFile(request)
+                val existNewFileSign = existNewFileSign(request)
+                if (!existNewFileSign) {
+                    uploadNewSignFile(request, signData)
+                }
+            } catch (e: Exception) {
+                logger.debug("Upload sign file error.", e)
+            }
+        }
         val context = UploadContext(request, signFuture)
         if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
             if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
                 logger.info("Faster internet,use common generic upload.")
                 commonUpload(context)
+                signFuture.get()
                 return
             }
         }
@@ -78,6 +89,8 @@ class HttpBkSyncCall(
                 logger.debug("Upload failed: ", e)
             }
             commonUpload(context)
+        } finally {
+            signFuture.get()
         }
     }
 
@@ -116,20 +129,6 @@ class HttpBkSyncCall(
         request.headers[HEADER_MD5] = md5
         logger.info("End sign file.")
         return byteOutputStream.toByteArray()
-    }
-
-    /**
-     * 上传结束后行为
-     * */
-    private fun afterUpload(request: UploadRequest, signData: ByteArray) {
-        try {
-            val existNewFileSign = existNewFileSign(request)
-            if (!existNewFileSign) {
-                uploadNewSignFile(request, signData)
-            }
-        } catch (e: Exception) {
-            logger.debug("Upload sign file error.", e)
-        }
     }
 
     private fun reportSpeed(url: String, speed: Int) {
@@ -188,9 +187,7 @@ class HttpBkSyncCall(
                 val signStream = signResponse.body()?.byteStream() ?: let {
                     throw SignRequestException("Sign stream broken: ${signResponse.message()}.")
                 }
-                val signData = context.signFuture.get()
                 patch(signStream.buffered(), context)
-                afterUpload(request, signData)
             }
         }
     }
@@ -354,8 +351,6 @@ class HttpBkSyncCall(
                 }
             }
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
-            val signData = context.signFuture.get()
-            afterUpload(request, signData)
         }
     }
 
