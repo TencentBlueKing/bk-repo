@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -104,6 +105,13 @@ class OciExceptionHandler(
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: OciFileAlreadyExistsException) {
         val responseObject = OciErrorResponse(exception.message, exception.code, exception.detail)
+        ociResponse(responseObject, exception)
+    }
+
+    @ExceptionHandler(ErrorCodeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleException(exception: ErrorCodeException) {
+        val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
         ociResponse(responseObject, exception)
     }
 

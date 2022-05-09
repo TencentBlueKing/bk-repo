@@ -32,15 +32,17 @@
 package com.tencent.bkrepo.oci.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_TYPE
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.RANGE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.oci.constant.BLOB_UPLOAD_SESSION_ID
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
-import com.tencent.bkrepo.oci.constant.DOCKER_UPLOAD_UUID
 import com.tencent.bkrepo.oci.constant.OCI_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import javax.servlet.http.HttpServletResponse
@@ -57,11 +59,44 @@ object OciResponseUtils {
     }
 
     fun buildUploadResponse(domain: String, digest: OciDigest, locationStr: String, response: HttpServletResponse) {
-        uploadResponse(domain, response, HttpStatus.CREATED, locationStr, digest.toString())
+        uploadResponse(
+            domain = domain,
+            response = response,
+            status = HttpStatus.CREATED,
+            locationStr = locationStr,
+            digest = digest.toString(),
+            contentLength = 0
+        )
     }
 
     fun buildBlobUploadUUIDResponse(domain: String, uuid: String, locationStr: String, response: HttpServletResponse) {
-        uploadResponse(domain, response, HttpStatus.ACCEPTED, locationStr, null, uuid)
+        uploadResponse(
+            domain = domain,
+            response = response,
+            status = HttpStatus.ACCEPTED,
+            locationStr = locationStr,
+            uuid = uuid,
+            contentLength = 0
+        )
+    }
+
+    fun buildBlobUploadPatchResponse(
+        domain: String,
+        uuid: String,
+        locationStr: String,
+        status: HttpStatus = HttpStatus.ACCEPTED,
+        response: HttpServletResponse,
+        range: Long
+    ) {
+        uploadResponse(
+            domain = domain,
+            response = response,
+            status = status,
+            locationStr = locationStr,
+            uuid = uuid,
+            contentLength = 0,
+            range = range
+        )
     }
 
     fun buildDownloadResponse(digest: OciDigest, response: HttpServletResponse, size: Long? = null) {
@@ -83,7 +118,9 @@ object OciResponseUtils {
         status: HttpStatus,
         locationStr: String,
         digest: String? = null,
-        uuid: String? = null
+        uuid: String? = null,
+        range: Long? = null,
+        contentLength: Int? = null
     ) {
         val location = getResponseLocationURI(locationStr, domain)
         response.status = status.value
@@ -91,10 +128,15 @@ object OciResponseUtils {
         digest?.let {
             response.addHeader(DOCKER_CONTENT_DIGEST, digest)
         }
-        response.addHeader(DOCKER_UPLOAD_UUID, uuid)
         response.addHeader(HttpHeaders.LOCATION, location)
         uuid?.let {
-            response.addHeader(DOCKER_UPLOAD_UUID, uuid)
+            response.addHeader(BLOB_UPLOAD_SESSION_ID, uuid)
+        }
+        contentLength?.let {
+            response.addHeader(CONTENT_LENGTH, contentLength.toString())
+        }
+        range?.let {
+            response.addHeader(RANGE, "0-$range")
         }
     }
 
@@ -109,7 +151,7 @@ object OciResponseUtils {
         response.addHeader(DOCKER_CONTENT_DIGEST, digest)
         response.addHeader(HttpHeaders.ETAG, digest)
         size?.let {
-            response.addHeader(HttpHeaders.CONTENT_LENGTH, size.toString())
+            response.addHeader(CONTENT_LENGTH, size.toString())
         }
         response.addHeader(CONTENT_TYPE, mediaType)
     }

@@ -32,7 +32,9 @@
 package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -41,6 +43,9 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.BLOB_UNKNOWN_CODE
@@ -51,9 +56,12 @@ import com.tencent.bkrepo.oci.constant.FORCE
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE_ALL
+import com.tencent.bkrepo.oci.constant.PATCH
+import com.tencent.bkrepo.oci.constant.POST
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.model.Descriptor
 import com.tencent.bkrepo.oci.model.ManifestSchema2
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
@@ -62,6 +70,7 @@ import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -79,6 +88,11 @@ class OciRegistryLocalRepository(
     override fun onUploadBefore(context: ArtifactUploadContext) {
         with(context) {
             super.onUploadBefore(context)
+            val requestMethod = request.method
+            if (PATCH == requestMethod) {
+                logger.info("Will using patch ways to upload file in repo ${artifactInfo.getRepoIdentify()}")
+                return
+            }
             val isForce = request.getParameter(FORCE)?.let { true } ?: false
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
@@ -98,46 +112,160 @@ class OciRegistryLocalRepository(
     }
 
     /**
+     * 从Content-Range头中解析出起始位置
+     */
+    private fun getRangeInfo(range: String): Pair<Long, Long> {
+        val values = range.split("-")
+        return Pair(values[0].toLong(), values[1].toLong())
+    }
+
+    /**
      * 上传
      */
     override fun onUpload(context: ArtifactUploadContext) {
         logger.info("Preparing to upload the oci file in repo ${context.artifactInfo.getRepoIdentify()}")
-        val artifactFile = context.getArtifactFile()
-        val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
-        val fullPath = storeArtifact(context)
-        // 获取用户可访问地址
-        val location = when (context.artifactInfo) {
-            is OciManifestArtifactInfo -> {
-                // 上传manifest文件，同时需要将manifest中对应blob的属性进行补充到blob节点中，同时创建package相关信息
-                with(context.artifactInfo as OciManifestArtifactInfo) {
-                    updateOciInfo(
-                        ociArtifactInfo = this,
-                        digest = digest,
-                        artifactFile = artifactFile,
-                        fullPath = fullPath,
-                        context = context
-                    )
-                    OciLocationUtils.manifestLocation(digest, this)
-                }
+        val requestMethod = context.request.method
+        if (PATCH == requestMethod) {
+            patchUpload(context)
+        } else {
+            val (digest, location) = if (POST == requestMethod) {
+                postUpload(context)
+            } else {
+                putUpload(context)
             }
-            is OciBlobArtifactInfo -> {
-                with(context.artifactInfo as OciBlobArtifactInfo) {
-                    OciLocationUtils.blobLocation(digest, this)
-                }
-            }
-            else -> null
-        }
-        logger.info(
-            "Artifact $fullPath has been uploaded and will can be accessed in $location" +
-                " in repo ${context.artifactInfo.getRepoIdentify()}"
-        )
-        location?.let {
+            logger.info(
+                "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded " +
+                    "and will can be accessed in $location" +
+                    " in repo ${context.artifactInfo.getRepoIdentify()}"
+            )
             OciResponseUtils.buildUploadResponse(
                 domain = ociProperties.domain,
                 digest = digest,
                 locationStr = location,
                 response = context.response
             )
+        }
+    }
+
+    /**
+     * blob chunks上传中的patch上传部分逻辑处理
+     * Pushing a blob in chunks
+     * A chunked blob upload is accomplished in three phases:
+     * 1:Obtain a session ID (upload URL) (POST)
+     * 2:Upload the chunks (PATCH)
+     * 3:Close the session (PUT)
+     */
+    private fun patchUpload(context: ArtifactUploadContext) {
+        logger.info("Will using patch ways to upload file in repo ${context.artifactInfo.getRepoIdentify()}")
+        if (context.artifactInfo !is OciBlobArtifactInfo) {
+            return
+        }
+        with(context.artifactInfo as OciBlobArtifactInfo) {
+            val range = context.request.getHeader("Content-Range")
+            val length = context.request.contentLength
+            if (!range.isNullOrEmpty() && length > -1) {
+                logger.info("range $range, length $length, uuid $uuid")
+                val (_, end) = getRangeInfo(range)
+                // 判断长度是否超长
+                if (end > length) {
+                    OciResponseUtils.buildBlobUploadPatchResponse(
+                        domain = ociProperties.domain,
+                        uuid = uuid!!,
+                        locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
+                        response = HttpContextHolder.getResponse(),
+                        range = length.toLong(),
+                        status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+                    )
+                    return
+                }
+            }
+            val patchLen = storageService.append(
+                appendId = uuid!!,
+                artifactFile = context.getArtifactFile(),
+                storageCredentials = context.repositoryDetail.storageCredentials
+            )
+            // 判断长度是否超长
+            if (length > -1 && patchLen > length) {
+                OciResponseUtils.buildBlobUploadPatchResponse(
+                    domain = ociProperties.domain,
+                    uuid = uuid,
+                    locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
+                    response = HttpContextHolder.getResponse(),
+                    range = length.toLong(),
+                    status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+                )
+            } else {
+                OciResponseUtils.buildBlobUploadPatchResponse(
+                    domain = ociProperties.domain,
+                    uuid = uuid,
+                    locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
+                    response = HttpContextHolder.getResponse(),
+                    range = patchLen
+                )
+            }
+        }
+    }
+
+    /**
+     * blob 上传，直接使用post
+     * Pushing a blob monolithically ：A single POST request
+     */
+    private fun postUpload(context: ArtifactUploadContext): Pair<OciDigest, String> {
+        val artifactFile = context.getArtifactFile()
+        val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
+        val fullPath = storeArtifact(context)
+        logger.info(
+            "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to $fullPath" +
+                " in repo  ${context.artifactInfo.getRepoIdentify()}"
+        )
+        val blobLocation = OciLocationUtils.blobLocation(digest, context.artifactInfo as OciArtifactInfo)
+        return Pair(digest, blobLocation)
+    }
+
+    /**
+     * put 上传包含三种逻辑：
+     * 1 blob POST with PUT 上传的put模块处理
+     * 2 blob POST PATCH with PUT 上传的put模块处理
+     * 3 manifest PUT上传的逻辑处理
+     */
+    private fun putUpload(context: ArtifactUploadContext): Pair<OciDigest, String> {
+        return if (context.artifactInfo is OciBlobArtifactInfo) {
+            with(context.artifactInfo as OciBlobArtifactInfo) {
+                storageService.append(
+                    appendId = uuid!!,
+                    artifactFile = context.getArtifactFile(),
+                    storageCredentials = context.repositoryDetail.storageCredentials
+                )
+                val fileInfo = storageService.finishAppend(uuid, context.repositoryDetail.storageCredentials)
+                val digest = OciDigest.fromSha256(fileInfo.sha256)
+                val fullPath = storeArtifact(context, fileInfo)
+                logger.info(
+                    "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to $fullPath" +
+                        " in repo  ${context.artifactInfo.getRepoIdentify()}"
+                )
+                val blobLocation = OciLocationUtils.blobLocation(digest, this)
+                Pair(digest, blobLocation)
+            }
+        } else {
+            with(context.artifactInfo as OciManifestArtifactInfo) {
+                val artifactFile = context.getArtifactFile()
+                val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
+                val fullPath = storeArtifact(context)
+                logger.info(
+                    "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to $fullPath" +
+                        " in repo  ${context.artifactInfo.getRepoIdentify()}"
+                )
+                // 上传manifest文件，同时需要将manifest中对应blob的属性进行补充到blob节点中，同时创建package相关信息
+                updateOciInfo(
+                    ociArtifactInfo = this,
+                    digest = digest,
+                    artifactFile = artifactFile,
+                    fullPath = fullPath,
+                    context = context
+                )
+                val manifestLocation = OciLocationUtils.manifestLocation(digest, this)
+                Pair(digest, manifestLocation)
+            }
         }
     }
 
@@ -166,13 +294,15 @@ class OciRegistryLocalRepository(
             mediaType = mediaType
         )
         // 同步blob相关metadata
-        syncBlobInfo(
-            ociArtifactInfo = ociArtifactInfo,
-            manifest = manifest,
-            manifestDigest = digest,
-            context = context,
-            manifestPath = fullPath
-        )
+        if (ociArtifactInfo.packageName.isNotEmpty()) {
+            syncBlobInfo(
+                ociArtifactInfo = ociArtifactInfo,
+                manifest = manifest,
+                manifestDigest = digest,
+                context = context,
+                manifestPath = fullPath
+            )
+        }
     }
     /**
      * 将部分信息存入节点metadata中
@@ -400,12 +530,39 @@ class OciRegistryLocalRepository(
     }
 
     /**
-     * 保存文件内容
+     * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
      */
-    private fun storeArtifact(context: ArtifactUploadContext): String {
+    private fun storeArtifact(context: ArtifactUploadContext, fileInfo: FileInfo? = null): String {
         val request = buildNodeCreateRequest(context)
-        storageManager.storeArtifactFile(request, context.getArtifactFile(), context.storageCredentials)
+        if (fileInfo != null) {
+            val newNodeRequest = request.copy(
+                size = fileInfo.size,
+                md5 = fileInfo.md5,
+                sha256 = fileInfo.sha256
+            )
+            createNode(newNodeRequest, context.storageCredentials)
+        } else {
+            storageManager.storeArtifactFile(request, context.getArtifactFile(), context.storageCredentials)
+        }
         return request.fullPath
+    }
+
+    /**
+     * 当使用追加上传时，文件已存储，只需存储节点信息
+     */
+    private fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail {
+        try {
+            return nodeClient.createNode(request).data!!
+        } catch (exception: Exception) {
+            // 当文件有创建，则删除文件
+            try {
+                storageService.delete(request.sha256!!, storageCredentials)
+            } catch (exception: Exception) {
+                logger.error("Failed to delete new created file[${request.sha256}]", exception)
+            }
+            // 异常往上抛
+            throw exception
+        }
     }
 
     /**
@@ -414,7 +571,15 @@ class OciRegistryLocalRepository(
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         logger.info("Will start to download oci artifact in repo ${context.artifactInfo.getRepoIdentify()}...")
         // 根据类型解析实际存储路径，manifest有可能根据版本进行获取而不是对应文件的digest值
-        val fullPath = when (context.artifactInfo) {
+        val fullPath = getFullpathFromTagOrDigest(context)
+        return downloadArtifact(context, fullPath)
+    }
+
+    /**
+     * 根据传入的是tag 还是digest获取对应fullpath
+     */
+    private fun getFullpathFromTagOrDigest(context: ArtifactContext): String? {
+        return when (context.artifactInfo) {
             is OciBlobArtifactInfo -> {
                 with(context.artifactInfo as OciBlobArtifactInfo) {
                     getArtifactFullPath()
@@ -436,7 +601,6 @@ class OciRegistryLocalRepository(
             }
             else -> null
         }
-        return downloadArtifact(context, fullPath)
     }
 
     private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
@@ -475,12 +639,18 @@ class OciRegistryLocalRepository(
      */
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
-                ?: throw OciFileNotFoundException(
-                    "node [${getArtifactFullPath()}] in repo ${getRepoIdentify()} does not found."
+            val fullPath = getFullpathFromTagOrDigest(context)
+            if (fullPath.isNullOrBlank()) {
+                throw OciFileNotFoundException(
+                    "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
                 )
-            logger.info("Ready to delete ${getArtifactFullPath()} in repo ${getRepoIdentify()}")
-            val request = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
+            }
+            nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+                ?: throw OciFileNotFoundException(
+                    "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
+                )
+            logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
+            val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
             nodeClient.deleteNode(request)
             OciResponseUtils.buildDeleteResponse(context.response)
         }
