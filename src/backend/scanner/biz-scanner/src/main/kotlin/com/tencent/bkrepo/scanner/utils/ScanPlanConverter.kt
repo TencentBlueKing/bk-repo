@@ -229,7 +229,8 @@ object ScanPlanConverter {
                 high = high,
                 medium = medium,
                 low = low,
-                total = critical + high + medium + low
+                total = critical + high + medium + low,
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME)
             )
         }
     }
