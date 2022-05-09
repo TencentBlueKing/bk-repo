@@ -32,7 +32,7 @@ package com.tencent.bkrepo.oci.test
 // # Registry details
 // export OCI_ROOT_URL="http://registry.me:25907"
 // export OCI_NAMESPACE="test/test-oci/test"
-// export OCI_CROSSMOUNT_NAMESPACE="myorg/other"
+// export OCI_CROSSMOUNT_NAMESPACE="test/test-oci/test"
 // export OCI_USERNAME="admin"
 // export OCI_PASSWORD="password"
 //

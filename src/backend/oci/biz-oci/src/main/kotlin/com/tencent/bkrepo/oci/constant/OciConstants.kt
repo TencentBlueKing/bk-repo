@@ -46,6 +46,7 @@ const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
 const val PATCH = "PATCH"
 const val POST = "POST"
+const val NODE_FULL_PATH = "fullPath"
 
 const val MANIFEST = "manifest.json"
 const val MEDIA_TYPE = "mediaType"
