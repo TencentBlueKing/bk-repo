@@ -33,16 +33,19 @@ package com.tencent.bkrepo.oci.constant
 const val OCI_API_PREFIX = "v2/"
 const val OCI_FILTER_ENDPOINT = "/v2/"
 
-const val PROJECT_TYPE = "OCI"
+const val REPO_TYPE = "OCI"
 
 const val DOCKER_HEADER_API_VERSION = "Docker-Distribution-Api-Version"
 const val DOCKER_API_VERSION = "registry/2.0"
 const val DOCKER_CONTENT_DIGEST = "Docker-Content-Digest"
 const val DOCKER_UPLOAD_UUID = "Docker-Upload-Uuid"
+const val BLOB_UPLOAD_SESSION_ID = "Blob-Upload-Session-ID"
 
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
+const val PATCH = "PATCH"
+const val POST = "POST"
 
 const val MANIFEST = "manifest.json"
 const val MEDIA_TYPE = "mediaType"

@@ -37,9 +37,9 @@ import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(OciManifestArtifactInfo::class)
@@ -55,19 +55,15 @@ class OciManifestArtifactInfoResolver : ArtifactInfoResolver {
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         // 解析tag
         val reference = attributes["reference"].toString().trim()
-        validate(packageName, reference)
+        validate(packageName)
         val isValidDigest = OciDigest.isValid(reference)
         return OciManifestArtifactInfo(projectId, repoName, packageName, "", reference, isValidDigest)
     }
 
-    private fun validate(packageName: String, reference: String) {
+    private fun validate(packageName: String) {
         // packageName格式校验
         Preconditions.checkNotBlank(packageName, "packageName")
         Preconditions.matchPattern(packageName, PACKAGE_NAME_PATTERN, "package name [$packageName] invalid")
-        // reference格式校验，只能为digest或者tag
-        Preconditions.checkNotBlank(reference, "reference")
-        Preconditions.checkArgument(reference.length <= NAME_MAX_LENGTH, reference)
-        Preconditions.matchPattern(packageName, PACKAGE_REFERENCE_PATTERN, "reference [$reference] invalid")
     }
 
     companion object {

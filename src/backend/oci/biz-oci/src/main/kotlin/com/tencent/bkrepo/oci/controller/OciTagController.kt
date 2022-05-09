@@ -29,13 +29,12 @@ package com.tencent.bkrepo.oci.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_URL
-import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
+import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.service.OciTagService
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
@@ -56,10 +55,17 @@ class OciTagController(
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @RequestMapping(TAGS_URL, method = [RequestMethod.GET])
     fun checkBlobExists(
-        artifactInfo: OciArtifactInfo,
+        artifactInfo: OciTagArtifactInfo,
         @RequestParam n: Int?,
         @RequestParam last: String?
-    ): Response<TagsInfo> {
-        return ResponseBuilder.success(ociTagService.getTagList(artifactInfo, n, last))
+    ): ResponseEntity<Any> {
+        return ResponseEntity(
+            ociTagService.getTagList(
+                artifactInfo = artifactInfo,
+                n = n,
+                last = last
+            ),
+            HttpStatus.OK
+        )
     }
 }

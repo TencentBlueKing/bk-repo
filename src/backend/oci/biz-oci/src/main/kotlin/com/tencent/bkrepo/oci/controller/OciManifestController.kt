@@ -54,6 +54,7 @@ class OciManifestController(
 
     /**
      * 上传manifest文件
+     * 可以通过digest或者tag去上传
      */
     @PutMapping(MANIFEST_URL)
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
@@ -78,7 +79,7 @@ class OciManifestController(
 
     /**
      * 删除manifest文件
-     * 只能通过digest删除
+     * 可以通过digest和tag删除
      */
     @DeleteMapping(MANIFEST_URL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)

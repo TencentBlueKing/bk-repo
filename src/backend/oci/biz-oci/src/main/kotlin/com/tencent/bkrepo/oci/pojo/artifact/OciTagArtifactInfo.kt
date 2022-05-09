@@ -31,43 +31,14 @@
 
 package com.tencent.bkrepo.oci.pojo.artifact
 
-import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import com.tencent.bkrepo.oci.util.OciLocationUtils
-
-/**
- * oci blob信息
- */
-class OciBlobArtifactInfo(
+class OciTagArtifactInfo(
     projectId: String,
     repoName: String,
     packageName: String,
-    version: String,
-    val digest: String? = null,
-    val uuid: String? = null,
-    val mount: String? = null,
-    val from: String? = null
+    version: String
 ) : OciArtifactInfo(projectId, repoName, packageName, version) {
-    private val ociDigest = OciDigest(digest)
 
-    fun getDigestAlg(): String {
-        return ociDigest.getDigestAlg()
-    }
+    override fun getArtifactName() = packageName
 
-    fun getDigestHex(): String {
-        return ociDigest.getDigestHex()
-    }
-
-    fun getDigest() = ociDigest
-
-    fun blobTempPath(): String {
-        return OciLocationUtils.buildDigestBlobsUploadPath(packageName, ociDigest)
-    }
-
-    override fun getArtifactFullPath(): String {
-        return if (digest.isNullOrBlank()) {
-            ""
-        } else {
-            OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest)
-        }
-    }
+    override fun getArtifactVersion() = version
 }

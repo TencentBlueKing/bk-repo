@@ -40,7 +40,7 @@ import com.tencent.bkrepo.oci.constant.DESCRIPTION
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
-import com.tencent.bkrepo.oci.constant.PROJECT_TYPE
+import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciRepoNotFoundException
 import com.tencent.bkrepo.oci.pojo.OciDomainInfo
@@ -309,7 +309,7 @@ class OciOperationServiceImpl(
      */
     private fun getRepositoryInfo(artifactInfo: OciArtifactInfo): RepositoryDetail {
         with(artifactInfo) {
-            val result = repositoryClient.getRepoDetail(projectId, repoName, PROJECT_TYPE).data ?: run {
+            val result = repositoryClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
                 logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
                 throw OciRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
             }

@@ -31,25 +31,30 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.config.OciProperties
+import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
+import com.tencent.bkrepo.oci.exception.OciRepoNotFoundException
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.service.OciBlobService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
+import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class OciBlobServiceImpl(
-    private val ociProperties: OciProperties
+    private val ociProperties: OciProperties,
+    private val storage: StorageService,
+    private val repoClient: RepositoryClient
 ) : OciBlobService {
 
     override fun startUploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
@@ -80,7 +85,7 @@ class OciBlobServiceImpl(
         with(artifactInfo) {
             if (mount.isNullOrBlank()) {
                 logger.info("Will obtain uuid for uploading blobs in repo ${artifactInfo.getRepoIdentify()}.")
-                val uuidCreated = StringPool.uniqueId()
+                val uuidCreated = startAppend(this)
                 OciResponseUtils.buildBlobUploadUUIDResponse(
                     ociProperties.domain,
                     uuidCreated,
@@ -93,22 +98,27 @@ class OciBlobServiceImpl(
         }
     }
 
-    override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
-        logger.info("handing request upload blob [$artifactInfo] in repo ${artifactInfo.getRepoIdentify()}.")
-        uploadBlobFromPut(artifactInfo, artifactFile)
-        // TODO 三段式追加上传逻辑需要处理
+    /**
+     * start a append upload
+     * @return String append Id
+     */
+    fun startAppend(artifactInfo: OciBlobArtifactInfo): String {
+        with(artifactInfo) {
+            // check repository
+            val result = repoClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+                OciOperationServiceImpl.logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
+                throw OciRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+            }
+            logger.debug("Start to append file in ${getRepoIdentify()}")
+            return storage.createAppendId(result.storageCredentials)
+        }
     }
 
-    /**
-     * 上传blob文件
-     */
-    private fun uploadBlobFromPut(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
-        with(artifactInfo) {
-            logger.info("Will upload blob [${getArtifactFullPath()}] into [${getRepoIdentify()}]")
-            // TODO mount不为空的时候逻辑需要确认
-            val context = ArtifactUploadContext(artifactFile)
-            ArtifactContextHolder.getRepository().upload(context)
-        }
+    override fun uploadBlob(artifactInfo: OciBlobArtifactInfo, artifactFile: ArtifactFile) {
+        logger.info("handing request upload blob [$artifactInfo] in repo ${artifactInfo.getRepoIdentify()}.")
+        val context = ArtifactUploadContext(artifactFile)
+        // 3种上传方式都在local里面做处理
+        ArtifactContextHolder.getRepository().upload(context)
     }
 
     override fun downloadBlob(artifactInfo: OciBlobArtifactInfo) {

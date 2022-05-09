@@ -25,9 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.tags
+package com.tencent.bkrepo.oci.test
 
-class TagsInfo(
-    val name: String,
-    val tags: List<String>
-)
+// oci 测试用例以及脚本地址 https://github.com/opencontainers/distribution-spec/tree/main/conformance
+
+// # Registry details
+// export OCI_ROOT_URL="http://registry.me:25907"
+// export OCI_NAMESPACE="test/test-oci/test"
+// export OCI_CROSSMOUNT_NAMESPACE="myorg/other"
+// export OCI_USERNAME="admin"
+// export OCI_PASSWORD="password"
+//
+// # Which workflows to run
+// export OCI_TEST_PULL=1
+// # Optional: set to prevent automatic setup
+// OCI_MANIFEST_DIGEST=sha256:52dbbcb6185d373e773ff70e90ca4c99a63f43af8b091be3662ebe25d9371fa7
+// OCI_TAG_NAME=emptylayer
+// OCI_BLOB_DIGEST=sha256__6e766a49e512e0ba0bc935e2aacd3e5a4a34add17f83afc4c9e669c70241cd48
+//
+// export OCI_TEST_PUSH=1
+// export OCI_TEST_CONTENT_DISCOVERY=1
+// export OCI_TEST_CONTENT_MANAGEMENT=1
+//
+// # Extra settings
+// export OCI_HIDE_SKIPPED_WORKFLOWS=0
+// export OCI_DEBUG=0
+// export OCI_DELETE_MANIFEST_BEFORE_BLOBS=0
