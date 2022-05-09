@@ -54,6 +54,7 @@ import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Compan
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
+import org.apache.commons.io.input.ReversedLinesFileReader
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -311,11 +312,23 @@ class ArrowheadScanExecutor @Autowired constructor(
             return status
         }
 
-        val lastLineLog = logFile.readLines().lastOrNull() ?: return status
-        if (lastLineLog.trimEnd().endsWith("Done")) {
-            return SubScanTaskStatus.SUCCESS
+        ReversedLinesFileReader(logFile, Charsets.UTF_8).use {
+            var line: String? = it.readLine() ?: return status
+            if (line!!.trimEnd().endsWith("Done")) {
+                return SubScanTaskStatus.SUCCESS
+            }
+
+            val arrowheadLog = ArrayList<String>()
+            var count = 1
+            while (count < scannerExecutorProperties.maxScannerLogLines && line != null) {
+                line = it.readLine()?.apply {
+                    arrowheadLog.add(this)
+                    count++
+                }
+            }
+
+            logger.info(logMsg(task, "scan failed: ${arrowheadLog.asReversed().joinToString("\n")}"))
         }
-        logger.info(logMsg(task, "scan failed: $lastLineLog"))
 
         return status
     }
