@@ -101,6 +101,13 @@ class OciExceptionHandler(
         ociResponse(responseObject, exception)
     }
 
+    @ExceptionHandler(OciForbiddenRequestException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleForbiddenException(exception: OciForbiddenRequestException) {
+        val responseObject = OciErrorResponse(exception.message, exception.code, exception.detail)
+        ociResponse(responseObject, exception)
+    }
+
     @ExceptionHandler(OciFileAlreadyExistsException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: OciFileAlreadyExistsException) {

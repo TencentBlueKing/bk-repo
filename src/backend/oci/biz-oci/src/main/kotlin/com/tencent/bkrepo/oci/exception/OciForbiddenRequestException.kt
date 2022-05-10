@@ -25,32 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.service.impl
+package com.tencent.bkrepo.oci.exception
 
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.oci.constant.LAST_TAG
-import com.tencent.bkrepo.oci.constant.N
-import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
-import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
-import com.tencent.bkrepo.oci.service.OciTagService
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
-
-@Service
-class OciTagServiceImpl : OciTagService {
-    override fun getTagList(artifactInfo: OciTagArtifactInfo, n: Int?, last: String?): TagsInfo {
-        logger.info(
-            "Handling search tags request for package [${artifactInfo.packageName}] " +
-                "with n $n and last $last in repo [${artifactInfo.getRepoIdentify()}]"
-        )
-        val context = ArtifactQueryContext()
-        last?.let { context.putAttribute(LAST_TAG, last) }
-        n?.let { context.putAttribute(N, n) }
-        return ArtifactContextHolder.getRepository().query(context) as TagsInfo
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(OciTagServiceImpl::class.java)
-    }
-}
+class OciForbiddenRequestException(
+    message: String,
+    code: Any? = null,
+    detail: String? = null
+) : OciException(message, code, detail)

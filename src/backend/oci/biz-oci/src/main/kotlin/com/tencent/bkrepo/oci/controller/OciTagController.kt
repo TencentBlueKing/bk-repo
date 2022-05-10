@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
+import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciTagService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -44,21 +45,19 @@ import org.springframework.web.bind.annotation.RestController
  * oci tag controller
  */
 @RestController
-@Suppress("MVCPathVariableInspection")
 class OciTagController(
     private val ociTagService: OciTagService
 ) {
     /**
-     * 检查blob文件是否存在
-     * helm chart push 时会调用该请求去判断blob文件在服务器上是否存在，如果存在则不上传
+     * 获取blob对应的tag信息
      */
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @RequestMapping(TAGS_URL, method = [RequestMethod.GET])
-    fun checkBlobExists(
+    fun getTagList(
         artifactInfo: OciTagArtifactInfo,
         @RequestParam n: Int?,
         @RequestParam last: String?
-    ): ResponseEntity<Any> {
+    ): ResponseEntity<TagsInfo> {
         return ResponseEntity(
             ociTagService.getTagList(
                 artifactInfo = artifactInfo,
