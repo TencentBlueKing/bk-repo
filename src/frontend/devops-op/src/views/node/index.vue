@@ -107,6 +107,7 @@
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
               <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
+              <el-dropdown-item @click.native="showScanDialog(scope.row)">扫描</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
           <el-button
@@ -123,12 +124,9 @@
             type="danger"
             @click="showNodeDelete(scope.$index, scope.row)"
           >删除</el-button>
-          <el-button
-            style="margin-left: 10px"
-            size="mini"
-            type="primary"
-            @click="showScanDialog(scope.row)"
-          >扫描</el-button>
+          <el-link :href="downloadUrl(scope.row)" target="_blank">
+            <el-button style="margin-left: 10px" size="mini" type="primary">下载</el-button>
+          </el-link>
         </template>
       </el-table-column>
     </el-table>
@@ -341,6 +339,9 @@ export default {
         return 'deleted-row'
       }
       return ''
+    },
+    downloadUrl(node) {
+      return `/${node.projectId}/${node.repoName}/${escape(node.fullPath)}?download=true`
     },
     showNodeDetail(node) {
       this.nodeOfDetailDialog = node
