@@ -83,7 +83,7 @@ class OciRegistryRemoteRepository(
      */
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         val configuration = context.getRemoteConfiguration()
-        val (fullpath, params) = when (context.artifactInfo) {
+        val (fullPath, params) = when (context.artifactInfo) {
             is OciBlobArtifactInfo -> {
                 with(context.artifactInfo as OciBlobArtifactInfo) {
                     Pair(OciLocationUtils.blobPathLocation(this.getDigest(), this), StringPool.EMPTY)
@@ -95,31 +95,35 @@ class OciRegistryRemoteRepository(
                 }
             }
             is OciTagArtifactInfo -> {
-                with(context.artifactInfo as OciTagArtifactInfo) {
-                    val n = context.getAttribute<Int>(N)
-                    val last = context.getAttribute<String>(LAST_TAG)
-                    var param = StringPool.EMPTY
-                    if (n != null) {
-                        param += "n=$n"
-                        if (!last.isNullOrBlank()) {
-                            param += "&last=$last"
-                        }
-                    } else {
-                        if (!last.isNullOrBlank()) {
-                            param += "last=$last"
-                        }
-                    }
-                    Pair("/$packageName/tags/list", param)
-                }
+                createParamsForTagList(context)
             }
             else -> Pair(null, null)
         }
         val baseUrl = URL(configuration.url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
-        return UrlFormatter.format(v2Url.toString(), fullpath, params)
+        return UrlFormatter.format(v2Url.toString(), fullPath, params)
     }
 
-/**
+    private fun createParamsForTagList(context: ArtifactContext): Pair<String, String> {
+        with(context.artifactInfo as OciTagArtifactInfo) {
+            val n = context.getAttribute<Int>(N)
+            val last = context.getAttribute<String>(LAST_TAG)
+            var param = StringPool.EMPTY
+            if (n != null) {
+                param += "n=$n"
+                if (!last.isNullOrBlank()) {
+                    param += "&last=$last"
+                }
+            } else {
+                if (!last.isNullOrBlank()) {
+                    param += "last=$last"
+                }
+            }
+            return Pair("/$packageName/tags/list", param)
+        }
+    }
+
+    /**
      * 远程下载响应回调
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
@@ -129,7 +133,7 @@ class OciRegistryRemoteRepository(
         val size = artifactFile.getSize()
         val mediaType = node?.metadata?.get(MEDIA_TYPE) ?: MediaTypes.APPLICATION_OCTET_STREAM
         logger.info(
-            "The mediaType of Artifact ${context.artifactInfo.getArtifactFullPath()} " +
+            "The mediaType of remote Artifact ${context.artifactInfo.getArtifactFullPath()} " +
                 "is $mediaType in repo: ${context.artifactInfo.getRepoIdentify()}"
         )
 
