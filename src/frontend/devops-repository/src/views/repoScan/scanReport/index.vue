@@ -1,6 +1,19 @@
 <template>
     <div class="scan-report-container">
-        <bk-button class="start-scan" theme="default" @click="startScanHandler">扫描</bk-button>
+        <div class="report-operation flex-align-center">
+            <bk-date-picker
+                class="mr10 w250"
+                v-model="filterTime"
+                :shortcuts="shortcuts"
+                type="daterange"
+                transfer
+                placeholder="请选择日期范围"
+                @change="changeFilterTime">
+            </bk-date-picker>
+            <!-- <bk-button class="mr10" theme="default" @click="stopScanHandler">中止扫描</bk-button> -->
+            <bk-button class="mr10" theme="default" @click="startScanHandler">立即扫描</bk-button>
+            <bk-button theme="default" @click="scanSettingHandler">设置</bk-button>
+        </div>
         <div class="report-overview flex-align-center display-block" data-title="报告总览">
             <div class="base-info-item flex-column"
                 v-for="item in baseInfoList" :key="item.key">
@@ -8,9 +21,9 @@
                 <span class="base-info-value" :style="{ color: item.color }">{{ segmentNumberThree(baseInfo[item.key] || 0) }}</span>
             </div>
         </div>
-        <div class="report-list display-block" data-title="扫描制品列表">
+        <div class="report-list display-block" data-title="扫描制品列表" v-bkloading="{ isLoading }">
             <!-- <i class="devops-icon icon-filter-shape" @click="filter.show = true"></i> -->
-            <bk-button class="report-filter" theme="default" @click="filter.show = true">筛选</bk-button>
+            <bk-button class="report-filter" theme="default" @click="showFilterForm">筛选</bk-button>
             <bk-table
                 height="calc(100% - 60px)"
                 :data="scanList"
@@ -36,12 +49,19 @@
                         <span class="ml10">{{replaceRepoName(row.repoName)}}</span>
                     </template>
                 </bk-table-column>
+                <bk-table-column label="质量规则">
+                    <template #default="{ row }">
+                        <span v-if="row.qualityRedLine === true" class="repo-tag SUCCESS">通过</span>
+                        <span v-else-if="row.qualityRedLine === false" class="repo-tag FAILED">不通过</span>
+                        <span v-else>/</span>
+                    </template>
+                </bk-table-column>
                 <bk-table-column label="风险等级">
                     <template #default="{ row }">
                         <div v-if="row.highestLeakLevel" class="status-sign" :class="row.highestLeakLevel"
                             :data-name="leakLevelEnum[row.highestLeakLevel]">
                         </div>
-                        <span v-else>--</span>
+                        <span v-else>/</span>
                     </template>
                 </bk-table-column>
                 <bk-table-column label="扫描状态">
@@ -76,84 +96,33 @@
                 :limit-list="pagination.limitList">
             </bk-pagination>
         </div>
-        <bk-sideslider
-            :is-show.sync="filter.show"
-            title="筛选"
-            @click.native.stop="() => {}"
-            :quick-close="true">
-            <template #content>
-                <bk-form class="p20" form-type="vertical">
-                    <bk-form-item label="制品名称">
-                        <bk-input v-model="filter.name"></bk-input>
-                    </bk-form-item>
-                    <bk-form-item label="所属仓库">
-                        <bk-select
-                            v-model="filter.repoName"
-                            searchable>
-                            <bk-option-group
-                                v-for="(list, type) in repoGroupList"
-                                :name="type.toLowerCase()"
-                                :key="type"
-                                show-collapse>
-                                <bk-option v-for="option in list"
-                                    :key="option.name"
-                                    :id="option.name"
-                                    :name="option.name">
-                                </bk-option>
-                            </bk-option-group>
-                        </bk-select>
-                    </bk-form-item>
-                    <bk-form-item label="风险等级">
-                        <bk-select
-                            v-model="filter.highestLeakLevel">
-                            <bk-option v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="name"></bk-option>
-                        </bk-select>
-                    </bk-form-item>
-                    <bk-form-item label="扫描状态">
-                        <bk-select
-                            v-model="filter.status">
-                            <bk-option v-for="[id, name] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="name"></bk-option>
-                        </bk-select>
-                    </bk-form-item>
-                    <bk-form-item label="扫描完成时间">
-                        <bk-date-picker
-                            style="--long-width:360px;width:100%;"
-                            v-model="filter.time"
-                            :shortcuts="shortcuts"
-                            type="daterange"
-                            transfer
-                            placeholder="请选择日期范围">
-                        </bk-date-picker>
-                    </bk-form-item>
-                    <bk-form-item>
-                        <bk-button class="mt10" theme="primary" @click="filterHandler()">筛选</bk-button>
-                        <bk-button class="ml20 mt10" theme="default" @click="reset()">重置</bk-button>
-                    </bk-form-item>
-                </bk-form>
-            </template>
-        </bk-sideslider>
+        <filter-sideslider ref="filterSideslider" :repo-type="[baseInfo.planType]" @filter="filterHandler"></filter-sideslider>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
-    import { mapState, mapActions } from 'vuex'
+    import filterSideslider from './filterSideslider'
+    import { mapActions } from 'vuex'
     import { formatDate, segmentNumberThree } from '@repository/utils'
     import { scanStatusEnum, leakLevelEnum } from '@repository/store/publicEnum'
     const nowTime = new Date()
     export default {
         name: 'scanReport',
-        components: { OperationList },
+        components: {
+            OperationList,
+            filterSideslider
+        },
         data () {
             return {
                 scanStatusEnum,
                 leakLevelEnum,
                 baseInfoList: [
                     { key: 'artifactCount', label: '扫描制品数量' },
-                    { key: 'total', label: '漏洞总数量' },
+                    { key: 'total', label: '漏洞总量' },
                     { key: 'critical', label: '危急漏洞', color: '#EA3736' },
-                    { key: 'high', label: '高风险漏洞', color: '#FFB549' },
-                    { key: 'medium', label: '中风险漏洞', color: '#3A84FF' },
-                    { key: 'low', label: '低风险漏洞', color: '#979BA5' }
+                    { key: 'high', label: '高级漏洞', color: '#FFB549' },
+                    { key: 'medium', label: '中级漏洞', color: '#3A84FF' },
+                    { key: 'low', label: '低级漏洞', color: '#979BA5' }
                 ],
                 baseInfo: {},
                 isLoading: false,
@@ -164,14 +133,7 @@
                     limit: 20,
                     limitList: [10, 20, 40]
                 },
-                filter: {
-                    show: false,
-                    name: '',
-                    repoName: '',
-                    highestLeakLevel: '',
-                    status: '',
-                    time: []
-                },
+                filterTime: [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 30), nowTime],
                 shortcuts: [
                     {
                         text: '近7天',
@@ -195,65 +157,49 @@
             }
         },
         computed: {
-            ...mapState(['repoListAll']),
             projectId () {
                 return this.$route.params.projectId
             },
             planId () {
                 return this.$route.params.planId
             },
-            repoGroupList () {
-                return this.repoListAll
-                    .filter(r => r.type === this.baseInfo.planType)
-                    .reduce((target, repo) => {
-                        if (!target[repo.type]) target[repo.type] = []
-                        target[repo.type].push(repo)
-                        return target
-                    }, {})
+            formatISO () {
+                const [startTime, endTime] = this.filterTime
+                return {
+                    ...(startTime instanceof Date ? { startTime: startTime.toISOString() } : {}),
+                    ...(endTime instanceof Date ? { endTime: endTime.toISOString() } : {})
+                }
             }
         },
         created () {
-            this.getRepoListAll({ projectId: this.projectId })
-            this.scanReportOverview({
-                projectId: this.projectId,
-                id: this.planId
-            }).then(res => {
-                this.baseInfo = res
-            })
+            this.getScanReportOverview()
             this.handlerPaginationChange()
         },
         methods: {
             formatDate,
             segmentNumberThree,
             ...mapActions([
-                'getRepoListAll',
                 'scanReportOverview',
                 'scanReportList',
                 'stopScan',
                 'startScanSingle'
             ]),
-            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
+            handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, filter) {
                 this.pagination.current = current
                 this.pagination.limit = limit
-                this.getReportListHandler()
+                this.getReportListHandler(filter)
             },
-            getReportListHandler () {
+            getReportListHandler (filter = {}) {
                 this.isLoading = true
-                let [startTime, endTime] = this.filter.time
-                startTime = startTime instanceof Date ? startTime.toISOString() : undefined
-                endTime = endTime instanceof Date ? endTime.toISOString() : undefined
-                const { name, highestLeakLevel, repoName, status } = this.filter
                 return this.scanReportList({
                     id: this.planId,
-                    name,
-                    highestLeakLevel,
                     projectId: this.projectId,
-                    repoName,
-                    status,
+                    query: {
+                        ...this.formatISO,
+                        ...filter
+                    },
                     current: this.pagination.current,
-                    limit: this.pagination.limit,
-                    startTime,
-                    endTime
+                    limit: this.pagination.limit
                 }).then(({ records, totalRecords }) => {
                     this.scanList = records
                     this.pagination.count = totalRecords
@@ -261,31 +207,66 @@
                     this.isLoading = false
                 })
             },
-            filterHandler () {
-                this.filter.show = false
+            getScanReportOverview () {
+                this.scanReportOverview({
+                    projectId: this.projectId,
+                    id: this.planId,
+                    ...this.formatISO
+                }).then(res => {
+                    this.baseInfo = res
+                })
+            },
+            changeFilterTime () {
+                this.getScanReportOverview()
                 this.handlerPaginationChange()
             },
-            reset () {
-                this.filter = {
-                    show: false,
-                    name: '',
-                    repoName: '',
-                    highestLeakLevel: '',
-                    status: '',
-                    time: []
-                }
+            showFilterForm () {
+                this.$refs.filterSideslider.show()
+            },
+            filterHandler (filter) {
+                this.handlerPaginationChange(undefined, filter)
+            },
+            scanSettingHandler () {
+                this.$router.push({
+                    name: 'scanConfig',
+                    params: {
+                        ...this.$route.params,
+                        planId: this.baseInfo.id
+                    },
+                    query: {
+                        scanName: this.baseInfo.name
+                    }
+                })
             },
             stopScanHandler ({ recordId }) {
-                this.stopScan({
-                    projectId: this.projectId,
-                    recordId
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: '中止扫描成功'
+                if (!recordId) {
+                    this.$confirm({
+                        theme: 'danger',
+                        message: `确认中止扫描计划 ${this.baseInfo.name} 的全部扫描任务?`,
+                        confirmFn: () => {
+                            // return this.deletePlan({
+                            //     id
+                            // }).then(() => {
+                            //     this.handlerPaginationChange()
+                            //     this.$bkMessage({
+                            //         theme: 'success',
+                            //         message: '删除计划' + this.$t('success')
+                            //     })
+                            // })
+                        }
                     })
-                    this.getReportListHandler()
-                })
+                } else {
+                    this.stopScan({
+                        projectId: this.projectId,
+                        recordId
+                    }).then(() => {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: '中止扫描成功'
+                        })
+                        this.getReportListHandler()
+                    })
+                }
             },
             showArtiReport ({ recordId, name }) {
                 this.$router.push({
@@ -406,7 +387,7 @@
             }
         }
     }
-    .start-scan {
+    .report-operation {
         position: absolute;
         top: 15px;
         right: 20px;

@@ -6,7 +6,7 @@
         <bk-form-item label="" v-for="[id, name] in Object.entries(leakLevelEnum)" :key="id"
             :property="id.toLowerCase()" error-display-type="normal">
             <div class="flex-align-center">
-                <div :class="`status-sign ${id}`" style="width: 100px;" :data-name="`${name}漏洞`"></div>
+                <div :class="`status-sign ${id}`" :data-name="`${name}漏洞≦`"></div>
                 <bk-input class="ml10 mr10" style="width: 80px;" v-model.trim="rule[id.toLowerCase()]"></bk-input>
                 <span>个</span>
             </div>
@@ -61,14 +61,7 @@
             }
         },
         created () {
-            this.getQualityRule({
-                id: this.planId
-            }).then(res => {
-                this.rule = {
-                    ...this.rule,
-                    ...res
-                }
-            })
+            this.getRules()
         },
         methods: {
             ...mapActions(['getQualityRule', 'saveQualityRule']),
@@ -80,11 +73,26 @@
                         if (typeof value === 'string' && value.length > 0) {
                             target[key] = Number(value)
                         }
-                        if (typeof value === 'boolean') {
+                        if (typeof value === 'boolean' || typeof value === 'number') {
                             target[key] = value
                         }
                         return target
                     }, {})
+                }).then(() => {
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('save') + this.$t('success')
+                    })
+                    this.getRules()
+                })
+            },
+            getRules () {
+                this.getQualityRule({
+                    id: this.planId
+                }).then(res => {
+                    Object.keys(res).forEach(k => {
+                        res[k] !== null && (this.rule[k] = res[k])
+                    })
                 })
             }
         }

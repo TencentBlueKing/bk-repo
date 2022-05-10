@@ -5,7 +5,7 @@
             :value="path.value"
             @input="path => change({ path })"
             :disabled="disabled"
-            placeholder="请输入目录路径">
+            placeholder="请输入文件目录的绝对路径">
         </bk-input>
         <bk-select
             style="width:100px;"
@@ -46,7 +46,7 @@
                 type: Object,
                 default: () => ({
                     field: 'path',
-                    operation: 'EQ',
+                    operation: 'REGEX',
                     value: ''
                 })
             }
@@ -103,7 +103,7 @@
                 input: value = this.defaultValue.value
             }) {
                 const data = {
-                    path: { field: 'path', operation: 'EQ', value: path }
+                    path: { field: 'path', operation: 'REGEX', value: path }
                 }
                 field && (data[field] = { field, operation, value })
                 this.$emit('change', data)

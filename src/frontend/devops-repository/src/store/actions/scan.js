@@ -55,30 +55,23 @@ export default {
         )
     },
     // 报告基本信息
-    scanReportOverview (_, { projectId, id }) {
+    scanReportOverview (_, params) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/plan/count/${projectId}/${id}`
+            `${prefix}/plan/count`,
+            {
+                params
+            }
         )
     },
     // 报告制品列表
-    scanReportList (_, {
-        projectId, id, name, repoType, repoName,
-        highestLeakLevel, status, startTime, endTime,
-        current = 1, limit = 20
-    }) {
+    scanReportList (_, { projectId, id, query, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/plan/artifact`,
             {
                 params: {
-                    id,
-                    name: name || undefined,
-                    highestLeakLevel: highestLeakLevel || undefined,
                     projectId,
-                    repoType: repoType || undefined,
-                    repoName: repoName || undefined,
-                    status,
-                    startTime,
-                    endTime,
+                    id,
+                    ...query,
                     pageNumber: current,
                     pageSize: limit
                 }

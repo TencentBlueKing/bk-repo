@@ -12,7 +12,9 @@
         </bk-form-item>
         <bk-form-item label="保留规则">
             <bk-button :disabled="!config.autoClean" icon="plus" @click="addRule()">添加规则</bk-button>
-            <div class="form-tip">满足保留规则的制品将不会被清理</div>
+            <div class="form-tip">
+                {{ repoType === 'generic' ? '在目录（包含子目录）下符合规则的文件将不会被自动清理' : '符合规则的制品将不会被自动清理' }}
+            </div>
             <div class="rule-list">
                 <component
                     :is="repoType === 'generic' ? 'generic-clean-rule' : 'package-clean-rule'"
@@ -93,7 +95,8 @@
                         rule = { rules: [] }
                     } = val.configuration.cleanStrategy
                     this.config = { ...this.config, autoClean, reserveVersions, reserveDays }
-                    this.config.rules = rule.rules.map(r => {
+                    const rules = rule.rules.find(r => r.rules)?.rules || []
+                    this.config.rules = rules.map(r => {
                         return r.rules?.reduce((target, item) => {
                             target[item.field] = {
                                 ...item,
@@ -143,8 +146,27 @@
                                 ...(this.repoType === 'generic' ? {} : { reserveVersions }),
                                 reserveDays,
                                 rule: {
-                                    relation: 'OR',
-                                    rules
+                                    relation: 'AND',
+                                    rules: [
+                                        this.repoType === 'generic'
+                                            ? {
+                                                field: 'projectId',
+                                                value: this.projectId,
+                                                operation: 'EQ'
+                                            }
+                                            : undefined,
+                                        this.repoType === 'generic'
+                                            ? {
+                                                field: 'repoName',
+                                                value: this.repoName,
+                                                operation: 'EQ'
+                                            }
+                                            : undefined,
+                                        {
+                                            relation: 'OR',
+                                            rules
+                                        }
+                                    ].filter(Boolean)
                                 }
                             }
                         }

@@ -354,7 +354,7 @@
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
                         return {
-                            metadata: {},
+                            systemMetadata: {},
                             ...v,
                             // 流水线文件夹名称替换
                             name: v.metadata?.displayName || v.name

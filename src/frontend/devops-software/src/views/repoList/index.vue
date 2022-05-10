@@ -48,7 +48,7 @@
             <template #empty>
                 <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
             </template>
-            <bk-table-column label="所属项目" show-overflow-tooltip>
+            <bk-table-column label="所属项目" show-overflow-tooltip width="200">
                 <template #default="{ row }">
                     {{ (projectList.find(p => p.id === row.projectId) || {}).name || '/' }}
                 </template>
@@ -61,10 +61,10 @@
                     <span class="hover-btn">{{replaceRepoName(row.name)}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="150">
+            <bk-table-column :label="$t('createdDate')" width="250">
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')" width="90">
+            <bk-table-column :label="$t('createdBy')" width="150">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>

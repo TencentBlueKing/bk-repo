@@ -28,7 +28,7 @@
                                 :key="tag">
                                 {{ tag }}
                             </span>
-                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="detail.systemMetadata.scanStatus"></scan-tag>
+                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="(detail.systemMetadata || {}).scanStatus"></scan-tag>
                         </template>
                     </span>
                 </div>
@@ -60,7 +60,7 @@
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
             <div class="version-metadata display-block" :data-title="$t('metaData')">
                 <bk-table
-                    :data="Object.entries(detail.metadata || {})"
+                    :data="Object.entries(detail.metadata)"
                     :outer-border="false"
                     :row-border="false"
                     size="small">
