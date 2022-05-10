@@ -40,7 +40,8 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     UPLOAD_ID_NOT_FOUND(1, "generic.uploadId.notfound"),
     LIST_DIR_NOT_ALLOWED(2, "generic.dir.not-allowed"),
     SIGN_FILE_NOT_FOUND(3, "generic.delta.sign-file.notfound"),
-    NODE_DATA_HAS_CHANGED(3, "generic.node.data.has.changed");
+    NODE_DATA_HAS_CHANGED(4, "generic.node.data.has.changed"),
+    DOWNLOAD_DIR_NOT_ALLOWED(5, "generic.download.dir.not-allowed");
 
     override fun getBusinessCode() = businessCode
     override fun getKey() = key
