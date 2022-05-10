@@ -141,6 +141,10 @@ class ScannerMetrics(
         subtaskCounter(next).incrementAndGet()
     }
 
+    fun setSubtaskCount(status: SubScanTaskStatus, count: Long) {
+        subtaskCounter(status).set(count)
+    }
+
     /**
      * 重用扫描结果的子任务数量加1
      */

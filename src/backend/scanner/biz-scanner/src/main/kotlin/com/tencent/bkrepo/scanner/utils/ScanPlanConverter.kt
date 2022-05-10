@@ -329,6 +329,7 @@ object ScanPlanConverter {
             SubScanTaskStatus.SUCCESS.name,
             ScanTaskStatus.FINISHED.name -> ScanStatus.SUCCESS
 
+            SubScanTaskStatus.BLOCK_TIMEOUT.name,
             SubScanTaskStatus.TIMEOUT.name,
             SubScanTaskStatus.FAILED.name -> ScanStatus.FAILED
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, status.toString())

@@ -56,5 +56,9 @@ data class ScannerExecutorProperties(
     /**
      * [workDir]所在硬盘当前可用空间百分比，小于这个值后不再认领任务
      */
-    var atLeastUsableDiskSpacePercent: Double = 0.3
+    var atLeastUsableDiskSpacePercent: Double = 0.3,
+    /**
+     * 扫描器日志最大行数
+     */
+    var maxScannerLogLines: Long = 200L
 )

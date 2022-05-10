@@ -19,7 +19,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 import java.io.File
 import java.lang.management.ManagementFactory
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class ExecutorScheduler @Autowired constructor(
@@ -31,24 +31,29 @@ class ExecutorScheduler @Autowired constructor(
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) {
 
-    private val executingCount = AtomicInteger(0)
+    private val executingSubtaskExecutorMap = ConcurrentHashMap<String, ScanExecutor>()
     private val operatingSystemBean by lazy { ManagementFactory.getOperatingSystemMXBean() as OperatingSystemMXBean }
-
 
     @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
     fun scan() {
         while (allowExecute()) {
             val subtask = scanClient.pullSubTask().data ?: break
+            if (executingSubtaskExecutorMap.contains(subtask.taskId)) {
+                // 任务执行中，直接忽略新任务
+                logger.warn("subtask[${subtask.taskId}] of task[${subtask.parentScanTaskId}] is executing")
+                return
+            }
+
             scanClient.updateSubScanTaskStatus(subtask.taskId, SubScanTaskStatus.EXECUTING.name)
 
-            executingCount.incrementAndGet()
-            logger.info("task start, executing task count ${executingCount.get()}")
+            executingSubtaskExecutorMap[subtask.taskId] = scanExecutorFactory.get(subtask.scanner.type)
+            logger.info("task start, executing task count ${executingSubtaskExecutorMap.size}")
             executor.execute {
                 try {
                     doScan(subtask)
                 } finally {
-                    executingCount.decrementAndGet()
-                    logger.info("task finished, executing task count ${executingCount.get()}")
+                    executingSubtaskExecutorMap.remove(subtask.taskId)
+                    logger.info("task finished, executing task count ${executingSubtaskExecutorMap.size}")
                 }
             }
         }
@@ -58,7 +63,7 @@ class ExecutorScheduler @Autowired constructor(
      * 是否允许执行扫描
      */
     private fun allowExecute(): Boolean {
-        val executingCount = executingCount.get()
+        val executingCount = executingSubtaskExecutorMap.size
 
         val freeMem = operatingSystemBean.freePhysicalMemorySize
         val totalMem = operatingSystemBean.totalPhysicalMemorySize
@@ -73,8 +78,10 @@ class ExecutorScheduler @Autowired constructor(
         val diskAvailable = usableDiskSpacePercent > scannerExecutorProperties.atLeastUsableDiskSpacePercent
 
         if (!memAvailable || !diskAvailable) {
-            logger.warn("memory[$freeMemPercent]: $freeMem / $totalMem, " +
-                            "disk space[$usableDiskSpacePercent]: $usableDiskSpacePercent / ${workDir.totalSpace}")
+            logger.warn(
+                "memory[$freeMemPercent]: $freeMem / $totalMem, " +
+                    "disk space[$usableDiskSpacePercent]: $usableDiskSpacePercent / ${workDir.totalSpace}"
+            )
         }
 
         return executingCount < scannerExecutorProperties.maxTaskCount && memAvailable && diskAvailable
@@ -90,8 +97,10 @@ class ExecutorScheduler @Autowired constructor(
             // 文件大小超过限制直接返回
             val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
             if (size > fileSizeLimit) {
-                logger.warn("file too large, sha256[${sha256}, credentials: [${credentialsKey}]" +
-                                ", size[$size], limit[$fileSizeLimit]")
+                logger.warn(
+                    "file too large, sha256[${sha256}, credentials: [${credentialsKey}], subtaskId[$taskId]" +
+                        ", size[$size], limit[$fileSizeLimit]"
+                )
                 report(taskId, parentScanTaskId, startTimestamp)
                 return
             }
@@ -112,15 +121,18 @@ class ExecutorScheduler @Autowired constructor(
                 val executor = scanExecutorFactory.get(subScanTask.scanner.type)
                 executor.scan(executorTask)
             } catch (e: Exception) {
-                logger.error("scan failed, parentTaskId[$parentScanTaskId], subTaskId[$taskId], " +
-                                 "sha256[$sha256], scanner[${scanner.name}]]", e)
+                logger.error(
+                    "scan failed, parentTaskId[$parentScanTaskId], subTaskId[$taskId], " +
+                        "sha256[$sha256], scanner[${scanner.name}]]", e
+                )
                 null
             }
 
             // 3. 上报扫描结果
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
-            logger.info("scan finished[${result?.scanStatus}], time spent $timeSpent, reporting result")
+            logger.info("scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$size], " +
+                            "subtaskId[$taskId], sha256[$sha256], reporting result")
             report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)
         }
     }

@@ -84,6 +84,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_DATE_TIME
+import java.time.temporal.ChronoUnit
 
 @Service
 class ScanServiceImpl @Autowired constructor(
@@ -301,8 +302,12 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             val oldStatus = SubScanTaskStatus.valueOf(subScanTask.status)
+            val scanner = scannerService.get(subScanTask.scanner)
+            val maxScanDuration = scanner.maxScanDuration(subScanTask.size)
+            // 多加1分钟，避免执行器超时后正在上报结果又被重新触发
+            val timeoutDateTime = LocalDateTime.now().plus(maxScanDuration, ChronoUnit.MILLIS).plusMinutes(1L)
             val updateResult = subScanTaskDao.updateStatus(
-                subScanTaskId, SubScanTaskStatus.EXECUTING, oldStatus, subScanTask.lastModifiedDate
+                subScanTaskId, SubScanTaskStatus.EXECUTING, oldStatus, subScanTask.lastModifiedDate, timeoutDateTime
             )
             val modified = updateResult.modifiedCount == 1L
             if (modified) {
@@ -348,6 +353,17 @@ class ScanServiceImpl @Autowired constructor(
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
             scanTaskScheduler.schedule(Converter.convert(resetTask, plan))
+        }
+    }
+
+    /**
+     * 结束处于blocked状态超时的子任务
+     */
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = FIXED_DELAY)
+    fun finishBlockTimeoutSubScanTask() {
+        subScanTaskDao.blockedTimeoutTasks(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS).records.forEach { subtask ->
+            logger.info("subTask[${subtask.id}] of parentTask[${subtask.parentScanTaskId}] block timeout")
+            self.updateScanTaskResult(subtask, SubScanTaskStatus.BLOCK_TIMEOUT.name, emptyMap())
         }
     }
 

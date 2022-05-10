@@ -65,7 +65,9 @@ class CleanJob(
                     Files.deleteIfExists(it.toPath())
                 }
             } catch (e: DirectoryNotEmptyException) {
-                logger.warn("directory [${it.absolutePath}] is not empty")
+                logger.warn(
+                    "directory [${it.absolutePath}] is not empty[${it.listFiles()?.joinToString(",")}]"
+                )
             } catch (e: Exception) {
                 logger.error("delete file[${it.absolutePath}] failed", e)
             }

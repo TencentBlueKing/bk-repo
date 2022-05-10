@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.scanner.constant.Constant.SUPPORT_FILE_NAME_EXTENSION
+import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
@@ -61,7 +61,8 @@ class ScanEventConsumer(
     private val scanService: ScanService,
     private val scanPlanDao: ScanPlanDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
-    private val executor: ThreadPoolTaskExecutor
+    private val executor: ThreadPoolTaskExecutor,
+    private val scannerProperties: ScannerProperties
 ) : Consumer<ArtifactEvent> {
 
     /**
@@ -124,7 +125,7 @@ class ScanEventConsumer(
 
     private fun supportFileNameExtension(fullPath: String): Boolean {
         val fileNameExtension = fullPath.substringAfterLast('.', "")
-        return fileNameExtension in SUPPORT_FILE_NAME_EXTENSION
+        return fileNameExtension in scannerProperties.supportFileNameExt
     }
 
     /**
