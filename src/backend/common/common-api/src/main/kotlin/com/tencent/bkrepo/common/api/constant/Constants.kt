@@ -68,6 +68,7 @@ const val ACCESS_LOGGER_NAME = "AccessLogger"
  */
 const val DEFAULT_PAGE_NUMBER = 1
 const val DEFAULT_PAGE_SIZE = 20
+const val TOTAL_RECORDS_INFINITY = -1L
 
 /**
  * service name

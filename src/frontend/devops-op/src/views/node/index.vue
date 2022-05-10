@@ -156,7 +156,7 @@ import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 import FileDetailDialog from '@/views/node/components/FileDetailDialog'
 import FileRestoreDialog from '@/views/node/components/FileRestoreDialog'
 import FileDeleteDialog from '@/views/node/components/FileDeleteDialog'
-import { listProjects } from '@/api/project'
+import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import FileScanDialog from '@/views/node/components/FileScanDialog'
 
@@ -248,14 +248,10 @@ export default {
       this.$refs['form'].clearValidate()
     },
     queryProjects(queryStr, cb) {
-      if (!this.projects) {
-        listProjects().then(res => {
-          this.projects = res.data
-          cb(this.doFilter(this.projects, queryStr))
-        })
-      } else {
-        cb(this.doFilter(this.projects, queryStr))
-      }
+      searchProjects(queryStr).then(res => {
+        this.projects = res.data.records
+        cb(this.projects)
+      })
     },
     selectProject(project) {
       this.$refs['project-form-item'].resetField()

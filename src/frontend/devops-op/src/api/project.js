@@ -9,3 +9,15 @@ export function listProjects() {
   })
 }
 
+export function searchProjects(namePrefix, page = 1, size = 20) {
+  namePrefix = namePrefix || null
+  return request({
+    url: `${PREFIX_PROJECT}/search`,
+    method: 'get',
+    params: {
+      namePrefix: namePrefix,
+      pageNumber: page,
+      pageSize: size
+    }
+  })
+}
