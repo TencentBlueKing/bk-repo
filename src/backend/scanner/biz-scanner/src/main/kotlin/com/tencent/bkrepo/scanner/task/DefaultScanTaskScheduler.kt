@@ -217,7 +217,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             } else {
                 // 添加到扫描任务队列
                 val status = status(scanningCount, projectScanConfiguration)
-                subScanTasks.add(createSubTask(scanTask, node, storageCredentialsKey, status))
+                subScanTasks.add(createSubTask(scanTask, scanner, node, storageCredentialsKey, status))
                 if (status == SubScanTaskStatus.CREATED) {
                     scanningCount++
                 }
@@ -284,6 +284,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
     fun createSubTask(
         scanTask: ScanTask,
+        scanner: Scanner,
         node: Node,
         credentialKey: String? = null,
         status: SubScanTaskStatus = SubScanTaskStatus.CREATED

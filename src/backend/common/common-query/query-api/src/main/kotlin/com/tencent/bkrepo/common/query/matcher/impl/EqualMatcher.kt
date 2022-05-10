@@ -25,8 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.constant
+package com.tencent.bkrepo.common.query.matcher.impl
 
-object Constant {
-    val SUPPORT_FILE_NAME_EXTENSION = listOf("apk", "apks", "aab", "exe", "so", "ipa", "dmg", "jar")
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.matcher.RuleMatcher
+import com.tencent.bkrepo.common.query.model.Rule
+
+class EqualMatcher : RuleMatcher() {
+    override fun supportOperationType() = OperationType.EQ
+
+    override fun isSupportValueType(rule: Rule.QueryRule, valueToMatch: Any?): Boolean {
+        return true
+    }
+
+    override fun doMatch(rule: Rule.QueryRule, valueToMatch: Any?): Boolean {
+        return rule.value == valueToMatch
+    }
 }

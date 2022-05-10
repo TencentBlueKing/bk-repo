@@ -32,6 +32,7 @@ import com.github.dockerjava.api.command.PullImageResultCallback
 import com.github.dockerjava.api.command.WaitContainerResultCallback
 import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.HostConfig
+import com.github.dockerjava.api.model.Ulimit
 import com.github.dockerjava.api.model.Volume
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.scanner.executor.configuration.DockerProperties.Compan
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
 import com.tencent.bkrepo.scanner.executor.pojo.ScanExecutorTask
 import com.tencent.bkrepo.scanner.executor.util.FileUtils.deleteRecursively
+import org.apache.commons.io.input.ReversedLinesFileReader
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -61,9 +63,12 @@ import org.springframework.core.io.Resource
 import org.springframework.expression.common.TemplateParserContext
 import org.springframework.expression.spel.standard.SpelExpressionParser
 import org.springframework.stereotype.Component
-import org.springframework.util.unit.DataSize
 import java.io.File
+import java.io.UncheckedIOException
+import java.net.SocketTimeoutException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
 import kotlin.system.measureTimeMillis
 
 @Component(ArrowheadScanner.TYPE)
@@ -75,6 +80,7 @@ class ArrowheadScanExecutor @Autowired constructor(
 
     @Value(CONFIG_FILE_TEMPLATE_CLASS_PATH)
     private lateinit var arrowheadConfigTemplate: Resource
+    private val taskContainerIdMap = ConcurrentHashMap<String, String>()
 
     override fun scan(task: ScanExecutorTask): ScanExecutorResult {
         require(task.scanner is ArrowheadScanner)
@@ -96,8 +102,7 @@ class ArrowheadScanExecutor @Autowired constructor(
             logger.info(logMsg(task, "load config success"))
 
             // 执行扫描
-            val maxScanDuration = maxScanDuration(scanner, scannerInputFile.length())
-            val scanStatus = doScan(workDir, task, maxScanDuration)
+            val scanStatus = doScan(workDir, task, scannerInputFile.length())
             return result(
                 File(workDir, scanner.container.outputDir),
                 scanStatus
@@ -110,11 +115,17 @@ class ArrowheadScanExecutor @Autowired constructor(
         }
     }
 
-    /**
-     * 获取文件最大允许扫描时间
-     */
-    private fun maxScanDuration(scanner: ArrowheadScanner, fileSize: Long): Long {
-        return scanner.maxScanDuration * DataSize.ofBytes(fileSize).toMegabytes()
+    override fun stop(taskId: String): Boolean {
+        val containerId = taskContainerIdMap[taskId] ?: return false
+        dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+        return true
+    }
+
+    private fun maxFileSize(fileSize: Long): Long {
+        // 最大允许的单文件大小为待扫描文件大小3倍，先除以3，防止long溢出
+        val maxFileSize = (Long.MAX_VALUE / 3L).coerceAtMost(fileSize) * 3L
+        // 限制单文件大小，避免扫描器文件创建的文件过大
+        return max(scannerExecutorProperties.fileSizeLimit.toBytes(), maxFileSize)
     }
 
     /**
@@ -204,22 +215,35 @@ class ArrowheadScanExecutor @Autowired constructor(
      *
      * @return true 扫描成功， false 扫描失败
      */
-    private fun doScan(workDir: File, task: ScanExecutorTask, maxScanDuration: Long): SubScanTaskStatus {
+    private fun doScan(workDir: File, task: ScanExecutorTask, fileSize: Long): SubScanTaskStatus {
         require(task.scanner is ArrowheadScanner)
+
+        val maxScanDuration = task.scanner.maxScanDuration(fileSize)
+        // 容器内单文件大小限制为待扫描文件大小的3倍
+        val maxFilesSize = maxFileSize(fileSize)
         val containerConfig = task.scanner.container
+
+        // 拉取镜像
         pullImage(containerConfig.image)
 
         // 容器内tmp目录
-        val tmpBind = Bind("${workDir.absolutePath}${File.separator}tmp", Volume("/tmp"))
+        val tmpDir = createTmpDir(workDir)
+        val tmpBind = Bind(tmpDir.absolutePath, Volume("/tmp"))
         // 容器内工作目录
         val bind = Bind(workDir.absolutePath, Volume(containerConfig.workDir))
-        val hostConfig = HostConfig().withBinds(tmpBind, bind).apply { configCpu(this) }
+        val hostConfig = HostConfig().apply {
+            withBinds(tmpBind, bind)
+            withUlimits(arrayOf(Ulimit("fsize", maxFilesSize, maxFilesSize)))
+            configCpu(this)
+        }
+
         val containerId = dockerClient.createContainerCmd(containerConfig.image)
             .withHostConfig(hostConfig)
             .withCmd(containerConfig.args)
             .withTty(true)
             .withStdinOpen(true)
             .exec().id
+        taskContainerIdMap[task.taskId] = containerId
         logger.info(logMsg(task, "run container instance Id [$workDir, $containerId]"))
         try {
             dockerClient.startContainerCmd(containerId).exec()
@@ -228,12 +252,39 @@ class ArrowheadScanExecutor @Autowired constructor(
             val result = resultCallback.awaitCompletion(maxScanDuration, TimeUnit.MILLISECONDS)
             logger.info(logMsg(task, "task docker run result[$result], [$workDir, $containerId]"))
             if (!result) {
-                return SubScanTaskStatus.TIMEOUT
+                return scanStatus(task, workDir, SubScanTaskStatus.TIMEOUT)
             }
             return scanStatus(task, workDir)
+        } catch (e: UncheckedIOException) {
+            if (e.cause is SocketTimeoutException) {
+                logger.error(logMsg(task, "socket timeout[${e.message}]"))
+                return scanStatus(task, workDir, SubScanTaskStatus.TIMEOUT)
+            }
+            throw e
         } finally {
-            dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+            taskContainerIdMap.remove(task.taskId)
+            ignoreExceptionExecute(logMsg(task, "stop container failed")) {
+                dockerClient.stopContainerCmd(containerId).withTimeout(DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS).exec()
+                dockerClient.killContainerCmd(containerId).withSignal(SIGNAL_KILL).exec()
+            }
+            ignoreExceptionExecute(logMsg(task, "remove container failed")) {
+                dockerClient.removeContainerCmd(containerId).withForce(true).exec()
+            }
         }
+    }
+
+    private fun ignoreExceptionExecute(failedMsg: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: Exception) {
+            logger.warn("$failedMsg, ${e.message}")
+        }
+    }
+
+    private fun createTmpDir(workDir: File): File {
+        val tmpDir = File(workDir, TMP_DIR_NAME)
+        tmpDir.mkdirs()
+        return tmpDir
     }
 
     private fun configCpu(hostConfig: HostConfig) {
@@ -250,20 +301,36 @@ class ArrowheadScanExecutor @Autowired constructor(
     /**
      * 解析arrowhead输出日志，判断扫描结果
      */
-    private fun scanStatus(task: ScanExecutorTask, workDir: File): SubScanTaskStatus {
+    private fun scanStatus(
+        task: ScanExecutorTask,
+        workDir: File,
+        status: SubScanTaskStatus = SubScanTaskStatus.FAILED
+    ): SubScanTaskStatus {
         val logFile = File(workDir, RESULT_FILE_NAME_LOG)
         if (!logFile.exists()) {
             logger.info(logMsg(task, "arrowhead log file not exists"))
-            return SubScanTaskStatus.FAILED
+            return status
         }
 
-        val lastLineLog = logFile.readLines().lastOrNull() ?: return SubScanTaskStatus.FAILED
-        if (lastLineLog.trimEnd().endsWith("Done")) {
-            return SubScanTaskStatus.SUCCESS
-        }
-        logger.info(logMsg(task, "scan failed: $lastLineLog"))
+        ReversedLinesFileReader(logFile, Charsets.UTF_8).use {
+            var line: String? = it.readLine() ?: return status
+            if (line!!.trimEnd().endsWith("Done")) {
+                return SubScanTaskStatus.SUCCESS
+            }
 
-        return SubScanTaskStatus.FAILED
+            val arrowheadLog = ArrayList<String>()
+            var count = 1
+            while (count < scannerExecutorProperties.maxScannerLogLines && line != null) {
+                line = it.readLine()?.apply {
+                    arrowheadLog.add(this)
+                    count++
+                }
+            }
+
+            logger.info(logMsg(task, "scan failed: ${arrowheadLog.asReversed().joinToString("\n")}"))
+        }
+
+        return status
     }
 
     /**
@@ -383,5 +450,11 @@ class ArrowheadScanExecutor @Autowired constructor(
          * 默认为1024，降低此值可降低容器在CPU时间分配中的优先级
          */
         private const val CONTAINER_CPU_SHARES = 512
+
+        const val TMP_DIR_NAME = "tmp"
+
+        private const val DEFAULT_STOP_CONTAINER_TIMEOUT_SECONDS = 30
+
+        private const val SIGNAL_KILL = "KILL"
     }
 }

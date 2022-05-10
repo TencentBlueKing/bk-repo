@@ -27,21 +27,25 @@
 
 package com.tencent.bkrepo.scanner.event
 
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.scanner.constant.Constant.SUPPORT_FILE_NAME_EXTENSION
+import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.utils.RuleConverter
-import com.tencent.bkrepo.scanner.utils.RuleMatcher
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -57,7 +61,8 @@ class ScanEventConsumer(
     private val scanService: ScanService,
     private val scanPlanDao: ScanPlanDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
-    private val executor: ThreadPoolTaskExecutor
+    private val executor: ThreadPoolTaskExecutor,
+    private val scannerProperties: ScannerProperties
 ) : Consumer<ArtifactEvent> {
 
     /**
@@ -120,7 +125,7 @@ class ScanEventConsumer(
 
     private fun supportFileNameExtension(fullPath: String): Boolean {
         val fileNameExtension = fullPath.substringAfterLast('.', "")
-        return fileNameExtension in SUPPORT_FILE_NAME_EXTENSION
+        return fileNameExtension in scannerProperties.supportFileNameExt
     }
 
     /**
@@ -200,15 +205,24 @@ class ScanEventConsumer(
         }
 
         with(event) {
-            if (event.type == EventType.NODE_CREATED && RuleMatcher.matchFullPath(resourceKey, rule)) {
-                return true
+            if (event.type == EventType.NODE_CREATED) {
+                val valuesToMatch = mapOf(
+                    NodeDetail::projectId.name to projectId,
+                    NodeDetail::repoName.name to repoName,
+                    RuleArtifact::name.name to resourceKey.substringAfterLast(CharPool.SLASH)
+                )
+                return RuleMatcher.match(rule, valuesToMatch)
             }
 
-            if ((event.type == EventType.VERSION_CREATED || event.type == EventType.VERSION_UPDATED)
-                && rule is Rule.NestedRule) {
-                val packageName = data[VersionCreatedEvent::packageName.name] as String
-                val packageVersion = data[VersionCreatedEvent::packageVersion.name] as String
-                return RuleMatcher.matchNameVersion(packageName, packageVersion, rule)
+            if ((event.type == EventType.VERSION_CREATED || event.type == EventType.VERSION_UPDATED)) {
+                val valuesToMatch = mapOf(
+                    PackageSummary::projectId.name to projectId,
+                    PackageSummary::repoName.name to repoName,
+                    PackageSummary::type.name to data[VersionCreatedEvent::packageType.name] as String,
+                    RuleArtifact::name.name to data[VersionCreatedEvent::packageName.name] as String,
+                    RuleArtifact::version.name to data[VersionCreatedEvent::packageVersion.name] as String
+                )
+                return RuleMatcher.match(rule, valuesToMatch)
             }
         }
 
