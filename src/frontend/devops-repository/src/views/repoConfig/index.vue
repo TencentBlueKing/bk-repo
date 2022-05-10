@@ -80,6 +80,9 @@
             <bk-tab-panel render-directive="if" v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
                 <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
+            <!-- <bk-tab-panel name="cleanConfig" label="清理设置">
+                <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
+            </bk-tab-panel> -->
             <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
                 <permission-config></permission-config>
             </bk-tab-panel> -->
@@ -89,11 +92,16 @@
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
+    // import cleanConfig from '@repository/views/repoConfig/cleanConfig'
     // import permissionConfig from './permissionConfig'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
-        components: { CardRadioGroup, proxyConfig },
+        components: {
+            CardRadioGroup,
+            proxyConfig
+            // cleanConfig
+        },
         data () {
             const filenameRule = [
                 {
