@@ -120,24 +120,28 @@ export default {
     // 批量扫描
     startScan (_, body) {
         return Vue.prototype.$ajax.post(
-            `${prefix}/batch`,
+            `${prefix}`,
             body
         )
     },
     // 单个扫描
-    startScanSingle (_, { projectId, id, repoName, name, version, packageKey, fullPath }) {
+    startScanSingle (_, { projectId, id, repoName, version, packageKey, fullPath }) {
         // return Vue.prototype.$ajax.post(
         //     `${prefix}/single`,
         //     body
         // )
         return Vue.prototype.$ajax.post(
-            `${prefix}/batch`,
+            `${prefix}`,
             {
-                projectId,
                 id,
                 force: true,
                 rule: {
                     rules: [
+                        {
+                            field: 'projectId',
+                            value: projectId,
+                            operation: 'EQ'
+                        },
                         {
                             field: 'repoName',
                             value: [repoName],
@@ -147,12 +151,7 @@ export default {
                             rules: [
                                 {
                                     rules: [
-                                        {
-                                            field: 'name',
-                                            operation: 'EQ',
-                                            value: name
-                                        },
-                                        version
+                                        packageKey
                                             ? {
                                                 field: 'version',
                                                 operation: 'EQ',
@@ -166,14 +165,14 @@ export default {
                                                 value: packageKey
                                             }
                                             : undefined,
-                                        fullPath
+                                        !packageKey
                                             ? {
                                                 field: 'fullPath',
                                                 operation: 'EQ',
                                                 value: fullPath
                                             }
                                             : undefined
-                                    ],
+                                    ].filter(Boolean),
                                     relation: 'AND'
                                 }
                             ],

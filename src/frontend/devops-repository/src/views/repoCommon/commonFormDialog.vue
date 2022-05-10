@@ -119,10 +119,9 @@
                 })
             },
             submitScanFile () {
-                const { id, name, version } = this.formDialog
+                const { id, version } = this.formDialog
                 return this.startScanSingle({
                     id,
-                    name,
                     version,
                     packageKey: this.packageKey,
                     projectId: this.projectId,

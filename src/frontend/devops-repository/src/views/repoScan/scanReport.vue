@@ -306,13 +306,12 @@
                     query: this.$route.query
                 })
             },
-            startScanSingleHandler ({ repoType, repoName, name, fullPath, packageKey, version }) {
+            startScanSingleHandler ({ repoType, repoName, fullPath, packageKey, version }) {
                 this.startScanSingle({
                     projectId: this.projectId,
                     id: this.planId,
                     repoType,
                     repoName,
-                    name,
                     fullPath,
                     packageKey,
                     version

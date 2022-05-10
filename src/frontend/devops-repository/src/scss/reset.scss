@@ -112,8 +112,7 @@ body {
             margin: 0 -2px 0 -4px;
             font-size: 20px;
         }
-        &.bk-default.hover,
-        &.bk-default:hover {
+        &.bk-default:not([disabled]):hover {
             border-color: var(--primaryColor);
             color: var(--primaryColor);
             background-color: var(--bgHoverLighterColor);

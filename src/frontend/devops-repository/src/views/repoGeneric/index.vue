@@ -94,7 +94,7 @@
                         <template #default="{ row }">
                             <scan-tag class="mr5"
                                 v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
-                                :status="row.metadata.scanStatus"
+                                :status="row.systemMetadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>

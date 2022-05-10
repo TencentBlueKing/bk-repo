@@ -192,13 +192,12 @@
                 }
             },
             startScanSingleHandler () {
-                const { repoType, repoName, name, fullPath, packageKey, version } = this.baseInfo
+                const { repoType, repoName, fullPath, packageKey, version } = this.baseInfo
                 this.startScanSingle({
                     projectId: this.projectId,
                     id: this.planId,
                     repoType,
                     repoName,
-                    name,
                     fullPath,
                     packageKey,
                     version

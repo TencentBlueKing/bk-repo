@@ -101,10 +101,14 @@
                 const repoNameList = await this.$refs.repoConfig.getConfig()
                 const artifactRules = await this.$refs.artiConfig.getConfig()
                 this.startScan({
-                    projectId: this.projectId,
                     id: this.planId,
                     rule: {
                         rules: [
+                            {
+                                field: 'projectId',
+                                value: this.projectId,
+                                operation: 'EQ'
+                            },
                             repoNameList.length
                                 ? {
                                     field: 'repoName',

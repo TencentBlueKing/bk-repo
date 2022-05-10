@@ -107,6 +107,11 @@
                         scanOnNewArtifact: this.config.scanOnNewArtifact,
                         rule: {
                             rules: [
+                                {
+                                    field: 'projectId',
+                                    value: this.projectId,
+                                    operation: 'EQ'
+                                },
                                 repoNameList.length
                                     ? {
                                         field: 'repoName',
