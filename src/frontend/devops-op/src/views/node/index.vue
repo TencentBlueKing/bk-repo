@@ -165,8 +165,6 @@ export default {
     return {
       rules: {
         sha256: [{ validator: this.validateSha256, trigger: 'blur' }],
-        projectId: [{ validator: this.validateName, trigger: 'blur' }],
-        repoName: [{ validator: this.validateName, trigger: 'blur' }],
         path: [{ validator: this.validatePath, trigger: 'blur' }]
       },
       loading: false,
@@ -218,7 +216,7 @@ export default {
     },
     validatePath(rule, value, callback) {
       if (!this.nodes.useSha256) {
-        this.regexValidate(value, /^(\/|(\/[\w-~#\\.]+)+\/?)$/, callback)
+        this.regexValidate(value, /^(\/|(\/[^\/]+)+\/?)$/, callback)
       }
       callback()
     },
