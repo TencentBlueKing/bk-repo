@@ -57,6 +57,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
+import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
@@ -122,7 +123,7 @@ class ScanServiceImpl @Autowired constructor(
                     createdDate = now,
                     lastModifiedBy = userId,
                     lastModifiedDate = now,
-                    rule = rule?.toJsonString() ?: plan?.rule,
+                    rule = rule?.toJsonString(),
                     triggerType = triggerType.name,
                     planId = plan?.id,
                     status = ScanTaskStatus.PENDING.name,
@@ -147,8 +148,13 @@ class ScanServiceImpl @Autowired constructor(
     override fun singleScan(request: SingleScanRequest): ScanTask {
         with(request) {
             val plan = scanPlanDao.get(planId)
-            return scan(Converter.convert(request, plan.type), ScanTriggerType.MANUAL)
+            return self.scan(Converter.convert(request, plan.type), ScanTriggerType.MANUAL)
         }
+    }
+
+    override fun batchScan(request: BatchScanRequest): ScanTask {
+        val plan = scanPlanDao.get(request.planId)
+        return self.scan(Converter.convert(request, plan.type), Converter.convert(request.triggerType))
     }
 
     @Transactional(rollbackFor = [Throwable::class])

@@ -105,14 +105,19 @@ object ScanPlanConverter {
         }
     }
 
-    fun convert(scanPlanRequest: UpdateScanPlanRequest, curRepoNames: List<String>, curRule: Rule): ScanPlan {
+    fun convert(
+        scanPlanRequest: UpdateScanPlanRequest,
+        curRepoNames: List<String>,
+        curRule: Rule,
+        planType: String
+    ): ScanPlan {
         return with(scanPlanRequest) {
             val rule = if (repoNameList == null && artifactRules == null) {
                 null
             } else {
                 val repoNames = repoNameList ?: curRepoNames
                 val artifactRules = artifactRules ?: RuleConverter.convert(curRule)
-                RuleConverter.convert(projectId!!, repoNames, artifactRules)
+                RuleConverter.convert(projectId!!, repoNames, artifactRules, planType)
             }
             ScanPlan(
                 id = id,

@@ -60,13 +60,16 @@ class IteratorManager(
      * @param resume 是否从之前的扫描进度恢复
      */
     fun createNodeIterator(scanTask: ScanTask, resume: Boolean = false): Iterator<Node> {
-        val rule = scanTask.scanPlan
-            ?.let { modifyRule(it, scanTask) }
-            ?: scanTask.rule
+        val rule = if (scanTask.scanPlan != null && scanTask.rule is Rule.NestedRule) {
+            // 存在扫描方案时才修改制品遍历规则
+            modifyRule(scanTask.scanPlan!!, scanTask.rule as Rule.NestedRule)
+        } else {
+            scanTask.rule
+        }
 
         // TODO projectClient添加分页获取project接口后这边再取消rule需要projectId条件的限制
         require(rule is Rule.NestedRule)
-        val projectIds = projectIdsFromRule(rule)
+        val projectIds = fieldValueFromRule(rule, NodeDetail::projectId.name)
         val projectIdIterator = projectIds.iterator()
 
         val isPackageScanPlanType = scanTask.scanPlan != null && scanTask.scanPlan!!.type != RepositoryType.GENERIC.name
@@ -77,12 +80,13 @@ class IteratorManager(
         }
     }
 
-    private fun modifyRule(scanPlan: ScanPlan, scanTask: ScanTask): Rule {
-        val rule = scanTask.rule ?: scanPlan.rule!!
+    private fun modifyRule(scanPlan: ScanPlan, rule: Rule.NestedRule): Rule {
         if (scanPlan.type == RepositoryType.GENERIC.name) {
-            if (scanPlan.repoNames.isNullOrEmpty()) {
-                addRepoNames(rule as Rule.NestedRule, scanPlan.projectId!!)
+            if (fieldValueFromRule(rule, NodeDetail::repoName.name).isEmpty()) {
+                // 未指定要扫描的仓库时限制只扫描GENERIC类型仓库
+                addRepoNames(rule, scanPlan.projectId!!)
             }
+            // 限制待扫描文件后缀
             return addMobilePackageRule(rule)
         }
         return rule
@@ -105,27 +109,28 @@ class IteratorManager(
     }
 
     /**
-     * 如果指定要扫描的projectId，必须relation为AND，在nestedRule里面的第一层rule包含projectId的匹配条件
+     * 在nestedRule第一层找需要字段的值
+     * 如果指定要扫描的projectId或repoName，必须relation为AND，在nestedRule里面的第一层rule包含对应的匹配条件
      */
     @Suppress("UNCHECKED_CAST")
-    private fun projectIdsFromRule(rule: Rule.NestedRule): List<String> {
-        val projectIds = ArrayList<String>()
+    private fun fieldValueFromRule(rule: Rule.NestedRule, field: String): List<String> {
+        val fieldValues = ArrayList<String>()
         if (rule.relation != Rule.NestedRule.RelationType.AND) {
             return emptyList()
         } else {
             rule.rules
                 .asSequence()
                 .filterIsInstance(Rule.QueryRule::class.java)
-                .filter { it.field == NodeDetail::projectId.name }
+                .filter { it.field == field }
                 .forEach {
                     if (it.operation == OperationType.EQ) {
-                        projectIds.add(it.value as String)
+                        fieldValues.add(it.value as String)
                     } else if (it.operation == OperationType.IN) {
-                        projectIds.addAll(it.value as Collection<String>)
+                        fieldValues.addAll(it.value as Collection<String>)
                     }
                 }
         }
-        return projectIds
+        return fieldValues
     }
 
     private fun addRepoNames(rule: Rule, projectId: String): Rule {
