@@ -31,47 +31,37 @@
 
 package com.tencent.bkrepo.oci.artifact.repository
 
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
-import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.BLOB_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.BLOB_UNKNOWN_DESCRIPTION
-import com.tencent.bkrepo.oci.constant.CHART_LAYER_MEDIA_TYPE
-import com.tencent.bkrepo.oci.constant.DESCRIPTION
 import com.tencent.bkrepo.oci.constant.FORCE
-import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
+import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
-import com.tencent.bkrepo.oci.constant.MEDIA_TYPE_ALL
+import com.tencent.bkrepo.oci.constant.N
+import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
-import com.tencent.bkrepo.oci.model.Descriptor
-import com.tencent.bkrepo.oci.model.ManifestSchema2
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
+import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
-import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
-import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -96,7 +86,7 @@ class OciRegistryLocalRepository(
             val isForce = request.getParameter(FORCE)?.let { true } ?: false
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
-            val fullPath = getFullPath(context)
+            val fullPath = context.artifactInfo.getArtifactFullPath()
             val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
             logger.info(
                 "The file $fullPath that will be uploaded to server is exist: $isExist " +
@@ -213,9 +203,14 @@ class OciRegistryLocalRepository(
     private fun postUpload(context: ArtifactUploadContext): Pair<OciDigest, String> {
         val artifactFile = context.getArtifactFile()
         val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
-        val fullPath = storeArtifact(context)
+        ociOperationService.storeArtifact(
+            ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
+            artifactFile = artifactFile,
+            storageCredentials = context.storageCredentials
+        )
         logger.info(
-            "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to $fullPath" +
+            "Artifact ${context.artifactInfo.getArtifactFullPath()} has " +
+                "been uploaded to ${context.artifactInfo.getArtifactFullPath()}" +
                 " in repo  ${context.artifactInfo.getRepoIdentify()}"
         )
         val blobLocation = OciLocationUtils.blobLocation(digest, context.artifactInfo as OciArtifactInfo)
@@ -238,9 +233,15 @@ class OciRegistryLocalRepository(
                 )
                 val fileInfo = storageService.finishAppend(uuid, context.repositoryDetail.storageCredentials)
                 val digest = OciDigest.fromSha256(fileInfo.sha256)
-                val fullPath = storeArtifact(context, fileInfo)
+                ociOperationService.storeArtifact(
+                    ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
+                    artifactFile = context.getArtifactFile(),
+                    storageCredentials = context.storageCredentials,
+                    fileInfo = fileInfo
+                )
                 logger.info(
-                    "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to $fullPath" +
+                    "Artifact ${context.artifactInfo.getArtifactFullPath()} " +
+                        "has been uploaded to ${context.artifactInfo.getArtifactFullPath()}" +
                         " in repo  ${context.artifactInfo.getRepoIdentify()}"
                 )
                 val blobLocation = OciLocationUtils.blobLocation(digest, this)
@@ -250,18 +251,22 @@ class OciRegistryLocalRepository(
             with(context.artifactInfo as OciManifestArtifactInfo) {
                 val artifactFile = context.getArtifactFile()
                 val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
-                val fullPath = storeArtifact(context)
+                val node = ociOperationService.storeManifestArtifact(
+                    ociArtifactInfo = this,
+                    artifactFile = artifactFile,
+                    storageCredentials = context.storageCredentials
+                )
                 logger.info(
-                    "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to $fullPath" +
+                    "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to ${node!!.fullPath}" +
                         " in repo  ${context.artifactInfo.getRepoIdentify()}"
                 )
                 // 上传manifest文件，同时需要将manifest中对应blob的属性进行补充到blob节点中，同时创建package相关信息
-                updateOciInfo(
+                ociOperationService.updateOciInfo(
                     ociArtifactInfo = this,
                     digest = digest,
                     artifactFile = artifactFile,
-                    fullPath = fullPath,
-                    context = context
+                    storageCredentials = context.storageCredentials,
+                    fullPath = node.fullPath
                 )
                 val manifestLocation = OciLocationUtils.manifestLocation(digest, this)
                 Pair(digest, manifestLocation)
@@ -270,342 +275,23 @@ class OciRegistryLocalRepository(
     }
 
     /**
-     * 更新整个blob相关信息,blob相关的mediatype，version等信息需要从manifest中获取
-     */
-    private fun updateOciInfo(
-        ociArtifactInfo: OciManifestArtifactInfo,
-        digest: OciDigest,
-        artifactFile: ArtifactFile,
-        fullPath: String,
-        context: ArtifactUploadContext
-    ) {
-        logger.info(
-            "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
-                "in repo ${ociArtifactInfo.getRepoIdentify()}"
-        )
-        val manifest = OciUtils.streamToManifest(artifactFile.getInputStream())
-        // 更新manifest文件的metadata
-        val mediaType = HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE).orEmpty()
-        updateNodeMetaData(
-            digest = digest.toString(),
-            schemaVersion = manifest.schemaVersion,
-            ociArtifactInfo = ociArtifactInfo,
-            fullPath = fullPath,
-            mediaType = mediaType
-        )
-        // 同步blob相关metadata
-        if (ociArtifactInfo.packageName.isNotEmpty()) {
-            syncBlobInfo(
-                ociArtifactInfo = ociArtifactInfo,
-                manifest = manifest,
-                manifestDigest = digest,
-                context = context,
-                manifestPath = fullPath
-            )
-        }
-    }
-    /**
-     * 将部分信息存入节点metadata中
-     */
-    private fun updateNodeMetaData(
-        digest: String,
-        schemaVersion: Int? = null,
-        ociArtifactInfo: OciManifestArtifactInfo,
-        fullPath: String,
-        mediaType: String,
-        manifestDigest: String? = null,
-        chartYaml: Map<String, Any>? = null
-    ) {
-        logger.info("The mediaType of $fullPath file that has been uploaded is $mediaType")
-        // 将基础信息存储到metadata中
-        val metadata = ObjectBuildUtils.buildMetadata(
-            mediaType = mediaType,
-            digest = digest,
-            version = ociArtifactInfo.reference,
-            schemaVersion = schemaVersion,
-            manifestDigest = manifestDigest,
-            yamlData = chartYaml
-        )
-        ociOperationService.saveMetaData(
-            projectId = ociArtifactInfo.projectId,
-            repoName = ociArtifactInfo.repoName,
-            fullPath = fullPath,
-            metadata = metadata
-        )
-    }
-
-    /**
-     * 构造节点创建请求
-     */
-    override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        return ObjectBuildUtils.buildNodeCreateRequest(
-            projectId = context.artifactInfo.projectId,
-            repoName = context.artifactInfo.repoName,
-            artifactFile = context.getArtifactFile(),
-            fullPath = getFullPath(context)
-        )
-    }
-
-    private fun getFullPath(context: ArtifactUploadContext): String {
-        return when (context.artifactInfo) {
-            is OciManifestArtifactInfo -> {
-                with(context.artifactInfo as OciManifestArtifactInfo) {
-                    val path = OciLocationUtils.buildDigestManifestPathWithSha256(
-                        packageName,
-                        context.getArtifactSha256()
-                    )
-                    logger.info("$packageName' manifest file will be stored in [$path] under repo ${getRepoIdentify()}")
-                    path
-                }
-            }
-            is OciBlobArtifactInfo -> {
-                with(context.artifactInfo as OciBlobArtifactInfo) {
-                    val path = getArtifactFullPath()
-                    logger.info(
-                        "$packageName blob file will be stored in [$path] under repo ${getRepoIdentify()}"
-                    )
-                    path
-                }
-            }
-            else -> context.artifactInfo.getArtifactFullPath()
-        }
-    }
-
-    /**
-     * 同步blob层的数据和config里面的数据
-     */
-    private fun syncBlobInfo(
-        ociArtifactInfo: OciManifestArtifactInfo,
-        manifest: ManifestSchema2,
-        manifestDigest: OciDigest,
-        context: ArtifactUploadContext,
-        manifestPath: String
-    ) {
-        logger.info(
-            "Will start to sync blobs and config info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
-        )
-        val descriptorList = OciUtils.manifestIterator(manifest)
-
-        var chartYaml: Map<String, Any>? = null
-        // 统计所有mainfest中的文件size作为整个package version的size
-        var size: Long = 0
-        // 同步layer以及config层blob信息
-        descriptorList.forEach {
-            size += it.size
-            chartYaml = when (it.mediaType) {
-                CHART_LAYER_MEDIA_TYPE -> {
-                    // 针对helm chart，需要将chart.yaml中相关信息存入对应节点中
-                    ociOperationService.loadArtifactInput(
-                        chartDigest = it.digest,
-                        projectId = ociArtifactInfo.projectId,
-                        repoName = ociArtifactInfo.repoName,
-                        packageName = ociArtifactInfo.packageName,
-                        version = ociArtifactInfo.reference,
-                        storageCredentials = context.storageCredentials
-                    )
-                }
-                else -> null
-            }
-            doSyncBlob(it, ociArtifactInfo, manifestDigest, chartYaml)
-        }
-        // 根据flag生成package信息以及packageversion信息
-        doPackageOperations(
-            manifestPath = manifestPath,
-            ociArtifactInfo = ociArtifactInfo,
-            manifestDigest = manifestDigest,
-            size = size,
-            chartYaml = chartYaml
-        )
-    }
-
-    /**
-     * 更新blobs的信息
-     */
-    private fun doSyncBlob(
-        descriptor: Descriptor,
-        ociArtifactInfo: OciManifestArtifactInfo,
-        manifestDigest: OciDigest,
-        chartYaml: Map<String, Any>? = null
-    ) {
-        with(ociArtifactInfo) {
-            logger.info(
-                "Handling sync blob digest [${descriptor.digest}] in repo ${ociArtifactInfo.getRepoIdentify()}"
-            )
-            if (!OciDigest.isValid(descriptor.digest)) {
-                logger.info("Invalid blob digest [$descriptor]")
-                return
-            }
-            val blobDigest = OciDigest(descriptor.digest)
-            val fullPath = OciLocationUtils.buildDigestBlobsPath(packageName, blobDigest)
-            updateBlobMetaData(
-                fullPath = fullPath,
-                descriptor = descriptor,
-                ociArtifactInfo = this,
-                manifestDigest = manifestDigest,
-                yamlMap = chartYaml
-            )
-        }
-    }
-
-    /**
-     * 根据manifest文件中的信息更新blob metadata信息
-     */
-    private fun updateBlobMetaData(
-        fullPath: String,
-        descriptor: Descriptor,
-        ociArtifactInfo: OciManifestArtifactInfo,
-        manifestDigest: OciDigest,
-        yamlMap: Map<String, Any>? = null
-    ) {
-        with(ociArtifactInfo) {
-            nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
-                logger.info(
-                    "The current blob [${descriptor.digest}] is stored in $fullPath with package $packageName " +
-                        "and version $reference under repo ${getRepoIdentify()}"
-                )
-                updateNodeMetaData(
-                    digest = descriptor.digest,
-                    ociArtifactInfo = this,
-                    fullPath = it.fullPath,
-                    mediaType = descriptor.mediaType,
-                    manifestDigest = manifestDigest.toString(),
-                    chartYaml = yamlMap
-                )
-            }
-        }
-    }
-
-    /**
-     * 根据blob信息生成对应的package以及version信息
-     */
-    private fun doPackageOperations(
-        manifestPath: String,
-        ociArtifactInfo: OciManifestArtifactInfo,
-        manifestDigest: OciDigest,
-        size: Long,
-        chartYaml: Map<String, Any>? = null
-    ) {
-        with(ociArtifactInfo) {
-            logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
-            val packageVersion = packageClient.findVersionByName(
-                projectId = projectId,
-                repoName = repoName,
-                packageKey = PackageKeys.ofOci(packageName),
-                version = ociArtifactInfo.reference
-            ).data
-            val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
-                .apply { chartYaml?.let { this.putAll(chartYaml) } }
-            if (packageVersion == null) {
-                val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
-                    ociArtifactInfo = this,
-                    packageName = packageName,
-                    version = ociArtifactInfo.reference,
-                    size = size,
-                    fullPath = manifestPath,
-                    metadata = metadata
-                )
-                packageClient.createVersion(request)
-            } else {
-                val request = ObjectBuildUtils.buildPackageVersionUpdateRequest(
-                    ociArtifactInfo = this,
-                    packageName = packageName,
-                    version = ociArtifactInfo.reference,
-                    size = size,
-                    fullPath = manifestPath,
-                    metadata = metadata
-                )
-                packageClient.updateVersion(request)
-            }
-
-            // 针对helm chart包，将部分信息放入到package中
-            var appVersion: String? = null
-            var description: String? = null
-            chartYaml?.let {
-                appVersion = it[APP_VERSION] as String?
-                description = it[DESCRIPTION] as String?
-            }
-            ociOperationService.updatePackageInfo(ociArtifactInfo, appVersion, description)
-        }
-    }
-
-    /**
-     * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
-     */
-    private fun storeArtifact(context: ArtifactUploadContext, fileInfo: FileInfo? = null): String {
-        val request = buildNodeCreateRequest(context)
-        if (fileInfo != null) {
-            val newNodeRequest = request.copy(
-                size = fileInfo.size,
-                md5 = fileInfo.md5,
-                sha256 = fileInfo.sha256
-            )
-            createNode(newNodeRequest, context.storageCredentials)
-        } else {
-            storageManager.storeArtifactFile(request, context.getArtifactFile(), context.storageCredentials)
-        }
-        return request.fullPath
-    }
-
-    /**
-     * 当使用追加上传时，文件已存储，只需存储节点信息
-     */
-    private fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail {
-        try {
-            return nodeClient.createNode(request).data!!
-        } catch (exception: Exception) {
-            // 当文件有创建，则删除文件
-            try {
-                storageService.delete(request.sha256!!, storageCredentials)
-            } catch (exception: Exception) {
-                logger.error("Failed to delete new created file[${request.sha256}]", exception)
-            }
-            // 异常往上抛
-            throw exception
-        }
-    }
-
-    /**
      * 在原有逻辑上增加响应头
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        logger.info("Will start to download oci artifact in repo ${context.artifactInfo.getRepoIdentify()}...")
+        logger.info(
+            "Will start to download oci artifact ${context.artifactInfo.getArtifactFullPath()}" +
+                " in repo ${context.artifactInfo.getRepoIdentify()}..."
+        )
         // 根据类型解析实际存储路径，manifest有可能根据版本进行获取而不是对应文件的digest值
-        val fullPath = getFullpathFromTagOrDigest(context)
-        return downloadArtifact(context, fullPath)
+        return downloadArtifact(context)
     }
 
-    /**
-     * 根据传入的是tag 还是digest获取对应fullpath
-     */
-    private fun getFullpathFromTagOrDigest(context: ArtifactContext): String? {
-        return when (context.artifactInfo) {
-            is OciBlobArtifactInfo -> {
-                with(context.artifactInfo as OciBlobArtifactInfo) {
-                    getArtifactFullPath()
-                }
-            }
-            is OciManifestArtifactInfo -> {
-                with(context.artifactInfo as OciManifestArtifactInfo) {
-                    if (isValidDigest) {
-                        getArtifactFullPath()
-                    } else {
-                        ociOperationService.queryManifestFullPathByNameAndDigest(
-                            projectId = projectId,
-                            repoName = repoName,
-                            version = reference,
-                            packageName = packageName
-                        )
-                    }
-                }
-            }
-            else -> null
-        }
-    }
-
-    private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
-        logger.info("Starting to download $fullPath in repo: ${context.artifactInfo.getRepoIdentify()}")
-        if (fullPath.isNullOrBlank()) return null
+    private fun downloadArtifact(context: ArtifactDownloadContext): ArtifactResource {
+        val fullPath = context.artifactInfo.getArtifactFullPath()
+        logger.info(
+            "Starting to download $fullPath " +
+                "in repo: ${context.artifactInfo.getRepoIdentify()}"
+        )
         val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
             ?: throw OciFileNotFoundException(
@@ -614,15 +300,22 @@ class OciRegistryLocalRepository(
                 BLOB_UNKNOWN_DESCRIPTION
             )
         val digest = OciDigest.fromSha256(node!!.sha256.orEmpty())
-        val mediaType = if (node.metadata[MEDIA_TYPE] == null) {
-            MEDIA_TYPE_ALL
-        } else {
-            node.metadata[MEDIA_TYPE] as String
-        }
+        val mediaType = node.metadata[MEDIA_TYPE] ?: MediaTypes.APPLICATION_OCTET_STREAM
         logger.info(
             "The mediaType of Artifact $fullPath is $mediaType in repo: ${context.artifactInfo.getRepoIdentify()}"
         )
-        OciResponseUtils.buildDownloadResponse(digest, context.response, node.size)
+
+        val contentType = if (context.artifactInfo is OciManifestArtifactInfo) {
+            node.metadata[MEDIA_TYPE] ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+        } else {
+            MediaTypes.APPLICATION_OCTET_STREAM
+        }
+        OciResponseUtils.buildDownloadResponse(
+            digest = digest,
+            response = context.response,
+            size = node.size,
+            contentType = contentType as String
+        )
         val resource = ArtifactResource(
             inputStream = inputStream,
             artifactName = context.artifactInfo.getResponseName(),
@@ -630,7 +323,7 @@ class OciRegistryLocalRepository(
             channel = ArtifactChannel.LOCAL,
             useDisposition = context.useDisposition
         )
-        resource.contentType = mediaType
+        resource.contentType = mediaType.toString()
         return resource
     }
 
@@ -639,12 +332,7 @@ class OciRegistryLocalRepository(
      */
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val fullPath = getFullpathFromTagOrDigest(context)
-            if (fullPath.isNullOrBlank()) {
-                throw OciFileNotFoundException(
-                    "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
-                )
-            }
+            val fullPath = context.artifactInfo.getArtifactFullPath()
             nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
                 ?: throw OciFileNotFoundException(
                     "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
@@ -654,6 +342,85 @@ class OciRegistryLocalRepository(
             nodeClient.deleteNode(request)
             OciResponseUtils.buildDeleteResponse(context.response)
         }
+    }
+
+    /**
+     * 查询tag列表
+     */
+    override fun query(context: ArtifactQueryContext): TagsInfo {
+        with(context.artifactInfo as OciTagArtifactInfo) {
+            val n = context.getAttribute<Int>(N)
+            val last = context.getAttribute<String>(LAST_TAG)
+            val versionList = packageClient.listAllVersion(
+                projectId,
+                repoName,
+                PackageKeys.ofOci(packageName)
+            ).data.orEmpty()
+            var tagList = mutableListOf<String>()
+            versionList.forEach {
+                tagList.add(it.name)
+            }
+            tagList.sort()
+            tagList = filterHandler(
+                tags = tagList,
+                n = n,
+                last = last
+            )
+            return TagsInfo(packageName, tagList as List<String>)
+        }
+    }
+
+    /**
+     * 根据n或者last进行过滤（注意n是否会超过tags总长）
+     * 1 n和last 都不存在，则返回所有
+     * 2 n存在， last不存在，则返回前n个
+     * 3 last存在 n不存在， 则返回查到的last，如不存在，则返回空列表
+     * 4 last存在，n存在，则返回last之后的n个
+     */
+    private fun filterHandler(tags: MutableList<String>, n: Int?, last: String?): MutableList<String> {
+        var tagList = tags
+        if (n != null) {
+            tagList = handleNFilter(tagList, n, last)
+        } else {
+            if (!last.isNullOrEmpty()) {
+                val index = tagList.indexOf(last)
+                tagList = if (index == -1) {
+                    mutableListOf()
+                } else {
+                    mutableListOf(last)
+                }
+            }
+        }
+        return tagList
+    }
+
+    /**
+     * 处理n存在时的逻辑
+     */
+    private fun handleNFilter(tags: MutableList<String>, n: Int, last: String?): MutableList<String> {
+        var tagList = tags
+        var size = n
+        val length = tagList.size
+        tagList = if (!last.isNullOrEmpty()) {
+            // 当last存在，n也存在 则获取last所在后n个tag
+            val index = tagList.indexOf(last)
+            if (index == -1) {
+                mutableListOf()
+            } else {
+                // 需要判断last后n个是否超过tags总长
+                if (index + size + 1 > length) {
+                    size = length - 1 - index
+                }
+                tagList.subList(index + 1, size + 1)
+            }
+        } else {
+            // 需要判断n个是否超过tags总长
+            if (size > length) {
+                size = length
+            }
+            tagList.subList(0, size)
+        }
+        return tagList
     }
 
     companion object {

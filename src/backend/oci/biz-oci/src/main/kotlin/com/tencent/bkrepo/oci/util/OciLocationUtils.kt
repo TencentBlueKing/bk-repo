@@ -29,6 +29,8 @@ package com.tencent.bkrepo.oci.util
 
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import java.net.URI
+import java.net.URL
 import org.slf4j.LoggerFactory
 
 object OciLocationUtils {
@@ -36,7 +38,7 @@ object OciLocationUtils {
     private val logger = LoggerFactory.getLogger(OciLocationUtils::class.java)
 
     fun buildManifestPath(packageName: String, tag: String): String {
-        return "/$packageName/$tag/manifest.json"
+        return "/$packageName/manifest/$tag"
     }
 
     fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {
@@ -71,8 +73,24 @@ object OciLocationUtils {
         return returnLocation(digest, ociArtifactInfo, "manifest")
     }
 
+    fun blobPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo): String {
+        return returnPathLocation(digest, ociArtifactInfo, "blobs")
+    }
+
     fun blobLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo): String {
         return returnLocation(digest, ociArtifactInfo, "blobs")
+    }
+
+    fun manifestPathLocation(reference: String, ociArtifactInfo: OciArtifactInfo): String {
+        with(ociArtifactInfo) {
+            return "/$packageName/manifests/$reference"
+        }
+    }
+
+    private fun returnPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {
+        with(ociArtifactInfo) {
+            return "/$packageName/$type/$digest"
+        }
     }
 
     private fun returnLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {
@@ -86,4 +104,23 @@ object OciLocationUtils {
             return "/$projectId/$repoName/$packageName/blobs/uploads/$uuid"
         }
     }
+}
+
+fun main() {
+    val baseUrl = URL("http://registry.me:25907/test/test-oci")
+    val rawUrl = URL(baseUrl, "/v2" + baseUrl.getPath())
+
+    val oldUri = URI("http://registry.me:25907/test/test-oci")
+    var newQuery: String? = oldUri.query
+    if (newQuery == null) {
+        newQuery = "name=John"
+    } else {
+        newQuery += "&name=John"
+    }
+    val newH = URI(
+        oldUri.scheme, baseUrl.authority,
+        "/v2" + oldUri.path, newQuery, oldUri.fragment
+    )
+    println(rawUrl)
+    println(newH)
 }

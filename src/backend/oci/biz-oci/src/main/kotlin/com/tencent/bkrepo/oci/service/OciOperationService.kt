@@ -27,10 +27,16 @@
 
 package com.tencent.bkrepo.oci.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.OciDomainInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
+import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
+import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 
 interface OciOperationService {
 
@@ -99,4 +105,40 @@ interface OciOperationService {
      * 获取对应域名
      */
     fun getRegistryDomain(): OciDomainInfo
+
+    /**
+     * 更新整个blob相关信息,blob相关的mediatype，version等信息需要从manifest中获取
+     */
+    fun updateOciInfo(
+        ociArtifactInfo: OciManifestArtifactInfo,
+        digest: OciDigest,
+        artifactFile: ArtifactFile,
+        fullPath: String,
+        storageCredentials: StorageCredentials?
+    )
+
+    /**
+     * 当使用追加上传时，文件已存储，只需存储节点信息
+     */
+    fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail
+
+    /**
+     * 保存manifest文件内容
+     * 特殊：对于manifest文件，存两个node，一个存tag 一个存digest
+     */
+    fun storeManifestArtifact(
+        ociArtifactInfo: OciManifestArtifactInfo,
+        artifactFile: ArtifactFile,
+        storageCredentials: StorageCredentials?
+    ): NodeDetail?
+
+    /**
+     * 保存非manifest文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
+     */
+    fun storeArtifact(
+        ociArtifactInfo: OciArtifactInfo,
+        artifactFile: ArtifactFile,
+        storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo? = null
+    ): NodeDetail?
 }

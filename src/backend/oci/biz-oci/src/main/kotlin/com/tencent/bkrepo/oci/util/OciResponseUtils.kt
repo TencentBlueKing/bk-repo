@@ -113,11 +113,16 @@ object OciResponseUtils {
         )
     }
 
-    fun buildDownloadResponse(digest: OciDigest, response: HttpServletResponse, size: Long? = null) {
+    fun buildDownloadResponse(
+        digest: OciDigest,
+        response: HttpServletResponse,
+        size: Long? = null,
+        contentType: String = MediaTypes.APPLICATION_OCTET_STREAM
+    ) {
         downloadResponse(
             response,
             digest.toString(),
-            MediaTypes.APPLICATION_OCTET_STREAM,
+            contentType,
             size
         )
     }
