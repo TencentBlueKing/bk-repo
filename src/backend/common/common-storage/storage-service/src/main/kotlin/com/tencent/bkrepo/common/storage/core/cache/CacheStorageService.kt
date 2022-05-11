@@ -124,7 +124,7 @@ class CacheStorageService(
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val rootPath = Paths.get(credentials.upload.stagingPath)
+        val rootPath = Paths.get(credentials.cache.path, STAGING)
         val visitor = FileSynchronizeVisitor(rootPath, fileLocator, fileStorage, credentials)
         getStagingClient(credentials).walk(visitor)
         return visitor.result
@@ -159,7 +159,8 @@ class CacheStorageService(
     }
 
     private fun getStagingClient(credentials: StorageCredentials): FileSystemClient {
-        return FileSystemClient(credentials.upload.stagingPath)
+        val stagingPath = Paths.get(credentials.cache.path, STAGING)
+        return FileSystemClient(stagingPath)
     }
 
     private fun stagingFile(credentials: StorageCredentials, path: String, filename: String, file: File) {
@@ -172,5 +173,6 @@ class CacheStorageService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(CacheStorageService::class.java)
+        private const val STAGING = "staging"
     }
 }

@@ -40,10 +40,5 @@ data class UploadProperties(
     /**
      * 文件上传本地目录，一定要为本地文件系统路径。
      * */
-    var localPath: String = System.getProperty("java.io.tmpdir"),
-
-    /**
-     * 文件暂存目录，完整文件临时存放地址
-     * */
-    var stagingPath: String = System.getProperty("java.io.tmpdir")
+    var localPath: String = System.getProperty("java.io.tmpdir")
 )
