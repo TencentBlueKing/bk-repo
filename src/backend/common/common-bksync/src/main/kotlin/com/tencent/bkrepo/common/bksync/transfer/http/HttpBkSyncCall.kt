@@ -175,7 +175,6 @@ class HttpBkSyncCall(
      * 上传具体实现
      * 1. 请求sign
      * 2. 计算diff并且patch
-     * 3. 上传新文件的sign数据
      * */
     private fun doUpload(context: UploadContext) {
         val request = context.request
