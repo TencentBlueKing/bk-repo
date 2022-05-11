@@ -205,13 +205,13 @@ class TemporaryAccessService(
     /**
      * 增量签名
      * */
-    fun sign(artifactInfo: GenericArtifactInfo) {
+    fun sign(artifactInfo: GenericArtifactInfo, md5: String?) {
         with(artifactInfo) {
             val repo = repositoryClient.getRepoDetail(projectId, repoName).data
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
-            deltaSyncService.downloadSignFile()
+            deltaSyncService.downloadSignFile(md5)
         }
     }
 
