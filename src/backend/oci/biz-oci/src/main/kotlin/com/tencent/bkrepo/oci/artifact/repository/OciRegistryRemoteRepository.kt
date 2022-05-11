@@ -129,34 +129,73 @@ class OciRegistryRemoteRepository(
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
         val node = cacheArtifact(context, artifactFile)
-        val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
         val size = artifactFile.getSize()
-        val mediaType = node?.metadata?.get(MEDIA_TYPE) ?: MediaTypes.APPLICATION_OCTET_STREAM
-        logger.info(
-            "The mediaType of remote Artifact ${context.artifactInfo.getArtifactFullPath()} " +
-                "is $mediaType in repo: ${context.artifactInfo.getRepoIdentify()}"
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        val artifactResource = ArtifactResource(
+            inputStream = artifactStream,
+            artifactName = context.artifactInfo.getResponseName(),
+            node = node,
+            channel = ArtifactChannel.LOCAL
         )
 
+        return buildResponse(
+            cacheNode = node,
+            context = context,
+            artifactResource = artifactResource,
+            sha256 = artifactFile.getFileSha256(),
+            size = size
+        )
+    }
+
+    /**
+     * 加载要返回的资源
+     */
+    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+        return storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
+            if (logger.isDebugEnabled) {
+                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
+            }
+            val artifactResource = ArtifactResource(
+                inputStream = this,
+                artifactName = context.artifactInfo.getResponseName(),
+                node = cacheNode,
+                channel = ArtifactChannel.PROXY
+            )
+            buildResponse(
+                cacheNode = cacheNode,
+                context = context,
+                artifactResource = artifactResource
+            )
+        }
+    }
+
+    private fun buildResponse(
+        cacheNode: NodeDetail?,
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource,
+        sha256: String? = null,
+        size: Long? = null
+    ): ArtifactResource {
+        val digest = if (cacheNode != null) {
+            OciDigest.fromSha256(cacheNode.sha256!!)
+        } else {
+            OciDigest.fromSha256(sha256!!)
+        }
+        val length = cacheNode?.size ?: size
+        val mediaType = cacheNode?.metadata?.get(MEDIA_TYPE) ?: MediaTypes.APPLICATION_OCTET_STREAM
         val contentType = if (context.artifactInfo is OciManifestArtifactInfo) {
-            node?.metadata?.get(MEDIA_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            cacheNode?.metadata?.get(MEDIA_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
         } else {
             MediaTypes.APPLICATION_OCTET_STREAM
         }
         OciResponseUtils.buildDownloadResponse(
             digest = digest,
             response = context.response,
-            size = size,
+            size = length,
             contentType = contentType.toString()
         )
-        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-        val resource = ArtifactResource(
-            inputStream = artifactStream,
-            artifactName = context.artifactInfo.getResponseName(),
-            node = node,
-            channel = ArtifactChannel.LOCAL
-        )
-        resource.contentType = mediaType.toString()
-        return resource
+        artifactResource.contentType = mediaType.toString()
+        return artifactResource
     }
 
     fun cacheArtifact(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
