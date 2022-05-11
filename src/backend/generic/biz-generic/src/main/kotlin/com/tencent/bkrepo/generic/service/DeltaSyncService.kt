@@ -102,10 +102,7 @@ class DeltaSyncService(
     }
 
     fun uploadSignFile(file: ArtifactFile, artifactInfo: GenericArtifactInfo, md5: String) {
-        with(artifactInfo) {
-            signFileDao.findByDetail(projectId, repoName, md5, blockSize)
-                ?: saveSignFile(artifactInfo, file, md5)
-        }
+        saveSignFile(artifactInfo, file, md5)
     }
 
     /**
