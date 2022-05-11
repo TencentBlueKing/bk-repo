@@ -371,7 +371,7 @@ export default {
       this.showNodeRestoreDialog = true
     },
     onRestoreSuccess(node) {
-      node.deleted = undefined
+      this.queryNodes(this.nodeQuery)
     },
     showNodeDelete(index, node) {
       this.nodeToDelete = node
@@ -379,12 +379,7 @@ export default {
       this.indexOfNodeToDelete = index
     },
     onDeleteSuccess() {
-      const projectId = this.nodeToDelete.projectId
-      const repoName = this.nodeToDelete.repoName
-      const fullPath = this.nodeToDelete.fullPath
-      searchNodes(projectId, repoName, fullPath, 1, 1).then(res => {
-        this.nodes.splice(this.indexOfNodeToDelete, 1, res.data.records[0])
-      })
+      this.queryNodes(this.nodeQuery)
     }
   }
 }
