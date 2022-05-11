@@ -116,13 +116,20 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         val cacheNode = findCacheNodeDetail(context)
         if (cacheNode == null || cacheNode.folder) return null
         return if (!isExpired(cacheNode, configuration.cache.expiration)) {
-            storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
-                if (logger.isDebugEnabled) {
-                    logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
-                }
-                ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
-            }
+            loadArtifactResource(cacheNode, context)
         } else null
+    }
+
+    /**
+     * 加载要返回的资源
+     */
+    open fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+        return storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
+            if (logger.isDebugEnabled) {
+                logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
+            }
+            ArtifactResource(this, context.artifactInfo.getResponseName(), cacheNode, ArtifactChannel.PROXY)
+        }
     }
 
     /**
