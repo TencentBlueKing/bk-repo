@@ -44,6 +44,7 @@ import com.tencent.bkrepo.oci.constant.DESCRIPTION
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
+import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciRepoNotFoundException
@@ -468,13 +469,17 @@ class OciOperationServiceImpl(
         )
         val manifest = OciUtils.streamToManifest(artifactFile.getInputStream())
         // 更新manifest文件的metadata
-        val mediaType = manifest.mediaType ?: HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE).orEmpty()
+        val mediaType = if (manifest.mediaType.isNullOrEmpty()) {
+            HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+        } else {
+            manifest.mediaType
+        }
         updateNodeMetaData(
             digest = digest.toString(),
             schemaVersion = manifest.schemaVersion,
             ociArtifactInfo = ociArtifactInfo,
             fullPath = fullPath,
-            mediaType = mediaType
+            mediaType = mediaType!!
         )
 
         // 特殊：对于manifest文件，存两个node，一个存tag 一个存digest
