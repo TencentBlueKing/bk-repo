@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
-import java.nio.file.Files
+import java.io.File
 import java.nio.file.Paths
 
 /**
@@ -61,16 +61,15 @@ class CacheStorageService(
                 fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
             }
             else -> {
-                val file = artifactFile.flushToFile()
-                val stagingFilePath = getStagingClient(credentials).copy(path, filename, file).toPath()
-                val cachedFile = getCacheClient(credentials).move(path, filename, file)
+                val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
                 threadPoolTaskExecutor.execute {
                     try {
-                        fileStorage.store(path, filename, cachedFile, credentials)
-                        Files.deleteIfExists(stagingFilePath)
+                        fileStorage.store(path, filename, cacheFile, credentials)
                     } catch (ignored: Exception) {
                         // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
                         logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
+                        // 失败时把文件放入暂存区，后台任务会进行补偿。
+                        stagingFile(credentials, path, filename, cacheFile)
                     }
                 }
             }
@@ -161,6 +160,14 @@ class CacheStorageService(
 
     private fun getStagingClient(credentials: StorageCredentials): FileSystemClient {
         return FileSystemClient(credentials.upload.stagingPath)
+    }
+
+    private fun stagingFile(credentials: StorageCredentials, path: String, filename: String, file: File) {
+        try {
+            getStagingClient(credentials).createLink(path, filename, file)
+        } catch (e: Exception) {
+            logger.error("Create staging file link failed.", e)
+        }
     }
 
     companion object {
