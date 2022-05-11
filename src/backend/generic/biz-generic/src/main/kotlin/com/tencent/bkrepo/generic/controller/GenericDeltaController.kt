@@ -28,9 +28,10 @@ class GenericDeltaController(private val deltaSyncService: DeltaSyncService) {
     @GetMapping(DELTA_MAPPING_URI)
     @Permission(ResourceType.NODE, PermissionAction.READ)
     fun downloadSignFile(
-        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam md5: String? = null
     ) {
-        deltaSyncService.downloadSignFile()
+        deltaSyncService.downloadSignFile(md5)
     }
 
     @PutMapping(DELTA_MAPPING_URI)

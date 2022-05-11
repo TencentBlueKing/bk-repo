@@ -222,8 +222,11 @@ class HttpBkSyncCall(
      * */
     private fun existNewFileSign(request: UploadRequest): Boolean {
         with(request) {
+            val getUrl = HttpUrl.parse(newFileSignUrl)!!.newBuilder().addQueryParameter(
+                QUERY_PARAM_MD5, headers[HEADER_MD5]
+            ).build()
             val req = Request.Builder()
-                .url(newFileSignUrl)
+                .url(getUrl)
                 .head()
                 .headers(headers)
                 .build()
