@@ -110,10 +110,11 @@ class TemporaryAccessController(
     @GetMapping("/sign/$DELTA_MAPPING_URI")
     fun downloadSignFile(
         artifactInfo: GenericArtifactInfo,
-        @RequestParam token: String
+        @RequestParam token: String,
+        @RequestParam md5: String? = null
     ) {
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
-        temporaryAccessService.sign(artifactInfo)
+        temporaryAccessService.sign(artifactInfo, md5)
         temporaryAccessService.decrementPermits(tokenInfo)
     }
 
