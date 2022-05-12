@@ -30,8 +30,8 @@
  */
 
 plugins {
-    id("com.tencent.devops.boot") version "0.0.2"
-    id("com.tencent.devops.publish") version "0.0.2" apply false
+    id("com.tencent.devops.boot") version "0.0.6-SNAPSHOT"
+    id("com.tencent.devops.publish") version "0.0.6-SNAPSHOT" apply false
 }
 
 allprojects {
@@ -67,8 +67,8 @@ allprojects {
 
     tasks.withType<JacocoReport> {
         reports {
-            xml.isEnabled = true
-            html.isEnabled = true
+            xml.required.set(true)
+            html.required.set(true)
         }
         dependsOn(tasks.getByName("test"))
     }
