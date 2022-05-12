@@ -83,13 +83,9 @@ class DeltaSyncService(
     /**
      * 签名文件
      * */
-    fun downloadSignFile() {
+    fun downloadSignFile(queryMd5: String? = null) {
         with(ArtifactContext()) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            if (node == null || node.folder) {
-                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-            }
-            val md5 = node.md5!!
+            val md5 = queryMd5 ?: getMd5FromNode(this)
             val signNode = signFileDao.findByDetail(projectId, repoName, md5, blockSize)
                 ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, md5)
             if (request.method == HttpMethod.HEAD.name) {
@@ -102,16 +98,7 @@ class DeltaSyncService(
     }
 
     fun uploadSignFile(file: ArtifactFile, artifactInfo: GenericArtifactInfo, md5: String) {
-        with(artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
-            if (node == null || node.folder) {
-                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-            }
-            if (md5 != node.md5) {
-                throw ErrorCodeException(GenericMessageCode.NODE_DATA_HAS_CHANGED)
-            }
-            signFileDao.findByDetail(projectId, repoName, md5, blockSize) ?: saveSignFile(node, file)
-        }
+        saveSignFile(artifactInfo, file, md5)
     }
 
     /**
@@ -168,10 +155,24 @@ class DeltaSyncService(
     }
 
     /**
+     * 根据上下文中的节点信息获取节点的md5
+     * */
+    private fun getMd5FromNode(context: ArtifactContext): String {
+        with(context) {
+            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            if (node == null || node.folder) {
+                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+            }
+            return node.md5!!
+        }
+    }
+
+    /**
      * 执行patch
      * @param patchContext patch上下文
      * */
     private fun doPatch(patchContext: PatchContext) {
+
         with(patchContext) {
             try {
                 verifyCheckSum(uploadMd5, uploadSha256, file)
@@ -332,16 +333,16 @@ class DeltaSyncService(
 
     /**
      * 保存sign文件到指定仓库
+     * @param artifactInfo 构件信息
      * @param md5 校验和md5
      * @param file 节点sign文件
      * */
-    private fun saveSignFile(node: NodeDetail, file: ArtifactFile) {
-        with(node) {
-            val md5 = node.md5!!
+    private fun saveSignFile(artifactInfo: GenericArtifactInfo, file: ArtifactFile, md5: String) {
+        with(artifactInfo) {
             val signFileFullPath = "$projectId/$repoName/$blockSize/$md5$SUFFIX_SIGN"
-            val artifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
+            val signFileArtifactInfo = GenericArtifactInfo(signFileProjectId, signFileRepoName, signFileFullPath)
             val nodeCreateRequest =
-                buildSignFileNodeCreateRequest(signRepo, artifactInfo, SecurityUtils.getUserId(), file)
+                buildSignFileNodeCreateRequest(signRepo, signFileArtifactInfo, SecurityUtils.getUserId(), file)
             try {
                 storageManager.storeArtifactFile(nodeCreateRequest, file, signRepo.storageCredentials)
                 val signFile = TSignFile(
