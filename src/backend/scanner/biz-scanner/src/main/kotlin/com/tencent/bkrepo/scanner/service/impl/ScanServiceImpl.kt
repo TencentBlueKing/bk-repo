@@ -71,6 +71,7 @@ import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
+import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
@@ -104,7 +105,8 @@ class ScanServiceImpl @Autowired constructor(
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
-    private val publisher: ApplicationEventPublisher
+    private val publisher: ApplicationEventPublisher,
+    private val scanQualityService: ScanQualityService
 ) : ScanService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -269,11 +271,27 @@ class ScanServiceImpl @Autowired constructor(
         // 子任务执行结束后唤醒项目另一个子任务
         scanTaskScheduler.notify(subTask.projectId)
 
-        planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, resultSubTaskStatus, overview, modifiedBy)
+        //质量规则检查结果
+        val planId = subTask.planId
+        logger.info("planId:$planId, overview:${overview.toJsonString()}")
+        val qualityPass = if (planId != null && overview.isNotEmpty()) {
+            scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
+        } else {
+            null
+        }
+        planArtifactLatestSubScanTaskDao.updateStatus(
+            latestSubScanTaskId = subTaskId,
+            subtaskScanStatus = resultSubTaskStatus,
+            overview = overview,
+            modifiedBy = modifiedBy,
+            qualityPass = qualityPass
+        )
         publisher.publishEvent(
             SubtaskStatusChangedEvent(
                 SubScanTaskStatus.valueOf(subTask.status),
-                TPlanArtifactLatestSubScanTask.convert(subTask, resultSubTaskStatus, overview)
+                TPlanArtifactLatestSubScanTask.convert(
+                    subTask, resultSubTaskStatus, overview, qualityPass = qualityPass
+                )
             )
         )
 

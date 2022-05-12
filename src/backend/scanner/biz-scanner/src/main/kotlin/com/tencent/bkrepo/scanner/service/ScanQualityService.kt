@@ -5,16 +5,19 @@ import com.tencent.bkrepo.scanner.pojo.response.ScanQualityCheckedDetail
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
 
 interface ScanQualityService {
-    fun getScanQuality(scanId: String): ScanQualityResponse
+    /**
+     * 获取方案质量规则
+     */
+    fun getScanQuality(planId: String): ScanQualityResponse
 
-    fun createScanQuality(scanId: String, request: ScanQualityCreateRequest): Boolean
+    fun createScanQuality(planId: String, request: ScanQualityCreateRequest): Boolean
 
-    fun updateScanQuality(scanId: String, request: ScanQualityCreateRequest): Boolean
+    fun updateScanQuality(planId: String, request: ScanQualityCreateRequest): Boolean
 
     /**
      * 检查是否通过质量规则
      */
-    fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean
+    fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean?
 
     fun checkScanQualityRedLineDetail(planId: String, scanResultOverview: Map<String, Number>): ScanQualityCheckedDetail
 

@@ -60,5 +60,7 @@ data class PlanArtifactInfo(
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
-    val createdDate: String
+    val createdDate: String,
+    @ApiModelProperty("是否通过质量红线")
+    val qualityRedLine: Boolean? = null
 )

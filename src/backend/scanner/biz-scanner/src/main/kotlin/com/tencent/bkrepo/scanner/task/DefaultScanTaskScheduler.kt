@@ -33,6 +33,7 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
@@ -57,6 +58,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.FINISHED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
@@ -89,7 +91,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scannerMetrics: ScannerMetrics,
     private val redisOperation: RedisOperation,
     private val publisher: ApplicationEventPublisher,
-    private val scannerProperties: ScannerProperties
+    private val scannerProperties: ScannerProperties,
+    private val scanQualityService: ScanQualityService
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -315,7 +318,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
                 size = size,
-                credentialsKey = credentialKey
+                credentialsKey = credentialKey,
+                scanQuality = scanTask.scanPlan?.scanQuality
             )
         }
     }
@@ -334,6 +338,14 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 .scanResult[scanTask.scanner]
                 ?.overview
                 ?.let { Converter.convert(it) }
+            logger.info("createFinishedSubTask scanTask:${scanTask.toJsonString()}, overview:${overview?.toJsonString()}")
+            //质量检查结果
+            val planId = scanTask.scanPlan?.id
+            val qualityPass = if (planId != null && overview != null) {
+                scanQualityService.checkScanQualityRedLine(planId, overview)
+            } else {
+                null
+            }
             return TPlanArtifactLatestSubScanTask(
                 createdBy = scanTask.createdBy,
                 createdDate = now,
@@ -360,7 +372,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 size = size,
                 credentialsKey = credentialKey,
 
-                scanResultOverview = overview
+                scanResultOverview = overview,
+                qualityRedLine = qualityPass,
+                scanQuality = scanTask.scanPlan?.scanQuality
             )
         }
     }

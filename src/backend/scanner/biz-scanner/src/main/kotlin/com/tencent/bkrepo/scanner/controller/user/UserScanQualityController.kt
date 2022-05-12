@@ -19,27 +19,27 @@ class UserScanQualityController(
         private val scanQualityService: ScanQualityService
 ) {
 
-    @GetMapping("/{scanId}")
+    @GetMapping("/{planId}")
     fun getScanQuality(
-        @PathVariable("scanId") scanId: String
+        @PathVariable("planId") planId: String
     ): Response<ScanQualityResponse> {
-        return ResponseBuilder.success(scanQualityService.getScanQuality(scanId))
+        return ResponseBuilder.success(scanQualityService.getScanQuality(planId))
     }
 
-    @PutMapping("/{scanId}")
+    @PutMapping("/{planId}")
     fun createScanQuality(
-        @PathVariable("scanId") scanId: String,
+        @PathVariable("planId") planId: String,
         @RequestBody request: ScanQualityCreateRequest
     ): Response<Boolean> {
-        return ResponseBuilder.success(scanQualityService.createScanQuality(scanId, request))
+        return ResponseBuilder.success(scanQualityService.createScanQuality(planId, request))
     }
 
-    @PostMapping("/{scanId}")
+    @PostMapping("/{planId}")
     fun updateScanQuality(
-            @PathVariable("scanId") scanId: String,
-            @RequestBody request: ScanQualityCreateRequest
+        @PathVariable("planId") planId: String,
+        @RequestBody request: ScanQualityCreateRequest
     ): Response<Boolean> {
-        return ResponseBuilder.success(scanQualityService.updateScanQuality(scanId, request))
+        return ResponseBuilder.success(scanQualityService.updateScanQuality(planId, request))
     }
 
 }

@@ -65,5 +65,12 @@ data class ArtifactScanResultOverview(
     @ApiModelProperty("漏洞总数")
     val total: Long = 0,
     @ApiModelProperty("完成时间")
-    val finishTime: String?
+    val finishTime: String?,
+
+    @ApiModelProperty("是否通过质量规则")
+    val qualityRedLine: Boolean? = null,
+    @ApiModelProperty("扫描时方案的质量规则")
+    val scanQuality: Map<String, Any>? = null,
+    @ApiModelProperty("扫描时长")
+    val duration: Long
 )

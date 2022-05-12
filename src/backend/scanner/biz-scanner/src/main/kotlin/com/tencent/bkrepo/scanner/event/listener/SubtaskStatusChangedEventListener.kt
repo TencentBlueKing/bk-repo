@@ -32,8 +32,6 @@ import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.scanner.QUALITY_RED_LINE
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
-import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
-import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -42,8 +40,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class SubtaskStatusChangedEventListener(
-    private val metadataClient: MetadataClient,
-    private val scanQualityService: ScanQualityService
+    private val metadataClient: MetadataClient
 ) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
@@ -55,26 +52,10 @@ class SubtaskStatusChangedEventListener(
             }
 
             logger.info("SubtaskStatusChangedEvent:${event.toJsonString()}")
-            //获取方案质量规则
-            val qualityRules = scanQualityService.getScanQuality(planId)
-            //判断方案是否需要质量检查
-            val qualityCheck = qualityCheck(qualityRules)
-            //方案有设置质量检查 且 扫描结束有扫描结果，检查质量规则是否通过
-            val qualityPass = if (qualityCheck && scanResultOverview != null) {
-                scanQualityService.checkScanQualityRedLine(planId, scanResultOverview)
-            } else {
-                null
-            }
-            //方案没设置质量检查，只保存扫描状态
-            val metadata = if (qualityPass == null) {
-                mapOf(METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name)
-            } else {
-                mapOf(
-                    METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name,
-                    //方案设置质量检查，保存质量红线规则(通过true / 不通过false)
-                    QUALITY_RED_LINE to qualityPass
-                )
-            }
+            val metadata = mutableMapOf<String, Any>(
+                METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name
+            )
+            qualityRedLine?.let { metadata[QUALITY_RED_LINE] = it }
             val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -86,10 +67,6 @@ class SubtaskStatusChangedEventListener(
             metadataClient.saveMetadata(request)
             logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] scanStatus[$status] success")
         }
-    }
-
-    fun qualityCheck(qualityRules: ScanQualityResponse): Boolean = with(qualityRules) {
-        return critical != null || high != null || medium != null || low != null
     }
 
     companion object {

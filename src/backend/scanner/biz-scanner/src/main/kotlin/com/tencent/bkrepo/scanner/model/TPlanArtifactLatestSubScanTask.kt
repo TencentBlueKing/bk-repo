@@ -87,7 +87,15 @@ class TPlanArtifactLatestSubScanTask(
     size: Long,
     credentialsKey: String?,
 
-    scanResultOverview: Map<String, Number>?
+    scanResultOverview: Map<String, Number>?,
+    /**
+     * 是否通过质量规则
+     */
+    qualityRedLine: Boolean? = null,
+    /**
+     * 扫描时方案的质量规则
+     */
+    scanQuality: Map<String, Any>? = null
 ) : SubScanTaskDefinition(
     id = id,
     createdBy = createdBy,
@@ -111,14 +119,17 @@ class TPlanArtifactLatestSubScanTask(
     sha256 = sha256,
     size = size,
     credentialsKey = credentialsKey,
-    scanResultOverview = scanResultOverview
+    scanResultOverview = scanResultOverview,
+    qualityRedLine = qualityRedLine,
+    scanQuality = scanQuality
 ) {
     companion object {
         fun convert(
             task: TSubScanTask,
             resultStatus: String,
             overview: Map<String, Any?>? = null,
-            modifiedBy: String? = null
+            modifiedBy: String? = null,
+            qualityPass: Boolean? = null
         ) = with(task) {
             val now = LocalDateTime.now()
             val numberOverview = overview?.let { Converter.convert(it) }
@@ -150,7 +161,9 @@ class TPlanArtifactLatestSubScanTask(
                 sha256 = sha256,
                 size = size,
                 credentialsKey = credentialsKey,
-                scanResultOverview = numberOverview
+                scanResultOverview = numberOverview,
+                qualityRedLine = qualityPass,
+                scanQuality = scanQuality
             )
         }
     }

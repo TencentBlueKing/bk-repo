@@ -2,6 +2,7 @@ package com.tencent.bkrepo.scanner.service.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.scanner.CRITICAL
 import com.tencent.bkrepo.scanner.CVE_CRITICAL_COUNT
 import com.tencent.bkrepo.scanner.CVE_HIGH_COUNT
@@ -17,41 +18,50 @@ import com.tencent.bkrepo.scanner.pojo.request.ScanQualityCreateRequest
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityCheckedDetail
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
 import com.tencent.bkrepo.scanner.service.ScanQualityService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
 class ScanQualityServiceImpl(
     private val scanPlanDao: ScanPlanDao
 ) : ScanQualityService {
-    override fun getScanQuality(scanId: String): ScanQualityResponse {
-        val scanPlan = scanPlanDao.get(scanId)
+    override fun getScanQuality(planId: String): ScanQualityResponse {
+        val scanPlan = scanPlanDao.get(planId)
         return scanPlan.scanQuality.convertToScanQualityResponse()
     }
 
-    override fun createScanQuality(scanId: String, request: ScanQualityCreateRequest): Boolean {
-        scanPlanDao.get(scanId)
+    override fun createScanQuality(planId: String, request: ScanQualityCreateRequest): Boolean {
+        scanPlanDao.get(planId)
         val qualityMap = request.convertToMap().apply {
             if (this.isEmpty()) {
                 return true
             }
         }
-        scanPlanDao.updateScanPlanQuality(scanId, qualityMap)
+        scanPlanDao.updateScanPlanQuality(planId, qualityMap)
         return true
     }
 
-    override fun updateScanQuality(scanId: String, request: ScanQualityCreateRequest): Boolean {
-        scanPlanDao.get(scanId)
+    override fun updateScanQuality(planId: String, request: ScanQualityCreateRequest): Boolean {
+        scanPlanDao.get(planId)
         val qualityMap = request.convertToMap().apply {
             if (this.isEmpty()) {
                 return true
             }
         }
-        scanPlanDao.updateScanPlanQuality(scanId, qualityMap)
+        scanPlanDao.updateScanPlanQuality(planId, qualityMap)
         return true
     }
 
-    override fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean {
+    override fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean? {
+        //获取方案质量规则
         val scanQuality = getScanQuality(planId)
+        //判断方案是否需要质量检查
+        val qualityCheck = qualityCheck(scanQuality)
+        logger.info("planId:$planId, scanResultOverview:${scanResultOverview.toJsonString()}" +
+            ", scanQuality:${scanQuality.toJsonString()}, qualityCheck:$qualityCheck")
+        //方案没有设置质量检查
+        if (!qualityCheck) return null
+        //方案有设置质量检查，检查质量规则是否通过
         scanQualityRedLineList.forEach { redLine ->
             val scanIndex = scanResultOverview[redLine]
             val qualityIndex = scanQuality.getScanQualityRedLineByLevel(redLine)
@@ -61,6 +71,10 @@ class ScanQualityServiceImpl(
             }
         }
         return true
+    }
+
+    fun qualityCheck(qualityRules: ScanQualityResponse): Boolean = with(qualityRules) {
+        return critical != null || high != null || medium != null || low != null
     }
 
     override fun checkScanQualityRedLineDetail(
@@ -101,6 +115,7 @@ class ScanQualityServiceImpl(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(javaClass)
         val scanQualityRedLineList = listOf(CVE_CRITICAL_COUNT, CVE_HIGH_COUNT, CVE_MEDIUM_COUNT, CVE_LOW_COUNT)
         fun ScanQualityCreateRequest.convertToMap(): Map<String, Any?> {
             val map = mutableMapOf<String, Any?>()

@@ -95,7 +95,11 @@ class TSubScanTask(
     scannerType: String,
     sha256: String,
     size: Long,
-    credentialsKey: String?
+    credentialsKey: String?,
+    /**
+     * 扫描时方案的质量规则
+     */
+    scanQuality: Map<String, Any>? = null
 ) : SubScanTaskDefinition(
     id = id,
     createdDate = createdDate,
@@ -120,5 +124,6 @@ class TSubScanTask(
     sha256 = sha256,
     size = size,
     credentialsKey = credentialsKey,
-    scanResultOverview = null
+    scanResultOverview = null,
+    scanQuality = scanQuality
 )
