@@ -41,7 +41,9 @@ import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_MESSAGE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.model.Descriptor
+import com.tencent.bkrepo.oci.model.ManifestSchema1
 import com.tencent.bkrepo.oci.model.ManifestSchema2
+import com.tencent.bkrepo.oci.model.SchemaVersion
 import com.tencent.bkrepo.oci.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.oci.util.DecompressUtil.getArchivesContent
 import java.io.InputStream
@@ -51,7 +53,27 @@ import java.io.InputStream
  */
 object OciUtils {
 
-    fun streamToManifest(inputStream: InputStream): ManifestSchema2 {
+    fun checkVersion(inputStream: InputStream): SchemaVersion {
+        try {
+            return JsonUtils.objectMapper.readValue(
+                inputStream, SchemaVersion::class.java
+            )
+        } catch (e: Exception) {
+            throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)
+        }
+    }
+
+    fun streamToManifestV1(inputStream: InputStream): ManifestSchema1 {
+        try {
+            return JsonUtils.objectMapper.readValue(
+                inputStream, ManifestSchema1::class.java
+            )
+        } catch (e: Exception) {
+            throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)
+        }
+    }
+
+    fun streamToManifestV2(inputStream: InputStream): ManifestSchema2 {
         try {
             return JsonUtils.objectMapper.readValue(
                 inputStream, ManifestSchema2::class.java
@@ -74,6 +96,23 @@ object OciUtils {
         val list = mutableListOf<Descriptor>()
         list.add(manifest.config)
         list.addAll(manifest.layers)
+        return list
+    }
+
+    fun manifestIteratorDegist(manifest: ManifestSchema2): List<String> {
+        val list = mutableListOf<String>()
+        list.add(manifest.config.digest)
+        manifest.layers.forEach {
+            list.add(it.digest)
+        }
+        return list
+    }
+
+    fun manifestIteratorDegist(manifest: ManifestSchema1): List<String> {
+        val list = mutableListOf<String>()
+        manifest.fsLayers.forEach {
+            list.add(it.blobSum)
+        }
         return list
     }
 

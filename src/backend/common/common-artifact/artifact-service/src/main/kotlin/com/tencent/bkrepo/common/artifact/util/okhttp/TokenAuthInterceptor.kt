@@ -29,15 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.model
+package com.tencent.bkrepo.common.artifact.util.okhttp
+
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import okhttp3.Interceptor
+import okhttp3.Response
 
 /**
- * manifest描述文件
+ * OKHTTP Bearer token认证拦截器
+ * 向请求头添加header: "Authorization: Bearer XXXX"
  */
-class ManifestSchema2(
-    override var schemaVersion: Int,
-    var mediaType: String? = null,
-    var config: ConfigDescriptor,
-    var layers: List<LayerDescriptor>,
-    var annotations: Map<String, String> = emptyMap()
-) : SchemaVersion(schemaVersion)
+class TokenAuthInterceptor(token: String) : Interceptor {
+
+    private val credentials = token
+
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val authenticatedRequest = request.newBuilder()
+            .header(HttpHeaders.AUTHORIZATION, credentials).build()
+        return chain.proceed(authenticatedRequest)
+    }
+}

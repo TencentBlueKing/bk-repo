@@ -31,10 +31,13 @@
 
 package com.tencent.bkrepo.oci.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.WWW_AUTHENTICATE
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -45,14 +48,21 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.util.okhttp.TokenAuthInterceptor
+import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
+import com.tencent.bkrepo.oci.constant.BEARER_REALM
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.SCOPE
+import com.tencent.bkrepo.oci.constant.SERVICE
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
+import com.tencent.bkrepo.oci.pojo.auth.BearerToken
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
@@ -60,6 +70,8 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import java.net.URL
+import java.util.concurrent.TimeUnit
+import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -75,6 +87,34 @@ class OciRegistryRemoteRepository(
             val message = "Forbidden to upload chart into a remote repository [$projectId/$repoName]"
             logger.warn(message)
             throw OciForbiddenRequestException(message)
+        }
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return getCacheArtifactResource(context) ?: run {
+            val remoteConfiguration = context.getRemoteConfiguration()
+            val httpClient = createHttpClient(remoteConfiguration)
+            val downloadUrl = createRemoteDownloadUrl(context)
+            val request = Request.Builder().url(downloadUrl).build()
+            val response = httpClient.newCall(request).execute()
+            val token = checkAuthenticate(response, remoteConfiguration)
+            if (!token.isNullOrBlank()) {
+                val builder = HttpClientBuilderFactory.create()
+                val httpClientWithAuth = builder
+                    .readTimeout(remoteConfiguration.network.readTimeout, TimeUnit.MILLISECONDS)
+                    .connectTimeout(remoteConfiguration.network.connectTimeout, TimeUnit.MILLISECONDS)
+                    .addInterceptor(TokenAuthInterceptor(token))
+                    .build()
+                val requestWithAuth = Request.Builder().url(downloadUrl)
+                    .build()
+                val responseWithAuth = httpClientWithAuth.newCall(requestWithAuth).execute()
+                return if (checkResponse(responseWithAuth)) {
+                    onDownloadResponse(context, responseWithAuth)
+                } else null
+            }
+            return if (checkResponse(response)) {
+                onDownloadResponse(context, response)
+            } else null
         }
     }
 
@@ -102,6 +142,58 @@ class OciRegistryRemoteRepository(
         val baseUrl = URL(configuration.url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return UrlFormatter.format(v2Url.toString(), fullPath, params)
+    }
+
+    private fun checkAuthenticate(response: Response, remoteConfiguration: RemoteConfiguration): String? {
+        if (response.isSuccessful || response.code() != HttpStatus.UNAUTHORIZED.value) {
+            return null
+        }
+        val wwwAuthenticate = response.header(WWW_AUTHENTICATE)
+        if (wwwAuthenticate.isNullOrBlank() || !wwwAuthenticate.startsWith(BEARER_AUTH_PREFIX)) {
+            return null
+        }
+        val url = parseWWWAuthenticateHeader(wwwAuthenticate)
+        logger.info("The url for authenticating is $url")
+        url?.let {
+            val builder = HttpClientBuilderFactory.create()
+            val httpClientWithAuth = builder.readTimeout(remoteConfiguration.network.readTimeout, TimeUnit.MILLISECONDS)
+                .connectTimeout(remoteConfiguration.network.connectTimeout, TimeUnit.MILLISECONDS)
+                .build()
+            val request = Request.Builder().url(it).build()
+            val tokenResponse = httpClientWithAuth.newCall(request).execute()
+            return if (!tokenResponse.isSuccessful) {
+                null
+            } else {
+                val body = tokenResponse.body()!!
+                val artifactFile = createTempFile(body)
+                val size = artifactFile.getSize()
+                val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+                artifactFile.delete()
+                val bearerToken = JsonUtils.objectMapper.readValue(artifactStream, BearerToken::class.java)
+                "Bearer ${bearerToken.token}"
+            }
+        }
+        return null
+    }
+
+    /**
+     * 解析返回头中的WWW_AUTHENTICATE字段， 只针对为Bearer realm
+     */
+    private fun parseWWWAuthenticateHeader(wwwAuthenticate: String): String? {
+        val map: MutableMap<String, String> = mutableMapOf()
+        return try {
+            val params = wwwAuthenticate.split(",")
+            params.forEach {
+                val param = it.split("=")
+                val name = param.first()
+                val value = param.last().removeSurrounding("\"")
+                map[name] = value
+            }
+            "${map[BEARER_REALM]}?$SERVICE=${map[SERVICE]}&$SCOPE=${map[SCOPE]}"
+        } catch (e: Exception) {
+            logger.warn("Parsing wwwAuthenticate header error: ${e.message}")
+            null
+        }
     }
 
     private fun createParamsForTagList(context: ArtifactContext): Pair<String, String> {
@@ -201,26 +293,30 @@ class OciRegistryRemoteRepository(
     fun cacheArtifact(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
         val configuration = context.getRemoteConfiguration()
         return if (configuration.cache.enabled) {
-            val node = if (context.artifactInfo is OciBlobArtifactInfo) {
-                ociOperationService.storeArtifact(
-                    ociArtifactInfo = context.artifactInfo as OciBlobArtifactInfo,
-                    artifactFile = artifactFile,
-                    storageCredentials = context.storageCredentials
-                )
-            } else if (context.artifactInfo is OciManifestArtifactInfo) {
-                ociOperationService.storeManifestArtifact(
-                    ociArtifactInfo = context.artifactInfo as OciManifestArtifactInfo,
-                    artifactFile = artifactFile,
-                    storageCredentials = context.storageCredentials
-                )
-                updateManifestAndBlob(context, artifactFile)
-                nodeClient.getNodeDetail(
-                    projectId = context.artifactInfo.projectId,
-                    repoName = context.artifactInfo.repoName,
-                    fullPath = context.artifactInfo.getArtifactFullPath()
-                ).data
-            } else {
-                null
+            val node = when (context.artifactInfo) {
+                is OciBlobArtifactInfo -> {
+                    ociOperationService.storeArtifact(
+                        ociArtifactInfo = context.artifactInfo as OciBlobArtifactInfo,
+                        artifactFile = artifactFile,
+                        storageCredentials = context.storageCredentials
+                    )
+                }
+                is OciManifestArtifactInfo -> {
+                    ociOperationService.storeManifestArtifact(
+                        ociArtifactInfo = context.artifactInfo as OciManifestArtifactInfo,
+                        artifactFile = artifactFile,
+                        storageCredentials = context.storageCredentials
+                    )
+                    updateManifestAndBlob(context, artifactFile)
+                    nodeClient.getNodeDetail(
+                        projectId = context.artifactInfo.projectId,
+                        repoName = context.artifactInfo.repoName,
+                        fullPath = context.artifactInfo.getArtifactFullPath()
+                    ).data
+                }
+                else -> {
+                    null
+                }
             }
             node
         } else null

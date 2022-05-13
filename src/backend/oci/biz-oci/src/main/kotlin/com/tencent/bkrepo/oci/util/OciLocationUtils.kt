@@ -29,8 +29,6 @@ package com.tencent.bkrepo.oci.util
 
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import java.net.URI
-import java.net.URL
 import org.slf4j.LoggerFactory
 
 object OciLocationUtils {
@@ -104,23 +102,4 @@ object OciLocationUtils {
             return "/$projectId/$repoName/$packageName/blobs/uploads/$uuid"
         }
     }
-}
-
-fun main() {
-    val baseUrl = URL("http://registry.me:25907/test/test-oci")
-    val rawUrl = URL(baseUrl, "/v2" + baseUrl.getPath())
-
-    val oldUri = URI("http://registry.me:25907/test/test-oci")
-    var newQuery: String? = oldUri.query
-    if (newQuery == null) {
-        newQuery = "name=John"
-    } else {
-        newQuery += "&name=John"
-    }
-    val newH = URI(
-        oldUri.scheme, baseUrl.authority,
-        "/v2" + oldUri.path, newQuery, oldUri.fragment
-    )
-    println(rawUrl)
-    println(newH)
 }
