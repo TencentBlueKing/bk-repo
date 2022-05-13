@@ -431,7 +431,7 @@ class FixToolServiceImpl(
                     artifactInfo.repoName,
                     path,
                     metaMap,
-                    context.userId
+                    operator = context.userId
                 )
                 metadataClient.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
