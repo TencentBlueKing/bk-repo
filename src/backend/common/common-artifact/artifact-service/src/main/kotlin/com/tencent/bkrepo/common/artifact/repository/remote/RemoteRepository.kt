@@ -109,7 +109,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 尝试读取缓存的远程构件
      */
-    private fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
+    fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
         val configuration = context.getRemoteConfiguration()
         if (!configuration.cache.enabled) return null
 

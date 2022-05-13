@@ -41,11 +41,13 @@ import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.CHART_LAYER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
+import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
+import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciRepoNotFoundException
 import com.tencent.bkrepo.oci.model.Descriptor
@@ -144,7 +146,12 @@ class OciOperationServiceImpl(
                     "and version $version under repo $projectId/$repoName"
             )
             storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
-                return OciUtils.convertToMap(OciUtils.parseChartInputStream(it))
+                return try {
+                    OciUtils.convertToMap(OciUtils.parseChartInputStream(it))
+                } catch (e: Exception) {
+                    logger.warn("Convert chart.yaml error: ${e.message}")
+                    null
+                }
             }
         }
         return null
@@ -246,15 +253,21 @@ class OciOperationServiceImpl(
                 nodeDetail,
                 getRepositoryInfo(artifactInfo).storageCredentials
             ) ?: return
-            val manifest = OciUtils.streamToManifest(inputStream)
+            val schemaVersion = OciUtils.checkVersion(inputStream)
+            val list = if (schemaVersion.schemaVersion == 1) {
+                val manifest = OciUtils.streamToManifestV1(inputStream)
+                OciUtils.manifestIteratorDegist(manifest)
+            } else {
+                val manifest = OciUtils.streamToManifestV2(inputStream)
+                OciUtils.manifestIteratorDegist(manifest)
+            }
             // 删除manifest中对应的所有blob
-            val list = OciUtils.manifestIterator(manifest)
             list.forEach { des ->
                 deleteNode(
                     projectId = projectId,
                     repoName = repoName,
                     packageName = packageName,
-                    digestStr = des.digest,
+                    digestStr = des,
                     userId = userId
                 )
             }
@@ -287,8 +300,13 @@ class OciOperationServiceImpl(
                 nodeDetail,
                 getRepositoryInfo(artifactInfo).storageCredentials
             ) ?: return null
-            val manifest = OciUtils.streamToManifest(inputStream)
-            return (OciUtils.manifestIterator(manifest, CHART_LAYER_MEDIA_TYPE) ?: return null).digest
+            try {
+                val manifest = OciUtils.streamToManifestV2(inputStream)
+                return (OciUtils.manifestIterator(manifest, CHART_LAYER_MEDIA_TYPE) ?: return null).digest
+            } catch (e: OciBadRequestException) {
+                logger.warn("Manifest convert error: ${e.message}")
+            }
+            return null
         }
     }
 
@@ -467,16 +485,24 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-        val manifest = OciUtils.streamToManifest(artifactFile.getInputStream())
-        // 更新manifest文件的metadata
-        val mediaType = if (manifest.mediaType.isNullOrEmpty()) {
-            HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+
+        val version = OciUtils.checkVersion(artifactFile.getInputStream())
+        val (mediaType, manifest) = if (version.schemaVersion == 1) {
+            Pair(DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1, null)
         } else {
-            manifest.mediaType
+            val manifest = OciUtils.streamToManifestV2(artifactFile.getInputStream())
+            // 更新manifest文件的metadata
+            val mediaTypeV2 = if (manifest.mediaType.isNullOrEmpty()) {
+                HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            } else {
+                manifest.mediaType
+            }
+            Pair(mediaTypeV2, manifest)
         }
+
         updateNodeMetaData(
             digest = digest.toString(),
-            schemaVersion = manifest.schemaVersion,
+            schemaVersion = version.schemaVersion,
             ociArtifactInfo = ociArtifactInfo,
             fullPath = fullPath,
             mediaType = mediaType!!
@@ -490,7 +516,7 @@ class OciOperationServiceImpl(
             )
             updateNodeMetaData(
                 digest = digest.toString(),
-                schemaVersion = manifest.schemaVersion,
+                schemaVersion = version.schemaVersion,
                 ociArtifactInfo = ociArtifactInfo,
                 fullPath = tagPath,
                 mediaType = mediaType
@@ -498,13 +524,21 @@ class OciOperationServiceImpl(
         }
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
-            syncBlobInfo(
-                ociArtifactInfo = ociArtifactInfo,
-                manifest = manifest,
-                manifestDigest = digest,
-                storageCredentials = storageCredentials,
-                manifestPath = fullPath
-            )
+            if (version.schemaVersion == 1) {
+                syncBlobInfoV1(
+                    ociArtifactInfo = ociArtifactInfo,
+                    manifestDigest = digest,
+                    manifestPath = fullPath
+                )
+            } else {
+                syncBlobInfo(
+                    ociArtifactInfo = ociArtifactInfo,
+                    manifest = manifest!!,
+                    manifestDigest = digest,
+                    storageCredentials = storageCredentials,
+                    manifestPath = fullPath
+                )
+            }
         }
     }
 
@@ -535,6 +569,27 @@ class OciOperationServiceImpl(
             repoName = ociArtifactInfo.repoName,
             fullPath = fullPath,
             metadata = metadata
+        )
+    }
+
+    /**
+     * 同步fsLayers层的数据
+     */
+    private fun syncBlobInfoV1(
+        ociArtifactInfo: OciManifestArtifactInfo,
+        manifestDigest: OciDigest,
+        manifestPath: String
+    ) {
+        logger.info(
+            "Will start to sync fsLayers' blob info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
+                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
+        )
+        // 根据flag生成package信息以及packageversion信息
+        doPackageOperations(
+            manifestPath = manifestPath,
+            ociArtifactInfo = ociArtifactInfo,
+            manifestDigest = manifestDigest,
+            size = 0
         )
     }
 

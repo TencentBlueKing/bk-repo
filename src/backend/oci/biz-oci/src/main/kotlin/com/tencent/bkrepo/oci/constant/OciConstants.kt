@@ -44,6 +44,9 @@ const val BLOB_UPLOAD_SESSION_ID = "Blob-Upload-Session-ID"
 const val HTTP_FORWARDED_PROTO = "X-Forwarded-Proto"
 const val HTTP_PROTOCOL_HTTP = "http"
 const val HTTP_PROTOCOL_HTTPS = "https"
+const val BEARER_REALM = "Bearer realm"
+const val SERVICE = "service"
+const val SCOPE = "scope"
 const val PATCH = "PATCH"
 const val POST = "POST"
 const val NODE_FULL_PATH = "fullPath"
@@ -116,3 +119,5 @@ const val LAYER_TAR_GZIP_DISTRIBUTION_MEDIA_TYPE = "application/vnd.oci.image.la
 
 // "Layer", as a tar archive with distribution restrictions compressed with zstd
 const val LAYER_TAR_ZSTD_DISTRIBUTION_MEDIA_TYPE = "application/vnd.oci.image.layer.nondistributable.v1.tar+zstd"
+
+const val DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1 = "application/vnd.docker.distribution.manifest.v1+json"
