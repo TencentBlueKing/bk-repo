@@ -51,7 +51,7 @@ class DefaultPluginManager(
 
     private val pluginMap = mutableMapOf<String, PluginInfo>()
 
-    @Value("\${service.name}")
+    @Value("\${spring.application.name}")
     private var applicationName: String? = null
 
     @EventListener(ApplicationReadyEvent::class)

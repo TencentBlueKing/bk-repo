@@ -1,2 +1,2 @@
 server.port: 25907
-service.name: job
+spring.application.name: job

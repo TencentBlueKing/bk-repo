@@ -36,16 +36,16 @@
 
 ### 2.2 设置部署环境变量
 
-|   变量名   |  用途     |
-| ------------ | ---------------- |
-|WORK_DIR|bkrepo安装目录,以/data/bkee/为例|
-|BK_REPO_MONGODB_USER|mongodb 用户名|
-|BK_REPO_MONGODB_PASSWORD|mongodb密码|
-|BK_REPO_MONGODB_ADDR|mongodb地址|
-|BK_REPO_MONGODB_DB_NAME|mongodb数据库名|
-|BK_REPO_SERVICE_PREFIX|bkrepo服务前缀，默认为repo-|
-|BK_REPO_CONSUL_SERVER_HOST|bkrepo consul服务ip|
-|BK_REPO_CONSUL_SERVER_PORT|bkrepo consul服务port|
+|   变量名   | 用途                        |
+| ------------ |---------------------------|
+|WORK_DIR| bkrepo安装目录,以/data/bkee/为例 |
+|BK_REPO_MONGODB_USER| mongodb 用户名               |
+|BK_REPO_MONGODB_PASSWORD| mongodb密码                 |
+|BK_REPO_MONGODB_ADDR| mongodb地址                 |
+|BK_REPO_MONGODB_DB_NAME| mongodb数据库名               |
+|BK_REPO_SERVICE_PREFIX| bkrepo服务前缀，默认为bkrepo-     |
+|BK_REPO_CONSUL_SERVER_HOST| bkrepo consul服务ip         |
+|BK_REPO_CONSUL_SERVER_PORT| bkrepo consul服务port       |
 
 ### 2.2 mongodb数据库初始化
 
