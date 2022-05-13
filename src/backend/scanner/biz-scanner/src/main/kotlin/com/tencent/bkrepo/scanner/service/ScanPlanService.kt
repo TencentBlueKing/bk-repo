@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
@@ -104,12 +105,11 @@ interface ScanPlanService {
     /**
      * 获取扫描方案最新一次扫描详情
      *
-     * @param projectId 扫描方案所属项目id
-     * @param id 扫描方案id
+     * @param request 获取扫描方案关联的统计请求，包含扫描方案信息和筛选条件
      *
      * @return 扫描方案最新一次扫描详情
      */
-    fun scanPlanInfo(projectId: String, id: String): ScanPlanInfo?
+    fun scanPlanInfo(request: PlanCountRequest): ScanPlanInfo?
 
     /**
      * 分页获取使用指定扫描方案扫描过的制品

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.utils.Converter
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.springframework.data.domain.Sort
@@ -80,6 +81,24 @@ class PlanArtifactLatestSubScanTaskDao(
     }
 
     /**
+     * 获取指定扫描方案的制品最新扫描记录
+     *
+     * @param request 获取制品最新扫描记录请求
+     *
+     * @return 扫描方案最新的制品扫描结果
+     */
+    fun findBy(request: PlanCountRequest): List<TPlanArtifactLatestSubScanTask> {
+        with(request) {
+            val criteria = Criteria
+                .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
+                .and(SubScanTaskDefinition::planId.name).isEqualTo(id)
+            startTime?.let { criteria.and(SubScanTaskDefinition::createdDate.name).gte(it) }
+            endTime?.let { criteria.and(SubScanTaskDefinition::finishedDateTime.name).lte(it) }
+            return find(Query(criteria))
+        }
+    }
+
+    /**
      * 分页获取指定扫描方案的制品最新扫描记录
      *
      * @param request 获取制品最新扫描记录请求
@@ -102,6 +121,7 @@ class PlanArtifactLatestSubScanTaskDao(
             subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
             startTime?.let { criteria.and(SubScanTaskDefinition::createdDate.name).gte(it) }
             endTime?.let { criteria.and(SubScanTaskDefinition::finishedDateTime.name).lte(it) }
+            qualityRedLine?.let { criteria.and(SubScanTaskDefinition::qualityRedLine.name).isEqualTo(qualityRedLine) }
 
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val query = Query(criteria)

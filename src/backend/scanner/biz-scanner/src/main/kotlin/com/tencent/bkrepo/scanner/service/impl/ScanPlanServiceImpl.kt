@@ -49,6 +49,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
@@ -164,12 +165,19 @@ class ScanPlanServiceImpl(
         }
     }
 
-    override fun scanPlanInfo(projectId: String, id: String): ScanPlanInfo? {
-        val scanPlan = scanPlanDao.find(projectId, id)
-            ?: throw throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
-        val scanTask = scanPlan.latestScanTaskId?.let { scanTaskDao.findById(it) }
-        val artifactCount = planArtifactLatestSubScanTaskDao.planArtifactCount(scanPlan.id!!)
-        return ScanPlanConverter.convert(scanPlan, scanTask, artifactCount)
+    override fun scanPlanInfo(request: PlanCountRequest): ScanPlanInfo? {
+        with(request) {
+            val scanPlan = scanPlanDao.find(projectId, id)
+                ?: throw throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
+            return if (startTime != null || endTime != null) {
+                val subScanTasks = planArtifactLatestSubScanTaskDao.findBy(request)
+                ScanPlanConverter.convert(scanPlan, subScanTasks)
+            } else {
+                val scanTask = scanPlan.latestScanTaskId?.let { scanTaskDao.findById(it) }
+                val artifactCount = planArtifactLatestSubScanTaskDao.planArtifactCount(scanPlan.id!!)
+                ScanPlanConverter.convert(scanPlan, scanTask, artifactCount)
+            }
+        }
     }
 
     override fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo> {

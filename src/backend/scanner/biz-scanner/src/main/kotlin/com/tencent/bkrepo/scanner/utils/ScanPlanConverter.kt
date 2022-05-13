@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.Dep
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
+import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.pojo.LeakType
@@ -48,6 +49,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
@@ -141,6 +143,40 @@ object ScanPlanConverter {
         }
     }
 
+    fun convert(scanPlan: TScanPlan, subScanTasks: List<TPlanArtifactLatestSubScanTask>): ScanPlanInfo {
+        with(scanPlan) {
+            var critical = 0L
+            var high = 0L
+            var medium = 0L
+            var low = 0L
+            subScanTasks.forEach { subScanTask ->
+                critical += getCveCount(Level.CRITICAL.levelName, subScanTask)
+                high += getCveCount(Level.HIGH.levelName, subScanTask)
+                medium += getCveCount(Level.MEDIUM.levelName, subScanTask)
+                low += getCveCount(Level.LOW.levelName, subScanTask)
+            }
+
+            return ScanPlanInfo(
+                id = id!!,
+                name = name,
+                planType = type,
+                projectId = projectId,
+                status = "",
+                artifactCount = subScanTasks.size.toLong(),
+                critical = critical,
+                high = high,
+                medium = medium,
+                low = low,
+                total = critical + high + medium + low,
+                createdBy = createdBy,
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastScanDate = null
+            )
+        }
+    }
+
     fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?, artifactCount: Long): ScanPlanInfo {
         with(scanPlan) {
             val scannerType = latestScanTask?.scannerType
@@ -171,6 +207,12 @@ object ScanPlanConverter {
                 lastScanDate = latestScanTask?.startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME)
             )
         }
+    }
+
+    fun convert(request: PlanCountRequest): PlanCountRequest {
+        request.startDateTime = request.startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+        request.finishedDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+        return request
     }
 
     fun convert(request: PlanArtifactRequest): PlanArtifactRequest {

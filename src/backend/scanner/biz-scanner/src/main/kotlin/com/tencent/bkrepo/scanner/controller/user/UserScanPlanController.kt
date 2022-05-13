@@ -43,6 +43,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
@@ -155,18 +156,10 @@ class UserScanPlanController(
     }
 
     @ApiOperation("方案详情-统计数据")
-    @GetMapping("/count/{projectId}/{id}")
+    @GetMapping("/count")
     @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
-    fun planDetailCount(
-        @ApiParam(value = "projectId")
-        @PathVariable
-        projectId: String,
-
-        @ApiParam(value = "方案id")
-        @PathVariable
-        id: String
-    ): Response<ScanPlanInfo?> {
-        return ResponseBuilder.success(scanPlanService.scanPlanInfo(projectId, id))
+    fun planDetailCount(countRequest: PlanCountRequest): Response<ScanPlanInfo?> {
+        return ResponseBuilder.success(scanPlanService.scanPlanInfo(ScanPlanConverter.convert(countRequest)))
     }
 
     @ApiOperation("方案详情-制品信息")
