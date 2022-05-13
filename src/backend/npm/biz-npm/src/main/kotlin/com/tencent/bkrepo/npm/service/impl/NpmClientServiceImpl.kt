@@ -507,7 +507,7 @@ class NpmClientServiceImpl(
                         artifactInfo.repoName,
                         tgzFullPath,
                         buildProperties(entry.value),
-                        userId
+                        operator = userId
                     )
                 )
             }
