@@ -34,6 +34,7 @@ println("assembly mode: $assemblyMode")
 val k8s: Boolean = assemblyMode?.equals("k8s") ?: false
 dependencies {
     api(project(":common:common-api"))
+    api("com.tencent.devops:devops-boot-starter-service")
 
     api("io.springfox:springfox-swagger2")
     api("io.github.openfeign:feign-okhttp")
