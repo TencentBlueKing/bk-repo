@@ -32,9 +32,9 @@
 dependencies {
     api(project(":common:common-api"))
     api("com.tencent.devops:devops-boot-starter-service")
+    api("com.tencent.devops:devops-boot-starter-circuitbreaker")
 
     api("io.micrometer:micrometer-registry-influx")
-    api("org.springframework.cloud:spring-cloud-starter-netflix-hystrix")
 
     implementation("org.apache.skywalking:apm-toolkit-logback-1.x")
     implementation("org.apache.skywalking:apm-toolkit-trace")
@@ -42,4 +42,6 @@ dependencies {
     api("io.jsonwebtoken:jjwt-api")
     runtimeOnly("io.jsonwebtoken:jjwt-impl")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
+
+    api("com.google.guava:guava")
 }

@@ -31,14 +31,14 @@
 
 package com.tencent.bkrepo.common.service.exception
 
-import com.netflix.client.ClientException
-import com.netflix.hystrix.exception.HystrixRuntimeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -61,20 +61,17 @@ class ServiceExceptionHandler {
         return ResponseBuilder.fail(exception.errorCode, exception.errorMessage.orEmpty())
     }
 
-    @ExceptionHandler(HystrixRuntimeException::class)
+    @ExceptionHandler(NoFallbackAvailableException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: HystrixRuntimeException): Response<Void> {
-        var causeMessage = exception.cause?.message
+    fun handleException(exception: NoFallbackAvailableException): Response<Void> {
+        val causeMessage = exception.cause?.message
         var messageCode = CommonMessageCode.SERVICE_CALL_ERROR
-        if (exception.failureType == HystrixRuntimeException.FailureType.COMMAND_EXCEPTION) {
-            val throwable = exception.cause?.cause
-            if (throwable is ClientException) {
-                causeMessage = throwable.errorMessage
-            }
-        } else if (exception.failureType == HystrixRuntimeException.FailureType.SHORTCIRCUIT) {
+
+        if (exception.cause is CallNotPermittedException) {
             messageCode = CommonMessageCode.SERVICE_CIRCUIT_BREAKER
         }
-        logException(exception, "[${exception.failureType}]${exception.message} Cause: $causeMessage", true)
+
+        logException(exception, "${exception.message} Cause: $causeMessage", true)
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(messageCode, null)
         return ResponseBuilder.fail(messageCode.getCode(), errorMessage)
     }
