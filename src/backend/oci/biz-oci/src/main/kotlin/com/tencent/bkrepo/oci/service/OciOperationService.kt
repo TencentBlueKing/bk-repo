@@ -129,7 +129,8 @@ interface OciOperationService {
     fun storeManifestArtifact(
         ociArtifactInfo: OciManifestArtifactInfo,
         artifactFile: ArtifactFile,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        proxyUrl: String? = null
     ): NodeDetail?
 
     /**
@@ -139,6 +140,7 @@ interface OciOperationService {
         ociArtifactInfo: OciArtifactInfo,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        fileInfo: FileInfo? = null
+        fileInfo: FileInfo? = null,
+        proxyUrl: String? = null
     ): NodeDetail?
 }

@@ -53,6 +53,8 @@ const val NODE_FULL_PATH = "fullPath"
 const val LAST_TAG = "last"
 const val N = "n"
 
+const val PROXY_URL = "proxyUrl"
+
 const val MANIFEST = "manifest.json"
 const val MEDIA_TYPE = "mediaType"
 const val DIGEST = "oci_digest"

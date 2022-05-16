@@ -220,9 +220,9 @@ class OciRegistryRemoteRepository(
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
-        val node = cacheArtifact(context, artifactFile)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        val node = cacheArtifact(context, artifactFile)
         val artifactResource = ArtifactResource(
             inputStream = artifactStream,
             artifactName = context.artifactInfo.getResponseName(),
@@ -298,14 +298,16 @@ class OciRegistryRemoteRepository(
                     ociOperationService.storeArtifact(
                         ociArtifactInfo = context.artifactInfo as OciBlobArtifactInfo,
                         artifactFile = artifactFile,
-                        storageCredentials = context.storageCredentials
+                        storageCredentials = context.storageCredentials,
+                        proxyUrl = configuration.url
                     )
                 }
                 is OciManifestArtifactInfo -> {
                     ociOperationService.storeManifestArtifact(
                         ociArtifactInfo = context.artifactInfo as OciManifestArtifactInfo,
                         artifactFile = artifactFile,
-                        storageCredentials = context.storageCredentials
+                        storageCredentials = context.storageCredentials,
+                        proxyUrl = configuration.url
                     )
                     updateManifestAndBlob(context, artifactFile)
                     nodeClient.getNodeDetail(
