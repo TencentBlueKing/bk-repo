@@ -46,6 +46,7 @@ import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
@@ -397,13 +398,18 @@ class OciOperationServiceImpl(
      */
     private fun buildNodeCreateRequest(
         ociArtifactInfo: OciArtifactInfo,
-        artifactFile: ArtifactFile
+        artifactFile: ArtifactFile,
+        proxyUrl: String? = null
     ): NodeCreateRequest {
+        val metadata = proxyUrl?.let {
+            mapOf(Pair(PROXY_URL, proxyUrl))
+        }
         return ObjectBuildUtils.buildNodeCreateRequest(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             artifactFile = artifactFile,
-            fullPath = ociArtifactInfo.getArtifactFullPath()
+            fullPath = ociArtifactInfo.getArtifactFullPath(),
+            metadata = metadata
         )
     }
 
@@ -414,9 +420,10 @@ class OciOperationServiceImpl(
         ociArtifactInfo: OciArtifactInfo,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        fileInfo: FileInfo?
+        fileInfo: FileInfo?,
+        proxyUrl: String?
     ): NodeDetail? {
-        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile)
+        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, proxyUrl)
         return if (fileInfo != null) {
             val newNodeRequest = request.copy(
                 size = fileInfo.size,
@@ -437,9 +444,10 @@ class OciOperationServiceImpl(
     override fun storeManifestArtifact(
         ociArtifactInfo: OciManifestArtifactInfo,
         artifactFile: ArtifactFile,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
+        proxyUrl: String?
     ): NodeDetail? {
-        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile)
+        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, proxyUrl)
         val node = storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         if (!ociArtifactInfo.isValidDigest) {
             val newNodeRequest = request.copy(
