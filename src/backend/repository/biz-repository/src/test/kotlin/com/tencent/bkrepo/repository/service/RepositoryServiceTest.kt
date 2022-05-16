@@ -316,11 +316,11 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals("http://url2", compositeConfiguration.proxy.channelList[1].url)
         // 检查私有代理仓库是否创建
         var privateProxyRepo1 = proxyChannelService.queryProxyChannel(
-            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1", "http://url1"
+            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1"
         )
         assertNotNull(privateProxyRepo1)
         var privateProxyRepo2 = proxyChannelService.queryProxyChannel(
-            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "private2", "http://url2"
+            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "private2"
         )
         assertNotNull(privateProxyRepo2)
 
@@ -349,15 +349,15 @@ class RepositoryServiceTest @Autowired constructor(
         assertEquals("http://url3", compositeConfiguration.proxy.channelList[1].url)
         // 检查 private2删除，private3创建
         privateProxyRepo1 = proxyChannelService.queryProxyChannel(
-            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1", "http://url1"
+            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "public1"
         )
         assertNotNull(privateProxyRepo1)
         privateProxyRepo2 = proxyChannelService.queryProxyChannel(
-            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "private2", "http://url2"
+            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "private2"
         )
         assertNull(privateProxyRepo2)
         val privateProxyRepo3 = proxyChannelService.queryProxyChannel(
-            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "private3", "http://url3"
+            UT_PROJECT_ID, UT_REPO_NAME, RepositoryType.GENERIC, "private3"
         )
         assertNotNull(privateProxyRepo3)
 

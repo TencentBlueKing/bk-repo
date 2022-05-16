@@ -104,6 +104,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.SortedSet
 import java.util.concurrent.ThreadPoolExecutor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -504,12 +505,26 @@ open class AbstractChartService : ArtifactService() {
                     oldEntries = oldIndex.entries,
                     newEntries = newIndex.entries
                 )
-                oldIndex.entries.putAll(addedSet)
+                mergeMap(oldIndex.entries, addedSet)
             } catch (ignored: Exception) {
                 logger.warn("Failed to execute action with channel ${proxyChannel.name}", ignored)
             }
         }
         return oldIndex
+    }
+
+    /**
+     * 合并
+     */
+    private fun mergeMap(
+        old: MutableMap<String, SortedSet<HelmChartMetadata>>,
+        new: MutableMap<String, SortedSet<HelmChartMetadata>>
+    ) {
+        new.forEach { (key, values) ->
+            old[key]?.let {
+                old[key]?.addAll(values)
+            } ?: run { old.put(key, values) }
+        }
     }
 
     private fun getRemoteConfigFromProxyChannel(
@@ -520,8 +535,7 @@ open class AbstractChartService : ArtifactService() {
             projectId = repositoryDetail.projectId,
             repoName = repositoryDetail.name,
             repoType = repositoryDetail.type.name,
-            name = setting.name,
-            url = setting.url
+            name = setting.name
         ).data!!
         // 构造RemoteConfiguration
         return (CompositeRepository.convertConfig(proxyChannel) as RemoteConfiguration)
