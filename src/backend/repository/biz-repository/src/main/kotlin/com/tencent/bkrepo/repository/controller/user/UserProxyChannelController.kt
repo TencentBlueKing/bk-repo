@@ -61,9 +61,7 @@ class UserProxyChannelController(
         @ApiParam(value = "type", required = true)
         @RequestParam repoType: String,
         @ApiParam(value = "name", required = true)
-        @RequestParam name: String,
-        @ApiParam(value = "url", required = true)
-        @RequestParam url: String
+        @RequestParam name: String
     ): Response<ProxyChannelInfo?> {
         val repoType = try {
             RepositoryType.ofValueOrDefault(repoType)
@@ -75,8 +73,7 @@ class UserProxyChannelController(
                 projectId = projectId,
                 repoName = repoName,
                 repoType = repoType,
-                name = name,
-                url = url
+                name = name
             )
         )
     }

@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.model.TProxyChannel
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
 import java.time.LocalDateTime
 import org.springframework.stereotype.Service
@@ -79,19 +80,42 @@ class ProxyChannelServiceImpl(
         }
     }
 
+    override fun updateProxy(userId: String, request: ProxyChannelUpdateRequest) {
+        with(request) {
+            val pw = if (password.isNullOrEmpty()) {
+                password
+            } else {
+                RsaUtils.encrypt(password!!)
+            }
+            val tProxyChannel = proxyChannelDao.findByUniqueParams(
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoType,
+                name = name
+            )
+            tProxyChannel?.let {
+                tProxyChannel.public = public
+                tProxyChannel.lastModifiedDate = LocalDateTime.now()
+                tProxyChannel.lastModifiedBy = userId
+                tProxyChannel.url = url
+                tProxyChannel.username = username
+                tProxyChannel.password = pw
+                proxyChannelDao.save(tProxyChannel)
+            }
+        }
+    }
+
     override fun queryProxyChannel(
         projectId: String,
         repoName: String,
         repoType: RepositoryType,
-        name: String,
-        url: String
+        name: String
     ): ProxyChannelInfo? {
         val proxy = proxyChannelDao.findByUniqueParams(
             projectId = projectId,
             repoName = repoName,
             repoType = repoType,
-            name = name,
-            url = url
+            name = name
         )
         return convert(proxy)
     }
@@ -102,8 +126,7 @@ class ProxyChannelServiceImpl(
                 projectId = projectId,
                 repoName = repoName,
                 repoType = repoType,
-                name = name,
-                url = url
+                name = name
             )
         }
     }
@@ -127,7 +150,11 @@ class ProxyChannelServiceImpl(
                 val pw = if (it.password.isNullOrEmpty()) {
                     it.password
                 } else {
-                    RsaUtils.decrypt(it.password!!)
+                    try {
+                        RsaUtils.decrypt(it.password!!)
+                    } catch (e: Exception) {
+                        it.password
+                    }
                 }
                 ProxyChannelInfo(
                     id = it.id!!,

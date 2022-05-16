@@ -43,8 +43,8 @@ import org.springframework.data.mongodb.core.mapping.Document
 @Document("proxy_channel")
 @CompoundIndexes(
     CompoundIndex(
-        name = "proxy_channel_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'repoType': 1, 'url': 1, 'name': 1}",
+        name = "proxy_idx",
+        def = "{'projectId': 1, 'repoName': 1, 'repoType': 1, 'name': 1}",
         unique = true
     )
 )

@@ -46,8 +46,6 @@ data class ProxyChannelDeleteRequest(
     val repoName: String,
     @ApiModelProperty("代理源名称", required = true)
     val name: String,
-    @ApiModelProperty("代理源url", required = true)
-    val url: String,
     @ApiModelProperty("代理源仓库类型", required = true)
     val repoType: RepositoryType
 )

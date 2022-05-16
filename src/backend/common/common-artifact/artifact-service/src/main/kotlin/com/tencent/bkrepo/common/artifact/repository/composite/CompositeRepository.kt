@@ -199,8 +199,7 @@ class CompositeRepository(
             projectId = context.projectId,
             repoName = context.repoName,
             repoType = context.repositoryDetail.type.name,
-            name = setting.name,
-            url = setting.url
+            name = setting.name
         ).data!!
         // 构造proxyConfiguration
         val remoteConfiguration = convertConfig(proxyChannel)

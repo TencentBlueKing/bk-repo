@@ -52,15 +52,13 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
         projectId: String,
         repoName: String,
         repoType: RepositoryType,
-        name: String,
-        url: String
+        name: String
     ): TProxyChannel? {
         val query = buildSingleQuery(
             projectId = projectId,
             repoName = repoName,
             repoType = repoType.name,
-            name = name,
-            url = url
+            name = name
         )
         return this.findOne(query, TProxyChannel::class.java)
     }
@@ -80,15 +78,13 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
         projectId: String,
         repoName: String,
         repoType: RepositoryType,
-        name: String,
-        url: String
+        name: String
     ) {
         val query = buildSingleQuery(
             projectId = projectId,
             repoName = repoName,
             repoType = repoType.name,
-            name = name,
-            url = url
+            name = name
         )
         this.remove(query)
     }
@@ -100,13 +96,11 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
         projectId: String,
         repoName: String,
         repoType: String,
-        name: String,
-        url: String
+        name: String
     ): Query {
         val criteria = where(TProxyChannel::projectId).isEqualTo(projectId)
             .and(TProxyChannel::repoName).isEqualTo(repoName)
             .and(TProxyChannel::name).isEqualTo(name)
-            .and(TProxyChannel::url).isEqualTo(url)
             .and(TProxyChannel::repoType).isEqualTo(repoType)
         return Query(criteria)
     }

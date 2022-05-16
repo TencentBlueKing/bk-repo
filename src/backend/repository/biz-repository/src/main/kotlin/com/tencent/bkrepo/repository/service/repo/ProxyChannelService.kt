@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 
 /**
  * 代理源服务接口
@@ -46,14 +47,18 @@ interface ProxyChannelService {
     fun createProxy(userId: String, request: ProxyChannelCreateRequest)
 
     /**
+     * 根据[request]更新代理源
+     */
+    fun updateProxy(userId: String, request: ProxyChannelUpdateRequest)
+
+    /**
      * 查询代理源
      */
     fun queryProxyChannel(
         projectId: String,
         repoName: String,
         repoType: RepositoryType,
-        name: String,
-        url: String
+        name: String
     ): ProxyChannelInfo?
 
     /**

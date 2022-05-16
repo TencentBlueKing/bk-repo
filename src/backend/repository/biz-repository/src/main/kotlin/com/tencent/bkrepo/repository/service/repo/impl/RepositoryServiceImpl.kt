@@ -59,6 +59,7 @@ import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
+import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
@@ -225,7 +226,7 @@ class RepositoryServiceImpl(
                 category = category,
                 public = public,
                 description = description,
-                configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString(),
+                configuration = repoConfiguration.toJsonString(),
                 credentialsKey = credentialsKey,
                 projectId = projectId,
                 createdBy = operator,
@@ -239,6 +240,7 @@ class RepositoryServiceImpl(
                 if (repoConfiguration is CompositeConfiguration) {
                     updateCompositeConfiguration(repoConfiguration, null, repository, operator)
                 }
+                repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
                 publishEvent(event)
@@ -389,13 +391,14 @@ class RepositoryServiceImpl(
 
         val toCreateList = mutableListOf<ProxyChannelSetting>()
         val toDeleteList = mutableListOf<ProxyChannelSetting>()
+        val toUpdateList = mutableListOf<ProxyChannelSetting>()
 
         // 查找要添加的代理库
         newProxyRepoMap.forEach { (name, channel) ->
             existProxyRepoMap[name]?.let {
-                // 确保用户未修改name和url，以及添加同名channel
-                if (channel.url != it.url) {
-                    throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, channel.name)
+                // 查找要更新的代理库
+                if (channel != it) {
+                    toUpdateList.add(channel)
                 }
             } ?: run { toCreateList.add(channel) }
         }
@@ -417,6 +420,10 @@ class RepositoryServiceImpl(
         toDeleteList.forEach {
             deleteProxyRepo(repository, it)
         }
+        // 更新旧的代理库
+        toUpdateList.forEach {
+            updateProxyRepo(repository, it, operator)
+        }
     }
 
     /**
@@ -427,7 +434,6 @@ class RepositoryServiceImpl(
             repoType = repository.type,
             projectId = repository.projectId,
             repoName = repository.name,
-            url = proxy.url,
             name = proxy.name
         )
         proxyChannelService.deleteProxy(proxyRepository)
@@ -438,7 +444,7 @@ class RepositoryServiceImpl(
     }
 
     private fun createProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
-        // 创建仓库
+        // 创建代理仓库
         val proxyRepository = ProxyChannelCreateRequest(
             repoType = repository.type,
             projectId = repository.projectId,
@@ -452,6 +458,23 @@ class RepositoryServiceImpl(
         )
         proxyChannelService.createProxy(operator, proxyRepository)
         logger.info("Success to create private proxy repository[$proxyRepository]")
+    }
+
+    private fun updateProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
+        // 更新代理仓库
+        val proxyRepository = ProxyChannelUpdateRequest(
+            repoType = repository.type,
+            projectId = repository.projectId,
+            repoName = repository.name,
+            url = proxy.url,
+            name = proxy.name,
+            username = proxy.username,
+            password = proxy.password,
+            public = proxy.public,
+            credentialKey = proxy.credentialKey
+        )
+        proxyChannelService.updateProxy(operator, proxyRepository)
+        logger.info("Success to update private proxy repository[$proxyRepository]")
     }
 
     override fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail> {

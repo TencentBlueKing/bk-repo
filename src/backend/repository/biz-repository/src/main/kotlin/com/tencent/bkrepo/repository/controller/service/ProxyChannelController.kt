@@ -47,8 +47,7 @@ class ProxyChannelController(
         projectId: String,
         repoName: String,
         repoType: String,
-        name: String,
-        url: String
+        name: String
     ): Response<ProxyChannelInfo?> {
         val type = try {
             RepositoryType.ofValueOrDefault(repoType)
@@ -59,8 +58,7 @@ class ProxyChannelController(
             projectId = projectId,
             repoName = repoName,
             repoType = type,
-            name = name,
-            url = url
+            name = name
         )
         return ResponseBuilder.success(proxy)
     }
