@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.config
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.EventSupplier
 import com.tencent.bkrepo.job.batch.FileReferenceCleanupJob
+import com.tencent.bkrepo.job.batch.FileSynchronizeJob
 import com.tencent.bkrepo.job.batch.RemoteRepoRefreshJob
 import com.tencent.bkrepo.job.batch.SignFileCleanupJob
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
@@ -97,6 +98,19 @@ class JobConfig {
             nodeClient = nodeClient,
             mongoTemplate = mongoTemplate,
             properties = jobProperties.signFileCleanupJobProperties
+        )
+    }
+
+    @Bean
+    fun fileSynchronizeJob(
+        jobProperties: JobProperties,
+        storageCredentialsClient: StorageCredentialsClient,
+        storageService: StorageService
+    ): FileSynchronizeJob {
+        return FileSynchronizeJob(
+            properties = jobProperties.fileSynchronizeJobProperties,
+            storageService = storageService,
+            storageCredentialsClient = storageCredentialsClient
         )
     }
 }
