@@ -157,8 +157,8 @@ class UserScanPlanController(
 
     @ApiOperation("方案详情-统计数据")
     @GetMapping("/count")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun planDetailCount(countRequest: PlanCountRequest): Response<ScanPlanInfo?> {
+        permissionCheckHandler.checkProjectPermission(countRequest.projectId, PermissionAction.MANAGE)
         return ResponseBuilder.success(scanPlanService.scanPlanInfo(ScanPlanConverter.convert(countRequest)))
     }
 
