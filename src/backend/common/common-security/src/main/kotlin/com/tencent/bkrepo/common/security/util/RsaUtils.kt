@@ -74,8 +74,3 @@ class RsaUtils(
         }
     }
 }
-
-fun main() {
-    //
-//    KeyUtil.generatePrivateKey("RSA/ECB/PKCS1Padding")
-}

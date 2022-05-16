@@ -50,5 +50,5 @@ data class ProxyChannelSetting(
     @ApiModelProperty("代理源认证用户名", required = false)
     val username: String? = null,
     @ApiModelProperty("代理源认证密码", required = false)
-    val password: String? = null
+    var password: String? = null
 )

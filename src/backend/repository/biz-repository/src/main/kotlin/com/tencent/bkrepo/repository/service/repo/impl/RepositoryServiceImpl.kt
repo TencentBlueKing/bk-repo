@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -224,7 +225,7 @@ class RepositoryServiceImpl(
                 category = category,
                 public = public,
                 description = description,
-                configuration = repoConfiguration.toJsonString(),
+                configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString(),
                 credentialsKey = credentialsKey,
                 projectId = projectId,
                 createdBy = operator,
@@ -271,8 +272,8 @@ class RepositoryServiceImpl(
             repository.lastModifiedBy = operator
             repository.lastModifiedDate = LocalDateTime.now()
             configuration?.let {
-                updateRepoConfiguration(it, oldConfiguration, repository, operator)
-                repository.configuration = it.toJsonString()
+                updateRepoConfiguration(it, cryptoConfigurationPwd(oldConfiguration), repository, operator)
+                repository.configuration = cryptoConfigurationPwd(it, false).toJsonString()
             }
             repositoryDao.save(repository)
         }
@@ -367,8 +368,6 @@ class RepositoryServiceImpl(
 
     /**
      * 更新Composite类型仓库配置
-     *
-     * 创建private代理仓库
      */
     private fun updateCompositeConfiguration(
         new: CompositeConfiguration,
@@ -532,7 +531,7 @@ class RepositoryServiceImpl(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    configuration = it.configuration.readJsonString(),
+                    configuration = cryptoConfigurationPwd(it.configuration.readJsonString()),
                     storageCredentials = storageCredentials,
                     projectId = it.projectId,
                     createdBy = it.createdBy,
@@ -554,7 +553,7 @@ class RepositoryServiceImpl(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    configuration = it.configuration.readJsonString(),
+                    configuration = cryptoConfigurationPwd(it.configuration.readJsonString()),
                     storageCredentialsKey = it.credentialsKey,
                     projectId = it.projectId,
                     createdBy = it.createdBy,
@@ -564,6 +563,40 @@ class RepositoryServiceImpl(
                     quota = it.quota,
                     used = it.used
                 )
+            }
+        }
+
+        /**
+         * 加/解密密码
+         */
+        fun cryptoConfigurationPwd(
+            repoConfiguration: RepositoryConfiguration,
+            decrypt: Boolean = true
+        ): RepositoryConfiguration {
+            if (repoConfiguration is CompositeConfiguration) {
+                repoConfiguration.proxy.channelList.forEach {
+                    it.password?.let { pw ->
+                        it.password = crypto(pw, decrypt)
+                    }
+                }
+            }
+            if (repoConfiguration is RemoteConfiguration) {
+                repoConfiguration.credentials.password?.let {
+                    repoConfiguration.credentials.password = crypto(it, decrypt)
+                }
+            }
+            return repoConfiguration
+        }
+
+        private fun crypto(pw: String, decrypt: Boolean): String {
+            return if (!decrypt) {
+                RsaUtils.encrypt(pw)
+            } else {
+                try {
+                    RsaUtils.decrypt(pw)
+                } catch (e: Exception) {
+                    pw
+                }
             }
         }
     }
