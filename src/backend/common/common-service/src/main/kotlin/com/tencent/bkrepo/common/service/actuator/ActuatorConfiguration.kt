@@ -56,7 +56,8 @@ class ActuatorConfiguration {
         override fun provide(): Map<String, String> {
             return mapOf(
                 "service" to registration.serviceId,
-                "instance" to "${registration.host}-${registration.instanceId}"
+                "instance" to "${registration.host}-${registration.instanceId}",
+                "host" to registration.host
             )
         }
     }
