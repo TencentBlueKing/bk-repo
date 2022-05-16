@@ -44,4 +44,5 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
 
     api("com.google.guava:guava")
+    api("commons-lang:commons-lang:2.6")
 }
