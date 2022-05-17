@@ -231,7 +231,10 @@ open class PermissionServiceImpl constructor(
         if (roles.isNotEmpty() && request.projectId != null && request.repoName != null) {
             roles.filter { !it.isNullOrEmpty() }.forEach {
                 val rRole = roleRepository.findFirstByIdAndProjectIdAndTypeAndRepoName(
-                    id = it, projectId = request.projectId!!, type = RoleType.REPO, repoName = request.repoName!!
+                    id = it,
+                    projectId = request.projectId!!,
+                    type = RoleType.REPO,
+                    repoName = request.repoName!!
                 )
                 if (rRole != null && rRole.admin) return true
             }
