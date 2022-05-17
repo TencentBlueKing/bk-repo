@@ -38,19 +38,13 @@ class RsaUtils(
     cryptoProperties: CryptoProperties
 ) {
     init {
-        if (cryptoProperties.publicKeyStr.isNullOrEmpty() || cryptoProperties.privateKeyStr.isNullOrEmpty()) {
-            rsa = RSA()
-            publicKey = rsa.publicKeyBase64
-            privateKey = rsa.privateKeyBase64
-        } else {
-            publicKey = cryptoProperties.publicKeyStr!!
-            privateKey = cryptoProperties.privateKeyStr!!
-            rsa = RSA(
-                cryptoProperties.rsaAlgorithm,
-                cryptoProperties.privateKeyStr,
-                cryptoProperties.publicKeyStr
-            )
-        }
+        publicKey = cryptoProperties.publicKeyStr
+        privateKey = cryptoProperties.privateKeyStr
+        rsa = RSA(
+            cryptoProperties.rsaAlgorithm,
+            cryptoProperties.privateKeyStr,
+            cryptoProperties.publicKeyStr
+        )
     }
 
     companion object {
