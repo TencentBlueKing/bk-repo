@@ -123,18 +123,8 @@ interface OciOperationService {
     fun createNode(request: NodeCreateRequest, storageCredentials: StorageCredentials?): NodeDetail
 
     /**
-     * 保存manifest文件内容
-     * 特殊：对于manifest文件，存两个node，一个存tag 一个存digest
-     */
-    fun storeManifestArtifact(
-        ociArtifactInfo: OciManifestArtifactInfo,
-        artifactFile: ArtifactFile,
-        storageCredentials: StorageCredentials?,
-        proxyUrl: String? = null
-    ): NodeDetail?
-
-    /**
-     * 保存非manifest文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
+     * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
+     * 特殊：对于manifest文件，node存tag
      */
     fun storeArtifact(
         ociArtifactInfo: OciArtifactInfo,
@@ -143,4 +133,10 @@ interface OciOperationService {
         fileInfo: FileInfo? = null,
         proxyUrl: String? = null
     ): NodeDetail?
+
+    /**
+     * 获取对应存储节点路径
+     * 特殊：manifest文件按tag存储， 但是查询时存在tag/digest
+     */
+    fun getNodeFullPath(artifactInfo: OciArtifactInfo): String?
 }

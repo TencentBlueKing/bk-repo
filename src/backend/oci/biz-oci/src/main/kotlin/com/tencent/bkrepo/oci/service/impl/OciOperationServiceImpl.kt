@@ -45,6 +45,7 @@ import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
+import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
@@ -70,6 +71,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -414,7 +416,8 @@ class OciOperationServiceImpl(
     }
 
     /**
-     * 保存非manifest文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
+     * 保存文件内容(当使用追加上传时，文件已存储，只需存储节点信息)
+     * 特殊：对于manifest文件，node存tag
      */
     override fun storeArtifact(
         ociArtifactInfo: OciArtifactInfo,
@@ -435,30 +438,6 @@ class OciOperationServiceImpl(
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
         }
-    }
-
-    /**
-     * 保存manifest文件内容
-     * 特殊：对于manifest文件，存两个node，一个存tag 一个存digest
-     */
-    override fun storeManifestArtifact(
-        ociArtifactInfo: OciManifestArtifactInfo,
-        artifactFile: ArtifactFile,
-        storageCredentials: StorageCredentials?,
-        proxyUrl: String?
-    ): NodeDetail? {
-        val request = buildNodeCreateRequest(ociArtifactInfo, artifactFile, proxyUrl)
-        val node = storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
-        if (!ociArtifactInfo.isValidDigest) {
-            val newNodeRequest = request.copy(
-                fullPath = OciLocationUtils.buildDigestManifestPathWithReference(
-                    packageName = ociArtifactInfo.packageName,
-                    reference = OciDigest.fromSha256(request.sha256!!).toString()
-                )
-            )
-            createNode(newNodeRequest, storageCredentials)
-        }
-        return node
     }
 
     /**
@@ -515,21 +494,6 @@ class OciOperationServiceImpl(
             fullPath = fullPath,
             mediaType = mediaType!!
         )
-
-        // 特殊：对于manifest文件，存两个node，一个存tag 一个存digest
-        if (!ociArtifactInfo.isValidDigest) {
-            val tagPath = OciLocationUtils.buildDigestManifestPathWithReference(
-                packageName = ociArtifactInfo.packageName,
-                reference = digest.toString()
-            )
-            updateNodeMetaData(
-                digest = digest.toString(),
-                schemaVersion = version.schemaVersion,
-                ociArtifactInfo = ociArtifactInfo,
-                fullPath = tagPath,
-                mediaType = mediaType
-            )
-        }
         // 同步blob相关metadata
         if (ociArtifactInfo.packageName.isNotEmpty()) {
             if (version.schemaVersion == 1) {
@@ -756,6 +720,41 @@ class OciOperationServiceImpl(
                 description = it[DESCRIPTION] as String?
             }
             updatePackageInfo(ociArtifactInfo, appVersion, description)
+        }
+    }
+
+    /**
+     * 获取对应存储节点路径
+     * 特殊：manifest文件按tag存储， 但是查询时存在tag/digest
+     */
+    override fun getNodeFullPath(artifactInfo: OciArtifactInfo): String? {
+        if (artifactInfo is OciManifestArtifactInfo) {
+            // 根据类型解析实际存储路径，manifest获取路径有tag/digest
+            if (artifactInfo.isValidDigest) {
+                return getManifestNodeByDigest(artifactInfo)
+            }
+        }
+        return artifactInfo.getArtifactFullPath()
+    }
+
+    private fun getManifestNodeByDigest(ociArtifactInfo: OciManifestArtifactInfo): String? {
+        with(ociArtifactInfo) {
+            val ociDigest = OciDigest(reference)
+            val queryModel = NodeQueryBuilder()
+                .select(NODE_FULL_PATH)
+                .projectId(projectId)
+                .repoName(repoName)
+                .sha256(ociDigest.getDigestHex())
+                .sortByAsc(NODE_FULL_PATH)
+            val result = nodeClient.search(queryModel.build()).data ?: run {
+                logger.warn(
+                    "Could not find ${ociArtifactInfo.getArtifactFullPath()} " +
+                        "in repo ${getRepoIdentify()} to mount"
+                )
+                return null
+            }
+            if (result.records.isEmpty()) return null
+            return result.records[0][NODE_FULL_PATH] as String
         }
     }
 

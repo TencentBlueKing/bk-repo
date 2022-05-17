@@ -155,7 +155,7 @@ class OciRegistryLocalRepository(
             if (!range.isNullOrEmpty() && length > -1) {
                 logger.info("range $range, length $length, uuid $uuid")
                 val (_, end) = getRangeInfo(range)
-                // 判断长度是否超长
+                // 判断要上传的长度是否超长
                 if (end > length) {
                     OciResponseUtils.buildBlobUploadPatchResponse(
                         domain = ociProperties.domain,
@@ -173,7 +173,7 @@ class OciRegistryLocalRepository(
                 artifactFile = context.getArtifactFile(),
                 storageCredentials = context.repositoryDetail.storageCredentials
             )
-            // 判断长度是否超长
+            // 判断追加文件后长度是否超长
             if (length > -1 && patchLen > length) {
                 OciResponseUtils.buildBlobUploadPatchResponse(
                     domain = ociProperties.domain,
@@ -268,7 +268,7 @@ class OciRegistryLocalRepository(
         val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
         val artifactFile = context.getArtifactFile()
         val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
-        val node = ociOperationService.storeManifestArtifact(
+        val node = ociOperationService.storeArtifact(
             ociArtifactInfo = artifactInfo,
             artifactFile = artifactFile,
             storageCredentials = context.storageCredentials
@@ -297,20 +297,27 @@ class OciRegistryLocalRepository(
             "Will start to download oci artifact ${context.artifactInfo.getArtifactFullPath()}" +
                 " in repo ${context.artifactInfo.getRepoIdentify()}..."
         )
-        // 根据类型解析实际存储路径，manifest有可能根据版本进行获取而不是对应文件的digest值
-        return downloadArtifact(context)
+        val fullPath = ociOperationService.getNodeFullPath(context.artifactInfo as OciArtifactInfo)
+        return downloadArtifact(context, fullPath)
     }
 
-    private fun downloadArtifact(context: ArtifactDownloadContext): ArtifactResource {
-        val fullPath = context.artifactInfo.getArtifactFullPath()
+    /**
+     * 针对oci协议 需要将对应的media type返回
+     */
+    private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource {
+        if (fullPath == null) throw OciFileNotFoundException(
+            "Could not get artifact ${context.artifactInfo.getArtifactFullPath()} file in repo: $fullPath",
+            BLOB_UNKNOWN_CODE,
+            BLOB_UNKNOWN_DESCRIPTION
+        )
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
         logger.info(
             "Starting to download $fullPath " +
                 "in repo: ${context.artifactInfo.getRepoIdentify()}"
         )
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
             ?: throw OciFileNotFoundException(
-                "Could not get artifact $fullPath file in repo: ${context.artifactInfo.getRepoIdentify()}",
+                "Could not get artifact ${context.artifactInfo.getArtifactFullPath()} file in repo: $fullPath",
                 BLOB_UNKNOWN_CODE,
                 BLOB_UNKNOWN_DESCRIPTION
             )

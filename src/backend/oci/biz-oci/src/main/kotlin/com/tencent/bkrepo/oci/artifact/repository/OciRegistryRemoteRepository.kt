@@ -58,6 +58,7 @@ import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.SCOPE
 import com.tencent.bkrepo.oci.constant.SERVICE
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
@@ -92,7 +93,6 @@ class OciRegistryRemoteRepository(
 
     /**
      * 下载制品
-     * 注意：针对oci仓库配置的username/password鉴权方式请求返回401，需要额外去获取token
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
@@ -100,10 +100,16 @@ class OciRegistryRemoteRepository(
         }
     }
 
+    /**
+     * query功能主要用于获取对应tag列表
+     */
     override fun query(context: ArtifactQueryContext): Any? {
         return doRequest(context)
     }
 
+    /**
+     * 注意：针对oci仓库配置的username/password鉴权方式请求返回401，需要额外去获取token
+     */
     private fun doRequest(context: ArtifactContext): Any? {
         val remoteConfiguration = context.getRemoteConfiguration()
         val httpClient = createHttpClient(remoteConfiguration, false)
@@ -360,29 +366,29 @@ class OciRegistryRemoteRepository(
     fun cacheArtifact(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
         val configuration = context.getRemoteConfiguration()
         if (!configuration.cache.enabled) return null
-        if (context.artifactInfo is OciBlobArtifactInfo) {
-            return ociOperationService.storeArtifact(
-                ociArtifactInfo = context.artifactInfo as OciBlobArtifactInfo,
-                artifactFile = artifactFile,
-                storageCredentials = context.storageCredentials,
-                proxyUrl = configuration.url
-            )
+        val ociArtifactInfo = context.artifactInfo as OciArtifactInfo
+        val fullPath = ociOperationService.getNodeFullPath(ociArtifactInfo)
+        // 针对manifest文件获取会通过tag或manifest获取，避免重复创建
+        fullPath?.let {
+            val node = nodeClient.getNodeDetail(ociArtifactInfo.projectId, ociArtifactInfo.repoName, fullPath).data
+            if (node != null) return node
         }
+        var nodeDetail = ociOperationService.storeArtifact(
+            ociArtifactInfo = ociArtifactInfo,
+            artifactFile = artifactFile,
+            storageCredentials = context.storageCredentials,
+            proxyUrl = configuration.url
+        )
+        // 针对manifest文件需要更新metadata
         if (context.artifactInfo is OciManifestArtifactInfo) {
-            ociOperationService.storeManifestArtifact(
-                ociArtifactInfo = context.artifactInfo as OciManifestArtifactInfo,
-                artifactFile = artifactFile,
-                storageCredentials = context.storageCredentials,
-                proxyUrl = configuration.url
-            )
             updateManifestAndBlob(context, artifactFile)
-            return nodeClient.getNodeDetail(
+            nodeDetail = nodeClient.getNodeDetail(
                 projectId = context.artifactInfo.projectId,
                 repoName = context.artifactInfo.repoName,
                 fullPath = context.artifactInfo.getArtifactFullPath()
             ).data
         }
-        return null
+        return nodeDetail
     }
 
     private fun updateManifestAndBlob(context: ArtifactDownloadContext, artifactFile: ArtifactFile) {
