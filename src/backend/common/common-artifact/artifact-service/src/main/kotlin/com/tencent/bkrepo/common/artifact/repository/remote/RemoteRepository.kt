@@ -218,13 +218,15 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建http client
      */
-    protected fun createHttpClient(configuration: RemoteConfiguration): OkHttpClient {
+    protected fun createHttpClient(configuration: RemoteConfiguration, addInterceptor: Boolean = true): OkHttpClient {
         val builder = HttpClientBuilderFactory.create()
         builder.readTimeout(configuration.network.readTimeout, TimeUnit.MILLISECONDS)
         builder.connectTimeout(configuration.network.connectTimeout, TimeUnit.MILLISECONDS)
         builder.proxy(createProxy(configuration.network.proxy))
         builder.proxyAuthenticator(createProxyAuthenticator(configuration.network.proxy))
-        createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
+        if (addInterceptor) {
+            createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
+        }
         return builder.build()
     }
 

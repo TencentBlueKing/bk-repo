@@ -52,7 +52,7 @@ import javax.servlet.http.HttpServletResponse
  */
 object OciResponseUtils {
 
-    fun getResponseLocationURI(path: String, domain: String): String {
+    private fun getResponseLocationURI(path: String, domain: String): String {
         return UrlFormatter.format(
             domain, OCI_API_PREFIX + path.trimStart('/')
         )

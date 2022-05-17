@@ -47,7 +47,9 @@ class OciTagServiceImpl : OciTagService {
         val context = ArtifactQueryContext()
         last?.let { context.putAttribute(LAST_TAG, last) }
         n?.let { context.putAttribute(N, n) }
-        return ArtifactContextHolder.getRepository().query(context) as TagsInfo
+        val tags = ArtifactContextHolder.getRepository().query(context)
+            ?: return TagsInfo(artifactInfo.packageName, emptyList())
+        return tags as TagsInfo
     }
 
     companion object {

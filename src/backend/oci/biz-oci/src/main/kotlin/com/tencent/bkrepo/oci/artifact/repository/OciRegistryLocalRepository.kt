@@ -128,6 +128,7 @@ class OciRegistryLocalRepository(
                     "and will can be accessed in $location" +
                     " in repo ${context.artifactInfo.getRepoIdentify()}"
             )
+            if (digest == null || location.isNullOrEmpty()) return
             OciResponseUtils.buildUploadResponse(
                 domain = ociProperties.domain,
                 digest = digest,
@@ -147,9 +148,7 @@ class OciRegistryLocalRepository(
      */
     private fun patchUpload(context: ArtifactUploadContext) {
         logger.info("Will using patch ways to upload file in repo ${context.artifactInfo.getRepoIdentify()}")
-        if (context.artifactInfo !is OciBlobArtifactInfo) {
-            return
-        }
+        if (context.artifactInfo !is OciBlobArtifactInfo) return
         with(context.artifactInfo as OciBlobArtifactInfo) {
             val range = context.request.getHeader("Content-Range")
             val length = context.request.contentLength
@@ -223,55 +222,71 @@ class OciRegistryLocalRepository(
      * 2 blob POST PATCH with PUT 上传的put模块处理
      * 3 manifest PUT上传的逻辑处理
      */
-    private fun putUpload(context: ArtifactUploadContext): Pair<OciDigest, String> {
-        return if (context.artifactInfo is OciBlobArtifactInfo) {
-            with(context.artifactInfo as OciBlobArtifactInfo) {
-                storageService.append(
-                    appendId = uuid!!,
-                    artifactFile = context.getArtifactFile(),
-                    storageCredentials = context.repositoryDetail.storageCredentials
-                )
-                val fileInfo = storageService.finishAppend(uuid, context.repositoryDetail.storageCredentials)
-                val digest = OciDigest.fromSha256(fileInfo.sha256)
-                ociOperationService.storeArtifact(
-                    ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
-                    artifactFile = context.getArtifactFile(),
-                    storageCredentials = context.storageCredentials,
-                    fileInfo = fileInfo
-                )
-                logger.info(
-                    "Artifact ${context.artifactInfo.getArtifactFullPath()} " +
-                        "has been uploaded to ${context.artifactInfo.getArtifactFullPath()}" +
-                        " in repo  ${context.artifactInfo.getRepoIdentify()}"
-                )
-                val blobLocation = OciLocationUtils.blobLocation(digest, this)
-                Pair(digest, blobLocation)
-            }
-        } else {
-            with(context.artifactInfo as OciManifestArtifactInfo) {
-                val artifactFile = context.getArtifactFile()
-                val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
-                val node = ociOperationService.storeManifestArtifact(
-                    ociArtifactInfo = this,
-                    artifactFile = artifactFile,
-                    storageCredentials = context.storageCredentials
-                )
-                logger.info(
-                    "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to ${node!!.fullPath}" +
-                        " in repo  ${context.artifactInfo.getRepoIdentify()}"
-                )
-                // 上传manifest文件，同时需要将manifest中对应blob的属性进行补充到blob节点中，同时创建package相关信息
-                ociOperationService.updateOciInfo(
-                    ociArtifactInfo = this,
-                    digest = digest,
-                    artifactFile = artifactFile,
-                    storageCredentials = context.storageCredentials,
-                    fullPath = node.fullPath
-                )
-                val manifestLocation = OciLocationUtils.manifestLocation(digest, this)
-                Pair(digest, manifestLocation)
-            }
+    private fun putUpload(context: ArtifactUploadContext): Pair<OciDigest?, String?> {
+        if (context.artifactInfo is OciBlobArtifactInfo) {
+            return putUploadBlob(context)
         }
+        if (context.artifactInfo is OciManifestArtifactInfo) {
+            return putUploadManifest(context)
+        }
+        return Pair(null, null)
+    }
+
+    /**
+     * blob PUT上传的逻辑处理
+     * 1 blob POST with PUT 上传的put模块处理
+     * 2 blob POST PATCH with PUT 上传的put模块处理
+     */
+    private fun putUploadBlob(context: ArtifactUploadContext): Pair<OciDigest, String> {
+        val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
+        storageService.append(
+            appendId = artifactInfo.uuid!!,
+            artifactFile = context.getArtifactFile(),
+            storageCredentials = context.repositoryDetail.storageCredentials
+        )
+        val fileInfo = storageService.finishAppend(artifactInfo.uuid, context.repositoryDetail.storageCredentials)
+        val digest = OciDigest.fromSha256(fileInfo.sha256)
+        ociOperationService.storeArtifact(
+            ociArtifactInfo = context.artifactInfo as OciArtifactInfo,
+            artifactFile = context.getArtifactFile(),
+            storageCredentials = context.storageCredentials,
+            fileInfo = fileInfo
+        )
+        logger.info(
+            "Artifact ${context.artifactInfo.getArtifactFullPath()} " +
+                "has been uploaded to ${context.artifactInfo.getArtifactFullPath()}" +
+                " in repo  ${context.artifactInfo.getRepoIdentify()}"
+        )
+        val blobLocation = OciLocationUtils.blobLocation(digest, artifactInfo)
+        return Pair(digest, blobLocation)
+    }
+
+    /**
+     * manifest文件 PUT上传的逻辑处理
+     */
+    private fun putUploadManifest(context: ArtifactUploadContext): Pair<OciDigest, String> {
+        val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
+        val artifactFile = context.getArtifactFile()
+        val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
+        val node = ociOperationService.storeManifestArtifact(
+            ociArtifactInfo = artifactInfo,
+            artifactFile = artifactFile,
+            storageCredentials = context.storageCredentials
+        )
+        logger.info(
+            "Artifact ${context.artifactInfo.getArtifactFullPath()} has been uploaded to ${node!!.fullPath}" +
+                " in repo  ${context.artifactInfo.getRepoIdentify()}"
+        )
+        // 上传manifest文件，同时需要将manifest中对应blob的属性进行补充到blob节点中，同时创建package相关信息
+        ociOperationService.updateOciInfo(
+            ociArtifactInfo = artifactInfo,
+            digest = digest,
+            artifactFile = artifactFile,
+            storageCredentials = context.storageCredentials,
+            fullPath = node.fullPath
+        )
+        val manifestLocation = OciLocationUtils.manifestLocation(digest, artifactInfo)
+        return Pair(digest, manifestLocation)
     }
 
     /**
@@ -356,11 +371,12 @@ class OciRegistryLocalRepository(
                 repoName,
                 PackageKeys.ofOci(packageName)
             ).data.orEmpty()
-            var tagList = mutableListOf<String>()
-            versionList.forEach {
-                tagList.add(it.name)
+            var tagList = mutableListOf<String>().apply {
+                versionList.forEach {
+                    this.add(it.name)
+                }
+                this.sort()
             }
-            tagList.sort()
             tagList = filterHandler(
                 tags = tagList,
                 n = n,
@@ -378,20 +394,14 @@ class OciRegistryLocalRepository(
      * 4 last存在，n存在，则返回last之后的n个
      */
     private fun filterHandler(tags: MutableList<String>, n: Int?, last: String?): MutableList<String> {
-        var tagList = tags
-        if (n != null) {
-            tagList = handleNFilter(tagList, n, last)
+        if (n != null) return handleNFilter(tags, n, last)
+        if (last.isNullOrEmpty()) return tags
+        val index = tags.indexOf(last)
+        return if (index == -1) {
+            mutableListOf()
         } else {
-            if (!last.isNullOrEmpty()) {
-                val index = tagList.indexOf(last)
-                tagList = if (index == -1) {
-                    mutableListOf()
-                } else {
-                    mutableListOf(last)
-                }
-            }
+            mutableListOf(last)
         }
-        return tagList
     }
 
     /**
@@ -400,27 +410,27 @@ class OciRegistryLocalRepository(
     private fun handleNFilter(tags: MutableList<String>, n: Int, last: String?): MutableList<String> {
         var tagList = tags
         var size = n
-        val length = tagList.size
-        tagList = if (!last.isNullOrEmpty()) {
-            // 当last存在，n也存在 则获取last所在后n个tag
-            val index = tagList.indexOf(last)
-            if (index == -1) {
-                mutableListOf()
-            } else {
-                // 需要判断last后n个是否超过tags总长
-                if (index + size + 1 > length) {
-                    size = length - 1 - index
-                }
-                tagList.subList(index + 1, size + 1)
-            }
-        } else {
+        val length = tags.size
+        if (last.isNullOrEmpty()) {
             // 需要判断n个是否超过tags总长
             if (size > length) {
                 size = length
             }
-            tagList.subList(0, size)
+            tagList = tagList.subList(0, size)
+            return tagList
         }
-        return tagList
+        // 当last存在，n也存在 则获取last所在后n个tag
+        val index = tagList.indexOf(last)
+        return if (index == -1) {
+            mutableListOf()
+        } else {
+            // 需要判断last后n个是否超过tags总长
+            if (index + size + 1 > length) {
+                size = length - 1 - index
+            }
+            tagList = tagList.subList(index + 1, index + size + 1)
+            tagList
+        }
     }
 
     companion object {

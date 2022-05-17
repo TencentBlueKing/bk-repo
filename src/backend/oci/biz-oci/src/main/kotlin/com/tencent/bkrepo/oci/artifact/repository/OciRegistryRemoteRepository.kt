@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.oci.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.WWW_AUTHENTICATE
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
@@ -48,8 +49,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
-import com.tencent.bkrepo.common.artifact.util.okhttp.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.artifact.util.okhttp.TokenAuthInterceptor
 import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.oci.constant.BEARER_REALM
 import com.tencent.bkrepo.oci.constant.LAST_TAG
@@ -70,7 +69,8 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import java.net.URL
-import java.util.concurrent.TimeUnit
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
@@ -90,32 +90,86 @@ class OciRegistryRemoteRepository(
         }
     }
 
+    /**
+     * 下载制品
+     * 注意：针对oci仓库配置的username/password鉴权方式请求返回401，需要额外去获取token
+     */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
-            val remoteConfiguration = context.getRemoteConfiguration()
-            val httpClient = createHttpClient(remoteConfiguration)
-            val downloadUrl = createRemoteDownloadUrl(context)
-            val request = Request.Builder().url(downloadUrl).build()
-            val response = httpClient.newCall(request).execute()
-            val token = checkAuthenticate(response, remoteConfiguration)
-            if (!token.isNullOrBlank()) {
-                val builder = HttpClientBuilderFactory.create()
-                val httpClientWithAuth = builder
-                    .readTimeout(remoteConfiguration.network.readTimeout, TimeUnit.MILLISECONDS)
-                    .connectTimeout(remoteConfiguration.network.connectTimeout, TimeUnit.MILLISECONDS)
-                    .addInterceptor(TokenAuthInterceptor(token))
-                    .build()
-                val requestWithAuth = Request.Builder().url(downloadUrl)
-                    .build()
-                val responseWithAuth = httpClientWithAuth.newCall(requestWithAuth).execute()
-                return if (checkResponse(responseWithAuth)) {
-                    onDownloadResponse(context, responseWithAuth)
-                } else null
-            }
-            return if (checkResponse(response)) {
-                onDownloadResponse(context, response)
-            } else null
+            return doRequest(context) as ArtifactResource?
         }
+    }
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        return doRequest(context)
+    }
+
+    private fun doRequest(context: ArtifactContext): Any? {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val httpClient = createHttpClient(remoteConfiguration, false)
+        val downloadUrl = createRemoteDownloadUrl(context)
+        val request = buildRequest(downloadUrl, remoteConfiguration)
+        val response = httpClient.newCall(request).execute()
+        var responseWithAuth: Response? = null
+        try {
+            if (response.isSuccessful) return onResponse(context, response)
+            // 针对返回401进行token获取
+            val token = getAuthenticationCode(response, remoteConfiguration, httpClient)
+            if (token.isNullOrBlank()) return null
+            val requestWithAuth = buildRequest(
+                url = downloadUrl,
+                configuration = remoteConfiguration,
+                addBasicInterceptor = false,
+                token = token
+            )
+            responseWithAuth = httpClient
+                .newCall(requestWithAuth)
+                .execute()
+            return if (checkResponse(responseWithAuth)) {
+                onResponse(context, responseWithAuth)
+            } else null
+        } finally {
+            response.body()?.close()
+            responseWithAuth?.body()?.close()
+        }
+    }
+
+    private fun onResponse(context: ArtifactContext, response: Response): Any? {
+        if (context is ArtifactDownloadContext) {
+            return onDownloadResponse(context, response)
+        }
+        if (context is ArtifactQueryContext) {
+            return onQueryResponse(context, response)
+        }
+        return null
+    }
+
+    /**
+     * 默认情况下进行basic认证， 如basic认证返回401，则进行token认证
+     */
+    private fun buildRequest(
+        url: String,
+        configuration: RemoteConfiguration,
+        token: String? = null,
+        addBasicInterceptor: Boolean = true
+    ): Request {
+        val requestBuilder = Request.Builder().url(url)
+        if (addBasicInterceptor) {
+            requestBuilder.addInterceptor(configuration)
+        } else {
+            token?.let { requestBuilder.header(HttpHeaders.AUTHORIZATION, token) }
+        }
+        return requestBuilder.build()
+    }
+
+    private fun Request.Builder.addInterceptor(configuration: RemoteConfiguration): Request.Builder {
+        val username = configuration.credentials.username
+        val password = configuration.credentials.password
+        if (username != null && password != null) {
+            val credentials = Credentials.basic(username, password)
+            this.header(HttpHeaders.AUTHORIZATION, credentials)
+        }
+        return this
     }
 
     /**
@@ -123,29 +177,44 @@ class OciRegistryRemoteRepository(
      */
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         val configuration = context.getRemoteConfiguration()
-        val (fullPath, params) = when (context.artifactInfo) {
-            is OciBlobArtifactInfo -> {
-                with(context.artifactInfo as OciBlobArtifactInfo) {
-                    Pair(OciLocationUtils.blobPathLocation(this.getDigest(), this), StringPool.EMPTY)
-                }
-            }
-            is OciManifestArtifactInfo -> {
-                with(context.artifactInfo as OciManifestArtifactInfo) {
-                    Pair(OciLocationUtils.manifestPathLocation(this.reference, this), StringPool.EMPTY)
-                }
-            }
-            is OciTagArtifactInfo -> {
-                createParamsForTagList(context)
-            }
-            else -> Pair(null, null)
+        if (context.artifactInfo is OciBlobArtifactInfo) {
+            val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
+            return createUrl(
+                url = configuration.url,
+                fullPath = OciLocationUtils.blobPathLocation(artifactInfo.getDigest(), artifactInfo),
+                params = StringPool.EMPTY
+            )
         }
-        val baseUrl = URL(configuration.url)
+        if (context.artifactInfo is OciManifestArtifactInfo) {
+            val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
+            return createUrl(
+                url = configuration.url,
+                fullPath = OciLocationUtils.manifestPathLocation(artifactInfo.reference, artifactInfo),
+                params = StringPool.EMPTY
+            )
+        }
+        if (context.artifactInfo is OciTagArtifactInfo) {
+            val (fullPath, params) = createParamsForTagList(context)
+            return createUrl(configuration.url, fullPath, params)
+        }
+        return createUrl(configuration.url)
+    }
+
+    /**
+     * 拼接url
+     */
+    private fun createUrl(url: String, fullPath: String = StringPool.EMPTY, params: String = StringPool.EMPTY): String {
+        val baseUrl = URL(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return UrlFormatter.format(v2Url.toString(), fullPath, params)
     }
 
-    private fun checkAuthenticate(response: Response, remoteConfiguration: RemoteConfiguration): String? {
-        if (response.isSuccessful || response.code() != HttpStatus.UNAUTHORIZED.value) {
+    private fun getAuthenticationCode(
+        response: Response,
+        configuration: RemoteConfiguration,
+        httpClient: OkHttpClient
+    ): String? {
+        if (response.code() != HttpStatus.UNAUTHORIZED.value) {
             return null
         }
         val wwwAuthenticate = response.header(WWW_AUTHENTICATE)
@@ -154,26 +223,25 @@ class OciRegistryRemoteRepository(
         }
         val url = parseWWWAuthenticateHeader(wwwAuthenticate)
         logger.info("The url for authenticating is $url")
-        url?.let {
-            val builder = HttpClientBuilderFactory.create()
-            val httpClientWithAuth = builder.readTimeout(remoteConfiguration.network.readTimeout, TimeUnit.MILLISECONDS)
-                .connectTimeout(remoteConfiguration.network.connectTimeout, TimeUnit.MILLISECONDS)
-                .build()
-            val request = Request.Builder().url(it).build()
-            val tokenResponse = httpClientWithAuth.newCall(request).execute()
-            return if (!tokenResponse.isSuccessful) {
-                null
-            } else {
-                val body = tokenResponse.body()!!
-                val artifactFile = createTempFile(body)
-                val size = artifactFile.getSize()
-                val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-                artifactFile.delete()
-                val bearerToken = JsonUtils.objectMapper.readValue(artifactStream, BearerToken::class.java)
-                "Bearer ${bearerToken.token}"
-            }
+        if (url.isNullOrEmpty()) return null
+        val request = buildRequest(
+            url = url,
+            configuration = configuration,
+            addBasicInterceptor = false
+        )
+        val tokenResponse = httpClient.newCall(request).execute()
+        try {
+            if (!tokenResponse.isSuccessful) return null
+            val body = tokenResponse.body()!!
+            val artifactFile = createTempFile(body)
+            val size = artifactFile.getSize()
+            val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+            artifactFile.delete()
+            val bearerToken = JsonUtils.objectMapper.readValue(artifactStream, BearerToken::class.java)
+            return "Bearer ${bearerToken.token}"
+        } finally {
+            tokenResponse.body()?.close()
         }
-        return null
     }
 
     /**
@@ -229,7 +297,6 @@ class OciRegistryRemoteRepository(
             node = node,
             channel = ArtifactChannel.LOCAL
         )
-
         return buildResponse(
             cacheNode = node,
             context = context,
@@ -240,7 +307,7 @@ class OciRegistryRemoteRepository(
     }
 
     /**
-     * 加载要返回的资源
+     * 加载要返回的资源: oci协议需要返回特定的请求头和资源类型
      */
     override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
         return storageService.load(cacheNode.sha256!!, Range.full(cacheNode.size), context.storageCredentials)?.run {
@@ -292,36 +359,30 @@ class OciRegistryRemoteRepository(
 
     fun cacheArtifact(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
         val configuration = context.getRemoteConfiguration()
-        return if (configuration.cache.enabled) {
-            val node = when (context.artifactInfo) {
-                is OciBlobArtifactInfo -> {
-                    ociOperationService.storeArtifact(
-                        ociArtifactInfo = context.artifactInfo as OciBlobArtifactInfo,
-                        artifactFile = artifactFile,
-                        storageCredentials = context.storageCredentials,
-                        proxyUrl = configuration.url
-                    )
-                }
-                is OciManifestArtifactInfo -> {
-                    ociOperationService.storeManifestArtifact(
-                        ociArtifactInfo = context.artifactInfo as OciManifestArtifactInfo,
-                        artifactFile = artifactFile,
-                        storageCredentials = context.storageCredentials,
-                        proxyUrl = configuration.url
-                    )
-                    updateManifestAndBlob(context, artifactFile)
-                    nodeClient.getNodeDetail(
-                        projectId = context.artifactInfo.projectId,
-                        repoName = context.artifactInfo.repoName,
-                        fullPath = context.artifactInfo.getArtifactFullPath()
-                    ).data
-                }
-                else -> {
-                    null
-                }
-            }
-            node
-        } else null
+        if (!configuration.cache.enabled) return null
+        if (context.artifactInfo is OciBlobArtifactInfo) {
+            return ociOperationService.storeArtifact(
+                ociArtifactInfo = context.artifactInfo as OciBlobArtifactInfo,
+                artifactFile = artifactFile,
+                storageCredentials = context.storageCredentials,
+                proxyUrl = configuration.url
+            )
+        }
+        if (context.artifactInfo is OciManifestArtifactInfo) {
+            ociOperationService.storeManifestArtifact(
+                ociArtifactInfo = context.artifactInfo as OciManifestArtifactInfo,
+                artifactFile = artifactFile,
+                storageCredentials = context.storageCredentials,
+                proxyUrl = configuration.url
+            )
+            updateManifestAndBlob(context, artifactFile)
+            return nodeClient.getNodeDetail(
+                projectId = context.artifactInfo.projectId,
+                repoName = context.artifactInfo.repoName,
+                fullPath = context.artifactInfo.getArtifactFullPath()
+            ).data
+        }
+        return null
     }
 
     private fun updateManifestAndBlob(context: ArtifactDownloadContext, artifactFile: ArtifactFile) {
