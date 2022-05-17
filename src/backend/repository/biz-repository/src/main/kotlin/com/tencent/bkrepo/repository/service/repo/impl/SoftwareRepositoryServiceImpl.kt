@@ -3,14 +3,13 @@ package com.tencent.bkrepo.repository.service.repo.impl
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_PROXY_PROJECT
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.model.TRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.service.repo.SoftwareRepositoryService
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -32,7 +31,7 @@ class SoftwareRepositoryServiceImpl(
         name: String?,
         type: RepositoryType?
     ): Page<RepositoryInfo> {
-        val query = buildListQuery(projectId, name, type, includeGeneric = true)
+        val query = buildListQuery(projectId, name, type, includeGeneric = false)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val totalRecords = repositoryDao.count(query)
         val records = repositoryDao.find(query.with(pageRequest)).map { convertToInfo(it)!! }
@@ -63,10 +62,11 @@ class SoftwareRepositoryServiceImpl(
         val criteria = Criteria()
         if (projectId != null && projectId.isNotBlank()) {
             criteria.and(TRepository::projectId).`is`(projectId)
-        }  else {
+        } else {
             criteria.and(TRepository::projectId).ne(PUBLIC_PROXY_PROJECT)
         }
         criteria.and(TRepository::display).ne(false)
+        criteria.and(TRepository::category).`is`(RepositoryCategory.LOCAL)
         if (repoType == null && !includeGeneric) criteria.and(TRepository::type).ne(RepositoryType.GENERIC)
         if (repoType != null) {
             criteria.and(TRepository::type).isEqualTo(repoType)
@@ -77,7 +77,6 @@ class SoftwareRepositoryServiceImpl(
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(SoftwareRepositoryServiceImpl::class.java)
         private fun convertToInfo(tRepository: TRepository?): RepositoryInfo? {
             return tRepository?.let {
                 RepositoryInfo(
