@@ -22,10 +22,6 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     private val md5: MessageDigest = MessageDigest.getInstance("MD5")
     private val adler32RollingHash = Adler32RollingHash(blockSize)
 
-    init {
-        adjustWindowBufferSize()
-    }
-
     /**
      * 对文件进行分块和输出校验和信息
      * @param file 需要处理的文件
@@ -77,10 +73,11 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * */
     fun diff(file: File, checksumStream: InputStream, deltaOutput: OutputStream, reuseThreshold: Float): DiffResult {
         // 使用滑动窗口检测,找到与远端相同的部分
+        val index = ChecksumIndex(checksumStream)
+        val window = BufferedSlidingWindow(blockSize, windowBufferSize, file.inputStream(), file.length())
         val raf = RandomAccessFile(file, READ)
         raf.use {
-            val index = ChecksumIndex(checksumStream)
-            return detecting(it, index, deltaOutput, reuseThreshold)
+            return detecting(window, index, deltaOutput, it)
         }
     }
 
@@ -93,16 +90,16 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * @param reuseThreshold 重复率阈值
      * */
     private fun detecting(
-        raf: RandomAccessFile,
+        window: BufferedSlidingWindow,
         index: ChecksumIndex,
         outputStream: OutputStream,
+        raf: RandomAccessFile,
         reuseThreshold: Float
     ): DiffResult {
-        val window = BufferedSlidingWindow(blockSize, windowBufferSize, raf)
         var content: ByteArray
         var deltaStart: Long
         var deltaEnd: Long
-        var lastSamePos = 0L
+        var nextDeltaStart = 0L
         var reuse = 0
         while (window.hasNext()) {
             /*
@@ -126,17 +123,17 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
                 }
             }
             if (checksum != null) {
-                deltaStart = lastSamePos
+                deltaStart = nextDeltaStart
                 deltaEnd = window.headPos()
                 checkAndWriteDelta(deltaStart, deltaEnd, raf, outputStream)
-                lastSamePos = window.tailPos()
+                nextDeltaStart = window.tailPos() + 1
                 val seqData = Ints.toByteArray(checksum.seq)
                 outputStream.write(seqData)
                 reuse++
             }
         }
         // 确定文件末端是否是增量数据
-        deltaStart = lastSamePos
+        deltaStart = nextDeltaStart
         deltaEnd = raf.length()
         if (deltaEnd - deltaStart > 0) {
             checkAndWriteDelta(deltaStart, deltaEnd, raf, outputStream)
@@ -323,7 +320,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * 从源文件拷贝数据
      * @param newFileOutputStream 新文件输出流
      * @param seq 源文件块序列号
-     * @param raf 源文件
+     * @param blockInputStream 源数据
      * @param blockData 块数据
      * */
     private fun copyOldBlock(
@@ -370,20 +367,9 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         }
     }
 
-    /**
-     * 调整window buffer大小
-     * */
-    private fun adjustWindowBufferSize() {
-        if (windowBufferSize >= blockSize) {
-            windowBufferSize = (blockSize shr 2).coerceAtLeast(MIN_WINDOW_BUFFER_SIZE)
-            logger.info("windowBufferSize granter than blockSize,resize it to $windowBufferSize")
-        }
-    }
-
     companion object {
         const val DEFAULT_BLOCK_SIZE = 2048
-        const val DEFAULT_WINDOW_BUFFER_SIZE = 512
-        const val MIN_WINDOW_BUFFER_SIZE = 2
+        const val DEFAULT_WINDOW_BUFFER_SIZE = 16 * 1024 * 1024
         val BEGIN_FLAG: ByteArray = Ints.toByteArray(-1)
         const val READ = "r"
     }

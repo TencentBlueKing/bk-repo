@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 
 class BkSyncTest {
 
-    private val bkSync = BkSync(4, 2)
+    private val bkSync = BkSync(4)
     private val oldData = byteArrayOf(
         1, 2, 3, 4,
         5, 6, 7, 8,
@@ -97,7 +97,7 @@ class BkSyncTest {
         newFile.writeBytes(fileData)
         bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
 
-        // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(2b) 
+        // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(2b)
         Assertions.assertEquals(22, deltaOutput.size())
         val deltaData = deltaOutput.toByteArray()
         Assertions.assertEquals(14, deltaData.last())
