@@ -2,12 +2,13 @@ package com.tencent.bkrepo.common.bksync
 
 import com.tencent.bkrepo.common.api.collection.MutablePair
 import java.io.RandomAccessFile
+import kotlin.math.ceil
 
 /**
  * 使用缓冲区的滑动窗口
  * 支持移动一个字节和移动整个窗口
  * */
-class BufferedSlidingWindow(private val windowSize: Int, val bufferSize: Int, private val raf: RandomAccessFile) {
+class BufferedSlidingWindow(val windowSize: Int, val bufferSize: Int, private val raf: RandomAccessFile) {
 
     private val fileLength = raf.length()
 
@@ -98,6 +99,13 @@ class BufferedSlidingWindow(private val windowSize: Int, val bufferSize: Int, pr
      * */
     fun tailPos(): Long {
         return tailBuffer.start + tailBuffer.offset
+    }
+
+    /**
+     * 获取剩余窗口数量
+     */
+    fun remainingWindowCount(): Int {
+        return ceil((fileLength - tailPos()) / windowSize.toDouble()).toInt()
     }
 
     /**

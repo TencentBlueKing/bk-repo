@@ -4,6 +4,7 @@ import com.google.common.primitives.Ints
 import com.tencent.bkrepo.common.bksync.checksum.Adler32RollingHash
 import com.tencent.bkrepo.common.bksync.checksum.Checksum
 import com.tencent.bkrepo.common.api.util.StreamUtils.readFully
+import com.tencent.bkrepo.common.bksync.transfer.exception.InterruptedRollingException
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -71,13 +72,14 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * @param file 需要上传的文件
      * @param checksumStream 远端checksum
      * @param deltaOutput delta output stream
+     * @param reuseThreshold 重复率阈值
      * */
-    fun diff(file: File, checksumStream: InputStream, deltaOutput: OutputStream): DiffResult {
+    fun diff(file: File, checksumStream: InputStream, deltaOutput: OutputStream, reuseThreshold: Float): DiffResult {
         // 使用滑动窗口检测,找到与远端相同的部分
         val raf = RandomAccessFile(file, READ)
         raf.use {
             val index = ChecksumIndex(checksumStream)
-            return detecting(it, index, deltaOutput)
+            return detecting(it, index, deltaOutput, reuseThreshold)
         }
     }
 
@@ -87,8 +89,14 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * @param raf 待检测的文件
      * @param index 校验和索引
      * @param outputStream delta output stream
+     * @param reuseThreshold 重复率阈值
      * */
-    private fun detecting(raf: RandomAccessFile, index: ChecksumIndex, outputStream: OutputStream): DiffResult {
+    private fun detecting(
+        raf: RandomAccessFile,
+        index: ChecksumIndex,
+        outputStream: OutputStream,
+        reuseThreshold: Float
+    ): DiffResult {
         val window = BufferedSlidingWindow(blockSize, windowBufferSize, raf)
         var content: ByteArray
         var deltaStart: Long
@@ -110,7 +118,11 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             val rollingHash = adler32RollingHash.digest()
             var checksum = search(rollingHash.toInt(), index, window)
             if (checksum == null) {
-                checksum = rolling(window, adler32RollingHash, index)
+                checksum = try {
+                    rolling(window, adler32RollingHash, index, reuse, reuseThreshold)
+                } catch (e: InterruptedRollingException) {
+                    return DiffResult(reuse, index.total)
+                }
             }
             if (checksum != null) {
                 deltaStart = lastSamePos
@@ -172,12 +184,18 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * @param slidingWindow 滑动窗口
      * @param adler32RollingHash 滚动哈希
      * @param index 校验和索引
+     * @param reuse 重复使用的块数量
+     * @param reuseThreshold 重复使用率阈值
      * */
     private fun rolling(
         slidingWindow: BufferedSlidingWindow,
         adler32RollingHash: Adler32RollingHash,
-        index: ChecksumIndex
+        index: ChecksumIndex,
+        reuse: Int,
+        reuseThreshold: Float
     ): Checksum? {
+        var checkInterruptFlag = slidingWindow.windowSize
+        val halfWindowSize = slidingWindow.windowSize / 2
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
             adler32RollingHash.rotate(remove, enter)
@@ -185,6 +203,16 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             val checksum = search(rollingHash.toInt(), index, slidingWindow)
             if (checksum != null) {
                 return checksum
+            }
+            // 剩余窗口都可以重复利用时的最大重复使用率
+            checkInterruptFlag = (checkInterruptFlag - 1) % halfWindowSize
+            if (checkInterruptFlag == 0) {
+                val maxReuseRate = (slidingWindow.remainingWindowCount() + reuse) / index.total.toDouble()
+                if (maxReuseRate < reuseThreshold) {
+                    logger.info("Even if remaining window can be reused, " +
+                        "the reuse rate is still less than the threshold")
+                    throw InterruptedRollingException()
+                }
             }
         }
         return null
