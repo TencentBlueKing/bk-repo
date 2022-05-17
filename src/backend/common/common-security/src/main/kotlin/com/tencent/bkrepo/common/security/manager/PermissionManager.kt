@@ -335,7 +335,8 @@ open class PermissionManager(
     private fun matchApi(scope: String): Boolean {
         val stackTraceElements =
             Thread.currentThread().stackTrace.toList().filter { it.toString().startsWith(PACKAGE_NAME_PREFIX) }.map {
-                it.toString().replace(Regex("\\\$\\\$(.*)\\\$\\\$[a-z0-9]+"), "").substringBefore("(")
+                it.toString().replace(Regex("\\\$\\\$(.*)\\\$\\\$[a-z0-9]+"), "")
+                    .substringBefore("(")
             }
         logger.debug("stack trace elements: $stackTraceElements")
         val pattern = wildcardToRegex(scope)
@@ -422,14 +423,16 @@ open class PermissionManager(
                     return
                 }
                 logger.info(
-                    "check external permission error, url[${request.url()}], project[$projectId], repo[$repoName]," + " nodes$paths, code[${it.code()}], response[$content]"
+                    "check external permission error, url[${request.url()}], project[$projectId], repo[$repoName]," +
+                            " nodes$paths, code[${it.code()}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
 
         } catch (e: IOException) {
             logger.error(
-                "check external permission error," + "url[${request.url()}], project[$projectId], repo[$repoName], nodes$paths, $e"
+                "check external permission error," + "url[${request.url()}], project[$projectId], " +
+                        "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }

@@ -39,6 +39,13 @@ class UserSoftwarePackageController(
         @RequestParam repoName: String?,
         @RequestParam packageName: String?
     ): Response<List<ProjectPackageOverview>> {
-        return ResponseBuilder.success(softwarePackageService.packageOverview(repoType, projectId, repoName, packageName))
+        return ResponseBuilder.success(
+            softwarePackageService.packageOverview(
+                repoType = repoType,
+                projectId = projectId,
+                repoName = repoName,
+                packageName = packageName
+            )
+        )
     }
 }
