@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.docker.model
 
 import com.tencent.bkrepo.common.api.constant.StringPool.EMPTY
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 
 /**
  * docker digest

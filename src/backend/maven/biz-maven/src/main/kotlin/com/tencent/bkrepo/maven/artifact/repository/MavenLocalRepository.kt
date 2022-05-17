@@ -98,7 +98,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.regex.Pattern
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.apache.maven.artifact.repository.metadata.Snapshot
 import org.apache.maven.artifact.repository.metadata.SnapshotVersion
 import org.apache.maven.artifact.repository.metadata.Versioning
