@@ -32,7 +32,6 @@ package com.tencent.bkrepo.scanner.utils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
@@ -107,28 +106,21 @@ object ScanPlanConverter {
         }
     }
 
-    fun convert(
-        scanPlanRequest: UpdateScanPlanRequest,
-        curRepoNames: List<String>,
-        curRule: Rule,
-        planType: String
-    ): ScanPlan {
+    fun convert(scanPlanRequest: UpdateScanPlanRequest): ScanPlan {
         return with(scanPlanRequest) {
-            val rule = if (repoNameList == null && artifactRules == null) {
-                null
+            val (repoNames, filterRule) = if (scanOnNewArtifact != null && scanOnNewArtifact!!) {
+                Pair(RuleUtil.getRepoNames(rule), rule)
             } else {
-                val repoNames = repoNameList ?: curRepoNames
-                val artifactRules = artifactRules ?: RuleConverter.convert(curRule)
-                RuleConverter.convert(projectId!!, repoNames, artifactRules, planType)
+                Pair(null, null)
             }
             ScanPlan(
                 id = id,
                 projectId = projectId,
                 name = name,
                 description = description,
-                scanOnNewArtifact = autoScan,
-                repoNames = repoNameList,
-                rule = rule
+                scanOnNewArtifact = scanOnNewArtifact,
+                repoNames = repoNames,
+                rule = filterRule
             )
         }
     }
@@ -142,8 +134,8 @@ object ScanPlanConverter {
                 scanner = scanner,
                 description = description,
                 scanOnNewArtifact = autoScan,
-                repoNames = repoNameList,
-                rule = RuleConverter.convert(projectId, repoNameList, artifactRules, type)
+                repoNames = emptyList(),
+                rule = RuleConverter.convert(projectId, emptyList(), emptyList(), type)
             )
         }
     }

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.common.query.model.Rule
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -35,7 +36,8 @@ import io.swagger.annotations.ApiModelProperty
 data class ScanRequest(
     @ApiModelProperty("扫描器名")
     val scanner: String? = null,
-    @ApiModelProperty("扫描方案名")
+    @ApiModelProperty("扫描方案id")
+    @JsonAlias("id")
     val planId: String? = null,
     @ApiModelProperty("扫描文件匹配规则")
     val rule: Rule? = null,

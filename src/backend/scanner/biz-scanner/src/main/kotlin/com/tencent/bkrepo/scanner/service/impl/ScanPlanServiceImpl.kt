@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -159,12 +158,8 @@ class ScanPlanServiceImpl(
             if (id.isNullOrEmpty()) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "planId is empty")
             }
-            val plan = scanPlanDao.find(projectId!!, id!!)
-                ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, request.toString())
 
-            scanPlanDao.update(
-                ScanPlanConverter.convert(request, plan.repoNames, plan.rule.readJsonString(), plan.type)
-            )
+            scanPlanDao.update(ScanPlanConverter.convert(request))
             return scanPlanDao.findById(request.id!!)!!.let { ScanPlanConverter.convert(it) }
         }
     }

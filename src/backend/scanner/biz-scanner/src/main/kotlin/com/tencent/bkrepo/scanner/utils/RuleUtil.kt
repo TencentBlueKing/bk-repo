@@ -25,24 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.scanner.utils
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.tencent.bkrepo.common.query.model.Rule
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class UpdateScanPlanRequest(
-    @ApiModelProperty("方案ID")
-    val id: String? = null,
-    @ApiModelProperty("项目ID")
-    val projectId: String? = null,
-    @ApiModelProperty("方案名称")
-    val name: String? = null,
-    @ApiModelProperty("描述")
-    val description: String? = null,
-    @ApiModelProperty("是否自动扫描")
-    val scanOnNewArtifact: Boolean? = null,
-    @ApiModelProperty("自动扫描规则，包含仓库和制品规则")
-    val rule: Rule? = null
-)
+object RuleUtil {
+
+    fun getRepoNames(rule: Rule?): List<String> {
+        if (rule == null) return emptyList()
+
+        require(rule is Rule.NestedRule)
+        if (rule.rules.isEmpty()) return emptyList()
+        val repoRule = getQueryRule(rule, NodeInfo::repoName.name)
+        return if (repoRule == null) {
+            emptyList()
+        } else {
+            repoRule.value as List<String>
+        }
+    }
+
+    private fun getQueryRule(rule: Rule.NestedRule, field: String): Rule.QueryRule? {
+        return rule.rules.firstOrNull {
+            it is Rule.QueryRule && it.field == field
+        } as Rule.QueryRule?
+    }
+}

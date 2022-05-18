@@ -43,6 +43,22 @@ import com.tencent.bkrepo.scanner.pojo.rule.RuleType
 
 object RuleConverter {
 
+    fun convert(projectId: String, rule: Rule?): Rule {
+        val projectIdRule = Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
+        val filterRule = NestedRule(mutableListOf(projectIdRule), AND)
+        if (rule == null) return filterRule
+
+        require(rule is NestedRule)
+        if (rule.rules.isEmpty()) return filterRule
+        if (rule.relation == OR) {
+            filterRule.rules.add(rule)
+        } else {
+            filterRule.rules.addAll(rule.rules)
+        }
+
+        return filterRule
+    }
+
     fun convert(projectId: String, repoNames: List<String>, rules: List<ArtifactRule>, repoType: String? = null): Rule {
         val rule = createProjectIdAdnRepoRule(projectId, repoNames, repoType)
 
