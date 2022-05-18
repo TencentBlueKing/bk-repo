@@ -67,11 +67,11 @@ class SoftwareRepositoryServiceImpl(
         }
         criteria.and(TRepository::display).ne(false)
         criteria.and(TRepository::category).`is`(RepositoryCategory.LOCAL)
-        if (repoType == null && !includeGeneric) criteria.and(TRepository::type).ne(RepositoryType.GENERIC)
+        if (repoType == null && !includeGeneric) criteria.and(TRepository::type)
+            .`in`(RepositoryType.HELM, RepositoryType.RDS)
         if (repoType != null) {
             criteria.and(TRepository::type).isEqualTo(repoType)
         }
-        criteria.and(TRepository::type).`in`(RepositoryType.HELM, RepositoryType.RDS)
         criteria.orOperator(publicCriteria, systemCriteria)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
