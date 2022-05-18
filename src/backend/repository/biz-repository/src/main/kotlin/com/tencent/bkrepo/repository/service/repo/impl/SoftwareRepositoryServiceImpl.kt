@@ -71,6 +71,7 @@ class SoftwareRepositoryServiceImpl(
         if (repoType != null) {
             criteria.and(TRepository::type).isEqualTo(repoType)
         }
+        criteria.and(TRepository::type).`in`(RepositoryType.HELM, RepositoryType.RDS)
         criteria.orOperator(publicCriteria, systemCriteria)
         repoName?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::name).regex("^$this") }
         return Query(criteria).with(Sort.by(Sort.Direction.DESC, TRepository::createdDate.name))
