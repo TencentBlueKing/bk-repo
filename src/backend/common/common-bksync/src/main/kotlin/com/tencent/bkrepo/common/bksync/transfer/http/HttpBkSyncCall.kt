@@ -120,7 +120,8 @@ class HttpBkSyncCall(
 
     private fun signFile(request: UploadRequest): ByteArray {
         logger.info("Start sign file.")
-        val md5DigestInputStream = DigestInputStream(request.file.inputStream(), MessageDigest.getInstance("MD5"))
+        val md5DigestInputStream =
+            DigestInputStream(request.file.inputStream().buffered(DEFAULT_BUFFER_SIZE), MessageDigest.getInstance("MD5"))
         val byteOutputStream = ByteArrayOutputStream()
         BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
         val md5Data = md5DigestInputStream.messageDigest.digest()
@@ -405,6 +406,7 @@ class HttpBkSyncCall(
         private const val QUERY_PARAM_MD5 = "md5"
         private const val HEADER_MD5 = "X-BKREPO-MD5"
         private const val UPLOAD_ACTION = "UPLOAD"
+        private const val DEFAULT_BUFFER_SIZE = 16 * 1024 * 1024
         private val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("BkSync Signer-%d").build()
         private val executor = ThreadPoolExecutor(
             0, Integer.MAX_VALUE, 0, TimeUnit.SECONDS,
