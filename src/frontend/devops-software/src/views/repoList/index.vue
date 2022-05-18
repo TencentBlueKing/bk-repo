@@ -15,7 +15,7 @@
                 class="ml10 w250"
                 @change="handlerPaginationChange()"
                 :placeholder="$t('allTypes')">
-                <bk-option v-for="type in repoEnum" :key="type" :id="type" :name="type">
+                <bk-option v-for="type in repoEnum.filter(r => r !== 'generic')" :key="type" :id="type" :name="type">
                     <div class="flex-align-center">
                         <Icon size="20" :name="type" />
                         <span class="ml10 flex-1 text-overflow">{{type}}</span>
