@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.generic.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -44,13 +45,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -65,7 +69,6 @@ class DeltaSyncService(
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
     storageProperties: StorageProperties,
-    val taskExecutor: ThreadPoolTaskScheduler,
     private val redisOperation: RedisOperation
 ) : ArtifactService() {
 
@@ -124,9 +127,12 @@ class DeltaSyncService(
             val emitter = SseEmitter(patchTimeout)
             val patchContext = buildPatchContext(counterInputStream, emitter, this, blockInputStream)
             emitter.onCompletion { patchContext.hasCompleted.set(true) }
-            val reportAction = { reportProcess(patchContext) }
-            val ackFuture = taskExecutor.scheduleWithFixedDelay(reportAction, HEART_BEAT_INTERVAL)
-            taskExecutor.execute {
+            val reportAction = Runnable { reportProcess(patchContext) }
+            val ackFuture = heartBeatExecutor.scheduleWithFixedDelay(
+                reportAction, 0,
+                HEART_BEAT_INTERVAL, TimeUnit.SECONDS
+            )
+            patchExecutor.execute {
                 try {
                     doPatch(patchContext)
                 } finally {
@@ -172,7 +178,6 @@ class DeltaSyncService(
      * @param patchContext patch上下文
      * */
     private fun doPatch(patchContext: PatchContext) {
-
         with(patchContext) {
             try {
                 verifyCheckSum(uploadMd5, uploadSha256, file)
@@ -200,6 +205,7 @@ class DeltaSyncService(
                 emitter.complete()
             } catch (e: Exception) {
                 emitter.completeWithError(e)
+                logger.error("Patch artifactInfo[$artifactInfo] failed.", e)
             }
         }
     }
@@ -230,7 +236,9 @@ class DeltaSyncService(
                     clientError.set(true)
                     return
                 }
-                logger.error("Send sse event failed.", e)
+                logger.error("Send sse event io error.", e)
+            } catch (e: Exception) {
+                logger.error("Send sse event unknown error.", e)
             }
         }
     }
@@ -439,5 +447,14 @@ class DeltaSyncService(
         // 3s patch 回复心跳时间，保持连接存活
         private const val HEART_BEAT_INTERVAL = 3000L
         private const val SPEED_KEY_PREFIX = "delta:speed:"
+        private val heartBeatExecutor = ScheduledThreadPoolExecutor(
+            Runtime.getRuntime().availableProcessors(),
+            ThreadFactoryBuilder().setNameFormat("BkSync-heart-beat-%d").build()
+        )
+        private val patchExecutor = ThreadPoolExecutor(
+            200, 200, 60, TimeUnit.SECONDS,
+            LinkedBlockingQueue<Runnable>(8192),
+            ThreadFactoryBuilder().setNameFormat("BkSync-patch-%d").build()
+        )
     }
 }
