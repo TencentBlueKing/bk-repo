@@ -72,8 +72,8 @@ class DeltaSyncService(
     private val deltaProperties = genericProperties.delta
     private val blockSize = deltaProperties.blockSize.toBytes().toInt()
     private val patchTimeout = deltaProperties.patchTimeout.toMillis()
-    val signFileProjectId = deltaProperties.projectId!!
-    val signFileRepoName = deltaProperties.repoName!!
+    val signFileProjectId = deltaProperties.projectId
+    val signFileRepoName = deltaProperties.repoName
     val signRepo: RepositoryDetail by lazy {
         repositoryClient.getRepoDetail(signFileProjectId, signFileRepoName).data
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, signFileRepoName)

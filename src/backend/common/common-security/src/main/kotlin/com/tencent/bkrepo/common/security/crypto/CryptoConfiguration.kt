@@ -25,26 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.security.crypto
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import com.tencent.bkrepo.common.security.util.RsaUtils
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String = "",
-    var repoName: String = "",
-    var whiteList: List<String> = listOf(ALL),
-    var speedTestExpired: Duration = Duration.ofMinutes(10)
-) {
-    companion object {
-        const val ALL = "all"
-    }
+@Configuration
+@EnableConfigurationProperties(CryptoProperties::class)
+class CryptoConfiguration {
+    @Bean
+    fun rsaUtils(cryptoProperties: CryptoProperties) = RsaUtils(cryptoProperties)
 }

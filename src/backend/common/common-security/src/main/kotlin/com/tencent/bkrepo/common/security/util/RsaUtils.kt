@@ -25,26 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.security.util
 
-import org.springframework.util.unit.DataSize
-import java.time.Duration
+import cn.hutool.crypto.asymmetric.KeyType
+import cn.hutool.crypto.asymmetric.RSA
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 
-class DeltaProperties(
-    /**
-     * 增量同步的块大小
-     * */
-    var blockSize: DataSize = DataSize.ofBytes(2048),
-    /**
-     * patch 超时时间
-     * */
-    var patchTimeout: Duration = Duration.ofMinutes(30),
-    var projectId: String = "",
-    var repoName: String = "",
-    var whiteList: List<String> = listOf(ALL),
-    var speedTestExpired: Duration = Duration.ofMinutes(10)
+/**
+ * RSA 非对称加密工具类
+ */
+class RsaUtils(
+    cryptoProperties: CryptoProperties
 ) {
+    init {
+        publicKey = cryptoProperties.publicKeyStr
+        privateKey = cryptoProperties.privateKeyStr
+        rsa = RSA(
+            cryptoProperties.rsaAlgorithm,
+            cryptoProperties.privateKeyStr,
+            cryptoProperties.publicKeyStr
+        )
+    }
+
     companion object {
-        const val ALL = "all"
+        lateinit var rsa: RSA
+        lateinit var publicKey: String
+        lateinit var privateKey: String
+        /**
+         * 公钥加密
+         * @param password 需要解密的密码
+         */
+        fun encrypt(password: String): String {
+            return rsa.encryptBcd(password, KeyType.PublicKey)
+        }
+
+        /**
+         * 私钥解密，返回解密后的密码
+         * @param password 前端加密后的密码
+         */
+        fun decrypt(password: String): String {
+            return rsa.decryptStr(password, KeyType.PrivateKey)
+        }
     }
 }

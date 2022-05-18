@@ -29,38 +29,23 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.api
+package com.tencent.bkrepo.repository.pojo.proxy
 
-import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 代理源服务接口
+ * 代理源创建请求
  */
-@Primary
-@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyChannelClient")
-@RequestMapping("/service/proxy-channel")
-interface ProxyChannelClient {
-
-    @ApiOperation("查询代理源信息")
-    @GetMapping("/{projectId}/{repoName}")
-    fun getByUniqueId(
-        @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
-        @ApiParam(value = "type", required = true)
-        @RequestParam repoType: String,
-        @ApiParam(value = "name", required = true)
-        @RequestParam name: String
-    ): Response<ProxyChannelInfo?>
-}
+@ApiModel("代理源删除请求")
+data class ProxyChannelDeleteRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("代理源名称", required = true)
+    val name: String,
+    @ApiModelProperty("代理源仓库类型", required = true)
+    val repoType: RepositoryType
+)
