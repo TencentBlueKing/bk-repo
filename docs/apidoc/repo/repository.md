@@ -95,15 +95,6 @@
 - 功能说明：
   - 中文：删除仓库
   - English：delete repo
-- 请求体
-
-  ```json
-  {
-    "public": false,
-    "description": "repo description",
-    "configuration": null
-  }
-  ```
 
 - 请求字段说明
 
@@ -563,4 +554,4 @@
 
 ### 依赖源的差异化配置项
 
-各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。
+各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。 
