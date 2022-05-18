@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import org.slf4j.LoggerFactory
@@ -40,7 +41,8 @@ import kotlin.math.max
 @ApiModel("扫描器配置")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = ArrowheadScanner::class, name = ArrowheadScanner.TYPE)
+    JsonSubTypes.Type(value = ArrowheadScanner::class, name = ArrowheadScanner.TYPE),
+    JsonSubTypes.Type(value = DependencyScanner::class, name = DependencyScanner.TYPE)
 )
 open class Scanner(
     @ApiModelProperty("扫描器名")

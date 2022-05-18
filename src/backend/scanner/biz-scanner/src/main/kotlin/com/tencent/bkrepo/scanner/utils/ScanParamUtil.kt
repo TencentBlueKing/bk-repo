@@ -56,8 +56,20 @@ object ScanParamUtil {
                 if (fullPath.isNullOrEmpty()) {
                     throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "fullPath[$fullPath]")
                 }
+                if (!checkPackage(fullPath)) {
+                    throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "fullPath[$fullPath]")
+                }
             }
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "repoType[${repoType.name}]")
+        }
+    }
+
+    /**
+     * 包类型检查：支持ipa/apk/apks/aab/jar类型包
+     */
+    fun checkPackage(artifactName: String): Boolean {
+        return listOf(".apk", ".apks", ".aab", ".ipa", ".jar").any {
+            artifactName.endsWith(it)
         }
     }
 }

@@ -25,14 +25,62 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-checker:biz-checker"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:3.2.13")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.13")
+package com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result
+
+import com.fasterxml.jackson.annotation.JsonAlias
+import com.tencent.bkrepo.common.checker.pojo.Cvssv2
+import com.tencent.bkrepo.common.checker.pojo.Cvssv3
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("DependencyCheck漏洞信息")
+data class DependencyItem(
+    /**
+     * CVE-2017-18349
+     */
+    @ApiModelProperty("cve id")
+    val cveId: String,
+
+    /**
+     * CVE-2017-18349
+     */
+    @ApiModelProperty("漏洞名/漏洞标题")
+    val name: String,
+
+    @ApiModelProperty("所属依赖")
+    val dependency: String,
+
+    @ApiModelProperty("引入版本")
+    val version: String,
+
+    /**
+     * CRITICAL,HIGH,MEDIUM,LOW
+     */
+    @ApiModelProperty("等级")
+    val severity: String,
+
+    @ApiModelProperty("漏洞描述")
+    @JsonAlias("description")
+    val description: String,
+
+    @ApiModelProperty("官方解决方案")
+    @JsonAlias("official_solution")
+    val officialSolution: String?,
+
+    @ApiModelProperty("解决方案")
+    @JsonAlias("defense_solution")
+    val defenseSolution: String?,
+
+    @ApiModelProperty("相关链接")
+    val references: List<String>?,
+
+    @ApiModelProperty("cvss V2 漏洞影响评价")
+    val cvssV2Vector: Cvssv2?,
+
+    @ApiModelProperty("cvss V3 漏洞影响评价")
+    val cvssV3: Cvssv3?
+) {
+    companion object {
+        const val TYPE = "DEPENDENCY_ITEM"
+    }
 }

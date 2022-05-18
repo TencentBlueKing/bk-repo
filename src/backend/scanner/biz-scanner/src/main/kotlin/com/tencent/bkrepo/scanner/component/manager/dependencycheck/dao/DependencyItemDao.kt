@@ -25,14 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-checker:biz-checker"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:3.2.13")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.13")
+package com.tencent.bkrepo.scanner.component.manager.dependencycheck.dao
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
+import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ResultItemDao
+import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItem
+import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.stereotype.Repository
+
+@Repository
+class DependencyItemDao : ResultItemDao<TDependencyItem>() {
+    override fun customizePageBy(criteria: Criteria, arguments: ArrowheadLoadResultArguments): Criteria {
+        if (arguments.vulnerabilityLevels.isNotEmpty()) {
+            criteria.and(dataKey(DependencyItem::severity.name)).inValues(arguments.vulnerabilityLevels)
+        }
+        if (arguments.vulIds.isNotEmpty()) {
+            criteria.and(dataKey(DependencyItem::cveId.name)).inValues(arguments.vulIds)
+        }
+        return criteria
+    }
+
+    private fun dataKey(name: String) = "${TDependencyItem::data.name}.$name"
 }

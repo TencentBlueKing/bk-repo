@@ -25,14 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-checker:biz-checker"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:3.2.13")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.13")
-}
+package com.tencent.bkrepo.scanner.pojo.request.dependencecheck
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
+
+class DependencySaveResultArguments : SaveResultArguments(DependencyScanner.TYPE)

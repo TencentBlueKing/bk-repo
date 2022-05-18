@@ -25,14 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-checker:biz-checker"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:3.2.13")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.13")
+package com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("DependencyCheck扫描器扫描结果")
+data class DependencyScanExecutorResult(
+    override val scanStatus: String,
+    override val overview: Map<String, Any?>,
+    @ApiModelProperty("结果")
+    val dependencyItems: List<DependencyItem>
+) : ScanExecutorResult(scanStatus, overview, DependencyScanner.TYPE) {
+    companion object {
+
+        fun overviewKeyOfCve(level: String): String {
+            return "cve${level.capitalize()}Count"
+        }
+    }
 }

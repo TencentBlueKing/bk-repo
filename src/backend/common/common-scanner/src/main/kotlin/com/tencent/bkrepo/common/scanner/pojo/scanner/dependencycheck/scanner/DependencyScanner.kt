@@ -25,14 +25,32 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-checker:biz-checker"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:3.2.13")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.13")
+package com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner
+
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("DependencyCheck扫描器配置")
+class DependencyScanner(
+    override val name: String,
+    /**
+     * 格式为ArrowheadImageVersion::KnowledgeBaseVervion::StandaloneConfigTemplateVersion
+     * 或者ArrowheadImageVersion::KnowledgeBaseVervion
+     */
+    @ApiModelProperty("扫描器版本")
+    override val version: String,
+    @ApiModelProperty("扫描结束后是否清理工作目录")
+    val cleanWorkDir: Boolean = true,
+    @ApiModelProperty("最大允许的扫描时间")
+    val maxScanDuration: Long = DEFAULT_MAX_SCAN_DURATION
+) : Scanner(name, TYPE, version) {
+    companion object {
+        /**
+         * 扫描器和漏洞库版本号分隔符
+         */
+        const val VERSION_SPLIT = "::"
+        const val TYPE = "DependencyCheck"
+        const val DEFAULT_MAX_SCAN_DURATION = 10 * 60 * 1000L
+    }
 }

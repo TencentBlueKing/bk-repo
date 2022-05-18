@@ -37,6 +37,8 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TScanPlan
@@ -350,9 +352,10 @@ object ScanPlanConverter {
     }
 
     fun getCveOverviewKey(scannerType: String, level: String): String {
-        if (scannerType == ArrowheadScanner.TYPE) {
-            return ArrowheadScanExecutorResult.overviewKeyOfCve(level)
+        return when (scannerType) {
+            ArrowheadScanner.TYPE -> ArrowheadScanExecutorResult.overviewKeyOfCve(level)
+            DependencyScanner.TYPE -> DependencyScanExecutorResult.overviewKeyOfCve(level)
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, scannerType, level)
         }
-        throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, scannerType, level)
     }
 }

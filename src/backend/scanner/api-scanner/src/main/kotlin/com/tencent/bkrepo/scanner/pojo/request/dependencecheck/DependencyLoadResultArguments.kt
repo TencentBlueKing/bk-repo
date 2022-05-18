@@ -25,14 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-checker:biz-checker"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:3.2.13")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:3.2.13")
-}
+package com.tencent.bkrepo.scanner.pojo.request.dependencecheck
+
+import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+
+@ApiModel("DependencyCheck扫描结果拉取参数")
+data class DependencyLoadResultArguments(
+    @ApiModelProperty("需要的cve列表")
+    val vulIds: List<String> = emptyList(),
+    @ApiModelProperty("需要的漏洞严重性等级列表")
+    val vulnerabilityLevels: List<String> = emptyList(),
+    @ApiModelProperty("扫描结果类型")
+    val reportType: String,
+    @ApiModelProperty("分页参数")
+    val pageLimit: PageLimit = PageLimit()
+) : LoadResultArguments(DependencyScanner.TYPE)

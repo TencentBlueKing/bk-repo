@@ -36,6 +36,10 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -238,6 +242,8 @@ class ScanServiceImpl @Autowired constructor(
 
             // 保存详细扫描结果
             val resultManager = scanExecutorResultManagers[scanner.type]
+            logger.info("scanExecutorResultManagers:${scanExecutorResultManagers.toJsonString()}, " +
+                "resultManager:${resultManager?.toJsonString()}")
             resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner, scanExecutorResult!!)
         }
     }
@@ -445,7 +451,11 @@ class ScanServiceImpl @Autowired constructor(
             val subtask = planArtifactLatestSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
             permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
-
+            reportType = when (subtask.scannerType) {
+                ArrowheadScanner.TYPE -> CveSecItem.TYPE
+                DependencyScanner.TYPE -> DependencyItem.TYPE
+                else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, subtask.scannerType)
+            }
             val scanner = scannerService.get(subtask.scanner)
             val arguments = Converter.convertToLoadArguments(request, scanner.type)
             val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
