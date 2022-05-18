@@ -13,7 +13,7 @@
             </router-link>
             <!-- <a class="ml20 link" target="_self" href="/software/repoList">
                 <i class="devops-icon icon-sort"></i>
-                <span class="ml5">软件源</span>
+                <span class="ml5">Artifact Hub</span>
             </a> -->
             <bk-select
                 class="ml20 bkre-project-select"
