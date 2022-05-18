@@ -32,4 +32,4 @@ import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 
 class ScannerNotFoundException(
     scannerName: String
-): NotFoundException(ScannerMessageCode.SCANNER_NOT_FOUND, scannerName)
+) : NotFoundException(ScannerMessageCode.SCANNER_NOT_FOUND, scannerName)

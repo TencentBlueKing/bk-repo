@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/scan/quality")
 class UserScanQualityController(
-        private val scanQualityService: ScanQualityService
+    private val scanQualityService: ScanQualityService
 ) {
 
     @GetMapping("/{planId}")
@@ -41,5 +41,4 @@ class UserScanQualityController(
     ): Response<Boolean> {
         return ResponseBuilder.success(scanQualityService.updateScanQuality(planId, request))
     }
-
 }

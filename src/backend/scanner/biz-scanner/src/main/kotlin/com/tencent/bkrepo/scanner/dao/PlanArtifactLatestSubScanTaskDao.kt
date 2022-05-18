@@ -275,7 +275,7 @@ class PlanArtifactLatestSubScanTaskDao(
     }
 
     private fun updateOverview(planOverview: MutableMap<String, Long>, artifactOverview: Map<String, Number>?) {
-        if(artifactOverview == null) {
+        if (artifactOverview == null) {
             return
         }
 

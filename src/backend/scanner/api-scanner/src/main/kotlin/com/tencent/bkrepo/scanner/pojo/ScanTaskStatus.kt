@@ -30,7 +30,7 @@ package com.tencent.bkrepo.scanner.pojo
 /**
  * 任务状态
  */
-enum class ScanTaskStatus{
+enum class ScanTaskStatus {
     /**
      * 排队中
      */

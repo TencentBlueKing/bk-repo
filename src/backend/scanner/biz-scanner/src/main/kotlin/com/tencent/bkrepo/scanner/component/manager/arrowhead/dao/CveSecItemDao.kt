@@ -54,7 +54,7 @@ class CveSecItemDao : ResultItemDao<TCveSecItem>() {
 
         vulIds.forEach { vulId ->
             val prefix = vulId.substring(0, vulId.indexOf('-')).toLowerCase()
-            when(prefix) {
+            when (prefix) {
                 "cve" -> cveIds.add(vulId)
                 "cnnvd" -> cnnvdIds.add(vulId)
                 "cnvd" -> cnvdIds.add(vulId)

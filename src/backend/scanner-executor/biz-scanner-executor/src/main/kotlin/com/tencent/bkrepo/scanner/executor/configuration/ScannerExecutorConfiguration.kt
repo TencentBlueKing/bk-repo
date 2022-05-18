@@ -62,5 +62,4 @@ class ScannerExecutorConfiguration {
                 .build()
         }
     }
-
 }

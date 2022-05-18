@@ -58,7 +58,6 @@ class UserProjectScanConfigurationController(
         return ResponseBuilder.success(configuration)
     }
 
-
     @PutMapping
     fun update(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
         val configuration = projectScanConfigurationService.update(request)

@@ -71,12 +71,14 @@ class ScannerServiceImpl @Autowired constructor(
         with(scanner) {
             val userId = SecurityUtils.getUserId()
             val savedScanner = scannerDao.findByName(name) ?: throw ScannerNotFoundException(name)
-            return scannerDao.save(savedScanner.copy(
-                lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now(),
-                version = version,
-                config = scanner.toJsonString()
-            )).run { convert(this) }
+            return scannerDao.save(
+                savedScanner.copy(
+                    lastModifiedBy = userId,
+                    lastModifiedDate = LocalDateTime.now(),
+                    version = version,
+                    config = scanner.toJsonString()
+                )
+            ).run { convert(this) }
         }
     }
 

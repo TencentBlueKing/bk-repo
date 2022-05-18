@@ -339,7 +339,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?.overview
                 ?.let { Converter.convert(it) }
             logger.info("createFinishedSubTask scanTask:${scanTask.toJsonString()}, overview:${overview?.toJsonString()}")
-            //质量检查结果
+            // 质量检查结果
             val planId = scanTask.scanPlan?.id
             val qualityPass = if (planId != null && overview != null) {
                 scanQualityService.checkScanQualityRedLine(planId, overview)

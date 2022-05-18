@@ -20,5 +20,4 @@ interface ScanQualityService {
     fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean?
 
     fun checkScanQualityRedLineDetail(planId: String, scanResultOverview: Map<String, Number>): ScanQualityCheckedDetail
-
 }

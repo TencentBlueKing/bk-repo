@@ -244,8 +244,10 @@ class ScanServiceImpl @Autowired constructor(
 
             // 保存详细扫描结果
             val resultManager = scanExecutorResultManagers[scanner.type]
-            logger.info("scanExecutorResultManagers:${scanExecutorResultManagers.toJsonString()}, " +
-                "resultManager:${resultManager?.toJsonString()}")
+            logger.info(
+                "scanExecutorResultManagers:${scanExecutorResultManagers.toJsonString()}, " +
+                    "resultManager:${resultManager?.toJsonString()}"
+            )
             resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner, scanExecutorResult!!)
         }
     }
@@ -271,7 +273,7 @@ class ScanServiceImpl @Autowired constructor(
         // 子任务执行结束后唤醒项目另一个子任务
         scanTaskScheduler.notify(subTask.projectId)
 
-        //质量规则检查结果
+        // 质量规则检查结果
         val planId = subTask.planId
         logger.info("planId:$planId, overview:${overview.toJsonString()}")
         val qualityPass = if (planId != null && overview.isNotEmpty()) {

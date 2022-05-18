@@ -158,7 +158,8 @@ class IteratorManager(
      */
     private fun packageRule(rule: Rule): Boolean {
         if (rule is Rule.QueryRule &&
-            (rule.field == PackageSummary::key.name || rule.field == RuleArtifact::version.name)) {
+            (rule.field == PackageSummary::key.name || rule.field == RuleArtifact::version.name)
+        ) {
             return true
         }
 

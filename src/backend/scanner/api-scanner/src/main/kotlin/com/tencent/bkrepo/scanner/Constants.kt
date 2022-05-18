@@ -5,8 +5,6 @@ const val CVE_HIGH_COUNT = "cveHighCount"
 const val CVE_MEDIUM_COUNT = "cveMediumCount"
 const val CVE_LOW_COUNT = "cveLowCount"
 
-
-
 const val CRITICAL = "critical"
 const val HIGH = "high"
 const val MEDIUM = "medium"

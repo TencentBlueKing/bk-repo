@@ -50,7 +50,6 @@ class RedisAtomicLong(
         return redisOperation.increment(key, delta)!!
     }
 
-
     fun get(): Long {
         return redisOperation.get(key)?.toLong() ?: 0L
     }
@@ -58,5 +57,4 @@ class RedisAtomicLong(
     fun toDouble(): Double {
         return get().toDouble()
     }
-
 }

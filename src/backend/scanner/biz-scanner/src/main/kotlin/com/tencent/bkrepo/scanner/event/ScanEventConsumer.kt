@@ -176,8 +176,9 @@ class ScanEventConsumer(
                 val scanner = entry.key
                 val configuration = entry.value
 
-                if (configuration.autoScanRepoNames.isNotEmpty() && repoName !in configuration.autoScanRepoNames
-                    || !match(event, configuration.autoScanMatchRule)) {
+                if (configuration.autoScanRepoNames.isNotEmpty() && repoName !in configuration.autoScanRepoNames ||
+                    !match(event, configuration.autoScanMatchRule)
+                ) {
                     continue
                 }
 

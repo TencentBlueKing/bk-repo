@@ -48,7 +48,7 @@ interface ScannerService {
     fun get(name: String): Scanner
     /**
      * 获取扫描器
-     * 
+     *
      * @param name 扫描器名
      */
     fun find(name: String): Scanner?

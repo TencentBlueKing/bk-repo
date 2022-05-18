@@ -231,5 +231,4 @@ class ArrowheadResultManager @Autowired constructor(
         resultItemDao.deleteBy(credentialsKey, sha256, scanner)
         resultItemDao.insert(resultItems)
     }
-
 }

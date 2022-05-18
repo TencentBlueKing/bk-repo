@@ -53,20 +53,21 @@ class ScanQualityServiceImpl(
     }
 
     override fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean? {
-        //获取方案质量规则
+        // 获取方案质量规则
         val scanQuality = getScanQuality(planId)
-        //判断方案是否需要质量检查
+        // 判断方案是否需要质量检查
         val qualityCheck = qualityCheck(scanQuality)
-        logger.info("planId:$planId, scanResultOverview:${scanResultOverview.toJsonString()}" +
-            ", scanQuality:${scanQuality.toJsonString()}, qualityCheck:$qualityCheck")
-        //方案没有设置质量检查
+        logger.info(
+            "planId:$planId, scanResultOverview:${scanResultOverview.toJsonString()}" +
+                ", scanQuality:${scanQuality.toJsonString()}, qualityCheck:$qualityCheck"
+        )
+        // 方案没有设置质量检查
         if (!qualityCheck) return null
-        //方案有设置质量检查，检查质量规则是否通过
+        // 方案有设置质量检查，检查质量规则是否通过
         scanQualityRedLineList.forEach { redLine ->
             val scanIndex = scanResultOverview[redLine]
             val qualityIndex = scanQuality.getScanQualityRedLineByLevel(redLine)
-            if (scanIndex != null && qualityIndex != null
-                && scanIndex.toInt() > qualityIndex) {
+            if (scanIndex != null && qualityIndex != null && scanIndex.toInt() > qualityIndex) {
                 return false
             }
         }
@@ -103,19 +104,16 @@ class ScanQualityServiceImpl(
             lowStatus = detailsMap[CVE_LOW_COUNT],
             qualityStatus = (
                 detailsMap[CVE_CRITICAL_COUNT]?.status
-                    ?: true
-                    && detailsMap[CVE_HIGH_COUNT]?.status
-                    ?: true
-                    && detailsMap[CVE_MEDIUM_COUNT]?.status
-                    ?: true
-                    && detailsMap[CVE_LOW_COUNT]?.status
+                    ?: true && detailsMap[CVE_HIGH_COUNT]?.status
+                    ?: true && detailsMap[CVE_MEDIUM_COUNT]?.status
+                    ?: true && detailsMap[CVE_LOW_COUNT]?.status
                     ?: true
                 )
         )
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(javaClass)
+        private val logger = LoggerFactory.getLogger(ScanQualityServiceImpl::class.java)
         val scanQualityRedLineList = listOf(CVE_CRITICAL_COUNT, CVE_HIGH_COUNT, CVE_MEDIUM_COUNT, CVE_LOW_COUNT)
         fun ScanQualityCreateRequest.convertToMap(): Map<String, Any?> {
             val map = mutableMapOf<String, Any?>()
