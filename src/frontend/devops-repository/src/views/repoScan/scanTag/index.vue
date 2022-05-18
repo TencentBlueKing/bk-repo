@@ -1,5 +1,6 @@
 <template>
-    <span class="repo-tag scan-tag-container" :class="[status && 'hover-btn', status]"
+    <span class="repo-tag scan-tag-container"
+        :class="status"
         @click.stop="showScanList"
         v-bk-clickoutside="handleClickOutSide"
         :data-name="scanStatusEnum[status] || '未扫描'">
@@ -12,18 +13,13 @@
             :close-icon="false"
             :show-footer="false"
             :draggable="false">
-            <template v-if="scanList.length">
-                <div class="scan-item flex-between-center"
-                    v-for="scan in scanList"
-                    :key="scan.id">
-                    <span class="text-overflow" :class="{ 'hover-btn': scan.status === 'SUCCESS' }" style="max-width:150px;"
-                        @click="toReport(scan)" :title="scan.name">{{ scan.name }}</span>
-                    <span class="repo-tag" :class="scan.status">{{scanStatusEnum[scan.status]}}</span>
-                </div>
-            </template>
-            <empty-data class="m20" v-else>
-                <span class="ml10">暂无适配的扫描方案</span>
-            </empty-data>
+            <div class="scan-item flex-between-center"
+                v-for="scan in scanList"
+                :key="scan.id">
+                <span class="text-overflow" :class="{ 'hover-btn': scan.status === 'SUCCESS' }" style="max-width:150px;"
+                    @click="toReport(scan)" :title="scan.name">{{ scan.name }}</span>
+                <span class="repo-tag" :class="scan.status">{{scanStatusEnum[scan.status]}}</span>
+            </div>
         </bk-dialog>
     </span>
 </template>
@@ -61,7 +57,7 @@
                     projectId,
                     repoType,
                     repoName,
-                    packageKey: this.$route.query.package || undefined,
+                    packageKey: this.$route.query.packageKey || undefined,
                     version: version || undefined,
                     fullPath: this.fullPath || undefined
                 }).then(res => {
@@ -101,6 +97,7 @@
 </script>
 <style lang="scss" scoped>
 .scan-tag-container {
+    cursor: pointer;
     &:before {
         content: attr(data-name);
     }

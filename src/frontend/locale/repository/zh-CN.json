@@ -21,7 +21,7 @@
     "repoConfig": "仓库配置",
     "save": "保存",
     "returnBack": "返回",
-    "repoBaseInfo": "仓库信息",
+    "repoBaseInfo": "基本设置",
     "proxyConfig": "代理配置",
     "repoAddress": "仓库地址",
     "proxyConfigTips": "拉取本仓库不存在的制品时，将尝试从配置的代理地址去拉取。优先级：从上到下。",

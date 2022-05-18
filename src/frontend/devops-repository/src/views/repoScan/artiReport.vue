@@ -12,10 +12,26 @@
                     <span class="ml20">{{ baseInfo[item.key] }}</span>
                 </div>
             </div>
+            <div v-if="baseInfo.qualityRedLine !== null" class="arti-quality">
+                <div class="flex-align-center">
+                    <span class="mr20" style="color:var(--fontSubsidiaryColor);">质量规则</span>
+                    <span v-if="baseInfo.qualityRedLine" class="repo-tag SUCCESS">通过</span>
+                    <span v-else class="repo-tag FAILED">不通过</span>
+                </div>
+                <div class="status-sign"
+                    :class="item.id"
+                    v-for="item in qualityList"
+                    :key="item.id"
+                    :data-name="item.label">
+                </div>
+            </div>
             <div class="arti-leak">
-                <div v-for="item in leakBase" :key="item.key">
-                    <span style="color:var(--fontSubsidiaryColor);">{{ item.label }}</span>
-                    <span class="ml20">{{ segmentNumberThree(baseInfo[item.key]) }}</span>
+                <div style="color:var(--fontSubsidiaryColor);">漏洞数量统计</div><div></div>
+                <div class="status-sign"
+                    :class="id"
+                    v-for="[id, name] in Object.entries(leakLevelEnum)"
+                    :key="id"
+                    :data-name="`${name}漏洞：${segmentNumberThree(baseInfo[id.toLowerCase()])}`">
                 </div>
             </div>
         </div>
@@ -88,7 +104,7 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import { formatDate, segmentNumberThree } from '@repository/utils'
+    import { formatDate, segmentNumberThree, formatDuration } from '@repository/utils'
     import { leakLevelEnum } from '@repository/store/publicEnum'
     export default {
         name: 'artiReport',
@@ -96,19 +112,12 @@
             return {
                 leakLevelEnum,
                 metaBase: [
+                    { key: 'duration', label: '持续时间' },
                     { key: 'finishTime', label: '完成时间' },
                     { key: 'repoName', label: '所属仓库' },
                     { key: 'groupId', label: 'GroupId' },
                     { key: 'version', label: '制品版本' },
                     { key: 'fullPath', label: '存储路径' }
-                ],
-                leakBase: [
-                    { key: 'highestLeakLevel', label: '风险等级' },
-                    { key: 'total', label: '漏洞总数' },
-                    { key: 'critical', label: '危急漏洞' },
-                    { key: 'high', label: '高风险漏洞' },
-                    { key: 'medium', label: '中风险漏洞' },
-                    { key: 'low', label: '低风险漏洞' }
                 ],
                 baseInfo: {},
                 isLoading: false,
@@ -134,6 +143,18 @@
             },
             recordId () {
                 return this.$route.params.recordId
+            },
+            qualityList () {
+                const data = this.baseInfo.scanQuality || {}
+                return Object.keys(leakLevelEnum).map(k => {
+                    if (k.toLowerCase() in data && data[k.toLowerCase()] !== null) {
+                        return {
+                            id: k,
+                            label: `${leakLevelEnum[k]}漏洞总数 ≦ ${data[k.toLowerCase()]}`
+                        }
+                    }
+                    return undefined
+                }).filter(Boolean)
             }
         },
         created () {
@@ -144,6 +165,7 @@
                 this.baseInfo = {
                     ...res,
                     highestLeakLevel: leakLevelEnum[res.highestLeakLevel],
+                    duration: formatDuration(res.duration / 1000),
                     finishTime: formatDate(res.finishTime)
                 }
             })
@@ -192,13 +214,12 @@
                 }
             },
             startScanSingleHandler () {
-                const { repoType, repoName, name, fullPath, packageKey, version } = this.baseInfo
+                const { repoType, repoName, fullPath, packageKey, version } = this.baseInfo
                 this.startScanSingle({
                     projectId: this.projectId,
                     id: this.planId,
                     repoType,
                     repoName,
-                    name,
                     fullPath,
                     packageKey,
                     version
@@ -207,7 +228,23 @@
                         theme: 'success',
                         message: '已添加到扫描队列'
                     })
-                    this.$router.back()
+                    this.back()
+                })
+            },
+            back () {
+                const { repoType, repoName } = this.baseInfo
+                const { scanName, path, packageKey, version } = this.$route.query
+                this.$router.push({
+                    name: scanName ? 'scanReport' : (this.packageKey ? 'commonPackage' : 'repoGeneric'),
+                    params: {
+                        projectId: this.projectId,
+                        [this.planId ? 'planId' : 'repoType']: this.planId || repoType
+                    },
+                    query: scanName
+                        ? { scanName }
+                        : (this.packageKey
+                            ? { repoName, packageKey, version }
+                            : { repoName, path })
                 })
             }
         }
@@ -232,21 +269,25 @@
             font-weight: 600;
         }
         .arti-meta,
+        .arti-quality,
         .arti-leak {
             padding: 20px 0;
             display: grid;
             gap: 20px;
             border-top: 1px solid var(--borderColor);
-            .meta-content {
-                display: flex;
-                span:first-child {
-                    flex-shrink: 0;
-                }
-                span:last-child {
-                    word-break: break-word;
-                    flex: 1
-                }
+        }
+        .arti-meta .meta-content {
+            display: flex;
+            span:first-child {
+                flex-shrink: 0;
             }
+            span:last-child {
+                word-break: break-word;
+                flex: 1
+            }
+        }
+        .arti-leak {
+            grid-template: auto / repeat(2, 1fr);
         }
     }
     .leak-list {

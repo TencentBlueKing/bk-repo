@@ -27,7 +27,7 @@ const storeObject = {
         userList: {
             anonymous: {
                 id: 'anonymous',
-                name: '--'
+                name: '/'
             }
         },
         userInfo: {
@@ -74,7 +74,7 @@ const storeObject = {
                 ...data,
                 anonymous: {
                     id: 'anonymous',
-                    name: '--'
+                    name: '/'
                 }
             }
         },

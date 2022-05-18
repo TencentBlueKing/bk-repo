@@ -67,18 +67,13 @@
                         :key="pkg.repoName + (pkg.key || pkg.fullPath)"
                         :card-data="pkg"
                         readonly
+                        @show-detail="showDetail"
                         @share="handlerShare"
                         @click.native="showCommonPackageDetail(pkg)">
                     </package-card>
                 </infinite-scroll>
             </template>
-            <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:80px;"
-                :config="{
-                    imgSrc: '/ui/no-search.png',
-                    title: '搜索结果为空',
-                    subTitle: '请尝试修改搜索条件'
-                }">
-            </empty-data>
+            <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:80px;"></empty-data>
         </main>
         <generic-detail ref="genericDetail"></generic-detail>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
@@ -240,20 +235,30 @@
             },
             showCommonPackageDetail (pkg) {
                 if (pkg.fullPath) {
-                    this.showDetail(pkg)
-                    return
+                    // generic
+                    this.$router.push({
+                        name: 'repoGeneric',
+                        params: {
+                            projectId: pkg.projectId
+                        },
+                        query: {
+                            repoName: pkg.repoName,
+                            path: pkg.fullPath
+                        }
+                    })
+                } else {
+                    this.$router.push({
+                        name: 'commonPackage',
+                        params: {
+                            projectId: pkg.projectId,
+                            repoType: pkg.type.toLowerCase()
+                        },
+                        query: {
+                            repoName: pkg.repoName,
+                            packageKey: pkg.key
+                        }
+                    })
                 }
-                this.$router.push({
-                    name: 'commonPackage',
-                    params: {
-                        projectId: pkg.projectId,
-                        repoType: pkg.type.toLowerCase()
-                    },
-                    query: {
-                        repoName: pkg.repoName,
-                        package: pkg.key
-                    }
-                })
             },
             showDetail (pkg) {
                 this.$refs.genericDetail.setData({
