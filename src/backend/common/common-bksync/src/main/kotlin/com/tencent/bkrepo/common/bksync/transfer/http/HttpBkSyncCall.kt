@@ -121,9 +121,14 @@ class HttpBkSyncCall(
     private fun signFile(request: UploadRequest): ByteArray {
         logger.info("Start sign file.")
         val md5DigestInputStream =
-            DigestInputStream(request.file.inputStream().buffered(DEFAULT_BUFFER_SIZE), MessageDigest.getInstance("MD5"))
+            DigestInputStream(
+                request.file.inputStream().buffered(DEFAULT_BUFFER_SIZE),
+                MessageDigest.getInstance("MD5")
+            )
         val byteOutputStream = ByteArrayOutputStream()
-        BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
+        md5DigestInputStream.use {
+            BkSync(BLOCK_SIZE).checksum(md5DigestInputStream, byteOutputStream)
+        }
         val md5Data = md5DigestInputStream.messageDigest.digest()
         val md5 = HashCode.fromBytes(md5Data).toString()
         // 设置md5 header,做服务器校验
