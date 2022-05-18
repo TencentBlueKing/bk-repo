@@ -45,11 +45,7 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(isSearching)">
-                    <template v-if="!Boolean(isSearching)">
-                        <span class="ml10">暂无操作记录</span>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(isSearching)"></empty-data>
             </template>
             <bk-table-column label="项目" show-overflow-tooltip>
                 <template #default="{ row }">{{ getProjectName(row.content.projectId) }}</template>
@@ -193,7 +189,7 @@
             },
             getProjectName (id) {
                 const project = this.projectList.find(project => project.id === id)
-                return project ? project.name : '--'
+                return project ? project.name : '/'
             }
         }
     }

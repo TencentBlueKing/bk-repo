@@ -17,30 +17,34 @@
                 show-overflow-tips
                 @change="changeSelect">
                 <template #source-option="{ key, type }">
-                    <Icon size="16" :name="type.toLowerCase()" />
-                    <span class="ml10 flex-1 text-overflow" style="max-width:280px" :title="key">{{ key }}</span>
+                    <div class="flex-align-center flex-1">
+                        <Icon size="16" :name="type.toLowerCase()" />
+                        <span class="ml10 flex-1 text-overflow" :title="key">{{ key }}</span>
+                        <i class="bk-icon icon-arrows-right"></i>
+                    </div>
                 </template>
                 <template #target-option="row">
                     <div class="flex-1 flex-align-center">
                         <Icon size="16" :name="row.type.toLowerCase()" />
-                        <span class="ml10 flex-1 text-overflow" style="max-width:280px" :title="row.key">{{ row.key }}</span>
-                    </div>
-                    <div class="pl10 flex-1" @click.stop="">
-                        <bk-select
-                            size="small"
-                            searchable
-                            multiple
-                            show-select-all
-                            ext-popover-cls="show-select-all"
-                            display-tag
-                            :value="checkedVersions[row.fid]"
-                            @change="versions => selectVersions(row, versions)">
-                            <bk-option v-for="option in (versionStorage[row.fid] || [])"
-                                :key="option.name"
-                                :id="option.name"
-                                :name="option.name">
-                            </bk-option>
-                        </bk-select>
+                        <span class="ml10 flex-1 text-overflow" :title="row.key">{{ row.key }}</span>
+                        <div class="ml10" style="width:200px" @click.stop="">
+                            <bk-select
+                                size="small"
+                                searchable
+                                multiple
+                                show-select-all
+                                ext-popover-cls="show-select-all"
+                                display-tag
+                                :value="checkedVersions[row.fid]"
+                                @change="versions => selectVersions(row, versions)">
+                                <bk-option v-for="option in (versionStorage[row.fid] || [])"
+                                    :key="option.name"
+                                    :id="option.name"
+                                    :name="option.name">
+                                </bk-option>
+                            </bk-select>
+                        </div>
+                        <i class="bk-icon icon-close"></i>
                     </div>
                 </template>
             </bk-transfer>

@@ -1,6 +1,6 @@
 <template>
     <div class="user-manage-container">
-        <bk-tab class="user-manage-tab" type="unborder-card" :active.sync="tabName">
+        <bk-tab class="user-manage-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="user" :label="$t('user')">
                 <User />
             </bk-tab-panel>
@@ -29,7 +29,7 @@
     .user-manage-tab {
         height: 100%;
         ::v-deep .bk-tab-section {
-            height: calc(100% - 50px);
+            height: calc(100% - 60px);
             padding: 0;
             .bk-tab-content {
                 height: 100%;

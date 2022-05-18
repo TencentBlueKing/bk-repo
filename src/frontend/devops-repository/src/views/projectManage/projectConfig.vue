@@ -1,6 +1,6 @@
 <template>
     <div class="project-detail-container">
-        <bk-tab class="project-detail-tab" type="unborder-card" :active.sync="tabName">
+        <bk-tab class="project-detail-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="basic" label="基础信息">
                 <bk-form class="ml10 mr10" :label-width="75">
                     <bk-form-item label="项目标识">
@@ -34,7 +34,7 @@
                         </bk-option>
                     </bk-select>
                     <bk-button :disabled="!tab.add.length" icon="plus" theme="primary" class="ml10" @click="confirmHandler(tab, 'add')">{{ $t('add') }}</bk-button>
-                    <bk-button :disabled="!tab.delete.length" theme="warning" class="ml10" @click="confirmHandler(tab, 'delete')">批量删除</bk-button>
+                    <bk-button :disabled="!tab.delete.length" theme="default" class="ml10" @click="confirmHandler(tab, 'delete')">批量移除</bk-button>
                 </div>
                 <bk-table
                     class="mt10"
@@ -165,34 +165,40 @@
                     .filter(v => !~tab.items.findIndex(w => w === v.id))
             },
             confirmHandler (tab, type) {
-                const fn = {
-                    user: this.setUserPermission,
-                    role: this.setRolePermission
-                }[tab.type]
-                const key = {
-                    user: 'userId',
-                    role: 'rId'
-                }[tab.type]
+                if (tab.loading || !tab[type].length) return
+
+                const fn = { user: this.setUserPermission, role: this.setRolePermission }[tab.type]
+
+                const key = { user: 'userId', role: 'rId' }[tab.type]
+
                 const value = {
                     add: [...tab.items, ...tab.add],
                     delete: tab.items.filter(v => !tab.delete.find(w => w === v))
                 }[type]
-                if (tab.loading || !tab[type].length) return
-                tab.loading = true
-                fn({
-                    body: {
-                        permissionId: tab.id,
-                        [key]: value
+
+                const deleteName = tab.delete.map(v => this.userList[v]?.name || this.roleList[v]?.name || v)
+
+                this.$confirm({
+                    theme: 'danger',
+                    message: `确定移除 ${deleteName} ?`,
+                    confirmFn: () => {
+                        tab.loading = true
+                        return fn({
+                            body: {
+                                permissionId: tab.id,
+                                [key]: value
+                            }
+                        }).then(() => {
+                            this.$bkMessage({
+                                theme: 'success',
+                                message: (type === 'add' ? this.$t('add') : this.$t('delete')) + this.$t('success')
+                            })
+                            this.initProjectConfig()
+                            tab[type] = []
+                        }).finally(() => {
+                            tab.loading = false
+                        })
                     }
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: (type === 'add' ? this.$t('add') : this.$t('delete')) + this.$t('success')
-                    })
-                    this.initProjectConfig()
-                    tab[type] = []
-                }).finally(() => {
-                    tab.loading = false
                 })
             },
             showProjectDialog () {
@@ -216,7 +222,7 @@
     .project-detail-tab {
         height: 100%;
         ::v-deep .bk-tab-section {
-            height: calc(100% - 50px);
+            height: calc(100% - 60px);
             .bk-tab-content {
                 height: 100%;
             }

@@ -2,7 +2,8 @@
 export const repoEnum = MODE_CONFIG === 'ci'
     ? [
         'generic',
-        'helm'
+        'helm',
+        'rds'
     ]
     : [
         'generic',
@@ -11,6 +12,7 @@ export const repoEnum = MODE_CONFIG === 'ci'
         'pypi',
         'npm',
         'helm',
+        'rds',
         'composer',
         'rpm'
         // 'git',
@@ -92,7 +94,7 @@ export const scanStatusEnum = {
 // 漏洞风险等级
 export const leakLevelEnum = {
     CRITICAL: '危急',
-    HIGH: '高风险',
-    MEDIUM: '中风险',
-    LOW: '低风险'
+    HIGH: '高级',
+    MEDIUM: '中级',
+    LOW: '低级'
 }

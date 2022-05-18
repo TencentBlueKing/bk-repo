@@ -77,7 +77,7 @@
                 return this.$route.query.repoName
             },
             packageKey () {
-                return this.$route.query.package
+                return this.$route.query.packageKey
             }
         },
         methods: {
@@ -119,10 +119,9 @@
                 })
             },
             submitScanFile () {
-                const { id, name, version } = this.formDialog
+                const { id, version } = this.formDialog
                 return this.startScanSingle({
                     id,
-                    name,
                     version,
                     packageKey: this.packageKey,
                     projectId: this.projectId,

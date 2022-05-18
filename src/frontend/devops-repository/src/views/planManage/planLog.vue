@@ -34,7 +34,7 @@
                         <template #default="{ row }">{{formatDate(row.endTime)}}</template>
                     </bk-table-column>
                     <bk-table-column label="备注" show-overflow-tooltip>
-                        <template #default="{ row }">{{row.errorReason || '--'}}</template>
+                        <template #default="{ row }">{{row.errorReason || '/'}}</template>
                     </bk-table-column>
                 </bk-table>
                 <bk-pagination

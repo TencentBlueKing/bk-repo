@@ -19,16 +19,13 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :search="Boolean(projectInput)">
-                    <template v-if="!Boolean(projectInput)">
-                        <span class="ml10">暂无项目数据，</span>
-                        <bk-button text @click="showProjectDialog()">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :search="Boolean(projectInput)"></empty-data>
             </template>
             <bk-table-column label="项目标识" prop="id" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="项目名称" prop="name" show-overflow-tooltip></bk-table-column>
-            <bk-table-column label="项目描述" prop="description" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="项目描述" show-overflow-tooltip>
+                <template #default="{ row }">{{row.description || '/'}}</template>
+            </bk-table-column>
             <bk-table-column :label="$t('createdDate')">
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>

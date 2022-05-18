@@ -1,8 +1,8 @@
 <template>
     <div class="repo-config-container" v-bkloading="{ isLoading }">
-        <bk-tab class="repo-config-tab" type="unborder-card" :active.sync="tabName">
+        <bk-tab class="repo-config-tab page-tab" type="unborder-card" :active.sync="tabName">
             <bk-tab-panel name="baseInfo" :label="$t('repoBaseInfo')">
-                <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules">
+                <bk-form ref="repoBaseInfo" class="repo-base-info" :label-width="120" :model="repoBaseInfo" :rules="rules">
                     <bk-form-item :label="$t('repoName')">
                         <div class="flex-align-center">
                             <icon size="20" :name="repoBaseInfo.repoType || repoType" />
@@ -44,10 +44,11 @@
                             <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
                         </bk-form-item>
                         <bk-form-item :label="$t('repodataDepth')" property="repodataDepth" error-display-type="normal">
-                            <bk-input v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
+                            <bk-input class="w480" v-model.trim="repoBaseInfo.repodataDepth"></bk-input>
                         </bk-form-item>
                         <bk-form-item :label="$t('groupXmlSet')" property="groupXmlSet" error-display-type="normal">
                             <bk-tag-input
+                                class="w480"
                                 :value="repoBaseInfo.groupXmlSet"
                                 @change="(val) => {
                                     repoBaseInfo.groupXmlSet = val.map(v => {
@@ -76,9 +77,12 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <bk-tab-panel v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
+            <bk-tab-panel render-directive="if" v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
                 <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
+            <!-- <bk-tab-panel name="cleanConfig" label="清理设置">
+                <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
+            </bk-tab-panel> -->
             <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
                 <permission-config></permission-config>
             </bk-tab-panel> -->
@@ -88,11 +92,16 @@
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import proxyConfig from '@repository/views/repoConfig/proxyConfig'
+    // import cleanConfig from '@repository/views/repoConfig/cleanConfig'
     // import permissionConfig from './permissionConfig'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'repoConfig',
-        components: { CardRadioGroup, proxyConfig },
+        components: {
+            CardRadioGroup,
+            proxyConfig
+            // cleanConfig
+        },
         data () {
             const filenameRule = [
                 {
@@ -299,7 +308,7 @@
     .repo-config-tab {
         height: 100%;
         ::v-deep .bk-tab-section {
-            height: calc(100% - 42px);
+            height: calc(100% - 52px);
             overflow-y: auto;
         }
         .repo-base-info {

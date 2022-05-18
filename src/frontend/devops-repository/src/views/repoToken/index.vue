@@ -9,10 +9,7 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading">
-                    <span class="ml10">暂无个人令牌数据，</span>
-                    <bk-button text @click="createToken">即刻创建</bk-button>
-                </empty-data>
+                <empty-data :is-loading="isLoading"></empty-data>
             </template>
             <bk-table-column :label="$t('name')" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column :label="$t('createdDate')">
@@ -23,7 +20,7 @@
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
-                    <Icon class="hover-btn flex-align-center" size="24" name="icon-delete"
+                    <Icon class="hover-btn" size="24" name="icon-delete"
                         @click.native.stop="deleteTokenHandler(row)" />
                 </template>
             </bk-table-column>
