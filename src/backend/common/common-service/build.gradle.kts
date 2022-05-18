@@ -33,6 +33,7 @@ dependencies {
     api(project(":common:common-api"))
     api("com.tencent.devops:devops-boot-starter-service")
     api("com.tencent.devops:devops-boot-starter-circuitbreaker")
+    api("io.github.resilience4j:resilience4j-bulkhead")
 
     api("io.micrometer:micrometer-registry-influx")
 

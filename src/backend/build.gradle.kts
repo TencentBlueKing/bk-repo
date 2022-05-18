@@ -50,6 +50,9 @@ allprojects {
             dependency("com.google.code.gson:gson:2.8.6")
             dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:5.11.0.202103091610-r")
             dependency("org.eclipse.jgit:org.eclipse.jgit:5.11.0.202103091610-r")
+            // 2.1.2才支持配置使用信号量隔离
+            dependency("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:2.1.2")
+            dependency("org.springframework.cloud:spring-cloud-circuitbreaker-resilience4j:2.1.2")
         }
     }
     configurations.all {
