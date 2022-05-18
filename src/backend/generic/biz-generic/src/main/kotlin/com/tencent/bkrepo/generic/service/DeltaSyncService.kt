@@ -205,7 +205,7 @@ class DeltaSyncService(
                 emitter.complete()
             } catch (e: Exception) {
                 emitter.completeWithError(e)
-                logger.error("Patch artifactInfo[$artifactInfo] failed.", e)
+                logger.error("Patch artifact[$artifactInfo] failed.", e)
             }
         }
     }
