@@ -130,7 +130,7 @@ class DeltaSyncService(
             val reportAction = Runnable { reportProcess(patchContext) }
             val ackFuture = heartBeatExecutor.scheduleWithFixedDelay(
                 reportAction, 0,
-                HEART_BEAT_INTERVAL, TimeUnit.SECONDS
+                HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS
             )
             patchExecutor.execute {
                 try {
