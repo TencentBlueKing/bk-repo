@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -45,6 +46,7 @@ import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
+import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.PROXY_URL
@@ -82,8 +84,8 @@ class OciOperationServiceImpl(
     private val metadataClient: MetadataClient,
     private val packageClient: PackageClient,
     private val ociProperties: OciProperties,
-    private val storageManager: StorageManager,
     private val storageService: StorageService,
+    private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient
 ) : OciOperationService {
 
@@ -96,7 +98,7 @@ class OciOperationServiceImpl(
         packageName: String,
         version: String
     ): String {
-        val packageVersion = packageClient.findVersionByName(
+        packageClient.findVersionByName(
             projectId = projectId,
             repoName = repoName,
             packageKey = PackageKeys.ofOci(packageName),
@@ -107,8 +109,7 @@ class OciOperationServiceImpl(
                 MANIFEST_UNKNOWN_CODE,
                 MANIFEST_UNKNOWN_DESCRIPTION
             )
-        val manifestDigest = packageVersion.metadata[MANIFEST_DIGEST] as String
-        return OciLocationUtils.buildDigestManifestPathWithReference(packageName, manifestDigest)
+        return OciLocationUtils.buildManifestPath(packageName, version)
     }
 
     /**
@@ -222,13 +223,8 @@ class OciOperationServiceImpl(
                     version = version!!,
                     storageCredentials = getRepositoryInfo(this).storageCredentials
                 )
-                // 针对chart包需要将其appversion以及description写入package中
-                var appVersion: String? = null
-                var description: String? = null
-                chartYaml?.let {
-                    appVersion = it[APP_VERSION] as String?
-                    description = it[DESCRIPTION] as String?
-                }
+                // 针对helm chart包，将部分信息放入到package中
+                val (appVersion, description) = getMetaDataFromChart(chartYaml)
                 updatePackageInfo(artifactInfo, appVersion, description)
             } catch (e: Exception) {
                 logger.warn("can not convert meta data")
@@ -252,12 +248,15 @@ class OciOperationServiceImpl(
                     "in repo ${getRepoIdentify()}"
             )
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return
-            val inputStream = storageManager.loadArtifactInputStream(
-                nodeDetail,
-                getRepositoryInfo(artifactInfo).storageCredentials
+            val inputStream = storageService.load(
+                digest = nodeDetail.sha256!!,
+                range = Range.full(nodeDetail.size),
+                storageCredentials = getRepositoryInfo(artifactInfo).storageCredentials
             ) ?: return
-            val schemaVersion = OciUtils.checkVersion(inputStream)
-            val list = if (schemaVersion.schemaVersion == 1) {
+            // 判断manifest文件版本
+            val mediaType: String = nodeDetail.metadata[MEDIA_TYPE] as String? ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            val schemaVersion = OciUtils.checkVersion(mediaType)
+            val list = if (schemaVersion == 1) {
                 val manifest = OciUtils.streamToManifestV1(inputStream)
                 OciUtils.manifestIteratorDegist(manifest)
             } else {
@@ -282,7 +281,7 @@ class OciOperationServiceImpl(
                 path = fullPath,
                 userId = userId
             )
-            packageClient.deleteVersion(projectId, repoName, packageName, version)
+            packageClient.deleteVersion(projectId, repoName, PackageKeys.ofOci(packageName), version)
         }
     }
 
@@ -299,9 +298,10 @@ class OciOperationServiceImpl(
                 version = version
             )
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return null
-            val inputStream = storageManager.loadArtifactInputStream(
-                nodeDetail,
-                getRepositoryInfo(artifactInfo).storageCredentials
+            val inputStream = storageService.load(
+                digest = nodeDetail.sha256!!,
+                range = Range.full(nodeDetail.size),
+                storageCredentials = getRepositoryInfo(artifactInfo).storageCredentials
             ) ?: return null
             try {
                 val manifest = OciUtils.streamToManifestV2(inputStream)
@@ -713,14 +713,22 @@ class OciOperationServiceImpl(
             }
 
             // 针对helm chart包，将部分信息放入到package中
-            var appVersion: String? = null
-            var description: String? = null
-            chartYaml?.let {
-                appVersion = it[APP_VERSION] as String?
-                description = it[DESCRIPTION] as String?
-            }
+            val (appVersion, description) = getMetaDataFromChart(chartYaml)
             updatePackageInfo(ociArtifactInfo, appVersion, description)
         }
+    }
+
+    /**
+     * 针对helm chart包，将部分信息放入到package中
+     */
+    private fun getMetaDataFromChart(chartYaml: Map<String, Any>? = null): Pair<String?, String?> {
+        var appVersion: String? = null
+        var description: String? = null
+        chartYaml?.let {
+            appVersion = it[APP_VERSION] as String?
+            description = it[DESCRIPTION] as String?
+        }
+        return Pair(appVersion, description)
     }
 
     /**

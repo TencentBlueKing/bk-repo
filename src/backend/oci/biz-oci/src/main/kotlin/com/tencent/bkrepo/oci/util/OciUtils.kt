@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.FILE_EXTENSION
 import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_DESCRIPTION
@@ -61,6 +62,11 @@ object OciUtils {
         } catch (e: Exception) {
             throw OciBadRequestException(MANIFEST_INVALID_MESSAGE, MANIFEST_INVALID_CODE, MANIFEST_INVALID_DESCRIPTION)
         }
+    }
+
+    fun checkVersion(mediaType: String): Int {
+        if (DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1 == mediaType) return 1
+        return 2
     }
 
     fun streamToManifestV1(inputStream: InputStream): ManifestSchema1 {

@@ -354,8 +354,11 @@ class OciRegistryLocalRepository(
      */
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val fullPath = context.artifactInfo.getArtifactFullPath()
-            nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+            val fullPath = ociOperationService.getNodeFullPath(this as OciArtifactInfo)
+                ?: throw OciFileNotFoundException(
+                    "node [${getArtifactFullPath()}] in repo ${this.getRepoIdentify()} does not found."
+                )
+            nodeClient.getNodeDetail(projectId, repoName, fullPath).data
                 ?: throw OciFileNotFoundException(
                     "node [$fullPath] in repo ${this.getRepoIdentify()} does not found."
                 )
