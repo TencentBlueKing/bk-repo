@@ -43,8 +43,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.config.OciProperties
-import com.tencent.bkrepo.oci.constant.BLOB_UNKNOWN_CODE
-import com.tencent.bkrepo.oci.constant.BLOB_UNKNOWN_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.FORCE
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
@@ -304,23 +302,15 @@ class OciRegistryLocalRepository(
     /**
      * 针对oci协议 需要将对应的media type返回
      */
-    private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource {
-        if (fullPath == null) throw OciFileNotFoundException(
-            "Could not get artifact ${context.artifactInfo.getArtifactFullPath()} file in repo: $fullPath",
-            BLOB_UNKNOWN_CODE,
-            BLOB_UNKNOWN_DESCRIPTION
-        )
+    private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
+        if (fullPath == null) return null
         val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
         logger.info(
             "Starting to download $fullPath " +
                 "in repo: ${context.artifactInfo.getRepoIdentify()}"
         )
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
-            ?: throw OciFileNotFoundException(
-                "Could not get artifact ${context.artifactInfo.getArtifactFullPath()} file in repo: $fullPath",
-                BLOB_UNKNOWN_CODE,
-                BLOB_UNKNOWN_DESCRIPTION
-            )
+            ?: return null
         val digest = OciDigest.fromSha256(node!!.sha256.orEmpty())
         val mediaType = node.metadata[MEDIA_TYPE] ?: MediaTypes.APPLICATION_OCTET_STREAM
         logger.info(

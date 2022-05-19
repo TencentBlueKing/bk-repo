@@ -36,7 +36,7 @@ object OciLocationUtils {
     private val logger = LoggerFactory.getLogger(OciLocationUtils::class.java)
 
     fun buildManifestPath(packageName: String, tag: String): String {
-        return "/$packageName/manifest/$tag"
+        return "/$packageName/manifest/$tag/manifest.json"
     }
 
     fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {

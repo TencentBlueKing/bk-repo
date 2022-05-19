@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
@@ -112,6 +113,13 @@ class OciExceptionHandler(
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: OciFileAlreadyExistsException) {
         val responseObject = OciErrorResponse(exception.message, exception.code, exception.detail)
+        ociResponse(responseObject, exception)
+    }
+
+    @ExceptionHandler(ArtifactNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleException(exception: ArtifactNotFoundException) {
+        val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
         ociResponse(responseObject, exception)
     }
 

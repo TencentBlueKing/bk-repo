@@ -488,9 +488,9 @@ class OciOperationServiceImpl(
         }
 
         updateNodeMetaData(
-            digest = digest.toString(),
-            schemaVersion = version.schemaVersion,
-            ociArtifactInfo = ociArtifactInfo,
+            projectId = ociArtifactInfo.projectId,
+            repoName = ociArtifactInfo.repoName,
+            version = ociArtifactInfo.reference,
             fullPath = fullPath,
             mediaType = mediaType!!
         )
@@ -518,27 +518,22 @@ class OciOperationServiceImpl(
      * 将部分信息存入节点metadata中
      */
     private fun updateNodeMetaData(
-        digest: String,
-        schemaVersion: Int? = null,
-        ociArtifactInfo: OciManifestArtifactInfo,
+        projectId: String,
+        repoName: String,
+        version: String? = null,
         fullPath: String,
         mediaType: String,
-        manifestDigest: String? = null,
         chartYaml: Map<String, Any>? = null
     ) {
-        logger.info("The mediaType of $fullPath file that has been uploaded is $mediaType")
         // 将基础信息存储到metadata中
         val metadata = ObjectBuildUtils.buildMetadata(
             mediaType = mediaType,
-            digest = digest,
-            version = ociArtifactInfo.reference,
-            schemaVersion = schemaVersion,
-            manifestDigest = manifestDigest,
+            version = version,
             yamlData = chartYaml
         )
         saveMetaData(
-            projectId = ociArtifactInfo.projectId,
-            repoName = ociArtifactInfo.repoName,
+            projectId = projectId,
+            repoName = repoName,
             fullPath = fullPath,
             metadata = metadata
         )
@@ -601,7 +596,7 @@ class OciOperationServiceImpl(
                 }
                 else -> null
             }
-            doSyncBlob(it, ociArtifactInfo, manifestDigest, chartYaml)
+            doSyncBlob(it, ociArtifactInfo, chartYaml)
         }
         // 根据flag生成package信息以及packageversion信息
         doPackageOperations(
@@ -619,7 +614,6 @@ class OciOperationServiceImpl(
     private fun doSyncBlob(
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        manifestDigest: OciDigest,
         chartYaml: Map<String, Any>? = null
     ) {
         with(ociArtifactInfo) {
@@ -636,7 +630,6 @@ class OciOperationServiceImpl(
                 fullPath = fullPath,
                 descriptor = descriptor,
                 ociArtifactInfo = this,
-                manifestDigest = manifestDigest,
                 yamlMap = chartYaml
             )
         }
@@ -649,7 +642,6 @@ class OciOperationServiceImpl(
         fullPath: String,
         descriptor: Descriptor,
         ociArtifactInfo: OciManifestArtifactInfo,
-        manifestDigest: OciDigest,
         yamlMap: Map<String, Any>? = null
     ) {
         with(ociArtifactInfo) {
@@ -659,11 +651,10 @@ class OciOperationServiceImpl(
                         "and version $reference under repo ${getRepoIdentify()}"
                 )
                 updateNodeMetaData(
-                    digest = descriptor.digest,
-                    ociArtifactInfo = this,
+                    projectId = projectId,
+                    repoName = repoName,
                     fullPath = it.fullPath,
                     mediaType = descriptor.mediaType,
-                    manifestDigest = manifestDigest.toString(),
                     chartYaml = yamlMap
                 )
             }
