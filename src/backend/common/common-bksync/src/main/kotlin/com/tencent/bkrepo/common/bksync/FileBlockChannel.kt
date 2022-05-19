@@ -11,14 +11,6 @@ import java.nio.file.StandardOpenOption
 class FileBlockChannel(file: File, val name: String) : BlockChannel {
     private val srcChannel = FileChannel.open(file.toPath(), StandardOpenOption.READ)
     private val length = file.length()
-    override fun transferTo(seq: Int, blockSize: Int, target: WritableByteChannel): Long {
-        var copyLen = blockSize
-        val start = seq.toLong() * blockSize
-        if (start + blockSize > length) {
-            copyLen = (length - start).toInt()
-        }
-        return srcChannel.transferTo(start, copyLen.toLong(), target)
-    }
 
     override fun transferTo(startSeq: Int, endSeq: Int, blockSize: Int, target: WritableByteChannel): Long {
         val start = startSeq.toLong() * blockSize

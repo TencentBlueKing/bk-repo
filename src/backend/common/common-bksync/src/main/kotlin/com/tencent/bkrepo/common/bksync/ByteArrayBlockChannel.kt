@@ -9,17 +9,6 @@ import java.nio.channels.WritableByteChannel
 class ByteArrayBlockChannel(val bytes: ByteArray, val name: String) : BlockChannel {
     private val buf = ByteBuffer.wrap(bytes)
 
-    override fun transferTo(seq: Int, blockSize: Int, target: WritableByteChannel): Long {
-        var copyLen = blockSize
-        val start = (seq.toLong() * blockSize).toInt()
-        if (start + blockSize > bytes.size) {
-            copyLen = bytes.size - start
-        }
-        buf.position(start)
-        buf.limit(start + copyLen)
-        return target.write(buf).toLong()
-    }
-
     override fun transferTo(startSeq: Int, endSeq: Int, blockSize: Int, target: WritableByteChannel): Long {
         val start = (startSeq.toLong() * blockSize).toInt()
         var copyLen = (endSeq - startSeq + 1) * blockSize

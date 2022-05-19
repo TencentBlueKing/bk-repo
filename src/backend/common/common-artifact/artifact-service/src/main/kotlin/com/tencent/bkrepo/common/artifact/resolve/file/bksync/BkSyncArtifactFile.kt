@@ -28,18 +28,18 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.file.bksync
 
-import com.google.common.hash.HashCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.toPath
 import java.io.File
 import java.io.InputStream
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
-import java.security.MessageDigest
 import java.security.SecureRandom
 import kotlin.math.abs
 
@@ -75,7 +75,7 @@ class BkSyncArtifactFile(
             path = fallbackPath
             isFallback = true
         }
-        tempFile = path.resolve(generateFilename()).toFile()
+        tempFile = path.resolve(generateFilename()).createFile()
     }
 
     /**
@@ -127,7 +127,7 @@ class BkSyncArtifactFile(
 
     override fun getFileSha1(): String {
         init()
-        return sha1!!
+        return sha1 ?: getInputStream().use { it.sha1() }
     }
 
     override fun getFileSha256(): String {
@@ -144,32 +144,15 @@ class BkSyncArtifactFile(
             return
         }
         val bkSync = BkSync(blockSize)
+        bkSync.calculateMd5 = true
+        bkSync.calculateSha256 = true
         val channel = FileChannel.open(tempFile.toPath(), StandardOpenOption.WRITE)
         channel.use {
-            bkSync.merge(blockChannel, deltaInputStream, channel)
+            val result = bkSync.merge(blockChannel, deltaInputStream, channel)
+            md5 = result.md5
+            sha256 = result.sha256
         }
-        digest()
         initialized = true
-    }
-
-    @Suppress("UnstableApiUsage")
-    private fun digest() {
-        val md5Digest: MessageDigest = MessageDigest.getInstance("MD5")
-        val sha256Digest = MessageDigest.getInstance("SHA-256")
-        val sha1Digest = MessageDigest.getInstance("SHA-1")
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        tempFile.inputStream().buffered().use {
-            var read = it.read(buffer)
-            while (read != -1) {
-                md5Digest.update(buffer, 0, read)
-                sha1Digest.update(buffer, 0, read)
-                sha256Digest.update(buffer, 0, read)
-                read = it.read(buffer)
-            }
-        }
-        md5 = HashCode.fromBytes(md5Digest.digest()).toString()
-        sha256 = HashCode.fromBytes(sha256Digest.digest()).toString()
-        sha1 = HashCode.fromBytes(sha1Digest.digest()).toString()
     }
 
     companion object {

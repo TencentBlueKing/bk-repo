@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.bksync
 
+import com.google.common.hash.HashCode
 import com.google.common.primitives.Ints
 import com.tencent.bkrepo.common.bksync.checksum.Adler32RollingHash
 import com.tencent.bkrepo.common.bksync.checksum.Checksum
@@ -10,19 +11,29 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
 import java.security.MessageDigest
 import java.util.zip.Adler32
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayOutputStream
+import java.nio.channels.Channels
+import java.nio.channels.WritableByteChannel
 import kotlin.math.ceil
 
 /**
  * 基于rsync算法实现的增量上传/下载工具
  * */
+@Suppress("UnstableApiUsage")
 class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int = DEFAULT_WINDOW_BUFFER_SIZE) {
     private val logger = LoggerFactory.getLogger(BkSync::class.java)
-    private val md5: MessageDigest = MessageDigest.getInstance("MD5")
+    private val md5Digest: MessageDigest = MessageDigest.getInstance("MD5")
+    private val sha256Digest: MessageDigest = MessageDigest.getInstance("SHA-256")
     private val adler32RollingHash = Adler32RollingHash(blockSize)
+
+    // 是否需要计算merge后文件的sha256
+    var calculateSha256 = false
+
+    // 是否需要计算merge后文件的md5
+    var calculateMd5 = false
 
     /**
      * 对文件进行分块和输出校验和信息
@@ -56,13 +67,13 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             adler32.update(block, 0, bytes)
             val rollingHash = adler32.value
             val rollingHashData = Ints.toByteArray(rollingHash.toInt())
-            md5.update(block, 0, bytes)
-            val md5Data = md5.digest()
+            md5Digest.update(block, 0, bytes)
+            val md5Data = md5Digest.digest()
             checksumOutput.write(rollingHashData)
             checksumOutput.write(md5Data)
             bytes = readFully(inputStream, block)
             adler32.reset()
-            md5.reset()
+            md5Digest.reset()
         }
     }
 
@@ -216,9 +227,9 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * 计算md5的值
      * */
     private fun md5(bytes: ByteArray): ByteArray {
-        md5.reset()
-        md5.update(bytes)
-        return md5.digest()
+        md5Digest.reset()
+        md5Digest.update(bytes)
+        return md5Digest.digest()
     }
 
     /**
@@ -273,7 +284,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     /**
      * 根据delta数据和旧文件合并成新的文件
      * */
-    fun merge(baseFile: File, deltaInput: InputStream, newFileChannel: FileChannel): MergeResult {
+    fun merge(baseFile: File, deltaInput: InputStream, newFileChannel: WritableByteChannel): MergeResult {
         val fileBlockChannel = FileBlockChannel(baseFile, baseFile.name)
         fileBlockChannel.use {
             return merge(fileBlockChannel, deltaInput, newFileChannel)
@@ -283,12 +294,11 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     fun merge(
         blockChannel: BlockChannel,
         deltaInput: InputStream,
-        newFileChannel: FileChannel
+        newFileChannel: WritableByteChannel
     ): MergeResult {
         val deltaStream = DeltaInputStream(deltaInput)
         var reuse = 0
         var deltaDataLength = 0L
-        val blockData = ByteArray(blockSize)
         var bytes = deltaStream.moveToNext()
         var startSeq = -1
         var endSeq = -1
@@ -331,12 +341,20 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             // 最后一块数据是块引用
             copyOldBlock(newFileChannel, startSeq, endSeq, blockChannel)
         }
+        var md5: String? = null
+        var sha256: String? = null
+        if (needCalculateDigest()) {
+            md5 = HashCode.fromBytes(md5Digest.digest()).toString()
+            sha256 = HashCode.fromBytes(sha256Digest.digest()).toString()
+        }
         val mergeResult = MergeResult(
             reuse,
             deltaDataLength,
             blockChannel.totalSize(),
             blockChannel.name(),
-            blockSize
+            blockSize,
+            sha256,
+            md5
         )
         logger.info(mergeResult.toString())
         return mergeResult
@@ -345,38 +363,41 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     /**
      * 从源文件拷贝数据
      * @param newFileChannel 新文件输出流
-     * @param seq 源文件块序列号
+     * @param startSeq 源文件块开始序列号
+     * @param endSeq 源文件块结束序列号
      * @param blockChannel 源数据
-     * @param blockData 块数据
      * */
     private fun copyOldBlock(
-        newFileChannel: FileChannel,
+        newFileChannel: WritableByteChannel,
         startSeq: Int,
         endSeq: Int,
         blockChannel: BlockChannel
     ) {
-        if (startSeq == endSeq) {
-            // 读取单块数据
-            blockChannel.transferTo(startSeq, blockSize, newFileChannel)
-        } else {
-            var currentStartSeq = startSeq
-            while (currentStartSeq < endSeq) {
-                val blocks = (endSeq - currentStartSeq).coerceAtMost(MAX_IO_READ_MERGE_BLOCKS)
-                val currentEndSeq = currentStartSeq + blocks
-                blockChannel.transferTo(currentStartSeq, currentEndSeq, blockSize, newFileChannel)
-                currentStartSeq = currentEndSeq + 1
+        var currentStartSeq = startSeq
+        val arrayOutputStream = ByteArrayOutputStream()
+        val writableByteChannel = Channels.newChannel(arrayOutputStream)
+        while (currentStartSeq <= endSeq) {
+            val blocks = (endSeq - currentStartSeq).coerceAtMost(MAX_IO_READ_MERGE_BLOCKS)
+            val currentEndSeq = currentStartSeq + blocks
+            blockChannel.transferTo(currentStartSeq, currentEndSeq, blockSize, newFileChannel)
+            if (needCalculateDigest()) {
+                blockChannel.transferTo(currentStartSeq, currentEndSeq, blockSize, writableByteChannel)
+                val data = arrayOutputStream.toByteArray()
+                calculateDigestIfNeed(data, 0, data.size)
+                arrayOutputStream.reset()
             }
+            currentStartSeq = currentEndSeq + 1
         }
     }
 
     /**
      * 从流中拷贝数据
-     * @param newFileOutputStream 新文件输出流
+     * @param newFileChannel 新文件输出channel
      * @param deltaStream 增量数据流
      * @param len 需要写入的长度
      * */
     private fun copyDataSequence(
-        newFileChannel: FileChannel,
+        newFileChannel: WritableByteChannel,
         deltaStream: DeltaInputStream,
         len: Int
     ) {
@@ -390,12 +411,32 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
                 break
             }
             newFileChannel.write(ByteBuffer.wrap(buffer, 0, bytes))
+            calculateDigestIfNeed(buffer, 0, bytes)
             totalRead += bytes
             remain = len - totalRead
             if (remain in 1 until bufferSize) {
                 buffer = ByteArray(remain)
             }
         }
+    }
+
+    /**
+     * 如果设置了calculateSha256和calculateMd5,则进行计算对应校验和
+     * */
+    private fun calculateDigestIfNeed(bytes: ByteArray, pos: Int, len: Int) {
+        if (calculateSha256) {
+            sha256Digest.update(bytes, pos, len)
+        }
+        if (calculateMd5) {
+            md5Digest.update(bytes, pos, len)
+        }
+    }
+
+    /**
+     * 是否需要计算校验和
+     * */
+    private fun needCalculateDigest(): Boolean {
+        return calculateMd5 || calculateSha256
     }
 
     companion object {
