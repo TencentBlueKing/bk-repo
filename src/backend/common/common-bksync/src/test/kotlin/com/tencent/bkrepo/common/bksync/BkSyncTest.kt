@@ -236,7 +236,7 @@ class BkSyncTest {
             9, 10, 11, 12
         )
         newFile.writeBytes(newData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
         // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(2b)
         Assertions.assertEquals(22, deltaOutput.size())
         val deltaInput = ByteArrayInputStream(deltaOutput.toByteArray())

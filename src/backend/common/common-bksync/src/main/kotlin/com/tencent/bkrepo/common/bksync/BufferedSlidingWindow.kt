@@ -9,7 +9,7 @@ import kotlin.math.ceil
  * 支持移动一个字节和移动整个窗口
  * */
 class BufferedSlidingWindow(
-    private val windowSize: Int,
+    val windowSize: Int,
     private val bufferSize: Int,
     private val srcInput: InputStream,
     private val size: Long

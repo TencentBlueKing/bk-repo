@@ -90,7 +90,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         val window = BufferedSlidingWindow(blockSize, windowBufferSize, file.inputStream(), file.length())
         val raf = RandomAccessFile(file, READ)
         raf.use {
-            return detecting(window, index, deltaOutput, it)
+            return detecting(window, index, deltaOutput, it, reuseThreshold)
         }
     }
 
