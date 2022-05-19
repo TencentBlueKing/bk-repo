@@ -161,9 +161,9 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
-        val node = cacheArtifactFile(context, artifactFile)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        val node = cacheArtifactFile(context, artifactFile)
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
     }
 

@@ -28,17 +28,21 @@
 package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.helm.artifact.repository.HelmLocalRepository
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -146,7 +150,8 @@ class HelmOperationService : AbstractChartService() {
      * 更新remote仓库index.yaml文件，并刷新对应的package信息
      */
     fun updatePackageForRemote(projectId: String, name: String, userId: String = SecurityUtils.getUserId()) {
-        logger.info("Will start to init package info for remote repo $projectId|$name")
+        logger.info("Will start to update package info for repo $projectId|$name")
+        val repoDetail = checkRepo(projectId, name) ?: return
         // 先判断本地存储中是否存在index.yaml，如不存在则认为是刚创建的repo
         val oldNodeDetail = getOriginalIndexNode(projectId, name)
         // 获取本地index文件
@@ -155,17 +160,41 @@ class HelmOperationService : AbstractChartService() {
         } catch (ignore: HelmFileNotFoundException) {
             HelmUtils.initIndexYamlMetadata()
         }
-
-        // 下载最新index文件
+        // 获取最新文件
         val newIndex = initIndexYaml(projectId, name, userId) ?: return
+        updatePackage(
+            oldIndex = oldIndex,
+            newIndex = newIndex,
+            projectId = projectId,
+            name = name,
+            userId = userId,
+            oldNodeDetail = oldNodeDetail,
+            repoDetail = repoDetail
+        )
+    }
+
+    /**
+     * 对比新老index文件中的chart信息，刷新package信息
+     */
+    private fun updatePackage(
+        oldIndex: HelmIndexYamlMetadata,
+        newIndex: HelmIndexYamlMetadata,
+        projectId: String,
+        name: String,
+        userId: String,
+        oldNodeDetail: NodeDetail?,
+        repoDetail: RepositoryDetail
+    ) {
         val newNodeDetail = getOriginalIndexNode(projectId, name)
         // 先比较本地与远程两个index文件的checksum是否一样，一样则认为不需要更新
         if (oldNodeDetail?.sha256 == newNodeDetail!!.sha256) {
             logger.info("the index.yaml is exactly same with the old one in repo $projectId|$name")
             return
         }
-
-        val (deletedSet, addedSet) = ChartParserUtil.compareIndexYamlMetadata(oldIndex.entries, newIndex.entries)
+        val (deletedSet, addedSet) = ChartParserUtil.compareIndexYamlMetadata(
+            oldEntries = oldIndex.entries,
+            newEntries = newIndex.entries
+        )
         // 对新增的chart进行插入
         addedSet.forEach { element ->
             element.value.forEach {
@@ -177,16 +206,19 @@ class HelmOperationService : AbstractChartService() {
                 )
             }
         }
-        // 对需要删除的chart进行删除
-        deletedSet.forEach { element ->
-            element.value.forEach {
-                removeVersion(
-                    projectId = projectId,
-                    repoName = name,
-                    version = it.version,
-                    packageKey = PackageKeys.ofHelm(it.name),
-                    userId = userId
-                )
+        // 针对composite类型，local中的优先级最高，代理中的顺序在前优先级高，所以不删除本地的
+        if (repoDetail.configuration is RemoteConfiguration) {
+            // 对需要删除的chart进行删除
+            deletedSet.forEach { element ->
+                element.value.forEach {
+                    removeVersion(
+                        projectId = projectId,
+                        repoName = name,
+                        version = it.version,
+                        packageKey = PackageKeys.ofHelm(it.name),
+                        userId = userId
+                    )
+                }
             }
         }
     }

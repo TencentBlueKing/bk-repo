@@ -129,8 +129,8 @@ class BkAuthPermissionServiceImpl constructor(
 
     private fun checkReportPermission(action: String): Boolean {
         return action == PermissionAction.READ.toString() ||
-            action == PermissionAction.WRITE.toString() ||
-            action == PermissionAction.VIEW.toString()
+                action == PermissionAction.WRITE.toString() ||
+                action == PermissionAction.VIEW.toString()
     }
 
     private fun checkPipelinePermission(
@@ -164,6 +164,10 @@ class BkAuthPermissionServiceImpl constructor(
     }
 
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
+        // 用户为系统管理员
+        if (isUserLocalAdmin(userId)) {
+            return getAllRepoByProjectId(projectId)
+        }
         appId?.let {
             val request = buildProjectCheckRequest(projectId, userId, appId)
 

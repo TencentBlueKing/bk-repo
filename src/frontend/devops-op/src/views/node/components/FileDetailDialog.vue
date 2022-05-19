@@ -54,7 +54,15 @@ export default {
       if (newVal) {
         this.showDialog = true
         this.loading = true
-        searchNodes(this.node.projectId, this.node.repoName, this.node.fullPath, 1, 1, true).then(res => {
+        searchNodes(
+          this.node.projectId,
+          this.node.repoName,
+          this.node.fullPath,
+          1,
+          1,
+          true,
+          this.node.deleted
+        ).then(res => {
           this.nodeDetail = res.data.records[0]
         }).finally(_ => {
           this.loading = false
