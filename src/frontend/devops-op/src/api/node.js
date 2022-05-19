@@ -43,7 +43,7 @@ export function searchNodes(projectId, repoName, path, page, size, detail = fals
     ])
     rules.push({
       'field': 'deleted',
-      'value': deleted ? deleted : '',
+      'value': deleted || '',
       'operation': deleted ? 'EQ' : 'NULL'
     })
   }

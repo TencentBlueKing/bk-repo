@@ -87,9 +87,9 @@ export default {
       this.webhookDetail.headers = JSON.parse(this.webhookDetail.headers)
       const promise = updateWebhook(
         this.webhookDetail.id,
-        this.webhookDetail.url, 
-        this.webhookDetail.headers, 
-        this.webhookDetail.triggers, 
+        this.webhookDetail.url,
+        this.webhookDetail.headers,
+        this.webhookDetail.triggers,
         this.webhookDetail.resourceKeyPattern
       )
       promise.then(() => {
