@@ -30,32 +30,42 @@
  */
 
 plugins {
-    id("com.tencent.devops.boot") version "0.0.6-SNAPSHOT"
-    id("com.tencent.devops.publish") version "0.0.6-SNAPSHOT" apply false
+    id("com.tencent.devops.boot") version Versions.DevopsBoot
+    id("com.tencent.devops.publish") version Versions.DevopsBoot apply false
 }
 
 allprojects {
-    group = "com.tencent.bkrepo"
-    version = "1.0.0-SNAPSHOT"
+    group = Release.Group
+    version = Release.Version
 
     apply(plugin = "com.tencent.devops.boot")
     apply(plugin = "jacoco")
+
     dependencyManagement {
         dependencies {
-            dependency("com.github.zafarkhaja:java-semver:0.9.0")
-            dependency("org.apache.skywalking:apm-toolkit-logback-1.x:6.6.0")
-            dependency("org.apache.skywalking:apm-toolkit-trace:6.6.0")
-            dependency("net.javacrumbs.shedlock:shedlock-spring:4.12.0")
-            dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:4.12.0")
-            dependency("com.google.code.gson:gson:2.8.6")
-            dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:5.11.0.202103091610-r")
-            dependency("org.eclipse.jgit:org.eclipse.jgit:5.11.0.202103091610-r")
-            // 2.1.2才支持配置使用信号量隔离
-            dependency("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:2.1.2")
-            dependency("org.springframework.cloud:spring-cloud-circuitbreaker-resilience4j:2.1.2")
+            dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
+            dependency("org.apache.skywalking:apm-toolkit-logback-1.x:${Versions.SkyWalkingApmToolkit}")
+            dependency("org.apache.skywalking:apm-toolkit-trace:${Versions.SkyWalkingApmToolkit}")
+            dependency("net.javacrumbs.shedlock:shedlock-spring:${Versions.Shedlock}")
+            dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:${Versions.Shedlock}")
+            dependency("com.google.code.gson:gson:${Versions.Gson}")
+            dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:${Versions.JGit}")
+            dependency("org.eclipse.jgit:org.eclipse.jgit:${Versions.JGit}")
+            dependency("org.apache.hadoop:hadoop-hdfs:${Versions.Hadoop}")
+            dependency("org.apache.hadoop:hadoop-common:${Versions.Hadoop}")
+            dependency("org.apache.commons:commons-compress:${Versions.CommonsCompress}:")
+            dependency("commons-io:commons-io:${Versions.CommonsIO}")
+            dependency("com.google.guava:guava:${Versions.Guava}")
+            dependency("com.google.protobuf:protobuf-java-util:${Versions.ProtobufJava}")
         }
     }
+    ext["netty.version"] = Versions.Netty
+    // 2.1.2才支持配置使用信号量隔离
+    ext["spring-cloud-circuitbreaker.version"] = Versions.SpringCloudCircuitbreaker
+
     configurations.all {
+        // io.netty:netty已替换成io.netty:netty-all
+        exclude(group = "io.netty", module = "netty")
         exclude(group = "log4j", module = "log4j")
         exclude(group = "org.slf4j", module = "slf4j-log4j12")
         exclude(group = "commons-logging", module = "commons-logging")

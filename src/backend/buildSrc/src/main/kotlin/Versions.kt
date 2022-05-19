@@ -25,4 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-ext["jersey.version"] = Versions.Jersey
+object Release {
+    const val Group = "com.tencent.bkrepo"
+    const val Version = "1.0.0-SNAPSHOT"
+}
+
+object Versions {
+    const val DevopsBoot = "0.0.6-SNAPSHOT"
+    const val Hadoop = "3.3.2"
+    const val Netty = "4.1.77.Final"
+    const val SpringCloudCircuitbreaker = "2.1.2"
+    const val Jersey = "2.35"
+    const val Jsoup = "1.15.1"
+    const val Redline = "1.2.10"
+    const val SkyWalkingApmToolkit = "8.10.0"
+    const val Gson = "2.9.0"
+    const val ProtobufJava = "3.19.4"
+    const val Guava = "31.1-jre"
+    const val Shedlock = "4.12.0"
+    const val JGit = "5.11.0.202103091610-r"
+    const val JavaSemver = "0.9.0"
+    const val CommonsCompress = "1.21"
+    const val CommonsIO = "2.11.0"
+}

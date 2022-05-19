@@ -25,4 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-ext["jersey.version"] = Versions.Jersey
+plugins {
+    `kotlin-dsl`
+}
+
+repositories {
+    mavenLocal()
+    maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
+    mavenCentral()
+}

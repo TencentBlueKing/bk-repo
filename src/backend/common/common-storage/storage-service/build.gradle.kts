@@ -47,5 +47,5 @@ dependencies {
     implementation("org.apache.hadoop:hadoop-common")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    implementation("com.tencent.polaris:polaris-discovery-factory:1.2.4")
+    implementation("com.tencent.polaris:polaris-discovery-factory:1.5.2")
 }
