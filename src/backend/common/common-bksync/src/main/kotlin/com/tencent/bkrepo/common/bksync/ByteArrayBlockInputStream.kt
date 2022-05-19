@@ -14,6 +14,15 @@ class ByteArrayBlockInputStream(val bytes: ByteArray, val name: String) : BlockI
         return copyLen
     }
 
+    override fun getBlock(startSeq: Int, endSeq: Int, blockSize: Int): ByteArray {
+        val start = (startSeq.toLong() * blockSize).toInt()
+        var copyLen = (endSeq - startSeq + 1) * blockSize
+        if (start + copyLen > bytes.size) {
+            copyLen = bytes.size - start
+        }
+        return bytes.copyOfRange(start, start + copyLen)
+    }
+
     override fun totalSize(): Long {
         return bytes.size.toLong()
     }

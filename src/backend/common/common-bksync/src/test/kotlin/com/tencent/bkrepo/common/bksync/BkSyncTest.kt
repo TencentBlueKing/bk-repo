@@ -225,6 +225,29 @@ class BkSyncTest {
         Assertions.assertEquals(true, mergeData.contentEquals(newData))
     }
 
+    @DisplayName("连续块合并测试")
+    @Test
+    fun mergeByBlocksTest() {
+        val newData = byteArrayOf(
+            1, 2, 3, 4,
+            5, 6, 7, 8, 7, 8,
+            9, 10, 11, 12
+        )
+        newFile.writeBytes(newData)
+        bkSync.diff(newFile, checksumStream, deltaOutput)
+        // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(2b)
+        Assertions.assertEquals(22, deltaOutput.size())
+        val deltaInput = ByteArrayInputStream(deltaOutput.toByteArray())
+        val newFileOutputStream = mergeFile.outputStream()
+        newFileOutputStream.use {
+            bkSync.merge(oldFile, deltaInput, newFileOutputStream)
+        }
+        Assertions.assertEquals(14, mergeFile.length())
+        val mergeData = ByteArray(newData.size)
+        mergeFile.inputStream().read(mergeData)
+        Assertions.assertEquals(true, mergeData.contentEquals(newData))
+    }
+
     @DisplayName("diff提前中断测试")
     @Test
     fun interruptDiffTest() {

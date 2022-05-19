@@ -19,6 +19,18 @@ class FileBlockInputStream(file: File, val name: String) : BlockInputStream {
         return copyLen
     }
 
+    override fun getBlock(startSeq: Int, endSeq: Int, blockSize: Int): ByteArray {
+        val start = startSeq.toLong() * blockSize
+        var copyLen = (endSeq - startSeq + 1) * blockSize
+        if (start + copyLen > raf.length()) {
+            copyLen = (raf.length() - start).toInt()
+        }
+        val data = ByteArray(copyLen)
+        raf.seek(start)
+        raf.read(data)
+        return data
+    }
+
     override fun totalSize(): Long {
         return raf.length()
     }

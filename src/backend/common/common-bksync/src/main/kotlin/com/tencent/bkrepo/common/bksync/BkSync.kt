@@ -288,12 +288,32 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         var deltaDataLength = 0L
         val blockData = ByteArray(blockSize)
         var bytes = deltaStream.moveToNext()
+        var startSeq = -1
+        var endSeq = -1
         while (bytes > 0) {
             if (deltaStream.isBlockReference()) {
                 val blockReference = deltaStream.getBlockReference()
-                copyOldBlock(newFileOutputStream, blockReference, blockInputStream, blockData)
+                if (startSeq == -1) {
+                    // 记录开始位置
+                    startSeq = blockReference
+                    endSeq = blockReference
+                } else if (blockReference == (endSeq + 1)) {
+                    // 连续块，更新结束位置
+                    endSeq = blockReference
+                } else {
+                    // 非连续块，拷贝之前连续块数据，重新开始记录起始块
+                    copyOldBlock(newFileOutputStream, startSeq, endSeq, blockInputStream, blockData)
+                    startSeq = blockReference
+                    endSeq = blockReference
+                }
                 reuse++
             } else if (deltaStream.isDataSequence()) {
+                if (startSeq > -1) {
+                    // 增量数据前，如果有未冲刷的文件引用块，需要先冲刷
+                    copyOldBlock(newFileOutputStream, startSeq, endSeq, blockInputStream, blockData)
+                    startSeq = -1
+                    endSeq = -1
+                }
                 // 移动到len
                 bytes = deltaStream.moveToNext()
                 if (bytes == 0) {
@@ -304,6 +324,10 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
                 deltaDataLength += len
             }
             bytes = deltaStream.moveToNext()
+        }
+        if (startSeq > -1) {
+            // 最后一块数据是块引用
+            copyOldBlock(newFileOutputStream, startSeq, endSeq, blockInputStream, blockData)
         }
         val mergeResult = MergeResult(
             reuse,
@@ -325,17 +349,30 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
      * */
     private fun copyOldBlock(
         newFileOutputStream: OutputStream,
-        seq: Int,
+        startSeq: Int,
+        endSeq: Int,
         blockInputStream: BlockInputStream,
         blockData: ByteArray
     ) {
-        var data = blockData
-        val read = blockInputStream.getBlock(seq, blockSize, blockData)
-        if (read < blockData.size) {
-            val dstBytes = ByteArray(read)
-            data = blockData.copyInto(dstBytes, endIndex = read)
+        if (startSeq == endSeq) {
+            // 读取单块数据
+            var data = blockData
+            val read = blockInputStream.getBlock(startSeq, blockSize, blockData)
+            if (read < blockData.size) {
+                val dstBytes = ByteArray(read)
+                data = blockData.copyInto(dstBytes, endIndex = read)
+            }
+            newFileOutputStream.write(data)
+        } else {
+            var currentStartSeq = startSeq
+            while (currentStartSeq < endSeq) {
+                val blocks = (endSeq - currentStartSeq).coerceAtMost(MAX_IO_READ_MERGE_BLOCKS)
+                val currentEndSeq = currentStartSeq + blocks
+                val data = blockInputStream.getBlock(currentStartSeq, currentEndSeq, blockSize)
+                newFileOutputStream.write(data)
+                currentStartSeq = currentEndSeq + 1
+            }
         }
-        newFileOutputStream.write(data)
     }
 
     /**
@@ -372,5 +409,6 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         const val DEFAULT_WINDOW_BUFFER_SIZE = 16 * 1024 * 1024
         val BEGIN_FLAG: ByteArray = Ints.toByteArray(-1)
         const val READ = "r"
+        const val MAX_IO_READ_MERGE_BLOCKS = 1024
     }
 }
