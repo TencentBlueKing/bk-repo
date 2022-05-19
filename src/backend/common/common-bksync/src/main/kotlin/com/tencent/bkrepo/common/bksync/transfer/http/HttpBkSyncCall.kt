@@ -316,7 +316,7 @@ class HttpBkSyncCall(
     ): DiffResult {
         with(HumanReadable) {
             val (result, nanos) = executeAndMeasureNanoTime {
-                BkSync(BLOCK_SIZE).diff(file, signInputStream, deltaOutputStream)
+                BkSync(BLOCK_SIZE).diff(file, signInputStream, deltaOutputStream, reuseThreshold)
             }
             val bytes = file.length()
             logger.info(

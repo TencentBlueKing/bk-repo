@@ -61,7 +61,7 @@ class BkSyncTest {
         val signInputStream = ByteArrayInputStream(signOutputStream.toByteArray())
         val deltaOutputStream = ByteArrayOutputStream()
         // 比较差异
-        bkSync.diff(srcNewFile, signInputStream, deltaOutputStream)
+        bkSync.diff(srcNewFile, signInputStream, deltaOutputStream, 0.2f)
         val deltaInputStream = ByteArrayInputStream(deltaOutputStream.toByteArray())
         // 结合delta文件，merge成新文件
         val newFileOutputStream = mergeFile.outputStream()
@@ -95,7 +95,7 @@ class BkSyncTest {
             13, 14
         )
         newFile.writeBytes(fileData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
 
         // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(2b) 
         Assertions.assertEquals(22, deltaOutput.size())
@@ -112,7 +112,7 @@ class BkSyncTest {
             9, 10, 11, 12
         )
         newFile.writeBytes(newData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
 
         // delta stream should 2*ref(4b) +begin(-1,4b) +len(4b) +delta data(6b)
         Assertions.assertEquals(22, deltaOutput.size())
@@ -138,7 +138,7 @@ class BkSyncTest {
             9, 10, 11, 12
         )
         newFile.writeBytes(newData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
 
         // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(3b)
         Assertions.assertEquals(23, deltaOutput.size())
@@ -162,7 +162,7 @@ class BkSyncTest {
             9, 10, 11, 12
         )
         newFile.writeBytes(newData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
 
         // delta stream should 2*ref(4b) +begin(-1,4b) +len(4b) +delta data(3b)
         Assertions.assertEquals(19, deltaOutput.size())
@@ -187,7 +187,7 @@ class BkSyncTest {
             15
         )
         newFile.writeBytes(newData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
 
         // delta stream should ref(4b) +2*begin(-1,4b) +2*len(4b) +delta data(8b)+delta data(1b)
         Assertions.assertEquals(29, deltaOutput.size())
@@ -211,7 +211,7 @@ class BkSyncTest {
             9, 10, 11, 12
         )
         newFile.writeBytes(newData)
-        bkSync.diff(newFile, checksumStream, deltaOutput)
+        bkSync.diff(newFile, checksumStream, deltaOutput, 0.2f)
         // delta stream should 2*ref(4b) +begin(-1,4b) +len(4b) +delta data(6b)
         Assertions.assertEquals(22, deltaOutput.size())
         val deltaInput = ByteArrayInputStream(deltaOutput.toByteArray())
@@ -223,6 +223,19 @@ class BkSyncTest {
         val mergeData = ByteArray(newData.size)
         mergeFile.inputStream().read(mergeData)
         Assertions.assertEquals(true, mergeData.contentEquals(newData))
+    }
+
+    @DisplayName("diff提前中断测试")
+    @Test
+    fun interruptDiffTest() {
+        val interruptData = byteArrayOf(
+            1, 5, 3, 4,
+            9, 10, 11, 12,
+            1, 2, 3, 4
+        )
+        newFile.writeBytes(interruptData)
+        val diffResult = bkSync.diff(newFile, checksumStream, deltaOutput, 0.7f)
+        Assertions.assertEquals(0, diffResult.reuse)
     }
 
     fun File.md5(): String {
