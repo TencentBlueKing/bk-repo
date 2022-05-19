@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -64,9 +66,9 @@ class BkSyncTest {
         bkSync.diff(srcNewFile, signInputStream, deltaOutputStream, 0.2f)
         val deltaInputStream = ByteArrayInputStream(deltaOutputStream.toByteArray())
         // 结合delta文件，merge成新文件
-        val newFileOutputStream = mergeFile.outputStream()
-        newFileOutputStream.use {
-            bkSync.merge(dstOldFile, deltaInputStream, newFileOutputStream)
+        val channel = FileChannel.open(mergeFile.toPath(), StandardOpenOption.WRITE)
+        channel.use {
+            bkSync.merge(dstOldFile, deltaInputStream, channel)
         }
         // 检查生成的文件与源文件是否相同
         Assertions.assertEquals(srcNewFile.length(), mergeFile.length())
@@ -215,9 +217,9 @@ class BkSyncTest {
         // delta stream should 2*ref(4b) +begin(-1,4b) +len(4b) +delta data(6b)
         Assertions.assertEquals(22, deltaOutput.size())
         val deltaInput = ByteArrayInputStream(deltaOutput.toByteArray())
-        val newFileOutputStream = mergeFile.outputStream()
-        newFileOutputStream.use {
-            bkSync.merge(oldFile, deltaInput, newFileOutputStream)
+        val channel = FileChannel.open(mergeFile.toPath(), StandardOpenOption.WRITE)
+        channel.use {
+            bkSync.merge(oldFile, deltaInput, channel)
         }
         Assertions.assertEquals(14, mergeFile.length())
         val mergeData = ByteArray(newData.size)
@@ -238,9 +240,9 @@ class BkSyncTest {
         // delta stream should 3*ref(4b) +begin(-1,4b) +len(4b) +delta data(2b)
         Assertions.assertEquals(22, deltaOutput.size())
         val deltaInput = ByteArrayInputStream(deltaOutput.toByteArray())
-        val newFileOutputStream = mergeFile.outputStream()
-        newFileOutputStream.use {
-            bkSync.merge(oldFile, deltaInput, newFileOutputStream)
+        val channel = FileChannel.open(mergeFile.toPath(), StandardOpenOption.WRITE)
+        channel.use {
+            bkSync.merge(oldFile, deltaInput, channel)
         }
         Assertions.assertEquals(14, mergeFile.length())
         val mergeData = ByteArray(newData.size)

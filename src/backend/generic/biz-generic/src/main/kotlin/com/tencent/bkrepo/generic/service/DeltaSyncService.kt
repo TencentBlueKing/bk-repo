@@ -17,9 +17,9 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.bksync.BlockInputStream
-import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
-import com.tencent.bkrepo.common.bksync.FileBlockInputStream
+import com.tencent.bkrepo.common.bksync.BlockChannel
+import com.tencent.bkrepo.common.bksync.ByteArrayBlockChannel
+import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -288,17 +288,17 @@ class DeltaSyncService(
      * 构建Patch上下文
      * @param emitter sse发送器
      * @param context 当前上下文
-     * @param blockInputStream 增量同步使用的块输入流
+     * @param blockChannel 增量同步使用的块输入流
      * */
     private fun buildPatchContext(
         counterInputStream: CounterInputStream,
         emitter: SseEmitter,
         context: ArtifactContext,
-        blockInputStream: BlockInputStream
+        blockChannel: BlockChannel
     ): PatchContext {
         with(context) {
             val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as GenericLocalRepository
-            val file = ArtifactFileFactory.buildBkSync(blockInputStream, counterInputStream, blockSize)
+            val file = ArtifactFileFactory.buildBkSync(blockChannel, counterInputStream, blockSize)
             return PatchContext(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
@@ -311,7 +311,7 @@ class DeltaSyncService(
                 artifactInfo = artifactInfo,
                 repositoryDetail = repositoryDetail,
                 file = file,
-                blockInputStream = blockInputStream,
+                blockChannel = blockChannel,
                 userId = SecurityUtils.getUserId()
             )
         }
@@ -372,7 +372,7 @@ class DeltaSyncService(
         }
     }
 
-    private fun getBlockInputStream(node: NodeDetail, storageCredentials: StorageCredentials?): BlockInputStream {
+    private fun getBlockInputStream(node: NodeDetail, storageCredentials: StorageCredentials?): BlockChannel {
         val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
             ?: throw ArtifactNotFoundException("file[${node.sha256}] not found in ${storageCredentials?.key}")
         artifactInputStream.use {
@@ -381,15 +381,15 @@ class DeltaSyncService(
             if (node.size <= fileSizeThreshold) {
                 val dataOutput = ByteArrayOutputStream()
                 artifactInputStream.copyTo(dataOutput)
-                return ByteArrayBlockInputStream(dataOutput.toByteArray(), name)
+                return ByteArrayBlockChannel(dataOutput.toByteArray(), name)
             }
             // 本地cache
             if (artifactInputStream is FileArtifactInputStream) {
-                return FileBlockInputStream(artifactInputStream.file, name)
+                return FileBlockChannel(artifactInputStream.file, name)
             }
             // 远端网络流
             val file = ArtifactFileFactory.build(artifactInputStream, node.size).getFile()!!
-            return FileBlockInputStream(file, name)
+            return FileBlockChannel(file, name)
         }
     }
 
@@ -434,7 +434,7 @@ class DeltaSyncService(
         val artifactInfo: ArtifactInfo,
         val file: ArtifactFile,
         val overwrite: Boolean,
-        val blockInputStream: BlockInputStream
+        val blockChannel: BlockChannel
     )
 
     companion object {

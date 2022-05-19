@@ -1,26 +1,34 @@
 package com.tencent.bkrepo.common.bksync
 
+import java.nio.ByteBuffer
+import java.nio.channels.WritableByteChannel
+
 /**
  * 字节块输入流
  * */
-class ByteArrayBlockInputStream(val bytes: ByteArray, val name: String) : BlockInputStream {
-    override fun getBlock(seq: Int, blockSize: Int, blockData: ByteArray): Int {
+class ByteArrayBlockChannel(val bytes: ByteArray, val name: String) : BlockChannel {
+    private val buf = ByteBuffer.wrap(bytes)
+
+    override fun transferTo(seq: Int, blockSize: Int, target: WritableByteChannel): Long {
         var copyLen = blockSize
         val start = (seq.toLong() * blockSize).toInt()
         if (start + blockSize > bytes.size) {
             copyLen = bytes.size - start
         }
-        bytes.copyInto(blockData, startIndex = start, endIndex = start + copyLen)
-        return copyLen
+        buf.position(start)
+        buf.limit(start + copyLen)
+        return target.write(buf).toLong()
     }
 
-    override fun getBlock(startSeq: Int, endSeq: Int, blockSize: Int): ByteArray {
+    override fun transferTo(startSeq: Int, endSeq: Int, blockSize: Int, target: WritableByteChannel): Long {
         val start = (startSeq.toLong() * blockSize).toInt()
         var copyLen = (endSeq - startSeq + 1) * blockSize
         if (start + copyLen > bytes.size) {
             copyLen = bytes.size - start
         }
-        return bytes.copyOfRange(start, start + copyLen)
+        buf.position(start)
+        buf.limit(start + copyLen)
+        return target.write(buf).toLong()
     }
 
     override fun totalSize(): Long {

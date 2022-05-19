@@ -1,13 +1,15 @@
 package com.tencent.bkrepo.common.bksync
 
+import java.nio.channels.WritableByteChannel
+
 /**
- * 块输入流
+ * 块输入channel
  * */
-interface BlockInputStream : AutoCloseable {
+interface BlockChannel : AutoCloseable {
     /**
      * 获取块内容
      * */
-    fun getBlock(seq: Int, blockSize: Int, blockData: ByteArray): Int
+    fun transferTo(seq: Int, blockSize: Int, target: WritableByteChannel): Long
 
     /**
      * 获取连续块
@@ -15,7 +17,7 @@ interface BlockInputStream : AutoCloseable {
      * @param endSeq 结束块序号，包含endSeq
      * @param blockSize 块大小
      * */
-    fun getBlock(startSeq: Int, endSeq: Int, blockSize: Int): ByteArray
+    fun transferTo(startSeq: Int, endSeq: Int, blockSize: Int, target: WritableByteChannel): Long
 
     /**
      * 流大小
