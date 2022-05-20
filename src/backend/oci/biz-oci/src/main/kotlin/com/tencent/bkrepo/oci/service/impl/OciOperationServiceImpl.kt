@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -432,7 +431,7 @@ class OciOperationServiceImpl(
     }
 
     override fun getRegistryDomain(): OciDomainInfo {
-        return OciDomainInfo(UrlFormatter.formatHost(ociProperties.domain))
+        return OciDomainInfo(ociProperties.domain)
     }
 
     /**
