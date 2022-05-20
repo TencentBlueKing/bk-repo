@@ -92,8 +92,7 @@ class PlanArtifactLatestSubScanTaskDao(
             val criteria = Criteria
                 .where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
                 .and(SubScanTaskDefinition::planId.name).isEqualTo(id)
-            startTime?.let { criteria.and(SubScanTaskDefinition::createdDate.name).gte(it) }
-            endTime?.let { criteria.and(SubScanTaskDefinition::finishedDateTime.name).lte(it) }
+                .and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
             return find(Query(criteria))
         }
     }
@@ -119,8 +118,9 @@ class PlanArtifactLatestSubScanTaskDao(
             repoType?.let { criteria.and(SubScanTaskDefinition::repoType.name).isEqualTo(repoType) }
             repoName?.let { criteria.and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName) }
             subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
-            startTime?.let { criteria.and(SubScanTaskDefinition::createdDate.name).gte(it) }
-            endTime?.let { criteria.and(SubScanTaskDefinition::finishedDateTime.name).lte(it) }
+            if (startTime != null && endTime != null) {
+                criteria.and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
+            }
             qualityRedLine?.let { criteria.and(SubScanTaskDefinition::qualityRedLine.name).isEqualTo(qualityRedLine) }
 
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)

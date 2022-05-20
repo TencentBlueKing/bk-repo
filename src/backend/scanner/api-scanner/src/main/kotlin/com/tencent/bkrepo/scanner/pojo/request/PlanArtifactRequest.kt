@@ -64,14 +64,14 @@ data class PlanArtifactRequest(
     val status: String? = null,
     @ApiModelProperty("制品扫描状态")
     var subScanTaskStatus: List<String>? = null,
-    @ApiModelProperty("制品开始扫描时间")
+    @ApiModelProperty("制品扫描任务创建时间(开始)")
     val startTime: Instant? = null,
-    @ApiModelProperty("制品开始扫描时间")
+    @ApiModelProperty("制品扫描任务创建时间(开始)")
     var startDateTime: LocalDateTime? = null,
-    @ApiModelProperty("制品扫描结束时间")
+    @ApiModelProperty("制品扫描任务创建时间(截止)")
     val endTime: Instant? = null,
-    @ApiModelProperty("制品扫描结束时间")
-    var finishedDateTime: LocalDateTime? = null,
+    @ApiModelProperty("制品扫描任务创建时间(截止)")
+    var endDateTime: LocalDateTime? = null,
     @ApiModelProperty("页码")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
     @ApiModelProperty("页大小")

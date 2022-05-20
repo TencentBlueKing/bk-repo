@@ -32,18 +32,18 @@ import io.swagger.annotations.ApiModelProperty
 import java.time.Instant
 import java.time.LocalDateTime
 
-@ApiModel("请求指定扫描方案扫描过的制品统计信息")
+@ApiModel("指定扫描方案扫描过的制品统计信息请求")
 data class PlanCountRequest(
     @ApiModelProperty("扫描方案所属项目id", required = true)
     val projectId: String,
     @ApiModelProperty("扫描方案id", required = true)
     val id: String,
-    @ApiModelProperty("制品开始扫描时间")
+    @ApiModelProperty("制品扫描任务创建时间(开始)")
     val startTime: Instant? = null,
-    @ApiModelProperty("制品开始扫描时间")
+    @ApiModelProperty("制品扫描任务创建时间(开始)")
     var startDateTime: LocalDateTime? = null,
-    @ApiModelProperty("制品扫描结束时间")
+    @ApiModelProperty("制品扫描任务创建时间(截止)")
     val endTime: Instant? = null,
-    @ApiModelProperty("制品扫描结束时间")
-    var finishedDateTime: LocalDateTime? = null
+    @ApiModelProperty("制品扫描任务创建时间(截止)")
+    var endDateTime: LocalDateTime? = null
 )
