@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
+import org.apache.commons.logging.LogFactory
 
 /**
  * 默认构件提供tag实现
@@ -63,18 +64,19 @@ class DefaultArtifactTagProvider(
         includeRepoInfo: Boolean,
         path: String
     ): Tags {
+        // 异步非http请求场景下，获取不到repo信息，无法细化度量取值。
+        repositoryDetail ?: return Tags.of(PATH, StringPool.UNKNOWN)
         with(repositoryDetail) {
             if (!includeRepoInfo) {
                 return Tags.of(
                     PATH,
-                    this?.let { getTagPath(getStorageCredentials(storageCredentials), path) } ?: path
+                    getTagPath(getStorageCredentials(storageCredentials), path)
                 )
             }
             return Tags.of(
                 REPO_TAG, getRepoTagValue(this),
                 PATH,
-                this?.let { getTagPath(getStorageCredentials(storageCredentials), path) }
-                    ?: path
+                getTagPath(getStorageCredentials(storageCredentials), path)
             )
         }
     }
@@ -87,6 +89,9 @@ class DefaultArtifactTagProvider(
     }
 
     private fun getTagPath(credentials: StorageCredentials, path: String): String {
+        if (path == SOURCE_IN_MEMORY || path == SOURCE_IN_REMOTE) {
+            return path
+        }
         with(credentials) {
             if (path.startsWith(upload.location)) {
                 return upload.location
@@ -97,7 +102,8 @@ class DefaultArtifactTagProvider(
             if (path.startsWith(cache.path)) {
                 return cache.path
             }
-            return path
+            logger.warn("Unknown path[$path] origin with key[${credentials.key}]")
+            return StringPool.UNKNOWN
         }
     }
 
@@ -115,6 +121,7 @@ class DefaultArtifactTagProvider(
     }
 
     companion object {
+        private val logger = LogFactory.getLog(DefaultArtifactTagProvider::class.java)
         private const val PATH = "path"
         const val REPO_TAG = "repo"
     }
