@@ -89,6 +89,9 @@ class DefaultArtifactTagProvider(
     }
 
     private fun getTagPath(credentials: StorageCredentials, path: String): String {
+        if (path == SOURCE_IN_MEMORY || path == SOURCE_IN_REMOTE) {
+            return path
+        }
         with(credentials) {
             if (path.startsWith(upload.location)) {
                 return upload.location
