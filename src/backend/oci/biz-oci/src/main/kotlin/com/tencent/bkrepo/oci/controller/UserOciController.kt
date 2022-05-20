@@ -108,7 +108,7 @@ class UserOciController(
     }
 
     @ApiOperation("获取Oci域名地址")
-    @GetMapping("/address")
+    @GetMapping("/addr")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getRegistryDomain(): Response<OciDomainInfo> {
         return ResponseBuilder.success(operationService.getRegistryDomain())
