@@ -72,7 +72,7 @@ class OciExceptionHandler(
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
             OciLoginAuthHandler.AUTH_CHALLENGE_SERVICE_SCOPE.format(
-                ociProperties.domain,
+                ociProperties.url,
                 OciLoginAuthHandler.REGISTRY_SERVICE,
                 OciLoginAuthHandler.SCOPE_STR
             )

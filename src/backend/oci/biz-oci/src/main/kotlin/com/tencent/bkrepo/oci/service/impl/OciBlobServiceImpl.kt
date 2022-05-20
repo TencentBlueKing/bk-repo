@@ -92,7 +92,7 @@ class OciBlobServiceImpl(
                 logger.info("Will obtain uuid for uploading blobs in repo ${artifactInfo.getRepoIdentify()}.")
                 val uuidCreated = startAppend(this)
                 OciResponseUtils.buildBlobUploadUUIDResponse(
-                    ociProperties.domain,
+                    ociProperties.url,
                     uuidCreated,
                     OciLocationUtils.blobUUIDLocation(uuidCreated, artifactInfo),
                     HttpContextHolder.getResponse()
@@ -116,7 +116,7 @@ class OciBlobServiceImpl(
             nodeClient.search(queryModel.build()).data ?: run {
                 logger.warn("Could not find $fileName in repo ${getRepoIdentify()} to mount")
                 OciResponseUtils.buildBlobMountResponse(
-                    domain = ociProperties.domain,
+                    domain = ociProperties.url,
                     locationStr = "",
                     status = HttpStatus.ACCEPTED,
                     response = HttpContextHolder.getResponse()
@@ -125,7 +125,7 @@ class OciBlobServiceImpl(
             }
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             OciResponseUtils.buildBlobMountResponse(
-                domain = ociProperties.domain,
+                domain = ociProperties.url,
                 locationStr = blobLocation,
                 status = HttpStatus.CREATED,
                 response = HttpContextHolder.getResponse()

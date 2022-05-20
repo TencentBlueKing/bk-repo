@@ -129,7 +129,7 @@ class OciRegistryLocalRepository(
             )
             if (digest == null || location.isNullOrEmpty()) return
             OciResponseUtils.buildUploadResponse(
-                domain = ociProperties.domain,
+                domain = ociProperties.url,
                 digest = digest,
                 locationStr = location,
                 response = context.response
@@ -157,7 +157,7 @@ class OciRegistryLocalRepository(
                 // 判断要上传的长度是否超长
                 if (end > length) {
                     OciResponseUtils.buildBlobUploadPatchResponse(
-                        domain = ociProperties.domain,
+                        domain = ociProperties.url,
                         uuid = uuid!!,
                         locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
                         response = HttpContextHolder.getResponse(),
@@ -175,7 +175,7 @@ class OciRegistryLocalRepository(
             // 判断追加文件后长度是否超长
             if (length > -1 && patchLen > length) {
                 OciResponseUtils.buildBlobUploadPatchResponse(
-                    domain = ociProperties.domain,
+                    domain = ociProperties.url,
                     uuid = uuid,
                     locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
                     response = HttpContextHolder.getResponse(),
@@ -184,7 +184,7 @@ class OciRegistryLocalRepository(
                 )
             } else {
                 OciResponseUtils.buildBlobUploadPatchResponse(
-                    domain = ociProperties.domain,
+                    domain = ociProperties.url,
                     uuid = uuid,
                     locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
                     response = HttpContextHolder.getResponse(),
