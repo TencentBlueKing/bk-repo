@@ -211,14 +211,14 @@ object ScanPlanConverter {
 
     fun convert(request: PlanCountRequest): PlanCountRequest {
         request.startDateTime = request.startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
-        request.finishedDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+        request.endDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
         return request
     }
 
     fun convert(request: PlanArtifactRequest): PlanArtifactRequest {
         request.highestLeakLevel = request.highestLeakLevel?.let { normalizedLevel(it) }
         request.startDateTime = request.startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
-        request.finishedDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+        request.endDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
         if (!request.status.isNullOrEmpty()) {
             request.subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(request.status!!)).map { it.name }
         }

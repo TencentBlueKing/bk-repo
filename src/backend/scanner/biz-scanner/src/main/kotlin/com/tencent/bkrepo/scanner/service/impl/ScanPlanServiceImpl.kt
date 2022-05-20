@@ -169,7 +169,7 @@ class ScanPlanServiceImpl(
         with(request) {
             val scanPlan = scanPlanDao.find(projectId, id)
                 ?: throw throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
-            return if (startTime != null || endTime != null) {
+            return if (startTime != null && endTime != null) {
                 val subScanTasks = planArtifactLatestSubScanTaskDao.findBy(request)
                 ScanPlanConverter.convert(scanPlan, subScanTasks)
             } else {
