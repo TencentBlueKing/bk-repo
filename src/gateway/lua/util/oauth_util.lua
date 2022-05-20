@@ -53,7 +53,7 @@ function _M:get_ticket(bk_ticket, input_type)
         local requestBodyJson = json.encode(requestBody)
         if requestBodyJson == nil then
             ngx.log(ngx.ERR, "failed to encode auth/token request body: ", logUtil:dump(requestBody))
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
 
@@ -85,13 +85,13 @@ function _M:get_ticket(bk_ticket, input_type)
         --- 判断是否出错了
         if not res then
             ngx.log(ngx.ERR, "failed to request get_ticket: ", err)
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
         --- 判断返回的状态码是否是200
         if res.status ~= 200 then
             ngx.log(ngx.STDERR, "failed to request get_ticket, status: ", res.status)
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
         --- 获取所有回复
@@ -103,7 +103,7 @@ function _M:get_ticket(bk_ticket, input_type)
         --- 判断JSON转换是否成功
         if result == nil then
             ngx.log(ngx.ERR, "failed to parse get_ticket response：", responseBody)
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
 
@@ -144,13 +144,13 @@ function _M:verify_bkrepo_token(access_token)
         --- 判断是否出错了
         if not res then
             ngx.log(ngx.ERR, "failed to request verify_bkrepo_token: ", err)
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
         --- 判断返回的状态码是否是200
         if res.status ~= 200 then
             ngx.log(ngx.STDERR, "failed to request verify_bkrepo_token, status: ", res.status)
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
         --- 设置HTTP保持连接
@@ -160,7 +160,7 @@ function _M:verify_bkrepo_token(access_token)
         --- 判断JSON转换是否成功
         if result == nil then
             ngx.log(ngx.ERR, "failed to parse verify_bkrepo_token response：", responseBody)
-            ngx.exit(500)
+            ngx.exit(401)
             return
         end
 
@@ -198,13 +198,13 @@ function _M:verify_token(access_token)
     --- 判断是否出错了
     if not res then
         ngx.log(ngx.ERR, "failed to request verify_token: ", err)
-        ngx.exit(500)
+        ngx.exit(401)
         return
     end
     --- 判断返回的状态码是否是200
     if res.status ~= 200 then
         ngx.log(ngx.STDERR, "failed to request verify_token, status: ", res.status)
-        ngx.exit(500)
+        ngx.exit(401)
         return
     end
     --- 获取所有回复
@@ -216,7 +216,7 @@ function _M:verify_token(access_token)
     --- 判断JSON转换是否成功
     if result == nil then
         ngx.log(ngx.ERR, "failed to parse verify_token response：", responseBody)
-        ngx.exit(500)
+        ngx.exit(401)
         return
     end
 
