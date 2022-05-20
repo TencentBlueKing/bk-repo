@@ -35,6 +35,10 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     // 是否需要计算merge后文件的md5
     var calculateMd5 = false
 
+    // 用于计算校验和使用
+    private val arrayOutputStream = ByteArrayOutputStream()
+    private val writableByteChannel = Channels.newChannel(arrayOutputStream)
+
     /**
      * 对文件进行分块和输出校验和信息
      * @param file 需要处理的文件
@@ -374,8 +378,6 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         blockChannel: BlockChannel
     ) {
         var currentStartSeq = startSeq
-        val arrayOutputStream = ByteArrayOutputStream()
-        val writableByteChannel = Channels.newChannel(arrayOutputStream)
         while (currentStartSeq <= endSeq) {
             val blocks = (endSeq - currentStartSeq).coerceAtMost(MAX_IO_READ_MERGE_BLOCKS)
             val currentEndSeq = currentStartSeq + blocks
