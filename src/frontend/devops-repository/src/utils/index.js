@@ -63,7 +63,7 @@ function prezero (num) {
 }
 
 export function formatDate (ms) {
-    if (!ms) return ms
+    if (!ms) return ms || '/'
     const time = new Date(ms)
     return `${time.getFullYear()}-${
         prezero(time.getMonth() + 1)}-${
@@ -71,6 +71,24 @@ export function formatDate (ms) {
         prezero(time.getHours())}:${
         prezero(time.getMinutes())}:${
         prezero(time.getSeconds())}`
+}
+
+const durationMap = {
+    s: { label: '秒', deno: 60, next: 'm' },
+    m: { label: '分', deno: 60, next: 'h' },
+    h: { label: '时', deno: 24, next: 'd' },
+    d: { label: '天', deno: 365 }
+}
+export function formatDuration (duration, unit = 's', target = []) {
+    if (!duration) return duration || '/'
+    duration = Math.floor(Number(duration))
+    const { label, deno, next } = durationMap[unit]
+    const current = duration % deno ? `${duration % deno}${label}` : ''
+    duration = Math.floor(duration / deno)
+    if (!duration) {
+        return [current, ...target].slice(0, 2).join('')
+    }
+    return formatDuration(duration, next, [current, ...target])
 }
 
 // 数字三位分隔

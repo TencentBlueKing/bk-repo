@@ -20,18 +20,12 @@
                 <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
                 <div class="proxy-address">{{proxy.url}}</div>
                 <div class="flex-align-center proxy-operation">
-                    <i v-if="!proxy.public" class="mr10 devops-icon icon-edit hover-btn" @click.stop="editProxy(proxy)"></i>
+                    <Icon v-if="!proxy.public" class="mr10 hover-btn" size="24" name="icon-edit" @click.native.stop="editProxy(proxy)" />
                     <Icon class="hover-btn" size="24" name="icon-delete" @click.native.stop="deleteProxy(proxy)" />
                 </div>
             </div>
         </draggable>
-        <empty-data v-else ex-style="margin-top:80px;"
-            :config="{
-                imgSrc: '/ui/no-proxy.png',
-                title: '暂无代理源配置',
-                subTitle: '请尝试添加公有代理源或配置私有代理源'
-            }">
-        </empty-data>
+        <empty-data v-else ex-style="margin-top:80px;" title="暂无代理源配置" sub-title="请尝试添加公有代理源或配置私有代理源"></empty-data>
         <proxy-origin-dialog :show="showProxyDialog" :public-proxy="filterPublicProxy" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
     </div>
 </template>

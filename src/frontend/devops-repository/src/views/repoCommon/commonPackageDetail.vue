@@ -126,7 +126,7 @@
                 return this.$route.query.repoName || ''
             },
             packageKey () {
-                return this.$route.query.package || ''
+                return this.$route.query.packageKey || ''
             },
             version () {
                 return this.$route.query.version || ''
@@ -337,19 +337,20 @@
                     .version-operation {
                         position: absolute;
                         right: 10px;
-                        visibility: hidden;
                     }
                     &:hover {
                         background-color: var(--bgHoverLighterColor);
-                        .version-operation {
-                            visibility: visible;
-                        }
                     }
                     &.selected {
                         color: white;
                         background-color: var(--primaryColor);
                         .version-operation {
-                            visibility: visible;
+                            ::v-deep .devops-icon.hover-btn {
+                                color: white;
+                                &:hover {
+                                    background-color: transparent;
+                                }
+                            }
                             &:hover {
                                 background-color: var(--primaryColor);
                             }

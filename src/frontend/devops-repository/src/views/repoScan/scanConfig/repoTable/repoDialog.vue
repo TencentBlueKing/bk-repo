@@ -16,12 +16,18 @@
             show-overflow-tips
             @change="changeSelect">
             <template #source-option="{ name, type }">
-                <Icon size="16" :name="type.toLowerCase()" />
-                <span class="ml10 text-overflow" style="max-width:280px" :title="name">{{ name }}</span>
+                <div class="flex-align-center flex-1">
+                    <Icon size="16" :name="type.toLowerCase()" />
+                    <span class="ml10 flex-1 text-overflow" :title="name">{{ name }}</span>
+                    <i class="bk-icon icon-arrows-right"></i>
+                </div>
             </template>
             <template #target-option="{ name, type }">
-                <Icon size="16" :name="type.toLowerCase()" />
-                <span class="ml10 text-overflow" style="max-width:280px" :title="name">{{ name }}</span>
+                <div class="flex-align-center flex-1">
+                    <Icon size="16" :name="type.toLowerCase()" />
+                    <span class="ml10 flex-1 text-overflow" :title="name">{{ name }}</span>
+                    <i class="bk-icon icon-close"></i>
+                </div>
             </template>
         </bk-transfer>
     </canway-dialog>

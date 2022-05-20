@@ -4,10 +4,7 @@
             <bk-radio :disabled="disabled" :value="false">所有制品的最新版本</bk-radio>
             <bk-radio :disabled="disabled" class="mt10" :value="true">
                 <span>满足规则的制品</span>
-                <div v-show="showAddBtn && !disabled" class="ml10 rule-add flex-center" @click="addRule()">
-                    <i class="mr5 devops-icon icon-plus-circle"></i>
-                    添加规则
-                </div>
+                <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="addRule()">添加规则</bk-button>
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn" class="rule-list">
@@ -57,10 +54,19 @@
         watch: {
             initData: {
                 handler (data) {
-                    this.defaultRules = data.map(r => ({ nameRule: r.nameRule || undefined, versionRule: r.versionRule || undefined }))
+                    this.defaultRules = data.map(r => {
+                        return r.rules?.reduce((target, item) => {
+                            target[item.field] = {
+                                ...item,
+                                value: item.operation === 'MATCH' ? item.value.replace(/^\*(.*)\*$/, '$1') : item.value
+                            }
+                            return target
+                        }, {})
+                    })
                     this.showAddBtn = Boolean(data.length)
                 },
-                immediate: true
+                immediate: true,
+                deep: true
             }
         },
         methods: {
@@ -69,13 +75,18 @@
                     if (!this.showAddBtn) resolve([])
                     else {
                         const rules = this.defaultRules
-                            .map(({ nameRule, versionRule }) => {
+                            .map(rs => {
                                 return {
-                                    nameRule: nameRule?.value ? nameRule : null,
-                                    versionRule: versionRule?.value ? versionRule : null
+                                    relation: 'AND',
+                                    rules: Object.values(rs).map(i => {
+                                        return i.value && {
+                                            ...i,
+                                            value: i.operation === 'MATCH' ? `*${i.value}*` : i.value
+                                        }
+                                    }).filter(Boolean)
                                 }
                             })
-                            .filter(rule => Boolean(rule.nameRule || rule.versionRule))
+                            .filter(rule => Boolean(rule.rules.length))
                         rules.length ? resolve(rules) : reject(new Error())
                     }
                 })
@@ -104,13 +115,6 @@
             margin-bottom: -10px;
             color: var(--fontSubsidiaryColor);
         }
-    }
-    .rule-add {
-        width: 120px;
-        height: 32px;
-        color: var(--primaryColor);
-        background-color: var(--bgHoverColor);
-        cursor: pointer;
     }
 }
 </style>

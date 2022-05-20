@@ -27,6 +27,10 @@
 
             if (this.iframeMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
+                // 请求管理员信息
+                this.ajaxUserInfo().then((userInfo) => {
+                    userInfo.admin && this.getClusterList()
+                })
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
@@ -74,8 +78,6 @@
                                 projectId
                             }
                         })
-
-                        projectId && this.checkPM({ projectId })
                     }
                     
                     userInfo.admin && this.getClusterList()
@@ -86,7 +88,6 @@
             ...mapActions([
                 'getProjectList',
                 'ajaxUserInfo',
-                'checkPM',
                 'getRepoUserList',
                 'getClusterList'
             ])

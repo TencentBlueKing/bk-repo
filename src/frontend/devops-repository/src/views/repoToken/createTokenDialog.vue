@@ -41,7 +41,7 @@
     </canway-dialog>
 </template>
 <script>
-    import { mapState, mapActions } from 'vuex'
+    import { mapActions } from 'vuex'
     import { copyToClipboard } from '@repository/utils'
     export default {
         name: 'createToken',
@@ -64,9 +64,6 @@
                 },
                 token: ''
             }
-        },
-        computed: {
-            ...mapState(['userInfo'])
         },
         methods: {
             ...mapActions(['addToken']),

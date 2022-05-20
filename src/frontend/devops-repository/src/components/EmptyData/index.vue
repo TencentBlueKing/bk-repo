@@ -1,18 +1,10 @@
 <template>
     <div class="empty-data-container flex-center" :class="{ 'hidden': isLoading }" :style="exStyle">
-        <template v-if="config">
-            <div class="flex-column flex-center">
-                <img :src="config.imgSrc" width="250" />
-                <span class="mt5 empty-data-title">{{ config.title }}</span>
-                <span class="mt5 empty-data-subtitle">{{ config.subTitle }}</span>
-            </div>
-        </template>
-        <template v-else>
-            <Icon :name="search ? 'empty-search' : 'empty-data'" size="30"></Icon>
-            <slot>
-                <span class="ml10 empty-tip">{{ search ? $t('noSearchData') : $t('noData') }}</span>
-            </slot>
-        </template>
+        <div class="flex-column flex-center">
+            <img :src="search ? '/ui/no-search.png' : '/ui/no-data.png'" width="250" />
+            <span class="mt5 empty-data-title">{{ search ? searchTitle : title }}</span>
+            <span class="mt5 empty-data-subtitle">{{ subTitle }}</span>
+        </div>
     </div>
 </template>
 <script>
@@ -27,9 +19,15 @@
                 type: String,
                 default: ''
             },
-            config: {
-                type: Object
+            title: {
+                type: String,
+                default: '暂无数据'
             },
+            searchTitle: {
+                type: String,
+                default: '搜索结果为空'
+            },
+            subTitle: String,
             isLoading: {
                 type: Boolean,
                 default: false
