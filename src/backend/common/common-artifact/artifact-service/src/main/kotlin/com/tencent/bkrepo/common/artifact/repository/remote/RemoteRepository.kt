@@ -146,7 +146,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 尝试获取缓存的远程构件节点
      */
-    private fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
+    open fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
         with(context) {
             return nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
         }

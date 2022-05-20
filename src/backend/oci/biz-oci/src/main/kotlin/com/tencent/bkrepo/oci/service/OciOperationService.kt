@@ -67,19 +67,10 @@ interface OciOperationService {
      */
     fun updatePackageInfo(
         ociArtifactInfo: OciArtifactInfo,
+        packageKey: String,
         appVersion: String? = null,
         description: String? = null
     )
-
-    /**
-     * 根据artifactInfo获取对应manifest文件path
-     */
-    fun queryManifestFullPathByNameAndDigest(
-        projectId: String,
-        repoName: String,
-        packageName: String,
-        version: String
-    ): String
 
     /**
      * 查询包版本详情
@@ -139,4 +130,21 @@ interface OciOperationService {
      * 特殊：manifest文件按tag存储， 但是查询时存在tag/digest
      */
     fun getNodeFullPath(artifactInfo: OciArtifactInfo): String?
+
+    /**
+     * 根据sha256值获取对应的node fullpath
+     */
+    fun getNodeByDigest(
+        projectId: String,
+        repoName: String,
+        digestStr: String
+    ): String?
+
+    /**
+     * 针对老的docker仓库的数据做兼容性处理
+     * 老版数据node存储格式不一样：
+     * 1 docker-local/nginx/latest 下存所有manifest和blobs
+     * 2 docker-local/nginx/_uploads/ 临时存储上传的blobs，待manifest文件上传成功后移到到对应版本下，如docker-local/nginx/latest
+     */
+    fun getOldDockerNode(artifactInfo: OciArtifactInfo): String?
 }

@@ -57,6 +57,7 @@ const val PROXY_URL = "proxyUrl"
 
 const val MANIFEST = "manifest.json"
 const val MEDIA_TYPE = "mediaType"
+const val OLD_DOCKER_MEDIA_TYPE = "docker.manifest.type"
 const val DIGEST = "oci_digest"
 const val SIZE = "size"
 const val SCHEMA_VERSION = "schemaVersion"

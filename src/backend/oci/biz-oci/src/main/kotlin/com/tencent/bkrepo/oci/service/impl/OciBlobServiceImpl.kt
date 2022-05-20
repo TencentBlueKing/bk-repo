@@ -43,7 +43,6 @@ import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
-import com.tencent.bkrepo.oci.exception.OciRepoNotFoundException
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.service.OciBlobService
@@ -142,8 +141,9 @@ class OciBlobServiceImpl(
         with(artifactInfo) {
             // check repository
             val result = repoClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
-                OciOperationServiceImpl.logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
-                throw OciRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
+                ArtifactContextHolder.queryRepoDetailFormExtraRepoType(projectId, repoName)
+//                logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
+//                throw OciRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
             }
             logger.debug("Start to append file in ${getRepoIdentify()}")
             return storage.createAppendId(result.storageCredentials)

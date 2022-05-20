@@ -31,10 +31,13 @@
 
 package com.tencent.bkrepo.oci.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.FILE_EXTENSION
 import com.tencent.bkrepo.oci.constant.MANIFEST_INVALID_CODE
@@ -95,7 +98,7 @@ object OciUtils {
     }
 
     fun convertToMap(chartInfo: HelmChartMetadata): Map<String, Any> {
-        return chartInfo.toJsonString().readJsonString<Map<String, Any>>()
+        return chartInfo.toJsonString().readJsonString()
     }
 
     fun manifestIterator(manifest: ManifestSchema2): List<Descriptor> {
@@ -127,5 +130,26 @@ object OciUtils {
         list.add(manifest.config)
         list.addAll(manifest.layers)
         return list.find { it.mediaType == mediaType }
+    }
+
+    /**
+     * 根据packageKey获取对应的package name
+     */
+    fun getPackageNameFormPackageKey(
+        packageKey: String,
+        defaultType: RepositoryType,
+        extraTypes: List<RepositoryType>
+    ): String {
+        var packageName = StringPool.EMPTY
+        if (packageKey.startsWith(defaultType.name.toLowerCase())) {
+            return PackageKeys.resolveName(defaultType.name.toLowerCase(), packageKey)
+        }
+        extraTypes.forEach {
+            if (packageKey.startsWith(it.name.toLowerCase())) {
+                packageName = PackageKeys.resolveName(it.name.toLowerCase(), packageKey)
+                return@forEach
+            }
+        }
+        return packageName
     }
 }

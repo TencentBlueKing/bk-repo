@@ -48,6 +48,7 @@ import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.PATCH
 import com.tencent.bkrepo.oci.constant.POST
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
@@ -295,7 +296,8 @@ class OciRegistryLocalRepository(
             "Will start to download oci artifact ${context.artifactInfo.getArtifactFullPath()}" +
                 " in repo ${context.artifactInfo.getRepoIdentify()}..."
         )
-        val fullPath = ociOperationService.getNodeFullPath(context.artifactInfo as OciArtifactInfo)
+        val artifactInfo = context.artifactInfo as OciArtifactInfo
+        val fullPath = ociOperationService.getNodeFullPath(artifactInfo)
         return downloadArtifact(context, fullPath)
     }
 
@@ -304,7 +306,11 @@ class OciRegistryLocalRepository(
      */
     private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
         if (fullPath == null) return null
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data ?: run {
+            val oldDockerPath = ociOperationService.getOldDockerNode(context.artifactInfo as OciArtifactInfo)
+                ?: return null
+            nodeClient.getNodeDetail(context.projectId, context.repoName, oldDockerPath).data
+        }
         logger.info(
             "Starting to download $fullPath " +
                 "in repo: ${context.artifactInfo.getRepoIdentify()}"
@@ -312,13 +318,17 @@ class OciRegistryLocalRepository(
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
             ?: return null
         val digest = OciDigest.fromSha256(node!!.sha256.orEmpty())
-        val mediaType = node.metadata[MEDIA_TYPE] ?: MediaTypes.APPLICATION_OCTET_STREAM
+        val mediaType = node.metadata[MEDIA_TYPE] ?: run {
+            node.metadata[OLD_DOCKER_MEDIA_TYPE] ?: MediaTypes.APPLICATION_OCTET_STREAM
+        }
         logger.info(
             "The mediaType of Artifact $fullPath is $mediaType in repo: ${context.artifactInfo.getRepoIdentify()}"
         )
 
         val contentType = if (context.artifactInfo is OciManifestArtifactInfo) {
-            node.metadata[MEDIA_TYPE] ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            node.metadata[MEDIA_TYPE] ?: run {
+                node.metadata[OLD_DOCKER_MEDIA_TYPE] ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            }
         } else {
             MediaTypes.APPLICATION_OCTET_STREAM
         }

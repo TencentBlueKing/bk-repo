@@ -52,6 +52,10 @@ import org.springframework.context.annotation.Configuration
 class OciRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getRepositoryType(): RepositoryType = RepositoryType.OCI
 
+    override fun getRepositoryTypes(): List<RepositoryType> {
+        return mutableListOf(RepositoryType.DOCKER)
+    }
+
     override fun getLocalRepository(): LocalRepository = SpringContextUtils.getBean<OciRegistryLocalRepository>()
 
     override fun getRemoteRepository(): RemoteRepository = SpringContextUtils.getBean<OciRegistryRemoteRepository>()

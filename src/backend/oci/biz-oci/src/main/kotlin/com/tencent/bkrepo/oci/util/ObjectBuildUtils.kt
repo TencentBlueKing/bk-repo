@@ -103,15 +103,19 @@ object ObjectBuildUtils {
         version: String,
         size: Long,
         fullPath: String,
+        repoType: String,
         metadata: Map<String, Any>? = null
     ): PackageVersionCreateRequest {
         with(ociArtifactInfo) {
+            // 兼容多仓库类型支持
+            val packageType = PackageType.valueOf(repoType)
+            val packageKey = PackageKeys.ofName(repoType.toLowerCase(), packageName)
             return PackageVersionCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
                 packageName = packageName,
-                packageKey = PackageKeys.ofOci(packageName),
-                packageType = PackageType.OCI,
+                packageKey = packageKey,
+                packageType = packageType,
                 versionName = version,
                 size = size,
                 artifactPath = fullPath,
@@ -124,17 +128,17 @@ object ObjectBuildUtils {
 
     fun buildPackageVersionUpdateRequest(
         ociArtifactInfo: OciManifestArtifactInfo,
-        packageName: String,
         version: String,
         size: Long,
         fullPath: String,
-        metadata: Map<String, Any>? = null
+        metadata: Map<String, Any>? = null,
+        packageKey: String
     ): PackageVersionUpdateRequest {
         with(ociArtifactInfo) {
             return PackageVersionUpdateRequest(
                 projectId = projectId,
                 repoName = repoName,
-                packageKey = PackageKeys.ofOci(packageName),
+                packageKey = packageKey,
                 versionName = version,
                 size = size,
                 manifestPath = fullPath,
@@ -146,6 +150,7 @@ object ObjectBuildUtils {
     fun buildPackageUpdateRequest(
         artifactInfo: ArtifactInfo,
         name: String,
+        packageKey: String,
         appVersion: String? = null,
         description: String? = null
     ): PackageUpdateRequest {
@@ -154,7 +159,7 @@ object ObjectBuildUtils {
             repoName = artifactInfo.repoName,
             name = name,
             description = description,
-            packageKey = PackageKeys.ofOci(name),
+            packageKey = packageKey,
             extension = appVersion?.let { mapOf("appVersion" to appVersion) }
         )
     }
