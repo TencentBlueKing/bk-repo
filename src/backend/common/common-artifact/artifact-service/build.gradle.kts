@@ -36,7 +36,6 @@ dependencies {
     api(project(":common:common-service"))
     api(project(":common:common-security"))
     api(project(":common:common-artifact:artifact-api"))
-    api(project(":common:common-plugin:plugin-service"))
     api(project(":common:common-storage:storage-service"))
     api(project(":common:common-operate:operate-service"))
 
