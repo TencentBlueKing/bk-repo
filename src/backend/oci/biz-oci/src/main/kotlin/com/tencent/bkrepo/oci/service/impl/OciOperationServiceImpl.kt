@@ -48,10 +48,8 @@ import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
-import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
-import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
@@ -270,33 +268,6 @@ class OciOperationServiceImpl(
                 name = artifactInfo.packageName,
                 version = version
             ) ?: return
-            val inputStream = storageService.load(
-                digest = nodeDetail.sha256!!,
-                range = Range.full(nodeDetail.size),
-                storageCredentials = getRepositoryInfo(artifactInfo).storageCredentials
-            ) ?: return
-            // 判断manifest文件版本
-            val mediaType: String = nodeDetail.metadata[MEDIA_TYPE] as String? ?: run {
-                nodeDetail.metadata[OLD_DOCKER_MEDIA_TYPE] ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-            } as String
-            val schemaVersion = OciUtils.checkVersion(mediaType)
-            val list = if (schemaVersion == 1) {
-                val manifest = OciUtils.streamToManifestV1(inputStream)
-                OciUtils.manifestIteratorDegist(manifest)
-            } else {
-                val manifest = OciUtils.streamToManifestV2(inputStream)
-                OciUtils.manifestIteratorDegist(manifest)
-            }
-            // 删除manifest中对应的所有blob
-            list.forEach { des ->
-                deleteNode(
-                    projectId = projectId,
-                    repoName = repoName,
-                    packageName = packageName,
-                    digestStr = des,
-                    userId = userId
-                )
-            }
             // 删除manifest
             deleteNode(
                 projectId = projectId,

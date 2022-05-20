@@ -142,8 +142,6 @@ class OciBlobServiceImpl(
             // check repository
             val result = repoClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
                 ArtifactContextHolder.queryRepoDetailFormExtraRepoType(projectId, repoName)
-//                logger.warn("check repository [$repoName] in projectId [$projectId] failed!")
-//                throw OciRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
             }
             logger.debug("Start to append file in ${getRepoIdentify()}")
             return storage.createAppendId(result.storageCredentials)
