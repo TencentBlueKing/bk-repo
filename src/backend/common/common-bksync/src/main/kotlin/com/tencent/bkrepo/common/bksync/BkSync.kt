@@ -195,11 +195,12 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         reuse: Int,
         reuseThreshold: Float
     ): Checksum? {
-        val remainingWindowCountLimit = ceil(index.total * reuseThreshold - reuse).toInt()
-        val remainingDataCountLimit = slidingWindow.windowSize * remainingWindowCountLimit
+        val detectingWindowCount = ceil(index.total - (index.total * reuseThreshold - reuse)).toInt()
+        var detectingDataCount = slidingWindow.windowSize * detectingWindowCount
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
-            if (slidingWindow.remainingDataCount() < remainingDataCountLimit) {
+            detectingDataCount--
+            if (detectingDataCount == 0) {
                 logger.info("Even if remaining data can be reused, the reuse rate is still less than the threshold")
                 throw InterruptedRollingException()
             }

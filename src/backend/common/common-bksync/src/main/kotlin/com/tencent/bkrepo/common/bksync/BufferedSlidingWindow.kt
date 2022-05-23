@@ -101,13 +101,6 @@ class BufferedSlidingWindow(val windowSize: Int, val bufferSize: Int, private va
     }
 
     /**
-     * 获取剩余数据字节数
-     */
-    fun remainingDataCount(): Long {
-        return fileLength - headPos()
-    }
-
-    /**
      * 下个头部字节
      * */
     private fun nextHead(): Byte {
