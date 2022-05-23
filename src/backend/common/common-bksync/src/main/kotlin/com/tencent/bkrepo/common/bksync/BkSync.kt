@@ -12,6 +12,7 @@ import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.zip.Adler32
 import org.slf4j.LoggerFactory
+import kotlin.math.ceil
 
 /**
  * 基于rsync算法实现的增量上传/下载工具
@@ -194,25 +195,19 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         reuse: Int,
         reuseThreshold: Float
     ): Checksum? {
-        var checkInterruptFlag = slidingWindow.windowSize
-        val halfWindowSize = slidingWindow.windowSize / 2
+        val detectingWindowCount = ceil(index.total - (index.total * reuseThreshold - reuse)).toInt()
+        var detectingDataCount = slidingWindow.windowSize * detectingWindowCount
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
+            if (--detectingDataCount == 0) {
+                logger.info("Even if remaining data can be reused, the reuse rate is still less than the threshold")
+                throw InterruptedRollingException()
+            }
             adler32RollingHash.rotate(remove, enter)
             val rollingHash = adler32RollingHash.digest()
             val checksum = search(rollingHash.toInt(), index, slidingWindow)
             if (checksum != null) {
                 return checksum
-            }
-            // 剩余窗口都可以重复利用时的最大重复使用率
-            checkInterruptFlag = (checkInterruptFlag - 1) % halfWindowSize
-            if (checkInterruptFlag == 0) {
-                val maxReuseRate = (slidingWindow.remainingWindowCount() + reuse) / index.total.toDouble()
-                if (maxReuseRate < reuseThreshold) {
-                    logger.info("Even if remaining window can be reused, " +
-                        "the reuse rate is still less than the threshold")
-                    throw InterruptedRollingException()
-                }
             }
         }
         return null
