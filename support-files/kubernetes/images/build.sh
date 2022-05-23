@@ -147,7 +147,7 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
     for SERVICE in ${BACKENDS[@]};
     do
         log "构建${SERVICE}镜像..."
-        $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
+        $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
         rm -rf $tmp_dir/*
         cp backend/startup.sh $tmp_dir/
         cp $BACKEND_DIR/release/boot-$SERVICE-*.jar $tmp_dir/app.jar
