@@ -66,5 +66,7 @@ enum class ScanTaskStatus {
         fun finishedStatus(status: String): Boolean {
             return status == STOPPING.name || status == STOPPED.name || status == FINISHED.name
         }
+
+        val unFinishedStatus = listOf(PENDING, SCANNING_SUBMITTING, SCANNING_SUBMITTED, PAUSE)
     }
 }

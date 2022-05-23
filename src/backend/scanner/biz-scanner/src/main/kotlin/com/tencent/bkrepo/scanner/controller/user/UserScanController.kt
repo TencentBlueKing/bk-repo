@@ -29,6 +29,8 @@ package com.tencent.bkrepo.scanner.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -88,9 +90,21 @@ class UserScanController @Autowired constructor(
         @ApiParam(value = "projectId")
         @PathVariable projectId: String,
         @ApiParam(value = "记录id")
-        @RequestParam("recordId") subtaskId: String
+        @RequestParam("recordId") subtaskId: String?,
+        @ApiParam(value = "方案id")
+        @RequestParam("id") planId: String?
     ): Response<Boolean> {
-        return ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
+        return when {
+            !subtaskId.isNullOrBlank() -> {
+                ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
+            }
+            !planId.isNullOrBlank() -> {
+                ResponseBuilder.success(scanService.stopScanPlan(projectId, planId))
+            }
+            else -> {
+                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
+            }
+        }
     }
 
     @ApiOperation("中止制品扫描")

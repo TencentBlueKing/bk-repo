@@ -189,6 +189,15 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
         )
     }
 
+    fun findUnFinished(projectId: String, planId: String): List<TScanTask> {
+        return find(
+            Query(
+                TScanTask::projectId.isEqualTo(projectId).and(TScanTask::planId).isEqualTo(planId)
+                    .and(TScanTask::status).`in`(ScanTaskStatus.unFinishedStatus)
+            )
+        )
+    }
+
     fun find(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<TScanTask> {
         val criteria = Criteria()
         with(scanTaskQuery) {

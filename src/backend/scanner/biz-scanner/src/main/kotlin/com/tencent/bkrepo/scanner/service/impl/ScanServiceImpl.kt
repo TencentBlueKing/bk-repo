@@ -186,6 +186,15 @@ class ScanServiceImpl @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
+    override fun stopScanPlan(projectId: String, planId: String): Boolean {
+        val unFinishedTasks = scanTaskDao.findUnFinished(projectId, planId)
+        unFinishedTasks.forEach {
+            stopTask(projectId, it.id!!)
+        }
+        return true
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
     override fun reportResult(reportResultRequest: ReportResultRequest) {
         with(reportResultRequest) {
             logger.info("report result, parentTask[$parentTaskId], subTask[$subTaskId]")

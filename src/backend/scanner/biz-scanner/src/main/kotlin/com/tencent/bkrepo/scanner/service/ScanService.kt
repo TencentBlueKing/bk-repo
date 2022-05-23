@@ -63,6 +63,16 @@ interface ScanService {
     fun stopByPlanArtifactLatestSubtaskId(projectId: String, subtaskId: String): Boolean
 
     /**
+     * 停止方案下所有子任务
+     *
+     * @param projectId 项目id
+     * @param planId 方案id
+     *
+     * @return true 停止成功，false 停止失败
+     */
+    fun stopScanPlan(projectId: String, planId: String): Boolean
+
+    /**
      * 停止子任务
      *
      * @param projectId 项目id
