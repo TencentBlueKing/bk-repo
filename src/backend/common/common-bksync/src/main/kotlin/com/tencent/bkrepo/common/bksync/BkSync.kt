@@ -196,6 +196,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
     ): Checksum? {
         var checkInterruptFlag = slidingWindow.windowSize
         val halfWindowSize = slidingWindow.windowSize / 2
+        val remainingWindowCountLimit = index.total * reuseThreshold - reuse
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
             adler32RollingHash.rotate(remove, enter)
@@ -204,11 +205,10 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             if (checksum != null) {
                 return checksum
             }
-            // 剩余窗口都可以重复利用时的最大重复使用率
+            // 每移动半个窗口检查一次，在理想情况下剩余窗口都可以重复使用时，是否满足重复率阈值
             checkInterruptFlag = (checkInterruptFlag - 1) % halfWindowSize
             if (checkInterruptFlag == 0) {
-                val maxReuseRate = (slidingWindow.remainingWindowCount() + reuse) / index.total.toDouble()
-                if (maxReuseRate < reuseThreshold) {
+                if (slidingWindow.remainingWindowCount() < remainingWindowCountLimit) {
                     logger.info("Even if remaining window can be reused, " +
                         "the reuse rate is still less than the threshold")
                     throw InterruptedRollingException()
