@@ -193,15 +193,27 @@ class DeltaSyncService(
                 emitter.send(event)
                 emitter.complete()
             } catch (e: ErrorCodeException) {
-                val msg = SseEmitter.event()
-                    .name(PATCH_EVENT_TYPE_ERROR)
-                    .data(e.message.orEmpty())
-                emitter.send(msg)
+                // 客户端异常
+                sendError(e.message.orEmpty(), emitter)
                 emitter.complete()
             } catch (e: Exception) {
+                // 服务端异常
+                sendError(e.message.orEmpty(), emitter)
                 emitter.completeWithError(e)
             }
         }
+    }
+
+    /**
+     * sse发送错误信息
+     * @param errorMsg 错误信息
+     * @param sseEmitter sse发送器
+     * */
+    private fun sendError(errorMsg: String, sseEmitter: SseEmitter) {
+        val msg = SseEmitter.event()
+            .name(PATCH_EVENT_TYPE_ERROR)
+            .data(errorMsg)
+        sseEmitter.send(msg)
     }
 
     /**
