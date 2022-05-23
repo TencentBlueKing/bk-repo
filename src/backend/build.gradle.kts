@@ -51,8 +51,6 @@ allprojects {
             dependency("com.google.code.gson:gson:${Versions.Gson}")
             dependency("org.eclipse.jgit:org.eclipse.jgit.http.server:${Versions.JGit}")
             dependency("org.eclipse.jgit:org.eclipse.jgit:${Versions.JGit}")
-            dependency("org.apache.hadoop:hadoop-hdfs:${Versions.Hadoop}")
-            dependency("org.apache.hadoop:hadoop-common:${Versions.Hadoop}")
             dependency("org.apache.commons:commons-compress:${Versions.CommonsCompress}:")
             dependency("commons-io:commons-io:${Versions.CommonsIO}")
             dependency("com.google.guava:guava:${Versions.Guava}")
