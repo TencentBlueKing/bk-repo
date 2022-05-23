@@ -62,7 +62,8 @@ class OciRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getAuthSecurityCustomizer(): HttpAuthSecurityCustomizer = object : HttpAuthSecurityCustomizer {
         override fun customize(httpAuthSecurity: HttpAuthSecurity) {
             val authenticationManager = httpAuthSecurity.authenticationManager!!
-            val ociLoginAuthHandler = OciLoginAuthHandler(authenticationManager)
+            val jwtAuthProperties = httpAuthSecurity.jwtAuthProperties!!
+            val ociLoginAuthHandler = OciLoginAuthHandler(authenticationManager, jwtAuthProperties)
             httpAuthSecurity.withPrefix("/oci")
                 .addHttpAuthHandler(ociLoginAuthHandler)
         }
