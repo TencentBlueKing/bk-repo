@@ -213,15 +213,15 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         var detectingDataCount = slidingWindow.windowSize * detectingWindowCount
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
-            if (--detectingDataCount == 0) {
-                logger.info("Even if remaining data can be reused, the reuse rate is still less than the threshold")
-                throw InterruptedRollingException()
-            }
             adler32RollingHash.rotate(remove, enter)
             val rollingHash = adler32RollingHash.digest()
             val checksum = search(rollingHash.toInt(), index, slidingWindow)
             if (checksum != null) {
                 return checksum
+            }
+            if (--detectingDataCount == 0) {
+                logger.info("Even if remaining data can be reused, the reuse rate is still less than the threshold")
+                throw InterruptedRollingException()
             }
         }
         return null
