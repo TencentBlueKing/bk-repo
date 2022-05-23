@@ -30,7 +30,6 @@ package com.tencent.bkrepo.oci.service
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import com.tencent.bkrepo.oci.pojo.OciDomainInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
@@ -96,7 +95,7 @@ interface OciOperationService {
     /**
      * 获取对应域名
      */
-    fun getRegistryDomain(): OciDomainInfo
+    fun getRegistryDomain(): String
 
     /**
      * 更新整个blob相关信息,blob相关的mediatype，version等信息需要从manifest中获取

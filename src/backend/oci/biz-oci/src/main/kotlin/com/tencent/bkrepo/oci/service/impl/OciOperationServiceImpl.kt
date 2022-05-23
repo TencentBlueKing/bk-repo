@@ -54,7 +54,6 @@ import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.model.Descriptor
 import com.tencent.bkrepo.oci.model.ManifestSchema2
-import com.tencent.bkrepo.oci.pojo.OciDomainInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
@@ -437,8 +436,8 @@ class OciOperationServiceImpl(
         remove(userId, artifactInfo)
     }
 
-    override fun getRegistryDomain(): OciDomainInfo {
-        return OciDomainInfo(domain)
+    override fun getRegistryDomain(): String {
+        return domain
     }
 
     /**
