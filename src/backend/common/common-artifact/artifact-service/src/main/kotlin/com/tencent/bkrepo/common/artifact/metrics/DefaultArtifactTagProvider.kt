@@ -64,21 +64,18 @@ class DefaultArtifactTagProvider(
         includeRepoInfo: Boolean,
         path: String
     ): Tags {
-        // 异步非http请求场景下，获取不到repo信息，无法细化度量取值。
-        repositoryDetail ?: return Tags.of(PATH, StringPool.UNKNOWN)
-        with(repositoryDetail) {
-            if (!includeRepoInfo) {
-                return Tags.of(
-                    PATH,
-                    getTagPath(getStorageCredentials(storageCredentials), path)
-                )
-            }
+        val credentials = repositoryDetail?.let { getStorageCredentials(it.storageCredentials) }
+        if (!includeRepoInfo) {
             return Tags.of(
-                REPO_TAG, getRepoTagValue(this),
                 PATH,
-                getTagPath(getStorageCredentials(storageCredentials), path)
+                getTagPath(credentials, path)
             )
         }
+        return Tags.of(
+            REPO_TAG, getRepoTagValue(repositoryDetail),
+            PATH,
+            getTagPath(credentials, path)
+        )
     }
 
     private fun getPath(receiver: ArtifactDataReceiver): String {
@@ -88,10 +85,11 @@ class DefaultArtifactTagProvider(
         return receiver.filePath.toString()
     }
 
-    private fun getTagPath(credentials: StorageCredentials, path: String): String {
+    private fun getTagPath(credentials: StorageCredentials?, path: String): String {
         if (path == SOURCE_IN_MEMORY || path == SOURCE_IN_REMOTE) {
             return path
         }
+        credentials ?: return StringPool.UNKNOWN
         with(credentials) {
             if (path.startsWith(upload.location)) {
                 return upload.location
