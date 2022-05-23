@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
@@ -128,6 +129,13 @@ class OciExceptionHandler {
     @ExceptionHandler(ErrorCodeException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleException(exception: ErrorCodeException) {
+        val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
+        ociResponse(responseObject, exception)
+    }
+
+    @ExceptionHandler(PermissionException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleException(exception: PermissionException) {
         val responseObject = OciErrorResponse(exception.message, exception.messageCode, null)
         ociResponse(responseObject, exception)
     }

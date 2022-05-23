@@ -321,10 +321,6 @@ class OciRegistryLocalRepository(
         val mediaType = node.metadata[MEDIA_TYPE] ?: run {
             node.metadata[OLD_DOCKER_MEDIA_TYPE] ?: MediaTypes.APPLICATION_OCTET_STREAM
         }
-        logger.info(
-            "The mediaType of Artifact $fullPath is $mediaType in repo: ${context.artifactInfo.getRepoIdentify()}"
-        )
-
         val contentType = if (context.artifactInfo is OciManifestArtifactInfo) {
             node.metadata[MEDIA_TYPE] ?: run {
                 node.metadata[OLD_DOCKER_MEDIA_TYPE] ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
@@ -332,6 +328,11 @@ class OciRegistryLocalRepository(
         } else {
             MediaTypes.APPLICATION_OCTET_STREAM
         }
+
+        logger.info(
+            "The mediaType of Artifact $fullPath is $mediaType and it's contentType is $contentType" +
+                "in repo: ${context.artifactInfo.getRepoIdentify()}"
+        )
         OciResponseUtils.buildDownloadResponse(
             digest = digest,
             response = context.response,
