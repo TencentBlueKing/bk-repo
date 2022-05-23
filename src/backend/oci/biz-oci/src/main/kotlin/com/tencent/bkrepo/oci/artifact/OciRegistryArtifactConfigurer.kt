@@ -43,12 +43,9 @@ import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryLocalRepository
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryRemoteRepository
 import com.tencent.bkrepo.oci.artifact.repository.OciRegistryVirtualRepository
-import com.tencent.bkrepo.oci.config.OciProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@EnableConfigurationProperties(OciProperties::class)
 class OciRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getRepositoryType(): RepositoryType = RepositoryType.OCI
 

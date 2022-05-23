@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.CHART_LAYER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
@@ -64,6 +63,7 @@ import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
+import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
@@ -74,8 +74,10 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
@@ -83,11 +85,19 @@ class OciOperationServiceImpl(
     private val nodeClient: NodeClient,
     private val metadataClient: MetadataClient,
     private val packageClient: PackageClient,
-    private val ociProperties: OciProperties,
     private val storageService: StorageService,
     private val storageManager: StorageManager,
     private val repositoryClient: RepositoryClient
 ) : OciOperationService {
+
+    @Value("\${auth.url:}")
+    private var authUrl: String = StringPool.EMPTY
+
+    @Value("\${oci.main:}")
+    private var domain: String = StringPool.EMPTY
+
+    @Value("\${docker.http: false}")
+    val enableHttp: Boolean = false
 
     /**
      * 检查package 对应的version是否存在
@@ -408,7 +418,7 @@ class OciOperationServiceImpl(
         }
         val fullPath = ociArtifactInfo.getArtifactFullPath()
         val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
-            val oldDockerFullPath = getOldDockerNode(ociArtifactInfo) ?: return@run null
+            val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return@run null
             nodeClient.getNodeDetail(projectId, repoName, oldDockerFullPath).data ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 null
@@ -431,7 +441,7 @@ class OciOperationServiceImpl(
     }
 
     override fun getRegistryDomain(): OciDomainInfo {
-        return OciDomainInfo(ociProperties.domain)
+        return OciDomainInfo(domain)
     }
 
     /**
@@ -820,7 +830,7 @@ class OciOperationServiceImpl(
      * 1 docker-local/nginx/latest 下存所有manifest和blobs
      * 2 docker-local/nginx/_uploads/ 临时存储上传的blobs，待manifest文件上传成功后移到到对应版本下，如docker-local/nginx/latest
      */
-    override fun getOldDockerNode(artifactInfo: OciArtifactInfo): String? {
+    override fun getDockerNode(artifactInfo: OciArtifactInfo): String? {
         if (artifactInfo is OciManifestArtifactInfo) {
             // 根据类型解析实际存储路径，manifest获取路径有tag/digest
             if (artifactInfo.isValidDigest)
@@ -840,6 +850,13 @@ class OciOperationServiceImpl(
             )
         }
         return null
+    }
+
+    override fun getReturnDomain(request: HttpServletRequest): String {
+        return OciResponseUtils.getResponseURI(
+            request = request,
+            enableHttp = this.enableHttp
+        ).toString()
     }
 
     companion object {

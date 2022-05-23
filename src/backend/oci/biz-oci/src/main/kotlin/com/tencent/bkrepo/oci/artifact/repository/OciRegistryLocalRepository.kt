@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.FORCE
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
@@ -67,7 +66,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class OciRegistryLocalRepository(
-    private val ociProperties: OciProperties,
     private val ociOperationService: OciOperationService
 ) : LocalRepository() {
 
@@ -128,8 +126,9 @@ class OciRegistryLocalRepository(
                     " in repo ${context.artifactInfo.getRepoIdentify()}"
             )
             if (digest == null || location.isNullOrEmpty()) return
+            val domain = ociOperationService.getReturnDomain(HttpContextHolder.getRequest())
             OciResponseUtils.buildUploadResponse(
-                domain = ociProperties.url,
+                domain = domain,
                 digest = digest,
                 locationStr = location,
                 response = context.response
@@ -151,13 +150,14 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciBlobArtifactInfo) {
             val range = context.request.getHeader("Content-Range")
             val length = context.request.contentLength
+            val domain = ociOperationService.getReturnDomain(HttpContextHolder.getRequest())
             if (!range.isNullOrEmpty() && length > -1) {
                 logger.info("range $range, length $length, uuid $uuid")
                 val (_, end) = getRangeInfo(range)
                 // 判断要上传的长度是否超长
                 if (end > length) {
                     OciResponseUtils.buildBlobUploadPatchResponse(
-                        domain = ociProperties.url,
+                        domain = domain,
                         uuid = uuid!!,
                         locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
                         response = HttpContextHolder.getResponse(),
@@ -175,7 +175,7 @@ class OciRegistryLocalRepository(
             // 判断追加文件后长度是否超长
             if (length > -1 && patchLen > length) {
                 OciResponseUtils.buildBlobUploadPatchResponse(
-                    domain = ociProperties.url,
+                    domain = domain,
                     uuid = uuid,
                     locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
                     response = HttpContextHolder.getResponse(),
@@ -184,7 +184,7 @@ class OciRegistryLocalRepository(
                 )
             } else {
                 OciResponseUtils.buildBlobUploadPatchResponse(
-                    domain = ociProperties.url,
+                    domain = domain,
                     uuid = uuid,
                     locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
                     response = HttpContextHolder.getResponse(),
@@ -307,7 +307,7 @@ class OciRegistryLocalRepository(
     private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
         if (fullPath == null) return null
         val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data ?: run {
-            val oldDockerPath = ociOperationService.getOldDockerNode(context.artifactInfo as OciArtifactInfo)
+            val oldDockerPath = ociOperationService.getDockerNode(context.artifactInfo as OciArtifactInfo)
                 ?: return null
             nodeClient.getNodeDetail(context.projectId, context.repoName, oldDockerPath).data
         }

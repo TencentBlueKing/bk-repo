@@ -37,6 +37,7 @@ import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import javax.servlet.http.HttpServletRequest
 
 interface OciOperationService {
 
@@ -146,5 +147,10 @@ interface OciOperationService {
      * 1 docker-local/nginx/latest 下存所有manifest和blobs
      * 2 docker-local/nginx/_uploads/ 临时存储上传的blobs，待manifest文件上传成功后移到到对应版本下，如docker-local/nginx/latest
      */
-    fun getOldDockerNode(artifactInfo: OciArtifactInfo): String?
+    fun getDockerNode(artifactInfo: OciArtifactInfo): String?
+
+    /**
+     * 根据request生成response url
+     */
+    fun getReturnDomain(request: HttpServletRequest): String
 }

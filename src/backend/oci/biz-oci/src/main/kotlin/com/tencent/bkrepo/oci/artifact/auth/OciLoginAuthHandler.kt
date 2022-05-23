@@ -34,6 +34,7 @@ package com.tencent.bkrepo.oci.artifact.auth
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
@@ -50,6 +51,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
 
 /**
  * oci registry login handler
@@ -57,6 +59,9 @@ import javax.servlet.http.HttpServletResponse
 class OciLoginAuthHandler(
     authenticationManager: AuthenticationManager
 ) : BasicAuthHandler(authenticationManager) {
+
+    @Value("\${auth.url:}")
+    private var authUrl: String = StringPool.EMPTY
 
     /**
      * login to a registry (with manual password entry)
@@ -80,7 +85,7 @@ class OciLoginAuthHandler(
         response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
-            AUTH_CHALLENGE_SERVICE_SCOPE.format(request.remoteHost, REGISTRY_SERVICE, SCOPE_STR)
+            AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, SCOPE_STR)
         )
         val ociAuthResponse = OciResponse.errorResponse(
             OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
