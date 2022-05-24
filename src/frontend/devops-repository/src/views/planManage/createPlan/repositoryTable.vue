@@ -1,9 +1,6 @@
 <template>
     <div class="repository-table-container">
-        <div v-show="!disabled" class="repo-add flex-center" @click="showAddDialog = true">
-            <i class="mr5 devops-icon icon-plus-circle"></i>
-            添加仓库
-        </div>
+        <bk-button v-show="!disabled" icon="plus" @click="showAddDialog = true">添加仓库</bk-button>
         <div v-show="replicaTaskObjects.length" class="mt10 repo-list">
             <div class="pl10 pr10 repo-item flex-between-center" v-for="(repo, ind) in replicaTaskObjects" :key="repo.fid">
                 <div class="flex-align-center">
@@ -95,13 +92,6 @@
                 margin-left: 5px;
             }
         }
-    }
-    .repo-add {
-        width: 120px;
-        height: 32px;
-        color: var(--primaryColor);
-        background-color: var(--bgHoverColor);
-        cursor: pointer;
     }
 }
 </style>

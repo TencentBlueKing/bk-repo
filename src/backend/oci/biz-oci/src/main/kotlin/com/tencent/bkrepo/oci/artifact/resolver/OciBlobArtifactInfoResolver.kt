@@ -53,7 +53,7 @@ class OciBlobArtifactInfoResolver : ArtifactInfoResolver {
         val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
         val packageName = requestUrl.replaceAfterLast("/blobs", StringPool.EMPTY).removeSuffix("/blobs")
             .removePrefix("/v2/$projectId/$repoName/")
-        Preconditions.checkNotBlank(packageName, "packageName")
+        validate(packageName)
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         // 解析digest
         val digest = attributes["digest"]?.toString()?.trim() ?: run {
@@ -65,5 +65,15 @@ class OciBlobArtifactInfoResolver : ArtifactInfoResolver {
         val mount = request.getAttribute("mount") as? String
         val from = request.getAttribute("from") as? String
         return OciBlobArtifactInfo(projectId, repoName, packageName, "", digest, uuid, mount, from)
+    }
+
+    private fun validate(packageName: String) {
+        // packageName格式校验
+        Preconditions.checkNotBlank(packageName, "packageName")
+        Preconditions.matchPattern(packageName, PACKAGE_NAME_PATTERN, "package name [$packageName] invalid")
+    }
+
+    companion object {
+        const val PACKAGE_NAME_PATTERN = "[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*"
     }
 }

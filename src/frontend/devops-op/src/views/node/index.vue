@@ -124,7 +124,7 @@
             type="danger"
             @click="showNodeDelete(scope.$index, scope.row)"
           >删除</el-button>
-          <el-link :href="downloadUrl(scope.row)" target="_blank">
+          <el-link v-if="!scope.row.folder" :underline="false" :href="downloadUrl(scope.row)" target="_blank">
             <el-button style="margin-left: 10px" size="mini" type="primary">下载</el-button>
           </el-link>
         </template>
@@ -339,7 +339,7 @@ export default {
       return ''
     },
     downloadUrl(node) {
-      return `/${node.projectId}/${node.repoName}/${escape(node.fullPath)}?download=true`
+      return `/web/repository/api/list/${node.projectId}/${node.repoName}${escape(node.fullPath)}`
     },
     showNodeDetail(node) {
       this.nodeOfDetailDialog = node

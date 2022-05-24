@@ -1,4 +1,7 @@
 import { mapState, mapActions } from 'vuex'
+const guideMap = {
+    rds: 'helm'
+}
 export default {
     computed: {
         ...mapState(['userInfo', 'domain']),
@@ -12,7 +15,7 @@ export default {
             return this.$route.query.repoName || ''
         },
         packageKey () {
-            return this.$route.query.package || ''
+            return this.$route.query.packageKey || ''
         },
         version () {
             return this.$route.query.version || ''
@@ -780,10 +783,10 @@ export default {
                 }]
         },
         articleGuide () {
-            return this[`${this.$route.params.repoType}Guide`]
+            return this[`${guideMap[this.repoType] || this.repoType}Guide`]
         },
         articleInstall () {
-            return this[`${this.$route.params.repoType}Install`]
+            return this[`${guideMap[this.repoType] || this.repoType}Install`]
         }
     },
     created () {

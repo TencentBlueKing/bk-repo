@@ -34,10 +34,13 @@ package com.tencent.bkrepo.oci.artifact.auth
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
+import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
@@ -46,17 +49,25 @@ import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
 import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
 import com.tencent.bkrepo.oci.pojo.response.OciResponse
-import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
+import com.tencent.bkrepo.oci.util.TimeUtil
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType
 
 /**
  * oci registry login handler
  */
 class OciLoginAuthHandler(
-    authenticationManager: AuthenticationManager
+    authenticationManager: AuthenticationManager,
+    private val jwtProperties: JwtAuthProperties
 ) : BasicAuthHandler(authenticationManager) {
+
+    private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
+
+    @Value("\${auth.url:}")
+    private var authUrl: String = StringPool.EMPTY
 
     /**
      * login to a registry (with manual password entry)
@@ -65,9 +76,14 @@ class OciLoginAuthHandler(
     override fun getLoginMethod() = HttpMethod.GET.name
 
     override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {
-        response.status = HttpStatus.OK.value
+        val token = JwtUtils.generateToken(signingKey, jwtProperties.expiration, userId)
+        val issuedAt = TimeUtil.getGMTTime()
+        val tokenUrl = AUTH_CHALLENGE_TOKEN.format(token, token, issuedAt)
         response.contentType = MediaType.APPLICATION_JSON_VALUE
-        response.writer.write("{}")
+        response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+        response.writer.print(tokenUrl)
+        response.writer.flush()
+        super.onAuthenticateSuccess(request, response, userId)
     }
 
     override fun onAuthenticateFailed(
@@ -80,7 +96,7 @@ class OciLoginAuthHandler(
         response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
-            AUTH_CHALLENGE_SERVICE_SCOPE.format(request.remoteHost, REGISTRY_SERVICE, SCOPE_STR)
+            AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, SCOPE_STR)
         )
         val ociAuthResponse = OciResponse.errorResponse(
             OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
@@ -91,6 +107,7 @@ class OciLoginAuthHandler(
 
     companion object {
         const val AUTH_CHALLENGE_SERVICE_SCOPE = "Basic realm=\"%s\",service=\"%s\",scope=\"%s\""
+        const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}"
         const val REGISTRY_SERVICE = "bkrepo"
         const val SCOPE_STR = "repository:*/*/tb:push,pull"
     }

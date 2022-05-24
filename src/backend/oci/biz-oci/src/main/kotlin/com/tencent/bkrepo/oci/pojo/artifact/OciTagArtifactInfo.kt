@@ -29,11 +29,16 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo
+package com.tencent.bkrepo.oci.pojo.artifact
 
-/**
- * oci 域名信息
- */
-data class OciDomainInfo(
-    val domain: String
-)
+class OciTagArtifactInfo(
+    projectId: String,
+    repoName: String,
+    packageName: String,
+    version: String
+) : OciArtifactInfo(projectId, repoName, packageName, version) {
+
+    override fun getArtifactName() = packageName
+
+    override fun getArtifactVersion() = version
+}

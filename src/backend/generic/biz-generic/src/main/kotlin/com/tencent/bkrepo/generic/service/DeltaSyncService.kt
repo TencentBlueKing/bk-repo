@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.generic.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -16,9 +17,9 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.bksync.BlockInputStream
-import com.tencent.bkrepo.common.bksync.ByteArrayBlockInputStream
-import com.tencent.bkrepo.common.bksync.FileBlockInputStream
+import com.tencent.bkrepo.common.bksync.BlockChannel
+import com.tencent.bkrepo.common.bksync.ByteArrayBlockChannel
+import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -44,13 +45,16 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.time.LocalDateTime
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -65,7 +69,6 @@ class DeltaSyncService(
     val signFileDao: SignFileDao,
     val repositoryClient: RepositoryClient,
     storageProperties: StorageProperties,
-    val taskExecutor: ThreadPoolTaskScheduler,
     private val redisOperation: RedisOperation
 ) : ArtifactService() {
 
@@ -124,9 +127,12 @@ class DeltaSyncService(
             val emitter = SseEmitter(patchTimeout)
             val patchContext = buildPatchContext(counterInputStream, emitter, this, blockInputStream)
             emitter.onCompletion { patchContext.hasCompleted.set(true) }
-            val reportAction = { reportProcess(patchContext) }
-            val ackFuture = taskExecutor.scheduleWithFixedDelay(reportAction, HEART_BEAT_INTERVAL)
-            taskExecutor.execute {
+            val reportAction = Runnable { reportProcess(patchContext) }
+            val ackFuture = heartBeatExecutor.scheduleWithFixedDelay(
+                reportAction, 0,
+                HEART_BEAT_INTERVAL, TimeUnit.MILLISECONDS
+            )
+            patchExecutor.execute {
                 try {
                     doPatch(patchContext)
                 } finally {
@@ -172,7 +178,6 @@ class DeltaSyncService(
      * @param patchContext patch上下文
      * */
     private fun doPatch(patchContext: PatchContext) {
-
         with(patchContext) {
             try {
                 verifyCheckSum(uploadMd5, uploadSha256, file)
@@ -193,15 +198,28 @@ class DeltaSyncService(
                 emitter.send(event)
                 emitter.complete()
             } catch (e: ErrorCodeException) {
-                val msg = SseEmitter.event()
-                    .name(PATCH_EVENT_TYPE_ERROR)
-                    .data(e.message.orEmpty())
-                emitter.send(msg)
+                // 客户端异常
+                sendError(e.message.orEmpty(), emitter)
                 emitter.complete()
             } catch (e: Exception) {
+                // 服务端异常
+                sendError(e.message.orEmpty(), emitter)
                 emitter.completeWithError(e)
+                logger.error("Patch artifact[$artifactInfo] failed.", e)
             }
         }
+    }
+
+    /**
+     * sse发送错误信息
+     * @param errorMsg 错误信息
+     * @param sseEmitter sse发送器
+     * */
+    private fun sendError(errorMsg: String, sseEmitter: SseEmitter) {
+        val msg = SseEmitter.event()
+            .name(PATCH_EVENT_TYPE_ERROR)
+            .data(errorMsg)
+        sseEmitter.send(msg)
     }
 
     /**
@@ -230,7 +248,9 @@ class DeltaSyncService(
                     clientError.set(true)
                     return
                 }
-                logger.error("Send sse event failed.", e)
+                logger.error("Send sse event io error.", e)
+            } catch (e: Exception) {
+                logger.error("Send sse event unknown error.", e)
             }
         }
     }
@@ -280,17 +300,17 @@ class DeltaSyncService(
      * 构建Patch上下文
      * @param emitter sse发送器
      * @param context 当前上下文
-     * @param blockInputStream 增量同步使用的块输入流
+     * @param blockChannel 增量同步使用的块输入流
      * */
     private fun buildPatchContext(
         counterInputStream: CounterInputStream,
         emitter: SseEmitter,
         context: ArtifactContext,
-        blockInputStream: BlockInputStream
+        blockChannel: BlockChannel
     ): PatchContext {
         with(context) {
             val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as GenericLocalRepository
-            val file = ArtifactFileFactory.buildBkSync(blockInputStream, counterInputStream, blockSize)
+            val file = ArtifactFileFactory.buildBkSync(blockChannel, counterInputStream, blockSize)
             return PatchContext(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
@@ -303,7 +323,7 @@ class DeltaSyncService(
                 artifactInfo = artifactInfo,
                 repositoryDetail = repositoryDetail,
                 file = file,
-                blockInputStream = blockInputStream,
+                blockChannel = blockChannel,
                 userId = SecurityUtils.getUserId()
             )
         }
@@ -364,7 +384,7 @@ class DeltaSyncService(
         }
     }
 
-    private fun getBlockInputStream(node: NodeDetail, storageCredentials: StorageCredentials?): BlockInputStream {
+    private fun getBlockInputStream(node: NodeDetail, storageCredentials: StorageCredentials?): BlockChannel {
         val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
             ?: throw ArtifactNotFoundException("file[${node.sha256}] not found in ${storageCredentials?.key}")
         artifactInputStream.use {
@@ -373,15 +393,15 @@ class DeltaSyncService(
             if (node.size <= fileSizeThreshold) {
                 val dataOutput = ByteArrayOutputStream()
                 artifactInputStream.copyTo(dataOutput)
-                return ByteArrayBlockInputStream(dataOutput.toByteArray(), name)
+                return ByteArrayBlockChannel(dataOutput.toByteArray(), name)
             }
             // 本地cache
             if (artifactInputStream is FileArtifactInputStream) {
-                return FileBlockInputStream(artifactInputStream.file, name)
+                return FileBlockChannel(artifactInputStream.file, name)
             }
             // 远端网络流
             val file = ArtifactFileFactory.build(artifactInputStream, node.size).getFile()!!
-            return FileBlockInputStream(file, name)
+            return FileBlockChannel(file, name)
         }
     }
 
@@ -426,7 +446,7 @@ class DeltaSyncService(
         val artifactInfo: ArtifactInfo,
         val file: ArtifactFile,
         val overwrite: Boolean,
-        val blockInputStream: BlockInputStream
+        val blockChannel: BlockChannel
     )
 
     companion object {
@@ -439,5 +459,14 @@ class DeltaSyncService(
         // 3s patch 回复心跳时间，保持连接存活
         private const val HEART_BEAT_INTERVAL = 3000L
         private const val SPEED_KEY_PREFIX = "delta:speed:"
+        private val heartBeatExecutor = ScheduledThreadPoolExecutor(
+            Runtime.getRuntime().availableProcessors(),
+            ThreadFactoryBuilder().setNameFormat("BkSync-heart-beat-%d").build()
+        )
+        private val patchExecutor = ThreadPoolExecutor(
+            200, 200, 60, TimeUnit.SECONDS,
+            LinkedBlockingQueue<Runnable>(8192),
+            ThreadFactoryBuilder().setNameFormat("BkSync-patch-%d").build()
+        )
     }
 }

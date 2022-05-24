@@ -25,14 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.config
+package com.tencent.bkrepo.common.bksync.transfer.exception
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties(prefix = "oci")
-data class OciProperties(
-    /**
-     * oci服务domain地址
-     */
-    var domain: String = "localhost"
-)
+/**
+ * 计算滚动哈希中断异常
+ */
+class InterruptedRollingException: RuntimeException()

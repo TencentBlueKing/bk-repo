@@ -142,10 +142,9 @@
                 })
             },
             submitScanFile () {
-                const { id, name, path } = this.genericForm
+                const { id, path } = this.genericForm
                 return this.startScanSingle({
                     id,
-                    name,
                     projectId: this.projectId,
                     repoType: 'GENERIC',
                     repoName: this.repoName,

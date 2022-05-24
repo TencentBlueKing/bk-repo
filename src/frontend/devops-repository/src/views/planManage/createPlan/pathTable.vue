@@ -19,10 +19,7 @@
                 </bk-option>
             </bk-option-group>
         </bk-select>
-        <div v-show="!disabled && selectedRepoName" class="mt10 path-add flex-center" @click="showAddDialog = true">
-            <i class="mr5 devops-icon icon-plus-circle"></i>
-            添加文件路径
-        </div>
+        <bk-button v-show="!disabled && selectedRepoName" class="mt10" icon="plus" @click="showAddDialog = true">添加文件路径</bk-button>
         <div class="mt10 path-list" v-show="pathConstraints.length">
             <div class="pl10 pr10 path-item flex-between-center" v-for="(path, ind) in pathConstraints" :key="path">
                 <span class="path-name text-overflow" :title="path">{{ path }}</span>
@@ -115,13 +112,6 @@
                 margin-left: 5px;
             }
         }
-    }
-    .path-add {
-        width: 120px;
-        height: 32px;
-        color: var(--primaryColor);
-        background-color: var(--bgHoverColor);
-        cursor: pointer;
     }
 }
 </style>

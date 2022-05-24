@@ -40,7 +40,7 @@
 </template>
 <script>
     import Breadcrumb from '@repository/components/Breadcrumb/topBreadcrumb'
-    import { mapState, mapGetters } from 'vuex'
+    import { mapState, mapGetters, mapActions } from 'vuex'
     export default {
         components: { Breadcrumb },
         data () {
@@ -84,6 +84,14 @@
             breadcrumb () {
                 return this.$route.meta.breadcrumb || []
             }
+        },
+        mounted () {
+            this.checkPM({ projectId: this.$route.params.projectId })
+        },
+        methods: {
+            ...mapActions([
+                'checkPM'
+            ])
         }
     }
 </script>

@@ -61,16 +61,13 @@
                         :row-border="false"
                         size="small">
                         <template #empty>
-                            <empty-data :is-loading="detailSlider.loading">
-                                <span class="ml10">暂无元数据，</span>
-                                <bk-button text @click="showAddMetadata">即刻添加</bk-button>
-                            </empty-data>
+                            <empty-data :is-loading="detailSlider.loading"></empty-data>
                         </template>
                         <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
                         <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
                         <bk-table-column width="60">
                             <template #default="{ row }">
-                                <Icon class="hover-btn flex-align-center" size="24" name="icon-delete"
+                                <Icon class="hover-btn" size="24" name="icon-delete"
                                     @click.native.stop="deleteMetadataHandler(row)" />
                             </template>
                         </bk-table-column>
@@ -170,8 +167,6 @@
                         lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                         lastModifiedDate: formatDate(data.lastModifiedDate)
                     }
-                    // todo 屏蔽扫描状态字段
-                    Reflect.deleteProperty(this.detailSlider.data.metadata, 'scanStatus')
                 }).finally(() => {
                     this.detailSlider.loading = false
                 })

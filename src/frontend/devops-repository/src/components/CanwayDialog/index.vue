@@ -80,14 +80,4 @@
         }
     }
 }
-
-.bk-dialog-wrapper {
-    .bk-dialog-body {
-        min-height: 148px;
-        color: var(--fontPrimaryColor);
-    }
-    .bk-dialog-footer {
-        padding: 15px 20px;
-    }
-}
 </style>

@@ -1,6 +1,6 @@
 <template>
     <div class="start-scan-container">
-        <bk-form style="max-width: 1080px;" :label-width="150" :model="config" :rules="rules" ref="scanForm">
+        <bk-form style="max-width: 1080px;" :label-width="120" :model="config" :rules="rules" ref="scanForm">
             <bk-form-item label="方案名称">
                 <span>{{ config.name }}</span>
             </bk-form-item>
@@ -101,10 +101,30 @@
                 const repoNameList = await this.$refs.repoConfig.getConfig()
                 const artifactRules = await this.$refs.artiConfig.getConfig()
                 this.startScan({
-                    projectId: this.projectId,
                     id: this.planId,
-                    repoNameList,
-                    artifactRules
+                    rule: {
+                        rules: [
+                            {
+                                field: 'projectId',
+                                value: this.projectId,
+                                operation: 'EQ'
+                            },
+                            repoNameList.length
+                                ? {
+                                    field: 'repoName',
+                                    value: repoNameList,
+                                    operation: 'IN'
+                                }
+                                : undefined,
+                            artifactRules.length
+                                ? {
+                                    rules: artifactRules,
+                                    relation: 'OR'
+                                }
+                                : undefined
+                        ].filter(Boolean),
+                        relation: 'AND'
+                    }
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',

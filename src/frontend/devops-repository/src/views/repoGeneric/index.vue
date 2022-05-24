@@ -87,19 +87,14 @@
                     @row-dblclick="openFolder"
                     @selection-change="selectMultiRow">
                     <template #empty>
-                        <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)">
-                            <template v-if="!Boolean(searchFileName) && permission.write && repoName !== 'pipeline'">
-                                <span class="ml10">暂无文件，</span>
-                                <bk-button text @click="handlerUpload(selectedTreeNode)">即刻上传</bk-button>
-                            </template>
-                        </empty-data>
+                        <empty-data :is-loading="isLoading" :search="Boolean(searchFileName)"></empty-data>
                     </template>
                     <!-- <bk-table-column type="selection" width="60"></bk-table-column> -->
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip :render-header="renderHeader">
                         <template #default="{ row }">
                             <scan-tag class="mr5"
                                 v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
-                                :status="row.metadata.scanStatus"
+                                :status="row.systemMetadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>
@@ -131,7 +126,7 @@
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
-                                    (!row.metadata.scanStatus || (row.metadata.scanStatus === 'SUCCESS')) && { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                    { clickEvent: () => handlerDownload(row), label: $t('download') },
                                     !row.folder && { clickEvent: () => handlerShare(row), label: $t('share') },
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
                                     permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },
@@ -359,7 +354,7 @@
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
                         return {
-                            metadata: {},
+                            systemMetadata: {},
                             ...v,
                             // 流水线文件夹名称替换
                             name: v.metadata?.displayName || v.name
@@ -403,6 +398,14 @@
                 // 更新子文件夹
                 if (node.loading) return
                 this.updateGenericTreeNode(node)
+
+                // 更新url参数
+                this.$router.replace({
+                    query: {
+                        ...this.$route.query,
+                        path: `${node.fullPath}/default`
+                    }
+                })
             },
             iconClickHandler (node) {
                 // 更新已展开文件夹数据

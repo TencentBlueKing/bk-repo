@@ -4,10 +4,7 @@
             <bk-radio :disabled="disabled" :value="false">所有仓库</bk-radio>
             <bk-radio :disabled="disabled" class="mt10" :value="true">
                 <span>指定仓库</span>
-                <div v-show="showAddBtn && !disabled" class="ml10 repo-add flex-center" @click="showAddDialog = true">
-                    <i class="mr5 devops-icon icon-plus-circle"></i>
-                    添加仓库
-                </div>
+                <bk-button v-show="showAddBtn && !disabled" class="ml10" icon="plus" @click="showAddDialog = true">添加仓库</bk-button>
             </bk-radio>
         </bk-radio-group>
         <div v-show="showAddBtn && defaultRepos.length" class="mt10 repo-list">
@@ -113,13 +110,6 @@
                 margin-left: 5px;
             }
         }
-    }
-    .repo-add {
-        width: 120px;
-        height: 32px;
-        color: var(--primaryColor);
-        background-color: var(--bgHoverColor);
-        cursor: pointer;
     }
 }
 </style>

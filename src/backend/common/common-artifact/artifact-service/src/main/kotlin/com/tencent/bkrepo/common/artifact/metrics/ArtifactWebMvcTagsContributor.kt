@@ -48,16 +48,25 @@ class ArtifactWebMvcTagsContributor(private val artifactMetricsProperties: Artif
         handler: Any?,
         exception: Throwable?
     ): Iterable<Tag> {
-        // 添加添加project,添加repo
+        // 添加project,添加repo
         val artifactInfo = ArtifactContextHolder.getArtifactInfo(request) ?: return tagOfProjectAndRepo(
             StringPool.UNKNOWN,
             StringPool.UNKNOWN
         )
         with(artifactInfo) {
-            if (!contains(projectId, repoName)) {
-                return tagOfProjectAndRepo(StringPool.UNKNOWN, StringPool.UNKNOWN)
+            if (contains(StringPool.POUND, StringPool.POUND)) {
+                return tagOfProjectAndRepo(projectId, repoName)
             }
-            return tagOfProjectAndRepo(projectId, repoName)
+            if (contains(projectId, repoName)) {
+                return tagOfProjectAndRepo(projectId, repoName)
+            }
+            if (contains(projectId, StringPool.POUND)) {
+                return tagOfProjectAndRepo(projectId, StringPool.UNKNOWN)
+            }
+            if (contains(StringPool.POUND, repoName)) {
+                return tagOfProjectAndRepo(StringPool.UNKNOWN, repoName)
+            }
+            return tagOfProjectAndRepo(StringPool.UNKNOWN, StringPool.UNKNOWN)
         }
     }
 

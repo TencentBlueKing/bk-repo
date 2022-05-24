@@ -160,6 +160,7 @@
 .repo-tree-item {
     position: relative;
     color: var(--fontPrimaryColor);
+    cursor: pointer;
     .line-dashed {
         position: absolute;
         border-color: var(--borderColor);

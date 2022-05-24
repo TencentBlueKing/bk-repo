@@ -3,45 +3,37 @@
         <bk-collapse-item v-for="section in [admin, user]" :key="section.name" :name="section.name">
             <header class="section-header">
                 <div class="flex-align-center">
-                    <icon class="mr10" size="20" :name="section.icon"></icon>
+                    <Icon class="mr10" size="20" :name="section.icon" />
                     <span>{{ section.title }}</span>
-                    <span v-if="getActions(section.actions.data)" class="mr10 permission-actions">（{{ getActions(section.actions.data) }}）</span>
-                    <i v-if="section === user" class="devops-icon icon-edit hover-btn" @click.stop="editActionsDialogHandler(section)"></i>
+                    <span class="mr5 permission-actions">（{{ getActions(section.name) }}）</span>
+                    <Icon v-if="section === user" class="hover-btn" size="24" name="icon-edit" @click.native.stop="editActionsDialogHandler(section)" />
                 </div>
             </header>
             <template #content><div class="section-main">
                 <template v-for="part in ['users', 'roles']">
                     <header :key="part + 'header'" class="section-sub-title flex-align-center">
-                        <span>{{section[part].title}}</span>
-                        <i class="ml10 devops-icon hover-btn"
-                            :class="section[part].showAddArea ? 'icon-minus-square' : 'icon-plus-square'"
-                            @click="handleShowAddArea(section[part])">
+                        <span class="mr20">{{section[part].title}}</span>
+                        <bk-tag-input
+                            style="width: 300px"
+                            v-model="section[part].addList"
+                            :list="filterSelectOptions(section[part], part)"
+                            :search-key="['id', 'name']"
+                            :title="section[part].addList.map(u => userList[u] ? userList[u].name : u)"
+                            placeholder="请输入，按Enter键确认"
+                            trigger="focus"
+                            allow-create>
+                        </bk-tag-input>
+                        <i v-if="section[part].addList.length"
+                            class="section-sub-add-btn devops-icon icon-check-1"
+                            @click="() => {
+                                submit('add', part, section)
+                            }">
                         </i>
-                        <div v-show="section[part].showAddArea" :key="part + 'operation'" class="ml15 flex-align-center">
-                            <bk-tag-input
-                                style="width: 300px"
-                                v-model="section[part].addList"
-                                :list="filterSelectOptions(section[part], part)"
-                                :search-key="['id', 'name']"
-                                :title="section[part].addList.map(u => userList[u] ? userList[u].name : u)"
-                                placeholder="请输入，按Enter键确认"
-                                trigger="focus"
-                                allow-create>
-                            </bk-tag-input>
-                            <i v-if="section[part].addList.length"
-                                class="section-sub-add-btn devops-icon icon-check-1"
-                                @click="() => {
-                                    submit('add', part, section)
-                                }">
-                            </i>
-                        </div>
                     </header>
                     <div :key="part + 'data'" class="section-sub">
-                        <div class="section-sub-main mt10">
-                            <div class="permission-tag" v-for="tag in filterDeleteTagList(section[part])" :key="tag">
-                                {{ getName(part, tag) }}
-                                <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(tag, part, section)"></i>
-                            </div>
+                        <div class="permission-tag" v-for="tag in filterDeleteTagList(section[part])" :key="tag">
+                            {{ getName(part, tag) }}
+                            <i class="devops-icon icon-close-circle-shape" @click="handleDeleteTag(tag, part, section)"></i>
                         </div>
                     </div>
                 </template>
@@ -50,11 +42,16 @@
         <canway-dialog
             :value="editActionsDialog.show"
             width="400"
-            height-num="199"
+            height-num="450"
             :title="editActionsDialog.title"
             @cancel="editActionsDialog.show = false">
-            <bk-checkbox-group v-model="editActionsDialog.actions">
-                <bk-checkbox v-for="action in actionList" :key="action.id" class="m20" :value="action.id">{{ action.name }}</bk-checkbox>
+            <bk-checkbox-group class="vertical-checkbox" v-model="editActionsDialog.actions">
+                <bk-checkbox v-for="action in actionList" :key="action.id" :value="action.id" :disabled="action.id === 'READ'">
+                    <span>{{ action.name }}</span>
+                    <div class="checkbox-tip">
+                        <div v-for="tip in action.tips" :key="tip">{{ tip }}</div>
+                    </div>
+                </bk-checkbox>
             </bk-checkbox-group>
             <template #footer>
                 <bk-button theme="default" @click.stop="editActionsDialog.show = false">{{$t('cancel')}}</bk-button>
@@ -64,7 +61,7 @@
     </bk-collapse>
 </template>
 <script>
-    import { mapState, mapActions } from 'vuex'
+    import { mapActions } from 'vuex'
     export default {
         name: 'permissionConfig',
         data () {
@@ -90,14 +87,12 @@
                     },
                     users: {
                         title: this.$t('user'),
-                        showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     roles: {
                         title: this.$t('userGroup'),
-                        showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
@@ -114,14 +109,12 @@
                     },
                     users: {
                         title: this.$t('user'),
-                        showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
                     },
                     roles: {
                         title: this.$t('userGroup'),
-                        showAddArea: false,
                         data: [],
                         addList: [],
                         deleteList: []
@@ -130,14 +123,40 @@
                 userList: {},
                 roleList: {},
                 actionList: [
-                    { id: 'WRITE', name: '上传' },
-                    { id: 'UPDATE', name: '修改' },
-                    { id: 'DELETE', name: '删除' }
+                    {
+                        id: 'READ',
+                        name: '查看',
+                        tips: [
+                            '仓库内所有制品的查看和下载权限'
+                        ]
+                    },
+                    {
+                        id: 'WRITE',
+                        name: '上传',
+                        tips: [
+                            'Generic仓库：新建文件夹、上传文件、复制、移动',
+                            '依赖源仓库：上传制品版本'
+                        ]
+                    },
+                    {
+                        id: 'UPDATE',
+                        name: '修改',
+                        tips: [
+                            'Generic仓库：重命名、添加元数据、删除元数据',
+                            '依赖源仓库：制品版本晋级、添加元数据、删除元数据'
+                        ]
+                    },
+                    {
+                        id: 'DELETE',
+                        name: '删除',
+                        tips: [
+                            '仓库内所有制品的页面删除权限'
+                        ]
+                    }
                 ]
             }
         },
         computed: {
-            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -151,11 +170,6 @@
                         roles: this.roleList
                     }[part]
                     return map[tag] ? map[tag].name : tag
-                }
-            },
-            getActions () {
-                return (actions) => {
-                    return actions.map(v => this.actionList.find(w => w.id === v)?.name).filter(Boolean).join('，')
                 }
             },
             filterDeleteTagList () {
@@ -195,14 +209,20 @@
                 'setRolePermission',
                 'setActionPermission'
             ]),
+            getActions (name) {
+                const actionsName = ['READ', ...this[name].actions.data].map(id => this.actionList.find(action => action.id === id)?.name)
+                switch (name) {
+                    case 'admin':
+                        return '仓库管理，制品管理所有权限'
+                    case 'user':
+                        return `制品管理权限：${actionsName.join('，')}`
+                }
+            },
             filterSelectOptions (target, part) {
                 const list = Object.values({ users: this.userList, roles: this.roleList }[part])
                 return list
                     .filter(v => v.id !== 'anonymous')
                     .filter(v => !~target.data.findIndex(w => w === v.id))
-            },
-            handleShowAddArea (target) {
-                target.showAddArea = !target.showAddArea
             },
             handleDeleteTag (tag, part, section) {
                 section[part].deleteList.push(tag)
@@ -271,7 +291,7 @@
                     id: data.id,
                     name: data.name,
                     title: data.title + '权限配置',
-                    actions: JSON.parse(JSON.stringify(data.actions.data))
+                    actions: ['READ', ...JSON.parse(JSON.stringify(data.actions.data))]
                 }
             },
             handleActionPermission () {
@@ -280,7 +300,7 @@
                 this.setActionPermission({
                     body: {
                         permissionId: this.editActionsDialog.id,
-                        actions: this.editActionsDialog.actions
+                        actions: this.editActionsDialog.actions.filter(a => a !== 'READ')
                     }
                 }).then(res => {
                     this.$bkMessage({
@@ -314,30 +334,27 @@
         }
     }
     .section-header {
-        padding-left: 10px;
+        padding-left: 20px;
         color: var(--fontPrimaryColor);
-        background-color: var(--bgHoverColor);
+        background-color: var(--bgColor);
         border: 1px solid var(--borderColor);
-        font-weight: bold;
         .permission-actions {
             font-size: 12px;
             font-weight: normal;
-            color: var(--fontPrimaryColor);
+            color: var(--fontSubsidiaryColor);
         }
     }
     .section-main {
-        padding: 10px;
         border: solid var(--borderColor);
         border-width: 0 1px 1px;
         ::v-deep .bk-select-empty {
             display: none;
         }
         .section-sub-title {
-            height: 52px;
-            padding: 10px;
-            border-bottom: 1px solid var(--borderColor);
+            padding: 20px 10px 10px;
             > :first-child {
                 flex-basis: 45px;
+                text-align: right;
             }
             .section-sub-add-btn {
                 position: relative;
@@ -354,29 +371,42 @@
             }
         }
         .section-sub {
-            margin-bottom: 20px;
-            .section-sub-main {
-                display: flex;
-                flex-wrap: wrap;
-                .permission-tag {
-                    position: relative;
-                    margin-right: 15px;
-                    margin-bottom: 10px;
-                    padding: 7px 20px;
-                    background-color: var(--bgHoverColor);
-                    .icon-close-circle-shape {
-                        display: none;
-                        position: absolute;
-                        top: -5px;
-                        right: -5px;
-                        color: var(--dangerColor);
-                        cursor: pointer;
-                    }
-                    &:hover .icon-close-circle-shape {
-                        display: block;
-                    }
+            display: flex;
+            flex-wrap: wrap;
+            padding-left: 75px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--borderColor);
+            margin-bottom: -1px;
+            .permission-tag {
+                position: relative;
+                margin-right: 15px;
+                margin-bottom: 10px;
+                padding: 7px 20px;
+                background-color: var(--bgHoverLighterColor);
+                .icon-close-circle-shape {
+                    display: none;
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    color: var(--dangerColor);
+                    cursor: pointer;
+                }
+                &:hover .icon-close-circle-shape {
+                    display: block;
                 }
             }
+        }
+    }
+}
+.vertical-checkbox {
+    .bk-form-checkbox {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        .checkbox-tip {
+            margin-top: 10px;
+            color: var(--fontSubsidiaryColor);
+            line-height: 1.5;
         }
     }
 }

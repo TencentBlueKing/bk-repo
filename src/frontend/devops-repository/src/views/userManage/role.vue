@@ -18,18 +18,15 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(role)">
-                    <template v-if="!Boolean(role)">
-                        <span class="ml10">暂无用户组数据，</span>
-                        <bk-button text @click="createRoleHandler">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(role)"></empty-data>
             </template>
             <bk-table-column label="用户组名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="关联用户数" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.users.length }}</template>
             </bk-table-column>
-            <bk-table-column label="描述" prop="description" show-overflow-tooltip></bk-table-column>
+            <bk-table-column label="描述" show-overflow-tooltip>
+                <template #default="{ row }">{{row.description || '/'}}</template>
+            </bk-table-column>
             <bk-table-column :label="$t('operation')" width="70">
                 <template #default="{ row }">
                     <operation-list
@@ -80,7 +77,7 @@
                         allow-create>
                     </bk-tag-input>
                     <bk-button :disabled="!editRoleUsers.addUsers.length" theme="primary" class="ml10" @click="handleAddUsers">添加</bk-button>
-                    <bk-button :disabled="!editRoleUsers.deleteUsers.length" theme="warning" class="ml10" @click="handleDeleteUsers">批量移除</bk-button>
+                    <bk-button :disabled="!editRoleUsers.deleteUsers.length" theme="default" class="ml10" @click="handleDeleteUsers">批量移除</bk-button>
                 </div>
                 <bk-table
                     :data="editRoleUsers.users"
