@@ -54,6 +54,9 @@ class ArtifactWebMvcTagsContributor(private val artifactMetricsProperties: Artif
             StringPool.UNKNOWN
         )
         with(artifactInfo) {
+            if (contains(StringPool.POUND, StringPool.POUND)) {
+                return tagOfProjectAndRepo(projectId, repoName)
+            }
             if (contains(projectId, repoName)) {
                 return tagOfProjectAndRepo(projectId, repoName)
             }
