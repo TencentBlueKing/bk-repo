@@ -2,7 +2,6 @@ package com.tencent.bkrepo.common.bksync
 
 import com.tencent.bkrepo.common.api.collection.MutablePair
 import java.io.InputStream
-import kotlin.math.ceil
 
 /**
  * 使用缓冲区的滑动窗口
