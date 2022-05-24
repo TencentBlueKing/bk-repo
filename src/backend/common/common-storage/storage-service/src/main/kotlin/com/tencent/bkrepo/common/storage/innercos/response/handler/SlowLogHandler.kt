@@ -49,10 +49,6 @@ class SlowLogHandler<T>(
             }
             val endTime = System.currentTimeMillis()
             val request = response.request()
-            if (slowLogTime > 0) {
-                val requestTime = HumanReadable.time(Duration.ofMillis(endTime - beginTime).toNanos())
-                println(requestTime)
-            }
             // 时间定义慢日志
             if (slowLogTime > 0 && endTime - beginTime > slowLogTime) {
                 val requestTime = HumanReadable.time(Duration.ofMillis(endTime - beginTime).toNanos())
