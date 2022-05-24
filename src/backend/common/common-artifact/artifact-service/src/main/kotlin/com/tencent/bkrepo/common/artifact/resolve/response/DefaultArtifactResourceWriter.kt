@@ -35,9 +35,7 @@ import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
-import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -184,11 +182,7 @@ open class DefaultArtifactResourceWriter(
         if (request.method == HttpMethod.HEAD.name) {
             return Throughput.EMPTY
         }
-        val trafficHandler = TrafficHandler(
-            ArtifactMetrics.getDownloadingCounter(inputStream),
-            ArtifactMetrics.getDownloadingTimer(inputStream)
-        )
-        val recordAbleInputStream = RecordAbleInputStream(trafficHandler, inputStream)
+        val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
                 recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
@@ -226,11 +220,7 @@ open class DefaultArtifactResourceWriter(
                 zipOutput.setMethod(ZipOutputStream.DEFLATED)
                 zipOutput.use {
                     resource.artifactMap.forEach { (name, inputStream) ->
-                        val trafficHandler = TrafficHandler(
-                            ArtifactMetrics.getDownloadingCounter(inputStream),
-                            ArtifactMetrics.getDownloadingTimer(inputStream)
-                        )
-                        val recordAbleInputStream = RecordAbleInputStream(trafficHandler, inputStream)
+                        val recordAbleInputStream = RecordAbleInputStream(inputStream)
                         zipOutput.putNextEntry(generateZipEntry(name, inputStream))
                         recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
                             it.copyTo(
