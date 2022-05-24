@@ -78,7 +78,10 @@ data class DependencyItem(
     val cvssV2Vector: Cvssv2?,
 
     @ApiModelProperty("cvss V3 漏洞影响评价")
-    val cvssV3: Cvssv3?
+    val cvssV3: Cvssv3?,
+
+    @ApiModelProperty("漏洞文件路径")
+    val path: String? = null
 ) {
     companion object {
         const val TYPE = "DEPENDENCY_ITEM"

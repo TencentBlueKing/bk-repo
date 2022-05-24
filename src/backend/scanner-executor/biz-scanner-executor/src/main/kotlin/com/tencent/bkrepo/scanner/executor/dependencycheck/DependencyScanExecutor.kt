@@ -85,7 +85,9 @@ class DependencyScanExecutor @Autowired constructor(
     private fun result(dependencyInfo: DependencyInfo): DependencyScanExecutorResult {
         logger.info("dependencyInfo:${dependencyInfo.toJsonString()}")
         val dependencyItems = mutableListOf<DependencyItem>()
+        // 遍历依赖
         dependencyInfo.dependencies.forEach { dependency ->
+            // 遍历漏洞
             dependency.vulnerabilities?.forEach { vulnerability ->
                 val packages = dependency.packages?.get(0)?.id?.removePrefix("pkg:")?.split("@")
                 logger.info("packages:${packages?.toJsonString()}")
@@ -102,7 +104,8 @@ class DependencyScanExecutor @Autowired constructor(
                             defenseSolution = null,
                             references = vulnerability.references.map { reference -> reference.url },
                             cvssV2Vector = vulnerability.cvssv2,
-                            cvssV3 = vulnerability.cvssv3
+                            cvssV3 = vulnerability.cvssv3,
+                            path = dependency.filePath
                         )
                     )
                 }
