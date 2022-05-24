@@ -25,9 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.tags
+package com.tencent.bkrepo.oci.model
 
-class TagsInfo(
-    val name: String,
-    val tags: List<String>
+data class BlobSum(
+    var blobSum: String
 )

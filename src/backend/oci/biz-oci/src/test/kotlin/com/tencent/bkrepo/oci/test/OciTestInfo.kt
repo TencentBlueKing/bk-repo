@@ -25,9 +25,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.tags
+package com.tencent.bkrepo.oci.test
 
-class TagsInfo(
-    val name: String,
-    val tags: List<String>
-)
+const val testAddress = "https://github.com/opencontainers/distribution-spec/tree/main/conformance"

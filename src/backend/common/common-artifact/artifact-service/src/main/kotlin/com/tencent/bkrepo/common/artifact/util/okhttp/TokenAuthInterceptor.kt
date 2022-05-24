@@ -29,45 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.artifact
+package com.tencent.bkrepo.common.artifact.util.okhttp
 
-import com.tencent.bkrepo.oci.pojo.digest.OciDigest
-import com.tencent.bkrepo.oci.util.OciLocationUtils
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import okhttp3.Interceptor
+import okhttp3.Response
 
 /**
- * oci blob信息
+ * OKHTTP Bearer token认证拦截器
+ * 向请求头添加header: "Authorization: Bearer XXXX"
  */
-class OciBlobArtifactInfo(
-    projectId: String,
-    repoName: String,
-    packageName: String,
-    version: String,
-    val digest: String? = null,
-    val uuid: String? = null,
-    val mount: String? = null,
-    val from: String? = null
-) : OciArtifactInfo(projectId, repoName, packageName, version) {
-    private val ociDigest = OciDigest(digest)
+class TokenAuthInterceptor(token: String) : Interceptor {
 
-    fun getDigestAlg(): String {
-        return ociDigest.getDigestAlg()
-    }
+    private val credentials = token
 
-    fun getDigestHex(): String {
-        return ociDigest.getDigestHex()
-    }
-
-    fun getDigest() = ociDigest
-
-    fun blobTempPath(): String {
-        return OciLocationUtils.buildDigestBlobsUploadPath(packageName, ociDigest)
-    }
-
-    override fun getArtifactFullPath(): String {
-        return if (digest.isNullOrBlank()) {
-            ""
-        } else {
-            OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest)
-        }
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val authenticatedRequest = request.newBuilder()
+            .header(HttpHeaders.AUTHORIZATION, credentials).build()
+        return chain.proceed(authenticatedRequest)
     }
 }

@@ -90,9 +90,7 @@ class ChartRepositoryController(
      */
     @PostMapping("/{projectId}/{repoName}/refresh")
     fun refreshIndexYamlAndPackage(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
-        helmOperationService.lockAction(artifactInfo.projectId, artifactInfo.repoName) {
-            helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
-        }
+        chartRepositoryService.updatePackageForRemote(artifactInfo)
         return ResponseBuilder.success()
     }
 

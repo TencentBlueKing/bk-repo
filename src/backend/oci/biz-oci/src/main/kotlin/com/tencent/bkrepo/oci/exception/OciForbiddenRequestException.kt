@@ -25,14 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.config
+package com.tencent.bkrepo.oci.exception
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties(prefix = "oci")
-data class OciProperties(
-    /**
-     * oci服务domain地址
-     */
-    var domain: String = "localhost"
-)
+class OciForbiddenRequestException(
+    message: String,
+    code: Any? = null,
+    detail: String? = null
+) : OciException(message, code, detail)

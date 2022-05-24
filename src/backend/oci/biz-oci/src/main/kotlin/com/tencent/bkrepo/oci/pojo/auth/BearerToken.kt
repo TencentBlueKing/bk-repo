@@ -25,9 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.tags
+package com.tencent.bkrepo.oci.pojo.auth
 
-class TagsInfo(
-    val name: String,
-    val tags: List<String>
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class BearerToken(
+    val token: String?,
+    @JsonProperty("access_token")
+    val accessToken: String?,
+    @JsonProperty("expires_in")
+    val expiresIn: Long?,
+    @JsonProperty("issued_at")
+    val issuedAt: String?
 )

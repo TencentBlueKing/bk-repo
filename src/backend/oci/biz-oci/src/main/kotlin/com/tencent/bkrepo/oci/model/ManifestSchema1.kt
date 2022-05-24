@@ -25,9 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.tags
+package com.tencent.bkrepo.oci.model
 
-class TagsInfo(
-    val name: String,
-    val tags: List<String>
-)
+class ManifestSchema1(
+    override var schemaVersion: Int,
+    var fsLayers: List<BlobSum> = emptyList(),
+    var tag: String? = null,
+    var architecture: String? = null
+) : SchemaVersion(schemaVersion)
