@@ -34,13 +34,13 @@ import java.time.Duration
 /**
  * 流量处理器
  * */
-class TrafficHandler(private val counter: Counter, private val timer: Timer) {
+class TrafficHandler(private val counters: List<Counter>, private val timer: Timer) {
     /**
      * @param size 数据大小
      * @param elapse 处理耗时
      * */
     fun record(size: Int, elapse: Duration) {
-        counter.increment(size.toDouble())
+        counters.forEach { it.increment(size.toDouble()) }
         timer.record(elapse)
     }
 }

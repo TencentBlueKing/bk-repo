@@ -77,7 +77,7 @@ class RecordAbleInputStream(private val delegate: ArtifactInputStream) :
         try {
             trafficHandler ?: let {
                 trafficHandler = TrafficHandler(
-                    ArtifactMetrics.getDownloadingCounter(delegate),
+                    ArtifactMetrics.getDownloadingCounters(delegate),
                     ArtifactMetrics.getDownloadingTimer(delegate)
                 )
             }

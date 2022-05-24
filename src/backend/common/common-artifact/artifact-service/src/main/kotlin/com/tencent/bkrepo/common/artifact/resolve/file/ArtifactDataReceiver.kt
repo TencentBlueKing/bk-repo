@@ -448,7 +448,7 @@ class ArtifactDataReceiver(
      * */
     private fun refreshTrafficHandler() {
         trafficHandler = TrafficHandler(
-            ArtifactMetrics.getUploadingCounter(this),
+            ArtifactMetrics.getUploadingCounters(this),
             ArtifactMetrics.getUploadingTimer(this)
         )
     }
