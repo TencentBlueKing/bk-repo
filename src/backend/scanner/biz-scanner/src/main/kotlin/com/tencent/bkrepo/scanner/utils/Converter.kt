@@ -160,7 +160,8 @@ object Converter {
                     vulnerabilityName = it.name,
                     description = it.description,
                     officialSolution = it.officialSolution.ifEmpty { it.defenseSolution },
-                    reference = it.references
+                    reference = it.references,
+                    path = it.path
                 )
             }.toList()
             return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)
@@ -177,7 +178,8 @@ object Converter {
                     vulnerabilityName = it.name,
                     description = it.description,
                     officialSolution = it.officialSolution?.ifEmpty { it.defenseSolution },
-                    reference = it.references
+                    reference = it.references,
+                    path = it.path
                 )
             }.toList()
             return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)
