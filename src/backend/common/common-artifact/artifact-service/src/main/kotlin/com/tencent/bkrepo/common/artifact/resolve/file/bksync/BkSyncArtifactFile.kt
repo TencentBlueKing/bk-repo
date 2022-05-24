@@ -10,7 +10,6 @@
  *
  * Terms of the MIT License:
  * ---------------------------------------------------
- *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
@@ -29,54 +28,20 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.bksync
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.hash.sha1
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedFileOutputStream
 import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.BlockChannel
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
-import com.tencent.bkrepo.common.storage.util.createFile
-import com.tencent.bkrepo.common.storage.util.toPath
 import java.io.File
 import java.io.InputStream
-import java.nio.channels.FileChannel
-import java.nio.file.StandardOpenOption
-import java.security.SecureRandom
-import kotlin.math.abs
+import java.nio.channels.Channels
 
 class BkSyncArtifactFile(
     private val blockChannel: BlockChannel,
     private val deltaInputStream: InputStream,
-    private val blockSize: Int,
-    private val storageCredentials: StorageCredentials,
-    private val monitor: StorageHealthMonitor
+    private val blockSize: Int
 ) : ArtifactFile {
-    private var path = storageCredentials.upload.location.toPath()
-    private val tempFile: File
-    private var isFallback = false
-
-    /**
-     * 文件sha1值
-     */
-    private var sha1: String? = null
-
-    /**
-     * 文件sha256值
-     */
-    private var sha256: String? = null
-
-    /**
-     * 文件md5值
-     */
-    private var md5: String? = null
-
-    init {
-        val fallbackPath = monitor.getFallbackPath()
-        if (!monitor.healthy.get() && fallbackPath != null) {
-            path = fallbackPath
-            isFallback = true
-        }
-        tempFile = path.resolve(generateFilename()).createFile()
-    }
+    private val chunkedArtifactFile = ArtifactFileFactory.buildChunked()
 
     /**
      * 是否初始化
@@ -85,30 +50,31 @@ class BkSyncArtifactFile(
 
     override fun getInputStream(): InputStream {
         init()
-        return tempFile.inputStream()
+        return chunkedArtifactFile.getInputStream()
     }
 
     override fun getSize(): Long {
         init()
-        return tempFile.length()
+        return chunkedArtifactFile.getSize()
     }
 
     override fun isInMemory(): Boolean {
-        return false
+        init()
+        return chunkedArtifactFile.isInMemory()
     }
 
-    override fun getFile(): File {
+    override fun getFile(): File? {
         init()
-        return tempFile
+        return chunkedArtifactFile.getFile()
     }
 
     override fun flushToFile(): File {
         init()
-        return tempFile
+        return chunkedArtifactFile.flushToFile()
     }
 
     override fun delete() {
-        tempFile.delete()
+        chunkedArtifactFile.delete()
     }
 
     override fun hasInitialized(): Boolean {
@@ -117,26 +83,26 @@ class BkSyncArtifactFile(
 
     override fun isFallback(): Boolean {
         init()
-        return isFallback
+        return chunkedArtifactFile.isFallback()
     }
 
     override fun getFileMd5(): String {
         init()
-        return md5!!
+        return chunkedArtifactFile.getFileMd5()
     }
 
     override fun getFileSha1(): String {
         init()
-        return sha1 ?: getInputStream().use { it.sha1() }
+        return chunkedArtifactFile.getFileSha1()
     }
 
     override fun getFileSha256(): String {
         init()
-        return sha256!!
+        return chunkedArtifactFile.getFileSha256()
     }
 
     override fun isInLocalDisk(): Boolean {
-        return false
+        return chunkedArtifactFile.isInLocalDisk()
     }
 
     private fun init() {
@@ -144,26 +110,18 @@ class BkSyncArtifactFile(
             return
         }
         val bkSync = BkSync(blockSize)
-        bkSync.calculateMd5 = true
-        bkSync.calculateSha256 = true
-        val channel = FileChannel.open(tempFile.toPath(), StandardOpenOption.WRITE)
-        channel.use {
-            val result = bkSync.merge(blockChannel, deltaInputStream, channel)
-            md5 = result.md5
-            sha256 = result.sha256
+        try {
+            // outputStream不能close,因为close后会删除临时文件。这里统一通过请求拦截器进行清理
+            val outputStream = ChunkedFileOutputStream(chunkedArtifactFile).buffered()
+            val channel = Channels.newChannel(outputStream)
+            bkSync.merge(blockChannel, deltaInputStream, channel)
+            // buffered stream所以需要flush
+            outputStream.flush()
+            chunkedArtifactFile.finish()
+        } catch (e: Exception) {
+            chunkedArtifactFile.close()
+            throw e
         }
         initialized = true
-    }
-
-    companion object {
-        private val random = SecureRandom()
-        private const val BK_SYNC_PATCH_PREFIX = "patch_"
-        private const val BK_SYNC_PATCH_SUFFIX = ".temp"
-
-        private fun generateFilename(): String {
-            var randomLong = random.nextLong()
-            randomLong = if (randomLong == Long.MIN_VALUE) 0 else abs(randomLong)
-            return BK_SYNC_PATCH_PREFIX + randomLong.toString() + BK_SYNC_PATCH_SUFFIX
-        }
     }
 }

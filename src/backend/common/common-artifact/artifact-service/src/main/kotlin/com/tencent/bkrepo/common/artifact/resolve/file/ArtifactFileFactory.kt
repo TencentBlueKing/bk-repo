@@ -76,9 +76,7 @@ class ArtifactFileFactory(
             return BkSyncArtifactFile(
                 blockChannel,
                 deltaInputStream,
-                blockSize,
-                getStorageCredentials(),
-                getMonitor()
+                blockSize
             ).apply {
                 track(this)
             }

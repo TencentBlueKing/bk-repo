@@ -123,9 +123,9 @@ class DeltaSyncService(
                 }
             }
             val counterInputStream = CounterInputStream(deltaFile.getInputStream())
-            val blockInputStream = getBlockInputStream(node, storageCredentials)
+            val blockChannel = getBlockChannel(node, storageCredentials)
             val emitter = SseEmitter(patchTimeout)
-            val patchContext = buildPatchContext(counterInputStream, emitter, this, blockInputStream)
+            val patchContext = buildPatchContext(counterInputStream, emitter, this, blockChannel)
             emitter.onCompletion { patchContext.hasCompleted.set(true) }
             val reportAction = Runnable { reportProcess(patchContext) }
             val ackFuture = heartBeatExecutor.scheduleWithFixedDelay(
@@ -136,7 +136,7 @@ class DeltaSyncService(
                 try {
                     doPatch(patchContext)
                 } finally {
-                    blockInputStream.close()
+                    blockChannel.close()
                     counterInputStream.close()
                     ackFuture.cancel(true)
                 }
@@ -384,7 +384,7 @@ class DeltaSyncService(
         }
     }
 
-    private fun getBlockInputStream(node: NodeDetail, storageCredentials: StorageCredentials?): BlockChannel {
+    private fun getBlockChannel(node: NodeDetail, storageCredentials: StorageCredentials?): BlockChannel {
         val artifactInputStream = storageManager.loadArtifactInputStream(node, storageCredentials)
             ?: throw ArtifactNotFoundException("file[${node.sha256}] not found in ${storageCredentials?.key}")
         artifactInputStream.use {
