@@ -22,6 +22,7 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
+    oci.domain: {{ include "bkrepo.gateway.dockerHost" . }}
     cluster:
       region: {{ .Values.common.region }}
       self:
