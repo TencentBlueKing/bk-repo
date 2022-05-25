@@ -31,7 +31,8 @@
 package com.tencent.bkrepo.oci.constant
 
 const val OCI_API_PREFIX = "v2/"
-const val OCI_FILTER_ENDPOINT = "/v2/"
+const val OCI_FILTER_ENDPOINT = "/v2"
+const val OCI_API_SUFFIX = "/auth"
 
 const val REPO_TYPE = "OCI"
 
