@@ -34,7 +34,6 @@ package com.tencent.bkrepo.common.service.actuator
 import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
-import org.springframework.cloud.client.serviceregistry.Registration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -52,12 +51,17 @@ class ActuatorConfiguration {
     }
 
     @Bean
-    fun commonTagProvider(registration: Registration) = object : CommonTagProvider {
+    fun commonTagProvider() = object : CommonTagProvider {
         override fun provide(): Map<String, String> {
             return mapOf(
-                "service" to registration.serviceId,
-                "instance" to "${registration.host}-${registration.instanceId}"
+                "service" to SERVICE_NAME,
+                "instance" to SERVICE_INSTANCE_ID
             )
         }
+    }
+
+    companion object {
+        private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
+        private const val SERVICE_INSTANCE_ID = "${SERVICE_NAME}-\${server.port}-\${spring.cloud.client.ip-address}"
     }
 }
