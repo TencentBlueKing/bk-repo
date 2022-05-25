@@ -431,12 +431,27 @@ open class AbstractChartService : ArtifactService() {
     fun initIndexYaml(
         projectId: String,
         repoName: String,
-        userId: String = SecurityUtils.getUserId(),
-        storeFlag: Boolean = true
+        userId: String = SecurityUtils.getUserId()
     ): HelmIndexYamlMetadata? {
         logger.info("Will start to get index.yaml for repo [$projectId/$repoName]...")
         val repoDetail = checkRepo(projectId, repoName) ?: return null
-        val originalIndexYamlMetadata = when (repoDetail.configuration) {
+        val originalIndexYamlMetadata = getIndex(repoDetail)
+        originalIndexYamlMetadata?.let {
+            storeIndex(
+                indexYamlMetadata = originalIndexYamlMetadata,
+                projectId = projectId,
+                repoName = repoName,
+                userId = userId
+            )
+        }
+        return originalIndexYamlMetadata
+    }
+
+    /**
+     * 根据仓库类型获取对应index文件
+     */
+    fun getIndex(repoDetail: RepositoryDetail): HelmIndexYamlMetadata? {
+        return when (repoDetail.configuration) {
             is CompositeConfiguration -> {
                 val config = repoDetail.configuration as CompositeConfiguration
                 forEachProxyRepo(config.proxy.channelList, repoDetail)
@@ -459,14 +474,6 @@ open class AbstractChartService : ArtifactService() {
                 null
             }
         }
-        if (originalIndexYamlMetadata == null || !storeFlag) return originalIndexYamlMetadata
-        storeIndex(
-            indexYamlMetadata = originalIndexYamlMetadata,
-            projectId = projectId,
-            repoName = repoName,
-            userId = userId
-        )
-        return originalIndexYamlMetadata
     }
 
     /**

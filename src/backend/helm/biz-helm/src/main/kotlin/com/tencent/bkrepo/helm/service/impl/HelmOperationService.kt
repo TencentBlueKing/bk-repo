@@ -162,7 +162,7 @@ class HelmOperationService : AbstractChartService() {
             HelmUtils.initIndexYamlMetadata()
         }
         // 获取最新文件
-        val newIndex = initIndexYaml(projectId, name, userId, false) ?: return
+        val newIndex = getIndex(repoDetail) ?: return
 
         val (deletedSet, addedSet) = ChartParserUtil.compareIndexYamlMetadata(
             oldEntries = oldIndex.entries,
