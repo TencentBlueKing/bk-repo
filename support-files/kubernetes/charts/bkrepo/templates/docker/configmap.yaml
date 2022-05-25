@@ -13,7 +13,6 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    service.name: docker
     docker.oci:
       domain: {{ .Values.gateway.dockerHost }}
       {{- if .Values.ingress.tls }}
