@@ -55,7 +55,7 @@ class RemoteRepoRefreshJob(
     private val categories: List<String>
         get() = properties.categories
 
-    @Scheduled(cron = "0 0 4/24 * * ?") // 4点开始，6小时执行一次
+    @Scheduled(fixedDelay = 3600 * 1000L, initialDelay = 90 * 1000L)
     override fun start(): Boolean {
         return super.start()
     }
