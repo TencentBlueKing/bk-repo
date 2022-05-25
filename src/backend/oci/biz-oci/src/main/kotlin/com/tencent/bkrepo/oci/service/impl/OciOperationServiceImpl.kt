@@ -89,10 +89,10 @@ class OciOperationServiceImpl(
     private val repositoryClient: RepositoryClient
 ) : OciOperationService {
 
-    @Value("\${oci.domain: ''}")
+    @Value("\${docker.domain: ''}")
     private var domain: String = StringPool.EMPTY
 
-    @Value("\${oci.http: false}")
+    @Value("\${docker.http: false}")
     val enableHttp: Boolean = false
 
     /**
