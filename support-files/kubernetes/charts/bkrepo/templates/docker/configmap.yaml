@@ -13,8 +13,8 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    oci:
-      domain: docker.{{ .Values.gateway.host }}
+    docker:
+      oci.domain: docker.{{ .Values.gateway.host }}
       auth:
         url: http://{{ .Values.gateway.host }}/
       {{- if keys $.Values.docker.config }}
