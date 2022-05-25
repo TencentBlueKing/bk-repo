@@ -14,14 +14,14 @@ metadata:
 data:
   application.yml: |-
     service.name: docker
-    oci:
+    docker.oci:
       domain: {{ .Values.gateway.dockerHost }}
       {{- if .Values.ingress.tls }}
       http: false
       {{- else }}
       http: true
       {{- end }}
-    auth:
+    docker.auth:
       {{- if .Values.ingress.tls }}
       url: https://{{ .Values.gateway.host }}
       {{- else }}
