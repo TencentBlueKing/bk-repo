@@ -14,7 +14,7 @@ metadata:
 data:
   application.yml: |-
     docker:
-      domain: docker.{{ .Values.gateway.host }}
+      docker.domain: docker.{{ .Values.gateway.host }}
       auth:
         url: http://{{ .Values.gateway.host }}/
       {{- if keys $.Values.docker.config }}
