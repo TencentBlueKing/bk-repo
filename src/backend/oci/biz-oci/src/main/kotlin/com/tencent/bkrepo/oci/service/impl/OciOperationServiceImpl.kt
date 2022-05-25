@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.CHART_LAYER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
@@ -76,7 +77,6 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
@@ -86,14 +86,9 @@ class OciOperationServiceImpl(
     private val packageClient: PackageClient,
     private val storageService: StorageService,
     private val storageManager: StorageManager,
-    private val repositoryClient: RepositoryClient
+    private val repositoryClient: RepositoryClient,
+    private val ociProperties: OciProperties
 ) : OciOperationService {
-
-    @Value("\${oci.domain: ''}")
-    private var domain: String = StringPool.EMPTY
-
-    @Value("\${oci.http: false}")
-    val enableHttp: Boolean = false
 
     /**
      * 检查package 对应的version是否存在
@@ -437,7 +432,7 @@ class OciOperationServiceImpl(
     }
 
     override fun getRegistryDomain(): String {
-        return domain
+        return ociProperties.domain
     }
 
     /**
@@ -851,7 +846,7 @@ class OciOperationServiceImpl(
     override fun getReturnDomain(request: HttpServletRequest): String {
         return OciResponseUtils.getResponseURI(
             request = request,
-            enableHttp = this.enableHttp
+            enableHttp = ociProperties.http
         ).toString()
     }
 

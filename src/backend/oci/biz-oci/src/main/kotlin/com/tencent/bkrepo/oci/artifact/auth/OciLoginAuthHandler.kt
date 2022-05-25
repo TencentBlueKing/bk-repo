@@ -31,11 +31,8 @@
 
 package com.tencent.bkrepo.oci.artifact.auth
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
@@ -43,17 +40,12 @@ import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.oci.constant.OCI_API_SUFFIX
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
-import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
-import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
-import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
-import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
-import com.tencent.bkrepo.oci.pojo.response.OciResponse
 import com.tencent.bkrepo.oci.util.TimeUtil
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.HttpMethod
+import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 
 /**
@@ -66,14 +58,10 @@ class OciLoginAuthHandler(
 
     private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
 
-    @Value("\${auth.url:}")
-    private var authUrl: String = StringPool.EMPTY
-
     /**
      * login to a registry (with manual password entry)
      */
-    override fun getLoginEndpoint() = OCI_FILTER_ENDPOINT
-    override fun getLoginMethod() = HttpMethod.GET.name
+    override fun getLoginEndpoint() = OCI_FILTER_ENDPOINT + OCI_API_SUFFIX
 
     override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {
         val token = JwtUtils.generateToken(signingKey, jwtProperties.expiration, userId)
@@ -91,24 +79,23 @@ class OciLoginAuthHandler(
         response: HttpServletResponse,
         authenticationException: AuthenticationException
     ) {
-        response.status = HttpStatus.UNAUTHORIZED.value
-        response.contentType = MediaTypes.APPLICATION_JSON
-        response.addHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
-        response.addHeader(
-            HttpHeaders.WWW_AUTHENTICATE,
-            AUTH_CHALLENGE_SERVICE_SCOPE.format(authUrl, REGISTRY_SERVICE, SCOPE_STR)
-        )
-        val ociAuthResponse = OciResponse.errorResponse(
-            OciErrorResponse(UNAUTHORIZED_MESSAGE, UNAUTHORIZED_CODE, UNAUTHORIZED_DESCRIPTION)
-        )
-        response.writer.write(ociAuthResponse.toJsonString())
-        response.writer.flush()
+        request.getHeader(HttpHeaders.AUTHORIZATION) ?: run {
+            logger.info("empty user pull,push ,change to  [$this]")
+            return onAuthenticateSuccess(request, response, ANONYMOUS_USER)
+        }
+        throw authenticationException
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(OciLoginAuthHandler::class.java)
         const val AUTH_CHALLENGE_SERVICE_SCOPE = "Basic realm=\"%s\",service=\"%s\",scope=\"%s\""
         const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}"
         const val REGISTRY_SERVICE = "bkrepo"
         const val SCOPE_STR = "repository:*/*/tb:push,pull"
+        const val OCI_UNAUTHED_BODY =
+            "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"access to the " +
+                "requested resource is not authorized\",\"detail\"" +
+                ":[{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"pull\"}," +
+                "{\"Type\":\"repository\",\"Name\":\"samalba/my-app\",\"Action\":\"push\"}]}]}"
     }
 }
