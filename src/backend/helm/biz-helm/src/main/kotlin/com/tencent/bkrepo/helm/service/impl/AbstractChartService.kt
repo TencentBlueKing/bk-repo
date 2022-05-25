@@ -431,7 +431,8 @@ open class AbstractChartService : ArtifactService() {
     fun initIndexYaml(
         projectId: String,
         repoName: String,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
+        storeFlag: Boolean = true
     ): HelmIndexYamlMetadata? {
         logger.info("Will start to get index.yaml for repo [$projectId/$repoName]...")
         val repoDetail = checkRepo(projectId, repoName) ?: return null
@@ -458,16 +459,32 @@ open class AbstractChartService : ArtifactService() {
                 null
             }
         }
-        originalIndexYamlMetadata?.let {
-            val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
-                indexYamlMetadata = originalIndexYamlMetadata,
-                projectId = projectId,
-                repoName = repoName,
-                operator = userId
-            )
-            uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
-        }
+        if (originalIndexYamlMetadata == null || !storeFlag) return originalIndexYamlMetadata
+        storeIndex(
+            indexYamlMetadata = originalIndexYamlMetadata,
+            projectId = projectId,
+            repoName = repoName,
+            userId = userId
+        )
         return originalIndexYamlMetadata
+    }
+
+    /**
+     * 存储获取的index文件
+     */
+    fun storeIndex(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        projectId: String,
+        repoName: String,
+        userId: String = SecurityUtils.getUserId()
+    ) {
+        val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
+            indexYamlMetadata = indexYamlMetadata,
+            projectId = projectId,
+            repoName = repoName,
+            operator = userId
+        )
+        uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
     }
 
     /**
