@@ -13,7 +13,7 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    oci:
+    docker:
       domain: docker.{{ .Values.gateway.host }}
       auth:
         url: http://{{ .Values.gateway.host }}/
