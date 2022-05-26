@@ -59,7 +59,10 @@ class ArtifactMetricsConfiguration {
     }
 
     @Bean
-    fun artifactTagProvider(storageProperties: StorageProperties): ArtifactTransferTagProvider {
-        return DefaultArtifactTagProvider(storageProperties)
+    fun artifactTagProvider(
+        storageProperties: StorageProperties,
+        artifactMetricsProperties: ArtifactMetricsProperties
+    ): ArtifactTransferTagProvider {
+        return DefaultArtifactTagProvider(storageProperties, artifactMetricsProperties)
     }
 }

@@ -28,36 +28,38 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import io.micrometer.core.instrument.Tag
-import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsContributor
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import io.micrometer.core.instrument.Tags
 
-/**
- * 为请求增加额外的tag
- * */
-class ArtifactWebMvcTagsContributor(private val artifactMetricsProperties: ArtifactMetricsProperties) :
-    WebMvcTagsContributor {
-    override fun getTags(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        handler: Any?,
-        exception: Throwable?
-    ): Iterable<Tag> {
-        // 添加project,添加repo
-        val artifactInfo = ArtifactContextHolder.getArtifactInfo(request) ?: return TagUtils.tagOfProjectAndRepo(
-            StringPool.UNKNOWN,
-            StringPool.UNKNOWN
-        )
-        return TagUtils.tagOfProjectAndRepo(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactMetricsProperties.includeRepositories
+object TagUtils {
+
+    fun tagOfProjectAndRepo(projectId: String, repoName: String, includeRepositories: List<String>): Tags {
+        if (contains(StringPool.POUND, StringPool.POUND, includeRepositories)) {
+            return tagOfProjectAndRepo(projectId, repoName)
+        }
+        if (contains(projectId, repoName, includeRepositories)) {
+            return tagOfProjectAndRepo(projectId, repoName)
+        }
+        if (contains(projectId, StringPool.POUND, includeRepositories)) {
+            return tagOfProjectAndRepo(projectId, StringPool.UNKNOWN)
+        }
+        if (contains(StringPool.POUND, repoName, includeRepositories)) {
+            return tagOfProjectAndRepo(StringPool.UNKNOWN, repoName)
+        }
+        return tagOfProjectAndRepo(StringPool.UNKNOWN, StringPool.UNKNOWN)
+    }
+
+    fun tagOfProjectAndRepo(projectId: String, repoName: String): Tags {
+        return Tags.of(
+            Tag.of(PROJECT_ID, projectId),
+            Tag.of(REPO_NAME, repoName)
         )
     }
 
-    override fun getLongRequestTags(request: HttpServletRequest, handler: Any): Iterable<Tag> {
-        return emptyList()
+    private fun contains(projectId: String, repoName: String, includeRepositories: List<String>): Boolean {
+        val key = "$projectId/$repoName"
+        return includeRepositories.contains(key)
     }
 }

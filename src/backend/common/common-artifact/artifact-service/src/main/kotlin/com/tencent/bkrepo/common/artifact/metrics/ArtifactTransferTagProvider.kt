@@ -35,6 +35,7 @@ import io.micrometer.core.instrument.Tag
  * 为构件传输提供tag
  * */
 interface ArtifactTransferTagProvider {
+    fun getTags(): Iterable<Tag>
     fun getTags(inputStream: ArtifactInputStream, includeRepoInfo: Boolean = false): Iterable<Tag>
     fun getTags(receiver: ArtifactDataReceiver, includeRepoInfo: Boolean = false): Iterable<Tag>
 }
