@@ -45,8 +45,21 @@ import org.apache.commons.logging.LogFactory
  * 默认构件提供tag实现
  * */
 class DefaultArtifactTagProvider(
-    val storageProperties: StorageProperties
+    private val storageProperties: StorageProperties,
+    private val artifactMetricsProperties: ArtifactMetricsProperties
 ) : ArtifactTransferTagProvider {
+    override fun getTags(): Iterable<Tag> {
+        val repositoryDetail = ArtifactContextHolder.getRepoDetail() ?: return TagUtils.tagOfProjectAndRepo(
+            StringPool.UNKNOWN,
+            StringPool.UNKNOWN
+        )
+        return TagUtils.tagOfProjectAndRepo(
+            repositoryDetail.projectId,
+            repositoryDetail.name,
+            artifactMetricsProperties.includeRepositories
+        )
+    }
+
     override fun getTags(inputStream: ArtifactInputStream, includeRepoInfo: Boolean): Iterable<Tag> {
         val repositoryDetail = ArtifactContextHolder.getRepoDetail()
         val path = if (inputStream is FileArtifactInputStream) inputStream.file.path else SOURCE_IN_REMOTE
