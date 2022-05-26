@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.CHART_LAYER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
@@ -76,7 +77,6 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
@@ -86,14 +86,9 @@ class OciOperationServiceImpl(
     private val packageClient: PackageClient,
     private val storageService: StorageService,
     private val storageManager: StorageManager,
-    private val repositoryClient: RepositoryClient
+    private val repositoryClient: RepositoryClient,
+    private val ociProperties: OciProperties
 ) : OciOperationService {
-
-    @Value("\${docker.domain: ''}")
-    private var domain: String = StringPool.EMPTY
-
-    @Value("\${docker.http: false}")
-    val enableHttp: Boolean = false
 
     /**
      * 检查package 对应的version是否存在
@@ -152,7 +147,7 @@ class OciOperationServiceImpl(
         nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let { node ->
             logger.info(
                 "Will read chart.yaml data from $fullPath with package $packageName " +
-                    "and version $version under repo $projectId/$repoName"
+                        "and version $version under repo $projectId/$repoName"
             )
             storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
                 return try {
@@ -431,13 +426,13 @@ class OciOperationServiceImpl(
     override fun deleteVersion(userId: String, artifactInfo: OciArtifactInfo) {
         logger.info(
             "Try to delete the package [${artifactInfo.packageName}/${artifactInfo.version}] " +
-                "in repo ${artifactInfo.getRepoIdentify()}"
+                    "in repo ${artifactInfo.getRepoIdentify()}"
         )
         remove(userId, artifactInfo)
     }
 
     override fun getRegistryDomain(): String {
-        return domain
+        return ociProperties.domain
     }
 
     /**
@@ -503,7 +498,7 @@ class OciOperationServiceImpl(
         }
     }
 
-/**
+    /**
      * 更新整个blob相关信息,blob相关的mediatype，version等信息需要从manifest中获取
      */
     override fun updateOciInfo(
@@ -515,7 +510,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
-                "in repo ${ociArtifactInfo.getRepoIdentify()}"
+                    "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
 
         val version = OciUtils.checkVersion(artifactFile.getInputStream())
@@ -594,7 +589,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to sync fsLayers' blob info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
+                    "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
         )
         // 根据flag生成package信息以及packageversion信息
         doPackageOperations(
@@ -617,7 +612,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to sync blobs and config info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
+                    "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
         )
         val descriptorList = OciUtils.manifestIterator(manifest)
 
@@ -693,7 +688,7 @@ class OciOperationServiceImpl(
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
                 logger.info(
                     "The current blob [${descriptor.digest}] is stored in $fullPath with package $packageName " +
-                        "and version $reference under repo ${getRepoIdentify()}"
+                            "and version $reference under repo ${getRepoIdentify()}"
                 )
                 updateNodeMetaData(
                     projectId = projectId,
@@ -812,7 +807,7 @@ class OciOperationServiceImpl(
         val result = nodeClient.search(queryModel.build()).data ?: run {
             logger.warn(
                 "Could not find $digestStr " +
-                    "in repo $projectId|$repoName"
+                        "in repo $projectId|$repoName"
             )
             return null
         }
@@ -851,7 +846,7 @@ class OciOperationServiceImpl(
     override fun getReturnDomain(request: HttpServletRequest): String {
         return OciResponseUtils.getResponseURI(
             request = request,
-            enableHttp = this.enableHttp
+            enableHttp = ociProperties.http
         ).toString()
     }
 

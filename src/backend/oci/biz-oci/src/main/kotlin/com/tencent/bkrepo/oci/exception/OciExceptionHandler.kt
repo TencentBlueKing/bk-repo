@@ -34,7 +34,6 @@ package com.tencent.bkrepo.oci.exception
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -43,6 +42,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
+import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
@@ -50,7 +50,6 @@ import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
 import com.tencent.bkrepo.oci.pojo.response.OciResponse
 import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -60,11 +59,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RestControllerAdvice
-class OciExceptionHandler {
-    @Value("\${auth.url:}")
-    private var authUrl: String = StringPool.EMPTY
+class OciExceptionHandler(
+    private val ociProperties: OciProperties
+) {
 
-    /**
+/**
      * 单独处理认证失败异常，需要添加WWW_AUTHENTICATE响应头触发浏览器登录
      */
     @ExceptionHandler(AuthenticationException::class)
@@ -75,7 +74,7 @@ class OciExceptionHandler {
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
             OciLoginAuthHandler.AUTH_CHALLENGE_SERVICE_SCOPE.format(
-                authUrl,
+                ociProperties.authUrl,
                 OciLoginAuthHandler.REGISTRY_SERVICE,
                 OciLoginAuthHandler.SCOPE_STR
             )
