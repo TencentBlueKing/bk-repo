@@ -9,7 +9,7 @@ data class ScanQualityCheckedDetail(
 ) {
     data class ScanQualityCheckedStatus(
         val status: Boolean,
-        val require: Int?,
-        val actual: Int?
+        val require: Long,
+        val actual: Long
     )
 }

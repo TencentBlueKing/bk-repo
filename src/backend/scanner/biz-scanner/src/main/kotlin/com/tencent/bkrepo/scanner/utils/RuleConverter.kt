@@ -34,113 +34,60 @@ import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Rule.NestedRule
 import com.tencent.bkrepo.common.query.model.Rule.NestedRule.RelationType.AND
-import com.tencent.bkrepo.common.query.model.Rule.NestedRule.RelationType.OR
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
+import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
-import com.tencent.bkrepo.scanner.pojo.rule.RuleType
 
 object RuleConverter {
 
-    fun convert(projectId: String, rule: Rule?): Rule {
-        val projectIdRule = Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
-        val filterRule = NestedRule(mutableListOf(projectIdRule), AND)
-        if (rule == null) return filterRule
+    fun convert(sourceRule: Rule?, plan: TScanPlan?): Rule {
+        require(sourceRule != null || plan != null)
 
-        require(rule is NestedRule)
-        if (rule.rules.isEmpty()) return filterRule
-        if (rule.relation == OR) {
-            filterRule.rules.add(rule)
+        return if (sourceRule != null) {
+            // 尝试从sourceRule取projectId，不存在时从plan中取projectId
+            var projectIds = RuleUtil.getProjectIds(sourceRule)
+            if (projectIds.isEmpty() && plan == null) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+            }
+            projectIds = projectIds.ifEmpty { listOf(plan!!.projectId) }
+            val targetRule = createProjectIdAdnRepoRule(projectIds, emptyList(), plan?.type)
+            // 将sourceRule中除projectId相关外的rule都合并到targetRule中
+            mergeInto(sourceRule, targetRule, listOf(NodeInfo::projectId.name))
+            targetRule
         } else {
-            filterRule.rules.addAll(rule.rules)
+            createProjectIdAdnRepoRule(listOf(plan!!.projectId), emptyList(), plan.type)
         }
-
-        return filterRule
     }
 
-    fun convert(projectId: String, repoNames: List<String>, rules: List<ArtifactRule>, repoType: String? = null): Rule {
-        val rule = createProjectIdAdnRepoRule(projectId, repoNames, repoType)
-
-        if (rules.isEmpty()) {
-            return rule
-        } else if (rules.size == 1) {
-            val nameAndVersionRule = rule(rules[0])
-            if (nameAndVersionRule is NestedRule) {
-                rule.rules.addAll(nameAndVersionRule.rules)
-            } else {
-                rule.rules.add(nameAndVersionRule)
-            }
-        } else {
-            rules
-                .asSequence()
-                .filter { it.versionRule != null || it.nameRule != null }
-                .map { artifactRule -> rule(artifactRule) }
-                .let { rule.rules.add(NestedRule(it.toMutableList(), OR)) }
-        }
-
-        return rule
-    }
-
-    fun convert(rule: Rule): List<ArtifactRule> {
-        require(rule is NestedRule)
-
-        rule.rules.forEach { innerRule ->
-            val isArtifactRule = isArtifactRule(innerRule)
-
-            if (isArtifactRule && innerRule is Rule.QueryRule) {
-                return listOf(artifactRule(rule))
-            }
-
-            if (isArtifactRule && innerRule is NestedRule && innerRule.relation == AND) {
-                return listOf(artifactRule(innerRule))
-            }
-
-            if (isArtifactRule && innerRule is NestedRule && innerRule.relation == OR) {
-                return innerRule.rules.map { artifactRule(it) }
-            }
-        }
-
-        return emptyList()
+    fun convert(projectId: String, repoNames: List<String>, repoType: String? = null): Rule {
+        return createProjectIdAdnRepoRule(listOf(projectId), repoNames, repoType)
     }
 
     fun convert(projectId: String, repoName: String, fullPath: String): Rule {
-        val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
+        val rule = createProjectIdAdnRepoRule(listOf(projectId), listOf(repoName))
         rule.rules.add(Rule.QueryRule(NodeDetail::fullPath.name, fullPath, OperationType.EQ))
         return rule
     }
 
     fun convert(projectId: String, repoName: String, packageKey: String, version: String): Rule {
-        val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
+        val rule = createProjectIdAdnRepoRule(listOf(projectId), listOf(repoName))
         rule.rules.add(Rule.QueryRule(PackageSummary::key.name, packageKey, OperationType.EQ))
         rule.rules.add(Rule.QueryRule(RuleArtifact::version.name, version, OperationType.EQ))
         return rule
-    }
-
-    private fun rule(artifactRule: ArtifactRule): Rule {
-        val nameRule = artifactRule.nameRule?.let { convertRule(RuleArtifact::name.name, it) }
-        val versionRule = artifactRule.versionRule?.let { convertRule(RuleArtifact::version.name, it) }
-        return rule(nameRule, versionRule)
-    }
-
-    private fun convertRule(field: String, rule: com.tencent.bkrepo.scanner.pojo.rule.Rule): Rule.QueryRule {
-        return when (rule.type) {
-            RuleType.EQ -> Rule.QueryRule(field, rule.value, OperationType.EQ)
-            RuleType.IN -> Rule.QueryRule(field, "*${rule.value}*", OperationType.MATCH)
-            RuleType.REGEX -> Rule.QueryRule(field, rule.value, OperationType.REGEX)
-        }
     }
 
     /**
      * 添加projectId和repoName规则
      */
     private fun createProjectIdAdnRepoRule(
-        projectId: String,
+        projectIds: List<String>,
         repoNames: List<String>,
         repoType: String? = null
     ): NestedRule {
         val rules = mutableListOf<Rule>(
-            Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
+            Rule.QueryRule(NodeDetail::projectId.name, projectIds, OperationType.IN)
         )
 
         if (repoType != null && repoType != RepositoryType.GENERIC.name) {
@@ -154,88 +101,32 @@ object RuleConverter {
         return NestedRule(rules, AND)
     }
 
-    private fun rule(nameRule: Rule?, versionRule: Rule?): Rule {
-        require(nameRule != null || versionRule != null)
-        if (nameRule == null) {
-            return versionRule!!
+    /**
+     * 将[sourceRule]合并到[targetRule]中，存在于[ignoreFields]中的字段不参最外层规则的合并
+     */
+    private fun mergeInto(sourceRule: Rule, targetRule: NestedRule, ignoreFields: List<String>) {
+        if (sourceRule is Rule.QueryRule && sourceRule.field !in ignoreFields) {
+            targetRule.rules.add(sourceRule)
         }
 
-        if (versionRule == null) {
-            return nameRule
+        if (sourceRule is NestedRule) {
+            require(sourceRule.relation == targetRule.relation)
+            targetRule.rules.addAll(filter(sourceRule, ignoreFields).rules)
         }
-
-        return NestedRule(mutableListOf(nameRule, versionRule), AND)
     }
 
-    private fun isArtifactRule(rule: Rule): Boolean {
-        with(rule) {
-            // 只存在一个artifactRule，version和name只存在一种
-            if (this is Rule.QueryRule) {
-                return field == RuleArtifact::name.name || field == RuleArtifact::version.name
+    /**
+     * 从[rule]中将[fields]相关的query rule移除
+     */
+    private fun filter(rule: NestedRule, fields: List<String>): NestedRule {
+        val filteredRules = ArrayList<Rule>(rule.rules.size)
+        rule.rules.forEach {
+            if (it is Rule.QueryRule && it.field !in fields) {
+                filteredRules.add(it)
+            } else if (it is NestedRule) {
+                filteredRules.add(filter(it, fields))
             }
-
-            // 只存在一个artifactRule，version和name两种rule都存在
-            if (this is NestedRule && this.relation == AND) {
-                val artifactRule = artifactRule(this)
-                return artifactRule.nameRule != null && artifactRule.versionRule != null
-            }
-
-            // 存在多个artifactRule的情况
-            if (this is NestedRule && this.relation == OR) {
-                val artifactRule = artifactRule(this.rules.first())
-                return artifactRule.nameRule != null || artifactRule.versionRule != null
-            }
-
-            return false
         }
-    }
-
-    private fun artifactRule(rule: Rule): ArtifactRule {
-        require(rule is Rule.QueryRule || rule is NestedRule && rule.relation == AND)
-
-        return ArtifactRule(
-            findRuleFrom(rule, RuleArtifact::name.name),
-            findRuleFrom(rule, RuleArtifact::version.name)
-        )
-    }
-
-    private fun findRuleFrom(rule: Rule, filed: String): com.tencent.bkrepo.scanner.pojo.rule.Rule? {
-        require(rule is Rule.QueryRule || rule is NestedRule && rule.relation == AND)
-
-        return if (rule is Rule.QueryRule && rule.field == filed) {
-            convertRule(rule)
-        } else if (rule is NestedRule && rule.relation == AND) {
-            rule.rules
-                .firstOrNull { it is Rule.QueryRule && it.field == filed }
-                ?.let { convertRule(it) }
-        } else {
-            null
-        }
-    }
-
-    private fun convertRule(rule: Rule): com.tencent.bkrepo.scanner.pojo.rule.Rule {
-        require(rule is Rule.QueryRule)
-
-        val value = rule.value.toString()
-        val ruleValue = if (rule.operation == OperationType.MATCH && value.length > 2) {
-            // MATCH匹配规则的value为‘*someValue*’,需要移除头尾的'*'
-            value.substring(1, value.length - 1)
-        } else {
-            value
-        }
-
-        return com.tencent.bkrepo.scanner.pojo.rule.Rule(
-            convertRuleOperationType(rule.operation),
-            ruleValue
-        )
-    }
-
-    private fun convertRuleOperationType(type: OperationType): RuleType {
-        return when (type) {
-            OperationType.EQ -> RuleType.EQ
-            OperationType.REGEX -> RuleType.REGEX
-            OperationType.MATCH -> RuleType.IN
-            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, type)
-        }
+        return rule.copy(rules = filteredRules)
     }
 }

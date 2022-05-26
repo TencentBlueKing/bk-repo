@@ -34,23 +34,10 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("DependencyCheck扫描器配置")
 class DependencyScanner(
     override val name: String,
-    /**
-     * 格式为ArrowheadImageVersion::KnowledgeBaseVervion::StandaloneConfigTemplateVersion
-     * 或者ArrowheadImageVersion::KnowledgeBaseVervion
-     */
     @ApiModelProperty("扫描器版本")
-    override val version: String,
-    @ApiModelProperty("扫描结束后是否清理工作目录")
-    val cleanWorkDir: Boolean = true,
-    @ApiModelProperty("最大允许的扫描时间")
-    val maxScanDuration: Long = DEFAULT_MAX_SCAN_DURATION
+    override val version: String
 ) : Scanner(name, TYPE, version) {
     companion object {
-        /**
-         * 扫描器和漏洞库版本号分隔符
-         */
-        const val VERSION_SPLIT = "::"
         const val TYPE = "DependencyCheck"
-        const val DEFAULT_MAX_SCAN_DURATION = 10 * 60 * 1000L
     }
 }

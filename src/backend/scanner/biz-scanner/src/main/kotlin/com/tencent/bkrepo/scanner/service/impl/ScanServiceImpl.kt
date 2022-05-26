@@ -35,11 +35,13 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -61,13 +63,11 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
-import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
@@ -76,6 +76,8 @@ import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskScheduler
 import com.tencent.bkrepo.scanner.utils.Converter
+import com.tencent.bkrepo.scanner.utils.RuleConverter
+import com.tencent.bkrepo.scanner.utils.RuleUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -115,22 +117,26 @@ class ScanServiceImpl @Autowired constructor(
     private lateinit var self: ScanServiceImpl
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask {
+    override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
         with(scanRequest) {
-            require(planId != null || scanner != null)
-            val userId = SecurityUtils.getUserId()
+            if (planId == null && (scanner == null || rule == null)) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+            }
 
             val plan = planId?.let { scanPlanDao.get(it) }
+            val rule = RuleConverter.convert(rule, plan)
+
+            userId?.let { checkPermission(rule, it) }
 
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
             val scanTask = scanTaskDao.save(
                 TScanTask(
-                    createdBy = userId,
+                    createdBy = userId ?: SecurityUtils.getUserId(),
                     createdDate = now,
-                    lastModifiedBy = userId,
+                    lastModifiedBy = userId ?: SecurityUtils.getUserId(),
                     lastModifiedDate = now,
-                    rule = rule?.toJsonString(),
+                    rule = rule.toJsonString(),
                     triggerType = triggerType.name,
                     planId = plan?.id,
                     status = ScanTaskStatus.PENDING.name,
@@ -150,18 +156,6 @@ class ScanServiceImpl @Autowired constructor(
             logger.info("create scan task[${scanTask.taskId}] success")
             return scanTask
         }
-    }
-
-    override fun singleScan(request: SingleScanRequest): ScanTask {
-        with(request) {
-            val plan = scanPlanDao.get(planId)
-            return self.scan(Converter.convert(request, plan.type), ScanTriggerType.MANUAL)
-        }
-    }
-
-    override fun batchScan(request: BatchScanRequest): ScanTask {
-        val plan = scanPlanDao.get(request.planId)
-        return self.scan(Converter.convert(request, plan.type), Converter.convert(request.triggerType))
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -257,6 +251,7 @@ class ScanServiceImpl @Autowired constructor(
      *
      * @return 是否更新成功
      */
+    @Suppress("UNCHECKED_CAST")
     @Transactional(rollbackFor = [Throwable::class])
     fun updateScanTaskResult(
         subTask: TSubScanTask,
@@ -486,6 +481,19 @@ class ScanServiceImpl @Autowired constructor(
 
     private fun toLocalDateTime(timestamp: Long): LocalDateTime {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
+    }
+
+    private fun checkPermission(rule: Rule, userId: String) {
+        val projectIds = RuleUtil.getProjectIds(rule)
+        require(projectIds.isNotEmpty())
+
+        if (projectIds.size > 1) {
+            // 只允许系统管理员扫描多个项目
+            permissionCheckHandler.permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
+        } else {
+            require(projectIds.isNotEmpty())
+            permissionCheckHandler.checkProjectPermission(projectIds.first(), PermissionAction.MANAGE, userId)
+        }
     }
 
     companion object {

@@ -38,11 +38,4 @@ data class DependencyScanExecutorResult(
     override val overview: Map<String, Any?>,
     @ApiModelProperty("结果")
     val dependencyItems: List<DependencyItem>
-) : ScanExecutorResult(scanStatus, overview, DependencyScanner.TYPE) {
-    companion object {
-
-        fun overviewKeyOfCve(level: String): String {
-            return "cve${level.capitalize()}Count"
-        }
-    }
-}
+) : ScanExecutorResult(scanStatus, overview, DependencyScanner.TYPE)

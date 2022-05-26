@@ -105,9 +105,15 @@ open class PermissionManager(
      */
     open fun checkProjectPermission(
         action: PermissionAction,
-        projectId: String
+        projectId: String,
+        userId: String = SecurityUtils.getUserId()
     ) {
-        checkPermission(ResourceType.PROJECT, action, projectId)
+        checkPermission(
+            type = ResourceType.PROJECT,
+            action = action,
+            projectId = projectId,
+            userId = userId
+        )
     }
 
     /**
@@ -236,13 +242,13 @@ open class PermissionManager(
         projectId: String,
         repoName: String? = null,
         paths: List<String>? = null,
-        anonymous: Boolean = false
+        anonymous: Boolean = false,
+        userId: String = SecurityUtils.getUserId()
     ) {
         // 判断是否开启认证
         if (!httpAuthProperties.enabled) {
             return
         }
-        val userId = SecurityUtils.getUserId()
         val platformId = SecurityUtils.getPlatformId()
         checkAnonymous(userId, platformId)
 

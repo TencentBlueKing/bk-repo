@@ -1,25 +1,24 @@
 package com.tencent.bkrepo.scanner.pojo.response
 
-import com.tencent.bkrepo.scanner.CVE_CRITICAL_COUNT
-import com.tencent.bkrepo.scanner.CVE_HIGH_COUNT
-import com.tencent.bkrepo.scanner.CVE_LOW_COUNT
-import com.tencent.bkrepo.scanner.CVE_MEDIUM_COUNT
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 
 data class ScanQualityResponse(
-    val critical: Int?,
-    val high: Int?,
-    val medium: Int?,
-    val low: Int?,
+    val critical: Long?,
+    val high: Long?,
+    val medium: Long?,
+    val low: Long?,
     val forbidScanUnFinished: Boolean,
     val forbidQualityUnPass: Boolean
 ) {
-    fun getScanQualityRedLineByLevel(level: String): Int? {
-        return when (level) {
-            CVE_CRITICAL_COUNT -> critical
-            CVE_HIGH_COUNT -> high
-            CVE_MEDIUM_COUNT -> medium
-            CVE_LOW_COUNT -> low
-            else -> 0
-        }
+
+    companion object {
+        fun create(map: Map<String, Any>) = ScanQualityResponse(
+            critical = map[Level.CRITICAL.levelName] as? Long,
+            high = map[Level.HIGH.levelName] as? Long,
+            medium = map[Level.MEDIUM.levelName] as? Long,
+            low = map[Level.LOW.levelName] as? Long,
+            forbidScanUnFinished = map[ScanQualityResponse::forbidScanUnFinished.name] as? Boolean ?: false,
+            forbidQualityUnPass = map[ScanQualityResponse::forbidQualityUnPass.name] as? Boolean ?: false
+        )
     }
 }

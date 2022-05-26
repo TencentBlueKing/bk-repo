@@ -38,11 +38,11 @@ import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ApplicationItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult.Companion.overviewKeyOfCve
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult.Companion.overviewKeyOfLicenseRisk
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult.Companion.overviewKeyOfSensitive
 import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
@@ -392,7 +392,7 @@ class ArrowheadScanExecutor @Autowired constructor(
 
         // cve count
         cveSecItems.forEach {
-            val overviewKey = overviewKeyOfCve(it.cvssRank)
+            val overviewKey = CveOverviewKey.overviewKeyOf(it.cvssRank)
             overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
 

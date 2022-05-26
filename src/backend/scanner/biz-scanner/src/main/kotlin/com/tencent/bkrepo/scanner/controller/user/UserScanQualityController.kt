@@ -2,7 +2,7 @@ package com.tencent.bkrepo.scanner.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.pojo.request.ScanQualityCreateRequest
+import com.tencent.bkrepo.scanner.pojo.request.ScanQualityUpdateRequest
 import com.tencent.bkrepo.scanner.pojo.response.ScanQualityResponse
 import com.tencent.bkrepo.scanner.service.ScanQualityService
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,15 +29,15 @@ class UserScanQualityController(
     @PutMapping("/{planId}")
     fun createScanQuality(
         @PathVariable("planId") planId: String,
-        @RequestBody request: ScanQualityCreateRequest
+        @RequestBody request: ScanQualityUpdateRequest
     ): Response<Boolean> {
-        return ResponseBuilder.success(scanQualityService.createScanQuality(planId, request))
+        return ResponseBuilder.success(scanQualityService.updateScanQuality(planId, request))
     }
 
     @PostMapping("/{planId}")
     fun updateScanQuality(
         @PathVariable("planId") planId: String,
-        @RequestBody request: ScanQualityCreateRequest
+        @RequestBody request: ScanQualityUpdateRequest
     ): Response<Boolean> {
         return ResponseBuilder.success(scanQualityService.updateScanQuality(planId, request))
     }

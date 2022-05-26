@@ -35,14 +35,12 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
-import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
-import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.service.ScanService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -59,16 +57,12 @@ import org.springframework.web.bind.annotation.RestController
 @Api("扫描接口")
 @RestController
 @RequestMapping("/api/scan")
-class UserScanController @Autowired constructor(
-    private val scanService: ScanService,
-    private val permissionCheckHandler: ScannerPermissionCheckHandler
-) {
+class UserScanController @Autowired constructor(private val scanService: ScanService) {
 
     @ApiOperation("创建扫描任务")
     @PostMapping
-    @Principal(PrincipalType.ADMIN)
     fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL))
+        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL, SecurityUtils.getUserId()))
     }
 
     @ApiOperation("中止制品扫描")
@@ -81,22 +75,6 @@ class UserScanController @Autowired constructor(
         @RequestParam("recordId") subtaskId: String
     ): Response<Boolean> {
         return ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
-    }
-
-    @ApiOperation("批量扫描")
-    @PostMapping("/batch")
-    fun batchScan(@RequestBody request: BatchScanRequest): Response<Boolean> {
-        permissionCheckHandler.checkProjectPermission(request.projectId, PermissionAction.MANAGE)
-        scanService.batchScan(request)
-        return ResponseBuilder.success(true)
-    }
-
-    @ApiOperation("单个制品扫描")
-    @PostMapping("/single")
-    fun singleScan(@RequestBody request: SingleScanRequest): Response<Boolean> {
-        permissionCheckHandler.checkProjectPermission(request.projectId, PermissionAction.MANAGE)
-        scanService.singleScan(request)
-        return ResponseBuilder.success(true)
     }
 
     @ApiOperation("获取扫描任务信息")

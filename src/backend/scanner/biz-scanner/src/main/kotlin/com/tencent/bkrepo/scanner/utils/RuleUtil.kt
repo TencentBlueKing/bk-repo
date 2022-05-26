@@ -27,27 +27,59 @@
 
 package com.tencent.bkrepo.scanner.utils
 
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 object RuleUtil {
+    fun getProjectIds(rule: Rule?): List<String> {
+        return fieldValueFromRule(rule, NodeInfo::projectId.name)
+    }
 
     fun getRepoNames(rule: Rule?): List<String> {
-        if (rule == null) return emptyList()
+        return fieldValueFromRule(rule, NodeInfo::repoName.name)
+    }
 
-        require(rule is Rule.NestedRule)
-        if (rule.rules.isEmpty()) return emptyList()
-        val repoRule = getQueryRule(rule, NodeInfo::repoName.name)
-        return if (repoRule == null) {
-            emptyList()
-        } else {
-            repoRule.value as List<String>
+    /**
+     * 在nestedRule第一层找需要字段的值
+     * 如果指定要扫描的projectId或repoName，必须relation为AND，在nestedRule里面的第一层rule包含对应的匹配条件
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun fieldValueFromRule(rule: Rule?, field: String): List<String> {
+        return when(rule) {
+            is Rule.QueryRule -> fieldValue(rule, field)
+            is Rule.FixedRule -> fieldValue(rule.wrapperRule, field)
+            is Rule.NestedRule -> valuesFromNestedRule(rule, field)
+            else -> emptyList()
         }
     }
 
-    private fun getQueryRule(rule: Rule.NestedRule, field: String): Rule.QueryRule? {
-        return rule.rules.firstOrNull {
-            it is Rule.QueryRule && it.field == field
-        } as Rule.QueryRule?
+    private fun fieldValue(rule: Rule.QueryRule, field: String): List<String> {
+        return if (rule.field == field) {
+            listOf(rule.value.toString())
+        } else {
+            emptyList()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun valuesFromNestedRule(rule: Rule.NestedRule, field: String): List<String> {
+        if (rule.relation != Rule.NestedRule.RelationType.AND) {
+            return emptyList()
+        }
+
+        val fieldValues = ArrayList<String>()
+        rule.rules
+            .asSequence()
+            .filterIsInstance(Rule.QueryRule::class.java)
+            .filter { it.field == field }
+            .forEach {
+                if (it.operation == OperationType.EQ) {
+                    fieldValues.add(it.value as String)
+                } else if (it.operation == OperationType.IN) {
+                    fieldValues.addAll(it.value as Collection<String>)
+                }
+            }
+        return fieldValues
     }
 }

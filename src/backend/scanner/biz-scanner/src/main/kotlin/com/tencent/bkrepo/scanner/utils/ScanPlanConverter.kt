@@ -32,12 +32,9 @@ package com.tencent.bkrepo.scanner.utils
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
@@ -54,7 +51,6 @@ import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
 import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
-import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import java.time.Duration
 import java.time.LocalDateTime
@@ -82,29 +78,6 @@ object ScanPlanConverter {
                 lastModifiedBy = lastModifiedBy,
                 lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 scanQuality = scanQuality
-            )
-        }
-    }
-
-    fun convert(scanPlan: ScanPlan): ScanPlanBase {
-        return with(scanPlan) {
-            ScanPlanBase(
-                id = id!!,
-                name = name,
-                type = type!!,
-                scanner = scanner!!,
-                description = description!!,
-                projectId = projectId!!,
-                autoScan = scanOnNewArtifact!!,
-                scanOnNewArtifact = scanOnNewArtifact!!,
-                repoNameList = repoNames!!,
-                repoNames = repoNames!!,
-                artifactRules = rule?.let { RuleConverter.convert(it) } ?: emptyList(),
-                rule = rule,
-                createdBy = createdBy!!,
-                createdDate = createdDate!!,
-                lastModifiedBy = lastModifiedBy!!,
-                lastModifiedDate = lastModifiedDate!!
             )
         }
     }
@@ -138,7 +111,7 @@ object ScanPlanConverter {
                 description = description,
                 scanOnNewArtifact = autoScan,
                 repoNames = emptyList(),
-                rule = RuleConverter.convert(projectId, emptyList(), emptyList(), type)
+                rule = RuleConverter.convert(projectId, emptyList(), type)
             )
         }
     }
@@ -236,7 +209,7 @@ object ScanPlanConverter {
                 fullPath = fullPath,
                 repoType = repoType,
                 repoName = repoName,
-                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(scannerType, it) },
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
                 duration = duration(startDateTime, finishedDateTime),
                 finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 status = convertToScanStatus(status).name,
@@ -271,7 +244,7 @@ object ScanPlanConverter {
                 fullPath = fullPath,
                 repoType = repoType,
                 repoName = repoName,
-                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(scannerType, it) },
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
                 critical = critical,
                 high = high,
                 medium = medium,
@@ -336,9 +309,9 @@ object ScanPlanConverter {
         }
     }
 
-    private fun highestLeakLevel(scannerType: String, overview: Map<String, Number>): String? {
+    private fun highestLeakLevel(overview: Map<String, Number>): String? {
         Level.values().forEach {
-            if (overview.keys.contains(getCveOverviewKey(scannerType, it.levelName))) {
+            if (overview.keys.contains(getCveOverviewKey(it.levelName))) {
                 return convertToLeakLevel(it.levelName)
             }
         }
@@ -390,15 +363,11 @@ object ScanPlanConverter {
             return 0L
         }
 
-        val key = getCveOverviewKey(scannerType, level)
+        val key = getCveOverviewKey(level)
         return overview?.get(key)?.toLong() ?: 0L
     }
 
-    fun getCveOverviewKey(scannerType: String, level: String): String {
-        return when (scannerType) {
-            ArrowheadScanner.TYPE -> ArrowheadScanExecutorResult.overviewKeyOfCve(level)
-            DependencyScanner.TYPE -> DependencyScanExecutorResult.overviewKeyOfCve(level)
-            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, scannerType, level)
-        }
+    fun getCveOverviewKey(level: String): String {
+        return CveOverviewKey.overviewKeyOf(level)
     }
 }

@@ -25,18 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.rule
+package com.tencent.bkrepo.common.scanner.pojo.scanner
 
 /**
- * 制品匹配规则
+ * CVE数量预览数据Key
  */
-data class ArtifactRule(
-    /**
-     * 制品名规则
-     */
-    val nameRule: Rule? = null,
-    /**
-     * 制品版本规则
-     */
-    val versionRule: Rule? = null
-)
+enum class CveOverviewKey(val key: String, val level: Level) {
+    CVE_CRITICAL_COUNT("cveCriticalCount", Level.CRITICAL),
+    CVE_HIGH_COUNT("cveHighCount", Level.HIGH),
+    CVE_MEDIUM_COUNT("cveMediumCount", Level.MEDIUM),
+    CVE_LOW_COUNT("cveLowCount", Level.LOW);
+
+    companion object {
+        fun overviewKeyOf(level: String): String {
+            when (level) {
+                Level.CRITICAL.levelName -> CVE_CRITICAL_COUNT.key
+                Level.HIGH.levelName -> CVE_HIGH_COUNT.key
+                Level.MEDIUM.levelName -> CVE_MEDIUM_COUNT.key
+                Level.LOW.levelName -> CVE_LOW_COUNT
+            }
+            return "cve${level.capitalize()}Count"
+        }
+    }
+}

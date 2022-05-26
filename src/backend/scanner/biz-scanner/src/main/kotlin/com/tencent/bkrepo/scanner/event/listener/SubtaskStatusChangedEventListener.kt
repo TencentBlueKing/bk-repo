@@ -30,8 +30,8 @@ package com.tencent.bkrepo.scanner.event.listener
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.scanner.QUALITY_RED_LINE
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
+import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -55,7 +55,7 @@ class SubtaskStatusChangedEventListener(
             val metadata = mutableMapOf<String, Any>(
                 METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name
             )
-            qualityRedLine?.let { metadata[QUALITY_RED_LINE] = it }
+            qualityRedLine?.let { metadata[SubScanTaskDefinition::qualityRedLine.name] = it }
             val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,

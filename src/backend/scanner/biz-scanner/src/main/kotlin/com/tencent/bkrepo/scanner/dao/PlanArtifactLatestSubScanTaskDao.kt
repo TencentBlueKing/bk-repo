@@ -114,7 +114,7 @@ class PlanArtifactLatestSubScanTaskDao(
             name?.let {
                 criteria.and(SubScanTaskDefinition::artifactName.name).regex(".*$name.*")
             }
-            highestLeakLevel?.let { addHighestVulnerabilityLevel(scannerType, it, criteria) }
+            highestLeakLevel?.let { addHighestVulnerabilityLevel(it, criteria) }
             repoType?.let { criteria.and(SubScanTaskDefinition::repoType.name).isEqualTo(repoType) }
             repoName?.let { criteria.and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName) }
             subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
@@ -290,10 +290,10 @@ class PlanArtifactLatestSubScanTaskDao(
             .and(TPlanArtifactLatestSubScanTask::planId.name).isEqualTo(planId)
     }
 
-    private fun addHighestVulnerabilityLevel(scannerType: String, level: String, criteria: Criteria): Criteria {
+    private fun addHighestVulnerabilityLevel(level: String, criteria: Criteria): Criteria {
         Level.values().forEach {
             val isHighest = level == it.levelName
-            criteria.and(resultOverviewKey(scannerType, it.levelName)).exists(isHighest)
+            criteria.and(resultOverviewKey(it.levelName)).exists(isHighest)
             if (isHighest) {
                 return criteria
             }
@@ -301,8 +301,8 @@ class PlanArtifactLatestSubScanTaskDao(
         return criteria
     }
 
-    private fun resultOverviewKey(scannerType: String, level: String): String {
-        val overviewKey = ScanPlanConverter.getCveOverviewKey(scannerType, level)
+    private fun resultOverviewKey(level: String): String {
+        val overviewKey = ScanPlanConverter.getCveOverviewKey(level)
         return "${SubScanTaskDefinition::scanResultOverview.name}.$overviewKey"
     }
 

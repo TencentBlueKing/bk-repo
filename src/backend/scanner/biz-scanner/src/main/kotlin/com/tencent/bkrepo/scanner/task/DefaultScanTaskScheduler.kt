@@ -33,7 +33,6 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.redis.RedisLock
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
@@ -338,7 +337,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 .scanResult[scanTask.scanner]
                 ?.overview
                 ?.let { Converter.convert(it) }
-            logger.info("createFinishedSubTask scanTask:${scanTask.toJsonString()}, overview:${overview?.toJsonString()}")
             // 质量检查结果
             val planId = scanTask.scanPlan?.id
             val qualityPass = if (planId != null && overview != null) {

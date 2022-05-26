@@ -33,13 +33,11 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
-import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
 import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
@@ -53,22 +51,9 @@ interface ScanService {
      *
      * @param scanRequest 扫描参数，指定使用的扫描器和需要扫描的文件
      * @param triggerType 触发类型
+     * @param userId 用户id，传入null时表示系统触发扫描，不校验用户权限
      */
-    fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType): ScanTask
-
-    /**
-     * 扫描单个文件
-     *
-     * @param request 扫描请求
-     */
-    fun singleScan(request: SingleScanRequest): ScanTask
-
-    /**
-     * 批量扫描
-     *
-     * @param request 批量扫描请求
-     */
-    fun batchScan(request: BatchScanRequest): ScanTask
+    fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String? = null): ScanTask
 
     /**
      * 停止子任务
