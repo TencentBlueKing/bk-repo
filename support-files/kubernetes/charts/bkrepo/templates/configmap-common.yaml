@@ -23,6 +23,11 @@ data:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
     oci.domain: {{ .Values.gateway.dockerHost }}
+    {{- if .Values.ingress.tls }}
+    oci.authUrl: https://{{ .Values.gateway.host }}/docker/v2/auth
+    {{- else }}
+    oci.authUrl: http://{{ .Values.gateway.host }}/docker/v2/auth
+    {{- end }}
     cluster:
       region: {{ .Values.common.region }}
       self:
