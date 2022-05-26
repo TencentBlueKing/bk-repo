@@ -29,9 +29,36 @@
  * SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":common:common-api"))
-    implementation(project(":common:common-artifact:artifact-api"))
-    compileOnly("org.springframework:spring-web")
-    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
+package com.tencent.bkrepo.helm.controller.service
+
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.helm.api.HelmClient
+import com.tencent.bkrepo.helm.listener.consumer.RemoteEventJobExecutor
+import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class HelmIndexController(
+    private val remoteEventJobExecutor: RemoteEventJobExecutor
+) : HelmClient {
+
+    /**
+     * refresh index.yaml and package info for remote
+     */
+    override fun refreshIndexYamlAndPackage(projectId: String, repoName: String): Response<Void> {
+        val refreshEvent = ObjectBuilderUtil.buildRefreshEvent(projectId, repoName, SecurityUtils.getUserId())
+        remoteEventJobExecutor.execute(refreshEvent)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * init index.yaml and package info for remote
+     */
+    override fun initIndexAndPackage(projectId: String, repoName: String): Response<Void> {
+        val createEvent = ObjectBuilderUtil.buildCreatedEvent(projectId, repoName, SecurityUtils.getUserId())
+        remoteEventJobExecutor.execute(createEvent)
+        return ResponseBuilder.success()
+    }
 }

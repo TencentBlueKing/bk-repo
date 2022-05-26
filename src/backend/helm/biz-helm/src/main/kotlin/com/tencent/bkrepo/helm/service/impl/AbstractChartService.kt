@@ -485,6 +485,7 @@ open class AbstractChartService : ArtifactService() {
         repoName: String,
         userId: String = SecurityUtils.getUserId()
     ) {
+        logger.info("Index file will be stored in repo $projectId|$repoName")
         val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
             indexYamlMetadata = indexYamlMetadata,
             projectId = projectId,
