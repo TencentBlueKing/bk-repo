@@ -28,13 +28,13 @@
                                 :key="tag">
                                 {{ tag }}
                             </span>
-                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="detail.metadata.scanStatus"></scan-tag>
+                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="(detail.systemMetadata || {}).scanStatus"></scan-tag>
                         </template>
                     </span>
                 </div>
                 <div class="package-description grid-item">
                     <label>描述</label>
-                    <span class="flex-1 text-overflow" :title="detail.basic.description">{{ detail.basic.description || '--' }}</span>
+                    <span class="flex-1 text-overflow" :title="detail.basic.description">{{ detail.basic.description || '/' }}</span>
                 </div>
             </div>
             <div class="version-base-info base-info-guide display-block" :data-title="$t('useTips')">
@@ -60,17 +60,12 @@
         <bk-tab-panel v-if="detail.metadata" name="metadata" :label="$t('metaData')">
             <div class="version-metadata display-block" :data-title="$t('metaData')">
                 <bk-table
-                    :data="Object.entries(detail.metadata || {})"
+                    :data="Object.entries(detail.metadata)"
                     :outer-border="false"
                     :row-border="false"
                     size="small">
                     <template #empty>
-                        <empty-data ex-style="margin-top:80px;"
-                            :config="{
-                                imgSrc: '/ui/no-metadata.png',
-                                title: '暂无数据'
-                            }">
-                        </empty-data>
+                        <empty-data ex-style="margin-top:80px;"></empty-data>
                     </template>
                     <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
                     <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
@@ -85,12 +80,7 @@
                     :row-border="false"
                     size="small">
                     <template #empty>
-                        <empty-data ex-style="margin-top:80px;"
-                            :config="{
-                                imgSrc: '/ui/no-metadata.png',
-                                title: '暂无数据'
-                            }">
-                        </empty-data>
+                        <empty-data ex-style="margin-top:80px;"></empty-data>
                     </template>
                     <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
                     <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>

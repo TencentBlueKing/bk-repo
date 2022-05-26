@@ -38,7 +38,7 @@
           </el-select>
         </el-form-item>
         <el-form-item v-if="webhook.associationType != 'SYSTEM'" label="关联对象id" prop="associatitonId">
-          <el-input v-model="webhook.associatitonId" placeholder="请输入关联对象id  "/>
+          <el-input v-model="webhook.associatitonId" placeholder="请输入关联对象id" />
         </el-form-item>
         <el-form-item label="事件资源key正则模式" prop="resourceKeyPattern">
           <el-input v-model="webhook.resourceKeyPattern" placeholder="请输入事件资源key正则模式" />
@@ -80,10 +80,7 @@ export default {
         url: [{ required: true, message: '请输入url', trigger: 'blur' }],
         headers: [{ validator: validateHeaders, trigger: 'blur' }],
         triggers: [{ required: true, message: '请选择触发事件', trigger: 'blur' }],
-        associationType: [{ required: true, message: '请选择关联对象类型', trigger: 'blur' }],
-        url: [{ required: true, message: '请输入url', trigger: 'blur' }],
-        url: [{ required: true, message: '请输入url', trigger: 'blur' }],
-
+        associationType: [{ required: true, message: '请选择关联对象类型', trigger: 'blur' }]
       },
       showDialog: this.visible,
       loading: false,
@@ -133,7 +130,7 @@ export default {
         }).finally(() => {
           this.loading = false
         })
-      })      
+      })
     },
     close() {
       this.webhook = {}

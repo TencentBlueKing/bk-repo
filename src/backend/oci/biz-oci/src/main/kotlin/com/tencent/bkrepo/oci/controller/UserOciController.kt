@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.oci.pojo.OciDomainInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.OCI_VERSION_DELETE_URL
@@ -108,9 +107,8 @@ class UserOciController(
     }
 
     @ApiOperation("获取Oci域名地址")
-    @GetMapping("/address")
-    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
-    fun getRegistryDomain(): Response<OciDomainInfo> {
+    @GetMapping("/addr")
+    fun getRegistryDomain(): Response<String> {
         return ResponseBuilder.success(operationService.getRegistryDomain())
     }
 }

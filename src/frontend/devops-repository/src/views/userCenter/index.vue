@@ -3,7 +3,7 @@
         <bk-form class="mt50" :label-width="180">
             <bk-form-item v-for="item in formItem" :key="item.key" :label="item.label">
                 <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
-                    <span>{{userInfo[item.key] || '--'}}</span>
+                    <span>{{userInfo[item.key] || '/'}}</span>
                     <bk-button class="ml20 flex-align-center"
                         v-if="!editItem.key"
                         text

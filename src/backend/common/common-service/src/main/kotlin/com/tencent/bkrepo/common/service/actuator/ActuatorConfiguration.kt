@@ -55,13 +55,16 @@ class ActuatorConfiguration {
         override fun provide(): Map<String, String> {
             return mapOf(
                 "service" to SERVICE_NAME,
-                "instance" to SERVICE_INSTANCE_ID
+                "instance" to SERVICE_INSTANCE_ID,
+                "host" to SERVER_HOST
             )
         }
     }
 
     companion object {
         private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
-        private const val SERVICE_INSTANCE_ID = "${SERVICE_NAME}-\${server.port}-\${spring.cloud.client.ip-address}"
+        private const val SERVER_HOST = "\${spring.cloud.client.ip-address}"
+        private const val SERVER_PORT = "\${server.port}"
+        private const val SERVICE_INSTANCE_ID = "${SERVICE_NAME}-${SERVER_PORT}-${SERVER_HOST}"
     }
 }

@@ -3,7 +3,7 @@ import request from '@/utils/request'
 const PREFIX_NODE = '/repository/api/node'
 export const DEFAULT_PAGE_SIZE = 20
 
-export function searchNodes(projectId, repoName, path, page, size, detail = false) {
+export function searchNodes(projectId, repoName, path, page, size, detail = false, deleted = null) {
   const dir = path.endsWith('/')
   let pathRule
   if (dir) {
@@ -19,6 +19,19 @@ export function searchNodes(projectId, repoName, path, page, size, detail = fals
       'operation': 'EQ'
     }
   }
+  const rules = [
+    {
+      'field': 'projectId',
+      'value': projectId,
+      'operation': 'EQ'
+    },
+    {
+      'field': 'repoName',
+      'value': repoName,
+      'operation': 'EQ'
+    },
+    pathRule
+  ]
   const select = [
     'lastModifiedBy', 'lastModifiedDate', 'folder', 'name', 'size',
     'sha256', 'projectId', 'repoName', 'deleted', 'fullPath'
@@ -28,6 +41,11 @@ export function searchNodes(projectId, repoName, path, page, size, detail = fals
       'createdBy', 'createdDate', 'path', 'fullPath', 'expireDate', 'md5',
       'copyFromCredentialsKey', 'copyIntoCredentialsKey', 'metadata'
     ])
+    rules.push({
+      'field': 'deleted',
+      'value': deleted || '',
+      'operation': deleted ? 'EQ' : 'NULL'
+    })
   }
   return request({
     url: `${PREFIX_NODE}/search`,
@@ -36,19 +54,7 @@ export function searchNodes(projectId, repoName, path, page, size, detail = fals
       'page': { 'pageNumber': page, 'pageSize': size },
       'sort': { 'properties': ['folder', 'lastModifiedDate'], 'direction': 'DESC' },
       'rule': {
-        'rules': [
-          {
-            'field': 'projectId',
-            'value': projectId,
-            'operation': 'EQ'
-          },
-          {
-            'field': 'repoName',
-            'value': repoName,
-            'operation': 'EQ'
-          },
-          pathRule
-        ],
+        'rules': rules,
         'relation': 'AND'
       },
       select: select

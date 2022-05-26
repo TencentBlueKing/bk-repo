@@ -107,6 +107,7 @@
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item @click.native="showFileReferenceDetail(scope.row)">引用详情</el-dropdown-item>
               <el-dropdown-item @click.native="showNodesOfSha256(scope.row.sha256)">同引用文件</el-dropdown-item>
+              <el-dropdown-item @click.native="showScanDialog(scope.row)">扫描</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
           <el-button
@@ -123,12 +124,9 @@
             type="danger"
             @click="showNodeDelete(scope.$index, scope.row)"
           >删除</el-button>
-          <el-button
-            style="margin-left: 10px"
-            size="mini"
-            type="primary"
-            @click="showScanDialog(scope.row)"
-          >扫描</el-button>
+          <el-link v-if="!scope.row.folder" :underline="false" :href="downloadUrl(scope.row)" target="_blank">
+            <el-button style="margin-left: 10px" size="mini" type="primary">下载</el-button>
+          </el-link>
         </template>
       </el-table-column>
     </el-table>
@@ -156,7 +154,7 @@ import FileReferenceDialog from '@/views/node/components/FileReferenceDialog'
 import FileDetailDialog from '@/views/node/components/FileDetailDialog'
 import FileRestoreDialog from '@/views/node/components/FileRestoreDialog'
 import FileDeleteDialog from '@/views/node/components/FileDeleteDialog'
-import { listProjects } from '@/api/project'
+import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import FileScanDialog from '@/views/node/components/FileScanDialog'
 
@@ -167,8 +165,6 @@ export default {
     return {
       rules: {
         sha256: [{ validator: this.validateSha256, trigger: 'blur' }],
-        projectId: [{ validator: this.validateName, trigger: 'blur' }],
-        repoName: [{ validator: this.validateName, trigger: 'blur' }],
         path: [{ validator: this.validatePath, trigger: 'blur' }]
       },
       loading: false,
@@ -220,7 +216,7 @@ export default {
     },
     validatePath(rule, value, callback) {
       if (!this.nodes.useSha256) {
-        this.regexValidate(value, /^(\/|(\/[\w-~#\\.]+)+\/?)$/, callback)
+        this.regexValidate(value, /^(\/|(\/[^\/]+)+\/?)$/, callback)
       }
       callback()
     },
@@ -248,14 +244,10 @@ export default {
       this.$refs['form'].clearValidate()
     },
     queryProjects(queryStr, cb) {
-      if (!this.projects) {
-        listProjects().then(res => {
-          this.projects = res.data
-          cb(this.doFilter(this.projects, queryStr))
-        })
-      } else {
-        cb(this.doFilter(this.projects, queryStr))
-      }
+      searchProjects(queryStr).then(res => {
+        this.projects = res.data.records
+        cb(this.projects)
+      })
     },
     selectProject(project) {
       this.$refs['project-form-item'].resetField()
@@ -346,6 +338,9 @@ export default {
       }
       return ''
     },
+    downloadUrl(node) {
+      return `/web/repository/api/list/${node.projectId}/${node.repoName}${escape(node.fullPath)}`
+    },
     showNodeDetail(node) {
       this.nodeOfDetailDialog = node
       this.showNodeDetailDialog = true
@@ -376,7 +371,7 @@ export default {
       this.showNodeRestoreDialog = true
     },
     onRestoreSuccess(node) {
-      node.deleted = undefined
+      this.queryNodes(this.nodeQuery)
     },
     showNodeDelete(index, node) {
       this.nodeToDelete = node
@@ -384,12 +379,7 @@ export default {
       this.indexOfNodeToDelete = index
     },
     onDeleteSuccess() {
-      const projectId = this.nodeToDelete.projectId
-      const repoName = this.nodeToDelete.repoName
-      const fullPath = this.nodeToDelete.fullPath
-      searchNodes(projectId, repoName, fullPath, 1, 1).then(res => {
-        this.nodes.splice(this.indexOfNodeToDelete, 1, res.data.records[0])
-      })
+      this.queryNodes(this.nodeQuery)
     }
   }
 }

@@ -115,6 +115,10 @@ init:
       tag: 1.1.0
       pullPolicy: IfNotPresent
       pullSecrets: []
+  # 初始化bk-ci nav
+  entrance:
+    enabled: false
+    bkCiProjectInnerUrl:
 ## bkrepo公共配置
 common:
   # bkrepo镜像仓库全局配置, 具有最高优先级
@@ -190,9 +194,9 @@ gateway:
   ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式
   deployMode: standalone
   ## ci模式必填，蓝鲸paas域名
-  paasUrl: paas.example.com
+  bkPaasUrl: paas.example.com
   ## ci模式必填，登录地址
-  loginUrl: http://paas.example.com/login/
+  bkLoginUrl: http://paas.example.com/login/
   ## ci模式必填，ssm ip
   ssmIP0:
   ## ci模式必填，ssm host
@@ -479,7 +483,7 @@ docker:
   ## Kubernetes 通用配置
   image:
     registry: mirrors.tencent.com
-    repository: blueking/bkrepo-docker
+    repository: blueking/bkrepo-oci
     tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []

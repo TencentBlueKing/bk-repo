@@ -43,7 +43,8 @@ import com.tencent.bkrepo.oci.service.OciBlobService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -57,9 +58,14 @@ class OciBlobController(
 
     /**
      * 上传blob文件
-     * 分为两种情况：
+     * 分为两种情况：chunked/monolithic
+     * monolithic下载分为两种情况：
      * 1 当digest参数存在时，是使用single post直接上传文件
      * 2 当digest参数不存在时，使用post and put方式上传文件,此接口返回追加uuid
+     * chunked下载分为3步：
+     * 1 Obtain a session ID (upload URL) (POST)
+     * 2 Upload the chunks (PATCH)
+     * 3 Close the session (PUT)
      */
     @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
@@ -73,8 +79,13 @@ class OciBlobController(
     /**
      * 上传blob文件或者是完成上传，通过请求头[User-Agent]来判断
      * 如果正则匹配成功，则进行上传，执行完成则完成；否则使用的是追加上传的方式，完成最后一块的上传进行合并。
+     * Pushing a blob in chunks
+     * A chunked blob upload is accomplished in three phases:
+     * 1:Obtain a session ID (upload URL) (POST)
+     * 2:Upload the chunks (PATCH)
+     * 3:Close the session (PUT)
      */
-    @PutMapping(BOLBS_UPLOAD_SECOND_STEP_URL)
+    @RequestMapping(method = [RequestMethod.PUT, RequestMethod.PATCH], value = [BOLBS_UPLOAD_SECOND_STEP_URL])
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun uploadBlob(
         artifactInfo: OciBlobArtifactInfo,

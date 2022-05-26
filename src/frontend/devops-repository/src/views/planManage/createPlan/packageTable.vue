@@ -19,10 +19,7 @@
                 </bk-option>
             </bk-option-group>
         </bk-select>
-        <div v-show="!disabled && selectedRepoName" class="mt10 package-add flex-center" @click="showAddDialog = true">
-            <i class="mr5 devops-icon icon-plus-circle"></i>
-            添加制品
-        </div>
+        <bk-button v-show="!disabled && selectedRepoName" class="mt10" icon="plus" @click="showAddDialog = true">添加制品</bk-button>
         <div class="mt10 package-list" v-show="packageConstraints.length">
             <div class="pl10 pr10 package-item flex-between-center" v-for="(pkg, ind) in packageConstraints" :key="pkg.fid">
                 <div class="flex-align-center">
@@ -130,13 +127,6 @@
                 max-width: 250px;
             }
         }
-    }
-    .package-add {
-        width: 120px;
-        height: 32px;
-        color: var(--primaryColor);
-        background-color: var(--bgHoverColor);
-        cursor: pointer;
     }
 }
 </style>

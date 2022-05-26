@@ -15,7 +15,7 @@
                 class="ml10 w250"
                 @change="handlerPaginationChange()"
                 :placeholder="$t('allTypes')">
-                <bk-option v-for="type in repoEnum" :key="type" :id="type" :name="type">
+                <bk-option v-for="type in repoEnum.filter(r => r !== 'generic')" :key="type" :id="type" :name="type">
                     <div class="flex-align-center">
                         <Icon size="20" :name="type" />
                         <span class="ml10 flex-1 text-overflow">{{type}}</span>
@@ -46,18 +46,11 @@
             size="small"
             @row-click="toPackageList">
             <template #empty>
-                <empty-data
-                    :is-loading="isLoading"
-                    :search="Boolean(query.name || query.type)"
-                    :config="{
-                        imgSrc: '/ui/no-repo.png',
-                        title: '暂无仓库数据'
-                    }">
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(query.name || query.type)"></empty-data>
             </template>
-            <bk-table-column label="所属项目" show-overflow-tooltip>
+            <bk-table-column label="所属项目" show-overflow-tooltip width="200">
                 <template #default="{ row }">
-                    {{ (projectList.find(p => p.id === row.projectId) || {}).name || '--' }}
+                    {{ (projectList.find(p => p.id === row.projectId) || {}).name || '/' }}
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('repoName')" show-overflow-tooltip>
@@ -68,10 +61,10 @@
                     <span class="hover-btn">{{replaceRepoName(row.name)}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="150">
+            <bk-table-column :label="$t('createdDate')" width="250">
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdBy')" width="90">
+            <bk-table-column :label="$t('createdBy')" width="150">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
                 </template>

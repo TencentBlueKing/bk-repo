@@ -36,7 +36,7 @@ object OciLocationUtils {
     private val logger = LoggerFactory.getLogger(OciLocationUtils::class.java)
 
     fun buildManifestPath(packageName: String, tag: String): String {
-        return "/$packageName/$tag/manifest.json"
+        return "/$packageName/manifest/$tag/manifest.json"
     }
 
     fun buildDigestManifestPathWithReference(packageName: String, reference: String): String {
@@ -71,8 +71,24 @@ object OciLocationUtils {
         return returnLocation(digest, ociArtifactInfo, "manifest")
     }
 
+    fun blobPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo): String {
+        return returnPathLocation(digest, ociArtifactInfo, "blobs")
+    }
+
     fun blobLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo): String {
         return returnLocation(digest, ociArtifactInfo, "blobs")
+    }
+
+    fun manifestPathLocation(reference: String, ociArtifactInfo: OciArtifactInfo): String {
+        with(ociArtifactInfo) {
+            return "/$packageName/manifests/$reference"
+        }
+    }
+
+    private fun returnPathLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {
+        with(ociArtifactInfo) {
+            return "/$packageName/$type/$digest"
+        }
     }
 
     private fun returnLocation(digest: OciDigest, ociArtifactInfo: OciArtifactInfo, type: String): String {

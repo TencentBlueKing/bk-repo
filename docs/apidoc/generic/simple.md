@@ -194,3 +194,28 @@
     "traceId" : null
   }
   ```
+
+## 批量下载
+- API : GET /generic/batch/{project}/{repo}
+- API名称： batch download
+- 功能说明：
+   - 中文：批量下载通用制品文件
+   - English：batch download generic file
+- 请求body
+``` json
+{
+  "paths": ["/dir/file1", "/file2"]
+}
+```
+
+- 请求字段说明
+
+  |字段|类型|是否必须|默认值|说明|Description|
+  |---|---|---|---|---|---|
+  |project|string|是|无|项目名称|project name|
+  |repo|string|是|无|仓库名称|repo name|
+  |paths|list|是|无|文件完整路径，支持添加多个文件路径|full path list|
+
+
+- 响应体
+  [文件流]

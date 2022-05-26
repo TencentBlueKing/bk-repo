@@ -1,5 +1,3 @@
-@charset 'utf-8';
-// 存放常用变量
 :root {
     // 主题色
     --primaryWeightColor: #1F6ED4;
@@ -29,7 +27,8 @@
     --bgHoverLighterColor: #ebf2ff; // 10% 3a84ff
     --bgWeightColor: #F0F2F5;
     --primaryHoverColor: #619DFF;
-    --successBgColor: #D0EEDE; // 20% #14AB5B;
+    --successBgColor: #E7F6EE; // 10% #14AB5B;
     --warningBgColor: #FFF7EC;
+    --dangerBgColor: #FDEBEB; // 10% #EA3736;
 }
 

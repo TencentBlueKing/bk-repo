@@ -61,7 +61,7 @@ create_repo_project_name_init_plugintransfer_project_generic (){
                     echo "$ret. Repo project $i $j generic exist , ${ret}st check success"
                 else
                     echo "$ret. Repo project $i $j generic not exist , 1st create it now ......"
-                    curl -X POST "$REPO_CREATE_GENERIC_PATH" -u admin:password -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" -d '{"projectId": "'$i'", "name": "'$j'", "type":"GENERIC", "category":"LOCAL", "public":false, "configuration": {"type":"local"}, "description":"storage for devops ci '$j'"}'
+                    curl -X POST "$REPO_CREATE_GENERIC_PATH" -u admin:password -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" -d '{"projectId": "'$i'", "name": "'$j'", "type":"GENERIC", "category":"LOCAL", "public":true, "configuration": {"type":"local"}, "description":"storage for devops ci '$j'"}'
                     if [[ ! -z $(curl -s -XGET "$REPO_QUERY_GENERIC_PATH"/$i/$j/generic -u admin:password|grep projectId) ]] ; then
                         echo "$ret. Repo project $i $j generic ${ret}st create success"
                     else
@@ -81,7 +81,7 @@ create_repo_project_name_init_plugintransfer_project_generic (){
                 for j in plugin static
                 do  
                     ((ret++))
-                    curl -X POST "$REPO_CREATE_GENERIC_PATH" -u admin:password -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" -d '{"projectId": "'$i'", "name": "'$j'", "type":"GENERIC", "category":"LOCAL", "public":false, "configuration": {"type":"local"}, "description":"storage for devops ci '$j'"}'
+                    curl -X POST "$REPO_CREATE_GENERIC_PATH" -u admin:password -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" -d '{"projectId": "'$i'", "name": "'$j'", "type":"GENERIC", "category":"LOCAL", "public":true, "configuration": {"type":"local"}, "description":"storage for devops ci '$j'"}'
                     if [[ ! -z $(curl -s -XGET "$REPO_QUERY_GENERIC_PATH"/$i/$j/generic -u admin:password|grep projectId) ]] ; then
                         echo "$ret. Repo project $i $j generic ${ret}nd create success"
                     else

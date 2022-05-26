@@ -37,6 +37,5 @@ dependencies {
     api(project(":repository:api-repository"))
     implementation("com.google.guava:guava")
     api(project(":common:common-redis"))
-    implementation("cn.hutool:hutool-crypto:5.5.4")
     implementation("org.apache.httpcomponents:httpclient")
 }

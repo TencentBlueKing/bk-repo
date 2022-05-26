@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
+import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -181,9 +182,10 @@ open class DefaultArtifactResourceWriter(
         if (request.method == HttpMethod.HEAD.name) {
             return Throughput.EMPTY
         }
+        val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
-                inputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
                     it.copyTo(
                         out = response.outputStream,
                         bufferSize = getBufferSize(inputStream.range.length.toInt())
@@ -218,8 +220,9 @@ open class DefaultArtifactResourceWriter(
                 zipOutput.setMethod(ZipOutputStream.DEFLATED)
                 zipOutput.use {
                     resource.artifactMap.forEach { (name, inputStream) ->
+                        val recordAbleInputStream = RecordAbleInputStream(inputStream)
                         zipOutput.putNextEntry(generateZipEntry(name, inputStream))
-                        inputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                        recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
                             it.copyTo(
                                 out = zipOutput,
                                 bufferSize = getBufferSize(inputStream.range.length.toInt())

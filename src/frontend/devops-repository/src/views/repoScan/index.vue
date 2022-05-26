@@ -30,32 +30,13 @@
             row-key="id"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(scanName)">
-                    <template v-if="!scanName">
-                        <span class="ml10">暂无扫描方案，</span>
-                        <bk-button text @click="showCreateDialog">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(scanName)"></empty-data>
             </template>
             <bk-table-column label="方案名称" prop="name" show-overflow-tooltip></bk-table-column>
             <bk-table-column label="扫描类型">
                 <template #default="{ row }">{{ scanTypeEnum[row.planType] }}</template>
             </bk-table-column>
             <!-- <bk-table-column label="扫描器" prop="scanner" show-overflow-tooltip></bk-table-column> -->
-            <bk-table-column
-                v-for="column in [
-                    { label: '累计扫描制品', prop: 'artifactCount' },
-                    { label: '危急漏洞', prop: 'critical' },
-                    { label: '高风险漏洞', prop: 'high' },
-                    { label: '中风险漏洞', prop: 'medium' },
-                    { label: '低风险漏洞', prop: 'low' }
-                ]"
-                :key="column.prop"
-                :label="column.label"
-                :prop="column.prop"
-                align="right">
-                <template #default="{ row }">{{ segmentNumberThree(row[column.prop]) }}</template>
-            </bk-table-column>
             <bk-table-column label="扫描状态">
                 <template #default="{ row }">
                     <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
@@ -70,6 +51,7 @@
                         :list="[
                             { label: '报告', clickEvent: () => showScanReport(row) },
                             { label: '设置', clickEvent: () => showScanConfig(row) },
+                            // { label: '中止', clickEvent: () => stopScanHandler(row) },
                             { label: '扫描', clickEvent: () => startScanHandler(row) },
                             { label: '删除', clickEvent: () => deleteScanHandler(row) }
                         ]"></operation-list>
@@ -95,7 +77,7 @@
     import OperationList from '@repository/components/OperationList'
     import createScanDialog from './createScanDialog'
     import { mapState, mapActions } from 'vuex'
-    import { formatDate, segmentNumberThree } from '@repository/utils'
+    import { formatDate } from '@repository/utils'
     import { scanTypeEnum, scanStatusEnum } from '@repository/store/publicEnum'
     export default {
         name: 'plan',
@@ -127,7 +109,6 @@
         },
         methods: {
             formatDate,
-            segmentNumberThree,
             ...mapActions([
                 'getScanList',
                 'deleteScan'
@@ -212,6 +193,23 @@
                     },
                     query: {
                         scanName: name
+                    }
+                })
+            },
+            stopScanHandler ({ id, name }) {
+                this.$confirm({
+                    theme: 'danger',
+                    message: `确认中止扫描计划 ${name} 的全部扫描任务?`,
+                    confirmFn: () => {
+                        // return this.deletePlan({
+                        //     id
+                        // }).then(() => {
+                        //     this.handlerPaginationChange()
+                        //     this.$bkMessage({
+                        //         theme: 'success',
+                        //         message: '删除计划' + this.$t('success')
+                        //     })
+                        // })
                     }
                 })
             }

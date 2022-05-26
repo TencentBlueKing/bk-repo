@@ -3,6 +3,7 @@
         <bk-select class="select-container"
             :value="select"
             :clearable="false"
+            :disabled="disabled"
             @change="s => change('select', s)">
             <bk-option
                 v-for="option in selectList"
@@ -27,6 +28,7 @@
             select: String,
             input: String,
             placeholder: String,
+            disabled: Boolean,
             selectId: {
                 type: String,
                 default: 'id'

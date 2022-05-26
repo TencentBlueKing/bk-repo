@@ -68,7 +68,7 @@ create_repo_project_name_new (){
                 echo "$((y++)). Repo project $i $j generic exist , 1st check success"
             else
                 echo "$((y++)). Repo project $i $j generic not exist , 1st create it now ......"
-                curl -s -X POST "$REPO_CREATE_GENERIC_PATH" -u admin:password -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" -d '{"projectId": "'$i'", "name": "'$j'", "type":"GENERIC", "category":"LOCAL", "public":true, "configuration": {"type":"local"}, "description":"storage for devops ci '$j'"}'
+                curl -s -X POST "$REPO_CREATE_GENERIC_PATH" -u admin:password -H "X-BKREPO-UID: admin" -H "Content-Type: application/json" -d '{"projectId": "'$i'", "name": "'$j'", "type":"GENERIC", "category":"LOCAL", "public":false, "configuration": {"type":"local"}, "description":"storage for devops ci '$j'"}'
                 if [[ ! -z $(curl -s -XGET "$REPO_QUERY_GENERIC_PATH"/$i/$j/generic -u admin:password|grep projectId) ]] ; then
                     echo "${y}. Repo project $i $j generic 2nd create success"
                 else

@@ -31,12 +31,7 @@
             :row-border="false"
             size="small">
             <template #empty>
-                <empty-data :is-loading="isLoading" :search="Boolean(search.name || search.type)">
-                    <template v-if="!Boolean(search.name || search.type)">
-                        <span class="ml10">暂无节点数据，</span>
-                        <bk-button text @click="showCreateNode">即刻创建</bk-button>
-                    </template>
-                </empty-data>
+                <empty-data :is-loading="isLoading" :search="Boolean(search.name || search.type)"></empty-data>
             </template>
             <bk-table-column label="状态" width="100">
                 <template #default="{ row }">
@@ -63,7 +58,7 @@
                         :list="[
                             // { label: '编辑', clickEvent: () => showEditNode(row) },
                             { label: '删除', clickEvent: () => deleteClusterHandler(row) }
-                        ].filter(Boolean)">
+                        ]">
                     </operation-list>
                 </template>
             </bk-table-column>
