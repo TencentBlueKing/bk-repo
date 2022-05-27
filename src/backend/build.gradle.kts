@@ -72,7 +72,20 @@ allprojects {
         }
         dependsOn(tasks.getByName("test"))
     }
+
+    if (isBootProject(this)) {
+        tasks.named("copyToRelease") {
+            dependsOn(tasks.named("bootJar"))
+        }
+    }
+
 }
+
+fun isBootProject(project: Project): Boolean {
+    return project.name.startsWith("boot-") || project.findProperty("devops.boot") == "true"
+}
+
+
 
 apply(from = rootProject.file("gradle/publish-api.gradle.kts"))
 apply(from = rootProject.file("gradle/publish-all.gradle.kts"))
