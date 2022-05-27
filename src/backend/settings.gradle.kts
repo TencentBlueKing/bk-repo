@@ -34,6 +34,8 @@ rootProject.name = "bk-repo-backend"
 pluginManagement {
     repositories {
         mavenLocal()
+        maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
+        maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
         gradlePluginPortal()
         mavenCentral()
     }
@@ -56,7 +58,6 @@ includeAll(":common:common-storage")
 includeAll(":common:common-query")
 includeAll(":common:common-artifact")
 includeAll(":common:common-notify")
-includeAll(":common:common-plugin")
 includeAll(":common:common-operate")
 includeAll(":composer")
 includeAll(":docker")

@@ -25,13 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:${Versions.DockerJava}")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:${Versions.DockerJava}")
-}
+package com.tencent.bkrepo.common.service.feign
+
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
+import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JAutoConfiguration
+import org.springframework.cloud.openfeign.FeignClientsConfiguration
+
+/**
+ * 需要配置FeignClientsConfiguration在Resilience4JAutoConfiguration之后配置feign才会使用resilience4j进行熔断隔离
+ */
+@AutoConfigureAfter(Resilience4JAutoConfiguration::class)
+class CustomFeignClientsConfiguration: FeignClientsConfiguration()

@@ -25,13 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:${Versions.DockerJava}")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:${Versions.DockerJava}")
+package com.tencent.bkrepo.common.service.exception
+
+import java.util.function.Predicate
+
+/**
+ * test返回true的异常才会被记录为失败数，否则增加成功数，失败数达到阈值后resilience4j会熔断
+ */
+class Resilience4jRecordFailurePredicate : Predicate<Throwable> {
+    override fun test(throwable: Throwable): Boolean {
+        return throwable !is RemoteErrorCodeException
+    }
 }

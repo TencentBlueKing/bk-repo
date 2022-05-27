@@ -25,13 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-dependencies {
-    implementation(project(":scanner:api-scanner"))
-    implementation(project(":common:common-service"))
-    implementation(project(":common:common-security"))
-    implementation(project(":common:common-mongo"))
-    implementation(project(":common:common-storage:storage-service"))
-    implementation("commons-io:commons-io")
-    implementation("com.github.docker-java:docker-java:${Versions.DockerJava}")
-    implementation("com.github.docker-java:docker-java-transport-okhttp:${Versions.DockerJava}")
+object Release {
+    const val Group = "com.tencent.bkrepo"
+    const val Version = "1.0.0-SNAPSHOT"
+}
+
+object Versions {
+    const val DevopsBoot = "0.0.6-SNAPSHOT"
+    const val Netty = "4.1.77.Final"
+    const val SpringCloudCircuitbreaker = "2.1.2"
+    const val Jersey = "2.35"
+    const val Jsoup = "1.15.1"
+    const val Redline = "1.2.10"
+    const val SkyWalkingApmToolkit = "8.10.0"
+    const val Gson = "2.9.0"
+    const val ProtobufJava = "3.19.4"
+    const val Guava = "31.1-jre"
+    const val Shedlock = "4.12.0"
+    const val JGit = "5.11.0.202103091610-r"
+    const val JavaSemver = "0.9.0"
+    const val CommonsCompress = "1.21"
+    const val CommonsIO = "2.11.0"
+    const val Polaris = "1.5.2"
+    const val CommonsText = "1.9"
+    const val EmbeddedRedis = "0.7.3"
+    const val JMH = "0.5.3"
+    const val HutoolCrypto = "5.5.4"
+    const val JSR311API = "1.1.1"
+    const val MAVEN = "3.8.2"
+    const val MavenArtifact = "3.8.3"
+    const val MockitoKotlin = "4.0.0"
+    const val XStream = "1.4.19"
+    const val DockerJava = "3.2.13"
 }
