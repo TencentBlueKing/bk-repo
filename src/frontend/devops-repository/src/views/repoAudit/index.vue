@@ -94,7 +94,7 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    const nowTime = new Date()
+    const nowTime = new Date(`${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate() + 1}`)
     export default {
         name: 'audit',
         data () {
