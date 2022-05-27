@@ -45,5 +45,5 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-s3")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    implementation("com.tencent.polaris:polaris-discovery-factory:1.5.2")
+    implementation("com.tencent.polaris:polaris-discovery-factory")
 }

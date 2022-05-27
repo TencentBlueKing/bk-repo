@@ -42,5 +42,5 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-aop")
     api("io.micrometer:micrometer-registry-prometheus")
     api("org.influxdb:influxdb-java")
-    api("org.apache.commons:commons-text:1.9")
+    api("org.apache.commons:commons-text")
 }
