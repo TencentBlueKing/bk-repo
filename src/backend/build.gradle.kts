@@ -57,6 +57,7 @@ allprojects {
             dependency("com.google.protobuf:protobuf-java-util:${Versions.ProtobufJava}")
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
+            dependency("org.mockito.kotlin:mockito-kotlin:${Versions.MockitoKotlin}")
         }
     }
     ext["netty.version"] = Versions.Netty

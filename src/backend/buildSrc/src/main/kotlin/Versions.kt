@@ -48,4 +48,13 @@ object Versions {
     const val CommonsIO = "2.11.0"
     const val Polaris = "1.5.2"
     const val CommonsText = "1.9"
+    const val EmbeddedRedis = "0.7.3"
+    const val JMH = "0.5.3"
+    const val HutoolCrypto = "5.5.4"
+    const val JSR311API = "1.1.1"
+    const val MAVEN = "3.8.2"
+    const val MavenArtifact = "3.8.3"
+    const val MockitoKotlin = "4.0.0"
+    const val XStream = "1.4.19"
+    const val DockerJava = "3.2.13"
 }
