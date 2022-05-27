@@ -169,5 +169,15 @@ class ArtifactMetrics(
                 .tags(tagProvider.getTags(inputStream))
                 .register(meterRegistry)
         }
+
+        /**
+         * 获取下载失败计数器
+         */
+        fun getDownloadFailedCounter(): Counter {
+            return Counter.builder(ARTIFACT_DOWNLOAD_FAILED_COUNT)
+                .description(ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC)
+                .tags(tagProvider.getTags())
+                .register(meterRegistry)
+        }
     }
 }

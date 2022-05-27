@@ -29,40 +29,36 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.helm.controller.service
 
-import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
-import com.tencent.bkrepo.common.storage.core.StorageProperties
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxProperties
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.helm.api.HelmClient
+import com.tencent.bkrepo.helm.listener.consumer.RemoteEventJobExecutor
+import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import org.springframework.web.bind.annotation.RestController
 
-@Configuration
-@Import(
-    ArtifactMetrics::class,
-    ArtifactWebMvcTagsContributor::class
-)
-@EnableConfigurationProperties(ArtifactMetricsProperties::class)
-class ArtifactMetricsConfiguration {
+@RestController
+class HelmIndexController(
+    private val remoteEventJobExecutor: RemoteEventJobExecutor
+) : HelmClient {
 
-    @Bean
-    @ConditionalOnBean(InfluxProperties::class)
-    fun influxMetricsExporter(
-        influxProperties: InfluxProperties,
-        commonTagProvider: ObjectProvider<CommonTagProvider>
-    ): InfluxMetricsExporter {
-        return InfluxMetricsExporter(influxProperties, commonTagProvider)
+    /**
+     * refresh index.yaml and package info for remote
+     */
+    override fun refreshIndexYamlAndPackage(projectId: String, repoName: String): Response<Void> {
+        val refreshEvent = ObjectBuilderUtil.buildRefreshEvent(projectId, repoName, SecurityUtils.getUserId())
+        remoteEventJobExecutor.execute(refreshEvent)
+        return ResponseBuilder.success()
     }
 
-    @Bean
-    fun artifactTagProvider(
-        storageProperties: StorageProperties,
-        artifactMetricsProperties: ArtifactMetricsProperties
-    ): ArtifactTransferTagProvider {
-        return DefaultArtifactTagProvider(storageProperties, artifactMetricsProperties)
+    /**
+     * init index.yaml and package info for remote
+     */
+    override fun initIndexAndPackage(projectId: String, repoName: String): Response<Void> {
+        val createEvent = ObjectBuilderUtil.buildCreatedEvent(projectId, repoName, SecurityUtils.getUserId())
+        remoteEventJobExecutor.execute(createEvent)
+        return ResponseBuilder.success()
     }
 }
