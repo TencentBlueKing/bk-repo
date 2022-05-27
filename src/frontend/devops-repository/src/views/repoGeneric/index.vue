@@ -43,7 +43,7 @@
                                 item.roadMap !== '0' && { clickEvent: () => showDetail(item), label: $t('detail') },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => addFolder(item), label: '新建文件夹' },
                                 permission.write && repoName !== 'pipeline' && { clickEvent: () => handlerUpload(item), label: '上传文件' }
-                            ].filter(Boolean)">
+                            ]">
                         </operation-list>
                     </template>
                 </repo-tree>
@@ -134,7 +134,7 @@
                                     permission.write && repoName !== 'pipeline' && { clickEvent: () => copyRes(row), label: $t('copy') },
                                     !row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name) && { clickEvent: () => handlerScan(row), label: '安全扫描' },
                                     permission.delete && repoName !== 'pipeline' && { clickEvent: () => deleteRes(row), label: $t('delete') }
-                                ].filter(Boolean)">
+                                ]">
                             </operation-list>
                         </template>
                     </bk-table-column>

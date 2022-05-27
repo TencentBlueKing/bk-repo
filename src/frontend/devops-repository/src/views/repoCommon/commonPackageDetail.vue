@@ -46,7 +46,7 @@
                                     repoType === 'maven' && { label: '安全扫描', clickEvent: () => scanPackageHandler($version) },
                                     repoType !== 'docker' && { label: '下载', clickEvent: () => downloadPackageHandler($version) },
                                     permission.delete && { label: '删除', clickEvent: () => deleteVersionHandler($version) }
-                                ].filter(Boolean)"></operation-list>
+                                ]"></operation-list>
                         </div>
                     </infinite-scroll>
                 </div>

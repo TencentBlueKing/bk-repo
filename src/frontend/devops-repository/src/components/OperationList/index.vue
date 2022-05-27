@@ -1,7 +1,7 @@
 <template>
     <bk-popover
         :class="{ 'operation-trigger': !Object.keys($slots).length }"
-        :style="list.length ? '' : 'display:none;'"
+        :style="filterList.length ? '' : 'display:none;'"
         placement="bottom-end"
         theme="light"
         ext-cls="operation-container"
@@ -10,7 +10,7 @@
             <i @click.stop="() => {}" class="devops-icon icon-more flex-center hover-btn"></i>
         </slot>
         <template #content><ul class="operation-list">
-            <li v-for="li in list" :key="li.label"
+            <li v-for="li in filterList" :key="li.label"
                 class="operation-item"
                 :class="{ 'disabled': li.disabled }"
                 @click.stop="li.clickEvent()">
@@ -26,6 +26,11 @@
             list: {
                 type: Array,
                 default: () => []
+            }
+        },
+        computed: {
+            filterList () {
+                return this.list.filter(Boolean)
             }
         }
     }
