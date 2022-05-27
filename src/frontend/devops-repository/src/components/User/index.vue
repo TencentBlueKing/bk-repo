@@ -38,7 +38,7 @@
                     'userCenter',
                     'repoToken'
                     // 'repoHelp'
-                ].filter(Boolean)
+                ]
             }
         },
         methods: {
