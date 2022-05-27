@@ -279,7 +279,13 @@ class RepositoryServiceImpl(
             }
             repositoryDao.save(repository)
         }
-        publishEvent(buildUpdatedEvent(repoUpdateRequest))
+        val event = buildUpdatedEvent(repoUpdateRequest)
+        publishEvent(event)
+        eventSupplier.delegateToSupplier(
+            event = event,
+            topic = event.topic,
+            key = event.getFullResourceKey()
+        )
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 

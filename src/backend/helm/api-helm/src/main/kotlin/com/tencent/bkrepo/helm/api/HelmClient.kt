@@ -29,46 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.controller
+package com.tencent.bkrepo.helm.api
 
+import com.tencent.bkrepo.common.api.constant.HELM_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
-import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
-import com.tencent.bkrepo.helm.service.FixToolService
+import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
-import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RequestMapping
 
-@RestController
-class HelmFixToolController(
-    private val fixToolService: FixToolService
-) {
-    @ApiOperation("修复package管理功能")
-    @GetMapping("/ext/package/populate")
-    fun fixPackageVersion(): List<PackageManagerResponse> {
-        return fixToolService.fixPackageVersion()
-    }
+/**
+ * helm代理仓库刷新接口
+ */
+@Api("helm代理仓库刷新接口")
+@Primary
+@FeignClient(HELM_SERVICE_NAME, contextId = "HelmClient")
+@RequestMapping("/service/index")
+interface HelmClient {
 
-    @ApiOperation("修复index.yaml文件中的制品包创建时间问题")
-    @GetMapping("/ext/repairDateFormat")
-    fun repairPackageCreatedDate(): Response<List<DateTimeRepairResponse>> {
-        return ResponseBuilder.success(fixToolService.repairPackageCreatedDate())
-    }
+    @ApiOperation("刷新对应代理仓库的index文件以及package信息")
+    @PostMapping("/{projectId}/{repoName}/refresh")
+    fun refreshIndexYamlAndPackage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Void>
 
-    /**
-     * regenerate meta data from Chart.yaml
-     */
-    @PostMapping("/{projectId}/{repoName}/metaDate/regenerate")
-    fun regenerateMetaData(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: HelmArtifactInfo
-    ): Response<Void> {
-        fixToolService.metaDataRegenerate(userId, artifactInfo)
-        return ResponseBuilder.success()
-    }
+    @ApiOperation("初始化代理仓库的index文件以及package信息")
+    @PostMapping("/{projectId}/{repoName}/init")
+    fun initIndexAndPackage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Void>
 }

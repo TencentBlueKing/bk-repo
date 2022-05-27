@@ -435,7 +435,23 @@ open class AbstractChartService : ArtifactService() {
     ): HelmIndexYamlMetadata? {
         logger.info("Will start to get index.yaml for repo [$projectId/$repoName]...")
         val repoDetail = checkRepo(projectId, repoName) ?: return null
-        val originalIndexYamlMetadata = when (repoDetail.configuration) {
+        val originalIndexYamlMetadata = getIndex(repoDetail)
+        originalIndexYamlMetadata?.let {
+            storeIndex(
+                indexYamlMetadata = originalIndexYamlMetadata,
+                projectId = projectId,
+                repoName = repoName,
+                userId = userId
+            )
+        }
+        return originalIndexYamlMetadata
+    }
+
+    /**
+     * 根据仓库类型获取对应index文件
+     */
+    fun getIndex(repoDetail: RepositoryDetail): HelmIndexYamlMetadata? {
+        return when (repoDetail.configuration) {
             is CompositeConfiguration -> {
                 val config = repoDetail.configuration as CompositeConfiguration
                 forEachProxyRepo(config.proxy.channelList, repoDetail)
@@ -458,16 +474,25 @@ open class AbstractChartService : ArtifactService() {
                 null
             }
         }
-        originalIndexYamlMetadata?.let {
-            val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
-                indexYamlMetadata = originalIndexYamlMetadata,
-                projectId = projectId,
-                repoName = repoName,
-                operator = userId
-            )
-            uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
-        }
-        return originalIndexYamlMetadata
+    }
+
+    /**
+     * 存储获取的index文件
+     */
+    fun storeIndex(
+        indexYamlMetadata: HelmIndexYamlMetadata,
+        projectId: String,
+        repoName: String,
+        userId: String = SecurityUtils.getUserId()
+    ) {
+        logger.info("Index file will be stored in repo $projectId|$repoName")
+        val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
+            indexYamlMetadata = indexYamlMetadata,
+            projectId = projectId,
+            repoName = repoName,
+            operator = userId
+        )
+        uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
     }
 
     /**
