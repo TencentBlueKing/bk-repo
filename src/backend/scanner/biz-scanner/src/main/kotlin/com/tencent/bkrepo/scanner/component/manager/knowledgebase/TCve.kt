@@ -102,7 +102,7 @@ data class TCve(
     /**
      * 漏洞年份
      */
-    val cveYear: String,
+    val cveYear: String? = null,
 
     /**
      * poc id

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.component.manager.dependencycheck.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
 import com.tencent.bkrepo.scanner.component.manager.ResultItem
 import org.springframework.data.mongodb.core.mapping.Document
 
@@ -37,5 +36,28 @@ class TDependencyItem(
     credentialsKey: String?,
     sha256: String,
     scanner: String,
-    data: DependencyItem
-) : ResultItem<DependencyItem>(id, credentialsKey, sha256, scanner, data)
+    data: TDependencyItemData
+) : ResultItem<TDependencyItemData>(id, credentialsKey, sha256, scanner, data)
+
+data class TDependencyItemData(
+    /**
+     * 文件路径
+     */
+    val path: String,
+    /**
+     * 组件名
+     */
+    val component: String,
+    /**
+     * 组件版本
+     */
+    val versions: Set<String> = emptySet(),
+    /**
+     * 漏洞id
+     */
+    val cveId: String = "",
+    /**
+     * 等级， CRITICAL,HIGH,MEDIUM,LOW
+     */
+    val severity: String
+)

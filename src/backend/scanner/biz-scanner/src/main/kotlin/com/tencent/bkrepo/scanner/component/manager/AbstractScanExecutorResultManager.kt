@@ -25,29 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.dependencycheck.dao
+package com.tencent.bkrepo.scanner.component.manager
 
-import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
-import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItem
-import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItemData
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.inValues
-import org.springframework.stereotype.Repository
-
-@Repository
-class DependencyItemDao : ResultItemDao<TDependencyItem>() {
-    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
-        require(arguments is DependencyLoadResultArguments)
-        if (arguments.vulnerabilityLevels.isNotEmpty()) {
-            criteria.and(dataKey(TDependencyItemData::severity.name)).inValues(arguments.vulnerabilityLevels)
-        }
-        if (arguments.vulIds.isNotEmpty()) {
-            criteria.and(dataKey(TDependencyItemData::cveId.name)).inValues(arguments.vulIds)
-        }
-        return criteria
+abstract class AbstractScanExecutorResultManager : ScanExecutorResultManager{
+    protected inline fun <T, reified R : ResultItem<T>> convert(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        data: T
+    ): R {
+        return R::class.java.constructors[0].newInstance(null, credentialsKey, sha256, scanner, data) as R
     }
 
-    private fun dataKey(name: String) = "${TDependencyItem::data.name}.$name"
+    /**
+     * 替换同一文件使用同一扫描器原有的扫描结果
+     */
+    protected fun <T : ResultItem<*>, D : ResultItemDao<T>> replace(
+        credentialsKey: String?,
+        sha256: String,
+        scanner: String,
+        resultItemDao: D,
+        resultItems: List<T>
+    ) {
+        resultItemDao.deleteBy(credentialsKey, sha256, scanner)
+        resultItemDao.insert(resultItems)
+    }
 }

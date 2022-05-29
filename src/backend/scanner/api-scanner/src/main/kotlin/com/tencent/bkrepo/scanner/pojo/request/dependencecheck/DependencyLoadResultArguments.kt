@@ -39,8 +39,6 @@ data class DependencyLoadResultArguments(
     val vulIds: List<String> = emptyList(),
     @ApiModelProperty("需要的漏洞严重性等级列表")
     val vulnerabilityLevels: List<String> = emptyList(),
-    @ApiModelProperty("扫描结果类型")
-    val reportType: String,
     @ApiModelProperty("分页参数")
     val pageLimit: PageLimit = PageLimit()
 ) : LoadResultArguments(DependencyScanner.TYPE)

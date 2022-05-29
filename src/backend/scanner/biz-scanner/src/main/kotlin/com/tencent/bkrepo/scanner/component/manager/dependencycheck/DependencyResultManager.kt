@@ -34,11 +34,11 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
-import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
-import com.tencent.bkrepo.scanner.component.manager.ResultItem
+import com.tencent.bkrepo.scanner.component.manager.AbstractScanExecutorResultManager
 import com.tencent.bkrepo.scanner.component.manager.dependencycheck.dao.DependencyItemDao
 import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItem
+import com.tencent.bkrepo.scanner.component.manager.knowledgebase.KnowledgeBase
+import com.tencent.bkrepo.scanner.component.manager.knowledgebase.TCve
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
@@ -49,8 +49,9 @@ import org.springframework.transaction.annotation.Transactional
 
 @Component(DependencyScanner.TYPE)
 class DependencyResultManager @Autowired constructor(
-    private val dependencyItemDao: DependencyItemDao
-) : ScanExecutorResultManager {
+    private val dependencyItemDao: DependencyItemDao,
+    private val knowledgeBase: KnowledgeBase
+) : AbstractScanExecutorResultManager() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun save(
@@ -63,10 +64,7 @@ class DependencyResultManager @Autowired constructor(
         result as DependencyScanExecutorResult
         scanner as DependencyScanner
         val scannerName = scanner.name
-
-        result.dependencyItems
-            .map { convert<DependencyItem, TDependencyItem>(credentialsKey, sha256, scannerName, it) }
-            .run { replace(credentialsKey, sha256, scannerName, dependencyItemDao, this) }
+        replace(credentialsKey, sha256, scannerName, result.dependencyItems)
     }
 
     override fun load(
@@ -78,33 +76,40 @@ class DependencyResultManager @Autowired constructor(
         logger.debug("DependencyCheck load, arguments:${arguments?.toJsonString()}")
         scanner as DependencyScanner
         arguments as DependencyLoadResultArguments
-        val pageLimit = arguments.pageLimit
-        val page = dependencyItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
-
-        return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
+        val page = dependencyItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
+        val pocIds = page.records.map { Converter.pocIdOf(it.data.cveId) }
+        val cveMap = knowledgeBase.findByPocId(pocIds).associateBy { it.pocId }
+        val records = page.records.map { Converter.convert(it, cveMap[Converter.pocIdOf(it.data.cveId)]!!) }
+        return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
     }
 
-    private inline fun <T, reified R : ResultItem<T>> convert(
+    private fun replace(
         credentialsKey: String?,
         sha256: String,
         scanner: String,
-        data: T
-    ): R {
-        return R::class.java.constructors[0].newInstance(null, credentialsKey, sha256, scanner, data) as R
-    }
-
-    /**
-     * 替换同一文件使用同一扫描器原有的扫描结果
-     */
-    private fun <T : ResultItem<*>, D : ResultItemDao<T>> replace(
-        credentialsKey: String?,
-        sha256: String,
-        scanner: String,
-        resultItemDao: D,
-        resultItems: List<T>
+        dependencyItems: List<DependencyItem>
     ) {
-        resultItemDao.deleteBy(credentialsKey, sha256, scanner)
-        resultItemDao.insert(resultItems)
+        val cveSet = HashSet<TCve>(dependencyItems.size)
+        val tDependencyItems = ArrayList<TDependencyItem>(dependencyItems.size)
+
+        dependencyItems
+            .asSequence()
+            .forEach {
+                cveSet.add(Converter.convertToCve(it))
+                tDependencyItems.add(
+                    TDependencyItem(
+                        credentialsKey = credentialsKey,
+                        sha256 = sha256,
+                        scanner = scanner,
+                        data = Converter.convert(it)
+                    )
+                )
+            }
+
+        if (cveSet.isNotEmpty()) {
+            knowledgeBase.saveCve(cveSet)
+        }
+        replace(credentialsKey, sha256, scanner, dependencyItemDao, tDependencyItems)
     }
 
     companion object {

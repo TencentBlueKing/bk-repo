@@ -43,9 +43,17 @@ class CveDao : ScannerSimpleMongoDao<TCve>() {
         return findOne(query)
     }
 
+    fun findByPocId(pocId: String): TCve? {
+        return findOne(Query(TCve::pocId.isEqualTo(pocId)))
+    }
+
     fun findByCveIds(cveIds: Collection<String>): List<TCve> {
         val query = Query(TCve::cveId.inValues(cveIds))
         return find(query)
+    }
+
+    fun findByPocIds(pocIds: Collection<String>): List<TCve> {
+        return find(Query(TCve::pocId.inValues(pocIds)))
     }
 
     fun saveIfNotExists(cve: TCve) {

@@ -68,7 +68,6 @@ class DependencyCheckConverter : ScannerConverter {
         return DependencyLoadResultArguments(
             vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
             vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
-            reportType = request.reportType,
             pageLimit = PageLimit(request.pageNumber, request.pageSize)
         )
     }

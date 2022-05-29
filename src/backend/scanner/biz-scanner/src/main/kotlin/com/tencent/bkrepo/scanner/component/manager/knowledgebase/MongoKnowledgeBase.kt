@@ -62,7 +62,15 @@ open class MongoKnowledgeBase(
         return cveDao.findByCveId(cveId)
     }
 
+    override fun findByPocId(pocId: String): TCve? {
+        return cveDao.findByPocId(pocId)
+    }
+
     override fun findCve(cveIds: Collection<String>): List<TCve> {
         return cveDao.findByCveIds(cveIds)
+    }
+
+    override fun findByPocId(pocIds: Collection<String>): List<TCve> {
+        return cveDao.findByPocIds(pocIds)
     }
 }
