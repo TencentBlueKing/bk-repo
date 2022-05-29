@@ -25,14 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
+package com.tencent.bkrepo.scanner.component.manager
 
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
 import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -50,7 +49,7 @@ abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
         sha256: String,
         scanner: String,
         pageLimit: PageLimit,
-        arguments: ArrowheadLoadResultArguments
+        arguments: LoadResultArguments
     ): Page<T> {
         val pageable = PageRequest.of(pageLimit.pageNumber - 1, pageLimit.pageSize)
         val criteria = buildCriteria(credentialsKey, sha256, scanner)
@@ -61,7 +60,7 @@ abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
         return Page(pageLimit.pageNumber, pageLimit.pageSize, total, data)
     }
 
-    protected open fun customizePageBy(criteria: Criteria, arguments: ArrowheadLoadResultArguments): Criteria {
+    protected open fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
         return criteria
     }
 

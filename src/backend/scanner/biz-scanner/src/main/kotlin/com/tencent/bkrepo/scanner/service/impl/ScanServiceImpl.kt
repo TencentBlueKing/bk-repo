@@ -37,16 +37,13 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
+import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
@@ -105,6 +102,7 @@ class ScanServiceImpl @Autowired constructor(
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
+    private val scannerConverters: Map<String, ScannerConverter>,
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val publisher: ApplicationEventPublisher,
@@ -465,17 +463,18 @@ class ScanServiceImpl @Autowired constructor(
         with(request) {
             val subtask = planArtifactLatestSubScanTaskDao.findById(subScanTaskId!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
+
             permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
-            reportType = when (subtask.scannerType) {
-                ArrowheadScanner.TYPE -> CveSecItem.TYPE
-                DependencyScanner.TYPE -> DependencyItem.TYPE
-                else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, subtask.scannerType)
-            }
+
             val scanner = scannerService.get(subtask.scanner)
-            val arguments = Converter.convertToLoadArguments(request, scanner.type)
+            val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)]
+            val arguments = scannerConverter?.convertToLoadArguments(request)
             val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
             val detailReport = scanResultManager?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
-            return Converter.convert(detailReport, subtask.scannerType, reportType, pageNumber, pageSize)
+
+            return detailReport
+                ?.let { scannerConverter?.convertCveResult(it) }
+                ?: Pages.buildPage(emptyList(), pageSize, pageNumber)
         }
     }
 

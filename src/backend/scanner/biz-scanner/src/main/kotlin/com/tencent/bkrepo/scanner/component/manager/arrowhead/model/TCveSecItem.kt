@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
 
+import com.tencent.bkrepo.scanner.component.manager.ResultItem
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document

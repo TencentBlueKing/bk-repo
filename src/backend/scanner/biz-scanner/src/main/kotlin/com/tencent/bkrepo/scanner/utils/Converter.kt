@@ -27,15 +27,8 @@
 
 package com.tencent.bkrepo.scanner.utils
 
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
@@ -43,11 +36,6 @@ import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
-import org.springframework.data.domain.PageRequest
 import java.time.format.DateTimeFormatter
 
 object Converter {
@@ -97,68 +85,6 @@ object Converter {
         }
     }
 
-    fun convertToLoadArguments(request: ArtifactVulnerabilityRequest, scannerType: String): LoadResultArguments? {
-        return when (scannerType) {
-            ArrowheadScanner.TYPE, DependencyScanner.TYPE -> {
-                ArrowheadLoadResultArguments(
-                    vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
-                    vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
-                    reportType = request.reportType,
-                    pageLimit = PageLimit(request.pageNumber, request.pageSize)
-                )
-            }
-            else -> null
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun convert(
-        detailReport: Any?,
-        scannerType: String,
-        reportType: String,
-        pageNumber: Int,
-        pageSize: Int
-    ): Page<ArtifactVulnerabilityInfo> {
-        val pageRequest = PageRequest.of(pageNumber, pageSize)
-        if (scannerType == ArrowheadScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
-            detailReport as Page<CveSecItem>
-            val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {
-                ArtifactVulnerabilityInfo(
-                    vulId = getVulId(it),
-                    severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),
-                    pkgName = it.component,
-                    installedVersion = it.versions,
-                    title = it.name,
-                    vulnerabilityName = it.name,
-                    description = it.description,
-                    officialSolution = it.officialSolution.ifEmpty { it.defenseSolution },
-                    reference = it.references,
-                    path = it.path
-                )
-            }.toList()
-            return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)
-        }
-        if (scannerType == DependencyScanner.TYPE && reportType == DependencyItem.TYPE && detailReport != null) {
-            detailReport as Page<DependencyItem>
-            val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {
-                ArtifactVulnerabilityInfo(
-                    vulId = it.cveId,
-                    severity = ScanPlanConverter.convertToLeakLevel(it.severity),
-                    pkgName = it.dependency,
-                    installedVersion = setOf(it.version),
-                    title = it.name,
-                    vulnerabilityName = it.name,
-                    description = it.description,
-                    officialSolution = it.officialSolution?.ifEmpty { it.defenseSolution },
-                    reference = it.references,
-                    path = it.path
-                )
-            }.toList()
-            return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)
-        }
-        return Pages.ofResponse(pageRequest, 0L, emptyList())
-    }
-
     fun convert(overview: Map<String, Any?>): Map<String, Number> {
         val numberOverview = HashMap<String, Number>(overview.size)
         overview.forEach {
@@ -167,22 +93,5 @@ object Converter {
             }
         }
         return numberOverview
-    }
-
-    private fun getVulId(cveSecItem: CveSecItem): String {
-        with(cveSecItem) {
-            if (cveId.isNotEmpty()) {
-                return cveId
-            }
-
-            if (cnnvdId.isNotEmpty()) {
-                return cnnvdId
-            }
-
-            if (cnvdId.isNotEmpty()) {
-                return cnvdId
-            }
-            return pocId
-        }
     }
 }

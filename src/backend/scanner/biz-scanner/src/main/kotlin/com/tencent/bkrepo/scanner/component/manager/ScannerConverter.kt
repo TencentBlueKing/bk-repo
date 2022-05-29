@@ -25,17 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
+package com.tencent.bkrepo.scanner.component.manager
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CheckSecItem
-import com.tencent.bkrepo.scanner.component.manager.ResultItem
-import org.springframework.data.mongodb.core.mapping.Document
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
+import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 
-@Document("check_sec_item")
-class TCheckSecItem(
-    id: String? = null,
-    credentialsKey: String?,
-    sha256: String,
-    scanner: String,
-    data: CheckSecItem
-) : ResultItem<CheckSecItem>(id, credentialsKey, sha256, scanner, data)
+/**
+ * 接口数据格式转换
+ */
+interface ScannerConverter {
+    fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo>
+    fun convertToLoadArguments(request: ArtifactVulnerabilityRequest): LoadResultArguments
+
+    companion object {
+        fun name(scannerType: String) =  "${scannerType}Converter"
+    }
+}

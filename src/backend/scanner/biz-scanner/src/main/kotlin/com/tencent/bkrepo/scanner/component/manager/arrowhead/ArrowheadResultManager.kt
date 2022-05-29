@@ -45,9 +45,9 @@ import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ApplicationItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CheckSecItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.CveSecItemDao
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ResultItemDao
+import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.SensitiveItemDao
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
+import com.tencent.bkrepo.scanner.component.manager.ResultItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCheckSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem

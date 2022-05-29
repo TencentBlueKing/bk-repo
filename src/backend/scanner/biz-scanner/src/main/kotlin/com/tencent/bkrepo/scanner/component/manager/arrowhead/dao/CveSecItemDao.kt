@@ -27,16 +27,19 @@
 
 package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
+import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
 import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItem
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TCveSecItemData
+import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
 
 @Repository
 class CveSecItemDao : ResultItemDao<TCveSecItem>() {
-    override fun customizePageBy(criteria: Criteria, arguments: ArrowheadLoadResultArguments): Criteria {
+    override fun customizePageBy(criteria: Criteria, arguments: LoadResultArguments): Criteria {
+        require(arguments is ArrowheadLoadResultArguments)
         if (arguments.vulnerabilityLevels.isNotEmpty()) {
             criteria.and(dataKey(TCveSecItemData::cvssRank.name)).inValues(arguments.vulnerabilityLevels)
         }

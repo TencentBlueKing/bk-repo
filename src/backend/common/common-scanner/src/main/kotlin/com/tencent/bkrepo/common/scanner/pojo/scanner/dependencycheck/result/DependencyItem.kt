@@ -82,8 +82,4 @@ data class DependencyItem(
 
     @ApiModelProperty("漏洞文件路径")
     val path: String? = null
-) {
-    companion object {
-        const val TYPE = "DEPENDENCY_ITEM"
-    }
-}
+)

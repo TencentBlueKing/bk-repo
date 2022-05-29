@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.scanner.component.manager.dependencycheck.model
 
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
+import com.tencent.bkrepo.scanner.component.manager.ResultItem
 import org.springframework.data.mongodb.core.mapping.Document
 
 @Document("dependency_item")

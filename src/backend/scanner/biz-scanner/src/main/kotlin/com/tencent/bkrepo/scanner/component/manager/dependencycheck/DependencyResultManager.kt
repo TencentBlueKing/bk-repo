@@ -27,24 +27,21 @@
 
 package com.tencent.bkrepo.scanner.component.manager.dependencycheck
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.scanner.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyItem
+import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
 import com.tencent.bkrepo.common.scanner.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.dao.ResultItemDao
-import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.ResultItem
+import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
+import com.tencent.bkrepo.scanner.component.manager.ResultItem
 import com.tencent.bkrepo.scanner.component.manager.dependencycheck.dao.DependencyItemDao
 import com.tencent.bkrepo.scanner.component.manager.dependencycheck.model.TDependencyItem
-import com.tencent.bkrepo.scanner.message.ScannerMessageCode
-import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.request.SaveResultArguments
+import com.tencent.bkrepo.scanner.pojo.request.dependencecheck.DependencyLoadResultArguments
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -78,22 +75,11 @@ class DependencyResultManager @Autowired constructor(
         scanner: Scanner,
         arguments: LoadResultArguments?
     ): Any? {
-        logger.info("DependencyCheck load, arguments:${arguments?.toJsonString()}")
+        logger.debug("DependencyCheck load, arguments:${arguments?.toJsonString()}")
         scanner as DependencyScanner
-        arguments as ArrowheadLoadResultArguments
+        arguments as DependencyLoadResultArguments
         val pageLimit = arguments.pageLimit
-        val type = arguments.reportType
-
-        val page = when (type) {
-            DependencyItem.TYPE -> dependencyItemDao
-            else -> {
-                throw ErrorCodeException(
-                    messageCode = ScannerMessageCode.SCANNER_RESULT_TYPE_INVALID,
-                    status = HttpStatus.BAD_REQUEST,
-                    params = arrayOf(type)
-                )
-            }
-        }.run { pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments) }
+        val page = dependencyItemDao.pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments)
 
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
