@@ -126,12 +126,19 @@ export const asyncRoutes = [
   {
     path: '/webhook',
     component: Layout,
+    meta: { title: 'WebHook管理', icon: 'file' },
     children: [
       {
-        path: '/',
+        path: 'list',
         name: ROUTER_NAME_WEBHOOK,
-        meta: { title: 'WebHook管理', icon: 'file' },
+        meta: { title: 'WebHook', icon: 'file' },
         component: () => import('@/views/webhook/index')
+      },
+      {
+        path: 'log',
+        name: ROUTER_NAME_WEBHOOK,
+        meta: { title: 'WebHook日志', icon: 'file' },
+        component: () => import('@/views/webhook/log/index')
       }
     ]
   },

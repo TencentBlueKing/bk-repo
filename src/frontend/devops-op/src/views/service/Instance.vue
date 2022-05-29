@@ -39,6 +39,11 @@
           <svg-icon icon-class="arrow-down" /> {{ scope.row.detail.downloadingCount }}
         </template>
       </el-table-column>
+      <el-table-column label="已加载插件">
+        <template slot-scope="scope">
+          {{ scope.row.detail.loadedPlugins }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-button

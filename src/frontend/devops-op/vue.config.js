@@ -25,6 +25,33 @@ module.exports = {
     },
     proxy: {
       // 用于处理本地开发时跨域问题
+      '/web/auth': {
+        target: 'http://localhost:25902', // 接口域名
+        secure: false, // 如果是https接口，需要配置这个参数
+        pathRewrite: { '^/web/auth': '' },
+        headers: {
+          'Authorization': 'Platform Y2I0NzVmMGItMGIyZS00YjliLTlhYjItOTc3Mzg1ZDM3ZTQ1OjZ1UzE5Yjg3WUlVNnZXTkhpTW9lQ2xhNngzdHN4OA=='
+        },
+        changeOrigin: true // 是否跨域
+      },
+      '/web/opdata': {
+        target: 'http://localhost:25904', // 接口域名
+        secure: false, // 如果是https接口，需要配置这个参数
+        pathRewrite: { '^/web/opdata': '' },
+        headers: {
+          'Authorization': 'Platform Y2I0NzVmMGItMGIyZS00YjliLTlhYjItOTc3Mzg1ZDM3ZTQ1OjZ1UzE5Yjg3WUlVNnZXTkhpTW9lQ2xhNngzdHN4OA=='
+        },
+        changeOrigin: true // 是否跨域
+      },
+      '/web/webhook': {
+        target: 'http://localhost:25908', // 接口域名
+        secure: false, // 如果是https接口，需要配置这个参数
+        pathRewrite: { '^/web/webhook': '' },
+        headers: {
+          'Authorization': 'Platform Y2I0NzVmMGItMGIyZS00YjliLTlhYjItOTc3Mzg1ZDM3ZTQ1OjZ1UzE5Yjg3WUlVNnZXTkhpTW9lQ2xhNngzdHN4OA=='
+        },
+        changeOrigin: true // 是否跨域
+      },
       '/web': {
         target: 'http://bkrepo.example.com', // 接口域名
         secure: false, // 如果是https接口，需要配置这个参数
