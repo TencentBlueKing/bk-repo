@@ -20,7 +20,7 @@
     <template v-if="nodeDetail.metadata && Object.keys(nodeDetail.metadata).length !== 0">
       <el-divider>元数据</el-divider>
       <el-descriptions :column="2" border>
-        <template v-for="(metaKey, metaValue) in nodeDetail.metadata">
+        <template v-for="(metaValue, metaKey) in nodeDetail.metadata">
           <el-descriptions-item :key="metaKey" label="KEY" span="1">{{ metaKey }}</el-descriptions-item>
           <el-descriptions-item :key="metaKey" label="VALUE" span="1">{{ metaValue }}</el-descriptions-item>
         </template>

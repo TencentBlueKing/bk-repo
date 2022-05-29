@@ -29,11 +29,38 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo
+package com.tencent.bkrepo.helm.api
+
+import com.tencent.bkrepo.common.api.constant.HELM_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
 
 /**
- * oci 域名信息
+ * helm代理仓库刷新接口
  */
-data class OciDomainInfo(
-    val domain: String
-)
+@Api("helm代理仓库刷新接口")
+@Primary
+@FeignClient(HELM_SERVICE_NAME, contextId = "HelmClient")
+@RequestMapping("/service/index")
+interface HelmClient {
+
+    @ApiOperation("刷新对应代理仓库的index文件以及package信息")
+    @PostMapping("/{projectId}/{repoName}/refresh")
+    fun refreshIndexYamlAndPackage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Void>
+
+    @ApiOperation("初始化代理仓库的index文件以及package信息")
+    @PostMapping("/{projectId}/{repoName}/init")
+    fun initIndexAndPackage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Void>
+}

@@ -158,10 +158,7 @@ class ArtifactDataReceiver(
      */
     var finished = false
 
-    var trafficHandler = TrafficHandler(
-        ArtifactMetrics.getUploadingCounter(this),
-        ArtifactMetrics.getUploadingTimer(this)
-    )
+    var trafficHandler: TrafficHandler? = null
 
     init {
         initPath()
@@ -266,9 +263,7 @@ class ArtifactDataReceiver(
             val millis = measureTimeMillis { contentBytes.writeTo(fileOutputStream) }
             outputStream = fileOutputStream
             inMemory = false
-            refreshTrafficHandler()
-            trafficHandler.record(contentBytes.size(), Duration.ofMillis(millis))
-
+            recordQuiet(contentBytes.size(), Duration.ofMillis(millis), true)
             if (closeStream) {
                 cleanOriginalOutputStream()
             }
@@ -311,7 +306,7 @@ class ArtifactDataReceiver(
     private fun writeData(buffer: ByteArray, offset: Int, length: Int) {
         checkFallback()
         val millis = measureTimeMillis { outputStream.write(buffer, offset, length) }
-        trafficHandler.record(length, Duration.ofMillis(millis))
+        recordQuiet(length, Duration.ofMillis(millis))
         listener.data(buffer, offset, length)
         received += length
         checkThreshold()
@@ -453,9 +448,23 @@ class ArtifactDataReceiver(
      * */
     private fun refreshTrafficHandler() {
         trafficHandler = TrafficHandler(
-            ArtifactMetrics.getUploadingCounter(this),
+            ArtifactMetrics.getUploadingCounters(this),
             ArtifactMetrics.getUploadingTimer(this)
         )
+    }
+
+    /**
+     * 静默采集metrics
+     * */
+    private fun recordQuiet(size: Int, elapse: Duration, refresh: Boolean = false) {
+        try {
+            if (refresh || trafficHandler == null) {
+                refreshTrafficHandler()
+            }
+            trafficHandler?.record(size, elapse)
+        } catch (e: Exception) {
+            logger.error("Record upload metrics error", e)
+        }
     }
 
     companion object {

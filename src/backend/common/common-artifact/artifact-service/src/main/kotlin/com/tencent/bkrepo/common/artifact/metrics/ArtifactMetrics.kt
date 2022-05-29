@@ -114,13 +114,19 @@ class ArtifactMetrics(
          * 获取实时上传计数器
          * 用于计算上传实时流量
          * */
-        fun getUploadingCounter(receiver: ArtifactDataReceiver): Counter {
-            return Counter.builder(ARTIFACT_UPLOADING_SIZE)
-                .description(ARTIFACT_UPLOADING_SIZE_DESC)
+        fun getUploadingCounters(receiver: ArtifactDataReceiver): List<Counter> {
+            val limitUploadingCounter = Counter.builder(ARTIFACT_LIMIT_UPLOADING_SIZE)
+                .description(ARTIFACT_LIMIT_UPLOADING_SIZE_DESC)
                 .tags(tagProvider.getTags(receiver, true))
                 .baseUnit(BYTES)
                 .register(meterRegistry)
                 .apply { lruMeterFilter.access(this.id) }
+            val uploadingCounter = Counter.builder(ARTIFACT_UPLOADING_SIZE)
+                .description(ARTIFACT_UPLOADING_SIZE_DESC)
+                .tags(tagProvider.getTags(receiver))
+                .baseUnit(BYTES)
+                .register(meterRegistry)
+            return listOf(limitUploadingCounter, uploadingCounter)
         }
 
         /**
@@ -138,13 +144,19 @@ class ArtifactMetrics(
          * 获取实时下载计数器
          * 用于计算下载实时流量
          * */
-        fun getDownloadingCounter(inputStream: ArtifactInputStream): Counter {
-            return Counter.builder(ARTIFACT_DOWNLOADING_SIZE)
-                .description(ARTIFACT_DOWNLOADING_SIZE_DESC)
+        fun getDownloadingCounters(inputStream: ArtifactInputStream): List<Counter> {
+            val limitDownloadingCounter = Counter.builder(ARTIFACT_LIMIT_DOWNLOADING_SIZE)
+                .description(ARTIFACT_LIMIT_DOWNLOADING_SIZE_DESC)
                 .baseUnit(BYTES)
                 .tags(tagProvider.getTags(inputStream, true))
                 .register(meterRegistry)
                 .apply { lruMeterFilter.access(this.id) }
+            val downloadingCounter = Counter.builder(ARTIFACT_DOWNLOADING_SIZE)
+                .description(ARTIFACT_DOWNLOADING_SIZE_DESC)
+                .tags(tagProvider.getTags(inputStream))
+                .baseUnit(BYTES)
+                .register(meterRegistry)
+            return listOf(limitDownloadingCounter, downloadingCounter)
         }
 
         /**
@@ -155,6 +167,16 @@ class ArtifactMetrics(
             return Timer.builder(ARTIFACT_DOWNLOADING_TIME)
                 .description(ARTIFACT_DOWNLOADING_TIME_DESC)
                 .tags(tagProvider.getTags(inputStream))
+                .register(meterRegistry)
+        }
+
+        /**
+         * 获取下载失败计数器
+         */
+        fun getDownloadFailedCounter(): Counter {
+            return Counter.builder(ARTIFACT_DOWNLOAD_FAILED_COUNT)
+                .description(ARTIFACT_DOWNLOAD_FAILED_COUNT_DESC)
+                .tags(tagProvider.getTags())
                 .register(meterRegistry)
         }
     }

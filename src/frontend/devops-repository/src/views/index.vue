@@ -67,7 +67,7 @@
                         'repoSearch',
                         MODE_CONFIG === 'ci' && 'repoToken',
                         (this.userInfo.admin || this.userInfo.manage) && 'repoScan',
-                        (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
+                        MODE_CONFIG !== 'ci' && (!this.userInfo.admin && this.userInfo.manage) && 'projectConfig' // 仅项目管理员
                     ].filter(Boolean),
                     global: [
                         MODE_CONFIG !== 'ci' && 'projectManage',

@@ -95,15 +95,6 @@
 - 功能说明：
   - 中文：删除仓库
   - English：delete repo
-- 请求体
-
-  ```json
-  {
-    "public": false,
-    "description": "repo description",
-    "configuration": null
-  }
-  ```
 
 - 请求字段说明
 
@@ -554,13 +545,12 @@
 |字段|类型|是否必须|默认值|说明|Description|
 |---|---|---|---|---|---|
 |public|boolean|是|无|是否为公有源|is public|
-|channelId|string|否|无|公有源id, 公有源必须提供|public channel id|
-|name|string|否|无|代理源名称，私有源必选参数|private proxy channel name|
-|url|string|否|无|代理源地址，私有源必选参数|private proxy channel url|
-|credentialKey|string|否|无|鉴权凭据key，私有源可选参数|private proxy credentials id|
-|username|string|否|无|代理源认证用户名，私有源可选参数|private channel username|
-|password|string|否|无|代理源认证密码，私有源可选参数|private channel password|
+|name|string|否|无|代理源名称|proxy channel name|
+|url|string|否|无|代理源地址|proxy channel url|
+|credentialKey|string|否|无|鉴权凭据key|proxy credentials id|
+|username|string|否|无|代理源认证用户名|channel username|
+|password|string|否|无|代理源认证密码|channel password|
 
 ### 依赖源的差异化配置项
 
-各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。
+各个依赖源的差异化配置通过`settings`进行配置，每项配置的具体含义请参考依赖源文档。 

@@ -29,40 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.controller
+package com.tencent.bkrepo.repository.pojo.proxy
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHARTS_LIST
-import com.tencent.bkrepo.helm.service.ChartInfoService
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDateTime
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@Suppress("MVCPathVariableInspection")
-@RestController
-class ChartInfoController(
-    private val chartInfoService: ChartInfoService
-) {
-    @GetMapping(CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_VALUE])
-    fun allChartsList(
-        @ArtifactPathVariable
-        artifactInfo: HelmArtifactInfo,
-        @RequestParam startTime: LocalDateTime?
-    ): ResponseEntity<Any> {
-        return chartInfoService.allChartsList(artifactInfo, startTime)
-    }
-
-    @RequestMapping(CHARTS_LIST, method = [RequestMethod.HEAD])
-    fun exists(
-        @ArtifactPathVariable
-        artifactInfo: HelmArtifactInfo
-    ) {
-        chartInfoService.isExists(artifactInfo)
-    }
-}
+/**
+ * 代理源更新请求
+ */
+@ApiModel("代理源更新请求")
+data class ProxyChannelUpdateRequest(
+    @ApiModelProperty("所属项目id", required = true)
+    val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    val repoName: String,
+    @ApiModelProperty("是否为公有源", required = false)
+    val public: Boolean = true,
+    @ApiModelProperty("代理源名称", required = true)
+    val name: String,
+    @ApiModelProperty("代理源url", required = true)
+    val url: String,
+    @ApiModelProperty("代理源仓库类型", required = false)
+    val repoType: RepositoryType,
+    @ApiModelProperty("代理源认证凭证key", required = false)
+    val credentialKey: String? = null,
+    @ApiModelProperty("代理源认证用户名", required = false)
+    val username: String? = null,
+    @ApiModelProperty("代理源认证密码", required = false)
+    val password: String? = null
+)

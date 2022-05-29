@@ -37,6 +37,8 @@ data class JobProperties(
     @NestedConfigurationProperty
     var repoRefreshJobProperties: RepoRefreshJobProperties = RepoRefreshJobProperties(),
     @NestedConfigurationProperty
+    var repoInitJobProperties: RepoRefreshJobProperties = RepoRefreshJobProperties(),
+    @NestedConfigurationProperty
     var signFileCleanupJobProperties: SignFileCleanupJobProperties = SignFileCleanupJobProperties(),
     @NestedConfigurationProperty
     var fileSynchronizeJobProperties: FileSynchronizeJobProperties = FileSynchronizeJobProperties()

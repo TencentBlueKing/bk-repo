@@ -207,7 +207,7 @@
                     this.permission.edit && { clickEvent: () => this.$emit('tag'), label: '晋级', disabled: (this.detail.basic.stageTag || '').includes('@release') },
                     this.repoType === 'maven' && { clickEvent: () => this.$emit('scan'), label: '安全扫描' },
                     this.permission.delete && { clickEvent: () => this.$emit('delete'), label: this.$t('delete') }
-                ].filter(Boolean)
+                ]
             }
         },
         watch: {

@@ -39,13 +39,27 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Tags
+import org.apache.commons.logging.LogFactory
 
 /**
  * 默认构件提供tag实现
  * */
 class DefaultArtifactTagProvider(
-    val storageProperties: StorageProperties
+    private val storageProperties: StorageProperties,
+    private val artifactMetricsProperties: ArtifactMetricsProperties
 ) : ArtifactTransferTagProvider {
+    override fun getTags(): Iterable<Tag> {
+        val repositoryDetail = ArtifactContextHolder.getRepoDetail() ?: return TagUtils.tagOfProjectAndRepo(
+            StringPool.UNKNOWN,
+            StringPool.UNKNOWN
+        )
+        return TagUtils.tagOfProjectAndRepo(
+            repositoryDetail.projectId,
+            repositoryDetail.name,
+            artifactMetricsProperties.includeRepositories
+        )
+    }
+
     override fun getTags(inputStream: ArtifactInputStream, includeRepoInfo: Boolean): Iterable<Tag> {
         val repositoryDetail = ArtifactContextHolder.getRepoDetail()
         val path = if (inputStream is FileArtifactInputStream) inputStream.file.path else SOURCE_IN_REMOTE
@@ -63,20 +77,18 @@ class DefaultArtifactTagProvider(
         includeRepoInfo: Boolean,
         path: String
     ): Tags {
-        with(repositoryDetail) {
-            if (!includeRepoInfo) {
-                return Tags.of(
-                    PATH,
-                    this?.let { getTagPath(getStorageCredentials(storageCredentials), path) } ?: path
-                )
-            }
+        val credentials = repositoryDetail?.let { getStorageCredentials(it.storageCredentials) }
+        if (!includeRepoInfo) {
             return Tags.of(
-                REPO_TAG, getRepoTagValue(this),
                 PATH,
-                this?.let { getTagPath(getStorageCredentials(storageCredentials), path) }
-                    ?: path
+                getTagPath(credentials, path)
             )
         }
+        return Tags.of(
+            REPO_TAG, getRepoTagValue(repositoryDetail),
+            PATH,
+            getTagPath(credentials, path)
+        )
     }
 
     private fun getPath(receiver: ArtifactDataReceiver): String {
@@ -86,7 +98,11 @@ class DefaultArtifactTagProvider(
         return receiver.filePath.toString()
     }
 
-    private fun getTagPath(credentials: StorageCredentials, path: String): String {
+    private fun getTagPath(credentials: StorageCredentials?, path: String): String {
+        if (path == SOURCE_IN_MEMORY || path == SOURCE_IN_REMOTE) {
+            return path
+        }
+        credentials ?: return StringPool.UNKNOWN
         with(credentials) {
             if (path.startsWith(upload.location)) {
                 return upload.location
@@ -97,7 +113,8 @@ class DefaultArtifactTagProvider(
             if (path.startsWith(cache.path)) {
                 return cache.path
             }
-            return path
+            logger.warn("Unknown path[$path] origin with key[${credentials.key}]")
+            return StringPool.UNKNOWN
         }
     }
 
@@ -115,6 +132,7 @@ class DefaultArtifactTagProvider(
     }
 
     companion object {
+        private val logger = LogFactory.getLog(DefaultArtifactTagProvider::class.java)
         private const val PATH = "path"
         const val REPO_TAG = "repo"
     }

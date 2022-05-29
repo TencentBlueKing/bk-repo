@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
+import java.nio.file.Path
 import java.nio.file.Paths
 
 /**
@@ -117,7 +118,8 @@ class CacheStorageService(
         val credentials = getCredentialsOrDefault(storageCredentials)
         val rootPath = Paths.get(credentials.cache.path)
         val tempPath = getTempPath(credentials)
-        val visitor = CleanupFileVisitor(rootPath, tempPath, fileStorage, fileLocator, credentials)
+        val stagingPath = getStagingPath(credentials)
+        val visitor = CleanupFileVisitor(rootPath, tempPath, stagingPath, fileStorage, fileLocator, credentials)
         getCacheClient(credentials).walk(visitor)
         return visitor.result
     }
@@ -159,8 +161,11 @@ class CacheStorageService(
     }
 
     private fun getStagingClient(credentials: StorageCredentials): FileSystemClient {
-        val stagingPath = Paths.get(credentials.cache.path, STAGING)
-        return FileSystemClient(stagingPath)
+        return FileSystemClient(getStagingPath(credentials))
+    }
+
+    private fun getStagingPath(credentials: StorageCredentials): Path {
+        return Paths.get(credentials.cache.path, STAGING)
     }
 
     private fun stagingFile(credentials: StorageCredentials, path: String, filename: String, file: File) {

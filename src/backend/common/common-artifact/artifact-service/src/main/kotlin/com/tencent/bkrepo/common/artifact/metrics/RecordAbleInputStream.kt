@@ -28,20 +28,23 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
-import java.io.InputStream
+import org.slf4j.LoggerFactory
+import java.time.Duration
 
 /**
  * 可记录的输入流
  * */
-class RecordAbleInputStream(private val trafficHandler: TrafficHandler, delegate: InputStream) :
+class RecordAbleInputStream(private val delegate: ArtifactInputStream) :
     DelegateInputStream(delegate) {
+    private var trafficHandler: TrafficHandler? = null
 
     override fun read(): Int {
         executeAndMeasureTime { super.read() }.apply {
             val (read, cost) = this
             if (read > 0) {
-                trafficHandler.record(1, cost)
+                recordQuiet(1, cost)
             }
             return read
         }
@@ -51,7 +54,7 @@ class RecordAbleInputStream(private val trafficHandler: TrafficHandler, delegate
         executeAndMeasureTime { super.read(byteArray) }.apply {
             val (read, cost) = this
             if (read > 0) {
-                trafficHandler.record(read, cost)
+                recordQuiet(read, cost)
             }
             return read
         }
@@ -61,9 +64,30 @@ class RecordAbleInputStream(private val trafficHandler: TrafficHandler, delegate
         executeAndMeasureTime { super.read(byteArray, off, len) }.apply {
             val (read, cost) = this
             if (read > 0) {
-                trafficHandler.record(read, cost)
+                recordQuiet(read, cost)
             }
             return read
         }
+    }
+
+    /**
+     * 静默采集metrics
+     * */
+    private fun recordQuiet(size: Int, elapse: Duration) {
+        try {
+            trafficHandler ?: let {
+                trafficHandler = TrafficHandler(
+                    ArtifactMetrics.getDownloadingCounters(delegate),
+                    ArtifactMetrics.getDownloadingTimer(delegate)
+                )
+            }
+            trafficHandler?.record(size, elapse)
+        } catch (e: Exception) {
+            logger.error("Record download metrics error", e)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(RecordAbleInputStream::class.java)
     }
 }

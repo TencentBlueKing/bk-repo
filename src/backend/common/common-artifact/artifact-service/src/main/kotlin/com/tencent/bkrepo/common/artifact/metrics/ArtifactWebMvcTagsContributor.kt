@@ -28,11 +28,8 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
-import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.Tags
 import org.springframework.boot.actuate.metrics.web.servlet.WebMvcTagsContributor
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
@@ -48,32 +45,19 @@ class ArtifactWebMvcTagsContributor(private val artifactMetricsProperties: Artif
         handler: Any?,
         exception: Throwable?
     ): Iterable<Tag> {
-        // 添加添加project,添加repo
-        val artifactInfo = ArtifactContextHolder.getArtifactInfo(request) ?: return tagOfProjectAndRepo(
+        // 添加project,添加repo
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo(request) ?: return TagUtils.tagOfProjectAndRepo(
             StringPool.UNKNOWN,
             StringPool.UNKNOWN
         )
-        with(artifactInfo) {
-            if (!contains(projectId, repoName)) {
-                return tagOfProjectAndRepo(StringPool.UNKNOWN, StringPool.UNKNOWN)
-            }
-            return tagOfProjectAndRepo(projectId, repoName)
-        }
+        return TagUtils.tagOfProjectAndRepo(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactMetricsProperties.includeRepositories
+        )
     }
 
     override fun getLongRequestTags(request: HttpServletRequest, handler: Any): Iterable<Tag> {
         return emptyList()
-    }
-
-    private fun contains(projectId: String, repoName: String): Boolean {
-        val key = "$projectId/$repoName"
-        return artifactMetricsProperties.includeRepositories.contains(key)
-    }
-
-    private fun tagOfProjectAndRepo(projectId: String, repoName: String): Tags {
-        return Tags.of(
-            Tag.of(PROJECT_ID, projectId),
-            Tag.of(REPO_NAME, repoName)
-        )
     }
 }

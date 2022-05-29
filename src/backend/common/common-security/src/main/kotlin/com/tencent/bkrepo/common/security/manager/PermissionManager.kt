@@ -85,10 +85,8 @@ open class PermissionManager(
     private val nodeClient: NodeClient
 ) {
 
-    private val httpClient = OkHttpClient.Builder()
-        .connectTimeout(10L, TimeUnit.SECONDS)
-        .readTimeout(10L, TimeUnit.SECONDS)
-        .build()
+    private val httpClient =
+        OkHttpClient.Builder().connectTimeout(10L, TimeUnit.SECONDS).readTimeout(10L, TimeUnit.SECONDS).build()
 
     private val externalPermissionCache: LoadingCache<String, List<ExternalPermission>> by lazy {
         val cacheLoader = object : CacheLoader<String, List<ExternalPermission>>() {
@@ -131,7 +129,11 @@ open class PermissionManager(
         public: Boolean? = null,
         anonymous: Boolean = false
     ) {
-        if (isReadPublicRepo(action, projectId, repoName, public)) {
+        val repoInfo = queryRepositoryInfo(projectId, repoName)
+        if (isReadPublicRepo(action, repoInfo, public)) {
+            return
+        }
+        if (isReadSystemRepo(action, repoInfo)) {
             return
         }
         checkPermission(
@@ -160,7 +162,11 @@ open class PermissionManager(
         public: Boolean? = null,
         anonymous: Boolean = false
     ) {
-        if (isReadPublicRepo(action, projectId, repoName, public)) {
+        val repoInfo = queryRepositoryInfo(projectId, repoName)
+        if (isReadPublicRepo(action, repoInfo, public)) {
+            return
+        }
+        if (isReadSystemRepo(action, repoInfo)) {
             return
         }
         // 禁止批量下载流水线节点
@@ -215,15 +221,34 @@ open class PermissionManager(
      * 判断是否为public仓库且为READ操作
      */
     private fun isReadPublicRepo(
-        action: PermissionAction,
-        projectId: String,
-        repoName: String,
-        public: Boolean? = null
+        action: PermissionAction, repoInfo: RepositoryInfo, public: Boolean? = null
     ): Boolean {
         if (action != PermissionAction.READ) {
             return false
         }
-        return public ?: queryRepositoryInfo(projectId, repoName).public
+        return public ?: repoInfo.public
+    }
+
+    /**
+     * 判断是否为系统级公开仓库且为READ操作
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private fun isReadSystemRepo(action: PermissionAction, repoInfo: RepositoryInfo): Boolean {
+        if (action != PermissionAction.READ) {
+            return false
+        }
+        val userId = SecurityUtils.getUserId()
+        val platformId = SecurityUtils.getPlatformId()
+        checkAnonymous(userId, platformId)
+        // 加载仓库信息
+        val systemValue = repoInfo.configuration.settings["system"]
+        val system = try {
+            systemValue as? Boolean
+        } catch (e: Exception) {
+            logger.error("Repo configuration system field trans failed: $systemValue", e)
+            false
+        }
+        return true == system
     }
 
     /**
@@ -297,10 +322,8 @@ open class PermissionManager(
         val externalPermissionList = externalPermissionCache.get(SYSTEM_USER)
         val platformId = SecurityUtils.getPlatformId()
         val ext = externalPermissionList.firstOrNull { p ->
-            p.enabled
-                .and(projectId.matches(wildcardToRegex(p.projectId)))
-                .and(repoName?.matches(wildcardToRegex(p.repoName)) ?: true)
-                .and(matchApi(p.scope))
+            p.enabled.and(projectId.matches(wildcardToRegex(p.projectId)))
+                .and(repoName?.matches(wildcardToRegex(p.repoName)) ?: true).and(matchApi(p.scope))
                 .and(p.platformWhiteList.isNullOrEmpty() || !p.platformWhiteList!!.contains(platformId))
         }
         return ext
@@ -317,9 +340,8 @@ open class PermissionManager(
      * 然后scope与接口名称匹配进行正则匹配
      */
     private fun matchApi(scope: String): Boolean {
-        val stackTraceElements = Thread.currentThread().stackTrace.toList()
-            .filter { it.toString().startsWith(PACKAGE_NAME_PREFIX) }
-            .map {
+        val stackTraceElements =
+            Thread.currentThread().stackTrace.toList().filter { it.toString().startsWith(PACKAGE_NAME_PREFIX) }.map {
                 it.toString().replace(Regex("\\\$\\\$(.*)\\\$\\\$[a-z0-9]+"), "")
                     .substringBefore("(")
             }
@@ -356,15 +378,14 @@ open class PermissionManager(
     }
 
     private fun getNodeDetailList(
-        projectId: String,
-        repoName: String?,
-        paths: List<String>?
+        projectId: String, repoName: String?, paths: List<String>?
     ): List<NodeDetail>? {
         val nodeDetailList = if (repoName.isNullOrBlank() || paths.isNullOrEmpty()) {
             null
         } else if (paths.size == 1) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data
-                ?: throw NodeNotFoundException(paths.first())
+            val node = nodeClient.getNodeDetail(projectId, repoName, paths.first()).data ?: throw NodeNotFoundException(
+                paths.first()
+            )
             listOf(node)
         } else {
             queryNodeDetailList(projectId, repoName, paths)
@@ -376,9 +397,7 @@ open class PermissionManager(
     }
 
     private fun queryNodeDetailList(
-        projectId: String,
-        repoName: String,
-        paths: List<String>
+        projectId: String, repoName: String, paths: List<String>
     ): List<NodeDetail> {
         var prefix = paths.first()
         paths.forEach {
@@ -388,31 +407,21 @@ open class PermissionManager(
         val nodeDetailList = mutableListOf<NodeDetail>()
         do {
             val option = NodeListOption(
-                pageNumber = pageNumber,
-                pageSize = 1000,
-                includeFolder = true,
-                includeMetadata = true,
-                deep = true
+                pageNumber = pageNumber, pageSize = 1000, includeFolder = true, includeMetadata = true, deep = true
             )
             val records = nodeClient.listNodePage(projectId, repoName, prefix, option).data?.records
             if (records.isNullOrEmpty()) {
                 break
             }
-            nodeDetailList.addAll(
-                records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
-            )
-            pageNumber ++
+            nodeDetailList.addAll(records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) })
+            pageNumber++
         } while (nodeDetailList.size < paths.size)
         return nodeDetailList
     }
 
 
     private fun callbackToAuth(
-        request: Request,
-        projectId: String,
-        repoName: String?,
-        paths: List<String>?,
-        errorMsg: String
+        request: Request, projectId: String, repoName: String?, paths: List<String>?, errorMsg: String
     ) {
         try {
             httpClient.newCall(request).execute().use {
@@ -422,15 +431,15 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url()}], project[$projectId], repo[$repoName]," +
-                        " nodes$paths, code[${it.code()}], response[$content]"
+                            " nodes$paths, code[${it.code()}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
 
         } catch (e: IOException) {
             logger.error(
-                "check external permission error," +
-                    "url[${request.url()}], project[$projectId], repo[$repoName], nodes$paths, $e"
+                "check external permission error," + "url[${request.url()}], project[$projectId], " +
+                        "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }
@@ -472,8 +481,7 @@ open class PermissionManager(
             it.forEach { nodeDetail ->
                 nodeMaps.add(
                     mapOf(
-                        FULL_PATH to nodeDetail.fullPath,
-                        METADATA to nodeDetail.metadata
+                        FULL_PATH to nodeDetail.fullPath, METADATA to nodeDetail.metadata
                     )
                 )
             }

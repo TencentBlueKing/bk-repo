@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.controller
+package com.tencent.bkrepo.helm.controller.api
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
@@ -90,7 +90,7 @@ class ChartRepositoryController(
      */
     @PostMapping("/{projectId}/{repoName}/refresh")
     fun refreshIndexYamlAndPackage(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
-        helmOperationService.updatePackageForRemote(artifactInfo.projectId, artifactInfo.repoName)
+        chartRepositoryService.updatePackageForRemote(artifactInfo)
         return ResponseBuilder.success()
     }
 

@@ -29,46 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.helm.controller
+package com.tencent.bkrepo.helm.controller.api
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
-import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
-import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
-import com.tencent.bkrepo.helm.service.FixToolService
-import io.swagger.annotations.ApiOperation
+import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHARTS_LIST
+import com.tencent.bkrepo.helm.service.ChartInfoService
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
+@Suppress("MVCPathVariableInspection")
 @RestController
-class HelmFixToolController(
-    private val fixToolService: FixToolService
+class ChartInfoController(
+    private val chartInfoService: ChartInfoService
 ) {
-    @ApiOperation("修复package管理功能")
-    @GetMapping("/ext/package/populate")
-    fun fixPackageVersion(): List<PackageManagerResponse> {
-        return fixToolService.fixPackageVersion()
+    @GetMapping(CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun allChartsList(
+        @ArtifactPathVariable
+        artifactInfo: HelmArtifactInfo,
+        @RequestParam startTime: LocalDateTime?
+    ): ResponseEntity<Any> {
+        return chartInfoService.allChartsList(artifactInfo, startTime)
     }
 
-    @ApiOperation("修复index.yaml文件中的制品包创建时间问题")
-    @GetMapping("/ext/repairDateFormat")
-    fun repairPackageCreatedDate(): Response<List<DateTimeRepairResponse>> {
-        return ResponseBuilder.success(fixToolService.repairPackageCreatedDate())
-    }
-
-    /**
-     * regenerate meta data from Chart.yaml
-     */
-    @PostMapping("/{projectId}/{repoName}/metaDate/regenerate")
-    fun regenerateMetaData(
-        @RequestAttribute userId: String,
-        @ArtifactPathVariable artifactInfo: HelmArtifactInfo
-    ): Response<Void> {
-        fixToolService.metaDataRegenerate(userId, artifactInfo)
-        return ResponseBuilder.success()
+    @RequestMapping(CHARTS_LIST, method = [RequestMethod.HEAD])
+    fun exists(
+        @ArtifactPathVariable
+        artifactInfo: HelmArtifactInfo
+    ) {
+        chartInfoService.isExists(artifactInfo)
     }
 }

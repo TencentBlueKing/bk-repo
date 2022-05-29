@@ -242,7 +242,7 @@ class MavenLocalRepository(
         super.onUploadBefore(context)
         val noOverwrite = HeaderUtils.getBooleanHeader("X-BKREPO-NO-OVERWRITE")
         val path = context.artifactInfo.getArtifactFullPath()
-        logger.info("The File $path does not want to overwrite: $noOverwrite")
+        logger.info("The File $path does not want to be overwritten: $noOverwrite")
         if (noOverwrite) {
             // -SNAPSHOT/** 路径下的metadata.xml 文件不做判断
             if (!path.endsWith(MAVEN_METADATA_FILE_NAME)) {
