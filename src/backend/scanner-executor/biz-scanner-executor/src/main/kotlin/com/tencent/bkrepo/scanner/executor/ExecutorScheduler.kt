@@ -147,6 +147,9 @@ class ExecutorScheduler @Autowired constructor(
                 parentTaskId = parentScanTaskId,
                 inputStream = artifactInputStream,
                 scanner = scanner,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
                 sha256 = sha256
             )
         }

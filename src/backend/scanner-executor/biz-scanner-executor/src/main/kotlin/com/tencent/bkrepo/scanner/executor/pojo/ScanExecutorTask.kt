@@ -51,6 +51,18 @@ data class ScanExecutorTask(
      */
     val inputStream: InputStream,
     /**
+     * 文件所属项目
+     */
+    val projectId: String,
+    /**
+     * 文件所属仓库
+     */
+    val repoName: String,
+    /**
+     * 文件完整路径
+     */
+    val fullPath: String,
+    /**
      * 待扫描文件sha256
      */
     val sha256: String,

@@ -34,6 +34,7 @@ import com.github.dockerjava.api.model.Bind
 import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.api.model.Ulimit
 import com.github.dockerjava.api.model.Volume
+import com.tencent.bkrepo.common.api.constant.CharPool.DOT
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -89,8 +90,9 @@ class ArrowheadScanExecutor @Autowired constructor(
         val workDir = createWorkDir(scanner.rootPath, task.taskId)
         logger.info(logMsg(task, "create work dir success, $workDir"))
         try {
-            // 加载待扫描文件
-            val scannerInputFile = File(File(workDir, scanner.container.inputDir), task.sha256)
+            // 加载待扫描文件，Arrowhead依赖文件名后缀判断文件类型进行解析，所以需要加上文件名后缀
+            val fileExtension = task.fullPath.substringAfterLast(DOT, "")
+            val scannerInputFile = File(File(workDir, scanner.container.inputDir), "${task.sha256}.$fileExtension")
             scannerInputFile.parentFile.mkdirs()
             task.inputStream.use { taskInputStream ->
                 scannerInputFile.outputStream().use { taskInputStream.copyTo(it) }

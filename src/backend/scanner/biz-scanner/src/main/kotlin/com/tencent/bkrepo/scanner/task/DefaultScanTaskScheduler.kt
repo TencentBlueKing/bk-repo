@@ -252,7 +252,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         if (subScanTasks.isEmpty()) {
             return
         }
-        val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
+        val subTasks = self.saveSubTasks(subScanTasks).map { Converter.convert(it, scanner) }
         val enqueuedTasks = subScanTaskQueue.enqueue(subTasks)
         logger.info("${enqueuedTasks.size} subTasks enqueued")
 
@@ -440,17 +440,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
     private fun submitScanTaskLockKey(projectId: String) = "scanner:lock:submit:$projectId"
     private fun notifySubtaskLockKey(projectId: String) = "scanner:lock:notify:$projectId:subtask"
-
-    private fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask {
-        return SubScanTask(
-            taskId = subScanTask.id!!,
-            parentScanTaskId = subScanTask.parentScanTaskId,
-            scanner = scanner,
-            sha256 = subScanTask.sha256,
-            size = subScanTask.size,
-            credentialsKey = subScanTask.credentialsKey
-        )
-    }
 
     /**
      * 根据扫描数量是否超过限制返回扫描状态
