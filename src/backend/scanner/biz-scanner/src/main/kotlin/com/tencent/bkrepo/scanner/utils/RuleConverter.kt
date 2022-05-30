@@ -35,22 +35,15 @@ import com.tencent.bkrepo.common.query.model.Rule.NestedRule.RelationType.AND
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 
 object RuleConverter {
 
-    fun convert(sourceRule: Rule?, plan: TScanPlan?, projectId: String): Rule {
-        require(sourceRule != null || plan != null)
-
-        return if (sourceRule != null) {
-            val targetRule = createProjectIdAdnRepoRule(listOf(projectId), emptyList(), plan?.type)
-            // 将sourceRule中除projectId相关外的rule都合并到targetRule中
-            mergeInto(sourceRule, targetRule, listOf(NodeInfo::projectId.name))
-            targetRule
-        } else {
-            createProjectIdAdnRepoRule(listOf(plan!!.projectId), emptyList(), plan.type)
-        }
+    fun convert(sourceRule: Rule?, planType: String?, projectId: String): Rule {
+        val targetRule = createProjectIdAdnRepoRule(listOf(projectId), emptyList(), planType)
+        // 将sourceRule中除projectId相关外的rule都合并到targetRule中
+        sourceRule?.let { mergeInto(it, targetRule, listOf(NodeInfo::projectId.name)) }
+        return targetRule
     }
 
     fun convert(projectId: String, repoNames: List<String>, repoType: String? = null): Rule {

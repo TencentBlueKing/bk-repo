@@ -123,7 +123,7 @@ class ScanServiceImpl @Autowired constructor(
 
             val plan = planId?.let { scanPlanDao.get(it) }
             val projectId = projectId(rule, plan)
-            val rule = RuleConverter.convert(rule, plan, projectId)
+            val rule = RuleConverter.convert(rule, plan?.type, projectId)
             userId?.let { permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, it) }
 
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
