@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
+import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
@@ -48,6 +49,7 @@ import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TFileScanResult
+import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
 import com.tencent.bkrepo.scanner.model.TSubScanTask
@@ -82,6 +84,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val repositoryClient: RepositoryClient,
     private val subScanTaskDao: SubScanTaskDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
+    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
@@ -197,7 +200,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         var submittedSubTaskCount = 0L
         var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
-        val finishedSubScanTasks = ArrayList<TPlanArtifactLatestSubScanTask>()
+        val finishedSubScanTasks = ArrayList<TFinishedSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
         for (node in nodeIterator) {
             // 未使用扫描方案的情况直接取node的projectId
@@ -264,12 +267,14 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun save(tasks: List<TPlanArtifactLatestSubScanTask>) {
-        if (tasks.isEmpty()) {
+    fun save(finishedSubtasks: List<TFinishedSubScanTask>) {
+        if (finishedSubtasks.isEmpty()) {
             return
         }
-        planArtifactLatestSubScanTaskDao.replace(tasks)
-        tasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
+        val tasks = finishedSubScanTaskDao.insert(finishedSubtasks)
+        val planArtifactLatestSubtasks = tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
+        planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubtasks)
+        planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 更新当前正在扫描的任务数
         val overview = HashMap<String, Number>()
@@ -329,7 +334,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         node: Node,
         credentialKey: String? = null,
         resultStatus: String = SubScanTaskStatus.SUCCESS.name
-    ): TPlanArtifactLatestSubScanTask {
+    ): TFinishedSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
             val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
@@ -344,7 +349,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
             } else {
                 null
             }
-            return TPlanArtifactLatestSubScanTask(
+            return TFinishedSubScanTask(
                 createdBy = scanTask.createdBy,
                 createdDate = now,
                 lastModifiedBy = scanTask.createdBy,
@@ -364,6 +369,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 artifactName = artifactName,
 
                 status = resultStatus,
+                executedTimes = 0,
                 scanner = scanTask.scanner,
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,

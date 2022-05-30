@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.scanner.model
 
-import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.utils.Converter
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -35,42 +34,23 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 /**
- * 制品使用指定扫描方案的最新一次扫描任务
+ * 已完成扫描的子任务
  */
-@Document("plan_artifact_latest_sub_scan_task")
+@Document("finished_sub_scan_task")
 @CompoundIndexes(
-    CompoundIndex(
-        name = "projectId_repoName_fullPath_planId_scanner_idx",
-        def = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'planId': 1, 'scanner': 1}",
-        background = true,
-        unique = true
-    ),
-    CompoundIndex(
-        name = "planId_idx",
-        def = "{'planId': 1}",
-        background = true
-    ),
-    CompoundIndex(
-        name = "latestSubScanTaskId_idx",
-        def = "{'latestSubScanTaskId': 1}",
-        background = true
-    )
+    CompoundIndex(name = "parentScanTaskId_idx", def = "{'parentScanTaskId': 1}", background = true)
 )
-class TPlanArtifactLatestSubScanTask(
+class TFinishedSubScanTask(
     id: String? = null,
     createdBy: String,
     createdDate: LocalDateTime,
     lastModifiedBy: String,
     lastModifiedDate: LocalDateTime,
     startDateTime: LocalDateTime?,
-    finishedDateTime: LocalDateTime?,
+    finishedDateTime: LocalDateTime,
 
     parentScanTaskId: String,
-    /**
-     * 制品最新一次扫描子任务的id，复用扫描结果时为null
-     */
-    val latestSubScanTaskId: String? = null,
-    planId: String? = null,
+    planId: String?,
 
     projectId: String,
     repoName: String,
@@ -81,6 +61,10 @@ class TPlanArtifactLatestSubScanTask(
     artifactName: String,
 
     status: String,
+    /**
+     * 已经执行的次数
+     */
+    val executedTimes: Int,
     scanner: String,
     scannerType: String,
     sha256: String,
@@ -124,29 +108,24 @@ class TPlanArtifactLatestSubScanTask(
     scanQuality = scanQuality
 ) {
     companion object {
-        fun convert(
-            task: SubScanTaskDefinition,
+        fun from(
+            task: TSubScanTask,
             resultStatus: String,
             overview: Map<String, Any?>? = null,
             modifiedBy: String? = null,
-            qualityPass: Boolean? = null
+            qualityPass: Boolean? = null,
+            now: LocalDateTime = LocalDateTime.now()
         ) = with(task) {
-            val now = LocalDateTime.now()
-            val numberOverview = overview?.let { Converter.convert(it) } ?: task.scanResultOverview
-            val finishedDateTime = if (SubScanTaskStatus.finishedStatus(resultStatus)) {
-                now
-            } else {
-                null
-            }
-            TPlanArtifactLatestSubScanTask(
+            val numberOverview = overview?.let { Converter.convert(it) }
+            TFinishedSubScanTask(
+                id = id,
                 createdBy = createdBy,
                 createdDate = createdDate,
                 lastModifiedBy = modifiedBy ?: lastModifiedBy,
                 lastModifiedDate = now,
                 startDateTime = startDateTime,
-                finishedDateTime = finishedDateTime,
+                finishedDateTime = now,
                 parentScanTaskId = parentScanTaskId,
-                latestSubScanTaskId = id,
                 planId = planId,
                 projectId = projectId,
                 repoName = repoName,
@@ -156,13 +135,14 @@ class TPlanArtifactLatestSubScanTask(
                 fullPath = fullPath,
                 artifactName = artifactName,
                 status = resultStatus,
+                executedTimes = executedTimes,
                 scanner = scanner,
                 scannerType = scannerType,
                 sha256 = sha256,
                 size = size,
                 credentialsKey = credentialsKey,
                 scanResultOverview = numberOverview,
-                qualityRedLine = qualityPass ?: qualityRedLine,
+                qualityRedLine = qualityPass,
                 scanQuality = scanQuality
             )
         }

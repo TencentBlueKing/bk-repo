@@ -44,6 +44,7 @@ import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
+import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
+import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
@@ -98,6 +100,7 @@ class ScanServiceImpl @Autowired constructor(
     private val subScanTaskDao: SubScanTaskDao,
     private val scanPlanDao: ScanPlanDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
+    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
@@ -269,12 +272,17 @@ class ScanServiceImpl @Autowired constructor(
 
         // 质量规则检查结果
         val planId = subTask.planId
-        logger.info("planId:$planId, overview:${overview.toJsonString()}")
+        if (logger.isDebugEnabled) {
+            logger.debug("planId:$planId, overview:${overview.toJsonString()}")
+        }
         val qualityPass = if (planId != null && overview.isNotEmpty()) {
             scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
         } else {
             null
         }
+        finishedSubScanTaskDao.insert(
+            TFinishedSubScanTask.from(subTask, resultSubTaskStatus, overview, qualityPass = qualityPass)
+        )
         planArtifactLatestSubScanTaskDao.updateStatus(
             latestSubScanTaskId = subTaskId,
             subtaskScanStatus = resultSubTaskStatus,
@@ -370,6 +378,7 @@ class ScanServiceImpl @Autowired constructor(
         val resetTask = scanTaskDao.resetTask(task.id!!, task.lastModifiedDate)
         if (resetTask != null) {
             subScanTaskDao.deleteByParentTaskId(task.id)
+            finishedSubScanTaskDao.deleteByParentTaskId(task.id)
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
             scanTaskScheduler.schedule(Converter.convert(resetTask, plan))
