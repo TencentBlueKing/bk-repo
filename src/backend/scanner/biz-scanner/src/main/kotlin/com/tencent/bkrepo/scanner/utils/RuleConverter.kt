@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.scanner.utils
 
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
@@ -42,17 +40,11 @@ import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 
 object RuleConverter {
 
-    fun convert(sourceRule: Rule?, plan: TScanPlan?): Rule {
+    fun convert(sourceRule: Rule?, plan: TScanPlan?, projectId: String): Rule {
         require(sourceRule != null || plan != null)
 
         return if (sourceRule != null) {
-            // 尝试从sourceRule取projectId，不存在时从plan中取projectId
-            var projectIds = RuleUtil.getProjectIds(sourceRule)
-            if (projectIds.isEmpty() && plan == null) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-            }
-            projectIds = projectIds.ifEmpty { listOf(plan!!.projectId) }
-            val targetRule = createProjectIdAdnRepoRule(projectIds, emptyList(), plan?.type)
+            val targetRule = createProjectIdAdnRepoRule(listOf(projectId), emptyList(), plan?.type)
             // 将sourceRule中除projectId相关外的rule都合并到targetRule中
             mergeInto(sourceRule, targetRule, listOf(NodeInfo::projectId.name))
             targetRule

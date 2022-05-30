@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -53,6 +52,7 @@ import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
+import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTask
@@ -122,9 +122,9 @@ class ScanServiceImpl @Autowired constructor(
             }
 
             val plan = planId?.let { scanPlanDao.get(it) }
-            val rule = RuleConverter.convert(rule, plan)
-
-            userId?.let { checkPermission(rule, it) }
+            val projectId = projectId(rule, plan)
+            val rule = RuleConverter.convert(rule, plan, projectId)
+            userId?.let { permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, it) }
 
             val scanner = scannerService.get(scanner ?: plan!!.scanner)
             val now = LocalDateTime.now()
@@ -137,6 +137,7 @@ class ScanServiceImpl @Autowired constructor(
                     rule = rule.toJsonString(),
                     triggerType = triggerType.name,
                     planId = plan?.id,
+                    projectId = projectId,
                     status = ScanTaskStatus.PENDING.name,
                     total = 0L,
                     scanning = 0L,
@@ -478,21 +479,20 @@ class ScanServiceImpl @Autowired constructor(
         }
     }
 
-    private fun toLocalDateTime(timestamp: Long): LocalDateTime {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
+    private fun projectId(rule: Rule?, plan: TScanPlan?): String {
+        // 尝试从rule取projectId，不存在时从plan中取projectId
+        val projectIds = RuleUtil.getProjectIds(rule)
+        return if (projectIds.size == 1) {
+            projectIds.first()
+        } else if (projectIds.isEmpty() && plan != null) {
+            plan.projectId
+        } else {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+        }
     }
 
-    private fun checkPermission(rule: Rule, userId: String) {
-        val projectIds = RuleUtil.getProjectIds(rule)
-        require(projectIds.isNotEmpty())
-
-        if (projectIds.size > 1) {
-            // 只允许系统管理员扫描多个项目
-            permissionCheckHandler.permissionManager.checkPrincipal(userId, PrincipalType.ADMIN)
-        } else {
-            require(projectIds.isNotEmpty())
-            permissionCheckHandler.checkProjectPermission(projectIds.first(), PermissionAction.MANAGE, userId)
-        }
+    private fun toLocalDateTime(timestamp: Long): LocalDateTime {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault())
     }
 
     companion object {

@@ -35,7 +35,12 @@ import java.time.LocalDateTime
 @Document("scan_task")
 @CompoundIndexes(
     CompoundIndex(name = "status_idx", def = "{'status': 1}", background = true),
-    CompoundIndex(name = "planId_idx", def = "{'planId': 1}", background = true)
+    CompoundIndex(name = "planId_idx", def = "{'planId': 1}", background = true),
+    CompoundIndex(
+        name = "projectId_lastModifiedDate_idx",
+        def = "{'projectId': 1, 'lastModifiedDate': 1}",
+        background = true
+    )
 )
 data class TScanTask(
     val id: String? = null,
@@ -62,6 +67,10 @@ data class TScanTask(
      * 使用的扫描方案id
      */
     val planId: String? = null,
+    /**
+     * 扫描的项目
+     */
+    val projectId: String? = null,
     /**
      * 任务状态
      */
