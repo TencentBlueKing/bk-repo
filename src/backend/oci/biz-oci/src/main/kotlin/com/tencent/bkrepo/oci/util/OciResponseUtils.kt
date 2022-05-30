@@ -189,7 +189,7 @@ object OciResponseUtils {
             response.addHeader(CONTENT_LENGTH, contentLength.toString())
         }
         range?.let {
-            response.addHeader(RANGE, "0-$range")
+            response.addHeader(RANGE, "0-${range - 1}")
         }
     }
 

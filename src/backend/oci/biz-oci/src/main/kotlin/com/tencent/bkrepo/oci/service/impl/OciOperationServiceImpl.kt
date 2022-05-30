@@ -33,8 +33,11 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -44,13 +47,21 @@ import com.tencent.bkrepo.oci.constant.APP_VERSION
 import com.tencent.bkrepo.oci.constant.CHART_LAYER_MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
 import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
+import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
+import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_DATE
 import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_CODE
 import com.tencent.bkrepo.oci.constant.MANIFEST_UNKNOWN_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
+import com.tencent.bkrepo.oci.constant.OCI_CREATE_BY
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OCI_MANIFEST
+import com.tencent.bkrepo.oci.constant.OCI_NODE_FULL_PATH
+import com.tencent.bkrepo.oci.constant.OCI_NODE_PATH
+import com.tencent.bkrepo.oci.constant.OCI_NODE_SIZE
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
+import com.tencent.bkrepo.oci.constant.STAGE_TAG
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.model.Descriptor
@@ -59,6 +70,10 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.response.OciImage
+import com.tencent.bkrepo.oci.pojo.response.OciImageResult
+import com.tencent.bkrepo.oci.pojo.response.OciTag
+import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.ObjectBuildUtils
@@ -74,6 +89,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import java.nio.charset.Charset
 import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -147,7 +163,7 @@ class OciOperationServiceImpl(
         nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let { node ->
             logger.info(
                 "Will read chart.yaml data from $fullPath with package $packageName " +
-                        "and version $version under repo $projectId/$repoName"
+                    "and version $version under repo $projectId/$repoName"
             )
             storageManager.loadArtifactInputStream(node, storageCredentials)?.let {
                 return try {
@@ -426,7 +442,7 @@ class OciOperationServiceImpl(
     override fun deleteVersion(userId: String, artifactInfo: OciArtifactInfo) {
         logger.info(
             "Try to delete the package [${artifactInfo.packageName}/${artifactInfo.version}] " +
-                    "in repo ${artifactInfo.getRepoIdentify()}"
+                "in repo ${artifactInfo.getRepoIdentify()}"
         )
         remove(userId, artifactInfo)
     }
@@ -510,7 +526,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
-                    "in repo ${ociArtifactInfo.getRepoIdentify()}"
+                "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
 
         val version = OciUtils.checkVersion(artifactFile.getInputStream())
@@ -589,7 +605,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to sync fsLayers' blob info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                    "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
+                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
         )
         // 根据flag生成package信息以及packageversion信息
         doPackageOperations(
@@ -612,7 +628,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to sync blobs and config info from manifest ${ociArtifactInfo.getArtifactFullPath()} " +
-                    "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
+                "to blobs in repo ${ociArtifactInfo.getRepoIdentify()}."
         )
         val descriptorList = OciUtils.manifestIterator(manifest)
 
@@ -688,7 +704,7 @@ class OciOperationServiceImpl(
             nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let {
                 logger.info(
                     "The current blob [${descriptor.digest}] is stored in $fullPath with package $packageName " +
-                            "and version $reference under repo ${getRepoIdentify()}"
+                        "and version $reference under repo ${getRepoIdentify()}"
                 )
                 updateNodeMetaData(
                     projectId = projectId,
@@ -807,7 +823,7 @@ class OciOperationServiceImpl(
         val result = nodeClient.search(queryModel.build()).data ?: run {
             logger.warn(
                 "Could not find $digestStr " +
-                        "in repo $projectId|$repoName"
+                    "in repo $projectId|$repoName"
             )
             return null
         }
@@ -848,6 +864,187 @@ class OciOperationServiceImpl(
             request = request,
             enableHttp = ociProperties.http
         ).toString()
+    }
+
+    override fun getManifest(artifactInfo: OciManifestArtifactInfo): String {
+        val context = ArtifactQueryContext()
+        try {
+            val inputStream = ArtifactContextHolder.getRepository().query(context) ?: throw OciFileNotFoundException(
+                "Error occurred when querying the manifest file.. "
+            )
+            return (inputStream as ArtifactInputStream).readBytes().toString(Charset.defaultCharset())
+        } catch (e: Exception) {
+            logger.warn(e.message.toString())
+            throw OciFileNotFoundException(e.message.toString())
+        }
+    }
+
+    override fun getImageList(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?
+    ): OciImageResult {
+        val result = getOciArtifactList(
+            projectId = projectId,
+            repoName = repoName,
+            pageNumber = pageNumber,
+            pageSize = pageSize,
+            name = name
+        )
+        val totalCount = result.size
+        return OciImageResult(totalCount, result)
+    }
+
+    fun getOciArtifactList(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?
+    ): List<OciImage> {
+        val queryModel = NodeQueryBuilder().select(
+            OCI_NODE_FULL_PATH,
+            OCI_NODE_PATH,
+            OCI_NODE_SIZE,
+            LAST_MODIFIED_BY,
+            LAST_MODIFIED_DATE
+        ).projectId(projectId).repoName(repoName).name(OCI_MANIFEST).sortByAsc(OCI_NODE_FULL_PATH)
+        name?.let {
+            queryModel.path("*$name*", OperationType.MATCH)
+        }
+        val result = nodeClient.search(queryModel.build()).data ?: run {
+            logger.warn("find repo list failed: [$projectId, $repoName] ")
+            return emptyList()
+        }
+        val data = mutableListOf<OciImage>()
+        val repoList = mutableListOf<String>()
+        result.records.forEach {
+            val path = it[OCI_NODE_PATH] as String
+            val imageName =
+                path.removeSuffix(StringPool.SLASH).replaceAfterLast(StringPool.SLASH, StringPool.EMPTY)
+                    .removeSuffix(StringPool.SLASH).removePrefix(StringPool.SLASH)
+            val lastModifiedBy = it[LAST_MODIFIED_BY] as String
+            val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
+            val downLoadCount = 0L
+            data.add(
+                OciImage(imageName, lastModifiedBy, lastModifiedDate, downLoadCount, StringPool.EMPTY, StringPool.EMPTY)
+            )
+            repoList.add(imageName)
+        }
+        val repoInfo = mutableListOf<OciImage>()
+        repoList.distinct().forEach { its ->
+            var downloadCount = 0L
+            var lastModifiedBy = StringPool.EMPTY
+            var lastModifiedDate = StringPool.EMPTY
+            data.forEach {
+                if (its == it.name) {
+                    downloadCount += it.downloadCount
+                    lastModifiedBy = it.lastModifiedBy
+                    lastModifiedDate = it.lastModifiedDate
+                }
+            }
+            repoInfo.add(
+                OciImage(its, lastModifiedBy, lastModifiedDate, downloadCount, StringPool.EMPTY, StringPool.EMPTY)
+            )
+        }
+        return repoInfo
+    }
+
+    override fun getRepoTag(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        packageName: String,
+        pageSize: Int,
+        tag: String?
+    ): OciTagResult {
+        val totalRecords = getRepoTagCount(
+            projectId = projectId,
+            repoName = repoName,
+            packageName = packageName,
+            tag = tag
+        )
+        val data = getRepoTagList(
+            projectId = projectId,
+            repoName = repoName,
+            packageName = packageName,
+            pageNumber = pageNumber,
+            pageSize = pageSize,
+            version = tag
+        )
+        return OciTagResult(totalRecords, data)
+    }
+
+    private fun getRepoTagCount(
+        projectId: String,
+        repoName: String,
+        packageName: String,
+        tag: String?
+    ): Long {
+        var queryModel = NodeQueryBuilder().select(
+            OCI_NODE_FULL_PATH,
+            OCI_NODE_PATH,
+            OCI_NODE_SIZE,
+            OCI_CREATE_BY,
+            LAST_MODIFIED_BY,
+            LAST_MODIFIED_DATE,
+            STAGE_TAG
+        ).sortByAsc(OCI_NODE_FULL_PATH).projectId(projectId).repoName(repoName)
+        queryModel = if (tag == null) {
+            queryModel.name(OCI_MANIFEST).path("/$packageName/", OperationType.PREFIX)
+        } else {
+            queryModel.name(OCI_MANIFEST).path("/$packageName/*$tag*", OperationType.MATCH)
+        }
+
+        val result = nodeClient.search(queryModel.build()).data ?: run {
+            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+            return 0L
+        }
+        return result.totalRecords
+    }
+
+    // get repo tag list
+    private fun getRepoTagList(
+        projectId: String,
+        repoName: String,
+        packageName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        version: String?
+    ): List<OciTag> {
+        var queryModel = NodeQueryBuilder().select(
+            OCI_NODE_FULL_PATH,
+            OCI_NODE_PATH,
+            OCI_NODE_SIZE,
+            OCI_CREATE_BY,
+            LAST_MODIFIED_BY,
+            LAST_MODIFIED_DATE,
+            STAGE_TAG
+        ).sortByAsc(OCI_NODE_FULL_PATH).page(pageNumber, pageSize).projectId(projectId).repoName(repoName)
+        queryModel = if (version == null) {
+            queryModel.name(OCI_MANIFEST).path("/$packageName/", OperationType.PREFIX)
+        } else {
+            queryModel.name(OCI_MANIFEST).path("/$packageName/*$version*", OperationType.MATCH)
+        }
+
+        val result = nodeClient.search(queryModel.build()).data ?: run {
+            logger.warn("find artifacts failed: [$projectId, $repoName] found no node")
+            return emptyList()
+        }
+        val data = mutableListOf<OciTag>()
+        result.records.forEach {
+            val path = it[OCI_NODE_PATH] as String
+            val tag = path.removePrefix("/$packageName/").removeSuffix(StringPool.SLASH)
+            val lastModifiedBy = it[LAST_MODIFIED_BY] as String
+            val lastModifiedDate = it[LAST_MODIFIED_DATE] as String
+            val size = it[OCI_NODE_SIZE] as Int
+            val downLoadCount = 0L
+            val registryUrl = "${ociProperties.domain}/$projectId/$repoName/$packageName:$tag"
+            data.add(OciTag(tag, StringPool.EMPTY, size, lastModifiedBy, lastModifiedDate, downLoadCount, registryUrl))
+        }
+        return data
     }
 
     companion object {

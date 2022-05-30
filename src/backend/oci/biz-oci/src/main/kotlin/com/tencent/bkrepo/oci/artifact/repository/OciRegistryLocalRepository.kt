@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.constant.FORCE
@@ -60,6 +61,7 @@ import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -306,11 +308,7 @@ class OciRegistryLocalRepository(
      */
     private fun downloadArtifact(context: ArtifactDownloadContext, fullPath: String?): ArtifactResource? {
         if (fullPath == null) return null
-        val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data ?: run {
-            val oldDockerPath = ociOperationService.getDockerNode(context.artifactInfo as OciArtifactInfo)
-                ?: return null
-            nodeClient.getNodeDetail(context.projectId, context.repoName, oldDockerPath).data
-        }
+        val node = getNodeDetail(context.artifactInfo as OciArtifactInfo, fullPath)
         logger.info(
             "Starting to download $fullPath " +
                 "in repo: ${context.artifactInfo.getRepoIdentify()}"
@@ -350,7 +348,15 @@ class OciRegistryLocalRepository(
         return resource
     }
 
-    /**
+    private fun getNodeDetail(artifactInfo: OciArtifactInfo, fullPath: String): NodeDetail? {
+        return nodeClient.getNodeDetail(artifactInfo.projectId, artifactInfo.repoName, fullPath).data ?: run {
+            val oldDockerPath = ociOperationService.getDockerNode(artifactInfo)
+                ?: return null
+            nodeClient.getNodeDetail(artifactInfo.projectId, artifactInfo.repoName, oldDockerPath).data
+        }
+    }
+
+/**
      * 版本不存在时 status code 404
      */
     override fun remove(context: ArtifactRemoveContext) {
@@ -373,7 +379,22 @@ class OciRegistryLocalRepository(
     /**
      * 查询tag列表
      */
-    override fun query(context: ArtifactQueryContext): TagsInfo {
+    override fun query(context: ArtifactQueryContext): Any? {
+        if (context.artifactInfo is OciTagArtifactInfo) {
+            return queryTagList(context)
+        }
+        if (context.artifactInfo is OciManifestArtifactInfo) {
+            return queryManifest(context)
+        }
+        return null
+    }
+
+    private fun queryManifest(context: ArtifactQueryContext): ArtifactInputStream? {
+        val node = getNodeDetail(context.artifactInfo as OciArtifactInfo, context.artifactInfo.getArtifactFullPath())
+        return storageManager.loadArtifactInputStream(node, context.storageCredentials)
+    }
+
+    private fun queryTagList(context: ArtifactQueryContext): TagsInfo {
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)

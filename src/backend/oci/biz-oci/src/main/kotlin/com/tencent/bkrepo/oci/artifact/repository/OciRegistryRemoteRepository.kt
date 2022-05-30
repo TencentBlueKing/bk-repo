@@ -424,7 +424,11 @@ class OciRegistryRemoteRepository(
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         artifactFile.delete()
-        return JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
+        return if (context.artifactInfo is OciTagArtifactInfo) {
+            JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
+        } else {
+            artifactStream
+        }
     }
 
     companion object {
