@@ -27,8 +27,22 @@
 
 package com.tencent.bkrepo.scanner.dao
 
-import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
-class FinishedSubScanTaskDao : AbsSubScanTaskDao<TFinishedSubScanTask>()
+class ArchiveSubScanTaskDao : AbsSubScanTaskDao<TArchiveSubScanTask>() {
+    fun updateStatus(ids: List<String>, status: String): UpdateResult {
+        val query = Query(Criteria.where(ID).inValues(ids))
+        val update = Update
+            .update(TArchiveSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TArchiveSubScanTask::status.name, status)
+        return updateMulti(query, update)
+    }
+}

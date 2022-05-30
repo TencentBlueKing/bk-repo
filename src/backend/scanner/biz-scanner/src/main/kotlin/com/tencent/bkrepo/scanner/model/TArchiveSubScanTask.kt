@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.scanner.utils.Converter
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -34,20 +35,20 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 /**
- * 已完成扫描的子任务
+ * 扫描的子任务归档表，包含所有扫描子任务
  */
-@Document("finished_sub_scan_task")
+@Document("archive_sub_scan_task")
 @CompoundIndexes(
     CompoundIndex(name = "parentScanTaskId_idx", def = "{'parentScanTaskId': 1}", background = true)
 )
-class TFinishedSubScanTask(
+class TArchiveSubScanTask(
     id: String? = null,
     createdBy: String,
     createdDate: LocalDateTime,
     lastModifiedBy: String,
     lastModifiedDate: LocalDateTime,
     startDateTime: LocalDateTime?,
-    finishedDateTime: LocalDateTime,
+    finishedDateTime: LocalDateTime?,
 
     parentScanTaskId: String,
     planId: String?,
@@ -110,21 +111,26 @@ class TFinishedSubScanTask(
     companion object {
         fun from(
             task: TSubScanTask,
-            resultStatus: String,
+            status: String,
             overview: Map<String, Any?>? = null,
             modifiedBy: String? = null,
-            qualityPass: Boolean? = null,
-            now: LocalDateTime = LocalDateTime.now()
+            qualityPass: Boolean? = null
         ) = with(task) {
+            val now = LocalDateTime.now()
             val numberOverview = overview?.let { Converter.convert(it) }
-            TFinishedSubScanTask(
+            val finishedDateTime = if (SubScanTaskStatus.finishedStatus(status)) {
+                now
+            } else {
+                null
+            }
+            TArchiveSubScanTask(
                 id = id,
                 createdBy = createdBy,
                 createdDate = createdDate,
                 lastModifiedBy = modifiedBy ?: lastModifiedBy,
                 lastModifiedDate = now,
                 startDateTime = startDateTime,
-                finishedDateTime = now,
+                finishedDateTime = finishedDateTime,
                 parentScanTaskId = parentScanTaskId,
                 planId = planId,
                 projectId = projectId,
@@ -134,7 +140,7 @@ class TFinishedSubScanTask(
                 version = version,
                 fullPath = fullPath,
                 artifactName = artifactName,
-                status = resultStatus,
+                status = status,
                 executedTimes = executedTimes,
                 scanner = scanner,
                 scannerType = scannerType,

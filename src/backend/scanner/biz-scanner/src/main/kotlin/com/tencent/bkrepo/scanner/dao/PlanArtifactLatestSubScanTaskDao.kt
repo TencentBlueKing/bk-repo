@@ -214,7 +214,7 @@ class PlanArtifactLatestSubScanTaskDao(
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, subtaskScanStatus)
-        return updateFirst(Query(criteria), update)
+        return updateMulti(Query(criteria), update)
     }
 
     /**

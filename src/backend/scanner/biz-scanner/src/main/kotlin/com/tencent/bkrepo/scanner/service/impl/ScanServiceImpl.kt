@@ -44,7 +44,7 @@ import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
-import com.tencent.bkrepo.scanner.dao.FinishedSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
@@ -52,7 +52,7 @@ import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
-import com.tencent.bkrepo.scanner.model.TFinishedSubScanTask
+import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
@@ -100,7 +100,7 @@ class ScanServiceImpl @Autowired constructor(
     private val subScanTaskDao: SubScanTaskDao,
     private val scanPlanDao: ScanPlanDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
-    private val finishedSubScanTaskDao: FinishedSubScanTaskDao,
+    private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
@@ -280,8 +280,10 @@ class ScanServiceImpl @Autowired constructor(
         } else {
             null
         }
-        finishedSubScanTaskDao.insert(
-            TFinishedSubScanTask.from(subTask, resultSubTaskStatus, overview, qualityPass = qualityPass)
+        archiveSubScanTaskDao.save(
+            TArchiveSubScanTask.from(
+                subTask, resultSubTaskStatus, overview, qualityPass = qualityPass, modifiedBy = modifiedBy
+            )
         )
         planArtifactLatestSubScanTaskDao.updateStatus(
             latestSubScanTaskId = subTaskId,
@@ -339,6 +341,7 @@ class ScanServiceImpl @Autowired constructor(
             )
             val modified = updateResult.modifiedCount == 1L
             if (modified) {
+                archiveSubScanTaskDao.save(TArchiveSubScanTask.from(subScanTask, SubScanTaskStatus.EXECUTING.name))
                 scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.EXECUTING)
                 // 更新任务实际开始扫描的时间
                 scanTaskDao.updateStartedDateTimeIfNotExists(subScanTask.parentScanTaskId, LocalDateTime.now())
@@ -366,6 +369,7 @@ class ScanServiceImpl @Autowired constructor(
         val updateResult =
             subScanTaskDao.updateStatus(subtask.id!!, SubScanTaskStatus.ENQUEUED, oldStatus, subtask.lastModifiedDate)
         if (updateResult.modifiedCount == 1L) {
+            archiveSubScanTaskDao.save(TArchiveSubScanTask.from(subtask, SubScanTaskStatus.ENQUEUED.name))
             scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.ENQUEUED)
         }
     }
@@ -378,7 +382,7 @@ class ScanServiceImpl @Autowired constructor(
         val resetTask = scanTaskDao.resetTask(task.id!!, task.lastModifiedDate)
         if (resetTask != null) {
             subScanTaskDao.deleteByParentTaskId(task.id)
-            finishedSubScanTaskDao.deleteByParentTaskId(task.id)
+            archiveSubScanTaskDao.deleteByParentTaskId(task.id)
             scannerMetrics.taskStatusChange(ScanTaskStatus.valueOf(task.status), ScanTaskStatus.PENDING)
             val plan = task.planId?.let { scanPlanDao.get(it) }
             scanTaskScheduler.schedule(Converter.convert(resetTask, plan))
@@ -416,6 +420,7 @@ class ScanServiceImpl @Autowired constructor(
             val updateResult =
                 subScanTaskDao.updateStatus(task.id!!, SubScanTaskStatus.PULLED, oldStatus, task.lastModifiedDate)
             if (updateResult.modifiedCount != 0L) {
+                archiveSubScanTaskDao.save(TArchiveSubScanTask.from(task, SubScanTaskStatus.PULLED.name))
                 scannerMetrics.subtaskStatusChange(oldStatus, SubScanTaskStatus.PULLED)
                 return task
             }
