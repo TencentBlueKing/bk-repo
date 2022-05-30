@@ -157,7 +157,7 @@ class OciRegistryLocalRepository(
                 logger.info("range $range, length $length, uuid $uuid")
                 val (_, end) = getRangeInfo(range)
                 // 判断要上传的长度是否超长
-                if (end > length) {
+                if (end > length - 1) {
                     OciResponseUtils.buildBlobUploadPatchResponse(
                         domain = domain,
                         uuid = uuid!!,
