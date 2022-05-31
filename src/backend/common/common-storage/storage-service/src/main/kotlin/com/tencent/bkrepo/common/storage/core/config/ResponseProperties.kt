@@ -50,5 +50,9 @@ data class ResponseProperties(
     /**
      * mime mappings，content-type的MediaType映射
      * */
-    var mimeMappings: Map<String, String> = emptyMap()
+    var mimeMappings: Map<String, String> = emptyMap(),
+    /**
+     * 二进制媒体类型，不指定编码。
+     * */
+    var binaryMediaTypes: Set<String> = emptySet()
 )
