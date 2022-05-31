@@ -166,40 +166,39 @@
             },
             confirmHandler (tab, type) {
                 if (tab.loading || !tab[type].length) return
-
-                const fn = { user: this.setUserPermission, role: this.setRolePermission }[tab.type]
-
                 const key = { user: 'userId', role: 'rId' }[tab.type]
-
                 const value = {
                     add: [...tab.items, ...tab.add],
                     delete: tab.items.filter(v => !tab.delete.find(w => w === v))
                 }[type]
-
                 const deleteName = tab.delete.map(v => this.userList[v]?.name || this.roleList[v]?.name || v)
 
-                this.$confirm({
-                    theme: 'danger',
-                    message: `确定移除 ${deleteName} ?`,
-                    confirmFn: () => {
-                        tab.loading = true
-                        return fn({
-                            body: {
-                                permissionId: tab.id,
-                                [key]: value
-                            }
-                        }).then(() => {
-                            this.$bkMessage({
-                                theme: 'success',
-                                message: (type === 'add' ? this.$t('add') : this.$t('delete')) + this.$t('success')
-                            })
-                            this.initProjectConfig()
-                            tab[type] = []
-                        }).finally(() => {
-                            tab.loading = false
+                const confirmFn = () => {
+                    tab.loading = true
+                    return ({ user: this.setUserPermission, role: this.setRolePermission })[tab.type]({
+                        body: {
+                            permissionId: tab.id,
+                            [key]: value
+                        }
+                    }).then(() => {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: (type === 'add' ? this.$t('add') : this.$t('delete')) + this.$t('success')
                         })
-                    }
-                })
+                        this.initProjectConfig()
+                        tab[type] = []
+                    }).finally(() => {
+                        tab.loading = false
+                    })
+                }
+
+                type === 'add'
+                    ? confirmFn()
+                    : this.$confirm({
+                        theme: 'danger',
+                        message: `确定移除 ${deleteName} ?`,
+                        confirmFn
+                    })
             },
             showProjectDialog () {
                 const { id = '', name = '', description = '' } = this.currentProject
