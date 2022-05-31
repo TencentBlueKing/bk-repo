@@ -37,7 +37,7 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("oci镜像信息查询结果信息")
 data class OciImageResult(
     @ApiModelProperty("totalRecords")
-    var totalRecords: Int,
+    var totalRecords: Long,
     @ApiModelProperty("records")
     var records: List<OciImage>
 )

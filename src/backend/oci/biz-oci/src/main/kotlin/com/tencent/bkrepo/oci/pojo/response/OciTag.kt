@@ -41,7 +41,7 @@ data class OciTag(
     @ApiModelProperty("stageTag")
     val stageTag: String,
     @ApiModelProperty("大小")
-    val size: Int,
+    val size: Long,
     @ApiModelProperty("最后修改人")
     val lastModifiedBy: String,
     @ApiModelProperty("最后修改时间")

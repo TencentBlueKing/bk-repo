@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.oci.constant.OCI_NODE_NAME
+import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
 import com.tencent.bkrepo.oci.constant.OCI_PROJECT_ID
 import com.tencent.bkrepo.oci.constant.OCI_REPO_NAME
 import com.tencent.bkrepo.oci.constant.OCI_TAG
@@ -153,7 +153,7 @@ class UserOciController(
         @ApiParam(value = PAGE_SIZE, required = true)
         pageSize: Int,
         @RequestParam(required = false)
-        @ApiParam(value = OCI_NODE_NAME, required = true)
+        @ApiParam(value = OCI_PACKAGE_NAME, required = true)
         name: String?
     ): Response<OciImageResult> {
         return ResponseBuilder.success(
