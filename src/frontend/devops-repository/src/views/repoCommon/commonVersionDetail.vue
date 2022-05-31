@@ -65,7 +65,7 @@
                     :row-border="false"
                     size="small">
                     <template #empty>
-                        <empty-data ex-style="margin-top:80px;"></empty-data>
+                        <empty-data ex-style="margin-top:130px;"></empty-data>
                     </template>
                     <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
                     <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>
@@ -80,7 +80,7 @@
                     :row-border="false"
                     size="small">
                     <template #empty>
-                        <empty-data ex-style="margin-top:80px;"></empty-data>
+                        <empty-data ex-style="margin-top:130px;"></empty-data>
                     </template>
                     <bk-table-column :label="$t('key')" prop="0" show-overflow-tooltip></bk-table-column>
                     <bk-table-column :label="$t('value')" prop="1" show-overflow-tooltip></bk-table-column>

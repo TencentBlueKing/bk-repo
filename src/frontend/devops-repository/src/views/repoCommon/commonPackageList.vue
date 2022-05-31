@@ -71,7 +71,7 @@
                 </template>
                 <!-- 无数据 -->
                 <template v-else>
-                    <empty-data :is-loading="isLoading" ex-style="padding-top: 100px;" search></empty-data>
+                    <empty-data :is-loading="isLoading" ex-style="padding-top: 130px;" search></empty-data>
                 </template>
             </div>
         </template>
