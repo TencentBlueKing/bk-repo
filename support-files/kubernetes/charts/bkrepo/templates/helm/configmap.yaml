@@ -14,7 +14,7 @@ metadata:
 data:
   application.yml: |-
     helm:
-      domain: {{ .Values.gateway.helmHost }}
+      domain: helm.{{ .Values.gateway.host }}
       {{- if keys $.Values.helm.config }}
         {{- toYaml .Values.helm.config | nindent 6 }}
       {{- end}}
