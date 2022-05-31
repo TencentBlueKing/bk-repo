@@ -35,6 +35,8 @@ import io.swagger.annotations.ApiModelProperty
 data class ScanTask(
     @ApiModelProperty("任务id")
     val taskId: String,
+    @ApiModelProperty("项目id")
+    val projectId: String?,
     @ApiModelProperty("触发者")
     val createdBy: String,
     @ApiModelProperty("最后修改时间")
@@ -59,6 +61,8 @@ data class ScanTask(
     val failed: Long,
     @ApiModelProperty("已扫描文件总数")
     val scanned: Long,
+    @ApiModelProperty("通过质量规则的文件总数")
+    val passed: Long,
     @ApiModelProperty("使用的扫描器")
     val scanner: String,
     @ApiModelProperty("扫描器类型")

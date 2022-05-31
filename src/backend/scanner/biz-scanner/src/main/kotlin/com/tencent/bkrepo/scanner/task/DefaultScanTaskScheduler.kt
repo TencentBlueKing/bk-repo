@@ -40,16 +40,16 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
-import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
-import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
+import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
 import com.tencent.bkrepo.scanner.model.TSubScanTask
@@ -202,6 +202,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         val subScanTasks = ArrayList<TSubScanTask>()
         val finishedSubScanTasks = ArrayList<TArchiveSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
+        val qualityRule = scanTask.scanPlan?.scanQuality
         for (node in nodeIterator) {
             // 未使用扫描方案的情况直接取node的projectId
             projectScanConfiguration = projectScanConfiguration
@@ -217,7 +218,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 fileScanResultDao.find(storageCredentialsKey, node.sha256, scanner.name, scanner.version)
             if (existsFileScanResult != null && !scanTask.force) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
-                val finishedSubtask = createFinishedSubTask(scanTask, existsFileScanResult, node, storageCredentialsKey)
+                val finishedSubtask = createFinishedSubTask(
+                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule
+                )
                 finishedSubScanTasks.add(finishedSubtask)
             } else {
                 // 添加到扫描任务队列
@@ -272,7 +275,13 @@ class DefaultScanTaskScheduler @Autowired constructor(
             return
         }
         val tasks = archiveSubScanTaskDao.insert(finishedSubtasks)
-        val planArtifactLatestSubtasks = tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
+        var passCount = 0L
+        val planArtifactLatestSubtasks = tasks.map {
+            if (it.qualityRedLine == true) {
+                passCount++
+            }
+            TPlanArtifactLatestSubScanTask.convert(it, it.status)
+        }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubtasks)
         planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
@@ -285,7 +294,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
 
         val task = tasks.first()
-        scanTaskDao.updateScanResult(task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true)
+        scanTaskDao.updateScanResult(
+            task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true, passCount = passCount
+        )
         scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toLong())
     }
 
@@ -333,7 +344,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         fileScanResult: TFileScanResult,
         node: Node,
         credentialKey: String? = null,
-        resultStatus: String = SubScanTaskStatus.SUCCESS.name
+        qualityRule: Map<String, Any>? = null
     ): TArchiveSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
@@ -343,9 +354,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 ?.overview
                 ?.let { Converter.convert(it) }
             // 质量检查结果
-            val planId = scanTask.scanPlan?.id
-            val qualityPass = if (planId != null && overview != null) {
-                scanQualityService.checkScanQualityRedLine(planId, overview)
+            val qualityPass = if (qualityRule != null && overview != null) {
+                scanQualityService.checkScanQualityRedLine(qualityRule, overview)
             } else {
                 null
             }
@@ -368,7 +378,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 fullPath = fullPath,
                 artifactName = artifactName,
 
-                status = resultStatus,
+                status = SubScanTaskStatus.SUCCESS.name,
                 executedTimes = 0,
                 scanner = scanTask.scanner,
                 scannerType = scanTask.scannerType,

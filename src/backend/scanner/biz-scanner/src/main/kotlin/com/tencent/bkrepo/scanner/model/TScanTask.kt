@@ -38,7 +38,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = "planId_idx", def = "{'planId': 1}", background = true),
     CompoundIndex(
         name = "projectId_lastModifiedDate_idx",
-        def = "{'projectId': 1, 'lastModifiedDate': 1}",
+        def = "{'projectId': 1, 'lastModifiedDate': -1}",
         background = true
     )
 )
@@ -95,6 +95,10 @@ data class TScanTask(
      * 已扫描文件数
      */
     val scanned: Long,
+    /**
+     * 通过扫描质量红线的文件数
+     */
+    val passed: Long = 0L,
     /**
      * 使用的扫描器
      */

@@ -56,6 +56,7 @@ object Converter {
     fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null, force: Boolean = false): ScanTask = with(scanTask) {
         ScanTask(
             taskId = id!!,
+            projectId = projectId,
             createdBy = createdBy,
             lastModifiedDateTime = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -68,6 +69,7 @@ object Converter {
             scanning = scanning,
             failed = failed,
             scanned = scanned,
+            passed = passed,
             scanner = scanner,
             scannerType = scannerType,
             scannerVersion = scannerVersion,

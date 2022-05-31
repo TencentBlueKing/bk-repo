@@ -33,7 +33,13 @@ class ScanQualityServiceImpl(
     override fun checkScanQualityRedLine(planId: String, scanResultOverview: Map<String, Number>): Boolean {
         // 获取方案质量规则
         val scanQuality = scanPlanDao.get(planId).scanQuality
+        return checkScanQualityRedLine(scanQuality, scanResultOverview)
+    }
 
+    override fun checkScanQualityRedLine(
+        scanQuality: Map<String, Any>,
+        scanResultOverview: Map<String, Number>
+    ): Boolean {
         // 检查质量规则是否通过
         CveOverviewKey.values().forEach { overviewKey ->
             if (checkRedLine(overviewKey, scanResultOverview, scanQuality)) {
@@ -90,7 +96,7 @@ class ScanQualityServiceImpl(
         quality: Map<String, Any>
     ): Boolean {
         val cveCount = overview[overviewKey.key]?.toLong()
-        val readLine = quality[overviewKey.level.levelName] as Long?
-        return cveCount != null && readLine != null && cveCount > readLine
+        val redLine = quality[overviewKey.level.levelName] as Long?
+        return cveCount != null && redLine != null && cveCount > redLine
     }
 }

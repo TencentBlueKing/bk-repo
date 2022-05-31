@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
@@ -80,9 +81,6 @@ import com.tencent.bkrepo.scanner.utils.RuleUtil
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -146,6 +144,7 @@ class ScanServiceImpl @Autowired constructor(
                     scanning = 0L,
                     failed = 0L,
                     scanned = 0L,
+                    passed = 0L,
                     scanner = scanner.name,
                     scannerType = scanner.type,
                     scannerVersion = scanner.version,
@@ -177,33 +176,21 @@ class ScanServiceImpl @Autowired constructor(
 
     override fun task(taskId: String): ScanTask {
         return scanTaskDao.findById(taskId)?.let { task ->
+            if (task.projectId == null) {
+                permissionCheckHandler.permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+            } else {
+                permissionCheckHandler.checkProjectPermission(task.projectId, PermissionAction.MANAGE)
+            }
             val plan = task.planId?.let { scanPlanDao.get(it) }
             Converter.convert(task, plan)
         } ?: throw ScanTaskNotFoundException(taskId)
     }
 
     override fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<ScanTask> {
-        val criteria = Criteria()
-        with(scanTaskQuery) {
-            scanner?.let { criteria.and(TScanTask::scanner.name).isEqualTo(it) }
-            scannerType?.let { criteria.and(TScanTask::scannerType.name).isEqualTo(it) }
-            status?.let { criteria.and(TScanTask::status.name).isEqualTo(it) }
-        }
-        val query = Query(criteria)
-        val count = scanTaskDao.count(query)
-        query.with(Pages.ofRequest(pageLimit.pageNumber, pageLimit.pageSize))
-        val tScanTasks = scanTaskDao.find(query)
-        val planIds = tScanTasks.filter { it.planId != null }.map { it.planId!! }
-        val tPlans = if (planIds.isEmpty()) {
-            emptyMap()
-        } else {
-            scanPlanDao.findByIds(planIds).associateBy { it.id!! }
-        }
-        val scanTasks = tScanTasks.map { task ->
-            val tPlan = task.planId?.let { tPlans[it] }
-            Converter.convert(task, tPlan)
-        }
-        return Page(pageLimit.pageNumber, pageLimit.pageSize, count, scanTasks)
+        permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId, PermissionAction.MANAGE)
+        val taskPage = scanTaskDao.find(scanTaskQuery, pageLimit)
+        val records = taskPage.records.map { Converter.convert(it) }
+        return Page(pageLimit.pageNumber, pageLimit.pageSize, taskPage.totalRecords, records)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -308,7 +295,12 @@ class ScanServiceImpl @Autowired constructor(
 
         // 更新父任务扫描结果
         val scanSuccess = resultSubTaskStatus == SubScanTaskStatus.SUCCESS.name
-        scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess)
+        val passCount = if (qualityPass == true) {
+            1L
+        } else {
+            0L
+        }
+        scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess, passCount = passCount)
         if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
             logger.info("scan finished, task[$parentTaskId]")
