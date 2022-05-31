@@ -152,4 +152,51 @@ object OciUtils {
         }
         return packageName
     }
+
+    /**
+     * 根据n或者last进行过滤（注意n是否会超过tags总长）
+     * 1 n和last 都不存在，则返回所有
+     * 2 n存在， last不存在，则返回前n个
+     * 3 last存在 n不存在， 则返回查到的last，如不存在，则返回空列表
+     * 4 last存在，n存在，则返回last之后的n个
+     */
+    fun filterHandler(tags: MutableList<String>, n: Int?, last: String?): MutableList<String> {
+        if (n != null) return handleNFilter(tags, n, last)
+        if (last.isNullOrEmpty()) return tags
+        val index = tags.indexOf(last)
+        return if (index == -1) {
+            mutableListOf()
+        } else {
+            mutableListOf(last)
+        }
+    }
+
+    /**
+     * 处理n存在时的逻辑
+     */
+    private fun handleNFilter(tags: MutableList<String>, n: Int, last: String?): MutableList<String> {
+        var tagList = tags
+        var size = n
+        val length = tags.size
+        if (last.isNullOrEmpty()) {
+            // 需要判断n个是否超过tags总长
+            if (size > length) {
+                size = length
+            }
+            tagList = tagList.subList(0, size)
+            return tagList
+        }
+        // 当last存在，n也存在 则获取last所在后n个tag
+        val index = tagList.indexOf(last)
+        return if (index == -1) {
+            mutableListOf()
+        } else {
+            // 需要判断last后n个是否超过tags总长
+            if (index + size + 1 > length) {
+                size = length - 1 - index
+            }
+            tagList = tagList.subList(index + 1, index + size + 1)
+            tagList
+        }
+    }
 }
