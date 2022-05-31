@@ -51,7 +51,9 @@ class SubtaskStatusChangedEventListener(
                 return
             }
 
-            logger.info("SubtaskStatusChangedEvent:${event.toJsonString()}")
+            if (logger.isDebugEnabled) {
+                logger.debug("SubtaskStatusChangedEvent:${event.toJsonString()}")
+            }
             val metadata = mutableMapOf<String, Any>(
                 METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name
             )

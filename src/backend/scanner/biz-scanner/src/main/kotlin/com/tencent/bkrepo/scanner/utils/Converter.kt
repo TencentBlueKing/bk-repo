@@ -67,6 +67,7 @@ object Converter {
             triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
             startDateTime = startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
             finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+            triggerType = triggerType,
             status = status,
             scanPlan = scanPlan?.let { ScanPlanConverter.convert(it) },
             rule = scanTask.rule?.readJsonString(),

@@ -95,8 +95,8 @@ class ScanQualityServiceImpl(
         overview: Map<String, Number>,
         quality: Map<String, Any>
     ): Boolean {
-        val cveCount = overview[overviewKey.key]?.toLong()
-        val redLine = quality[overviewKey.level.levelName] as Long?
-        return cveCount != null && redLine != null && cveCount > redLine
+        val cveCount = overview[overviewKey.key]?.toLong() ?: 0L
+        val redLine = quality[overviewKey.level.levelName] as Long? ?: Long.MAX_VALUE
+        return cveCount > redLine
     }
 }

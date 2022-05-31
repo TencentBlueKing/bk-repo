@@ -47,6 +47,8 @@ data class ScanTask(
     val startDateTime: String?,
     @ApiModelProperty("任务执行结束时间")
     val finishedDateTime: String?,
+    @ApiModelProperty("触发方式")
+    val triggerType: String,
     @ApiModelProperty("任务状态")
     val status: String,
     @ApiModelProperty("扫描方案")

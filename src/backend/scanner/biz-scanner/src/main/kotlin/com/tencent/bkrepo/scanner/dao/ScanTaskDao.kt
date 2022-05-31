@@ -186,7 +186,7 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
             criteria.and(TScanTask::projectId.name).isEqualTo(projectId)
             triggerType?.let { criteria.and(TScanTask::triggerType.name).isEqualTo(it) }
             after?.let { criteria.and(TScanTask::createdDate.name).gt(ofTimestamp(it)) }
-            before?.let { criteria.and(TScanTask::createdDate.name).gt(ofTimestamp(it)) }
+            before?.let { criteria.and(TScanTask::createdDate.name).lt(ofTimestamp(it)) }
             scanner?.let { criteria.and(TScanTask::scanner.name).isEqualTo(it) }
             scannerType?.let { criteria.and(TScanTask::scannerType.name).isEqualTo(it) }
             status?.let { criteria.and(TScanTask::status.name).isEqualTo(it) }
