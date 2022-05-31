@@ -34,4 +34,5 @@ dependencies {
     api(project(":common:common-artifact:artifact-service"))
     api("javax.ws.rs:jsr311-api:${Versions.JSR311API}")
     implementation("com.github.zafarkhaja:java-semver")
+    implementation("org.glassfish.jersey.core:jersey-server:${Versions.Jersey}")
 }
