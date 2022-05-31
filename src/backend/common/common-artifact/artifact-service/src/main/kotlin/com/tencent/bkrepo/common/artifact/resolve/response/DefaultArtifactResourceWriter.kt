@@ -90,8 +90,9 @@ open class DefaultArtifactResourceWriter(
             ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length.toInt())
-        response.characterEncoding = resource.characterEncoding
-        response.contentType = resource.contentType ?: determineMediaType(name)
+        val mediaType = resource.contentType ?: determineMediaType(name)
+        response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
+        response.contentType = mediaType
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
@@ -247,7 +248,18 @@ open class DefaultArtifactResourceWriter(
      */
     private fun determineMediaType(name: String): String {
         val extension = PathUtils.resolveExtension(name)
-        return mimeMappings.get(extension) ?: MediaTypes.APPLICATION_OCTET_STREAM
+        return mimeMappings.get(extension) ?: storageProperties.response.mimeMappings[extension]
+            ?: MediaTypes.APPLICATION_OCTET_STREAM
+    }
+
+    /**
+     * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
+     * */
+    private fun determineCharset(mediaType: String, defaultCharset: String): String? {
+        return if (binaryMediaTypes.contains(mediaType) ||
+            storageProperties.response.binaryMediaTypes.contains(mediaType)
+        ) null
+        else defaultCharset
     }
 
     /**
@@ -291,6 +303,8 @@ open class DefaultArtifactResourceWriter(
             add("yaml", MediaTypes.APPLICATION_YAML)
             add("tgz", MediaTypes.APPLICATION_TGZ)
             add("ico", MediaTypes.APPLICATION_ICO)
+            add("apk", MediaTypes.APPLICATION_APK)
         }
+        private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }
