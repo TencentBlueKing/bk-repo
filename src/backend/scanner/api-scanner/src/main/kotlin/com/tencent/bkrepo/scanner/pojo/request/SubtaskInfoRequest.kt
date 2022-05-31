@@ -35,11 +35,11 @@ import java.time.Instant
 import java.time.LocalDateTime
 
 @ApiModel("请求指定扫描方案扫描过的制品扫描结果信息")
-data class PlanArtifactRequest(
+data class SubtaskInfoRequest(
     @ApiModelProperty("扫描方案所属项目id", required = true)
     val projectId: String,
     @ApiModelProperty("扫描方案id", required = true)
-    val id: String,
+    val id: String? = null,
     @ApiModelProperty("扫描任务id，默认为扫描方案最新一次的扫描任务")
     var parentScanTaskId: String? = null,
     @ApiModelProperty("制品名关键字，只要制品名包含该关键字则匹配")

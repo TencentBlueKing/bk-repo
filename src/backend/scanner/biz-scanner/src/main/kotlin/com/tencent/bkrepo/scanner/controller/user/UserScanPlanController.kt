@@ -42,13 +42,14 @@ import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
-import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
-import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
+import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -65,6 +66,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/scan/plan")
 class UserScanPlanController(
     private val scanPlanService: ScanPlanService,
+    private val scanTaskService: ScanTaskService,
     private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) {
 
@@ -164,9 +166,11 @@ class UserScanPlanController(
 
     @ApiOperation("方案详情-制品信息")
     @GetMapping("/artifact")
-    fun planArtifactList(planArtifactRequest: PlanArtifactRequest): Response<Page<PlanArtifactInfo>> {
-        permissionCheckHandler.checkProjectPermission(planArtifactRequest.projectId, PermissionAction.MANAGE)
-        return ResponseBuilder.success(scanPlanService.planArtifactPage(ScanPlanConverter.convert(planArtifactRequest)))
+    fun planArtifactSubtaskList(subtaskInfoRequest: SubtaskInfoRequest): Response<Page<SubtaskInfo>> {
+        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
+        return ResponseBuilder.success(
+            scanTaskService.planArtifactSubtaskPage(ScanPlanConverter.convert(subtaskInfoRequest))
+        )
     }
 
     @ApiOperation("文件/包关联的扫描方案列表")

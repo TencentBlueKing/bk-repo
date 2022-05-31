@@ -28,7 +28,10 @@
 package com.tencent.bkrepo.scanner.utils
 
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
+import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
@@ -36,6 +39,8 @@ import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import java.time.format.DateTimeFormatter
 
 object Converter {
@@ -98,5 +103,83 @@ object Converter {
             }
         }
         return numberOverview
+    }
+
+    fun convertToSubtaskInfo(subScanTask: SubScanTaskDefinition): SubtaskInfo {
+        return with(subScanTask) {
+            SubtaskInfo(
+                recordId = id!!,
+                subTaskId = id!!,
+                name = artifactName,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                repoType = repoType,
+                repoName = repoName,
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                status = ScanPlanConverter.convertToScanStatus(status).name,
+                createdBy = createdBy,
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                qualityRedLine = qualityRedLine
+            )
+        }
+    }
+
+    fun convert(subScanTask: SubScanTaskDefinition): SubtaskResultOverview {
+        return with(subScanTask) {
+            val critical = getCveCount(Level.CRITICAL.levelName, subScanTask)
+            val high = getCveCount(Level.HIGH.levelName, subScanTask)
+            val medium = getCveCount(Level.MEDIUM.levelName, subScanTask)
+            val low = getCveCount(Level.LOW.levelName, subScanTask)
+
+            SubtaskResultOverview(
+                recordId = subScanTask.id!!,
+                subTaskId = subScanTask.id!!,
+                name = artifactName,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                repoType = repoType,
+                repoName = repoName,
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                critical = critical,
+                high = high,
+                medium = medium,
+                low = low,
+                total = critical + high + medium + low,
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                qualityRedLine = qualityRedLine,
+                scanQuality = scanQuality,
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime)
+            )
+        }
+    }
+
+    fun getCveCount(level: String, subtask: SubScanTaskDefinition): Long {
+        return getCveCount(subtask.scannerType, level, subtask.scanResultOverview)
+    }
+
+    fun getCveCount(scannerType: String?, level: String, overview: Map<String, Number>?): Long {
+        if (scannerType == null) {
+            return 0L
+        }
+
+        val key = getCveOverviewKey(level)
+        return overview?.get(key)?.toLong() ?: 0L
+    }
+
+    fun getCveOverviewKey(level: String): String {
+        return CveOverviewKey.overviewKeyOf(level)
+    }
+
+    private fun highestLeakLevel(overview: Map<String, Number>): String? {
+        Level.values().forEach {
+            if (overview.keys.contains(getCveOverviewKey(it.levelName))) {
+                return ScanPlanConverter.convertToLeakLevel(it.levelName)
+            }
+        }
+        return null
     }
 }

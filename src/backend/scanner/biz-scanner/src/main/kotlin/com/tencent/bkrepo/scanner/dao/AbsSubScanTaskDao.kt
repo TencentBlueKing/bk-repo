@@ -28,9 +28,16 @@
 package com.tencent.bkrepo.scanner.dao
 
 import com.mongodb.client.result.DeleteResult
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
+import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.scanner.utils.Converter
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 
 abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongoDao<E>() {
@@ -41,8 +48,64 @@ abstract class AbsSubScanTaskDao<E : SubScanTaskDefinition> : ScannerSimpleMongo
         return findOne(Query(criteria))
     }
 
+    /**
+     * 分页获取指定扫描方案的制品最新扫描记录
+     *
+     * @param request 获取制品最新扫描记录请求
+     *
+     * @return 扫描方案最新的制品扫描结果
+     */
+    fun pageBy(request: SubtaskInfoRequest): Page<E> {
+        with(request) {
+            val criteria = Criteria.where(SubScanTaskDefinition::projectId.name).isEqualTo(projectId)
+            parentScanTaskId?.let { criteria.and(SubScanTaskDefinition::parentScanTaskId.name).isEqualTo(it) }
+            id?.let { criteria.and(SubScanTaskDefinition::planId.name).isEqualTo(id) }
+            name?.let {
+                criteria.and(SubScanTaskDefinition::artifactName.name).regex(".*$name.*")
+            }
+            highestLeakLevel?.let { addHighestVulnerabilityLevel(it, criteria) }
+            repoType?.let { criteria.and(SubScanTaskDefinition::repoType.name).isEqualTo(repoType) }
+            repoName?.let { criteria.and(SubScanTaskDefinition::repoName.name).isEqualTo(repoName) }
+            subScanTaskStatus?.let { criteria.and(SubScanTaskDefinition::status.name).inValues(it) }
+            if (startTime != null && endTime != null) {
+                criteria.and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
+            }
+            qualityRedLine?.let { criteria.and(SubScanTaskDefinition::qualityRedLine.name).isEqualTo(qualityRedLine) }
+
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val query = Query(criteria)
+                .with(
+                    Sort.by(
+                        Sort.Direction.DESC,
+                        SubScanTaskDefinition::lastModifiedDate.name,
+                        SubScanTaskDefinition::repoName.name,
+                        SubScanTaskDefinition::fullPath.name
+                    )
+                )
+            val count = count(query)
+            val records = find(query.with(pageRequest))
+            return Page(pageNumber, pageSize, count, records)
+        }
+    }
+
     fun deleteByParentTaskId(parentTaskId: String): DeleteResult {
         val query = Query(SubScanTaskDefinition::parentScanTaskId.isEqualTo(parentTaskId))
         return remove(query)
+    }
+
+    private fun addHighestVulnerabilityLevel(level: String, criteria: Criteria): Criteria {
+        Level.values().forEach {
+            val isHighest = level == it.levelName
+            criteria.and(resultOverviewKey(it.levelName)).exists(isHighest)
+            if (isHighest) {
+                return criteria
+            }
+        }
+        return criteria
+    }
+
+    private fun resultOverviewKey(level: String): String {
+        val overviewKey = Converter.getCveOverviewKey(level)
+        return "${SubScanTaskDefinition::scanResultOverview.name}.$overviewKey"
     }
 }

@@ -31,8 +31,7 @@ import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("制品扫描结果预览")
-@Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("FileScanResultOverview"))
-data class ArtifactScanResultOverview(
+data class SubtaskResultOverview(
     @ApiModelProperty("子扫描任务id")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("subTaskId"))
     val recordId: String,

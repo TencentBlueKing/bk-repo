@@ -31,27 +31,19 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.component.manager.ScanExecutorResultManager
-import com.tencent.bkrepo.scanner.component.manager.ScannerConverter
-import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
+import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
-import com.tencent.bkrepo.scanner.exception.ScanTaskNotFoundException
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
@@ -62,15 +54,8 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.scanner.pojo.request.FileScanResultDetailRequest
-import com.tencent.bkrepo.scanner.pojo.request.FileScanResultOverviewRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
-import com.tencent.bkrepo.scanner.pojo.response.FileScanResultDetail
-import com.tencent.bkrepo.scanner.pojo.response.FileScanResultOverview
 import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
@@ -87,13 +72,10 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter.ISO_DATE_TIME
 import java.time.temporal.ChronoUnit
 
 @Service
 class ScanServiceImpl @Autowired constructor(
-    private val nodeClient: NodeClient,
-    private val repositoryClient: RepositoryClient,
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
     private val scanPlanDao: ScanPlanDao,
@@ -103,7 +85,6 @@ class ScanServiceImpl @Autowired constructor(
     private val scannerService: ScannerService,
     private val scanTaskScheduler: ScanTaskScheduler,
     private val scanExecutorResultManagers: Map<String, ScanExecutorResultManager>,
-    private val scannerConverters: Map<String, ScannerConverter>,
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val publisher: ApplicationEventPublisher,
@@ -172,25 +153,6 @@ class ScanServiceImpl @Autowired constructor(
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND)
         val userId = SecurityUtils.getUserId()
         return updateScanTaskResult(subtask, SubScanTaskStatus.STOPPED.name, emptyMap(), userId)
-    }
-
-    override fun task(taskId: String): ScanTask {
-        return scanTaskDao.findById(taskId)?.let { task ->
-            if (task.projectId == null) {
-                permissionCheckHandler.permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
-            } else {
-                permissionCheckHandler.checkProjectPermission(task.projectId, PermissionAction.MANAGE)
-            }
-            val plan = task.planId?.let { scanPlanDao.get(it) }
-            Converter.convert(task, plan)
-        } ?: throw ScanTaskNotFoundException(taskId)
-    }
-
-    override fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<ScanTask> {
-        permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId, PermissionAction.MANAGE)
-        val taskPage = scanTaskDao.find(scanTaskQuery, pageLimit)
-        val records = taskPage.records.map { Converter.convert(it) }
-        return Page(pageLimit.pageNumber, pageLimit.pageSize, taskPage.totalRecords, records)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -421,67 +383,6 @@ class ScanServiceImpl @Autowired constructor(
             if (++count >= MAX_RETRY_PULL_TASK_TIMES) {
                 return null
             }
-        }
-    }
-
-    override fun resultOverview(request: FileScanResultOverviewRequest): List<FileScanResultOverview> {
-        with(request) {
-            val subScanTaskMap = subScanTaskDao
-                .findByCredentialsKeyAndSha256List(credentialsKeyFiles)
-                .associateBy { "${it.credentialsKey}:${it.sha256}" }
-
-            return fileScanResultDao.findScannerResults(scanner, credentialsKeyFiles).map {
-                val status = subScanTaskMap["${it.credentialsKey}:${it.sha256}"]?.status
-                    ?: SubScanTaskStatus.SUCCESS.name
-                // 只查询对应scanner的结果，此处必定不为null
-                val scannerResult = it.scanResult[scanner]!!
-                FileScanResultOverview(
-                    status = status,
-                    sha256 = it.sha256,
-                    scanDate = scannerResult.startDateTime.format(ISO_DATE_TIME),
-                    overview = scannerResult.overview
-                )
-            }
-        }
-    }
-
-    override fun resultDetail(request: FileScanResultDetailRequest): FileScanResultDetail {
-        with(request) {
-            val node = artifactInfo!!.run {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath())
-            }.data!!
-            val repo = repositoryClient.getRepoInfo(node.projectId, node.repoName).data!!
-
-            val scanner = scannerService.get(scanner)
-            val scanResultDetail = scanExecutorResultManagers[scanner.type]?.load(
-                repo.storageCredentialsKey, node.sha256!!, scanner, arguments
-            )
-            val status = if (scanResultDetail == null) {
-                subScanTaskDao.findByCredentialsAndSha256(repo.storageCredentialsKey, node.sha256!!)?.status
-                    ?: SubScanTaskStatus.NEVER_SCANNED.name
-            } else {
-                SubScanTaskStatus.SUCCESS.name
-            }
-            return FileScanResultDetail(status, node.sha256!!, scanResultDetail)
-        }
-    }
-
-    override fun resultDetail(request: ArtifactVulnerabilityRequest): Page<ArtifactVulnerabilityInfo> {
-        with(request) {
-            val subtask = planArtifactLatestSubScanTaskDao.findById(subScanTaskId!!)
-                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, subScanTaskId!!)
-
-            permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
-
-            val scanner = scannerService.get(subtask.scanner)
-            val scannerConverter = scannerConverters[ScannerConverter.name(scanner.type)]
-            val arguments = scannerConverter?.convertToLoadArguments(request)
-            val scanResultManager = scanExecutorResultManagers[subtask.scannerType]
-            val detailReport = scanResultManager?.load(subtask.credentialsKey, subtask.sha256, scanner, arguments)
-
-            return detailReport
-                ?.let { scannerConverter?.convertCveResult(it) }
-                ?: Pages.buildPage(emptyList(), pageSize, pageNumber)
         }
     }
 

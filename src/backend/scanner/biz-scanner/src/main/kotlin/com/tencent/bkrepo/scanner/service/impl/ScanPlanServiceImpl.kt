@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
@@ -42,18 +41,14 @@ import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
-import com.tencent.bkrepo.scanner.dao.ScannerDao
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
-import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
 import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
-import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.utils.Request
@@ -66,7 +61,6 @@ import java.time.LocalDateTime
 @Service
 class ScanPlanServiceImpl(
     private val packageClient: PackageClient,
-    private val scannerDao: ScannerDao,
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
@@ -168,7 +162,7 @@ class ScanPlanServiceImpl(
     override fun scanPlanInfo(request: PlanCountRequest): ScanPlanInfo? {
         with(request) {
             val scanPlan = scanPlanDao.find(projectId, id)
-                ?: throw throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
+                ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
             return if (startTime != null && endTime != null) {
                 val subScanTasks = planArtifactLatestSubScanTaskDao.findBy(request)
                 ScanPlanConverter.convert(scanPlan, subScanTasks)
@@ -178,26 +172,6 @@ class ScanPlanServiceImpl(
                 ScanPlanConverter.convert(scanPlan, scanTask, artifactCount)
             }
         }
-    }
-
-    override fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo> {
-        with(request) {
-            val plan = scanPlanDao.get(id)
-            val scanner = scannerDao.findByName(plan.scanner)!!
-            val page = planArtifactLatestSubScanTaskDao.pageBy(request, scanner.type)
-            return Pages.ofResponse(
-                Pages.ofRequest(pageNumber, pageSize),
-                page.totalRecords,
-                page.records.map { ScanPlanConverter.convertToPlanArtifactInfo(it) }
-            )
-        }
-    }
-
-    override fun planArtifact(projectId: String, subScanTaskId: String): ArtifactScanResultOverview {
-        val subtask = planArtifactLatestSubScanTaskDao.find(projectId, subScanTaskId)
-            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, subScanTaskId)
-        permissionCheckHandler.checkSubtaskPermission(subtask, PermissionAction.READ)
-        return ScanPlanConverter.convert(subtask)
     }
 
     override fun artifactPlanList(request: ArtifactPlanRelationRequest): List<ArtifactPlanRelation> {
