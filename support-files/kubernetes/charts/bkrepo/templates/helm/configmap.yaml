@@ -18,4 +18,4 @@ data:
       {{- if keys $.Values.helm.config }}
         {{- toYaml .Values.helm.config | nindent 6 }}
       {{- end}}
-  { { - end } }
+{ { - end } }
