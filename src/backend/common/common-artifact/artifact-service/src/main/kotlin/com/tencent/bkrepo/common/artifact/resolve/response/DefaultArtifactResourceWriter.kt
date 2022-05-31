@@ -247,7 +247,8 @@ open class DefaultArtifactResourceWriter(
      */
     private fun determineMediaType(name: String): String {
         val extension = PathUtils.resolveExtension(name)
-        return mimeMappings.get(extension) ?: MediaTypes.APPLICATION_OCTET_STREAM
+        return mimeMappings.get(extension) ?: storageProperties.response.mimeMappings[extension]
+            ?: MediaTypes.APPLICATION_OCTET_STREAM
     }
 
     /**
@@ -291,6 +292,7 @@ open class DefaultArtifactResourceWriter(
             add("yaml", MediaTypes.APPLICATION_YAML)
             add("tgz", MediaTypes.APPLICATION_TGZ)
             add("ico", MediaTypes.APPLICATION_ICO)
+            add("apk", MediaTypes.APPLICATION_APK)
         }
     }
 }
