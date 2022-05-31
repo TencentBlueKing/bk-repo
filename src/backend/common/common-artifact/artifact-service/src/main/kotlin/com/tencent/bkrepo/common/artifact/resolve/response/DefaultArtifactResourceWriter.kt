@@ -90,8 +90,9 @@ open class DefaultArtifactResourceWriter(
             ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length.toInt())
-        response.characterEncoding = resource.characterEncoding
-        response.contentType = resource.contentType ?: determineMediaType(name)
+        val mediaType = resource.contentType ?: determineMediaType(name)
+        response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
+        response.contentType = mediaType
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
@@ -252,6 +253,16 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
+     * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
+     * */
+    private fun determineCharset(mediaType: String, defaultCharset: String): String? {
+        return if (binaryMediaTypes.contains(mediaType) ||
+            storageProperties.response.binaryMediaTypes.contains(mediaType)
+        ) null
+        else defaultCharset
+    }
+
+    /**
      * 编码Content-Disposition内容
      */
     private fun encodeDisposition(filename: String): String {
@@ -294,5 +305,6 @@ open class DefaultArtifactResourceWriter(
             add("ico", MediaTypes.APPLICATION_ICO)
             add("apk", MediaTypes.APPLICATION_APK)
         }
+        private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }
