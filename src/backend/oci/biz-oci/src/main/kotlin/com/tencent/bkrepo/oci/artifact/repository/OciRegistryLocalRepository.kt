@@ -386,10 +386,11 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
+            val packageKey = PackageKeys.ofName(context.repositoryDetail.type.name.toLowerCase(), packageName)
             val versionList = packageClient.listAllVersion(
                 projectId,
                 repoName,
-                PackageKeys.ofOci(packageName)
+                packageKey
             ).data.orEmpty()
             var tagList = mutableListOf<String>().apply {
                 versionList.forEach {
