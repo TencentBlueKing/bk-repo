@@ -160,29 +160,22 @@ export default {
             }
         )
     },
-    // 获取docker域名
-    getDockerDomain ({ commit }) {
+    // 获取相应服务的域名
+    getDomain ({ state, commit }, repoType) {
+        const urlMap = {
+            docker: 'docker/ext/addr',
+            npm: 'npm/ext/address'
+        }
+        if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(
-            'docker/ext/addr'
+            urlMap[repoType]
         ).then(domain => {
             commit('SET_DOMAIN', {
-                type: 'docker',
-                domain
+                type: repoType,
+                domain: domain || `${location.origin}/${repoType}`
             })
         })
     },
-    // 获取npm域名
-    getNpmDomain ({ commit }) {
-        Vue.prototype.$ajax.get(
-            'npm/ext/address'
-        ).then(({ domain }) => {
-            commit('SET_DOMAIN', {
-                type: 'npm',
-                domain: domain || `${location.origin}/npm`
-            })
-        })
-    },
-
     // 制品晋级
     changeStageTag (_, { projectId, repoName, packageKey, version, tag }) {
         return Vue.prototype.$ajax.post(

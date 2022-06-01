@@ -14,13 +14,13 @@
                     v-model="scanForm.type">
                     <bk-option v-for="[id, name] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="name"></bk-option>
                 </bk-select>
-                <div v-if="scanForm.type === 'GENERIC'" class="form-tip">支持apk、ipa、aab、jar格式的文件</div>
             </bk-form-item>
             <bk-form-item label="扫描器" :required="true" property="scanner" error-display-type="normal">
                 <bk-select
                     v-model="scanForm.scanner">
                     <bk-option v-for="scanner in scannerList" :key="scanner.name" :id="scanner.name" :name="scanner.name"></bk-option>
                 </bk-select>
+                <div v-if="scannerTip" class="form-tip">{{ scannerTip }}</div>
             </bk-form-item>
             <bk-form-item :label="$t('description')" property="description">
                 <bk-input
@@ -40,12 +40,13 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import { scanTypeEnum } from '@repository/store/publicEnum'
+    import { scanTypeEnum, scannerTypeEnum } from '@repository/store/publicEnum'
     export default {
         name: 'createScan',
         data () {
             return {
                 scanTypeEnum,
+                scannerTypeEnum,
                 scanForm: {
                     show: false,
                     loading: false,
@@ -83,6 +84,10 @@
         computed: {
             projectId () {
                 return this.$route.params.projectId
+            },
+            scannerTip () {
+                const scanner = this.scannerList.find(s => s.name === this.scanForm.scanner)
+                return scanner ? this.scannerTypeEnum[scanner.type][this.scanForm.type] : ''
             }
         },
         methods: {

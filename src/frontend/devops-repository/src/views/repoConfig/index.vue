@@ -215,13 +215,20 @@
                 ]
             }
         },
+        watch: {
+            repoType: {
+                handler (type) {
+                    type && this.getDomain(type)
+                },
+                immediate: true
+            }
+        },
         created () {
-            !this.domain.docker && this.getDockerDomain()
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDockerDomain']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain']),
             toRepoList () {
                 this.$router.push({
                     name: 'repoList'
