@@ -1,0 +1,38 @@
+{{- if .Values.init.entrance.enabled -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.names.fullname" . }}-init-entrance
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: init-entrance
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: init-entrance
+    spec:
+      containers:
+        - name: init-entrance
+          image: curlimages/curl:7.72.0
+          args:
+            - /bin/sh
+            - -c
+            - |
+              curl -X PUT --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'X-DEVOPS-UID: admin' -d "{
+                 \"showProjectList\": true,
+                 \"showNav\": true,
+                 \"status\": \"ok\",
+                 \"deleted\": false,
+                 \"iframeUrl\": \"http://{{ .Values.gateway.host }}/ui/\"}" "http://{{ .Values.init.entrance.bkCiProjectInnerUrl }}/api/op/services/update/Repo"
+      restartPolicy: OnFailure
+  {{- end }}
