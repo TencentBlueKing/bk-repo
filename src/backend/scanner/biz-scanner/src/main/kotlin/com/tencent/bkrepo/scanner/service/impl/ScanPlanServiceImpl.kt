@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
@@ -52,6 +53,7 @@ import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.utils.Request
+import com.tencent.bkrepo.scanner.utils.RuleUtil
 import com.tencent.bkrepo.scanner.utils.ScanParamUtil
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import org.slf4j.LoggerFactory
@@ -150,11 +152,13 @@ class ScanPlanServiceImpl(
         val operator = SecurityUtils.getUserId()
         logger.info("userId:$operator, updateScanPlan:[${request.id}]")
         with(request) {
-            if (id.isNullOrEmpty()) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "planId is empty")
+            if (id.isNullOrEmpty() || projectId.isNullOrEmpty()) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
             }
 
-            scanPlanDao.update(ScanPlanConverter.convert(request))
+            val scanPlan = ScanPlanConverter.convert(request)
+            checkPermission(scanPlan.projectId!!, scanPlan.rule)
+            scanPlanDao.update(scanPlan)
             return scanPlanDao.findById(request.id!!)!!.let { ScanPlanConverter.convert(it) }
         }
     }
@@ -215,6 +219,20 @@ class ScanPlanServiceImpl(
         if (scanTaskDao.existsByPlanIdAndStatus(planId, runningStatus)) {
             throw ErrorCodeException(ScannerMessageCode.SCAN_PLAN_DELETE_FAILED)
         }
+    }
+
+    /**
+     * [rule]中只能有一个projectId且与[projectId]一致
+     */
+    private fun checkPermission(projectId: String, rule: Rule?) {
+        if (rule != null) {
+            val ruleProjectIds = RuleUtil.getProjectIds(rule)
+            val ruleProjectId = ruleProjectIds.firstOrNull()
+            if (ruleProjectIds.size != 1 || ruleProjectId != projectId) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, rule)
+            }
+        }
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
     }
 
     companion object {
