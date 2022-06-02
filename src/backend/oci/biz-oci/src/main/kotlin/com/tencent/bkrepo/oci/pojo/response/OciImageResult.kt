@@ -29,29 +29,15 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.controller
+package com.tencent.bkrepo.oci.pojo.response
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
-import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
-import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
-import org.springframework.http.HttpHeaders.CONTENT_TYPE
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestAttribute
-import org.springframework.web.bind.annotation.RestController
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@RestController
-class BaseController {
-
-    @GetMapping(OCI_FILTER_ENDPOINT)
-    fun ping(@RequestAttribute userId: String): ResponseEntity<Any> {
-        if (userId == ANONYMOUS_USER) {
-            throw AuthenticationException()
-        }
-        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .header(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION).body("{}")
-    }
-}
+@ApiModel("oci镜像信息查询结果信息")
+data class OciImageResult(
+    @ApiModelProperty("totalRecords")
+    var totalRecords: Long,
+    @ApiModelProperty("records")
+    var records: List<OciImage>
+)

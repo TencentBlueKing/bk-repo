@@ -33,6 +33,8 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.response.OciImageResult
+import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -152,4 +154,32 @@ interface OciOperationService {
      * 根据request生成response url
      */
     fun getReturnDomain(request: HttpServletRequest): String
+
+    /**
+     * 获取对应的image的manifest文件内容
+     */
+    fun getManifest(artifactInfo: OciManifestArtifactInfo): String
+
+    /**
+     * 获取指定projectId和repoName下的所有镜像
+     */
+    fun getImageList(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int,
+        name: String?
+    ): OciImageResult
+
+    /**
+     * 获取repo的所有tag
+     */
+    fun getRepoTag(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        packageName: String,
+        pageSize: Int,
+        tag: String?
+    ): OciTagResult
 }
