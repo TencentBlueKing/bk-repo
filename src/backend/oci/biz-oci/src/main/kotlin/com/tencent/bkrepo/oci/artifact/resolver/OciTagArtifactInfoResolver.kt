@@ -36,6 +36,8 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.oci.constant.OCI_TAG
+import com.tencent.bkrepo.oci.constant.USER_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
@@ -50,11 +52,23 @@ class OciTagArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): ArtifactInfo {
-        val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-        val packageName = requestUrl.replaceAfterLast("/tags", StringPool.EMPTY).removeSuffix("/tags")
-            .removePrefix("/v2/$projectId/$repoName/")
-        validate(packageName)
-        return OciTagArtifactInfo(projectId, repoName, packageName, StringPool.EMPTY)
+        val requestURL = request.requestURL
+        return when {
+            requestURL.contains(TAG_PREFIX) -> {
+                val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+                val packageName = requestUrl.removePrefix("$USER_API_PREFIX/tag/$projectId/$repoName/")
+                validate(packageName)
+                val tag = request.getParameter(OCI_TAG) ?: StringPool.EMPTY
+                OciTagArtifactInfo(projectId, repoName, packageName, tag)
+            }
+            else -> {
+                val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
+                val packageName = requestUrl.replaceAfterLast("/tags", StringPool.EMPTY).removeSuffix("/tags")
+                    .removePrefix("/v2/$projectId/$repoName/")
+                validate(packageName)
+                OciTagArtifactInfo(projectId, repoName, packageName, StringPool.EMPTY)
+            }
+        }
     }
 
     private fun validate(packageName: String) {
@@ -65,5 +79,6 @@ class OciTagArtifactInfoResolver : ArtifactInfoResolver {
 
     companion object {
         const val PACKAGE_NAME_PATTERN = "[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*"
+        const val TAG_PREFIX = "/ext/tag/"
     }
 }

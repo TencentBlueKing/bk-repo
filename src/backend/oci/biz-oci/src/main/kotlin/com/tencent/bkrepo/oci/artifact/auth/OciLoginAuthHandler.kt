@@ -88,7 +88,7 @@ class OciLoginAuthHandler(
 
     companion object {
         private val logger = LoggerFactory.getLogger(OciLoginAuthHandler::class.java)
-        const val AUTH_CHALLENGE_SERVICE_SCOPE = "Basic realm=\"%s\",service=\"%s\",scope=\"%s\""
+        const val AUTH_CHALLENGE_SERVICE_SCOPE = "Bearer realm=\"%s\",service=\"%s\",scope=\"%s\""
         const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}"
         const val REGISTRY_SERVICE = "bkrepo"
         const val SCOPE_STR = "repository:*/*/tb:push,pull"
