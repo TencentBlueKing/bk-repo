@@ -20,6 +20,7 @@ import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.bksync.ByteArrayBlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
+import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -158,6 +159,11 @@ class DeltaSyncService(
     fun getSpeed(ip: String, action: GenericAction): Int {
         val key = "$SPEED_KEY_PREFIX$ip:$action"
         return redisOperation.get(key)?.toInt() ?: -1
+    }
+
+    fun recordMetrics(ip: String, metrics: BkSyncMetrics) {
+        metrics.ip = ip
+        logger.info(metrics.toString())
     }
 
     /**

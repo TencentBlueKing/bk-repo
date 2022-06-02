@@ -3,6 +3,9 @@ package com.tencent.bkrepo.common.bksync.transfer.http
 import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.hash.HashCode
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.CharPool
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
 import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
 import com.tencent.bkrepo.common.bksync.BkSync
@@ -11,6 +14,7 @@ import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.bksync.DiffResult
 import com.tencent.bkrepo.common.bksync.transfer.exception.ReportSpeedException
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
@@ -29,8 +33,10 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.URLDecoder
 import java.security.DigestInputStream
 import java.security.MessageDigest
+import java.util.Base64
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -53,11 +59,14 @@ class HttpBkSyncCall(
     @Volatile
     private var patchSuccess = true
 
+    private val metrics = BkSyncMetrics()
+
     /**
      * 增量上传
      * 在重复率较低或者发生异常时，转为普通上传
      * */
     fun upload(request: UploadRequest) {
+        metrics.setBasicMetrics(request)
         // 异步计算和上传md5,sign数据
         val signFuture = executor.submit<Unit> {
             try {
@@ -72,9 +81,10 @@ class HttpBkSyncCall(
         }
         val context = UploadContext(request, signFuture)
         if (allowUseMaxBandwidth > 0 && speedTestSettings != null) {
-            if (!checkSpeed(request, speedTestSettings) && request.genericUrl != null) {
+            if (!checkSpeed(request, speedTestSettings)) {
                 logger.info("Faster internet,use common generic upload.")
                 commonUpload(context)
+                reportMetrics(request.metricsUrl)
                 signFuture.get()
                 return
             }
@@ -90,7 +100,18 @@ class HttpBkSyncCall(
             }
             commonUpload(context)
         } finally {
+            reportMetrics(request.metricsUrl)
             signFuture.get()
+        }
+    }
+
+    private fun reportMetrics(url: String) {
+        try {
+            val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), metrics.toJsonString())
+            val request = Request.Builder().url(url).post(requestBody).build()
+            client.newCall(request).execute()
+        } catch (ignore: Exception) {
+            logger.info("report metrics failed, ${ignore.message}")
         }
     }
 
@@ -112,6 +133,7 @@ class HttpBkSyncCall(
             reportSpeed(request.speedReportUrl, avgMb.toInt())
             avgMb.toInt()
         } else speed
+        metrics.networkSpeed = avgMb
         if (avgMb > allowUseMaxBandwidth) {
             return false
         }
@@ -305,6 +327,7 @@ class HttpBkSyncCall(
                     throw PatchRequestException("Delta upload failed: ${errorMsg.orEmpty()}")
                 }
             }
+            metrics.patchTime = TimeUnit.NANOSECONDS.toMinutes(nanos)
             logger.info("Delta data upload success,elapsed ${HumanReadable.time(nanos)}.")
         } finally {
             deltaFile.delete()
@@ -329,6 +352,7 @@ class HttpBkSyncCall(
                 "Detecting file[$file] success, " +
                     "size: ${size(bytes)}, elapse: ${time(nanos)}, average: ${throughput(bytes, nanos)}."
             )
+            metrics.diffTime = TimeUnit.NANOSECONDS.toMinutes(nanos)
             return result
         }
     }
@@ -340,13 +364,9 @@ class HttpBkSyncCall(
         val request = context.request
         with(request) {
             logger.info("Start use generic upload.")
-            genericUrl ?: let {
-                logger.info("Generic url not set,skip upload.")
-                return
-            }
             val body = RequestBody.create(MediaType.get(APPLICATION_OCTET_STREAM), file)
             val commonRequest = Request.Builder()
-                .url(genericUrl!!)
+                .url(genericUrl)
                 .put(body)
                 .headers(headers)
                 .build()
@@ -358,6 +378,7 @@ class HttpBkSyncCall(
                     }
                 }
             }
+            metrics.genericUploadTime = TimeUnit.NANOSECONDS.toMinutes(nanos)
             logger.info("Generic upload[$file] success, elapsed ${HumanReadable.time(nanos)}.")
         }
     }

@@ -2,21 +2,23 @@ package com.tencent.bkrepo.common.bksync
 
 import com.google.common.hash.HashCode
 import com.google.common.primitives.Ints
+import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.StreamUtils.readFully
 import com.tencent.bkrepo.common.bksync.checksum.Adler32RollingHash
 import com.tencent.bkrepo.common.bksync.checksum.Checksum
-import com.tencent.bkrepo.common.api.util.StreamUtils.readFully
 import com.tencent.bkrepo.common.bksync.transfer.exception.InterruptedRollingException
+import org.slf4j.LoggerFactory
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
-import java.security.MessageDigest
-import java.util.zip.Adler32
-import org.slf4j.LoggerFactory
-import java.io.ByteArrayOutputStream
 import java.nio.channels.Channels
 import java.nio.channels.WritableByteChannel
+import java.security.MessageDigest
+import java.util.zip.Adler32
+import kotlin.concurrent.thread
 import kotlin.math.ceil
 
 /**
@@ -209,8 +211,10 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
         reuse: Int,
         reuseThreshold: Float
     ): Checksum? {
-        val detectingWindowCount = ceil(index.total - (index.total * reuseThreshold - reuse)).toInt()
-        var detectingDataCount = slidingWindow.windowSize * detectingWindowCount
+        // 达到重复使用阈值需要的数据字节数
+        val detectingDataCount = ceil(index.total * reuseThreshold - reuse) * slidingWindow.windowSize
+        // 剩余的数据字节数
+        var remainingDataCount = slidingWindow.windowSize * index.total - slidingWindow.headPos()
         while (slidingWindow.hasNext()) {
             val (remove, enter) = slidingWindow.moveToNextByte()
             adler32RollingHash.rotate(remove, enter)
@@ -219,7 +223,7 @@ class BkSync(val blockSize: Int = DEFAULT_BLOCK_SIZE, var windowBufferSize: Int 
             if (checksum != null) {
                 return checksum
             }
-            if (--detectingDataCount == 0) {
+            if (detectingDataCount > 0 && --remainingDataCount < detectingDataCount) {
                 logger.info("Even if remaining data can be reused, the reuse rate is still less than the threshold")
                 throw InterruptedRollingException()
             }
