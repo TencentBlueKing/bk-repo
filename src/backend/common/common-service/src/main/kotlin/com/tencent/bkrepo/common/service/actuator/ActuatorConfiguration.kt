@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.service.actuator
 
 import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -40,6 +41,15 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 @ConditionalOnMicroService
 class ActuatorConfiguration {
+
+    @Value(SERVICE_NAME)
+    private lateinit var serviceName: String
+
+    @Value(SERVICE_INSTANCE_ID)
+    private lateinit var instanceId: String
+
+    @Value(SERVER_HOST)
+    private lateinit var host: String
 
     @Bean
     fun metricsCommonTags(commonTagProvider: CommonTagProvider): MeterRegistryCustomizer<MeterRegistry> {
@@ -54,9 +64,9 @@ class ActuatorConfiguration {
     fun commonTagProvider() = object : CommonTagProvider {
         override fun provide(): Map<String, String> {
             return mapOf(
-                "service" to SERVICE_NAME,
-                "instance" to SERVICE_INSTANCE_ID,
-                "host" to SERVER_HOST
+                "service" to serviceName,
+                "instance" to instanceId,
+                "host" to host
             )
         }
     }
