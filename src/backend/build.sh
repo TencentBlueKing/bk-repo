@@ -143,19 +143,24 @@ if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
 fi
 
 # 构建backend镜像
-if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
-    for SERVICE in ${BACKENDS[@]};
-    do
-        log "构建${SERVICE}镜像..."
-        $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
-        rm -rf $tmp_dir/*
-        cp backend/startup.sh $tmp_dir/
-        cp $BACKEND_DIR/release/boot-$SERVICE-*.jar $tmp_dir/app.jar
-        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
-        if [[ $PUSH -eq 1 ]] ; then
-            docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
-        fi
-    done
+if $ALL -eq 1 ; then
+for SERVICE in ${BACKENDS[@]};
+do
+log "构建${SERVICE}镜像..."
+mkdir -p ${SERVICE}
+#$BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
+./gradlew :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
+cp ./release/boot-$SERVICE-.jar .
+cp -rf $WORKING_DIR/../../support-files/kubernetes/images/backend/ .
+#rm -rf $tmp_dir/*
+#cp backend/startup.sh $tmp_dir/
+#cp $BACKEND_DIR/release/boot-$SERVICE-*.jar $tmp_dir/app.jar
+#docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
+#if $PUSH -eq 1 ; then
+# docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
+#fi
+done
+ls -a
 fi
 
 # 构建init镜像

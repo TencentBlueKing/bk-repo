@@ -1,6 +1,19 @@
 # Where component owners are known, add them here.
-/docs @owenlxu
-/scripts @owenlxu
-/support-files @owenlxu
-/support-files @owenlxu
-/src/gateway   @owenlxu
+/docs                   @owenlxu
+/scripts                @owenlxu
+/support-files          @owenlxu
+/support-files          @owenlxu
+/src/gateway            @owenlxu
+/src/backend/auth       @owenlxu
+/src/backend/oci        @zacyanliu
+/src/backend/rds        @zacyanliu
+/src/backend/helm       @zacyanliu
+/src/backend/rpm        @zacyanliu
+/src/backend/maven      @zacyanliu
+/src/backend/generic    @felixncheng
+/src/backend/common     @felixncheng
+/src/backend/repository @felixncheng
+/src/backend/npm        @felixncheng
+/src/backend/webhook    @yaoxuwan
+/src/backend/scanner    @kunlongli
+/src/backend/opdata     @kunlongli
