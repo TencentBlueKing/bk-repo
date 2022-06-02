@@ -45,6 +45,7 @@ import com.tencent.bkrepo.npm.pojo.fixtool.FailVersionDetail
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.repository.api.PackageClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
@@ -95,6 +96,7 @@ class NpmPackageHandler {
                     dist.any()[SIZE].toString().toLong()
                 }
                 with(tgzNodeInfo) {
+                    val metadata = buildProperties(next.value).map { MetadataModel(key = it.key, value = it.value) }
                     val populatedPackageVersion = PopulatedPackageVersion(
                         createdBy = createdBy,
                         createdDate = LocalDateTime.parse(createdDate),
@@ -105,7 +107,7 @@ class NpmPackageHandler {
                         downloads = 0,
                         manifestPath = getManifestPath(name, version),
                         artifactPath = fullPath,
-                        metadata = buildProperties(next.value)
+                        packageMetadata = metadata
                     )
                     versionList.add(populatedPackageVersion)
                 }
@@ -159,7 +161,7 @@ class NpmPackageHandler {
                     manifestPath = manifestPath,
                     artifactPath = contentPath,
                     stageTag = null,
-                    metadata = metadata,
+                    packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
                     overwrite = true,
                     createdBy = userId
                 )

@@ -59,6 +59,7 @@ import com.tencent.bkrepo.composer.util.JsonUtil.wrapperPackageJson
 import com.tencent.bkrepo.composer.util.pojo.ComposerArtifact
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -95,7 +96,7 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
         val nodeCreateRequest = buildNodeCreateRequest(context)
         return nodeCreateRequest.copy(
             overwrite = true,
-            metadata = metadata
+            nodeMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) }
         )
     }
 
@@ -183,17 +184,15 @@ class ComposerLocalRepository(private val stageClient: StageClient) : LocalRepos
 
     fun createNode(context: ArtifactContext, fullPath: String?, artifactFile: ArtifactFile): NodeCreateRequest {
         return NodeCreateRequest(
-            context.projectId,
-            context.repoName,
-            fullPath ?: context.artifactInfo.getArtifactFullPath(),
-            false,
-            0L,
-            true,
-            artifactFile.getSize(),
-            artifactFile.getFileSha256(),
-            artifactFile.getFileMd5(),
-            null,
-            context.userId
+            projectId = context.projectId,
+            repoName = context.repoName,
+            fullPath = fullPath ?: context.artifactInfo.getArtifactFullPath(),
+            folder = false,
+            overwrite = true,
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            operator = context.userId
         )
     }
 

@@ -156,7 +156,6 @@ class FixToolServiceImpl(
                     manifestPath = nodeInfo.fullPath,
                     artifactPath = null,
                     stageTag = null,
-                    metadata = null,
                     overwrite = true,
                     createdBy = userId
                 )

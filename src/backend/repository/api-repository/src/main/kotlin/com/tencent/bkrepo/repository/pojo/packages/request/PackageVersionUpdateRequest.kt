@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.packages.request
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModelProperty
 
 data class PackageVersionUpdateRequest(
@@ -53,7 +54,10 @@ data class PackageVersionUpdateRequest(
     @ApiModelProperty("标签")
     val tags: List<String>? = null,
     @ApiModelProperty("版本元数据")
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("packageMetadata"))
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("版本元数据")
+    val packageMetadata: List<MetadataModel>? = null,
     @ApiModelProperty("版本扩展字段")
     val extension: Map<String, Any>? = null
 )

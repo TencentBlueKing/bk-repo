@@ -111,7 +111,7 @@ object ObjectBuilderUtil {
             manifestPath = null,
             artifactPath = HelmUtils.getChartFileFullPath(chartInfo.name, chartInfo.version),
             stageTag = null,
-            metadata = HelmMetadataUtils.convertToMap(chartInfo),
+            packageMetadata = HelmMetadataUtils.convertToMetadata(chartInfo),
             overwrite = isOverwrite,
             createdBy = userId
         )

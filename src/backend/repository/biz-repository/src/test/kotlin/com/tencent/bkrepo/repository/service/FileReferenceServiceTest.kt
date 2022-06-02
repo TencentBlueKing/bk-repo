@@ -137,7 +137,7 @@ class FileReferenceServiceTest @Autowired constructor(
             size = 1,
             sha256 = TEST_SHA_256,
             md5 = "md5",
-            metadata = emptyMap(),
+            nodeMetadata = emptyList(),
             operator = UT_USER
         )
         nodeService.createNode(createRequest)

@@ -59,6 +59,7 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import java.net.MalformedURLException
 import java.net.URL
@@ -198,7 +199,7 @@ class HelmRemoteRepository(
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
             operator = context.userId,
-            metadata = metadata,
+            nodeMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
             overwrite = true
         )
     }

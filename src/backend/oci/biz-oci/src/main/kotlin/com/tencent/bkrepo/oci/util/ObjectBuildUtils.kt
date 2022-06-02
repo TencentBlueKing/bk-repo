@@ -35,6 +35,7 @@ import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.user.BasicInfo
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -51,7 +52,7 @@ object ObjectBuildUtils {
         repoName: String,
         artifactFile: ArtifactFile,
         fullPath: String,
-        metadata: Map<String, Any>? = null
+        metadata: List<MetadataModel>? = null
     ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = projectId,
@@ -63,7 +64,7 @@ object ObjectBuildUtils {
             md5 = artifactFile.getFileMd5(),
             operator = SecurityUtils.getUserId(),
             overwrite = true,
-            metadata = metadata
+            nodeMetadata = metadata
         )
     }
 
@@ -88,11 +89,12 @@ object ObjectBuildUtils {
         fullPath: String,
         metadata: Map<String, Any>? = null
     ): MetadataSaveRequest {
+        val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value) }
         return MetadataSaveRequest(
             projectId = projectId,
             repoName = repoName,
             fullPath = fullPath,
-            metadata = metadata,
+            nodeMetadata = metadataModels,
             operator = SecurityUtils.getUserId()
         )
     }
@@ -119,7 +121,7 @@ object ObjectBuildUtils {
                 versionName = version,
                 size = size,
                 artifactPath = fullPath,
-                metadata = metadata,
+                packageMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = true,
                 createdBy = SecurityUtils.getUserId()
             )
@@ -142,7 +144,7 @@ object ObjectBuildUtils {
                 versionName = version,
                 size = size,
                 manifestPath = fullPath,
-                metadata = metadata
+                packageMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
             )
         }
     }

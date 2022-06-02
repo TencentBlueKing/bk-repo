@@ -195,7 +195,7 @@ class PackageServiceImpl(
                     manifestPath = request.manifestPath
                     artifactPath = request.artifactPath
                     stageTag = request.stageTag.orEmpty()
-                    metadata = MetadataUtils.fromMap(request.metadata)
+                    metadata = MetadataUtils.compatibleFromAndCheck(request.metadata, packageMetadata, createdBy)
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                     extension = request.extension.orEmpty()
                 }
@@ -215,7 +215,7 @@ class PackageServiceImpl(
                     manifestPath = manifestPath,
                     artifactPath = artifactPath,
                     stageTag = stageTag.orEmpty(),
-                    metadata = MetadataUtils.fromMap(metadata),
+                    metadata = MetadataUtils.compatibleFromAndCheck(metadata, packageMetadata, createdBy),
                     tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
                     extension = request.extension.orEmpty()
                 )
@@ -321,10 +321,16 @@ class PackageServiceImpl(
     }
 
     override fun updateVersion(request: PackageVersionUpdateRequest, realIpAddress: String?) {
+        val operator = SecurityUtils.getUserId()
         val projectId = request.projectId
         val repoName = request.repoName
         val packageKey = request.packageKey
         val versionName = request.versionName
+        val newMetadata = if (request.metadata != null || request.packageMetadata != null) {
+            MetadataUtils.compatibleFromAndCheck(request.metadata, request.packageMetadata, operator)
+        } else {
+            null
+        }
         val tPackage = checkPackage(projectId, repoName, packageKey)
         val packageId = tPackage.id.orEmpty()
         val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
@@ -332,10 +338,10 @@ class PackageServiceImpl(
             manifestPath = request.manifestPath ?: manifestPath
             artifactPath = request.artifactPath ?: artifactPath
             stageTag = request.stageTag ?: stageTag
-            metadata = request.metadata?.let { MetadataUtils.fromMap(it) } ?: metadata
+            metadata = newMetadata ?: metadata
             tags = request.tags ?: tags
             extension = request.extension ?: extension
-            lastModifiedBy = SecurityUtils.getUserId()
+            lastModifiedBy = operator
             lastModifiedDate = LocalDateTime.now()
         }
         packageVersionDao.save(tPackageVersion)
@@ -436,7 +442,7 @@ class PackageServiceImpl(
                     manifestPath = it.manifestPath,
                     artifactPath = it.artifactPath,
                     stageTag = it.stageTag.orEmpty(),
-                    metadata = MetadataUtils.fromMap(it.metadata),
+                    metadata = MetadataUtils.compatibleFromAndCheck(it.metadata, it.packageMetadata, it.createdBy),
                     extension = it.extension.orEmpty()
                 )
                 packageVersionDao.save(newVersion)
@@ -609,6 +615,7 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     stageTag = it.stageTag,
                     metadata = MetadataUtils.toMap(it.metadata),
+                    packageMetadata = MetadataUtils.toList(it.metadata),
                     tags = it.tags.orEmpty(),
                     extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath
