@@ -50,34 +50,17 @@
       >
         <el-input v-model="credential.region" :disabled="!createMode" />
       </el-form-item>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="CmdId" prop="cmdId" required>
+        <el-input v-model.number="credential.cmdId" type="number" :disabled="!createMode" />
+      </el-form-item>
+      <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="ModId" prop="modId" required>
+        <el-input v-model.number="credential.modId" type="number" :disabled="!createMode" />
+      </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_S3" label="Endpoint" prop="endpoint" required>
         <el-input v-model="credential.endpoint" :disabled="!createMode" />
       </el-form-item>
       <el-form-item v-if="credential.type === STORAGE_TYPE_INNER_COS" label="公开类型" prop="public">
         <el-switch v-model="credential.public" :disabled="!createMode" />
-      </el-form-item>
-
-      <!-- hdfs -->
-      <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="集群模式" prop="clusterMode">
-        <el-switch v-model="credential.clusterMode" :disabled="!createMode" />
-      </el-form-item>
-      <el-form-item
-        v-if="credential.type === STORAGE_TYPE_HDFS && credential.clusterMode"
-        label="集群名"
-        prop="clusterName"
-        required
-        :disabled="!createMode"
-      >
-        <el-input v-model="credential.clusterName" />
-      </el-form-item>
-      <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="Url" prop="url" required>
-        <el-input v-model="credential.url" placeholder="请输入Url，比如: hdfs://hdfs.example.com:9000" :disabled="!createMode" />
-      </el-form-item>
-      <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="用户名" prop="user" required>
-        <el-input v-model="credential.user" :disabled="!createMode" />
-      </el-form-item>
-      <el-form-item v-if="credential.type === STORAGE_TYPE_HDFS" label="工作目录" prop="workingDirectory" required>
-        <el-input v-model="credential.workingDirectory" placeholder="请输入工作目录，比如/example" :disabled="!createMode" />
       </el-form-item>
 
       <!-- upload config -->
@@ -113,7 +96,6 @@
 import {
   createCredential,
   STORAGE_TYPE_FILESYSTEM,
-  STORAGE_TYPE_HDFS,
   STORAGE_TYPE_INNER_COS,
   STORAGE_TYPE_S3,
   updateCredential
@@ -145,7 +127,6 @@ export default {
     return {
       STORAGE_TYPE_FILESYSTEM: STORAGE_TYPE_FILESYSTEM,
       STORAGE_TYPE_INNER_COS: STORAGE_TYPE_INNER_COS,
-      STORAGE_TYPE_HDFS: STORAGE_TYPE_HDFS,
       STORAGE_TYPE_S3: STORAGE_TYPE_S3,
       rules: {
         'upload.location': [
@@ -190,9 +171,6 @@ export default {
     },
     validateFilePathAllowEmpty(rule, value, callback) {
       this.validateUri(rule, value, callback, FILE_PATH_REGEX, this.createMode)
-    },
-    validateHdfsUrl(rule, value, callback) {
-      this.validateUri(rule, value, callback, /^hdfs:\/\/[\w-]+(\.[\w-]+)*(:\d{1,5})?$/)
     },
     validateUri(rule, value, callback, regex, allowEmpty = false) {
       if (allowEmpty && (!value || value.length === 0)) {
@@ -273,10 +251,6 @@ export default {
       switch (type) {
         case STORAGE_TYPE_FILESYSTEM: {
           credential.path = 'data/store'
-          break
-        }
-        case STORAGE_TYPE_HDFS: {
-          credential.workingDirectory = '/'
           break
         }
         default: {
