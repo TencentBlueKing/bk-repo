@@ -357,6 +357,7 @@ class HttpBkSyncCall(
                     "size: ${size(bytes)}, elapse: ${time(nanos)}, average: ${throughput(bytes, nanos)}."
             )
             metrics.diffTime = TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)
+            logger.debug("$nanos, ${time(nanos)}, ${TimeUnit.SECONDS.convert(nanos, TimeUnit.NANOSECONDS)}")
             return result
         }
     }
