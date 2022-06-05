@@ -109,9 +109,13 @@ class HttpBkSyncCall(
         try {
             val requestBody = RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), metrics.toJsonString())
             val request = Request.Builder().url(url).post(requestBody).build()
-            client.newCall(request).execute()
+            client.newCall(request).execute().use {
+                if (!it.isSuccessful) {
+                    logger.warn("report metrics failed, ${it.body()!!.string()}")
+                }
+            }
         } catch (ignore: Exception) {
-            logger.info("report metrics failed, ${ignore.message}")
+            logger.warn("report metrics failed, ${ignore.message}")
         }
     }
 
