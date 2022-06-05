@@ -37,7 +37,9 @@ class BkSyncMetrics(
     var networkSpeed: Int = 0,
     var fileSize: Long = 0,
     var diffTime: Long = 0,
+    var diffSpeed: String = "",
     var patchTime: Long = 0,
+    var patchSpeed: String = "",
     var genericUploadTime: Long = 0,
     var projectId: String = "",
     var repoName: String = "",
@@ -79,7 +81,8 @@ class BkSyncMetrics(
 
     override fun toString(): String {
         return "BkSyncMetrics {networkSpeed:$networkSpeed, fileSize:$fileSize, diffTime:$diffTime, " +
-            "patchTime:$patchTime, genericUploadTime:$genericUploadTime, projectId:'$projectId', repoName:'$repoName', " +
+            "diffSpeed:'$diffSpeed', patchTime:$patchTime, patchSpeed:'$patchSpeed', " +
+            "genericUploadTime:$genericUploadTime, projectId:'$projectId', repoName:'$repoName', " +
             "pipelineId:'$pipelineId', buildId:'$buildId', ip:'$ip'}"
     }
 
