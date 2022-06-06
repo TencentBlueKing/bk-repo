@@ -121,12 +121,6 @@ db.repository.updateOne(
     { upsert: true }
 );
 
-db.repository.remove(
-    {
-        projectId: "blueking",
-        name: "public-cr"
-    }
-);
 
 db.repository.updateOne(
     {
@@ -200,9 +194,3 @@ db.repository.updateOne(
     { upsert: true }
 );
 
-db.repository.remote(
-    {
-        projectId: "blueking",
-        name: "public-charts"
-    }
-);
