@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.util.toPath
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
@@ -42,7 +43,6 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.concurrent.thread
-import org.junit.jupiter.api.DisplayName
 
 internal class ArtifactDataReceiverTest {
 

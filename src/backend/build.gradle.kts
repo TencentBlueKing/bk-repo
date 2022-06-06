@@ -58,6 +58,7 @@ allprojects {
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
             dependency("org.mockito.kotlin:mockito-kotlin:${Versions.MockitoKotlin}")
+            dependency("io.mockk:mockk:${Versions.Mockk}")
         }
     }
     ext["netty.version"] = Versions.Netty

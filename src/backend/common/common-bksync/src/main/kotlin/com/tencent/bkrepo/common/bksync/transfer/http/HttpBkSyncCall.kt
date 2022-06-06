@@ -3,23 +3,20 @@ package com.tencent.bkrepo.common.bksync.transfer.http
 import com.fasterxml.jackson.core.type.TypeReference
 import com.google.common.hash.HashCode
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.MediaTypes
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.net.speedtest.NetSpeedTest
 import com.tencent.bkrepo.common.api.net.speedtest.SpeedTestSettings
-import com.tencent.bkrepo.common.bksync.BkSync
-import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
-import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.executeAndMeasureNanoTime
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.bksync.BkSync
 import com.tencent.bkrepo.common.bksync.DiffResult
+import com.tencent.bkrepo.common.bksync.transfer.exception.PatchRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.ReportSpeedException
+import com.tencent.bkrepo.common.bksync.transfer.exception.SignRequestException
 import com.tencent.bkrepo.common.bksync.transfer.exception.UploadSignFileException
 import okhttp3.HttpUrl
-import kotlin.system.measureNanoTime
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,14 +30,13 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
-import java.net.URLDecoder
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.util.Base64
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import kotlin.system.measureNanoTime
 
 /**
  * bksync http实现

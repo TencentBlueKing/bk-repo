@@ -2,7 +2,6 @@ package com.tencent.bkrepo.common.bksync
 
 import com.google.common.hash.HashCode
 import com.google.common.primitives.Ints
-import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.StreamUtils.readFully
 import com.tencent.bkrepo.common.bksync.checksum.Adler32RollingHash
 import com.tencent.bkrepo.common.bksync.checksum.Checksum
@@ -18,7 +17,6 @@ import java.nio.channels.Channels
 import java.nio.channels.WritableByteChannel
 import java.security.MessageDigest
 import java.util.zip.Adler32
-import kotlin.concurrent.thread
 import kotlin.math.ceil
 
 /**

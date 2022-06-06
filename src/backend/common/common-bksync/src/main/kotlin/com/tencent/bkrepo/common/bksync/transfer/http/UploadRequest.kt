@@ -7,12 +7,19 @@ import java.net.URLEncoder
  * 上传请求
  * */
 class UploadRequest(
+    // 增量上传文件
     val file: File,
+    // 制品库域名
     val domain: String,
+    // 项目id
     val projectId: String,
+    // 仓库名
     val repoName: String,
+    // 新上传文件路径
     val newFilePath: String,
+    // 旧文件路径
     val oldFilePath: String,
+    // 上传临时token
     val token: String
 ) {
     // 增量上传url

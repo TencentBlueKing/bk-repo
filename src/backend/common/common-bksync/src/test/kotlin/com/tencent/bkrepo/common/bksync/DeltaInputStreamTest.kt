@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 class DeltaInputStreamTest {
 
     private val reuseThreshold = 0.2f
-    private val bkSync = BkSync(4, 2)
+    private val bkSync = BkSync(4, 8)
     private val oldData = byteArrayOf(
         1, 2, 3, 4,
         5, 6, 7, 8,

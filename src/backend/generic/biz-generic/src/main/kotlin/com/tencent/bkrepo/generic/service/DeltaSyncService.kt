@@ -3,6 +3,7 @@ package com.tencent.bkrepo.generic.service
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -163,7 +164,7 @@ class DeltaSyncService(
 
     fun recordMetrics(ip: String, metrics: BkSyncMetrics) {
         metrics.ip = ip
-        logger.info(metrics.toString())
+        logger.info(metrics.toJsonString().replace("\n", ""))
     }
 
     /**

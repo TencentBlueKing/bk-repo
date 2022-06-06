@@ -34,12 +34,19 @@ import java.net.URLDecoder
 import java.util.Base64
 
 class BkSyncMetrics(
+    // 网络速度，单位MB/s
     var networkSpeed: Int = 0,
+    // 文件大小，单位字节
     var fileSize: Long = 0,
+    // 检测差异时间，单位秒
     var diffTime: Long = 0,
+    // 检测差异速度
     var diffSpeed: String = "",
+    // 合并时间，单位秒
     var patchTime: Long = 0,
+    // 合并速度
     var patchSpeed: String = "",
+    // 普通上传时间，单位秒
     var genericUploadTime: Long = 0,
     var projectId: String = "",
     var repoName: String = "",
@@ -64,13 +71,14 @@ class BkSyncMetrics(
             val metadataUrl = String(Base64.getDecoder().decode(header))
             metadataUrl.split(CharPool.AND).forEach { part ->
                 val pair = part.trim().split(CharPool.EQUAL, limit = 2)
-                if (pair.size > 1 && pair[0].isNotBlank() && pair[1].isNotBlank()) {
-                    val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
-                    val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
-                    when (key) {
-                        PIPELINE_ID -> pipelineId = value
-                        BUILD_ID -> buildId = value
-                    }
+                if (pair.size < 2 || pair[0].isBlank() || pair[1].isBlank()) {
+                    return@forEach
+                }
+                val key = URLDecoder.decode(pair[0], StringPool.UTF_8)
+                val value = URLDecoder.decode(pair[1], StringPool.UTF_8)
+                when (key) {
+                    PIPELINE_ID -> pipelineId = value
+                    BUILD_ID -> buildId = value
                 }
             }
         } catch (exception: IllegalArgumentException) {
@@ -78,14 +86,6 @@ class BkSyncMetrics(
         }
         return Pair(pipelineId, buildId)
     }
-
-    override fun toString(): String {
-        return "BkSyncMetrics {networkSpeed:$networkSpeed, fileSize:$fileSize, diffTime:$diffTime, " +
-            "diffSpeed:'$diffSpeed', patchTime:$patchTime, patchSpeed:'$patchSpeed', " +
-            "genericUploadTime:$genericUploadTime, projectId:'$projectId', repoName:'$repoName', " +
-            "pipelineId:'$pipelineId', buildId:'$buildId', ip:'$ip'}"
-    }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(BkSyncMetrics::class.java)
