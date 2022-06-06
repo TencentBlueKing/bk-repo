@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "common.names.fullname" . }}-init-repo
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: init-repo
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: init-repo
+    spec:
+      containers:
+        - name: init-repo
+          image: curlimages/curl:7.72.0
+          args:
+            - /bin/sh
+            - -c
+            - |
+              curl  -X POST http://bkrepo-repository.default.svc.cluster.local/api/repo/create -d '{
+                "projectId": "blueking",
+                "name": "remote-docker",
+                "type": "DOCKER",
+                "category": "COMPOSITE",
+                "public": true,
+                "description": "docker remote description",
+                "configuration": {
+                "type" : "composite",
+                "proxy" : {
+                  "channelList" : [
+                      {"public": true, "name":"blueking", "url":"https://hub.bktencent.com/chartrepo/blueking"}
+                  ]
+                }
+              },
+                "storageCredentialsKey": null
+              }' --header 'Content-Type: application/json' --header 'Accept: application/json' -u {{ .Values.common.username }}:{{ .Values.common.password }}
+      restartPolicy: OnFailure
