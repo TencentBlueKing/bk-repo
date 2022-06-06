@@ -1,3 +1,4 @@
+{{- if .Values.init.bcs.enabled -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -27,9 +28,9 @@ spec:
             - /bin/sh
             - -c
             - |
-              curl  -X POST http://bkrepo-repository.default.svc.cluster.local/api/repo/create -d '{
+              curl  -X POST http://bkrepo-repository.{{ .Release.Namespace }}.svc.cluster.local/api/repo/create -d '{
                 "projectId": "blueking",
-                "name": "remote-docker",
+                "name": "public-cr",
                 "type": "DOCKER",
                 "category": "COMPOSITE",
                 "public": true,
@@ -38,10 +39,29 @@ spec:
                 "type" : "composite",
                 "proxy" : {
                   "channelList" : [
-                      {"public": true, "name":"blueking", "url":"https://hub.bktencent.com/chartrepo/blueking"}
+                      {"public": true, "name":"bk-cr", "url":"https://hub.bktencent.com/blueking"}
                   ]
                 }
               },
-                "storageCredentialsKey": null
+              "storageCredentialsKey": null
+              }' --header 'Content-Type: application/json' --header 'Accept: application/json' -u {{ .Values.common.username }}:{{ .Values.common.password }}
+              
+              curl  -X POST http://bkrepo-repository.{{ .Release.Namespace }}.svc.cluster.local/api/repo/create -d '{
+                "projectId": "blueking",
+                "name": "public-charts",
+                "type": "HELM",
+                "category": "COMPOSITE",
+                "public": true,
+                "description": "helm remote description",
+                "configuration": {
+                "type" : "composite",
+                "proxy" : {
+                  "channelList" : [
+                      {"public": true, "name":"bk-charts", "url":"https://hub.bktencent.com/chartrepo/blueking"}
+                  ]
+                }
+              },
+              "storageCredentialsKey": null
               }' --header 'Content-Type: application/json' --header 'Accept: application/json' -u {{ .Values.common.username }}:{{ .Values.common.password }}
       restartPolicy: OnFailure
+  {{- end }}

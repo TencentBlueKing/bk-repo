@@ -121,28 +121,11 @@ db.repository.updateOne(
     { upsert: true }
 );
 
-db.repository.updateOne(
+db.repository.remove(
     {
         projectId: "blueking",
         name: "public-cr"
-    },
-    {
-        $setOnInsert: {
-            projectId: "blueking",
-            name: "public-cr",
-            type: "DOCKER",
-            category: "LOCAL",
-            public: true,
-            description: "public docker cr repository",
-            configuration: "{}",
-            display: true,
-            createdBy: "admin",
-            createdDate: new Date(),
-            lastModifiedBy: "admin",
-            lastModifiedDate: new Date()
-        }
-    },
-    { upsert: true }
+    }
 );
 
 db.repository.updateOne(
@@ -217,26 +200,9 @@ db.repository.updateOne(
     { upsert: true }
 );
 
-db.repository.updateOne(
+db.repository.remote(
     {
         projectId: "blueking",
         name: "public-charts"
-    },
-    {
-        $setOnInsert: {
-            projectId: "blueking",
-            name: "public-charts",
-            type: "HELM",
-            category: "LOCAL",
-            public: true,
-            description: "helm public local repository",
-            configuration: "{}",
-            display: true,
-            createdBy: "admin",
-            createdDate: new Date(),
-            lastModifiedBy: "admin",
-            lastModifiedDate: new Date()
-        }
-    },
-    { upsert: true }
+    }
 );
