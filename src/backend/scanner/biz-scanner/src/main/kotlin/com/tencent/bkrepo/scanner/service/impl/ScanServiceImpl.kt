@@ -189,10 +189,6 @@ class ScanServiceImpl @Autowired constructor(
 
             // 保存详细扫描结果
             val resultManager = scanExecutorResultManagers[scanner.type]
-            logger.info(
-                "scanExecutorResultManagers:${scanExecutorResultManagers.toJsonString()}, " +
-                    "resultManager:${resultManager?.toJsonString()}"
-            )
             resultManager?.save(subScanTask.credentialsKey, subScanTask.sha256, scanner, scanExecutorResult!!)
         }
     }

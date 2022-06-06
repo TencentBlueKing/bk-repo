@@ -40,24 +40,24 @@ import com.tencent.bkrepo.scanner.pojo.rule.RuleArtifact
 object RuleConverter {
 
     fun convert(sourceRule: Rule?, planType: String?, projectId: String): Rule {
-        val targetRule = createProjectIdAdnRepoRule(listOf(projectId), emptyList(), planType)
+        val targetRule = createProjectIdAdnRepoRule(projectId, emptyList(), planType)
         // 将sourceRule中除projectId相关外的rule都合并到targetRule中
         sourceRule?.let { mergeInto(it, targetRule, listOf(NodeInfo::projectId.name)) }
         return targetRule
     }
 
     fun convert(projectId: String, repoNames: List<String>, repoType: String? = null): Rule {
-        return createProjectIdAdnRepoRule(listOf(projectId), repoNames, repoType)
+        return createProjectIdAdnRepoRule(projectId, repoNames, repoType)
     }
 
     fun convert(projectId: String, repoName: String, fullPath: String): Rule {
-        val rule = createProjectIdAdnRepoRule(listOf(projectId), listOf(repoName))
+        val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
         rule.rules.add(Rule.QueryRule(NodeDetail::fullPath.name, fullPath, OperationType.EQ))
         return rule
     }
 
     fun convert(projectId: String, repoName: String, packageKey: String, version: String): Rule {
-        val rule = createProjectIdAdnRepoRule(listOf(projectId), listOf(repoName))
+        val rule = createProjectIdAdnRepoRule(projectId, listOf(repoName))
         rule.rules.add(Rule.QueryRule(PackageSummary::key.name, packageKey, OperationType.EQ))
         rule.rules.add(Rule.QueryRule(RuleArtifact::version.name, version, OperationType.EQ))
         return rule
@@ -67,12 +67,12 @@ object RuleConverter {
      * 添加projectId和repoName规则
      */
     private fun createProjectIdAdnRepoRule(
-        projectIds: List<String>,
+        projectId: String,
         repoNames: List<String>,
         repoType: String? = null
     ): NestedRule {
         val rules = mutableListOf<Rule>(
-            Rule.QueryRule(NodeDetail::projectId.name, projectIds, OperationType.IN)
+            Rule.QueryRule(NodeDetail::projectId.name, projectId, OperationType.EQ)
         )
 
         if (repoType != null && repoType != RepositoryType.GENERIC.name) {
