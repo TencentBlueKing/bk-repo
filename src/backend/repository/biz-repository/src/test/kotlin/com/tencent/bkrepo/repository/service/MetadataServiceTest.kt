@@ -38,6 +38,7 @@ import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.service.metadata.MetadataService
@@ -83,7 +84,14 @@ class MetadataServiceTest @Autowired constructor(
     fun testCreate() {
         val node = nodeService.createNode(createRequest())
         Assertions.assertEquals(0, metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath).size)
-        metadataService.saveMetadata(MetadataSaveRequest(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath, DEFAULT_METADATA))
+        metadataService.saveMetadata(
+            MetadataSaveRequest(
+                UT_PROJECT_ID,
+                UT_REPO_NAME,
+                node.fullPath,
+                nodeMetadata = DEFAULT_METADATA
+            )
+        )
         val dbMetadata = metadataService.listMetadata(UT_PROJECT_ID, UT_REPO_NAME, node.fullPath)
         Assertions.assertEquals(2, dbMetadata.size)
         Assertions.assertEquals("value1", dbMetadata["key1"])
@@ -117,7 +125,11 @@ class MetadataServiceTest @Autowired constructor(
 
     @Test
     fun testDelete() {
-        val metadata = mapOf("key1" to "value1", "key2" to "value2", "key3" to "value3")
+        val metadata = listOf(
+            MetadataModel(key = "key1", value = "value1"),
+            MetadataModel(key = "key2", value = "value2"),
+            MetadataModel(key = "key3", value = "value3")
+        )
         val node = nodeService.createNode(createRequest(metadata))
         // delete
         metadataService.deleteMetadata(
@@ -134,7 +146,7 @@ class MetadataServiceTest @Autowired constructor(
         Assertions.assertEquals("value3", dbMetadata["key3"])
     }
 
-    private fun createRequest(metadata: Map<String, String> = emptyMap()): NodeCreateRequest {
+    private fun createRequest(metadata: List<MetadataModel> = emptyList()): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
@@ -145,12 +157,15 @@ class MetadataServiceTest @Autowired constructor(
             size = 1,
             sha256 = "sha256",
             md5 = "md5",
-            metadata = metadata,
+            nodeMetadata = metadata,
             operator = UT_USER
         )
     }
 
     companion object {
-        private val DEFAULT_METADATA = mapOf("key1" to "value1", "key2" to "value2")
+        private val DEFAULT_METADATA = listOf(
+            MetadataModel(key = "key1", value = "value1"),
+            MetadataModel(key = "key2", value = "value2")
+        )
     }
 }

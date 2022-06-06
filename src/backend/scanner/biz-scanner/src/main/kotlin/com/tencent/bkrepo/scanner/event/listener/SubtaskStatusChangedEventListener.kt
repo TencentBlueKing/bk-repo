@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.scanner.event.listener
 
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
@@ -39,9 +39,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 
 @Component
-class SubtaskStatusChangedEventListener(
-    private val metadataClient: MetadataClient
-) {
+class SubtaskStatusChangedEventListener(private val metadataClient: MetadataClient) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
     fun listen(event: SubtaskStatusChangedEvent) {
@@ -51,21 +49,31 @@ class SubtaskStatusChangedEventListener(
                 return
             }
 
-            if (logger.isDebugEnabled) {
-                logger.debug("SubtaskStatusChangedEvent:${event.toJsonString()}")
-            }
-            val metadata = mutableMapOf<String, Any>(
-                METADATA_KEY_SCAN_STATUS to ScanPlanConverter.convertToScanStatus(status).name
+            // 更新扫描状态元数据
+            val metadata = ArrayList<MetadataModel>(2)
+            metadata.add(
+                MetadataModel(
+                    key = METADATA_KEY_SCAN_STATUS,
+                    value = ScanPlanConverter.convertToScanStatus(status).name,
+                    system = true
+                )
             )
-            qualityRedLine?.let { metadata[SubScanTaskDefinition::qualityRedLine.name] = it }
+            qualityRedLine?.let {
+                metadata.add(
+                    MetadataModel(
+                        key = SubScanTaskDefinition::qualityRedLine.name,
+                        value = it,
+                        system = true
+                    )
+                )
+            }
+
             val request = MetadataSaveRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,
-                metadata = metadata,
-                readOnly = true
+                nodeMetadata = metadata
             )
-            logger.info("saveMetadata request:${request.toJsonString()}")
             metadataClient.saveMetadata(request)
             logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] scanStatus[$status] success")
         }

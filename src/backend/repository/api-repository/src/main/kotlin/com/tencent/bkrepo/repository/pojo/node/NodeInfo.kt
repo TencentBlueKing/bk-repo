@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.pojo.node
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -65,8 +66,8 @@ data class NodeInfo(
     val md5: String? = null,
     @ApiModelProperty("元数据")
     val metadata: Map<String, Any>? = null,
-    @ApiModelProperty("系统元数据，只读")
-    val systemMetadata: Map<String, Any>? = null,
+    @ApiModelProperty("元数据信息")
+    val nodeMetadata: List<MetadataModel>? = null,
     @ApiModelProperty("所属项目id")
     val projectId: String,
     @ApiModelProperty("所属仓库名称")

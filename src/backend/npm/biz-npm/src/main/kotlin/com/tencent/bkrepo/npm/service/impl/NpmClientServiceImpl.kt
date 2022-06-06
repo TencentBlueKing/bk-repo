@@ -73,6 +73,7 @@ import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.api.MetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang.StringUtils
@@ -467,7 +468,7 @@ class NpmClientServiceImpl(
         }
     }
 
-    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): Map<String, String> {
+    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): List<MetadataModel> {
         return npmVersionMetadata?.let {
             val npmProperties = PackageProperties(
                 it.license,
@@ -477,8 +478,10 @@ class NpmClientServiceImpl(
                 it.maintainers,
                 it.any()["deprecated"] as? String
             )
-            BeanUtils.beanToMap(npmProperties)
-        } ?: emptyMap()
+            BeanUtils.beanToMap(npmProperties).map { metadata ->
+                MetadataModel(key = metadata.key, value = metadata.value)
+            }
+        } ?: emptyList()
     }
 
     private fun tgzContentToInputStream(data: String): InputStream {
@@ -503,10 +506,10 @@ class NpmClientServiceImpl(
             if (entry.value.any().containsKey("deprecated")) {
                 metadataClient.saveMetadata(
                     MetadataSaveRequest(
-                        artifactInfo.projectId,
-                        artifactInfo.repoName,
-                        tgzFullPath,
-                        buildProperties(entry.value),
+                        projectId = artifactInfo.projectId,
+                        repoName = artifactInfo.repoName,
+                        fullPath = tgzFullPath,
+                        nodeMetadata = buildProperties(entry.value),
                         operator = userId
                     )
                 )

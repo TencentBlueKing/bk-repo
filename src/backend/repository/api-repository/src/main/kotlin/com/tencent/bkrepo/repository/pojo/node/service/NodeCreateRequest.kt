@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.pojo.node.service
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.AuditableRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
@@ -63,7 +64,10 @@ data class NodeCreateRequest(
     @ApiModelProperty("文件md5")
     val md5: String? = null,
     @ApiModelProperty("元数据信息")
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("元数据信息")
+    val nodeMetadata: List<MetadataModel>? = null,
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER,
     override val createdBy: String? = null,

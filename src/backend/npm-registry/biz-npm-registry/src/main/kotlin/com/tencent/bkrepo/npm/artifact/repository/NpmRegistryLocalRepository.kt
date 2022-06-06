@@ -56,6 +56,7 @@ import com.tencent.bkrepo.npm.util.NpmUtils
 import com.tencent.bkrepo.repository.api.PackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -216,7 +217,7 @@ class NpmRegistryLocalRepository(
                 versionName = version,
                 size = getAttachment().length.toLong(),
                 artifactPath = getArtifactFullPath(),
-                metadata = metadata,
+                packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) },
                 extension = versionExtension,
                 overwrite = true,
                 createdBy = context.userId

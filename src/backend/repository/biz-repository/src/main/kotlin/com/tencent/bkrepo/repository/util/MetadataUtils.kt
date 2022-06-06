@@ -31,20 +31,125 @@
 
 package com.tencent.bkrepo.repository.util
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TMetadata
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
 /**
  * 元数据工具类
  */
 object MetadataUtils {
+    /**
+     * 元数据KEY保留字，仅允许系统使用
+     */
+    private val RESERVED_KEY = setOf("scanStatus")
 
-    fun fromMap(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
-        return metadataMap?.filter { it.key.isNotBlank() }.orEmpty()
-            .map { TMetadata(it.key, it.value) }
-            .toMutableList()
+    /**
+     * 用于兼容旧逻辑，优先从[metadataModels]取数据，[metadataModels]不存在时从[metadataMap]取
+     */
+    fun compatibleFromAndCheck(
+        metadataMap: Map<String, Any>?,
+        metadataModels: List<MetadataModel>?,
+        operator: String
+    ): MutableList<TMetadata> {
+        return if (!metadataModels.isNullOrEmpty()) {
+            metadataModels.map { from(it) }.toMutableList()
+        } else {
+            fromMap(metadataMap)
+        }.onEach {
+            checkReservedKey(it.key, operator)
+            checkPermission(it, operator)
+        }
     }
 
     fun toMap(metadataList: List<TMetadata>?): Map<String, Any> {
-        return metadataList?.map { it.key to it.value }?.toMap().orEmpty()
+        return metadataList?.associate { it.key to it.value }.orEmpty()
+    }
+
+    fun toList(metadataList: List<TMetadata>?): List<MetadataModel> {
+        return metadataList?.map {
+            MetadataModel(
+                key = it.key,
+                value = it.value,
+                system = it.system,
+                description = it.description
+            )
+        }.orEmpty()
+    }
+
+    /**
+     * 合并[oldMetadata]与[newMetadata]，存在相同的key时[newMetadata]的项会替换[oldMetadata]的元数据项
+     * 系统元数据只有当[operator]为[SYSTEM_USER]时才能修改
+     */
+    fun checkAndMerge(
+        oldMetadata: List<TMetadata>,
+        newMetadata: List<TMetadata>,
+        operator: String
+    ): MutableList<TMetadata> {
+        val metadataMap = oldMetadata.associateByTo(HashMap(oldMetadata.size + newMetadata.size)) { it.key }
+        newMetadata.forEach {
+            metadataMap[it.key]?.apply { checkPermission(this, operator) }
+            val new = it.apply { checkPermission(this, operator) }
+            metadataMap[it.key] = new
+        }
+        return metadataMap.values.toMutableList()
+    }
+
+    /**
+     * 使用[newMetadata]替换[oldMetadata]
+     * [operator]为[SYSTEM_USER]时才能操作system metadata
+     */
+    fun replace(
+        oldMetadata: List<TMetadata>,
+        newMetadata: List<TMetadata>,
+        operator: String
+    ): MutableList<TMetadata> {
+        if (operator == SYSTEM_USER) {
+            return newMetadata.toMutableList()
+        }
+
+        val oldSystemMetadata = oldMetadata.filter { it.system }.associateBy { it.key }
+
+        val result = HashMap<String, TMetadata>(newMetadata.size + oldSystemMetadata.size)
+        result.putAll(oldSystemMetadata)
+        for (new in newMetadata) {
+            if (!new.system && !oldSystemMetadata.contains(new.key)) {
+                result[new.key] = new
+            }
+        }
+
+        return result.values.toMutableList()
+    }
+
+    fun checkPermission(metadata: TMetadata?, operator: String) {
+        if (metadata?.system == true && operator != SYSTEM_USER) {
+            throw PermissionException("No permission to update system metadata[${metadata.key}]")
+        }
+    }
+
+    private fun fromMap(metadataMap: Map<String, Any>?): MutableList<TMetadata> {
+        return metadataMap?.filter { it.key.isNotBlank() }.orEmpty()
+            .map { TMetadata(key = it.key, value = it.value) }
+            .toMutableList()
+    }
+
+    private fun from(metadata: MetadataModel): TMetadata {
+        return with(metadata) {
+            TMetadata(
+                key = key,
+                value = value,
+                system = system,
+                description = description
+            )
+        }
+    }
+
+    private fun checkReservedKey(key: String, operator: String) {
+        if (key in RESERVED_KEY && operator != SYSTEM_USER) {
+            throw ErrorCodeException(RepositoryMessageCode.METADATA_KEY_RESERVED, key)
+        }
     }
 }

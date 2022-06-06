@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -239,7 +240,9 @@ class JobService(
                 "timestamp" to System.currentTimeMillis().toString(),
                 "openChecksum" to xmlFileSha1,
                 "openSize" to (xmlFile.length().toString())
-            )
+            ).map {
+                MetadataModel(key = it.key, value = it.value)
+            }
 
             val xmlGZNode = NodeCreateRequest(
                 repo.projectId,
@@ -251,7 +254,7 @@ class JobService(
                 xmlGZArtifact.getSize(),
                 xmlGZArtifact.getFileSha256(),
                 xmlGZArtifact.getFileMd5(),
-                metadata
+                nodeMetadata = metadata
             )
             store(xmlGZNode, xmlGZArtifact, repo)
             logger.debug("Store gzIndex success: [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value}]")

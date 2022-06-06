@@ -50,6 +50,7 @@ import com.tencent.bkrepo.rds.pojo.metadata.RdsChartMetadata
 import com.tencent.bkrepo.rds.pojo.metadata.RdsIndexYamlMetadata
 import com.tencent.bkrepo.rds.pojo.user.BasicInfo
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -94,6 +95,7 @@ object ObjectBuilderUtil {
         size: Long,
         isOverwrite: Boolean = false
     ): PackageVersionCreateRequest {
+        val metadata = RdsMetadataUtils.convertToMap(chartInfo).map { MetadataModel(key = it.key, value = it.value) }
         return PackageVersionCreateRequest(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,
@@ -106,7 +108,7 @@ object ObjectBuilderUtil {
             manifestPath = null,
             artifactPath = RdsUtils.getChartFileFullPath(chartInfo.code, chartInfo.version, chartInfo.extension),
             stageTag = null,
-            metadata = RdsMetadataUtils.convertToMap(chartInfo),
+            packageMetadata = metadata,
             overwrite = isOverwrite,
             createdBy = userId
         )

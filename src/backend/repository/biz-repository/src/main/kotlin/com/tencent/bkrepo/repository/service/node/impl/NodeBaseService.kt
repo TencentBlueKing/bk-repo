@@ -153,7 +153,7 @@ abstract class NodeBaseService(
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
-                metadata = MetadataUtils.fromMap(metadata),
+                metadata = MetadataUtils.compatibleFromAndCheck(metadata, nodeMetadata, operator),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,
@@ -280,7 +280,6 @@ abstract class NodeBaseService(
         private fun convert(tNode: TNode?): NodeInfo? {
             return tNode?.let {
                 val metadata = MetadataUtils.toMap(it.metadata)
-                val systemMetadata = MetadataUtils.toMap(it.systemMetadata)
                 NodeInfo(
                     createdBy = it.createdBy,
                     createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
@@ -296,7 +295,7 @@ abstract class NodeBaseService(
                     sha256 = it.sha256,
                     md5 = it.md5,
                     metadata = metadata,
-                    systemMetadata = systemMetadata,
+                    nodeMetadata = MetadataUtils.toList(it.metadata),
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME)

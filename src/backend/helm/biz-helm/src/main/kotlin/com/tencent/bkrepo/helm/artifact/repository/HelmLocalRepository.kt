@@ -67,6 +67,7 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -147,7 +148,7 @@ class HelmLocalRepository(
                 sha256 = getArtifactSha256(),
                 md5 = getArtifactMd5(),
                 operator = userId,
-                metadata = parseMetaData(context),
+                nodeMetadata = parseMetaData(context)?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = isOverwrite(fullPath, isForce)
             )
         }

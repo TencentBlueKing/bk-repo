@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.dao.PackageDao
 import com.tencent.bkrepo.repository.dao.PackageVersionDao
 import com.tencent.bkrepo.repository.model.TPackage
 import com.tencent.bkrepo.repository.model.TPackageVersion
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
@@ -275,7 +276,7 @@ class PackageServiceTest @Autowired constructor(
                 manifestPath = "/com/tencent/bkrepo/test/$version",
                 artifactPath = "/com/tencent/bkrepo/test/$version",
                 stageTag = null,
-                metadata = mapOf("key" to "value"),
+                packageMetadata = listOf(MetadataModel(key = "key", value = "value")),
                 overwrite = overwrite,
                 createdBy = UT_USER
             )
