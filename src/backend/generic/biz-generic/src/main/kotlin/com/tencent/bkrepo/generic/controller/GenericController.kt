@@ -46,8 +46,10 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
 import com.tencent.bkrepo.generic.pojo.BlockInfo
+import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.DownloadService
+import com.tencent.bkrepo.generic.service.CompressedFileService
 import com.tencent.bkrepo.generic.service.UploadService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -57,13 +59,15 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class GenericController(
     private val uploadService: UploadService,
     private val downloadService: DownloadService,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
+    private val compressedFileService: CompressedFileService
 ) {
 
     @PutMapping(GENERIC_MAPPING_URI)
@@ -144,5 +148,22 @@ class GenericController(
             path = *artifacts.map { it.getArtifactFullPath() }.toTypedArray()
         )
         downloadService.batchDownload(artifacts)
+    }
+
+    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @GetMapping("/compressed/list/$GENERIC_MAPPING_URI")
+    fun listCompressedFile(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo
+    ): Response<List<CompressedFileInfo>> {
+        return ResponseBuilder.success(compressedFileService.listCompressedFile(artifactInfo))
+    }
+
+    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @GetMapping("/compressed/preview/$GENERIC_MAPPING_URI")
+    fun previewCompressedFile(
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+        @RequestParam filePath: String
+    ) {
+        compressedFileService.previewCompressedFile(artifactInfo, filePath)
     }
 }
