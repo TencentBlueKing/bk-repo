@@ -30,10 +30,14 @@ package com.tencent.bkrepo.oci.controller.service
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciTagService
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestMapping
@@ -58,13 +62,22 @@ class OciTagController(
         @RequestParam n: Int?,
         @RequestParam last: String?
     ): ResponseEntity<TagsInfo> {
-        return ResponseEntity(
-            ociTagService.getTagList(
-                artifactInfo = artifactInfo,
-                n = n,
-                last = last
-            ),
-            HttpStatus.OK
+        val result = ociTagService.getTagList(
+            artifactInfo = artifactInfo,
+            n = n,
+            last = last
         )
+        val httpHeaders = HttpHeaders()
+        httpHeaders.set(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+        val left = result.left
+        if (left > 0) {
+            val lastTag = result.tags.last()
+            httpHeaders.set(
+                DOCKER_LINK,
+                "</v2/${artifactInfo.projectId}/${artifactInfo.repoName}/${artifactInfo.packageName}/tags/list" +
+                    "?last=$lastTag&n=$left>; rel=\"next\""
+            )
+        }
+        return ResponseEntity(result, httpHeaders, HttpStatus.OK)
     }
 }

@@ -160,21 +160,22 @@ object OciUtils {
      * 3 last存在 n不存在， 则返回查到的last，如不存在，则返回空列表
      * 4 last存在，n存在，则返回last之后的n个
      */
-    fun filterHandler(tags: MutableList<String>, n: Int?, last: String?): MutableList<String> {
+    fun filterHandler(tags: MutableList<String>, n: Int?, last: String?): Pair<MutableList<String>, Int> {
         if (n != null) return handleNFilter(tags, n, last)
-        if (last.isNullOrEmpty()) return tags
+        if (last.isNullOrEmpty()) return Pair(tags, 0)
         val index = tags.indexOf(last)
         return if (index == -1) {
-            mutableListOf()
+            Pair(mutableListOf(), 0)
         } else {
-            mutableListOf(last)
+            Pair(mutableListOf(last), 0)
         }
     }
 
     /**
      * 处理n存在时的逻辑
      */
-    private fun handleNFilter(tags: MutableList<String>, n: Int, last: String?): MutableList<String> {
+    private fun handleNFilter(tags: MutableList<String>, n: Int, last: String?): Pair<MutableList<String>, Int> {
+        var left = 0
         var tagList = tags
         var size = n
         val length = tags.size
@@ -184,19 +185,21 @@ object OciUtils {
                 size = length
             }
             tagList = tagList.subList(0, size)
-            return tagList
+            left = length - size - 1
+            return Pair(tagList, left)
         }
         // 当last存在，n也存在 则获取last所在后n个tag
         val index = tagList.indexOf(last)
         return if (index == -1) {
-            mutableListOf()
+            Pair(mutableListOf(), 0)
         } else {
             // 需要判断last后n个是否超过tags总长
             if (index + size + 1 > length) {
                 size = length - 1 - index
             }
             tagList = tagList.subList(index + 1, index + size + 1)
-            tagList
+            left = length - index - size - 2
+            Pair(tagList, left)
         }
     }
 }
