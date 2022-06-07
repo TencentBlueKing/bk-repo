@@ -28,7 +28,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              curl  -X POST http://bkrepo-repository.{{ .Release.Namespace }}.svc.cluster.local/api/repo/create -d '{
+              curl  -X POST http://{{ include "common.names.fullname" . }}-repository.{{ .Release.Namespace }}.svc.cluster.local/api/repo/create -d '{
                 "projectId": "blueking",
                 "name": "public-cr",
                 "type": "DOCKER",
