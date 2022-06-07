@@ -185,7 +185,7 @@ object OciUtils {
                 size = length
             }
             tagList = tagList.subList(0, size)
-            left = length - size - 1
+            left = length - size
             return Pair(tagList, left)
         }
         // 当last存在，n也存在 则获取last所在后n个tag
@@ -198,7 +198,7 @@ object OciUtils {
                 size = length - 1 - index
             }
             tagList = tagList.subList(index + 1, index + size + 1)
-            left = length - index - size - 2
+            left = length - index - size - 1
             Pair(tagList, left)
         }
     }

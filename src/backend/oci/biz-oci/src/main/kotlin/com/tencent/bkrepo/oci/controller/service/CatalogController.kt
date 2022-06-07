@@ -31,11 +31,14 @@
 
 package com.tencent.bkrepo.oci.controller.service
 
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
+import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.service.OciCatalogService
 import io.swagger.annotations.ApiParam
 import org.springframework.http.HttpHeaders
@@ -49,7 +52,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping(OCI_FILTER_ENDPOINT)
 class CatalogController(
-    private val catalogService: OciCatalogService
+    private val catalogService: OciCatalogService,
+    private val ociProperties: OciProperties
 ) {
 
     /**
@@ -57,6 +61,7 @@ class CatalogController(
      */
     @GetMapping(DOCKER_CATALOG_SUFFIX)
     fun list(
+        artifactInfo: OciTagArtifactInfo,
         @RequestParam(required = true)
         @ApiParam(required = true)
         projectId: String,
@@ -72,8 +77,7 @@ class CatalogController(
     ): ResponseEntity<Any> {
 
         val catalogResponse = catalogService.getCatalog(
-            projectId = projectId,
-            repoName = repoName,
+            artifactInfo = artifactInfo,
             n = n,
             last = last
         )
@@ -82,7 +86,15 @@ class CatalogController(
         val left = catalogResponse.left
         if (left > 0) {
             val lastTag = catalogResponse.repositories.last()
-            httpHeaders.set(DOCKER_LINK, "</v2/_catalog?last=$lastTag&n=$left>; rel=\"next\"")
+            val url = UrlFormatter.format(
+                host = ociProperties.domain,
+                uri = "/v2/_catalog",
+                query = "last=$lastTag&n=$left"
+            )
+            httpHeaders.set(
+                DOCKER_LINK,
+                "<$url>; rel=\"next\""
+            )
         }
         return ResponseEntity(catalogResponse, httpHeaders, HttpStatus.OK)
     }
