@@ -54,6 +54,7 @@ import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Request
+import com.tencent.bkrepo.scanner.utils.RuleConverter
 import com.tencent.bkrepo.scanner.utils.RuleUtil
 import com.tencent.bkrepo.scanner.utils.ScanParamUtil
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
@@ -158,7 +159,8 @@ class ScanPlanServiceImpl(
                 projectId = projectId,
                 name = name,
                 type = type,
-                scanner = scannerService.default().name
+                scanner = scannerService.default().name,
+                rule = RuleConverter.convert(projectId, emptyList(), type)
             )
             create(scanPlan)
         } catch (e: ErrorCodeException) {
