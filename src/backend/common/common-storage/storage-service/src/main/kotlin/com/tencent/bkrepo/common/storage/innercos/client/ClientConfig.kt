@@ -62,14 +62,16 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
     val httpProtocol: HttpProtocol = HttpProtocol.HTTP
 
     /**
-     * 分片上传阈值，大于此值将采用分片上传
+     * 分片阈值，大于此值将采用分片上传/下载
      */
-    val multipartUploadThreshold: Long = DataSize.ofMegabytes(MULTIPART_THRESHOLD_SIZE).toBytes()
+    val multipartThreshold: Long = DataSize.ofMegabytes(MULTIPART_THRESHOLD_SIZE).toBytes()
 
     /**
      * 分片最小数量
      */
-    val minimumUploadPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
+    val minimumPartSize: Long = DataSize.ofMegabytes(MIN_PART_SIZE).toBytes()
+
+    val downloadWorkers: Int = credentials.downloadWorkers
 
     /**
      * cos访问域名构造器
@@ -83,7 +85,11 @@ class ClientConfig(private val credentials: InnerCosCredentials) {
 
     val slowLogSpeed = credentials.slowLogSpeed
 
-    val slowLogTime = credentials.slowLogTimeInMillis
+    val slowLogTime: Long = credentials.slowLogTimeInMillis.toMillis()
+
+    var downloadTimeHighWaterMark: Long = credentials.downloadTimeHighWaterMark.toMillis()
+    var downloadTimeLowWaterMark: Long = credentials.downloadTimeLowWaterMark.toMillis()
+    var downloadTaskInterval: Long = credentials.downloadTaskInterval.toMillis()
 
     private fun createEndpointResolver(): EndpointResolver {
         return if (credentials.modId != null && credentials.cmdId != null) {
