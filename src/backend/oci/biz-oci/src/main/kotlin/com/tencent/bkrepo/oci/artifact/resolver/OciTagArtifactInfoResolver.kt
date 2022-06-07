@@ -38,7 +38,9 @@ import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.oci.constant.OCI_TAG
 import com.tencent.bkrepo.oci.constant.USER_API_PREFIX
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
+import io.undertow.servlet.spec.HttpServletRequestImpl
 import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
@@ -60,6 +62,12 @@ class OciTagArtifactInfoResolver : ArtifactInfoResolver {
                 validate(packageName)
                 val tag = request.getParameter(OCI_TAG) ?: StringPool.EMPTY
                 OciTagArtifactInfo(projectId, repoName, packageName, tag)
+            }
+            requestURL.contains(DOCKER_CATALOG_SUFFIX) -> {
+                val params = (request as HttpServletRequestImpl).queryParameters
+                val projectId = params?.get("projectId")?.first ?: StringPool.EMPTY
+                val repoName = params?.get("repoName")?.first ?: StringPool.EMPTY
+                OciTagArtifactInfo(projectId, repoName, StringPool.EMPTY, StringPool.EMPTY)
             }
             else -> {
                 val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()

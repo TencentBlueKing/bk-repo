@@ -60,6 +60,7 @@ import com.tencent.bkrepo.oci.constant.SCOPE
 import com.tencent.bkrepo.oci.constant.SERVICE
 import com.tencent.bkrepo.oci.exception.OciForbiddenRequestException
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
+import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
@@ -71,6 +72,7 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import java.net.URL
+import java.util.regex.Pattern
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -102,7 +104,9 @@ class OciRegistryRemoteRepository(
     }
 
     /**
-     * query功能主要用于获取对应tag列表
+     * query功能主要用于
+     * 1.获取对应tag列
+     * 2.获取manifest文件内容
      */
     override fun query(context: ArtifactQueryContext): Any? {
         return doRequest(context)
@@ -201,8 +205,14 @@ class OciRegistryRemoteRepository(
             )
         }
         if (context.artifactInfo is OciTagArtifactInfo) {
-            val (fullPath, params) = createParamsForTagList(context)
-            return createUrl(configuration.url, fullPath, params)
+            val artifactInfo = context.artifactInfo as OciTagArtifactInfo
+            if (artifactInfo.packageName.isBlank()) {
+                val (_, params) = createParamsForTagList(context)
+                return createCatalogUrl(configuration.url, DOCKER_CATALOG_SUFFIX, params)
+            } else {
+                val (fullPath, params) = createParamsForTagList(context)
+                return createUrl(configuration.url, fullPath, params)
+            }
         }
         return createUrl(configuration.url)
     }
@@ -211,6 +221,15 @@ class OciRegistryRemoteRepository(
      * 拼接url
      */
     private fun createUrl(url: String, fullPath: String = StringPool.EMPTY, params: String = StringPool.EMPTY): String {
+        val baseUrl = URL(url)
+        val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
+        return UrlFormatter.format(v2Url.toString(), fullPath, params)
+    }
+
+    /**
+     * 拼接catalog url
+     */
+    private fun createCatalogUrl(url: String, fullPath: String = StringPool.EMPTY, params: String = StringPool.EMPTY): String {
         val baseUrl = URL(url)
         val v2Url = URL(baseUrl, "/v2" + baseUrl.path)
         return UrlFormatter.format(v2Url.toString(), fullPath, params)
@@ -426,6 +445,7 @@ class OciRegistryRemoteRepository(
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         artifactFile.delete()
         return if (context.artifactInfo is OciTagArtifactInfo) {
+            // 获取tag列表
             val link = response.header(DOCKER_LINK)
             val tags = JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
             tags.left = parseLink(link)
@@ -440,7 +460,23 @@ class OciRegistryRemoteRepository(
      * Link: <<url>?n=<last n value>&last=<last entry from response>>; rel="next"
      */
     private fun parseLink(link: String?): Int {
-        return 0
+        if (link.isNullOrBlank()) return 0
+        var n = 0
+        try {
+            val regex = "<(.*)>; *rel=\"(.*)\""
+            val pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CHARACTER_CLASS)
+            val matcher = pattern.matcher(link)
+            val linkUrl = if (matcher.find()) {
+                matcher.group(1)
+            } else null
+            val url = URL(linkUrl)
+            val map = OciResponseUtils.parseQuerystring(url.query)
+            n = map?.get("n")?.toInt() ?: 0
+            return n
+        } catch (ignore: Exception) {
+            logger.warn("Error occurred while parsing linker, ${ignore.message}")
+        }
+        return n
     }
 
     companion object {

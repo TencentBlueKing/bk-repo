@@ -27,11 +27,12 @@
 
 package com.tencent.bkrepo.oci.service
 
+import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
 
 interface OciCatalogService {
     /**
      * 获取仓库下所有的image名
      */
-    fun getCatalog(projectId: String, repoName: String, n: Int?, last: String?): CatalogResponse
+    fun getCatalog(artifactInfo: OciTagArtifactInfo, n: Int?, last: String?): CatalogResponse
 }

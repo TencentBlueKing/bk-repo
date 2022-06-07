@@ -29,9 +29,9 @@ package com.tencent.bkrepo.oci.controller.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
-import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_URL
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
@@ -50,7 +50,8 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class OciTagController(
-    private val ociTagService: OciTagService
+    private val ociTagService: OciTagService,
+    private val ociProperties: OciProperties
 ) {
     /**
      * 获取blob对应的tag信息
@@ -68,14 +69,17 @@ class OciTagController(
             last = last
         )
         val httpHeaders = HttpHeaders()
-        httpHeaders.set(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         val left = result.left
         if (left > 0) {
             val lastTag = result.tags.last()
+            val url = UrlFormatter.format(
+                host = ociProperties.domain,
+                uri = "/v2/${artifactInfo.projectId}/${artifactInfo.repoName}/${artifactInfo.packageName}/tags/list",
+                query = "last=$lastTag&n=$left"
+            )
             httpHeaders.set(
                 DOCKER_LINK,
-                "</v2/${artifactInfo.projectId}/${artifactInfo.repoName}/${artifactInfo.packageName}/tags/list" +
-                    "?last=$lastTag&n=$left>; rel=\"next\""
+                "<$url>; rel=\"next\""
             )
         }
         return ResponseEntity(result, httpHeaders, HttpStatus.OK)
