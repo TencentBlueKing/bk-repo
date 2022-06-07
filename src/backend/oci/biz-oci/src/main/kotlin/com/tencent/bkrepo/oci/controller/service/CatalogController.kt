@@ -31,13 +31,16 @@
 
 package com.tencent.bkrepo.oci.controller.service
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
-import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
 import com.tencent.bkrepo.oci.service.OciCatalogService
 import io.swagger.annotations.ApiParam
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -66,14 +69,21 @@ class CatalogController(
         @RequestParam(required = false)
         @ApiParam(value = "last", required = false)
         last: String?
-    ): Response<CatalogResponse> {
-        return ResponseBuilder.success(
-            catalogService.getCatalog(
-                projectId = projectId,
-                repoName = repoName,
-                n = n,
-                last = last
-            )
+    ): ResponseEntity<Any> {
+
+        val catalogResponse = catalogService.getCatalog(
+            projectId = projectId,
+            repoName = repoName,
+            n = n,
+            last = last
         )
+        val httpHeaders = HttpHeaders()
+        httpHeaders.set(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
+        val left = catalogResponse.left
+        if (left > 0) {
+            val lastTag = catalogResponse.repositories.last()
+            httpHeaders.set(DOCKER_LINK, "</v2/_catalog?last=$lastTag&n=$left>; rel=\"next\"")
+        }
+        return ResponseEntity(catalogResponse, httpHeaders, HttpStatus.OK)
     }
 }

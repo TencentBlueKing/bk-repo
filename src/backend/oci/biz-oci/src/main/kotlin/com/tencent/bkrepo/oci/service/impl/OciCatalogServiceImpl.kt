@@ -58,11 +58,11 @@ class OciCatalogServiceImpl(
             }
             this.sort()
         }
-        val imageList = OciUtils.filterHandler(
+        val (imageList, left) = OciUtils.filterHandler(
             tags = nameList,
             n = n,
             last = last
         )
-        return CatalogResponse(imageList)
+        return CatalogResponse(imageList, left)
     }
 }
