@@ -27,42 +27,37 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
-import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.oci.constant.LAST_TAG
+import com.tencent.bkrepo.oci.constant.N
+import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
 import com.tencent.bkrepo.oci.service.OciCatalogService
-import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.api.PackageClient
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class OciCatalogServiceImpl(
-    private val packageClient: PackageClient,
-    private val artifactConfigurerSupport: ArtifactConfigurerSupport
-) : OciCatalogService {
+class OciCatalogServiceImpl : OciCatalogService {
 
     /**
      * n: declaring that the response should be limited to n results
      * last: last repository value from previous response
      */
-    override fun getCatalog(projectId: String, repoName: String, n: Int?, last: String?): CatalogResponse {
-        val packageList = packageClient.listAllPackageNames(projectId, repoName).data.orEmpty()
-        if (packageList.isEmpty()) return CatalogResponse()
-        val nameList = mutableListOf<String>().apply {
-            packageList.forEach {
-                val packageName = OciUtils.getPackageNameFormPackageKey(
-                    packageKey = it,
-                    defaultType = artifactConfigurerSupport.getRepositoryType(),
-                    extraTypes = artifactConfigurerSupport.getRepositoryTypes()
-                )
-                this.add(packageName)
-            }
-            this.sort()
-        }
-        val (imageList, left) = OciUtils.filterHandler(
-            tags = nameList,
-            n = n,
-            last = last
+    override fun getCatalog(artifactInfo: OciTagArtifactInfo, n: Int?, last: String?): CatalogResponse {
+        logger.info(
+            "Handling search catalog request for package " +
+                "with n $n and last $last in repo [${artifactInfo.getRepoIdentify()}]"
         )
-        return CatalogResponse(imageList, left)
+        val context = ArtifactQueryContext()
+        last?.let { context.putAttribute(LAST_TAG, last) }
+        n?.let { context.putAttribute(N, n) }
+        val catalog = ArtifactContextHolder.getRepository().query(context)
+            ?: return CatalogResponse(emptyList(), 0)
+        return catalog as CatalogResponse
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(OciCatalogServiceImpl::class.java)
     }
 }

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -57,6 +58,7 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
@@ -69,7 +71,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class OciRegistryLocalRepository(
-    private val ociOperationService: OciOperationService
+    private val ociOperationService: OciOperationService,
+    private val artifactConfigurerSupport: ArtifactConfigurerSupport
 ) : LocalRepository() {
 
     /**
@@ -377,25 +380,65 @@ class OciRegistryLocalRepository(
         }
     }
 
-    /**
-     * 查询tag列表
-     */
     override fun query(context: ArtifactQueryContext): Any? {
         if (context.artifactInfo is OciTagArtifactInfo) {
-            return queryTagList(context)
+            val packageName = (context.artifactInfo as OciTagArtifactInfo).packageName
+            if (packageName.isBlank()) {
+                // 查询catalog
+                queryCatalog(context)
+            } else {
+                // 查询tag列表
+                return queryTagList(context)
+            }
         }
         if (context.artifactInfo is OciManifestArtifactInfo) {
+            // 查询manifest文件内容
             return queryManifest(context)
         }
         return null
     }
 
+    /**
+     * 查询manifest文件内容
+     */
     private fun queryManifest(context: ArtifactQueryContext): ArtifactInputStream? {
         val node = getNodeDetail(context.artifactInfo as OciArtifactInfo, context.artifactInfo.getArtifactFullPath())
         return storageManager.loadArtifactInputStream(node, context.storageCredentials)
     }
 
-    private fun queryTagList(context: ArtifactQueryContext): TagsInfo {
+    /**
+     * 查询仓库对应的所有image名
+     */
+    private fun queryCatalog(context: ArtifactQueryContext): CatalogResponse? {
+        with(context.artifactInfo as OciTagArtifactInfo) {
+            val n = context.getAttribute<Int>(N)
+            val last = context.getAttribute<String>(LAST_TAG)
+            val packageList = packageClient.listAllPackageNames(projectId, repoName).data.orEmpty()
+            if (packageList.isEmpty()) return null
+            val nameList = mutableListOf<String>().apply {
+                packageList.forEach {
+                    val packageName = OciUtils.getPackageNameFormPackageKey(
+                        packageKey = it,
+                        defaultType = artifactConfigurerSupport.getRepositoryType(),
+                        extraTypes = artifactConfigurerSupport.getRepositoryTypes()
+                    )
+                    this.add(packageName)
+                }
+                this.sort()
+            }
+            val (imageList, left) = OciUtils.filterHandler(
+                tags = nameList,
+                n = n,
+                last = last
+            )
+            return CatalogResponse(imageList, left)
+        }
+    }
+
+    /**
+     * 查询对应package下所有版本
+     */
+    private fun queryTagList(context: ArtifactQueryContext): TagsInfo? {
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
@@ -404,6 +447,7 @@ class OciRegistryLocalRepository(
                 repoName,
                 PackageKeys.ofOci(packageName)
             ).data.orEmpty()
+            if (versionList.isEmpty()) return null
             val tagList = mutableListOf<String>().apply {
                 versionList.forEach {
                     this.add(it.name)
