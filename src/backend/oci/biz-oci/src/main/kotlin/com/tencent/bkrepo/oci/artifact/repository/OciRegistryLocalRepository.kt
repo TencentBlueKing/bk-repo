@@ -404,18 +404,18 @@ class OciRegistryLocalRepository(
                 repoName,
                 PackageKeys.ofOci(packageName)
             ).data.orEmpty()
-            var tagList = mutableListOf<String>().apply {
+            val tagList = mutableListOf<String>().apply {
                 versionList.forEach {
                     this.add(it.name)
                 }
                 this.sort()
             }
-            tagList = OciUtils.filterHandler(
+            val pair = OciUtils.filterHandler(
                 tags = tagList,
                 n = n,
                 last = last
             )
-            return TagsInfo(packageName, tagList as List<String>)
+            return TagsInfo(packageName, pair.first as List<String>, pair.second)
         }
     }
 

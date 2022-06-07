@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.oci.constant.BEARER_REALM
+import com.tencent.bkrepo.oci.constant.DOCKER_LINK
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.constant.N
@@ -425,10 +426,21 @@ class OciRegistryRemoteRepository(
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         artifactFile.delete()
         return if (context.artifactInfo is OciTagArtifactInfo) {
-            JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
+            val link = response.header(DOCKER_LINK)
+            val tags = JsonUtils.objectMapper.readValue(artifactStream, TagsInfo::class.java)
+            tags.left = parseLink(link)
+            tags
         } else {
             artifactStream
         }
+    }
+
+    /**
+     * 针对返回头中link字段进行解析
+     * Link: <<url>?n=<last n value>&last=<last entry from response>>; rel="next"
+     */
+    private fun parseLink(link: String?): Int {
+        return 0
     }
 
     companion object {

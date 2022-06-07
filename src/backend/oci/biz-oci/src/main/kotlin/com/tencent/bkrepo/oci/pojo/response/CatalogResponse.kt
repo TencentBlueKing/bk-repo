@@ -32,5 +32,6 @@
 package com.tencent.bkrepo.oci.pojo.response
 
 data class CatalogResponse(
-    var repositories: List<String> = emptyList()
+    var repositories: List<String> = emptyList(),
+    var left: Int = 0
 )
