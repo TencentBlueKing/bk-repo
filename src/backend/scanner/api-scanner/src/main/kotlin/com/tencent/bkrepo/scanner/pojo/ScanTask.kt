@@ -74,5 +74,7 @@ data class ScanTask(
     @ApiModelProperty("扫描结果统计数据")
     val scanResultOverview: Map<String, Long>?,
     @ApiModelProperty("是否强制扫描")
-    val force: Boolean = false
+    val force: Boolean = false,
+    @ApiModelProperty("扫描任务元数据")
+    val metadata: List<TaskMetadata>
 )

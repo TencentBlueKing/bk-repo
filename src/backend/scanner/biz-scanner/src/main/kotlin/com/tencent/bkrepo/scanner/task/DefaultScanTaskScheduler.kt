@@ -46,6 +46,7 @@ import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
@@ -181,6 +182,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
             val now = LocalDateTime.now()
             scanTaskDao.taskFinished(scanTask.taskId, now, now)
             scannerMetrics.incTaskCountAndGet(FINISHED)
+            val finishedScanTask = Converter
+                .convert(scanTaskDao.findById(scanTask.taskId)!!)
+                .copy(scanPlan = scanTask.scanPlan)
+            publisher.publishEvent(ScanTaskStatusChangedEvent(SCANNING_SUBMITTED, finishedScanTask))
             logger.info("scan finished, task[${scanTask.taskId}]")
         }
     }

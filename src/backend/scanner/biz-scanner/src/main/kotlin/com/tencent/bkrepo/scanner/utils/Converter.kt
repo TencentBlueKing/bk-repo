@@ -80,7 +80,8 @@ object Converter {
             scannerType = scannerType,
             scannerVersion = scannerVersion,
             scanResultOverview = scanResultOverview,
-            force = force
+            force = force,
+            metadata = metadata
         )
     }
 

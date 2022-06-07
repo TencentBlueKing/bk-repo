@@ -43,7 +43,9 @@ import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
+import com.tencent.bkrepo.scanner.event.listener.ScanTaskStatusChangedEventListener
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
 import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
@@ -54,8 +56,13 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_KEY_BID
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_KEY_PID
+import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
+import com.tencent.bkrepo.scanner.service.ScanPlanService
 import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScannerService
@@ -78,6 +85,7 @@ import java.time.temporal.ChronoUnit
 class ScanServiceImpl @Autowired constructor(
     private val scanTaskDao: ScanTaskDao,
     private val subScanTaskDao: SubScanTaskDao,
+    private val scanPlanService: ScanPlanService,
     private val scanPlanDao: ScanPlanDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
@@ -88,6 +96,7 @@ class ScanServiceImpl @Autowired constructor(
     private val scannerMetrics: ScannerMetrics,
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val publisher: ApplicationEventPublisher,
+    private val scanTaskStatusChangedEventListener: ScanTaskStatusChangedEventListener,
     private val scanQualityService: ScanQualityService
 ) : ScanService {
 
@@ -98,45 +107,26 @@ class ScanServiceImpl @Autowired constructor(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
-        with(scanRequest) {
-            if (planId == null && (scanner == null || rule == null)) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
-            }
+        val task = createTask(scanRequest, triggerType, userId)
+        scanTaskScheduler.schedule(task)
+        return task
+    }
 
-            val plan = planId?.let { scanPlanDao.get(it) }
-            val projectId = projectId(rule, plan)
-            val rule = RuleConverter.convert(rule, plan?.type, projectId)
-            userId?.let { permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, it) }
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun pipelineScan(pipelineScanRequest: PipelineScanRequest): ScanTask {
+        with(pipelineScanRequest) {
+            val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId)
+            val metadata = listOf(
+                TaskMetadata(key = TASK_METADATA_KEY_PID, value = pid),
+                TaskMetadata(key = TASK_METADATA_KEY_BID, value = bid)
+            )
+            val scanRequest = ScanRequest(rule = rule, planId = defaultScanPlan.id!!, metadata = metadata)
+            val task = createTask(scanRequest, ScanTriggerType.PIPELINE, SecurityUtils.getUserId())
 
-            val scanner = scannerService.get(scanner ?: plan!!.scanner)
-            val now = LocalDateTime.now()
-            val scanTask = scanTaskDao.save(
-                TScanTask(
-                    createdBy = userId ?: SecurityUtils.getUserId(),
-                    createdDate = now,
-                    lastModifiedBy = userId ?: SecurityUtils.getUserId(),
-                    lastModifiedDate = now,
-                    rule = rule.toJsonString(),
-                    triggerType = triggerType.name,
-                    planId = plan?.id,
-                    projectId = projectId,
-                    status = ScanTaskStatus.PENDING.name,
-                    total = 0L,
-                    scanning = 0L,
-                    failed = 0L,
-                    scanned = 0L,
-                    passed = 0L,
-                    scanner = scanner.name,
-                    scannerType = scanner.type,
-                    scannerVersion = scanner.version,
-                    scanResultOverview = emptyMap()
-                )
-            ).run { Converter.convert(this, plan, force) }
-            plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
-            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
-            scanTaskScheduler.schedule(scanTask)
-            logger.info("create scan task[${scanTask.taskId}] success")
-            return scanTask
+            weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it) }
+
+            scanTaskScheduler.schedule(task)
+            return task
         }
     }
 
@@ -261,6 +251,12 @@ class ScanServiceImpl @Autowired constructor(
         scanTaskDao.updateScanResult(parentTaskId, 1, overview, scanSuccess, passCount = passCount)
         if (scanTaskDao.taskFinished(parentTaskId).modifiedCount == 1L) {
             scannerMetrics.incTaskCountAndGet(ScanTaskStatus.FINISHED)
+            val scanPlan = planId?.let { scanPlanDao.findById(it) }
+            val event = ScanTaskStatusChangedEvent(
+                ScanTaskStatus.SCANNING_SUBMITTED,
+                Converter.convert(scanTaskDao.findById(parentTaskId)!!, scanPlan)
+            )
+            publisher.publishEvent(event)
             logger.info("scan finished, task[$parentTaskId]")
         }
         return true
@@ -379,6 +375,48 @@ class ScanServiceImpl @Autowired constructor(
             if (++count >= MAX_RETRY_PULL_TASK_TIMES) {
                 return null
             }
+        }
+    }
+
+    private fun createTask(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String?): ScanTask {
+        with(scanRequest) {
+            if (planId == null && (scanner == null || rule == null)) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID)
+            }
+
+            val plan = planId?.let { scanPlanDao.get(it) }
+            val projectId = projectId(rule, plan)
+            val rule = RuleConverter.convert(rule, plan?.type, projectId)
+            userId?.let { permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE, it) }
+
+            val scanner = scannerService.get(scanner ?: plan!!.scanner)
+            val now = LocalDateTime.now()
+            val scanTask = scanTaskDao.save(
+                TScanTask(
+                    createdBy = userId ?: SecurityUtils.getUserId(),
+                    createdDate = now,
+                    lastModifiedBy = userId ?: SecurityUtils.getUserId(),
+                    lastModifiedDate = now,
+                    rule = rule.toJsonString(),
+                    triggerType = triggerType.name,
+                    planId = plan?.id,
+                    projectId = projectId,
+                    status = ScanTaskStatus.PENDING.name,
+                    total = 0L,
+                    scanning = 0L,
+                    failed = 0L,
+                    scanned = 0L,
+                    passed = 0L,
+                    scanner = scanner.name,
+                    scannerType = scanner.type,
+                    scannerVersion = scanner.version,
+                    scanResultOverview = emptyMap()
+                )
+            ).run { Converter.convert(this, plan, force) }
+            plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
+            scannerMetrics.incTaskCountAndGet(ScanTaskStatus.PENDING)
+            logger.info("create scan task[${scanTask.taskId}] success")
+            return scanTask
         }
     }
 

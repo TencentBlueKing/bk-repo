@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.model
 
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -114,5 +115,9 @@ data class TScanTask(
     /**
      * 扫描结果统计信息
      */
-    val scanResultOverview: Map<String, Long> = emptyMap()
+    val scanResultOverview: Map<String, Long> = emptyMap(),
+    /**
+     * 扫描任务元数据
+     */
+    val metadata: List<TaskMetadata> = emptyList()
 )

@@ -38,8 +38,8 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
+import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ScanPlanDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.message.ScannerMessageCode
@@ -52,6 +52,7 @@ import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
+import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.utils.Request
 import com.tencent.bkrepo.scanner.utils.RuleUtil
 import com.tencent.bkrepo.scanner.utils.ScanParamUtil
@@ -65,6 +66,7 @@ class ScanPlanServiceImpl(
     private val packageClient: PackageClient,
     private val scanPlanDao: ScanPlanDao,
     private val scanTaskDao: ScanTaskDao,
+    private val scannerService: ScannerService,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
     private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) : ScanPlanService {
@@ -134,6 +136,40 @@ class ScanPlanServiceImpl(
 
     override fun find(projectId: String, id: String): ScanPlan? {
         return scanPlanDao.find(projectId, id)?.let { ScanPlanConverter.convert(it) }
+    }
+
+    override fun findByName(projectId: String, type: String, name: String): ScanPlan? {
+        return scanPlanDao.find(projectId, type, name)?.let { ScanPlanConverter.convert(it) }
+    }
+
+    override fun getOrCreateDefaultPlan(
+        projectId: String,
+        type: String
+    ): ScanPlan {
+        val name = defaultScanPlanName(type)
+
+        var defaultScanPlan = findByName(projectId, type, name)
+        if (defaultScanPlan != null) {
+            return defaultScanPlan
+        }
+
+        defaultScanPlan = try {
+            val scanPlan = ScanPlan(
+                projectId = projectId,
+                name = name,
+                type = type,
+                scanner = scannerService.default().name
+            )
+            create(scanPlan)
+        } catch (e: ErrorCodeException) {
+            if (e.messageCode == CommonMessageCode.RESOURCE_EXISTED) {
+                findByName(projectId, type, name)
+            } else {
+                throw e
+            }
+        }
+
+        return defaultScanPlan!!
     }
 
     override fun delete(projectId: String, id: String) {
@@ -234,6 +270,8 @@ class ScanPlanServiceImpl(
         }
         permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
     }
+
+    private fun defaultScanPlanName(type: String) = "DEFAULT_$type"
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScanPlanServiceImpl::class.java)

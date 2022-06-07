@@ -46,6 +46,12 @@ interface ScannerService {
      * @throws com.tencent.bkrepo.scanner.exception.ScannerNotFoundException 找不到指定扫描器时抛出异常
      */
     fun get(name: String): Scanner
+
+    /**
+     * 获取默认扫描器
+     */
+    fun default(): Scanner
+
     /**
      * 获取扫描器
      *

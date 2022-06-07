@@ -32,8 +32,11 @@
 package com.tencent.bkrepo.common.notify.service
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.MessageBody
 import com.tencent.bkrepo.common.notify.pojo.BaseMessage
 import com.tencent.bkrepo.common.notify.pojo.DevopsResult
 import com.tencent.bkrepo.common.notify.pojo.EmailNotifyMessage
@@ -87,6 +90,23 @@ class DevopsNotify constructor(
             body = body
         )
         postMessage(url, message)
+    }
+
+    override fun sendWeworkBot(webhookUrl: String, message: MessageBody) {
+        val body = HashMap<String, Any>(2).run {
+            put("msgtype", message.type())
+            put(message.type(), message)
+            RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), toJsonString())
+        }
+        val request = Request.Builder().url(webhookUrl).post(body).build()
+        okHttpClient.newCall(request).execute().use {
+            if (!it.isSuccessful) {
+                logger.error(
+                    "send wework bot message failed, " +
+                        "webhookUrl[$webhookUrl], message[$message], res[${it.body()?.string()}]"
+                )
+            }
+        }
     }
 
     override fun sendWechat(receivers: List<String>, body: String) {

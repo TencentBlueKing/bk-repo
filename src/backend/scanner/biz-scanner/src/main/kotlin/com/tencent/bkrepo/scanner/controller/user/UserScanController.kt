@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
+import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
 import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
@@ -70,6 +71,12 @@ class UserScanController @Autowired constructor(
     @PostMapping
     fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
         return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL, SecurityUtils.getUserId()))
+    }
+
+    @ApiOperation("从流水线触发扫描")
+    @PostMapping("/pipeline")
+    fun pipelineScan(@RequestBody request: PipelineScanRequest): Response<ScanTask> {
+        return ResponseBuilder.success(scanService.pipelineScan(request))
     }
 
     @ApiOperation("中止制品扫描")

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.scanner.service
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 
@@ -45,6 +46,11 @@ interface ScanService {
      * @param userId 用户id，传入null时表示系统触发扫描，不校验用户权限
      */
     fun scan(scanRequest: ScanRequest, triggerType: ScanTriggerType, userId: String? = null): ScanTask
+
+    /**
+     * 从流水线创建扫描任务
+     */
+    fun pipelineScan(pipelineScanRequest: PipelineScanRequest): ScanTask
 
     /**
      * 停止子任务

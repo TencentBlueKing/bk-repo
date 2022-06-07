@@ -25,25 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.configuration
+package com.tencent.bkrepo.scanner.pojo.request
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.common.query.model.Rule
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-@ConfigurationProperties("scanner")
-data class ScannerProperties(
-    /**
-     * 默认项目扫描子任务数量限制
-     */
-    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    var supportFileNameExt: Set<String> = DEFAULT_SUPPORT_FILE_NAME_EXTENSION,
-    var detailReportUrl: String = "http://localhost"
-) {
-    companion object {
-        val DEFAULT_SUPPORT_FILE_NAME_EXTENSION = setOf(
-            "apk", "apks", "aab", "exe", "so", "ipa", "dmg", "jar", "gz", "tar", "zip"
-        )
-        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
-        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
-        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
-    }
-}
+@ApiModel("流水线触发扫描请求")
+data class PipelineScanRequest(
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("流水线id")
+    val pid: String,
+    @ApiModelProperty("构建id")
+    val bid: String,
+    @ApiModelProperty("扫描方案id，未指定时会创建一个generic类型的默认方案")
+    val planId: String? = null,
+    @ApiModelProperty("扫描文件匹配规则")
+    val rule: Rule,
+    @ApiModelProperty("用于通知扫描结果的企业微信群机器人")
+    val weworkBotUrl: String? = null
+)

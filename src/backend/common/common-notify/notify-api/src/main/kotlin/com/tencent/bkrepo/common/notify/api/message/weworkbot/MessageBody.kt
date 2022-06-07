@@ -25,25 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.configuration
+package com.tencent.bkrepo.common.notify.api.message.weworkbot
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties("scanner")
-data class ScannerProperties(
-    /**
-     * 默认项目扫描子任务数量限制
-     */
-    var defaultProjectSubScanTaskCountLimit: Int = DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT,
-    var supportFileNameExt: Set<String> = DEFAULT_SUPPORT_FILE_NAME_EXTENSION,
-    var detailReportUrl: String = "http://localhost"
-) {
-    companion object {
-        val DEFAULT_SUPPORT_FILE_NAME_EXTENSION = setOf(
-            "apk", "apks", "aab", "exe", "so", "ipa", "dmg", "jar", "gz", "tar", "zip"
-        )
-        const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
-        const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
-        const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20
-    }
+interface MessageBody {
+    fun type(): String
 }

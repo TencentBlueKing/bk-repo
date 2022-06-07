@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.scanner.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
@@ -81,6 +82,27 @@ interface ScanPlanService {
      * @return 扫描方案
      */
     fun find(projectId: String, id: String): ScanPlan?
+
+    /**
+     * 获取扫描方案
+     *
+     * @param projectId 扫描方案所属项目id
+     * @param type 扫描方案类型
+     * @param name 扫描方案id
+     *
+     * @return 扫描方案
+     */
+    fun findByName(projectId: String, type: String, name: String): ScanPlan?
+
+    /**
+     * 获取[type]类型的默认扫描方案，不存在时则创建一个
+     *
+     * @param projectId 所属项目
+     * @param type 默认扫描方案类型
+     *
+     * @return 默认扫描方案
+     */
+    fun getOrCreateDefaultPlan(projectId: String, type: String = RepositoryType.GENERIC.name): ScanPlan
 
     /**
      * 删除扫描方案

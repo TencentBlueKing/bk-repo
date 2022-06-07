@@ -60,6 +60,13 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return findOne(Query(criteria))
     }
 
+    fun find(projectId: String, type: String, name: String): TScanPlan? {
+        val criteria = projectCriteria(projectId)
+            .and(TScanPlan::type.name).isEqualTo(type)
+            .and(TScanPlan::name.name).isEqualTo(name)
+        return findOne(Query(criteria))
+    }
+
     fun findByProjectIdAndRepoName(
         projectId: String,
         repoName: String,
