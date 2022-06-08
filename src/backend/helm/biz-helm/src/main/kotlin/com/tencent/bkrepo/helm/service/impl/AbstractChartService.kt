@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -102,13 +103,13 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.SortedSet
 import java.util.concurrent.ThreadPoolExecutor
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -402,7 +403,7 @@ open class AbstractChartService : ArtifactService() {
     fun findRemoteArtifactFullPath(name: String): String {
         logger.info("get remote url for downloading...")
         val helmIndexYamlMetadata = queryOriginalIndexYaml()
-        val map = ChartParserUtil.parseNameAndVersion(name)
+        val map = FileNameParser.parseNameAndVersionWithRegex(name)
         val chartName = map[NAME]
         val chartVersion = map[VERSION]
         val chartList =

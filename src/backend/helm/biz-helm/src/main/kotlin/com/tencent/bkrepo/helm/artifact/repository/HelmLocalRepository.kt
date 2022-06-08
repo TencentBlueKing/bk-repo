@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.helm.constants.CHART
@@ -245,7 +246,7 @@ class HelmLocalRepository(
             if (!isOverwrite(fullPath!!, forceUpdate!!)) {
                 when (fileType) {
                     CHART -> result = getAttribute(META_DETAIL)
-                    PROV -> result = ChartParserUtil.parseNameAndVersion(fullPath)
+                    PROV -> result = FileNameParser.parseNameAndVersionWithRegex(fullPath)
                 }
             }
             return result
