@@ -73,6 +73,10 @@
                     return 'all'
                 },
                 set (val) {
+                    const oldValue = this.defaultValue.field
+                    // 被动改变
+                    if (val === oldValue) return
+                    // 用户输入
                     let field = ''
                     if (val === 'name') field = 'name'
                     if (val === 'metadata') field = 'metadata.'
@@ -89,6 +93,7 @@
                         value: ''
                     }
                     const meta = Object.values(val).find(meta => meta.field)
+                    // 触发type改变导致input回置
                     meta && (this.defaultValue = { ...meta })
                 },
                 immediate: true,

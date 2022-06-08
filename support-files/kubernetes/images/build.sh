@@ -17,7 +17,7 @@ PUSH=0
 REGISTRY=docker.io/bkrepo
 USERNAME=
 PASSWORD=
-BACKENDS=(repository auth generic oci helm npm pypi replication opdata)
+BACKENDS=(repository auth generic oci helm npm pypi replication opdata job)
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
@@ -147,10 +147,10 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
     for SERVICE in ${BACKENDS[@]};
     do
         log "构建${SERVICE}镜像..."
-        $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
+        $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
         rm -rf $tmp_dir/*
         cp backend/startup.sh $tmp_dir/
-        cp $BACKEND_DIR/release/boot-$SERVICE-*.jar $tmp_dir/app.jar
+        cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
         docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
         if [[ $PUSH -eq 1 ]] ; then
             docker push $REGISTRY/bkrepo-$SERVICE:$VERSION

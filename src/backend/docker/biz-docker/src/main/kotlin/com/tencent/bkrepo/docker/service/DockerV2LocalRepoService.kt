@@ -86,7 +86,7 @@ import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobHeadResponse
 import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.InputStreamResource

@@ -80,7 +80,7 @@
             <bk-tab-panel render-directive="if" v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
                 <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
-            <!-- <bk-tab-panel name="cleanConfig" label="清理设置">
+            <!-- <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" label="清理设置">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
             </bk-tab-panel> -->
             <!-- <bk-tab-panel render-directive="if" name="permissionConfig" :label="$t('permissionConfig')">
@@ -185,6 +185,9 @@
             },
             showProxyConfigTab () {
                 return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
+            },
+            showCleanConfigTab () {
+                return ['maven', 'docker', 'npm', 'helm', 'generic'].includes(this.repoType)
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo

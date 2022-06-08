@@ -33,5 +33,6 @@ dependencies {
     api(project(":docker:api-docker"))
     api(project(":common:common-query:query-api"))
     api(project(":common:common-artifact:artifact-service"))
-    api("javax.ws.rs:jsr311-api:1.1.1")
+    api("javax.ws.rs:jsr311-api:${Versions.JSR311API}")
+    implementation("org.glassfish.jersey.core:jersey-server:${Versions.Jersey}")
 }

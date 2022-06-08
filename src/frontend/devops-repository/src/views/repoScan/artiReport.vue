@@ -64,18 +64,28 @@
                 row-key="leakKey"
                 size="small">
                 <template #empty>
-                    <empty-data :is-loading="isLoading"></empty-data>
+                    <empty-data
+                        :is-loading="isLoading"
+                        :search="Boolean(filter.vulId || filter.severity)"
+                        title="未扫描到漏洞">
+                    </empty-data>
                 </template>
                 <bk-table-column type="expand" width="30">
                     <template #default="{ row }">
+                        <template v-if="row.path">
+                            <div class="leak-title">存在漏洞的文件路径</div>
+                            <div class="leak-tip">{{ row.path }}</div>
+                        </template>
                         <div class="leak-title">{{ row.title }}</div>
-                        <div class="leak-tip">{{ row.description }}</div>
+                        <div class="leak-tip">{{ row.description || '/' }}</div>
                         <div class="leak-title">修复建议</div>
-                        <div class="leak-tip">{{ row.officialSolution }}</div>
-                        <div class="leak-title">相关资料</div>
-                        <div class="leak-tip" display v-for="url in row.reference" :key="url">
-                            <a :href="url" target="_blank">{{ url }}</a>
-                        </div>
+                        <div class="leak-tip">{{ row.officialSolution || '/' }}</div>
+                        <template v-if="row.reference && row.reference.length">
+                            <div class="leak-title">相关资料</div>
+                            <div class="leak-tip" display v-for="url in row.reference" :key="url">
+                                <a :href="url" target="_blank">{{ url }}</a>
+                            </div>
+                        </template>
                     </template>
                 </bk-table-column>
                 <bk-table-column label="漏洞ID" prop="vulId" show-overflow-tooltip></bk-table-column>
@@ -259,6 +269,8 @@
     overflow: hidden;
     background-color: white;
     .base-info {
+        height: 100%;
+        overflow-y: auto;
         padding: 0 20px;
         flex-basis: 300px;
         border: 1px solid var(--borderColor);

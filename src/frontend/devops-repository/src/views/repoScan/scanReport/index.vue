@@ -14,14 +14,14 @@
             <bk-button class="mr10" theme="default" @click="startScanHandler">立即扫描</bk-button>
             <bk-button theme="default" @click="scanSettingHandler">设置</bk-button>
         </div>
-        <div class="report-overview flex-align-center display-block" data-title="报告总览">
+        <div class="report-overview flex-align-center display-block" data-title="方案总览">
             <div class="base-info-item flex-column"
                 v-for="item in baseInfoList" :key="item.key">
                 <span class="base-info-key">{{ item.label }}</span>
                 <span class="base-info-value" :style="{ color: item.color }">{{ segmentNumberThree(baseInfo[item.key] || 0) }}</span>
             </div>
         </div>
-        <div class="report-list display-block" data-title="扫描制品列表" v-bkloading="{ isLoading }">
+        <div class="report-list display-block" data-title="扫描记录" v-bkloading="{ isLoading }">
             <!-- <i class="devops-icon icon-filter-shape" @click="filter.show = true"></i> -->
             <bk-button class="report-filter" theme="default" @click="showFilterForm">筛选</bk-button>
             <bk-table
@@ -105,7 +105,9 @@
     import { mapActions } from 'vuex'
     import { formatDate, segmentNumberThree } from '@repository/utils'
     import { scanStatusEnum, leakLevelEnum } from '@repository/store/publicEnum'
-    const nowTime = new Date()
+    const nowTime = new Date(
+        `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
+    ).getTime() + 3600 * 1000 * 24
     export default {
         name: 'scanReport',
         components: {
@@ -133,24 +135,24 @@
                     limit: 20,
                     limitList: [10, 20, 40]
                 },
-                filterTime: [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 30), nowTime],
+                filterTime: [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)],
                 shortcuts: [
                     {
                         text: '近7天',
                         value () {
-                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 7), nowTime]
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
                         }
                     },
                     {
                         text: '近15天',
                         value () {
-                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 15), nowTime]
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
                         }
                     },
                     {
                         text: '近30天',
                         value () {
-                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 30), nowTime]
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
                         }
                     }
                 ]

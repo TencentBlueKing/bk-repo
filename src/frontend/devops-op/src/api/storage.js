@@ -9,7 +9,6 @@ const STORAGE_CACHE_CONFIG_PREFIX = 'cache'
 const STORAGE_UPLOAD_CONFIG_PREFIX = 'upload'
 export const STORAGE_TYPE_FILESYSTEM = 'filesystem'
 export const STORAGE_TYPE_INNER_COS = 'innercos'
-export const STORAGE_TYPE_HDFS = 'hdfs'
 export const STORAGE_TYPE_S3 = 's3'
 
 export function credentials() {

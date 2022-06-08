@@ -33,5 +33,5 @@ dependencies {
     api(project(":auth:api-auth"))
     api(project(":repository:api-repository"))
     api(project(":common:common-service"))
-    implementation("cn.hutool:hutool-crypto:5.5.4")
+    implementation("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
 }

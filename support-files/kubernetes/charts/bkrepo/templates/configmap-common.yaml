@@ -22,6 +22,15 @@ data:
           transaction:
             enabled: false
     service.prefix: {{ include "common.names.fullname" . }}-
+    oci.domain: {{ .Values.gateway.dockerHost }}
+    {{- if .Values.ingress.tls }}
+    oci.authUrl: https://{{ .Values.gateway.host }}/docker/v2/auth
+    {{- else }}
+    oci.authUrl: http://{{ .Values.gateway.host }}/docker/v2/auth
+    {{- end }}
+    job.repoRefreshJobProperties.concurrentLevel: COLLECTION
+    job.repoRefreshJobProperties.permitsPerSecond: 512
+    job.repoRefreshJobProperties.types: HELM,OCI
     cluster:
       region: {{ .Values.common.region }}
       self:

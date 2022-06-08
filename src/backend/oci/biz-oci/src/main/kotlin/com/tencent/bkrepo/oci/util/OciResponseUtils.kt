@@ -42,6 +42,7 @@ import com.tencent.bkrepo.oci.constant.BLOB_UPLOAD_SESSION_ID
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_CONTENT_DIGEST
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_UPLOAD_UUID
 import com.tencent.bkrepo.oci.constant.HOST
 import com.tencent.bkrepo.oci.constant.HTTP_FORWARDED_PROTO
 import com.tencent.bkrepo.oci.constant.HTTP_PROTOCOL_HTTP
@@ -184,12 +185,13 @@ object OciResponseUtils {
         response.addHeader(HttpHeaders.LOCATION, location)
         uuid?.let {
             response.addHeader(BLOB_UPLOAD_SESSION_ID, uuid)
+            response.addHeader(DOCKER_UPLOAD_UUID, uuid)
         }
         contentLength?.let {
             response.addHeader(CONTENT_LENGTH, contentLength.toString())
         }
         range?.let {
-            response.addHeader(RANGE, "0-$range")
+            response.addHeader(RANGE, "0-${range - 1}")
         }
     }
 
