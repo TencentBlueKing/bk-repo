@@ -124,6 +124,23 @@ object MetadataUtils {
         return result.values.toMutableList()
     }
 
+    fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
+        return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
+            .map { it.getValue("key").toString() to it.getValue("value") }
+            .toMap()
+    }
+
+    fun convertToMetadataModel(metadataList: List<Map<String, Any>>): List<MetadataModel> {
+        return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
+            .map {
+                val key = it.getValue(TMetadata::key.name).toString()
+                val value = it.getValue(TMetadata::value.name)
+                val system = it[TMetadata::system.name] as Boolean? ?: false
+                val description = it[TMetadata::description.name]?.toString()
+                MetadataModel(key = key, value = value, system = system, description = description)
+            }
+    }
+
     fun checkPermission(metadata: TMetadata?, operator: String) {
         if (metadata?.system == true && operator != SYSTEM_USER) {
             throw PermissionException("No permission to update system metadata[${metadata.key}]")
