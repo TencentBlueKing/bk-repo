@@ -159,9 +159,9 @@ class OciRegistryLocalRepository(
             val domain = ociOperationService.getReturnDomain(HttpContextHolder.getRequest())
             if (!range.isNullOrEmpty() && length > -1) {
                 logger.info("range $range, length $length, uuid $uuid")
-                val (_, end) = getRangeInfo(range)
+                val (start, end) = getRangeInfo(range)
                 // 判断要上传的长度是否超长
-                if (end > length - 1) {
+                if (end - start > length - 1) {
                     OciResponseUtils.buildBlobUploadPatchResponse(
                         domain = domain,
                         uuid = uuid!!,
@@ -178,25 +178,13 @@ class OciRegistryLocalRepository(
                 artifactFile = context.getArtifactFile(),
                 storageCredentials = context.repositoryDetail.storageCredentials
             )
-            // 判断追加文件后长度是否超长
-            if (length > -1 && patchLen > length) {
-                OciResponseUtils.buildBlobUploadPatchResponse(
-                    domain = domain,
-                    uuid = uuid,
-                    locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
-                    response = HttpContextHolder.getResponse(),
-                    range = length.toLong(),
-                    status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE
-                )
-            } else {
-                OciResponseUtils.buildBlobUploadPatchResponse(
-                    domain = domain,
-                    uuid = uuid,
-                    locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
-                    response = HttpContextHolder.getResponse(),
-                    range = patchLen
-                )
-            }
+            OciResponseUtils.buildBlobUploadPatchResponse(
+                domain = domain,
+                uuid = uuid,
+                locationStr = OciLocationUtils.blobUUIDLocation(uuid, this),
+                response = HttpContextHolder.getResponse(),
+                range = patchLen
+            )
         }
     }
 
@@ -442,10 +430,11 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
+            val packageKey = PackageKeys.ofName(context.repositoryDetail.type.name.toLowerCase(), packageName)
             val versionList = packageClient.listAllVersion(
                 projectId,
                 repoName,
-                PackageKeys.ofOci(packageName)
+                packageKey
             ).data.orEmpty()
             if (versionList.isEmpty()) return null
             val tagList = mutableListOf<String>().apply {

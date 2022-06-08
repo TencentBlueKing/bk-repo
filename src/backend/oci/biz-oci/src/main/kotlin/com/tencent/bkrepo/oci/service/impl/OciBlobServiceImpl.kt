@@ -107,7 +107,7 @@ class OciBlobServiceImpl(
     private fun mountBlob(artifactInfo: OciBlobArtifactInfo) {
         with(artifactInfo) {
             val domain = ociOperationService.getReturnDomain(HttpContextHolder.getRequest())
-            val ociDigest = OciDigest(digest)
+            val ociDigest = OciDigest(mount)
             val fileName = ociDigest.fileName()
             val queryModel = NodeQueryBuilder()
                 .select(NODE_FULL_PATH)

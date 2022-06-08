@@ -402,8 +402,9 @@ open class AbstractChartService : ArtifactService() {
     fun findRemoteArtifactFullPath(name: String): String {
         logger.info("get remote url for downloading...")
         val helmIndexYamlMetadata = queryOriginalIndexYaml()
-        val chartName = ChartParserUtil.parseNameAndVersion(name)[NAME]
-        val chartVersion = ChartParserUtil.parseNameAndVersion(name)[VERSION]
+        val map = ChartParserUtil.parseNameAndVersion(name)
+        val chartName = map[NAME]
+        val chartVersion = map[VERSION]
         val chartList =
             helmIndexYamlMetadata.entries[chartName]
                 ?: throw HelmFileNotFoundException("File [$name] can not be found.")
