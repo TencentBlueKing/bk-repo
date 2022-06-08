@@ -38,7 +38,7 @@ class ExecutorScheduler @Autowired constructor(
     fun scan() {
         while (allowExecute()) {
             val subtask = scanClient.pullSubTask().data ?: break
-            if (executingSubtaskExecutorMap.contains(subtask.taskId)) {
+            if (scanning(subtask.taskId)) {
                 // 任务执行中，直接忽略新任务
                 logger.warn("subtask[${subtask.taskId}] of task[${subtask.parentScanTaskId}] is executing")
                 return
@@ -57,6 +57,13 @@ class ExecutorScheduler @Autowired constructor(
                 }
             }
         }
+    }
+
+    /**
+     * 判断任务是否正在执行
+     */
+    fun scanning(taskId: String): Boolean {
+        return executingSubtaskExecutorMap.contains(taskId)
     }
 
     /**
