@@ -46,6 +46,8 @@ class SemVersionTest {
         println(SemVersion.parse("1.1.0"))
         println(SemVersion.parse("1"))
         println(SemVersion.parse("1.1-alpha-2"))
+        println(SemVersion.parse("v1.1-alpha-2"))
+        println(SemVersion.parse("bcs-webconsole-v1.26.0-alpha.6"))
     }
 
     @Test
