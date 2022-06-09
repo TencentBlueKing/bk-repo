@@ -106,6 +106,7 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.SortedSet
@@ -369,9 +370,14 @@ open class AbstractChartService : ArtifactService() {
                 logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
             }
             packageClient.updatePackage(packageUpdateRequest)
-        } catch (exception: RemoteErrorCodeException) {
-            // 暂时转换为包存在异常
-            logger.warn("package version for $contentPath already existed, message: ${exception.message}")
+        } catch (exception: NoFallbackAvailableException) {
+            if (exception.cause is RemoteErrorCodeException) {
+                // 暂时转换为包存在异常
+                logger.warn(
+                    "package version for $contentPath already existed, " +
+                        "message: ${(exception.cause as RemoteErrorCodeException).errorMessage}"
+                )
+            } else throw exception
         }
     }
 
