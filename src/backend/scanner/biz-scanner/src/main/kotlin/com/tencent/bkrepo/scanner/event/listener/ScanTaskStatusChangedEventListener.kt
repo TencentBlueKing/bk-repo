@@ -73,15 +73,14 @@ class ScanTaskStatusChangedEventListener(
 
         val summary = StringBuilder()
 
-        summary.append("${task.total} artifact scan finished.")
+        summary.append("**${task.total}** artifact scanned.")
         if (task.failed != 0L) {
-            summary.append("${task.failed} failed.")
+            summary.append("**${task.failed}** failed.")
         }
 
         CveOverviewKey.values().forEach { key ->
-            task.scanResultOverview?.get(key.key)?.let {
-                summary.append("\n${key.level.levelName}: $it")
-            }
+            val count = task.scanResultOverview?.get(key.key) ?: 0L
+            summary.append("\n${key.level.levelName}: **$count**")
         }
 
         summary.append("\n[detail](${scannerProperties.detailReportUrl}/ui/${projectId}/scanReport/${planId})")

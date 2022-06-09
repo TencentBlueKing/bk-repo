@@ -29,19 +29,20 @@ package com.tencent.bkrepo.scanner.executor.job
 
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.PruneType
+import com.tencent.bkrepo.scanner.executor.ExecutorScheduler
 import com.tencent.bkrepo.scanner.executor.configuration.ScannerExecutorProperties
+import com.tencent.bkrepo.scanner.executor.util.FileUtils
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
-import java.nio.file.DirectoryNotEmptyException
-import java.nio.file.Files
 
 /**
  * 清理删除失败的文件和容器任务
  */
 @Component
 class CleanJob(
+    private val executorScheduler: ExecutorScheduler,
     private val dockerClient: DockerClient,
     private val scannerExecutorProperties: ScannerExecutorProperties
 ) {
@@ -56,23 +57,22 @@ class CleanJob(
      */
     private fun cleanExpireFile() {
         val workDir = File(scannerExecutorProperties.workDir)
-        val expiredMinutes = scannerExecutorProperties.fileExpiredMinutes.toMinutes()
-        val now = System.currentTimeMillis()
-        workDir.walkBottomUp().forEach {
-            try {
-                val notModifiedMinutes = (now - it.lastModified()) / 1000L / 60L
-                if (it.exists() && notModifiedMinutes > expiredMinutes) {
-                    Files.deleteIfExists(it.toPath())
-                }
-            } catch (e: DirectoryNotEmptyException) {
-                logger.warn(
-                    "directory [${it.absolutePath}] is not empty[${it.listFiles()?.joinToString(",")}]"
-                )
-            } catch (e: Exception) {
-                logger.error("delete file[${it.absolutePath}] failed", e)
-            }
+
+        val finishedTaskDirs = ArrayList<File>()
+        workDir.listFiles()!!.forEach { scannerDir ->
+            val files = scannerDir.listFiles { file ->
+                file.isDirectory && !executorScheduler.scanning(file.name)
+            }!!
+            finishedTaskDirs.addAll(files)
+        }
+
+
+        finishedTaskDirs.forEach { dir ->
+            logger.info("start clean finished task dirs [${dir.absolutePath}]")
+            FileUtils.deleteRecursively(dir)
         }
     }
+
 
     /**
      * 清理docker相关资源

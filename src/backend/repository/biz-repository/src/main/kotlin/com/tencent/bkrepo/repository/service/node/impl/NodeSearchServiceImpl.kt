@@ -46,6 +46,7 @@ import com.tencent.bkrepo.repository.search.node.NodeQueryContext
 import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
 import com.tencent.bkrepo.repository.service.node.NodeSearchService
 import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.repository.util.MetadataUtils
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -149,7 +150,8 @@ class NodeSearchServiceImpl(
                 it[TNode::deleted.name] = convertDateTime(deleted)
             }
             it[NodeInfo::metadata.name]?.let { metadata ->
-                it[NodeInfo::metadata.name] = convert(metadata as List<Map<String, Any>>)
+                it[NodeInfo::metadata.name] = MetadataUtils.convert(metadata as List<Map<String, Any>>)
+                it[NodeInfo::nodeMetadata.name] = MetadataUtils.convertToMetadataModel(metadata)
             }
         }
         val countQuery = Query.of(query).limit(0).skip(0)
@@ -160,12 +162,6 @@ class NodeSearchServiceImpl(
     }
 
     companion object {
-        fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
-            return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
-                .map { it.getValue("key").toString() to it.getValue("value") }
-                .toMap()
-        }
-
         fun convertDateTime(value: Any): LocalDateTime? {
             return if (value is Date) {
                 LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault())
