@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.scanner.executor.util
 
-import org.apache.commons.lang.SystemUtils
+import org.apache.commons.lang3.SystemUtils
 import org.slf4j.LoggerFactory
 
 object CommandUtil {
