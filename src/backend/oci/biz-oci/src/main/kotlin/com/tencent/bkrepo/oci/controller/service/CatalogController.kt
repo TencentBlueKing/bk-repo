@@ -31,7 +31,10 @@
 
 package com.tencent.bkrepo.oci.controller.service
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
 import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
@@ -60,6 +63,7 @@ class CatalogController(
      * 返回仓库下所有image名列表
      */
     @GetMapping(DOCKER_CATALOG_SUFFIX)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun list(
         artifactInfo: OciTagArtifactInfo,
         @RequestParam(required = true)
