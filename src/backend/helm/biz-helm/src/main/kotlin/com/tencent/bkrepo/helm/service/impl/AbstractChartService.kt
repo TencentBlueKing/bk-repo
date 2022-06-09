@@ -372,17 +372,15 @@ open class AbstractChartService : ArtifactService() {
             }
             packageClient.updatePackage(packageUpdateRequest)
         } catch (exception: NoFallbackAvailableException) {
-            if (exception.cause !is RemoteErrorCodeException) {
+            val e = exception.cause
+            if (e !is RemoteErrorCodeException || e.errorCode != ArtifactMessageCode.VERSION_EXISTED.getCode()) {
                 throw exception
             }
-            val e = exception.cause as RemoteErrorCodeException
-            if (e.errorCode == ArtifactMessageCode.VERSION_EXISTED.getCode()) {
-                // 暂时转换为包存在异常
-                logger.warn(
-                    "package version for $contentPath already existed, " +
-                        "message: ${(exception.cause as RemoteErrorCodeException).errorMessage}"
-                )
-            } else throw exception
+            // 暂时转换为包存在异常
+            logger.warn(
+                "package version for $contentPath already existed, " +
+                    "message: ${e.errorMessage}"
+            )
         }
     }
 
