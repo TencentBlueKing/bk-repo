@@ -46,7 +46,7 @@ import com.tencent.bkrepo.docker.util.BlobUtil.getBlobByName
 import com.tencent.bkrepo.docker.util.ResponseUtil.EMPTY_BLOB_CONTENT
 import com.tencent.bkrepo.docker.util.ResponseUtil.emptyBlobDigest
 import com.tencent.bkrepo.docker.util.ResponseUtil.isEmptyBlob
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 
@@ -64,6 +64,7 @@ object DockerManifestSyncer {
      * @param tag docker image tag
      * @return Boolean the sync result
      */
+    @Suppress("LoopWithTooManyJumpStatements")
     fun syncBlobs(context: RequestContext, repo: DockerArtifactRepo, info: ManifestMetadata, tag: String): Boolean {
         logger.info("start to sync docker repository blobs [${info.toJsonString()}]")
         val manifestInfos = info.blobsInfo.iterator()

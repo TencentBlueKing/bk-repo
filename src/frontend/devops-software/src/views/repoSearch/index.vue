@@ -73,7 +73,7 @@
                     </package-card>
                 </infinite-scroll>
             </template>
-            <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:80px;"></empty-data>
+            <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:130px;"></empty-data>
         </main>
         <generic-detail ref="genericDetail"></generic-detail>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>

@@ -94,7 +94,9 @@
 <script>
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    const nowTime = new Date(`${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate() + 1}`)
+    const nowTime = new Date(
+        `${new Date().getFullYear()}-${new Date().getMonth() + 1}-${new Date().getDate()}`
+    ).getTime() + 3600 * 1000 * 24
     export default {
         name: 'audit',
         data () {
@@ -103,7 +105,7 @@
                 query: {
                     projectId: this.$route.params.projectId,
                     user: [],
-                    time: [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 7), nowTime]
+                    time: [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
                 },
                 auditList: [],
                 pagination: {
@@ -117,19 +119,19 @@
                     {
                         text: '近7天',
                         value () {
-                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 7), nowTime]
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 7), new Date(nowTime)]
                         }
                     },
                     {
                         text: '近15天',
                         value () {
-                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 15), nowTime]
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 15), new Date(nowTime)]
                         }
                     },
                     {
                         text: '近30天',
                         value () {
-                            return [new Date(nowTime.getTime() - 3600 * 1000 * 24 * 30), nowTime]
+                            return [new Date(nowTime - 3600 * 1000 * 24 * 30), new Date(nowTime)]
                         }
                     }
                 ]
