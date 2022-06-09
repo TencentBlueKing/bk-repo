@@ -410,7 +410,8 @@ class ScanServiceImpl @Autowired constructor(
                     scanner = scanner.name,
                     scannerType = scanner.type,
                     scannerVersion = scanner.version,
-                    scanResultOverview = emptyMap()
+                    scanResultOverview = emptyMap(),
+                    metadata = metadata
                 )
             ).run { Converter.convert(this, plan, force) }
             plan?.id?.let { scanPlanDao.updateLatestScanTaskId(it, scanTask.taskId) }
