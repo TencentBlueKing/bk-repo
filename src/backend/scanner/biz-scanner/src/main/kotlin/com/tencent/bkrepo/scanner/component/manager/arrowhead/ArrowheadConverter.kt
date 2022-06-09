@@ -38,7 +38,6 @@ import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
-import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
 
 @Component("${ArrowheadScanner.TYPE}Converter")
@@ -46,7 +45,7 @@ class ArrowheadConverter : ScannerConverter {
     @Suppress("UNCHECKED_CAST")
     override fun convertCveResult(result: Any): Page<ArtifactVulnerabilityInfo> {
         result as Page<CveSecItem>
-        val pageRequest = PageRequest.of(result.pageNumber, result.pageSize)
+        val pageRequest = Pages.ofRequest(result.pageNumber, result.pageSize)
         val reports = result.records.mapTo(HashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
                 vulId = getVulId(it),

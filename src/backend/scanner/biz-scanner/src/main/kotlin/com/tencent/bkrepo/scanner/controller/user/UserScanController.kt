@@ -46,6 +46,7 @@ import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
 import com.tencent.bkrepo.scanner.service.ScanTaskService
+import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -103,7 +104,7 @@ class UserScanController @Autowired constructor(
         return ResponseBuilder.success(scanTaskService.tasks(scanTaskQuery, pageLimit))
     }
 
-    @ApiOperation("分页获取扫描子任务信息")
+    @ApiOperation("获取扫描子任务信息")
     @GetMapping("/tasks/{taskId}/subtasks/{subtaskId}")
     fun subtask(
         @PathVariable("taskId") taskId: String,
@@ -120,6 +121,6 @@ class UserScanController @Autowired constructor(
     ): Response<Page<SubtaskInfo>> {
         permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
         subtaskInfoRequest.parentScanTaskId = taskId
-        return ResponseBuilder.success(scanTaskService.subtasks(subtaskInfoRequest))
+        return ResponseBuilder.success(scanTaskService.subtasks(ScanPlanConverter.convert(subtaskInfoRequest)))
     }
 }
