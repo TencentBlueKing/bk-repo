@@ -63,7 +63,7 @@ class ExecutorScheduler @Autowired constructor(
      * 判断任务是否正在执行
      */
     fun scanning(taskId: String): Boolean {
-        return executingSubtaskExecutorMap.contains(taskId)
+        return executingSubtaskExecutorMap.containsKey(taskId)
     }
 
     /**
