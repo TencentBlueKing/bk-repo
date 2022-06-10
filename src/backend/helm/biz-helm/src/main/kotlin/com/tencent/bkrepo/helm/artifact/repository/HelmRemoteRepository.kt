@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.helm.constants.CHART
@@ -88,12 +87,10 @@ class HelmRemoteRepository(
         val body = response.body()!!
         val artifactFile = createTempFile(body)
         val size = artifactFile.getSize()
-        context.putAttribute(SIZE, size)
-        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         val result = checkNode(context, artifactFile)
         if (result == null) {
             logger.info("store the new helm file to replace the old version..")
-            parseAttribute(context, artifactStream)
+            parseAttribute(context, artifactFile)
             val stream = artifactFile.getInputStream().artifactStream(Range.full(size))
             cacheArtifactFile(context, artifactFile)
             return stream
@@ -158,15 +155,17 @@ class HelmRemoteRepository(
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
         val size = artifactFile.getSize()
-        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-        context.putAttribute(SIZE, size)
-//        parseAttribute(context, artifactStream)
+        parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
-//        helmOperationService.initPackageInfo(context)
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        helmOperationService.initPackageInfo(context)
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.PROXY, context.useDisposition)
     }
 
-    private fun parseAttribute(context: ArtifactContext, artifactStream: ArtifactInputStream) {
+    private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile) {
+        val size = artifactFile.getSize()
+        context.putAttribute(SIZE, size)
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         when (context.getStringAttribute(FILE_TYPE)) {
             CHART -> {
                 val helmChartMetadata = ChartParserUtil.parseChartInputStream(artifactStream)
