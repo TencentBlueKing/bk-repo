@@ -47,5 +47,5 @@ data class NotifyProperties(
     /**
      * 用于替换企业微信通知的scheme://host:port，为empty时不替换
      */
-    val replaceWeworkUrl: String = ""
+    var replaceWeworkUrl: String = ""
 )
