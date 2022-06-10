@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.helm.constants.CHART
@@ -155,13 +154,21 @@ class HelmRemoteRepository(
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
-        val artifactStream = parseAttribute(context, artifactFile)
+        val size = artifactFile.getSize()
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
-//        helmOperationService.initPackageInfo(context)
-        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
+        helmOperationService.initPackageInfo(context)
+        return ArtifactResource(
+            inputStream = artifactStream,
+            artifactName = context.artifactInfo.getResponseName(),
+            node = node,
+            channel = ArtifactChannel.PROXY,
+            useDisposition = context.useDisposition
+        )
     }
 
-    private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile): ArtifactInputStream {
+    private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile) {
         val size = artifactFile.getSize()
         context.putAttribute(SIZE, size)
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
@@ -176,7 +183,6 @@ class HelmRemoteRepository(
             }
             PROV -> ChartParserUtil.parseNameAndVersion(context)
         }
-        return artifactStream
     }
 
     /**

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -56,6 +57,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -105,6 +107,7 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.SortedSet
@@ -368,7 +371,11 @@ open class AbstractChartService : ArtifactService() {
                 logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
             }
             packageClient.updatePackage(packageUpdateRequest)
-        } catch (e: Exception) {
+        } catch (exception: NoFallbackAvailableException) {
+            val e = exception.cause
+            if (e !is RemoteErrorCodeException || e.errorCode != ArtifactMessageCode.VERSION_EXISTED.getCode()) {
+                throw exception
+            }
             // 暂时转换为包存在异常
             logger.warn(
                 "package version for $contentPath already existed, " +
