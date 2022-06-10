@@ -88,10 +88,12 @@ class HelmRemoteRepository(
         val body = response.body()!!
         val artifactFile = createTempFile(body)
         val size = artifactFile.getSize()
+        context.putAttribute(SIZE, size)
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         val result = checkNode(context, artifactFile)
         if (result == null) {
             logger.info("store the new helm file to replace the old version..")
-            parseAttribute(context, artifactFile)
+            parseAttribute(context, artifactStream)
             val stream = artifactFile.getInputStream().artifactStream(Range.full(size))
             cacheArtifactFile(context, artifactFile)
             return stream
@@ -155,16 +157,16 @@ class HelmRemoteRepository(
      */
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
-        val artifactStream = parseAttribute(context, artifactFile)
+        val size = artifactFile.getSize()
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+        context.putAttribute(SIZE, size)
+        parseAttribute(context, artifactStream)
         val node = cacheArtifactFile(context, artifactFile)
 //        helmOperationService.initPackageInfo(context)
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL, context.useDisposition)
     }
 
-    private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile): ArtifactInputStream {
-        val size = artifactFile.getSize()
-        context.putAttribute(SIZE, size)
-        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
+    private fun parseAttribute(context: ArtifactContext, artifactStream: ArtifactInputStream) {
         when (context.getStringAttribute(FILE_TYPE)) {
             CHART -> {
                 val helmChartMetadata = ChartParserUtil.parseChartInputStream(artifactStream)
@@ -176,7 +178,6 @@ class HelmRemoteRepository(
             }
             PROV -> ChartParserUtil.parseNameAndVersion(context)
         }
-        return artifactStream
     }
 
     /**
