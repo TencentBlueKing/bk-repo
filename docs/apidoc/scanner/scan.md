@@ -176,6 +176,9 @@
   "projectId": "testProjectId",
   "pid": "p-test",
   "bid": "b-test",
+  "buildNo": "12",
+  "pipelineName": "test",
+  "pluginName": "test",
   "rule": {
     "relation": "AND",
     "rules": [
@@ -195,7 +198,8 @@
         "operation": "PREFIX"
       }
     ],
-    "weworkBotUrl": "http://localhost"
+    "weworkBotUrl": "http://localhost",
+    "chatIds": "chatId1|chatId2"
   }
 }
 ```
@@ -204,12 +208,16 @@
 
 | 字段           | 类型     | 是否必须 | 默认值 | 说明                                                         | Description            |
 |--------------|--------|------|-----|------------------------------------------------------------|------------------------|
-| projectId    | string | 否    | 无   | 所属项目                                                       | project id             |
+| projectId    | string | 是    | 无   | 所属项目                                                       | project id             |
 | pid          | string | 否    | 无   | 流水线id                                                      | pipeline id            |
 | bid          | string | 否    | 无   | 构建id                                                       | build id               |
+| buildNo      | string | 否    | 无   | 构建号                                                        | build number           |
+| pipelineName | string | 否    | 无   | 流水线名                                                       | pipeline name          |
+| pluginName   | string | 否    | 无   | 插件名                                                        | plugin name            |
 | planId       | string | 否    | 无   | 使用的扫描方案id                                                  | plan id                |
-| rule         | object | 否    | 无   | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
+| rule         | object | 是    | 无   | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule        |
 | weworkBotUrl | string | 否    | 无   | 企业微信机器人webhook地址                                           | wework bot webhook url |
+| chatIds      | string | 否    | 无   | 企业微信机器人会话id，多个id用"&vert;"分隔                                | wework bot webhook url |
 
 - 响应体
 

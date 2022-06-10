@@ -57,8 +57,11 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
 import com.tencent.bkrepo.scanner.pojo.TaskMetadata
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_BUILD_NUMBER
 import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_KEY_BID
 import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_KEY_PID
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_PIPELINE_NAME
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata.Companion.TASK_METADATA_PLUGIN_NAME
 import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
@@ -116,14 +119,21 @@ class ScanServiceImpl @Autowired constructor(
     override fun pipelineScan(pipelineScanRequest: PipelineScanRequest): ScanTask {
         with(pipelineScanRequest) {
             val defaultScanPlan = scanPlanService.getOrCreateDefaultPlan(projectId)
-            val metadata = listOf(
-                TaskMetadata(key = TASK_METADATA_KEY_PID, value = pid),
-                TaskMetadata(key = TASK_METADATA_KEY_BID, value = bid)
-            )
+            val metadata = if(pid != null && bid != null) {
+                val data = ArrayList<TaskMetadata>()
+                pid?.let { data.add(TaskMetadata(key = TASK_METADATA_KEY_PID, value = it)) }
+                bid?.let { data.add(TaskMetadata(key = TASK_METADATA_KEY_BID, value = it)) }
+                pluginName?.let { data.add(TaskMetadata(key = TASK_METADATA_PLUGIN_NAME, value = it)) }
+                buildNo?.let { data.add(TaskMetadata(key = TASK_METADATA_BUILD_NUMBER, value = it)) }
+                pipelineName?.let { data.add(TaskMetadata(key = TASK_METADATA_PIPELINE_NAME, value = it)) }
+                data
+            } else {
+                emptyList<TaskMetadata>()
+            }
             val scanRequest = ScanRequest(rule = rule, planId = defaultScanPlan.id!!, metadata = metadata)
             val task = createTask(scanRequest, ScanTriggerType.PIPELINE, SecurityUtils.getUserId())
 
-            weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it) }
+            weworkBotUrl?.let { scanTaskStatusChangedEventListener.setWeworkBotUrl(task.taskId, it, chatIds) }
 
             scanTaskScheduler.schedule(task)
             return task

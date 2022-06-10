@@ -36,13 +36,21 @@ data class PipelineScanRequest(
     @ApiModelProperty("项目id")
     val projectId: String,
     @ApiModelProperty("流水线id")
-    val pid: String,
+    val pid: String? = null,
     @ApiModelProperty("构建id")
-    val bid: String,
+    val bid: String? = null,
+    @ApiModelProperty("构建号")
+    val buildNo: String? = null,
+    @ApiModelProperty("流水线名")
+    val pipelineName: String? = null,
+    @ApiModelProperty("使用的插件名")
+    val pluginName: String? = null,
     @ApiModelProperty("扫描方案id，未指定时会创建一个generic类型的默认方案")
     val planId: String? = null,
     @ApiModelProperty("扫描文件匹配规则")
     val rule: Rule,
     @ApiModelProperty("用于通知扫描结果的企业微信群机器人")
-    val weworkBotUrl: String? = null
+    val weworkBotUrl: String? = null,
+    @ApiModelProperty("用于通知扫描结果的企业微信群机器人会话，多个id用|分隔")
+    val chatIds: String? = null
 )

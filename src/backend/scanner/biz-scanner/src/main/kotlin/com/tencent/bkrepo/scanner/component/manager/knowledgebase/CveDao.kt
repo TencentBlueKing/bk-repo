@@ -29,6 +29,7 @@ package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
 import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.BulkOperationException
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.insert
 import org.springframework.data.mongodb.core.query.Query
@@ -72,6 +73,7 @@ class CveDao : ScannerSimpleMongoDao<TCve>() {
                 .withBulkMode(BulkOperations.BulkMode.UNORDERED)
                 .bulk(cveList)
         } catch (ignore: DuplicateKeyException) {
+        } catch (ignore: BulkOperationException) {
         }
     }
 }

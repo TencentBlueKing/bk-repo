@@ -25,36 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo
+package com.tencent.bkrepo.common.notify.api.message.weworkbot
 
-data class TaskMetadata(
-    val key: String,
-    val value: String
-) {
-    companion object {
-        /**
-         * 所属构建id metadata key
-         */
-        const val TASK_METADATA_KEY_BID = "BUILD_ID"
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
-        /**
-         * 所属流水线的构建号
-         */
-        const val TASK_METADATA_BUILD_NUMBER = "BUILD_NUMBER"
-
-        /**
-         * 所属流水线id metadata key
-         */
-        const val TASK_METADATA_KEY_PID = "PIPELINE_ID"
-
-        /**
-         * 所属流水线名
-         */
-        const val TASK_METADATA_PIPELINE_NAME = "PIPELINE_NAME"
-
-        /**
-         * 流水线中使用的插件名
-         */
-        const val TASK_METADATA_PLUGIN_NAME = "PLUGIN_NAME"
-    }
-}
+@ApiModel("企业微信你机器人")
+data class WeworkBot(
+    @ApiModelProperty("用于发消息的webhook地址")
+    val webhookUrl: String,
+    @ApiModelProperty("需要发消息的会话id，多个id用|分隔")
+    val chatIds: String? = null
+)

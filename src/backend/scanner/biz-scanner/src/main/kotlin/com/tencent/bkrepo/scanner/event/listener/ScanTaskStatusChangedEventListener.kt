@@ -27,8 +27,11 @@
 
 package com.tencent.bkrepo.scanner.event.listener
 
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.MarkdownMessage
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
@@ -53,15 +56,16 @@ class ScanTaskStatusChangedEventListener(
         with(event.task) {
             if (status == ScanTaskStatus.FINISHED.name) {
                 val message = buildMarkdownMessage(event.task).ifBlank { return }
-                val weworkBotUrl = getWeworkBotUrl(taskId) ?: return
-                send(message, weworkBotUrl)
+                val weworkBot = getWeworkBot(taskId) ?: return
+                send(weworkBot, message)
             }
         }
     }
 
-    fun setWeworkBotUrl(scanTaskId: String, url: String) {
-        val key = weworkBotUrlKey(scanTaskId)
-        redisTemplate.opsForValue().set(key, url, DEFAULT_EXPIRED_DAY, TimeUnit.DAYS)
+    fun setWeworkBotUrl(scanTaskId: String, url: String, chatIds: String? = null) {
+        val key = weworkBotKey(scanTaskId)
+        val bot = WeworkBot(webhookUrl = url, chatIds = chatIds)
+        redisTemplate.opsForValue().set(key, bot.toJsonString(), DEFAULT_EXPIRED_DAY, TimeUnit.DAYS)
     }
 
     private fun buildMarkdownMessage(task: ScanTask): String {
@@ -88,15 +92,15 @@ class ScanTaskStatusChangedEventListener(
         return summary.toString()
     }
 
-    private fun send(message: String, url: String) {
-        notifyService.sendWeworkBot(url, MarkdownMessage(message))
+    private fun send(bot: WeworkBot, message: String) {
+        notifyService.sendWeworkBot(bot, MarkdownMessage(message))
     }
 
-    private fun getWeworkBotUrl(scanTaskId: String): String? {
-        return redisTemplate.opsForValue().get(weworkBotUrlKey(scanTaskId))
+    private fun getWeworkBot(scanTaskId: String): WeworkBot? {
+        return redisTemplate.opsForValue().get(weworkBotKey(scanTaskId))?.readJsonString()
     }
 
-    private fun weworkBotUrlKey(scanTaskId: String) = "scanner:wework:url:${scanTaskId}"
+    private fun weworkBotKey(scanTaskId: String) = "scanner:taskId:${scanTaskId}:wework:bot"
 
     companion object {
         private const val DEFAULT_EXPIRED_DAY = 1L
