@@ -74,7 +74,8 @@ object ScanPlanConverter {
                 createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
                 lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                scanQuality = scanQuality
+                scanQuality = scanQuality,
+                readOnly = readOnly
             )
         }
     }
@@ -142,7 +143,8 @@ object ScanPlanConverter {
                 createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
                 lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastScanDate = null
+                lastScanDate = null,
+                readOnly = readOnly
             )
         }
     }
@@ -174,7 +176,8 @@ object ScanPlanConverter {
                 createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
                 lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastScanDate = latestScanTask?.startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME)
+                lastScanDate = latestScanTask?.startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                readOnly = readOnly
             )
         }
     }

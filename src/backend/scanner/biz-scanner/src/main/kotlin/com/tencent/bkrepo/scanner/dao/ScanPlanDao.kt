@@ -96,9 +96,9 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return find(query)
     }
 
-    fun exists(projectId: String, id: String): Boolean {
+    fun findByProjectIdAndId(projectId: String, id: String): TScanPlan? {
         val criteria = projectCriteria(projectId).and(ID).isEqualTo(id)
-        return exists(Query(criteria))
+        return findOne(Query(criteria))
     }
 
     fun delete(projectId: String, id: String): UpdateResult {

@@ -109,5 +109,9 @@ data class TScanPlan(
     /**
      * 质量规则
      */
-    val scanQuality: Map<String, Any> = emptyMap()
+    val scanQuality: Map<String, Any> = emptyMap(),
+    /**
+     * 扫描方案只读，不可修改
+     */
+    val readOnly: Boolean = false
 )

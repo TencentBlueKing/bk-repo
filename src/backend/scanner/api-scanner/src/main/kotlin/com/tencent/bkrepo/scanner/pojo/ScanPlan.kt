@@ -62,5 +62,7 @@ data class ScanPlan(
     @ApiModelProperty("修改者")
     var lastModifiedBy: String? = null,
     @ApiModelProperty("修改时间")
-    var lastModifiedDate: String? = null
+    var lastModifiedDate: String? = null,
+    @ApiModelProperty("是否只读")
+    var readOnly: Boolean? = null
 )

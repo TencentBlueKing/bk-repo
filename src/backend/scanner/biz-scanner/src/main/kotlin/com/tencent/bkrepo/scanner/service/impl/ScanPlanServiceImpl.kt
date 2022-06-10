@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
@@ -101,7 +102,8 @@ class ScanPlanServiceImpl(
                 createdBy = operator,
                 createdDate = now,
                 lastModifiedBy = operator,
-                lastModifiedDate = now
+                lastModifiedDate = now,
+                readOnly = readOnly ?: false
             )
             return ScanPlanConverter.convert(scanPlanDao.insert(tScanPlan))
         }
@@ -162,6 +164,7 @@ class ScanPlanServiceImpl(
                 scanner = scannerService.default().name,
                 rule = RuleConverter.convert(projectId, emptyList(), type)
             )
+            scanPlan.readOnly = true
             create(scanPlan)
         } catch (e: ErrorCodeException) {
             if (e.messageCode == CommonMessageCode.RESOURCE_EXISTED) {
@@ -177,8 +180,11 @@ class ScanPlanServiceImpl(
     override fun delete(projectId: String, id: String) {
         logger.info("deleteScanPlan userId:${SecurityUtils.getUserId()}, projectId:$projectId, planId:$id")
 
-        if (!scanPlanDao.exists(projectId, id)) {
-            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
+        val scanPlan = scanPlanDao.findByProjectIdAndId(projectId, id)
+            ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId, id)
+
+        if (scanPlan.readOnly) {
+            permissionCheckHandler.permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
         }
 
         // 方案正在使用，不能删除
@@ -196,8 +202,24 @@ class ScanPlanServiceImpl(
 
             val scanPlan = ScanPlanConverter.convert(request)
             checkPermission(scanPlan.projectId!!, scanPlan.rule)
-            scanPlanDao.update(scanPlan)
-            return scanPlanDao.findById(request.id!!)!!.let { ScanPlanConverter.convert(it) }
+
+            val tScanPlan = scanPlanDao.findByProjectIdAndId(projectId!!, id!!)
+                ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, projectId!!, id!!)
+
+            if (tScanPlan.readOnly) {
+                permissionCheckHandler.permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+            }
+
+            val savedScanPlan = scanPlanDao.save(
+                tScanPlan.copy(
+                    name = scanPlan.name ?: tScanPlan.name,
+                    description = scanPlan.description ?: tScanPlan.description,
+                    scanOnNewArtifact = scanPlan.scanOnNewArtifact ?: tScanPlan.scanOnNewArtifact,
+                    repoNames = scanPlan.repoNames ?: tScanPlan.repoNames,
+                    rule = scanPlan.rule?.toJsonString() ?: tScanPlan.rule
+                )
+            )
+            return ScanPlanConverter.convert(savedScanPlan)
         }
     }
 
