@@ -28,7 +28,7 @@ class MavenMetadataService(
         val (criteria, mavenVersion) = nodeCriteria(
             projectId = node.projectId,
             repoName = node.repoName,
-            metadata = node.metadata,
+            metadata = node.nodeMetadata?.associate { Pair(it.key, it.value) },
             fullPath = node.fullPath
         )
         if (criteria == null || mavenVersion == null) return

@@ -39,6 +39,9 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("创建或更新元数据请求")
 data class UserMetadataSaveRequest(
-    @ApiModelProperty("元数据key-value数据", required = true)
-    val metadata: Map<String, String>
+    @ApiModelProperty("元数据key-value数据")
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
+    val metadata: Map<String, String>? = null,
+    @ApiModelProperty("元数据")
+    val nodeMetadata: List<MetadataModel>? = null
 )

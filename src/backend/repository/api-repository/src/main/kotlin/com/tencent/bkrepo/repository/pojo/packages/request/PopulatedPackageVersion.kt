@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.packages.request
 
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.LocalDateTime
 
@@ -57,7 +58,10 @@ data class PopulatedPackageVersion(
     @ApiModelProperty("版本构件阶段")
     val stageTag: List<String>? = null,
     @ApiModelProperty("版本元数据")
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("packageMetadata"))
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("版本元数据")
+    val packageMetadata: List<MetadataModel>? = null,
     @ApiModelProperty("扩展字段")
     val extension: Map<String, Any>? = null
 )

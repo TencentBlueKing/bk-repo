@@ -86,6 +86,7 @@ import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -127,7 +128,7 @@ class MavenLocalRepository(
         val request = super.buildNodeCreateRequest(context)
         return request.copy(
             overwrite = true,
-            metadata = createNodeMetaData(context)
+            nodeMetadata = createNodeMetaData(context)
         )
     }
 
@@ -142,11 +143,11 @@ class MavenLocalRepository(
         return request.copy(
             fullPath = combineUrl,
             overwrite = true,
-            metadata = createNodeMetaData(context)
+            nodeMetadata = createNodeMetaData(context)
         )
     }
 
-    private fun createNodeMetaData(context: ArtifactUploadContext): Map<String, String> {
+    private fun createNodeMetaData(context: ArtifactUploadContext): List<MetadataModel> {
         with(context) {
             val md5 = getArtifactMd5()
             val sha1 = getArtifactSha1()
@@ -160,7 +161,9 @@ class MavenLocalRepository(
                 HashType.SHA1.ext to sha1,
                 HashType.SHA256.ext to sha256,
                 HashType.SHA512.ext to sha512
-            )
+            ).map {
+                MetadataModel(key = it.key, value = it.value)
+            }.toMutableList()
         }
     }
 
@@ -229,12 +232,12 @@ class MavenLocalRepository(
         mavenGavc: MavenGAVC
     ): NodeCreateRequest {
         val request = buildMavenArtifactNodeCreateRequest(context)
-        val metadata = request.metadata as? MutableMap
-        metadata?.set("packaging", packaging)
-        metadata?.set("groupId", mavenGavc.groupId)
-        metadata?.set("artifactId", mavenGavc.artifactId)
-        metadata?.set("version", mavenGavc.version)
-        mavenGavc.classifier?.let { metadata?.set("classifier", it) }
+        val metadata = request.nodeMetadata as? MutableList
+        metadata?.add(MetadataModel(key = "packaging", value = packaging))
+        metadata?.add(MetadataModel(key = "groupId", value = mavenGavc.groupId))
+        metadata?.add(MetadataModel(key = "artifactId", value = mavenGavc.artifactId))
+        metadata?.add(MetadataModel(key = "version", value = mavenGavc.version))
+        mavenGavc.classifier?.let { metadata?.add(MetadataModel(key = "classifier", value = it)) }
         return request
     }
 
@@ -882,7 +885,7 @@ class MavenLocalRepository(
                     artifactPath = fullPath,
                     overwrite = true,
                     createdBy = context.userId,
-                    metadata = metadata
+                    packageMetadata = metadata.map { MetadataModel(key = it.key, value = it.value) }
                 )
             )
         } catch (ignore: DuplicateKeyException) {

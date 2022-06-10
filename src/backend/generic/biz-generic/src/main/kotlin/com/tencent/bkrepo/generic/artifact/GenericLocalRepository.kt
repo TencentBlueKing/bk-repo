@@ -59,6 +59,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -318,7 +319,7 @@ class GenericLocalRepository : LocalRepository() {
         return super.buildNodeCreateRequest(context).copy(
             expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
             overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-            metadata = resolveMetadata(context.request)
+            nodeMetadata = resolveMetadata(context.request)
         )
     }
 
@@ -351,7 +352,7 @@ class GenericLocalRepository : LocalRepository() {
     /**
      * 从header中提取metadata
      */
-    fun resolveMetadata(request: HttpServletRequest): Map<String, String> {
+    fun resolveMetadata(request: HttpServletRequest): List<MetadataModel> {
         val metadata = mutableMapOf<String, String>()
         // case insensitive
         val headerNames = request.headerNames
@@ -366,7 +367,7 @@ class GenericLocalRepository : LocalRepository() {
         // case sensitive, base64 metadata
         // format X-BKREPO-META: base64(a=1&b=2)
         request.getHeader(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
-        return metadata
+        return metadata.map { MetadataModel(key = it.key, value = it.value) }
     }
 
     private fun decodeMetadata(header: String): Map<String, String> {

@@ -81,6 +81,7 @@ import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -470,7 +471,7 @@ class OciOperationServiceImpl(
             repoName = ociArtifactInfo.repoName,
             artifactFile = artifactFile,
             fullPath = ociArtifactInfo.getArtifactFullPath(),
-            metadata = metadata
+            metadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
         )
     }
 

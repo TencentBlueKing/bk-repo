@@ -39,6 +39,7 @@ import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
 import com.tencent.bkrepo.repository.dao.FileReferenceDao
 import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
@@ -281,7 +282,7 @@ class NodeSearchServiceTest @Autowired constructor(
             sha256 = "sha256",
             md5 = "md5",
             operator = UT_USER,
-            metadata = metadata,
+            nodeMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) },
             createdDate = createdDate,
             lastModifiedDate = createdDate
         )

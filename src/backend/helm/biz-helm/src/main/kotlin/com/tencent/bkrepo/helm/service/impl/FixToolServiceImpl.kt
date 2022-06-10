@@ -336,8 +336,7 @@ class FixToolServiceImpl(
                     size = size,
                     downloads = 0,
                     manifestPath = HelmUtils.getIndexCacheYamlFullPath(),
-                    artifactPath = HelmUtils.getChartFileFullPath(name, version),
-                    metadata = null
+                    artifactPath = HelmUtils.getChartFileFullPath(name, version)
                 )
             }
         }.toList()
@@ -416,7 +415,7 @@ class FixToolServiceImpl(
             try {
                 val path = it[NODE_FULL_PATH] as String
                 val chartMetadata = queryHelmChartMetadata(context, path)
-                val metaMap = HelmMetadataUtils.convertToMap(chartMetadata)
+                val metadata = HelmMetadataUtils.convertToMetadata(chartMetadata)
                 context.putAttribute(FULL_PATH, path)
                 createVersion(
                     userId = context.userId,
@@ -427,11 +426,11 @@ class FixToolServiceImpl(
                     isOverwrite = true
                 )
                 val metadataSaveRequest = MetadataSaveRequest(
-                    artifactInfo.projectId,
-                    artifactInfo.repoName,
-                    path,
-                    metaMap,
-                    context.userId
+                    projectId = artifactInfo.projectId,
+                    repoName = artifactInfo.repoName,
+                    fullPath = path,
+                    nodeMetadata = metadata,
+                    operator = context.userId
                 )
                 metadataClient.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
