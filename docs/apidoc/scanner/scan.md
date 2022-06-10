@@ -283,10 +283,19 @@
 
 - 请求字段说明
 
-| 字段         | 类型     | 是否必须 | 默认值 | 说明   | Description |
-|------------|--------|------|-----|------|-------------|
-| pageSize   | number | 否    | 20  | 分页大小 | page size   |
-| pageNumber | number | 否    | 1   | 分页页码 | page number |
+| 字段          | 类型     | 是否必须 | 默认值 | 说明                                                                   | Description  |
+|-------------|--------|------|-----|----------------------------------------------------------------------|--------------|
+| pageSize    | number | 否    | 20  | 分页大小                                                                 | page size    |
+| pageNumber  | number | 否    | 1   | 分页页码                                                                 | page number  |
+| projectId   | string | 是    | 无   | 项目id                                                                 | projectId    |
+| planId      | string | 否    | 无   | 扫描方案id                                                               | plan id      |
+| triggerType | string | 否    | 无   | 触发方式MANUAL,PIPELINE,ON_NEW_ARTIFACT                                  | trigger type |
+| after       | number | 否    | 无   | 在这个时间戳之后创建的任务                                                        | after        |
+| before      | number | 否    | 无   | 在这个时间戳之前创建的任务                                                        | before       |
+| scanner     | string | 否    | 无   | 扫描器名                                                                 | scanner      |
+| scannerType | string | 否    | 无   | 扫描器类型                                                                | scanner type |
+| status      | string | 否    | 无   | 扫描状态,PENDING,SCANNING_SUBMITTING,SCANNING_SUBMITTED,STOPPED,FINISHED | scan status  |
+
 
 - 响应体
 
