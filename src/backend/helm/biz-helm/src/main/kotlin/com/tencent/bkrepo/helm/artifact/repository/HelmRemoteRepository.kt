@@ -160,7 +160,7 @@ class HelmRemoteRepository(
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         context.putAttribute(SIZE, size)
-        parseAttribute(context, artifactStream)
+//        parseAttribute(context, artifactStream)
         val node = cacheArtifactFile(context, artifactFile)
 //        helmOperationService.initPackageInfo(context)
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.PROXY, context.useDisposition)
