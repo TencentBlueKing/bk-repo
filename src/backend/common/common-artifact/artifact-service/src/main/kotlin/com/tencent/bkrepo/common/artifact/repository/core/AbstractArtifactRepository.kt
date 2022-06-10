@@ -122,6 +122,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val throughput = artifactResourceWriter.write(artifactResponse)
             this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (exception: ArtifactResponseException) {
+            exception.printStackTrace()
             val principal = SecurityUtils.getPrincipal()
             val artifactInfo = context.artifactInfo
             val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
