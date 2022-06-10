@@ -198,7 +198,6 @@ open class DefaultArtifactResourceWriter(
             // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
             // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
-            exception.printStackTrace()
             val message = exception.message.orEmpty()
             val status = if (isClientBroken(exception)) HttpStatus.BAD_REQUEST else HttpStatus.INTERNAL_SERVER_ERROR
             throw ArtifactResponseException(message, status)
