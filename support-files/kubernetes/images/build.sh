@@ -18,6 +18,8 @@ REGISTRY=docker.io/bkrepo
 USERNAME=
 PASSWORD=
 BACKENDS=(repository auth generic oci helm npm pypi replication opdata job)
+SERVICE=
+SPECIAL=0
 
 cd $(dirname $0)
 WORKING_DIR=$(pwd)
@@ -39,6 +41,7 @@ usage () {
             [ -r, --registry        [可选] docker仓库地址, 默认docker.io ]
             [ --username            [可选] docker仓库用户名 ]
             [ --password            [可选] docker仓库密码 ]
+            [ --service             [可选] 需要编译的后端服务名,分割 ]
             [ -h, --help            [可选] 查看脚本帮助 ]
 EOF
 }
@@ -73,6 +76,11 @@ while (( $# > 0 )); do
         --backend )
             ALL=0
             BACKEND=1
+            ;;
+        --service )
+            SPECIAL=1
+            shift
+            SERVICE=$1
             ;;
         --init )
             ALL=0
@@ -144,18 +152,35 @@ fi
 
 # 构建backend镜像
 if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
-    for SERVICE in ${BACKENDS[@]};
-    do
-        log "构建${SERVICE}镜像..."
-        $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
-        rm -rf $tmp_dir/*
-        cp backend/startup.sh $tmp_dir/
-        cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
-        docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
-        if [[ $PUSH -eq 1 ]] ; then
-            docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
-        fi
-    done
+    IFS="," read -r -a array <<< "$SERVICE"
+    if [[ $SPECIAL -eq 1 || ${#array[*]} -gt 0 ]] ;then
+      for SERVICE in ${array[@]};
+      do
+          log "构建${SERVICE}镜像..."
+          $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
+          rm -rf $tmp_dir/*
+          cp backend/startup.sh $tmp_dir/
+          cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
+          docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
+          if [[ $PUSH -eq 1 ]] ; then
+              docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
+          fi
+      done
+    else
+      for SERVICE in ${BACKENDS[@]};
+      do
+          log "构建${SERVICE}镜像..."
+          $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
+          rm -rf $tmp_dir/*
+          cp backend/startup.sh $tmp_dir/
+          cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
+          docker build -f backend/backend.Dockerfile -t $REGISTRY/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
+          if [[ $PUSH -eq 1 ]] ; then
+              docker push $REGISTRY/bkrepo-$SERVICE:$VERSION
+          fi
+      done
+    fi
+
 fi
 
 # 构建init镜像
