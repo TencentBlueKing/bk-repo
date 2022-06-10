@@ -135,6 +135,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             )
             ArtifactMetrics.getDownloadFailedCounter().increment()
         } catch (exception: Exception) {
+            exception.printStackTrace()
             this.onDownloadFailed(context, exception)
         } finally {
             this.onDownloadFinished(context)
