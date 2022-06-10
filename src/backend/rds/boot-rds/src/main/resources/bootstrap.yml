@@ -1,4 +1,4 @@
-service.name: rds
+spring.application.name: rds
 server.port: 25813
 
 rds:

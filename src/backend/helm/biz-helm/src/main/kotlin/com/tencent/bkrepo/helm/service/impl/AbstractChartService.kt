@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -51,6 +52,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -102,13 +104,14 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.SortedSet
 import java.util.concurrent.ThreadPoolExecutor
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 
 // LateinitUsage: 抽象类中使用构造器注入会造成不便
 @Suppress("LateinitUsage")
@@ -368,9 +371,16 @@ open class AbstractChartService : ArtifactService() {
                 logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
             }
             packageClient.updatePackage(packageUpdateRequest)
-        } catch (exception: RemoteErrorCodeException) {
+        } catch (exception: NoFallbackAvailableException) {
+            val e = exception.cause
+            if (e !is RemoteErrorCodeException || e.errorCode != ArtifactMessageCode.VERSION_EXISTED.getCode()) {
+                throw exception
+            }
             // 暂时转换为包存在异常
-            logger.warn("package version for $contentPath already existed, message: ${exception.message}")
+            logger.warn(
+                "package version for $contentPath already existed, " +
+                    "message: ${e.errorMessage}"
+            )
         }
     }
 
@@ -402,8 +412,9 @@ open class AbstractChartService : ArtifactService() {
     fun findRemoteArtifactFullPath(name: String): String {
         logger.info("get remote url for downloading...")
         val helmIndexYamlMetadata = queryOriginalIndexYaml()
-        val chartName = ChartParserUtil.parseNameAndVersion(name)[NAME]
-        val chartVersion = ChartParserUtil.parseNameAndVersion(name)[VERSION]
+        val map = FileNameParser.parseNameAndVersionWithRegex(name)
+        val chartName = map[NAME]
+        val chartVersion = map[VERSION]
         val chartList =
             helmIndexYamlMetadata.entries[chartName]
                 ?: throw HelmFileNotFoundException("File [$name] can not be found.")

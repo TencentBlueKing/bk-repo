@@ -35,16 +35,17 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.service.packages.PackageService
-import java.net.MalformedURLException
-import java.net.URL
 import org.apache.logging.log4j.util.Strings
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.MalformedURLException
+import java.net.URL
 
 /**
  * 公共远程仓库
@@ -61,8 +62,10 @@ class CommonRemoteRepository(
             return super.createRemoteDownloadUrl(context)
         } else {
             val remoteConfiguration = context.getRemoteConfiguration()
-            val (name, version) = splitName(context.artifactInfo.getArtifactFullPath())
-            if (name.isNullOrEmpty() || version.isNullOrEmpty()) return Strings.EMPTY
+            val map = FileNameParser.parseNameAndVersionWithRegex(context.artifactInfo.getArtifactFullPath())
+            val name = map["name"] as String
+            val version = map["version"] as String
+            if (name.isBlank() || version.isBlank()) return Strings.EMPTY
             val packageKey = PackageKeys.ofName(type.name.toLowerCase(), name)
             val packageVersion = packageService.findVersionByName(
                 projectId = context.projectId,
@@ -91,9 +94,7 @@ class CommonRemoteRepository(
         return if (RepositoryType.HELM != type) {
             super.buildCacheNodeCreateRequest(context, artifactFile)
         } else {
-            val metadata = context
-                .getAttribute<Map<String, Any>>("meta_detail")
-                ?.map { MetadataModel(key = it.key, value = it.value) }
+            val metadata = context.getAttribute<Map<String, Any>>("meta_detail")
             NodeCreateRequest(
                 projectId = context.projectId,
                 repoName = context.repoName,
@@ -103,20 +104,11 @@ class CommonRemoteRepository(
                 sha256 = artifactFile.getFileSha256(),
                 md5 = artifactFile.getFileMd5(),
                 operator = context.userId,
-                nodeMetadata = metadata,
+                metadata = metadata,
+                nodeMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = true
             )
         }
-    }
-
-    /**
-     * helm的artifactPath规则是 "/{name}-{version}.tgz"
-     */
-    private fun splitName(artifactPath: String): Pair<String?, String?> {
-        val substring = artifactPath.trimStart('/').substring(0, artifactPath.lastIndexOf('.') - 1)
-        val name = substring.substringBeforeLast('-')
-        val version = substring.substringAfterLast('-')
-        return Pair(name, version)
     }
 
     /**

@@ -1,2 +1,2 @@
-service.name: docker
+spring.application.name: docker
 server.port: 25802

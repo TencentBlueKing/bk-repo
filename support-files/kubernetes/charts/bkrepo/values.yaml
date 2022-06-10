@@ -119,6 +119,9 @@ init:
   entrance:
     enabled: false
     bkCiProjectInnerUrl:
+  ## bcs repo配置
+  bcs:
+    enabled: false
 ## bkrepo公共配置
 common:
   # bkrepo镜像仓库全局配置, 具有最高优先级

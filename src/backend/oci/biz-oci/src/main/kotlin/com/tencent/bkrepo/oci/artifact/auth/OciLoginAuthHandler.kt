@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.oci.artifact.auth
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
@@ -43,6 +43,7 @@ import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.OCI_API_SUFFIX
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.util.TimeUtil
+import io.undertow.servlet.spec.HttpServletRequestImpl
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
@@ -79,16 +80,36 @@ class OciLoginAuthHandler(
         response: HttpServletResponse,
         authenticationException: AuthenticationException
     ) {
-        request.getHeader(HttpHeaders.AUTHORIZATION) ?: run {
-            logger.info("empty user pull,push ,change to  [$this]")
-            return onAuthenticateSuccess(request, response, ANONYMOUS_USER)
+        parseRepositoryId(request, response, authenticationException)
+    }
+
+    private fun parseRepositoryId(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        authenticationException: AuthenticationException
+    ) {
+        try {
+            val params = (request as HttpServletRequestImpl).queryParameters
+            // 从scope中解析对应的projectId与repoName, scope=repository:XXX/XXX/php:pull
+            val scope = params?.get("scope")?.first ?: throw authenticationException
+            val scopeValues = scope.split(":")
+            val values = scopeValues[1].split("/")
+            val repositoryId = ArtifactContextHolder.RepositoryId(values[0], values[1])
+            val repo = ArtifactContextHolder.getRepoDetail(repositoryId)
+            // 针对仓库类型的为public的，允许下载。
+            if (repo.public) {
+                logger.info("empty user pull,push ,change to  [$this]")
+                return onAuthenticateSuccess(request, response, ANONYMOUS_USER)
+            }
+        } catch (e: Exception) {
+            throw authenticationException
         }
         throw authenticationException
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(OciLoginAuthHandler::class.java)
-        const val AUTH_CHALLENGE_SERVICE_SCOPE = "Basic realm=\"%s\",service=\"%s\",scope=\"%s\""
+        const val AUTH_CHALLENGE_SERVICE_SCOPE = "Bearer realm=\"%s\",service=\"%s\",scope=\"%s\""
         const val AUTH_CHALLENGE_TOKEN = "{\"token\": \"%s\", \"access_token\": \"%s\",\"issued_at\": \"%s\"}"
         const val REGISTRY_SERVICE = "bkrepo"
         const val SCOPE_STR = "repository:*/*/tb:push,pull"

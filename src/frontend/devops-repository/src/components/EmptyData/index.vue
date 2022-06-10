@@ -1,7 +1,7 @@
 <template>
     <div class="empty-data-container flex-center" :class="{ 'hidden': isLoading }" :style="exStyle">
         <div class="flex-column flex-center">
-            <img :src="search ? '/ui/no-search.png' : '/ui/no-data.png'" width="250" />
+            <img :src="search ? '/ui/no-search.png' : '/ui/no-data.png'" width="200" />
             <span class="mt5 empty-data-title">{{ search ? searchTitle : title }}</span>
             <span class="mt5 empty-data-subtitle">{{ subTitle }}</span>
         </div>

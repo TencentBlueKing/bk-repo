@@ -24,8 +24,8 @@ function _M:get_addr(service_name)
     
     local service_prefix = config.service_prefix
 
-    if service_prefix == nil or service_prefix == "" then
-        service_prefix = "repo-"
+    if service_prefix == nil then
+        service_prefix = ""
     end
 
     -- return k8s service address

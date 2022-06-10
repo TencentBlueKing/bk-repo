@@ -73,8 +73,8 @@ const val TOTAL_RECORDS_INFINITY = -1L
 /**
  * service name
  */
-const val REPOSITORY_SERVICE_NAME = "\${service.prefix:repo-}repository\${service.suffix:}"
-const val AUTH_SERVICE_NAME = "\${service.prefix:repo-}auth\${service.suffix:}"
-const val REPLICATION_SERVICE_NAME = "\${service.prefix:repo-}replication\${service.suffix:}"
-const val SCANNER_SERVICE_NAME = "\${service.prefix:repo-}scanner\${service.suffix:}"
-const val HELM_SERVICE_NAME = "\${service.prefix:repo-}helm\${service.suffix:}"
+const val REPOSITORY_SERVICE_NAME = "\${service.prefix:}repository\${service.suffix:}"
+const val AUTH_SERVICE_NAME = "\${service.prefix:}auth\${service.suffix:}"
+const val REPLICATION_SERVICE_NAME = "\${service.prefix:}replication\${service.suffix:}"
+const val SCANNER_SERVICE_NAME = "\${service.prefix:}scanner\${service.suffix:}"
+const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"

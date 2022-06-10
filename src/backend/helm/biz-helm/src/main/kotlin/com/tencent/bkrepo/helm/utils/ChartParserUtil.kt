@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
 import com.tencent.bkrepo.helm.constants.FULL_PATH
@@ -91,17 +92,13 @@ object ChartParserUtil {
     fun parseNameAndVersion(context: ArtifactContext) {
         val fullPath = context.getStringAttribute(FULL_PATH)
         fullPath?.let {
-            parseNameAndVersion(fullPath)[NAME]?.let { it1 -> context.putAttribute(NAME, it1) }
-            parseNameAndVersion(fullPath)[VERSION]?.let { it1 -> context.putAttribute(VERSION, it1) }
-            parseNameAndVersion(fullPath).let { it1 -> context.putAttribute(META_DETAIL, it1) }
+            FileNameParser.parseNameAndVersionWithRegex(fullPath)[NAME]
+                ?.let { it1 -> context.putAttribute(NAME, it1) }
+            FileNameParser.parseNameAndVersionWithRegex(fullPath)[VERSION]
+                ?.let { it1 -> context.putAttribute(VERSION, it1) }
+            FileNameParser.parseNameAndVersionWithRegex(fullPath)
+                .let { it1 -> context.putAttribute(META_DETAIL, it1) }
         }
-    }
-
-    fun parseNameAndVersion(fullPath: String): Map<String, Any> {
-        val substring = fullPath.trimStart('/').substring(0, fullPath.lastIndexOf('.') - 1)
-        val name = substring.substringBeforeLast('-')
-        val version = substring.substringAfterLast('-')
-        return mapOf("name" to name, "version" to version)
     }
 
     /**

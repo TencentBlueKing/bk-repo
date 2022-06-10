@@ -60,7 +60,7 @@ class DownloadService(
     private val viewModelService: ViewModelService
 ) : ArtifactService() {
 
-    @Value("\${service.name}")
+    @Value("\${spring.application.name}")
     private var applicationName: String = "generic"
 
     fun download(artifactInfo: GenericArtifactInfo) {
