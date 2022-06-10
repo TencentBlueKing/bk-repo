@@ -60,12 +60,12 @@ import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import java.net.MalformedURLException
-import java.net.URL
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.net.MalformedURLException
+import java.net.URL
 
 @Component
 class HelmRemoteRepository(
@@ -157,7 +157,7 @@ class HelmRemoteRepository(
         val artifactFile = createTempFile(response.body()!!)
         val artifactStream = parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
-        helmOperationService.initPackageInfo(context)
+//        helmOperationService.initPackageInfo(context)
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
     }
 
