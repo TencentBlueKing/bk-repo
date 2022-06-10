@@ -187,8 +187,12 @@ open class DefaultArtifactResourceWriter(
         }
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
+            logger.info("writeRangeStream: outputStream ${inputStream.range}")
+
             return measureThroughput {
                 recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                    val buffer = getBufferSize(inputStream.range.length.toInt())
+                    logger.info("writeRangeStream: buffer $buffer")
                     it.copyTo(
                         out = response.outputStream,
                         bufferSize = getBufferSize(inputStream.range.length.toInt())
@@ -196,7 +200,10 @@ open class DefaultArtifactResourceWriter(
                 }
             }
         } catch (exception: IOException) {
-            logger.info("writeRangeStream: ${exception.message}, ${exception.cause}, ${exception.stackTrace}")
+            logger.info("writeRangeStream: $exception, ${exception.message}, ${exception.cause}")
+            exception.stackTrace.forEach {
+                logger.info("stackTrace,  $it}")
+            }
 
             // 直接向上抛IOException经过CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
             // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
