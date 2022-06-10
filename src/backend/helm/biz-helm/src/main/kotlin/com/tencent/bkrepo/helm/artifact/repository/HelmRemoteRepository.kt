@@ -155,9 +155,9 @@ class HelmRemoteRepository(
     override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
         val artifactFile = createTempFile(response.body()!!)
         val size = artifactFile.getSize()
+        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
-        val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         helmOperationService.initPackageInfo(context)
         return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.PROXY, context.useDisposition)
     }
