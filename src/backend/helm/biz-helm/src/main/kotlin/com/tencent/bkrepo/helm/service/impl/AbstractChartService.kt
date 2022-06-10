@@ -379,7 +379,7 @@ open class AbstractChartService : ArtifactService() {
             // 暂时转换为包存在异常
             logger.warn(
                 "package version for $contentPath already existed, " +
-                    "message: ${e.errorMessage}"
+                    "message: ${e.message}"
             )
         }
     }
