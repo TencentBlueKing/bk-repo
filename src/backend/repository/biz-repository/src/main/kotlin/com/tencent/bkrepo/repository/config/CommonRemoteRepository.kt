@@ -91,9 +91,7 @@ class CommonRemoteRepository(
         return if (RepositoryType.HELM != type) {
             super.buildCacheNodeCreateRequest(context, artifactFile)
         } else {
-            val metadata = context
-                .getAttribute<Map<String, Any>>("meta_detail")
-                ?.map { MetadataModel(key = it.key, value = it.value) }
+            val metadata = context.getAttribute<Map<String, Any>>("meta_detail")
             NodeCreateRequest(
                 projectId = context.projectId,
                 repoName = context.repoName,
@@ -103,7 +101,8 @@ class CommonRemoteRepository(
                 sha256 = artifactFile.getFileSha256(),
                 md5 = artifactFile.getFileMd5(),
                 operator = context.userId,
-                nodeMetadata = metadata,
+                metadata = metadata,
+                nodeMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = true
             )
         }
