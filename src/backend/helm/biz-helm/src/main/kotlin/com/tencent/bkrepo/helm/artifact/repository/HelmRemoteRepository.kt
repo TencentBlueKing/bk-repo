@@ -158,7 +158,7 @@ class HelmRemoteRepository(
         val artifactStream = parseAttribute(context, artifactFile)
         val node = cacheArtifactFile(context, artifactFile)
 //        helmOperationService.initPackageInfo(context)
-        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
+        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.PROXY)
     }
 
     private fun parseAttribute(context: ArtifactContext, artifactFile: ArtifactFile): ArtifactInputStream {
