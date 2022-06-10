@@ -35,7 +35,6 @@ import java.io.OutputStream
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 
 /**
  * 实现[StreamReadListener]接口，用于将FileStorage读取到的数据写入到缓存文件中
@@ -107,9 +106,13 @@ class CachedFileWriter(
             try {
                 it.flush()
                 it.closeQuietly()
-                Files.createDirectories(cachePath)
-                Files.move(tempFilePath, cachePath.resolve(filename), StandardCopyOption.REPLACE_EXISTING)
+                if (!Files.exists(cachePath)) {
+                    Files.createDirectories(cachePath)
+                }
+                Files.move(tempFilePath, cacheFilePath)
                 logger.info("Success cache file $filename")
+            } catch (ignore: FileAlreadyExistsException) {
+                logger.info("File[$cacheFilePath] already exists")
             } catch (exception: Exception) {
                 logger.warn("finish CacheFileWriter error: $exception")
             } finally {
