@@ -196,7 +196,7 @@ open class DefaultArtifactResourceWriter(
                 }
             }
         } catch (exception: IOException) {
-            logger.info("writeRangeStream: ${exception.printStackTrace()}")
+            logger.info("writeRangeStream: ${exception.message}, ${exception.cause}, ${exception.stackTrace}")
 
             // 直接向上抛IOException经过CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
             // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
