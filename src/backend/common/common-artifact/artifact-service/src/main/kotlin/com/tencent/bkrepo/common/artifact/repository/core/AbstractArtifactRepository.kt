@@ -119,9 +119,12 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             this.onDownloadBefore(context)
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException(context.artifactInfo.toString())
+            logger.info("artifactResponse $artifactResponse")
             val throughput = artifactResourceWriter.write(artifactResponse)
             this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (exception: ArtifactResponseException) {
+            logger.info("download ArtifactResponseException: ${exception.printStackTrace()}")
+            exception.printStackTrace()
             val principal = SecurityUtils.getPrincipal()
             val artifactInfo = context.artifactInfo
             val message = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
@@ -134,6 +137,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             )
             ArtifactMetrics.getDownloadFailedCounter().increment()
         } catch (exception: Exception) {
+            logger.info("download exception: ${exception.printStackTrace()}")
+            exception.printStackTrace()
             this.onDownloadFailed(context, exception)
         } finally {
             this.onDownloadFinished(context)

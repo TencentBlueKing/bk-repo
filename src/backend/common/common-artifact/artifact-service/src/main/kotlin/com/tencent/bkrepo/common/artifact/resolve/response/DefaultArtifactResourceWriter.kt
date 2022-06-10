@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.slf4j.LoggerFactory
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.http.HttpMethod
 import org.springframework.web.util.UriUtils
@@ -108,6 +109,7 @@ open class DefaultArtifactResourceWriter(
             response.setHeader(X_CHECKSUM_SHA256, it.sha256)
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
+        logger.info("before writeRangeStream $resource $request, $response")
         return writeRangeStream(resource, request, response)
     }
 
@@ -185,8 +187,12 @@ open class DefaultArtifactResourceWriter(
         }
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
+            logger.info("writeRangeStream: outputStream ${inputStream.range}")
+
             return measureThroughput {
                 recordAbleInputStream.rateLimit(storageProperties.response.rateLimit.toBytes()).use {
+                    val buffer = getBufferSize(inputStream.range.length.toInt())
+                    logger.info("writeRangeStream: buffer $buffer")
                     it.copyTo(
                         out = response.outputStream,
                         bufferSize = getBufferSize(inputStream.range.length.toInt())
@@ -194,6 +200,11 @@ open class DefaultArtifactResourceWriter(
                 }
             }
         } catch (exception: IOException) {
+            logger.info("writeRangeStream: $exception, ${exception.message}, ${exception.cause}")
+            exception.stackTrace.forEach {
+                logger.info("stackTrace,  $it}")
+            }
+
             // 直接向上抛IOException经过CglibAopProxy会抛java.lang.reflect.UndeclaredThrowableException: null
             // 由于已经设置了Content-Type为application/octet-stream, spring找不到对应的Converter，导致抛
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
@@ -299,6 +310,7 @@ open class DefaultArtifactResourceWriter(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(DefaultArtifactResourceWriter::class.java)
         private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
             add("yaml", MediaTypes.APPLICATION_YAML)
             add("tgz", MediaTypes.APPLICATION_TGZ)
