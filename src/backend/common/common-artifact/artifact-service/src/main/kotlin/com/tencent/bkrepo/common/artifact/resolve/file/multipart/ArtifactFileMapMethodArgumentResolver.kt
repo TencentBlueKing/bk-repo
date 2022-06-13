@@ -63,7 +63,11 @@ class ArtifactFileMapMethodArgumentResolver : HandlerMethodArgumentResolver {
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)!!
         val artifactFileMap = ArtifactFileMap()
         if (request is MultipartHttpServletRequest) {
-            request.fileMap.forEach { (key, value) -> artifactFileMap[key] = resolveMultipartFile(value) }
+            try {
+                request.fileMap.forEach { (key, value) -> artifactFileMap[key] = resolveMultipartFile(value) }
+            } catch (e: Exception) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "multipart file")
+            }
         } else throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "multipart file")
         return artifactFileMap
     }
