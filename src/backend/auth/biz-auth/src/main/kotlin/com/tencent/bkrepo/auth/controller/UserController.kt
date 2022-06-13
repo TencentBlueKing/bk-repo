@@ -75,6 +75,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RequestHeader
 
 @RestController
 @RequestMapping(AUTH_API_USER_PREFIX)
@@ -259,7 +260,7 @@ class UserController @Autowired constructor(
     @GetMapping("/info")
     fun userInfo(
         @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?,
-        @CookieValue(value = "bk_uid") bkUserId: String?
+        @RequestHeader("x-bkrepo-uid") bkUserId: String?
     ): Response<Map<String, Any>> {
         try {
             bkUserId?.let {
