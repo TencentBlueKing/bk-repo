@@ -49,7 +49,10 @@ data class MetadataSaveRequest(
     @ApiModelProperty("节点完整路径", required = true)
     override val fullPath: String,
     @ApiModelProperty("元数据key-value数据", required = true)
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
     val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("需要创建或更新的元数据", required = true)
+    val nodeMetadata: List<MetadataModel>? = null,
     @ApiModelProperty("操作用户")
     override val operator: String = SYSTEM_USER
 ) : NodeRequest, ServiceRequest

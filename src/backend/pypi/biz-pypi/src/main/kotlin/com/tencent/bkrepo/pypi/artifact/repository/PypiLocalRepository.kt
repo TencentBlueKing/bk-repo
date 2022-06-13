@@ -78,6 +78,7 @@ import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
 import com.tencent.bkrepo.pypi.util.pojo.PypiInfo
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -116,7 +117,7 @@ class PypiLocalRepository(
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         val repositoryDetail = context.repositoryDetail
         val artifactFile = context.getArtifactFile("content")
-        val metadata = context.request.parameterMaps()
+        val metadata = context.request.parameterMaps().map { MetadataModel(key = it.key, value = it.value) }
         val filename = (artifactFile as MultipartArtifactFile).getOriginalFilename()
         val sha256 = artifactFile.getFileSha256()
         val md5 = artifactFile.getFileMd5()
@@ -134,7 +135,7 @@ class PypiLocalRepository(
             sha256 = sha256,
             md5 = md5,
             operator = context.userId,
-            metadata = metadata
+            nodeMetadata = metadata
         )
     }
 
@@ -684,7 +685,7 @@ class PypiLocalRepository(
         filename: String,
         pypiInfo: PypiInfo
     ): NodeCreateRequest {
-        val metadata = context.request.parameterMaps()
+        val metadata = context.request.parameterMaps().map { MetadataModel(key = it.key, value = it.value) }
         // 文件fullPath
         val path = "/$packageName/${pypiInfo.version}/$filename"
         return NodeCreateRequest(
@@ -697,7 +698,7 @@ class PypiLocalRepository(
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
             operator = context.userId,
-            metadata = metadata
+            nodeMetadata = metadata
         )
     }
 

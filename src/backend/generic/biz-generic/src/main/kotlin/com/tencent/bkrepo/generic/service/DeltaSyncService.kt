@@ -38,6 +38,7 @@ import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -279,7 +280,7 @@ class DeltaSyncService(
         file: ArtifactFile,
         expires: Long,
         overwrite: Boolean,
-        metadata: Map<String, Any>
+        metadata: List<MetadataModel>
     ): NodeCreateRequest {
         return NodeCreateRequest(
             projectId = repositoryDetail.projectId,
@@ -292,7 +293,7 @@ class DeltaSyncService(
             operator = userId,
             expires = expires,
             overwrite = overwrite,
-            metadata = metadata
+            nodeMetadata = metadata
         )
     }
 
@@ -440,7 +441,7 @@ class DeltaSyncService(
         val uploadSha256: String?,
         val uploadMd5: String?,
         val expires: Long,
-        val metadata: Map<String, String>,
+        val metadata: List<MetadataModel>,
         val repositoryDetail: RepositoryDetail,
         val userId: String,
         val artifactInfo: ArtifactInfo,

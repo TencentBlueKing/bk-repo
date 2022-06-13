@@ -152,7 +152,7 @@ class ClusterReplicator(
                 manifestPath = null,
                 artifactPath = packageVersion.contentPath,
                 stageTag = packageVersion.stageTag,
-                metadata = packageVersion.metadata,
+                packageMetadata = packageVersion.packageMetadata,
                 extension = packageVersion.extension,
                 overwrite = true,
                 createdBy = packageVersion.createdBy
@@ -209,7 +209,7 @@ class ClusterReplicator(
                 }
             }
             // 查询元数据
-            val metadata = if (task.setting.includeMetadata) node.metadata else emptyMap()
+            val metadata = if (task.setting.includeMetadata) node.nodeMetadata else emptyList()
             return NodeCreateRequest(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
@@ -219,7 +219,7 @@ class ClusterReplicator(
                 size = node.size,
                 sha256 = node.sha256!!,
                 md5 = node.md5!!,
-                metadata = metadata,
+                nodeMetadata = metadata,
                 operator = node.createdBy,
                 createdBy = node.createdBy,
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
