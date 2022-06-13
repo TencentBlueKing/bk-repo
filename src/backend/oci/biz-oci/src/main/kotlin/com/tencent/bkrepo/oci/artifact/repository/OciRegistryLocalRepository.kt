@@ -33,6 +33,7 @@ package com.tencent.bkrepo.oci.artifact.repository
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -57,10 +58,12 @@ import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
 import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
+import com.tencent.bkrepo.oci.util.OciUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
@@ -68,7 +71,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class OciRegistryLocalRepository(
-    private val ociOperationService: OciOperationService
+    private val ociOperationService: OciOperationService,
+    private val artifactConfigurerSupport: ArtifactConfigurerSupport
 ) : LocalRepository() {
 
     /**
@@ -364,25 +368,65 @@ class OciRegistryLocalRepository(
         }
     }
 
-    /**
-     * 查询tag列表
-     */
     override fun query(context: ArtifactQueryContext): Any? {
         if (context.artifactInfo is OciTagArtifactInfo) {
-            return queryTagList(context)
+            val packageName = (context.artifactInfo as OciTagArtifactInfo).packageName
+            return if (packageName.isBlank()) {
+                // 查询catalog
+                queryCatalog(context)
+            } else {
+                // 查询tag列表
+                queryTagList(context)
+            }
         }
         if (context.artifactInfo is OciManifestArtifactInfo) {
+            // 查询manifest文件内容
             return queryManifest(context)
         }
         return null
     }
 
+    /**
+     * 查询manifest文件内容
+     */
     private fun queryManifest(context: ArtifactQueryContext): ArtifactInputStream? {
         val node = getNodeDetail(context.artifactInfo as OciArtifactInfo, context.artifactInfo.getArtifactFullPath())
         return storageManager.loadArtifactInputStream(node, context.storageCredentials)
     }
 
-    private fun queryTagList(context: ArtifactQueryContext): TagsInfo {
+    /**
+     * 查询仓库对应的所有image名
+     */
+    private fun queryCatalog(context: ArtifactQueryContext): CatalogResponse? {
+        with(context.artifactInfo as OciTagArtifactInfo) {
+            val n = context.getAttribute<Int>(N)
+            val last = context.getAttribute<String>(LAST_TAG)
+            val packageList = packageClient.listAllPackageNames(projectId, repoName).data.orEmpty()
+            if (packageList.isEmpty()) return null
+            val nameList = mutableListOf<String>().apply {
+                packageList.forEach {
+                    val packageName = OciUtils.getPackageNameFormPackageKey(
+                        packageKey = it,
+                        defaultType = artifactConfigurerSupport.getRepositoryType(),
+                        extraTypes = artifactConfigurerSupport.getRepositoryTypes()
+                    )
+                    this.add(packageName)
+                }
+                this.sort()
+            }
+            val (imageList, left) = OciUtils.filterHandler(
+                tags = nameList,
+                n = n,
+                last = last
+            )
+            return CatalogResponse(imageList, left)
+        }
+    }
+
+    /**
+     * 查询对应package下所有版本
+     */
+    private fun queryTagList(context: ArtifactQueryContext): TagsInfo? {
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
@@ -392,65 +436,19 @@ class OciRegistryLocalRepository(
                 repoName,
                 packageKey
             ).data.orEmpty()
-            var tagList = mutableListOf<String>().apply {
+            if (versionList.isEmpty()) return null
+            val tagList = mutableListOf<String>().apply {
                 versionList.forEach {
                     this.add(it.name)
                 }
                 this.sort()
             }
-            tagList = filterHandler(
+            val pair = OciUtils.filterHandler(
                 tags = tagList,
                 n = n,
                 last = last
             )
-            return TagsInfo(packageName, tagList as List<String>)
-        }
-    }
-
-    /**
-     * 根据n或者last进行过滤（注意n是否会超过tags总长）
-     * 1 n和last 都不存在，则返回所有
-     * 2 n存在， last不存在，则返回前n个
-     * 3 last存在 n不存在， 则返回查到的last，如不存在，则返回空列表
-     * 4 last存在，n存在，则返回last之后的n个
-     */
-    private fun filterHandler(tags: MutableList<String>, n: Int?, last: String?): MutableList<String> {
-        if (n != null) return handleNFilter(tags, n, last)
-        if (last.isNullOrEmpty()) return tags
-        val index = tags.indexOf(last)
-        return if (index == -1) {
-            mutableListOf()
-        } else {
-            mutableListOf(last)
-        }
-    }
-
-    /**
-     * 处理n存在时的逻辑
-     */
-    private fun handleNFilter(tags: MutableList<String>, n: Int, last: String?): MutableList<String> {
-        var tagList = tags
-        var size = n
-        val length = tags.size
-        if (last.isNullOrEmpty()) {
-            // 需要判断n个是否超过tags总长
-            if (size > length) {
-                size = length
-            }
-            tagList = tagList.subList(0, size)
-            return tagList
-        }
-        // 当last存在，n也存在 则获取last所在后n个tag
-        val index = tagList.indexOf(last)
-        return if (index == -1) {
-            mutableListOf()
-        } else {
-            // 需要判断last后n个是否超过tags总长
-            if (index + size + 1 > length) {
-                size = length - 1 - index
-            }
-            tagList = tagList.subList(index + 1, index + size + 1)
-            tagList
+            return TagsInfo(packageName, pair.first as List<String>, pair.second)
         }
     }
 

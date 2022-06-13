@@ -25,10 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.oci.pojo.tags
+package com.tencent.bkrepo.oci.service
 
-class TagsInfo(
-    var name: String,
-    var tags: List<String>,
-    var left: Int
-)
+import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
+import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
+
+interface OciCatalogService {
+    /**
+     * 获取仓库下所有的image名
+     */
+    fun getCatalog(artifactInfo: OciTagArtifactInfo, n: Int?, last: String?): CatalogResponse
+}

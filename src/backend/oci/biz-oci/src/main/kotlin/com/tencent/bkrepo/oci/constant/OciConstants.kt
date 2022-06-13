@@ -54,6 +54,7 @@ const val POST = "POST"
 const val NODE_FULL_PATH = "fullPath"
 const val LAST_TAG = "last"
 const val N = "n"
+const val DOCKER_LINK = "Link"
 
 const val PROXY_URL = "proxyUrl"
 

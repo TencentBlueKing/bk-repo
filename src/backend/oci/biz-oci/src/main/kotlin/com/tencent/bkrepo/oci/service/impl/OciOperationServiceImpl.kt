@@ -89,15 +89,15 @@ import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
+import org.apache.commons.lang3.StringUtils
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.nio.charset.Charset
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.servlet.http.HttpServletRequest
-import org.apache.commons.lang3.StringUtils
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 
 @Service
 class OciOperationServiceImpl(
@@ -963,7 +963,7 @@ class OciOperationServiceImpl(
         val data = mutableListOf<OciTag>()
         result.records.forEach {
             val name = it.name
-            val stageTag = StringUtils.join(it.stageTag.toTypedArray())
+            val stageTag = buildString(it.stageTag)
             val size = it.size
             val lastModifiedBy = it.lastModifiedBy
             val lastModifiedDate = it.lastModifiedDate.toString()
@@ -974,6 +974,11 @@ class OciOperationServiceImpl(
             )
         }
         return OciTagResult(result.totalRecords, data)
+    }
+
+    private fun buildString(stageTag: List<String>): String {
+        if (stageTag.isEmpty()) return StringPool.EMPTY
+        return StringUtils.join(stageTag.toTypedArray()).toString()
     }
 
     companion object {

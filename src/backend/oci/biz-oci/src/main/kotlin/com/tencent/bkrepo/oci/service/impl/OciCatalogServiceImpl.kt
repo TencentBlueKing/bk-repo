@@ -32,27 +32,32 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.oci.constant.LAST_TAG
 import com.tencent.bkrepo.oci.constant.N
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
-import com.tencent.bkrepo.oci.pojo.tags.TagsInfo
-import com.tencent.bkrepo.oci.service.OciTagService
+import com.tencent.bkrepo.oci.pojo.response.CatalogResponse
+import com.tencent.bkrepo.oci.service.OciCatalogService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class OciTagServiceImpl : OciTagService {
-    override fun getTagList(artifactInfo: OciTagArtifactInfo, n: Int?, last: String?): TagsInfo {
+class OciCatalogServiceImpl : OciCatalogService {
+
+    /**
+     * n: declaring that the response should be limited to n results
+     * last: last repository value from previous response
+     */
+    override fun getCatalog(artifactInfo: OciTagArtifactInfo, n: Int?, last: String?): CatalogResponse {
         logger.info(
-            "Handling search tags request for package [${artifactInfo.packageName}] " +
+            "Handling search catalog request for package " +
                 "with n $n and last $last in repo [${artifactInfo.getRepoIdentify()}]"
         )
         val context = ArtifactQueryContext()
         last?.let { context.putAttribute(LAST_TAG, last) }
         n?.let { context.putAttribute(N, n) }
-        val tags = ArtifactContextHolder.getRepository().query(context)
-            ?: return TagsInfo(artifactInfo.packageName, emptyList(), 0)
-        return tags as TagsInfo
+        val catalog = ArtifactContextHolder.getRepository().query(context)
+            ?: return CatalogResponse(emptyList(), 0)
+        return catalog as CatalogResponse
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(OciTagServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(OciCatalogServiceImpl::class.java)
     }
 }
