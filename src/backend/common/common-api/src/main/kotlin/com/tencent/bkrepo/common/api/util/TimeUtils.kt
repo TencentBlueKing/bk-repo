@@ -25,18 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.rule
+package com.tencent.bkrepo.common.api.util
 
-/**
- * 制品匹配规则
- */
-data class ArtifactRule(
-    /**
-     * 制品名规则
-     */
-    val nameRule: Rule? = null,
-    /**
-     * 制品版本规则
-     */
-    val versionRule: Rule? = null
-)
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+
+fun ofTimestamp(timestamp: Long, zoneId: ZoneId = ZoneId.systemDefault()): LocalDateTime {
+    return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), zoneId)
+}

@@ -31,8 +31,6 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.api.exception.BadRequestException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -42,13 +40,14 @@ import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.scanner.pojo.request.CreateScanPlanRequest
-import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
+import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
-import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
-import com.tencent.bkrepo.scanner.pojo.response.ScanPlanBase
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.scanner.service.ScanPlanService
+import com.tencent.bkrepo.scanner.service.ScanTaskService
 import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -65,6 +64,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/scan/plan")
 class UserScanPlanController(
     private val scanPlanService: ScanPlanService,
+    private val scanTaskService: ScanTaskService,
     private val permissionCheckHandler: ScannerPermissionCheckHandler
 ) {
 
@@ -87,10 +87,8 @@ class UserScanPlanController(
         @ApiParam(value = "方案id")
         @PathVariable
         id: String
-    ): Response<ScanPlanBase?> {
-        return ResponseBuilder.success(
-            scanPlanService.find(projectId, id)?.let { ScanPlanConverter.convert(it) }
-        )
+    ): Response<ScanPlan?> {
+        return ResponseBuilder.success(scanPlanService.find(projectId, id))
     }
 
     @ApiOperation("删除扫描方案")
@@ -109,8 +107,6 @@ class UserScanPlanController(
     @ApiOperation("更新扫描方案")
     @PostMapping("/update")
     fun updateScanPlan(@RequestBody request: UpdateScanPlanRequest): Response<Boolean> {
-        val projectId = request.projectId ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID)
-        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
         scanPlanService.update(request)
         return ResponseBuilder.success(true)
     }
@@ -158,25 +154,19 @@ class UserScanPlanController(
     }
 
     @ApiOperation("方案详情-统计数据")
-    @GetMapping("/count/{projectId}/{id}")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
-    fun planDetailCount(
-        @ApiParam(value = "projectId")
-        @PathVariable
-        projectId: String,
-
-        @ApiParam(value = "方案id")
-        @PathVariable
-        id: String
-    ): Response<ScanPlanInfo?> {
-        return ResponseBuilder.success(scanPlanService.scanPlanInfo(projectId, id))
+    @GetMapping("/count")
+    fun planDetailCount(countRequest: PlanCountRequest): Response<ScanPlanInfo?> {
+        permissionCheckHandler.checkProjectPermission(countRequest.projectId, PermissionAction.MANAGE)
+        return ResponseBuilder.success(scanPlanService.scanPlanInfo(ScanPlanConverter.convert(countRequest)))
     }
 
     @ApiOperation("方案详情-制品信息")
     @GetMapping("/artifact")
-    fun planArtifactList(planArtifactRequest: PlanArtifactRequest): Response<Page<PlanArtifactInfo>> {
-        permissionCheckHandler.checkProjectPermission(planArtifactRequest.projectId, PermissionAction.MANAGE)
-        return ResponseBuilder.success(scanPlanService.planArtifactPage(ScanPlanConverter.convert(planArtifactRequest)))
+    fun planArtifactSubtaskList(subtaskInfoRequest: SubtaskInfoRequest): Response<Page<SubtaskInfo>> {
+        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
+        return ResponseBuilder.success(
+            scanTaskService.planArtifactSubtaskPage(ScanPlanConverter.convert(subtaskInfoRequest))
+        )
     }
 
     @ApiOperation("文件/包关联的扫描方案列表")

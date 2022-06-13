@@ -51,7 +51,8 @@ import java.time.LocalDateTime
 
 @Repository
 class SubScanTaskDao(
-    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
+    private val archiveSubScanTaskDao: ArchiveSubScanTaskDao
 ) : AbsSubScanTaskDao<TSubScanTask>() {
 
     fun findByCredentialsKeyAndSha256List(credentialsKeyFiles: List<CredentialsKeyFiles>): List<TSubScanTask> {
@@ -174,8 +175,9 @@ class SubScanTaskDao(
         val update = Update()
             .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
             .set(TSubScanTask::status.name, status.name)
-        val updateResult = updateFirst(query, update)
+        val updateResult = updateMulti(query, update)
         planArtifactLatestSubScanTaskDao.updateStatus(subTaskIds, status.name)
+        archiveSubScanTaskDao.updateStatus(subTaskIds, status.name)
         return updateResult
     }
 

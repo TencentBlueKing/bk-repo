@@ -27,31 +27,20 @@
 
 package com.tencent.bkrepo.scanner.utils
 
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
-import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.PageLimit
+import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.scanner.pojo.scanner.Level
 import com.tencent.bkrepo.common.scanner.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.scanner.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.scanner.model.SubScanTaskDefinition
 import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
 import com.tencent.bkrepo.scanner.model.TScanPlan
 import com.tencent.bkrepo.scanner.model.TScanTask
 import com.tencent.bkrepo.scanner.model.TSubScanTask
 import com.tencent.bkrepo.scanner.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.scanner.pojo.ScanTask
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
-import com.tencent.bkrepo.scanner.pojo.request.ArrowheadLoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.ArtifactVulnerabilityRequest
-import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
-import com.tencent.bkrepo.scanner.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
-import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactVulnerabilityInfo
-import org.springframework.data.domain.PageRequest
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import java.time.format.DateTimeFormatter
 
 object Converter {
@@ -60,6 +49,9 @@ object Converter {
             taskId = id!!,
             parentScanTaskId = parentScanTaskId,
             scanner = scanner,
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
             sha256 = sha256,
             size = size,
             credentialsKey = credentialsKey
@@ -69,11 +61,13 @@ object Converter {
     fun convert(scanTask: TScanTask, scanPlan: TScanPlan? = null, force: Boolean = false): ScanTask = with(scanTask) {
         ScanTask(
             taskId = id!!,
+            projectId = projectId,
             createdBy = createdBy,
             lastModifiedDateTime = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
             startDateTime = startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
             finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+            triggerType = triggerType,
             status = status,
             scanPlan = scanPlan?.let { ScanPlanConverter.convert(it) },
             rule = scanTask.rule?.readJsonString(),
@@ -81,34 +75,14 @@ object Converter {
             scanning = scanning,
             failed = failed,
             scanned = scanned,
+            passed = passed,
             scanner = scanner,
             scannerType = scannerType,
             scannerVersion = scannerVersion,
             scanResultOverview = scanResultOverview,
-            force = force
+            force = force,
+            metadata = metadata
         )
-    }
-
-    fun convert(request: BatchScanRequest, planType: String): ScanRequest {
-        with(request) {
-            val rule = RuleConverter.convert(projectId, repoNames, artifactRules, planType)
-            return ScanRequest(null, request.planId, rule)
-        }
-    }
-
-    fun convert(request: SingleScanRequest, planType: String): ScanRequest {
-        with(request) {
-            require(fullPath != null || packageKey != null && version != null)
-
-            // 创建rule
-            val rule = if (planType == RepositoryType.GENERIC.name) {
-                RuleConverter.convert(projectId, repoName, fullPath!!)
-            } else {
-                RuleConverter.convert(projectId, repoName, packageKey!!, version!!)
-            }
-
-            return ScanRequest(planId = planId, rule = rule)
-        }
     }
 
     fun convert(projectScanConfiguration: TProjectScanConfiguration): ProjectScanConfiguration {
@@ -123,55 +97,6 @@ object Converter {
         }
     }
 
-    fun convertToLoadArguments(request: ArtifactVulnerabilityRequest, scannerType: String): LoadResultArguments? {
-        if (scannerType == ArrowheadScanner.TYPE) {
-            return ArrowheadLoadResultArguments(
-                vulnerabilityLevels = request.leakType?.let { listOf(it) } ?: emptyList(),
-                vulIds = request.vulId?.let { listOf(it) } ?: emptyList(),
-                reportType = request.reportType,
-                pageLimit = PageLimit(request.pageNumber, request.pageSize)
-            )
-        }
-        return null
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun convert(
-        detailReport: Any?,
-        scannerType: String,
-        reportType: String,
-        pageNumber: Int,
-        pageSize: Int
-    ): Page<ArtifactVulnerabilityInfo> {
-        val pageRequest = PageRequest.of(pageNumber, pageSize)
-        if (scannerType == ArrowheadScanner.TYPE && reportType == CveSecItem.TYPE && detailReport != null) {
-            detailReport as Page<CveSecItem>
-            val reports = detailReport.records.mapTo(HashSet(detailReport.records.size)) {
-                ArtifactVulnerabilityInfo(
-                    vulId = getVulId(it),
-                    severity = ScanPlanConverter.convertToLeakLevel(it.cvssRank),
-                    pkgName = it.component,
-                    installedVersion = it.versions,
-                    title = it.name,
-                    vulnerabilityName = it.name,
-                    description = it.description,
-                    officialSolution = it.officialSolution.ifEmpty { it.defenseSolution },
-                    reference = it.references
-                )
-            }.toList()
-            return Pages.ofResponse(pageRequest, detailReport.totalRecords, reports)
-        }
-        return Pages.ofResponse(pageRequest, 0L, emptyList())
-    }
-
-    fun convert(triggerType: String): ScanTriggerType {
-        return when (triggerType) {
-            "MANUAL" -> ScanTriggerType.MANUAL
-            "AUTOM" -> ScanTriggerType.ON_NEW_ARTIFACT
-            else -> throw SystemErrorException()
-        }
-    }
-
     fun convert(overview: Map<String, Any?>): Map<String, Number> {
         val numberOverview = HashMap<String, Number>(overview.size)
         overview.forEach {
@@ -182,20 +107,81 @@ object Converter {
         return numberOverview
     }
 
-    private fun getVulId(cveSecItem: CveSecItem): String {
-        with(cveSecItem) {
-            if (cveId.isNotEmpty()) {
-                return cveId
-            }
-
-            if (cnnvdId.isNotEmpty()) {
-                return cnnvdId
-            }
-
-            if (cnvdId.isNotEmpty()) {
-                return cnvdId
-            }
-            return pocId
+    fun convertToSubtaskInfo(subScanTask: SubScanTaskDefinition): SubtaskInfo {
+        return with(subScanTask) {
+            SubtaskInfo(
+                recordId = id!!,
+                subTaskId = id!!,
+                name = artifactName,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                repoType = repoType,
+                repoName = repoName,
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                status = ScanPlanConverter.convertToScanStatus(status).name,
+                createdBy = createdBy,
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                qualityRedLine = qualityRedLine
+            )
         }
+    }
+
+    fun convert(subScanTask: SubScanTaskDefinition): SubtaskResultOverview {
+        return with(subScanTask) {
+            val critical = getCveCount(Level.CRITICAL.levelName, subScanTask)
+            val high = getCveCount(Level.HIGH.levelName, subScanTask)
+            val medium = getCveCount(Level.MEDIUM.levelName, subScanTask)
+            val low = getCveCount(Level.LOW.levelName, subScanTask)
+
+            SubtaskResultOverview(
+                recordId = subScanTask.id!!,
+                subTaskId = subScanTask.id!!,
+                name = artifactName,
+                packageKey = packageKey,
+                version = version,
+                fullPath = fullPath,
+                repoType = repoType,
+                repoName = repoName,
+                highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
+                critical = critical,
+                high = high,
+                medium = medium,
+                low = low,
+                total = critical + high + medium + low,
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                qualityRedLine = qualityRedLine,
+                scanQuality = scanQuality,
+                duration = ScanPlanConverter.duration(startDateTime, finishedDateTime)
+            )
+        }
+    }
+
+    fun getCveCount(level: String, subtask: SubScanTaskDefinition): Long {
+        return getCveCount(subtask.scannerType, level, subtask.scanResultOverview)
+    }
+
+    fun getCveCount(scannerType: String?, level: String, overview: Map<String, Number>?): Long {
+        if (scannerType == null) {
+            return 0L
+        }
+
+        val key = getCveOverviewKey(level)
+        return overview?.get(key)?.toLong() ?: 0L
+    }
+
+    fun getCveOverviewKey(level: String): String {
+        return CveOverviewKey.overviewKeyOf(level)
+    }
+
+    private fun highestLeakLevel(overview: Map<String, Number>): String? {
+        Level.values().forEach {
+            if (overview.keys.contains(getCveOverviewKey(it.levelName))) {
+                return ScanPlanConverter.convertToLeakLevel(it.levelName)
+            }
+        }
+        return null
     }
 }

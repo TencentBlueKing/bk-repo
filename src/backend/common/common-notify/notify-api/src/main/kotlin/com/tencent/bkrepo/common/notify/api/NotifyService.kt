@@ -31,12 +31,23 @@
 
 package com.tencent.bkrepo.common.notify.api
 
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.MessageBody
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
+
 interface NotifyService {
     fun sendMail(receivers: List<String>, ccs: List<String>, title: String, body: String)
 
     fun sendSms(receivers: List<String>, body: String)
 
     fun sendWework(receivers: List<String>, title: String, body: String)
+
+    /**
+     * 通过企业微信机器人发消息
+     *
+     * @param bot 用于发消息的企业微信机器人
+     * @param message 消息
+     */
+    fun sendWeworkBot(bot: WeworkBot, message: MessageBody)
 
     fun sendWechat(receivers: List<String>, body: String)
 }

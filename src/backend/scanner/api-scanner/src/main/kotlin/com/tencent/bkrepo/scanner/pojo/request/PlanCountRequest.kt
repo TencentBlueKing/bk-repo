@@ -27,53 +27,23 @@
 
 package com.tencent.bkrepo.scanner.pojo.request
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 import java.time.Instant
 import java.time.LocalDateTime
 
-@ApiModel("请求指定扫描方案扫描过的制品扫描结果信息")
-data class PlanArtifactRequest(
+@ApiModel("指定扫描方案扫描过的制品统计信息请求")
+data class PlanCountRequest(
     @ApiModelProperty("扫描方案所属项目id", required = true)
     val projectId: String,
     @ApiModelProperty("扫描方案id", required = true)
     val id: String,
-    @ApiModelProperty("扫描任务id，默认为扫描方案最新一次的扫描任务")
-    var parentScanTaskId: String? = null,
-    @ApiModelProperty("制品名关键字，只要制品名包含该关键字则匹配")
-    val name: String? = null,
-    /**
-     * [com.tencent.bkrepo.scanner.pojo.LeakType]
-     */
-    @ApiModelProperty("制品最高等级漏洞")
-    var highestLeakLevel: String? = null,
-    /**
-     * [com.tencent.bkrepo.common.artifact.pojo.RepositoryType]
-     */
-    @ApiModelProperty("制品所属仓库类型")
-    val repoType: String? = null,
-    @ApiModelProperty("制品所属仓库名")
-    val repoName: String? = null,
-    /**
-     * [com.tencent.bkrepo.scanner.pojo.ScanStatus]
-     */
-    @ApiModelProperty("制品扫描状态")
-    @Deprecated("仅用于兼容旧接口", ReplaceWith("subScanTaskStatus"))
-    val status: String? = null,
-    @ApiModelProperty("制品扫描状态")
-    var subScanTaskStatus: List<String>? = null,
-    @ApiModelProperty("制品开始扫描时间")
+    @ApiModelProperty("制品扫描任务创建时间(开始)")
     val startTime: Instant? = null,
-    @ApiModelProperty("制品开始扫描时间")
+    @ApiModelProperty("制品扫描任务创建时间(开始)")
     var startDateTime: LocalDateTime? = null,
-    @ApiModelProperty("制品扫描结束时间")
+    @ApiModelProperty("制品扫描任务创建时间(截止)")
     val endTime: Instant? = null,
-    @ApiModelProperty("制品扫描结束时间")
-    var finishedDateTime: LocalDateTime? = null,
-    @ApiModelProperty("页码")
-    val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("页大小")
-    val pageSize: Int = DEFAULT_PAGE_SIZE
+    @ApiModelProperty("制品扫描任务创建时间(截止)")
+    var endDateTime: LocalDateTime? = null
 )

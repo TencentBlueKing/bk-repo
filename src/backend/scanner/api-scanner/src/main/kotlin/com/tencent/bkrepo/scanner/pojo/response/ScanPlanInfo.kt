@@ -63,5 +63,7 @@ data class ScanPlanInfo(
     @ApiModelProperty("修改时间")
     val lastModifiedDate: String,
     @ApiModelProperty("最后扫描时间")
-    val lastScanDate: String?
+    val lastScanDate: String?,
+    @ApiModelProperty("是否只读")
+    val readOnly: Boolean = false
 )

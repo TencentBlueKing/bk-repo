@@ -29,6 +29,7 @@ package com.tencent.bkrepo.scanner.component.manager.knowledgebase
 
 import com.tencent.bkrepo.scanner.dao.ScannerSimpleMongoDao
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.data.mongodb.BulkOperationException
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.insert
 import org.springframework.data.mongodb.core.query.Query
@@ -43,9 +44,17 @@ class CveDao : ScannerSimpleMongoDao<TCve>() {
         return findOne(query)
     }
 
+    fun findByPocId(pocId: String): TCve? {
+        return findOne(Query(TCve::pocId.isEqualTo(pocId)))
+    }
+
     fun findByCveIds(cveIds: Collection<String>): List<TCve> {
         val query = Query(TCve::cveId.inValues(cveIds))
         return find(query)
+    }
+
+    fun findByPocIds(pocIds: Collection<String>): List<TCve> {
+        return find(Query(TCve::pocId.inValues(pocIds)))
     }
 
     fun saveIfNotExists(cve: TCve) {
@@ -64,6 +73,7 @@ class CveDao : ScannerSimpleMongoDao<TCve>() {
                 .withBulkMode(BulkOperations.BulkMode.UNORDERED)
                 .bulk(cveList)
         } catch (ignore: DuplicateKeyException) {
+        } catch (ignore: BulkOperationException) {
         }
     }
 }

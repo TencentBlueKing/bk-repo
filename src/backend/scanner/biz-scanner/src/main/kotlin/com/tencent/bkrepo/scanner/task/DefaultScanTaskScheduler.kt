@@ -40,13 +40,16 @@ import com.tencent.bkrepo.common.scanner.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
+import com.tencent.bkrepo.scanner.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.FileScanResultDao
 import com.tencent.bkrepo.scanner.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.scanner.dao.ProjectScanConfigurationDao
 import com.tencent.bkrepo.scanner.dao.ScanTaskDao
 import com.tencent.bkrepo.scanner.dao.SubScanTaskDao
+import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.metrics.ScannerMetrics
+import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
 import com.tencent.bkrepo.scanner.model.TFileScanResult
 import com.tencent.bkrepo.scanner.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.scanner.model.TProjectScanConfiguration
@@ -57,6 +60,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.FINISHED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTED
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus.SCANNING_SUBMITTING
 import com.tencent.bkrepo.scanner.pojo.SubScanTask
+import com.tencent.bkrepo.scanner.service.ScanQualityService
 import com.tencent.bkrepo.scanner.service.ScannerService
 import com.tencent.bkrepo.scanner.task.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
 import com.tencent.bkrepo.scanner.task.iterator.IteratorManager
@@ -81,6 +85,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val repositoryClient: RepositoryClient,
     private val subScanTaskDao: SubScanTaskDao,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
+    private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
     private val scanTaskDao: ScanTaskDao,
     private val fileScanResultDao: FileScanResultDao,
     private val projectScanConfigurationDao: ProjectScanConfigurationDao,
@@ -89,7 +94,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
     private val scannerMetrics: ScannerMetrics,
     private val redisOperation: RedisOperation,
     private val publisher: ApplicationEventPublisher,
-    private val scannerProperties: ScannerProperties
+    private val scannerProperties: ScannerProperties,
+    private val scanQualityService: ScanQualityService
 ) : ScanTaskScheduler {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -176,6 +182,10 @@ class DefaultScanTaskScheduler @Autowired constructor(
             val now = LocalDateTime.now()
             scanTaskDao.taskFinished(scanTask.taskId, now, now)
             scannerMetrics.incTaskCountAndGet(FINISHED)
+            val finishedScanTask = Converter
+                .convert(scanTaskDao.findById(scanTask.taskId)!!)
+                .copy(scanPlan = scanTask.scanPlan)
+            publisher.publishEvent(ScanTaskStatusChangedEvent(SCANNING_SUBMITTED, finishedScanTask))
             logger.info("scan finished, task[${scanTask.taskId}]")
         }
     }
@@ -195,8 +205,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         var submittedSubTaskCount = 0L
         var reuseResultTaskCount = 0L
         val subScanTasks = ArrayList<TSubScanTask>()
-        val finishedSubScanTasks = ArrayList<TPlanArtifactLatestSubScanTask>()
+        val finishedSubScanTasks = ArrayList<TArchiveSubScanTask>()
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, false)
+        val qualityRule = scanTask.scanPlan?.scanQuality
         for (node in nodeIterator) {
             // 未使用扫描方案的情况直接取node的projectId
             projectScanConfiguration = projectScanConfiguration
@@ -212,7 +223,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 fileScanResultDao.find(storageCredentialsKey, node.sha256, scanner.name, scanner.version)
             if (existsFileScanResult != null && !scanTask.force) {
                 logger.info("skip scan file[${node.sha256}], credentials[$storageCredentialsKey]")
-                val finishedSubtask = createFinishedSubTask(scanTask, existsFileScanResult, node, storageCredentialsKey)
+                val finishedSubtask = createFinishedSubTask(
+                    scanTask, existsFileScanResult, node, storageCredentialsKey, qualityRule
+                )
                 finishedSubScanTasks.add(finishedSubtask)
             } else {
                 // 添加到扫描任务队列
@@ -250,7 +263,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         if (subScanTasks.isEmpty()) {
             return
         }
-        val subTasks = self.saveSubTasks(subScanTasks).map { convert(it, scanner) }
+        val subTasks = self.saveSubTasks(subScanTasks).map { Converter.convert(it, scanner) }
         val enqueuedTasks = subScanTaskQueue.enqueue(subTasks)
         logger.info("${enqueuedTasks.size} subTasks enqueued")
 
@@ -262,12 +275,20 @@ class DefaultScanTaskScheduler @Autowired constructor(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    fun save(tasks: List<TPlanArtifactLatestSubScanTask>) {
-        if (tasks.isEmpty()) {
+    fun save(finishedSubtasks: List<TArchiveSubScanTask>) {
+        if (finishedSubtasks.isEmpty()) {
             return
         }
-        planArtifactLatestSubScanTaskDao.replace(tasks)
-        tasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
+        val tasks = archiveSubScanTaskDao.insert(finishedSubtasks)
+        var passCount = 0L
+        val planArtifactLatestSubtasks = tasks.map {
+            if (it.qualityRedLine == true) {
+                passCount++
+            }
+            TPlanArtifactLatestSubScanTask.convert(it, it.status)
+        }
+        planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubtasks)
+        planArtifactLatestSubtasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 更新当前正在扫描的任务数
         val overview = HashMap<String, Number>()
@@ -278,7 +299,9 @@ class DefaultScanTaskScheduler @Autowired constructor(
         }
 
         val task = tasks.first()
-        scanTaskDao.updateScanResult(task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true)
+        scanTaskDao.updateScanResult(
+            task.parentScanTaskId, tasks.size, overview, success = true, reuseResult = true, passCount = passCount
+        )
         scannerMetrics.incSubtaskCountAndGet(SubScanTaskStatus.SUCCESS, tasks.size.toLong())
     }
 
@@ -315,7 +338,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
                 size = size,
-                credentialsKey = credentialKey
+                credentialsKey = credentialKey,
+                scanQuality = scanTask.scanPlan?.scanQuality
             )
         }
     }
@@ -325,8 +349,8 @@ class DefaultScanTaskScheduler @Autowired constructor(
         fileScanResult: TFileScanResult,
         node: Node,
         credentialKey: String? = null,
-        resultStatus: String = SubScanTaskStatus.SUCCESS.name
-    ): TPlanArtifactLatestSubScanTask {
+        qualityRule: Map<String, Any>? = null
+    ): TArchiveSubScanTask {
         with(node) {
             val now = LocalDateTime.now()
             val repoInfo = repoInfoCache.get(generateKey(projectId, repoName))
@@ -334,7 +358,13 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 .scanResult[scanTask.scanner]
                 ?.overview
                 ?.let { Converter.convert(it) }
-            return TPlanArtifactLatestSubScanTask(
+            // 质量检查结果
+            val qualityPass = if (qualityRule != null && overview != null) {
+                scanQualityService.checkScanQualityRedLine(qualityRule, overview)
+            } else {
+                null
+            }
+            return TArchiveSubScanTask(
                 createdBy = scanTask.createdBy,
                 createdDate = now,
                 lastModifiedBy = scanTask.createdBy,
@@ -353,14 +383,17 @@ class DefaultScanTaskScheduler @Autowired constructor(
                 fullPath = fullPath,
                 artifactName = artifactName,
 
-                status = resultStatus,
+                status = SubScanTaskStatus.SUCCESS.name,
+                executedTimes = 0,
                 scanner = scanTask.scanner,
                 scannerType = scanTask.scannerType,
                 sha256 = sha256,
                 size = size,
                 credentialsKey = credentialKey,
 
-                scanResultOverview = overview
+                scanResultOverview = overview,
+                qualityRedLine = qualityPass,
+                scanQuality = scanTask.scanPlan?.scanQuality
             )
         }
     }
@@ -375,6 +408,7 @@ class DefaultScanTaskScheduler @Autowired constructor(
         // 保存方案制品最新扫描记录
         val planArtifactLatestSubScanTasks = tasks.map { TPlanArtifactLatestSubScanTask.convert(it, it.status) }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubScanTasks)
+        archiveSubScanTaskDao.insert(tasks.map { TArchiveSubScanTask.from(it, it.status) })
         planArtifactLatestSubScanTasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
 
         // 更新当前正在扫描的任务数
@@ -428,17 +462,6 @@ class DefaultScanTaskScheduler @Autowired constructor(
 
     private fun submitScanTaskLockKey(projectId: String) = "scanner:lock:submit:$projectId"
     private fun notifySubtaskLockKey(projectId: String) = "scanner:lock:notify:$projectId:subtask"
-
-    private fun convert(subScanTask: TSubScanTask, scanner: Scanner): SubScanTask {
-        return SubScanTask(
-            taskId = subScanTask.id!!,
-            parentScanTaskId = subScanTask.parentScanTaskId,
-            scanner = scanner,
-            sha256 = subScanTask.sha256,
-            size = subScanTask.size,
-            credentialsKey = subScanTask.credentialsKey
-        )
-    }
 
     /**
      * 根据扫描数量是否超过限制返回扫描状态

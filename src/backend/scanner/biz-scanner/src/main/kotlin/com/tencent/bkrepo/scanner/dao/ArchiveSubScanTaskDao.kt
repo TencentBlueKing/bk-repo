@@ -25,43 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.response
+package com.tencent.bkrepo.scanner.dao
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.scanner.model.TArchiveSubScanTask
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
-@ApiModel("制品扫描结果预览")
-@Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("FileScanResultOverview"))
-data class ArtifactScanResultOverview(
-    @ApiModelProperty("子扫描任务id")
-    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("subTaskId"))
-    val recordId: String,
-    @ApiModelProperty("子扫描任务id")
-    val subTaskId: String,
-
-    @ApiModelProperty("制品名")
-    val name: String,
-    @ApiModelProperty("packageKey")
-    val packageKey: String? = null,
-    @ApiModelProperty("制品版本")
-    val version: String? = null,
-    @ApiModelProperty("制品路径")
-    val fullPath: String? = null,
-    @ApiModelProperty("仓库类型")
-    val repoType: String,
-    @ApiModelProperty("仓库名")
-    val repoName: String,
-
-    @ApiModelProperty("最高漏洞等级")
-    val highestLeakLevel: String? = null,
-    @ApiModelProperty("危急漏洞数")
-    val critical: Long = 0,
-    @ApiModelProperty("高危漏洞数")
-    val high: Long = 0,
-    @ApiModelProperty("中危漏洞数")
-    val medium: Long = 0,
-    @ApiModelProperty("低危漏洞数")
-    val low: Long = 0,
-    @ApiModelProperty("漏洞总数")
-    val total: Long = 0
-)
+@Repository
+class ArchiveSubScanTaskDao : AbsSubScanTaskDao<TArchiveSubScanTask>() {
+    fun updateStatus(ids: List<String>, status: String): UpdateResult {
+        val query = Query(Criteria.where(ID).inValues(ids))
+        val update = Update
+            .update(TArchiveSubScanTask::lastModifiedDate.name, LocalDateTime.now())
+            .set(TArchiveSubScanTask::status.name, status)
+        return updateMulti(query, update)
+    }
+}

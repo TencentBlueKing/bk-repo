@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.scanner.component.manager.arrowhead.dao
 
+import com.tencent.bkrepo.scanner.component.manager.ResultItemDao
 import com.tencent.bkrepo.scanner.component.manager.arrowhead.model.TApplicationItem
 import org.springframework.stereotype.Repository
 

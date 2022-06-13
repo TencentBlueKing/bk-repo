@@ -25,31 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.component.manager.arrowhead.model
+package com.tencent.bkrepo.common.checker.pojo
 
-import org.springframework.data.mongodb.core.index.CompoundIndex
-import org.springframework.data.mongodb.core.index.CompoundIndexes
-
-@CompoundIndexes(
-    CompoundIndex(
-        name = "credentialsKey_sha256_scanner_idx",
-        def = "{'credentialsKey': 1, 'sha256': 1, 'scanner': 1}",
-        background = true
-    )
-)
-open class ResultItem <T>(
-    var id: String? = null,
-    /**
-     * 被扫描文件所在存储
-     */
-    val credentialsKey: String?,
-    /**
-     * 被扫描文件sha256
-     */
-    val sha256: String,
-    /**
-     * 使用的扫描器
-     */
-    val scanner: String,
-    val data: T
+data class Software(
+    val id: String,
+    val versionEndExcluding: String?,
+    val vulnerabilityIdMatched: String?
 )

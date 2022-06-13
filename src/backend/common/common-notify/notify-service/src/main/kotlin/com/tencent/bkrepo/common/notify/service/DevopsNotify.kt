@@ -32,14 +32,20 @@
 package com.tencent.bkrepo.common.notify.service
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.MessageBody
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
+import com.tencent.bkrepo.common.notify.config.NotifyProperties
 import com.tencent.bkrepo.common.notify.pojo.BaseMessage
 import com.tencent.bkrepo.common.notify.pojo.DevopsResult
 import com.tencent.bkrepo.common.notify.pojo.EmailNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.RtxNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.SmsNotifyMessage
 import com.tencent.bkrepo.common.notify.pojo.WechatNotifyMessage
+import okhttp3.HttpUrl
 import okhttp3.MediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -47,11 +53,12 @@ import okhttp3.RequestBody
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
+
 /**
  * 蓝盾通知服务
  */
 class DevopsNotify constructor(
-    val devopsServer: String
+    private val notifyProperties: NotifyProperties
 ) : NotifyService {
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(5L, TimeUnit.SECONDS)
@@ -89,6 +96,36 @@ class DevopsNotify constructor(
         postMessage(url, message)
     }
 
+    override fun sendWeworkBot(bot: WeworkBot, message: MessageBody) {
+        val body = HashMap<String, Any>(2).run {
+            bot.chatIds?.let { put("chatid", it) }
+            put("msgtype", message.type())
+            put(message.type(), message)
+            RequestBody.create(MediaType.parse(MediaTypes.APPLICATION_JSON), toJsonString())
+        }
+
+        // 构造url
+        var url = HttpUrl.parse(bot.webhookUrl)!!
+        if (notifyProperties.replaceWeworkUrl.isNotEmpty()) {
+            val replaceUrl = HttpUrl.parse(notifyProperties.replaceWeworkUrl)!!
+            url = url.newBuilder()
+                .scheme(replaceUrl.scheme())
+                .host(replaceUrl.host())
+                .port(replaceUrl.port())
+                .build()
+        }
+
+        val request = Request.Builder().url(url).post(body).build()
+        okHttpClient.newCall(request).execute().use {
+            if (!it.isSuccessful) {
+                logger.error(
+                    "send wework bot message failed, " +
+                        "webhookUrl[${bot.webhookUrl}], message[$message], res[${it.body()?.string()}]"
+                )
+            }
+        }
+    }
+
     override fun sendWechat(receivers: List<String>, body: String) {
         val url = "${getServer()}/notify/api/service/notifies/wechat"
         val message = WechatNotifyMessage(
@@ -116,6 +153,7 @@ class DevopsNotify constructor(
     }
 
     private fun getServer(): String {
+        val devopsServer = notifyProperties.devopsServer
         return if (devopsServer.startsWith("http://") || devopsServer.startsWith("https://")) {
             devopsServer.removeSuffix("/")
         } else {

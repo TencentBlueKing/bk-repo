@@ -27,54 +27,40 @@
 
 package com.tencent.bkrepo.scanner.pojo.response
 
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
-@ApiModel("扫描方案基础信息")
-@Deprecated(
-    "仅用于兼容旧接口",
-    replaceWith = ReplaceWith(
-        expression = "ScanPlan",
-        imports = ["com.tencent.bkrepo.scanner.pojo.ScanPlan"]
-    )
-)
-data class ScanPlanBase(
-    @ApiModelProperty("方案id")
-    val id: String,
-    @ApiModelProperty("方案名")
-    val name: String?,
-    @ApiModelProperty("方案类型")
-    val type: String,
-    @ApiModelProperty("使用的扫描器")
-    val scanner: String,
-    @ApiModelProperty("描述")
-    val description: String? = "",
-    @ApiModelProperty("projectId")
-    val projectId: String,
-    @ApiModelProperty("是否开启自动扫描")
-    @Deprecated("仅用于兼容旧接口", ReplaceWith("scanOnNewArtifact"))
-    val autoScan: Boolean,
-    @ApiModelProperty("是否有新制品上传时自动扫描")
-    val scanOnNewArtifact: Boolean? = null,
-    @ApiModelProperty("自动扫描仓库")
-    @Deprecated("仅用于兼容旧接口", ReplaceWith("repoNames"))
-    val repoNameList: List<String> = emptyList(),
-    @ApiModelProperty("自动扫描仓库")
-    val repoNames: List<String> = emptyList(),
-    @ApiModelProperty("自动扫描规则")
-    @Deprecated("仅用于兼容旧接口", ReplaceWith("rule"))
-    val artifactRules: List<ArtifactRule> = emptyList(),
-    @ApiModelProperty("自动扫描规则")
-    val rule: Rule? = null,
-
+@ApiModel("扫描制品信息")
+data class SubtaskInfo(
+    @ApiModelProperty("子扫描任务id")
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("subTaskId"))
+    val recordId: String,
+    @ApiModelProperty("子扫描任务id")
+    val subTaskId: String,
+    @ApiModelProperty("制品名")
+    val name: String,
+    @ApiModelProperty("packageKey")
+    val packageKey: String? = null,
+    @ApiModelProperty("制品版本")
+    val version: String? = null,
+    @ApiModelProperty("制品路径")
+    val fullPath: String? = null,
+    @ApiModelProperty("仓库类型")
+    val repoType: String,
+    @ApiModelProperty("仓库名")
+    val repoName: String,
+    @ApiModelProperty("最高漏洞等级")
+    val highestLeakLevel: String? = null,
+    @ApiModelProperty("扫描时长")
+    val duration: Long,
+    @ApiModelProperty("完成时间")
+    val finishTime: String?,
+    @ApiModelProperty("状态")
+    val status: String,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
     val createdDate: String,
-    @ApiModelProperty("修改者")
-    val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
-    val lastModifiedDate: String
+    @ApiModelProperty("是否通过质量红线")
+    val qualityRedLine: Boolean? = null
 )

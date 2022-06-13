@@ -25,33 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.scanner.pojo.request
+package com.tencent.bkrepo.common.checker.pojo
 
-import com.fasterxml.jackson.annotation.JsonAlias
-import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
-import com.tencent.bkrepo.scanner.pojo.rule.ArtifactRule
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-
-@ApiModel("方案批量扫描请求")
-data class BatchScanRequest(
-    @ApiModelProperty("项目ID")
-    val projectId: String,
-    @ApiModelProperty("方案ID")
-    @JsonAlias("id")
-    val planId: String,
-    @ApiModelProperty("触发方式")
-    @JsonAlias("triggerMethod")
-    val triggerType: String = ScanTriggerType.MANUAL.name,
-    /**
-     * 指定扫描的仓库列表，未指定时使用扫描方案指定的仓库，都不存在时扫描全部仓库
-     */
-    @ApiModelProperty("仓库名")
-    @JsonAlias("repoNameList")
-    val repoNames: List<String> = emptyList(),
-    /**
-     * 指定扫描的制品名字与制品版本规则，未指定时使用扫描方案指定的规则，都不存在时扫描全部文件
-     */
-    @ApiModelProperty("制品规则")
-    val artifactRules: List<ArtifactRule> = emptyList()
+data class VersionEvidence(
+    val confidence: String,
+    val name: String,
+    val source: String,
+    val type: String,
+    val value: String
 )

@@ -28,14 +28,13 @@
 package com.tencent.bkrepo.scanner.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.request.ArtifactPlanRelationRequest
-import com.tencent.bkrepo.scanner.pojo.request.PlanArtifactRequest
+import com.tencent.bkrepo.scanner.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.scanner.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.scanner.pojo.response.ArtifactPlanRelation
-import com.tencent.bkrepo.scanner.pojo.response.ArtifactScanResultOverview
-import com.tencent.bkrepo.scanner.pojo.response.PlanArtifactInfo
 import com.tencent.bkrepo.scanner.pojo.response.ScanPlanInfo
 
 /**
@@ -85,6 +84,27 @@ interface ScanPlanService {
     fun find(projectId: String, id: String): ScanPlan?
 
     /**
+     * 获取扫描方案
+     *
+     * @param projectId 扫描方案所属项目id
+     * @param type 扫描方案类型
+     * @param name 扫描方案id
+     *
+     * @return 扫描方案
+     */
+    fun findByName(projectId: String, type: String, name: String): ScanPlan?
+
+    /**
+     * 获取[type]类型的默认扫描方案，不存在时则创建一个
+     *
+     * @param projectId 所属项目
+     * @param type 默认扫描方案类型
+     *
+     * @return 默认扫描方案
+     */
+    fun getOrCreateDefaultPlan(projectId: String, type: String = RepositoryType.GENERIC.name): ScanPlan
+
+    /**
      * 删除扫描方案
      *
      * @param projectId 扫描方案所属项目id
@@ -104,31 +124,11 @@ interface ScanPlanService {
     /**
      * 获取扫描方案最新一次扫描详情
      *
-     * @param projectId 扫描方案所属项目id
-     * @param id 扫描方案id
+     * @param request 获取扫描方案关联的统计请求，包含扫描方案信息和筛选条件
      *
      * @return 扫描方案最新一次扫描详情
      */
-    fun scanPlanInfo(projectId: String, id: String): ScanPlanInfo?
-
-    /**
-     * 分页获取使用指定扫描方案扫描过的制品
-     *
-     * @param request 获取扫描方案关联的制品请求，包含扫描方案信息和制品筛选条件
-     *
-     * @return 扫描方案扫描的制品信息
-     */
-    fun planArtifactPage(request: PlanArtifactRequest): Page<PlanArtifactInfo>
-
-    /**
-     * 获取制品扫描结果预览
-     *
-     * @param projectId 制品所属项目
-     * @param subScanTaskId 子扫描任务id
-     *
-     * @return 制品扫描结果预览信息
-     */
-    fun planArtifact(projectId: String, subScanTaskId: String): ArtifactScanResultOverview
+    fun scanPlanInfo(request: PlanCountRequest): ScanPlanInfo?
 
     /**
      * 获取制品关联的扫描方案列表

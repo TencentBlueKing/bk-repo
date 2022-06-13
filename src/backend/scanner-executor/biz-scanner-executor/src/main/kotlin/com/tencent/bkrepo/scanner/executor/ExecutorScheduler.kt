@@ -38,7 +38,7 @@ class ExecutorScheduler @Autowired constructor(
     fun scan() {
         while (allowExecute()) {
             val subtask = scanClient.pullSubTask().data ?: break
-            if (executingSubtaskExecutorMap.contains(subtask.taskId)) {
+            if (scanning(subtask.taskId)) {
                 // 任务执行中，直接忽略新任务
                 logger.warn("subtask[${subtask.taskId}] of task[${subtask.parentScanTaskId}] is executing")
                 return
@@ -57,6 +57,13 @@ class ExecutorScheduler @Autowired constructor(
                 }
             }
         }
+    }
+
+    /**
+     * 判断任务是否正在执行
+     */
+    fun scanning(taskId: String): Boolean {
+        return executingSubtaskExecutorMap.containsKey(taskId)
     }
 
     /**
@@ -98,7 +105,7 @@ class ExecutorScheduler @Autowired constructor(
             val fileSizeLimit = scannerExecutorProperties.fileSizeLimit.toBytes()
             if (size > fileSizeLimit) {
                 logger.warn(
-                    "file too large, sha256[${sha256}, credentials: [${credentialsKey}], subtaskId[$taskId]" +
+                    "file too large, sha256[$sha256, credentials: [$credentialsKey], subtaskId[$taskId]" +
                         ", size[$size], limit[$fileSizeLimit]"
                 )
                 report(taskId, parentScanTaskId, startTimestamp)
@@ -108,7 +115,7 @@ class ExecutorScheduler @Autowired constructor(
             val artifactInputStream = storageService.load(sha256, Range.full(size), storageCredentials)
             // 加载文件失败，直接返回
             if (artifactInputStream == null) {
-                logger.warn("Load storage file failed: sha256[${sha256}, credentials: [${credentialsKey}]")
+                logger.warn("Load storage file failed: sha256[$sha256, credentials: [$credentialsKey]")
                 report(taskId, parentScanTaskId, startTimestamp)
                 return
             }
@@ -123,7 +130,8 @@ class ExecutorScheduler @Autowired constructor(
             } catch (e: Exception) {
                 logger.error(
                     "scan failed, parentTaskId[$parentScanTaskId], subTaskId[$taskId], " +
-                        "sha256[$sha256], scanner[${scanner.name}]]", e
+                        "sha256[$sha256], scanner[${scanner.name}]]",
+                    e
                 )
                 null
             }
@@ -131,8 +139,10 @@ class ExecutorScheduler @Autowired constructor(
             // 3. 上报扫描结果
             val finishedTimestamp = System.currentTimeMillis()
             val timeSpent = finishedTimestamp - startTimestamp
-            logger.info("scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$size], " +
-                            "subtaskId[$taskId], sha256[$sha256], reporting result")
+            logger.info(
+                "scan finished[${result?.scanStatus}], timeSpent[$timeSpent], size[$size], " +
+                    "subtaskId[$taskId], sha256[$sha256], reporting result"
+            )
             report(taskId, parentScanTaskId, startTimestamp, finishedTimestamp, result)
         }
     }
@@ -144,6 +154,9 @@ class ExecutorScheduler @Autowired constructor(
                 parentTaskId = parentScanTaskId,
                 inputStream = artifactInputStream,
                 scanner = scanner,
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
                 sha256 = sha256
             )
         }

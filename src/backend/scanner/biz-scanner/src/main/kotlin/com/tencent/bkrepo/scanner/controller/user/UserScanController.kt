@@ -33,17 +33,20 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.scanner.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
-import com.tencent.bkrepo.scanner.pojo.request.BatchScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.PipelineScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanRequest
 import com.tencent.bkrepo.scanner.pojo.request.ScanTaskQuery
-import com.tencent.bkrepo.scanner.pojo.request.SingleScanRequest
+import com.tencent.bkrepo.scanner.pojo.request.SubtaskInfoRequest
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskInfo
+import com.tencent.bkrepo.scanner.pojo.response.SubtaskResultOverview
 import com.tencent.bkrepo.scanner.service.ScanService
+import com.tencent.bkrepo.scanner.service.ScanTaskService
+import com.tencent.bkrepo.scanner.utils.ScanPlanConverter
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -60,15 +63,21 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/scan")
 class UserScanController @Autowired constructor(
+    private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scanService: ScanService,
-    private val permissionCheckHandler: ScannerPermissionCheckHandler
+    private val scanTaskService: ScanTaskService
 ) {
 
     @ApiOperation("创建扫描任务")
     @PostMapping
-    @Principal(PrincipalType.ADMIN)
     fun scan(@RequestBody scanRequest: ScanRequest): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL))
+        return ResponseBuilder.success(scanService.scan(scanRequest, ScanTriggerType.MANUAL, SecurityUtils.getUserId()))
+    }
+
+    @ApiOperation("从流水线触发扫描")
+    @PostMapping("/pipeline")
+    fun pipelineScan(@RequestBody request: PipelineScanRequest): Response<ScanTask> {
+        return ResponseBuilder.success(scanService.pipelineScan(request))
     }
 
     @ApiOperation("中止制品扫描")
@@ -83,33 +92,35 @@ class UserScanController @Autowired constructor(
         return ResponseBuilder.success(scanService.stopByPlanArtifactLatestSubtaskId(projectId, subtaskId))
     }
 
-    @ApiOperation("批量扫描")
-    @PostMapping("/batch")
-    fun batchScan(@RequestBody request: BatchScanRequest): Response<Boolean> {
-        permissionCheckHandler.checkProjectPermission(request.projectId, PermissionAction.MANAGE)
-        scanService.batchScan(request)
-        return ResponseBuilder.success(true)
-    }
-
-    @ApiOperation("单个制品扫描")
-    @PostMapping("/single")
-    fun singleScan(@RequestBody request: SingleScanRequest): Response<Boolean> {
-        permissionCheckHandler.checkProjectPermission(request.projectId, PermissionAction.MANAGE)
-        scanService.singleScan(request)
-        return ResponseBuilder.success(true)
-    }
-
     @ApiOperation("获取扫描任务信息")
     @GetMapping("/tasks/{taskId}")
-    @Principal(PrincipalType.ADMIN)
     fun task(@PathVariable("taskId") taskId: String): Response<ScanTask> {
-        return ResponseBuilder.success(scanService.task(taskId))
+        return ResponseBuilder.success(scanTaskService.task(taskId))
     }
 
     @ApiOperation("分页获取扫描任务信息")
     @GetMapping("/tasks")
-    @Principal(PrincipalType.ADMIN)
     fun tasks(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Response<Page<ScanTask>> {
-        return ResponseBuilder.success(scanService.tasks(scanTaskQuery, pageLimit))
+        return ResponseBuilder.success(scanTaskService.tasks(scanTaskQuery, pageLimit))
+    }
+
+    @ApiOperation("获取扫描子任务信息")
+    @GetMapping("/tasks/{taskId}/subtasks/{subtaskId}")
+    fun subtask(
+        @PathVariable("taskId") taskId: String,
+        @PathVariable("subtaskId") subtaskId: String
+    ): Response<SubtaskResultOverview> {
+        return ResponseBuilder.success(scanTaskService.subtaskOverview(subtaskId))
+    }
+
+    @ApiOperation("分页获取扫描子任务信息")
+    @GetMapping("/tasks/{taskId}/subtasks")
+    fun subtasks(
+        @PathVariable("taskId") taskId: String,
+        subtaskInfoRequest: SubtaskInfoRequest
+    ): Response<Page<SubtaskInfo>> {
+        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
+        subtaskInfoRequest.parentScanTaskId = taskId
+        return ResponseBuilder.success(scanTaskService.subtasks(ScanPlanConverter.convert(subtaskInfoRequest)))
     }
 }

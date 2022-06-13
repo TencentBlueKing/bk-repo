@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":scanner:api-scanner"))
     implementation(project(":common:common-service"))
     implementation(project(":common:common-security"))
+    implementation(project(":common:common-checker:biz-checker"))
     implementation(project(":common:common-mongo"))
     implementation(project(":common:common-storage:storage-service"))
     implementation("commons-io:commons-io")

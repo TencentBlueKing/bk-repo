@@ -111,7 +111,7 @@ class ScanEventConsumer(
                         planId = it.id!!,
                         rule = RuleConverter.convert(projectId, repoName, resourceKey)
                     )
-                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT)
+                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT, it.lastModifiedBy)
                     hasScanTask = true
                 }
         }
@@ -154,7 +154,7 @@ class ScanEventConsumer(
                         planId = it.id!!,
                         rule = RuleConverter.convert(projectId, repoName, packageKey, packageVersion)
                     )
-                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT)
+                    scanService.scan(request, ScanTriggerType.ON_NEW_ARTIFACT, it.lastModifiedBy)
                     hasScanTask = true
                 }
         }
@@ -176,8 +176,9 @@ class ScanEventConsumer(
                 val scanner = entry.key
                 val configuration = entry.value
 
-                if (configuration.autoScanRepoNames.isNotEmpty() && repoName !in configuration.autoScanRepoNames
-                    || !match(event, configuration.autoScanMatchRule)) {
+                if (configuration.autoScanRepoNames.isNotEmpty() && repoName !in configuration.autoScanRepoNames ||
+                    !match(event, configuration.autoScanMatchRule)
+                ) {
                     continue
                 }
 
