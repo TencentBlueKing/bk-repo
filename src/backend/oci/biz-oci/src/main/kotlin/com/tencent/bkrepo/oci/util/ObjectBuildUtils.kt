@@ -169,7 +169,7 @@ object ObjectBuildUtils {
             return BasicInfo(
                 version = packageVersion.name,
                 fullPath = fullPath,
-                size = size,
+                size = packageVersion.size,
                 sha256 = sha256.orEmpty(),
                 md5 = md5.orEmpty(),
                 stageTag = packageVersion.stageTag,
