@@ -371,12 +371,12 @@ class OciRegistryLocalRepository(
     override fun query(context: ArtifactQueryContext): Any? {
         if (context.artifactInfo is OciTagArtifactInfo) {
             val packageName = (context.artifactInfo as OciTagArtifactInfo).packageName
-            if (packageName.isBlank()) {
+            return if (packageName.isBlank()) {
                 // 查询catalog
                 queryCatalog(context)
             } else {
                 // 查询tag列表
-                return queryTagList(context)
+                queryTagList(context)
             }
         }
         if (context.artifactInfo is OciManifestArtifactInfo) {

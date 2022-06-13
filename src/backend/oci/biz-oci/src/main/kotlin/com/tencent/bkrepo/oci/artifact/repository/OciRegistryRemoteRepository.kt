@@ -492,8 +492,8 @@ class OciRegistryRemoteRepository(
             val linkUrl = if (matcher.find()) {
                 matcher.group(1)
             } else null
-            val url = URL(linkUrl)
-            val map = OciResponseUtils.parseQuerystring(url.query)
+            val query = linkUrl?.split("?")?.last()
+            val map = OciResponseUtils.parseQuerystring(query)
             n = map?.get("n")?.toInt() ?: 0
             return n
         } catch (ignore: Exception) {

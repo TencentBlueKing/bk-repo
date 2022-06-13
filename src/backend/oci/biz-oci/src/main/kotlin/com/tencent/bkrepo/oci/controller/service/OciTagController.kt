@@ -29,7 +29,6 @@ package com.tencent.bkrepo.oci.controller.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DOCKER_LINK
@@ -72,14 +71,10 @@ class OciTagController(
         val left = result.left
         if (left > 0) {
             val lastTag = result.tags.last()
-            val url = UrlFormatter.format(
-                host = ociProperties.domain,
-                uri = "/v2/${artifactInfo.projectId}/${artifactInfo.repoName}/${artifactInfo.packageName}/tags/list",
-                query = "last=$lastTag&n=$left"
-            )
             httpHeaders.set(
                 DOCKER_LINK,
-                "<$url>; rel=\"next\""
+                "</v2/${artifactInfo.projectId}/${artifactInfo.repoName}/${artifactInfo.packageName}/tags/list" +
+                    "?last=$lastTag&n=$left>; rel=\"next\""
             )
         }
         return ResponseEntity(result, httpHeaders, HttpStatus.OK)

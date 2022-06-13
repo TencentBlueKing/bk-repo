@@ -33,7 +33,6 @@ package com.tencent.bkrepo.oci.controller.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.oci.config.OciProperties
 import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
@@ -90,15 +89,7 @@ class CatalogController(
         val left = catalogResponse.left
         if (left > 0) {
             val lastTag = catalogResponse.repositories.last()
-            val url = UrlFormatter.format(
-                host = ociProperties.domain,
-                uri = "/v2/_catalog",
-                query = "last=$lastTag&n=$left"
-            )
-            httpHeaders.set(
-                DOCKER_LINK,
-                "<$url>; rel=\"next\""
-            )
+            httpHeaders.set(DOCKER_LINK, "</v2/_catalog?last=$lastTag&n=$left>; rel=\"next\"")
         }
         return ResponseEntity(catalogResponse, httpHeaders, HttpStatus.OK)
     }
