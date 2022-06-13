@@ -36,12 +36,16 @@ import java.util.Base64
 class BkSyncMetrics(
     // 网络速度，单位MB/s
     var networkSpeed: Int = 0,
+    // 文件类型
+    var fileType: String = "",
     // 文件大小，单位字节
     var fileSize: Long = 0,
     // 检测差异时间，单位秒
     var diffTime: Long = 0,
     // 检测差异速度
     var diffSpeed: String = "",
+    // 重复块命中率
+    var hitRate: Float = 0f,
     // 合并时间，单位秒
     var patchTime: Long = 0,
     // 合并速度
@@ -55,6 +59,7 @@ class BkSyncMetrics(
     var ip: String = ""
 ) {
     fun setBasicMetrics(request: UploadRequest) {
+        fileType = request.file.extension
         fileSize = request.file.length()
         projectId = request.projectId
         repoName = request.repoName

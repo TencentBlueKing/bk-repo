@@ -293,6 +293,7 @@ class HttpBkSyncCall(
             deltaFile.outputStream().buffered().use {
                 logger.info("Detecting diff")
                 val result = detecting(file, signStream, it)
+                metrics.hitRate = result.hitRate
                 if (result.hitRate < reuseThreshold) {
                     logger.info(
                         "Current reuse hit rate[${result.hitRate}]" +
