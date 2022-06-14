@@ -149,7 +149,7 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
         log "构建${SERVICE}镜像"
         mkdir -p ${SERVICE}
         ./gradlew  :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
-        cp ./release/boot-$SERVICE-*.jar .
+        cp ./release/boot-$SERVICE*.jar .
         cp -rf $WORKING_DIR/../../support-files/kubernetes/images/backend/* .
     done
     ls -a
