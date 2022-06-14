@@ -56,7 +56,10 @@ class DownloadTimeWatchDog(
             }
         }
         val queueSize = threadPool.queue.size
-        logger.info("Success to check[$name] sessions[$removed/$size],queue size[$queueSize],max latency $maxSessionLatencyTime ms")
+        logger.info(
+            "Success to check[$name] sessions[$removed/$size]," +
+                "queue size[$queueSize],max latency $maxSessionLatencyTime ms"
+        )
         if (healthyFlag && maxSessionLatencyTime > highWaterMark) {
             healthyFlag = false
             coolingCycleTime = System.currentTimeMillis() + COLLING_CYCLE
