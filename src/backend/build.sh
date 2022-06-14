@@ -148,7 +148,6 @@ for SERVICE in ${BACKENDS[@]};
 do
 log "构建${SERVICE}镜像..."
 mkdir -p ${SERVICE}
-#$BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
 ./gradlew :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
 cp ./release/boot-$SERVICE-.jar .
 cp -rf $WORKING_DIR/../../support-files/kubernetes/images/backend/ .
