@@ -143,7 +143,7 @@ if [[ $ALL -eq 1 || $GATEWAY -eq 1 ]] ; then
 fi
 
 # 构建backend镜像
-if $ALL -eq 1 ; then
+if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
 for SERVICE in ${BACKENDS[@]};
 do
 log "构建${SERVICE}镜像..."
