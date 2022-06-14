@@ -4,9 +4,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.apache.commons.logging.LogFactory
 import java.util.LinkedList
+import java.util.concurrent.ThreadPoolExecutor
 
 class DownloadTimeWatchDog(
     private val name: String,
+    private val threadPool: ThreadPoolExecutor,
     private val highWaterMark: Long,
     private val lowWaterMark: Long
 ) {
@@ -59,9 +61,8 @@ class DownloadTimeWatchDog(
             coolingCycleTime = System.currentTimeMillis() + COLLING_CYCLE
             logger.warn("key[$name] change to unhealthy")
         }
-        // 当任务堆积时，虽然单个任务执行的快，会话延迟低，但是由于堆积任务多，
-        // 新进来的连接依然可能会超时，所以这里设置一个冷却期，以防止频繁切换。
-        if (!healthyFlag && System.currentTimeMillis() > coolingCycleTime && maxSessionLatencyTime < lowWaterMark) {
+
+        if (!healthyFlag && threadPool.queue.size < threadPool.corePoolSize && maxSessionLatencyTime < lowWaterMark) {
             healthyFlag = true
             logger.info("key[$name] change to healthy")
         }

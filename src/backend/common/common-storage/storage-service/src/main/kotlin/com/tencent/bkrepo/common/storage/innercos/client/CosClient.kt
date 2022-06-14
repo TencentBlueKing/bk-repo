@@ -98,11 +98,6 @@ import kotlin.system.measureNanoTime
  */
 class CosClient(val credentials: InnerCosCredentials) {
     private val config: ClientConfig = ClientConfig(credentials)
-    private val watchDog = DownloadTimeWatchDog(
-        credentials.key.toString(),
-        config.downloadTimeHighWaterMark,
-        config.downloadTimeLowWaterMark
-    )
 
     /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
@@ -115,6 +110,17 @@ class CosClient(val credentials: InnerCosCredentials) {
             TimeUnit.SECONDS, PriorityBlockingQueue(), namedThreadFactory
         ).apply { this.allowCoreThreadTimeOut(true) }
     } else null
+
+    private val watchDog: DownloadTimeWatchDog? = if (downloadThreadPool != null) {
+        DownloadTimeWatchDog(
+            credentials.key.toString(),
+            downloadThreadPool,
+            config.downloadTimeHighWaterMark,
+            config.downloadTimeLowWaterMark
+        )
+    } else null
+
+    private val useChunkedLoad = (watchDog != null) && (downloadThreadPool != null)
 
     /**
      * 单连接获取文件
@@ -135,7 +141,7 @@ class CosClient(val credentials: InnerCosCredentials) {
      * */
     fun getObjectByChunked(cosRequest: GetObjectRequest): CosObject {
         with(cosRequest) {
-            if (rangeStart == null || rangeEnd == null || downloadThreadPool == null) {
+            if (rangeStart == null || rangeEnd == null || !useChunkedLoad) {
                 return getObject(cosRequest)
             }
             val len = rangeEnd - rangeStart + 1
@@ -145,11 +151,11 @@ class CosClient(val credentials: InnerCosCredentials) {
             if (!checkObjectExist(CheckObjectExistRequest(key))) {
                 return CosObject(null, null)
             }
-            if (!watchDog.isHealthy()) {
+            if (!watchDog!!.isHealthy()) {
                 return getObject(cosRequest)
             }
             return try {
-                val inputStream = chunkedLoad(key, rangeStart, rangeEnd, getTempPath(), downloadThreadPool)
+                val inputStream = chunkedLoad(key, rangeStart, rangeEnd, getTempPath(), downloadThreadPool!!)
                 CosObject(eTag = null, inputStream = inputStream)
             } catch (e: Exception) {
                 logger.warn("Chunked load failed,fallback to use common get object", e)
@@ -339,7 +345,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val activeCount = AtomicInteger()
         val session = DownloadSession(activeCount = activeCount)
         val tempRootPath = Paths.get(dir.toString(), session.id)
-        watchDog.add(session)
+        watchDog!!.add(session)
         try {
             /*
             * 按时间顺序进行优先级下载。同时保持一段间距，以让新进来的连接可以插队。
