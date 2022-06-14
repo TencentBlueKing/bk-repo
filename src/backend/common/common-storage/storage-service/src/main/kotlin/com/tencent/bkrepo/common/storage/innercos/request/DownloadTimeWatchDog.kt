@@ -55,14 +55,14 @@ class DownloadTimeWatchDog(
                 }
             }
         }
-        logger.info("Success to check[$name] sessions[$removed/$size],max session latency $maxSessionLatencyTime ms")
+        val queueSize = threadPool.queue.size
+        logger.info("Success to check[$name] sessions[$removed/$size],queue size[$queueSize],max latency $maxSessionLatencyTime ms")
         if (healthyFlag && maxSessionLatencyTime > highWaterMark) {
             healthyFlag = false
             coolingCycleTime = System.currentTimeMillis() + COLLING_CYCLE
             logger.warn("key[$name] change to unhealthy")
         }
-
-        if (!healthyFlag && threadPool.queue.size < threadPool.corePoolSize && maxSessionLatencyTime < lowWaterMark) {
+        if (!healthyFlag && queueSize < threadPool.corePoolSize && maxSessionLatencyTime < lowWaterMark) {
             healthyFlag = true
             logger.info("key[$name] change to healthy")
         }
