@@ -389,7 +389,9 @@ class OciOperationServiceImpl(
                 repoName = repoName,
                 name = name,
                 version = version
-            ) ?: throw OciFileNotFoundException("packageKey [$packageKey] don't found.")
+            ) ?: throw OciFileNotFoundException(
+                "Could not find the packageKey [$packageKey] in repo ${artifactInfo.getRepoIdentify()}"
+            )
             val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data!!
             val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion)
             return PackageVersionInfo(basicInfo, emptyMap())
