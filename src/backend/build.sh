@@ -146,7 +146,7 @@ fi
 if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
     for SERVICE in ${BACKENDS[@]};
     do
-        log "构建${SERVICE}镜像"
+        log "开始构建${SERVICE}镜像..."
         mkdir -p ${SERVICE}
         ./gradlew  :$SERVICE:boot-$SERVICE:build -PassemblyMode=k8s -x test
         cp ./release/boot-$SERVICE*.jar .
