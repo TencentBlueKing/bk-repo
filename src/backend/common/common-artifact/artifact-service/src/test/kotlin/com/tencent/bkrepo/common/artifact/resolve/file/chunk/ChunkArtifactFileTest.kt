@@ -28,19 +28,22 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.chunk
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import io.mockk.every
+import io.mockk.mockkObject
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.springframework.util.unit.DataSize
 import java.nio.charset.Charset
 
-// TODO 现在Mockito版本不能mock静态方法，需要升级框架版本
 class ChunkArtifactFileTest {
 
     private val tempDir = System.getProperty("java.io.tmpdir")
@@ -56,6 +59,12 @@ class ChunkArtifactFileTest {
         )
         val monitor = StorageHealthMonitor(storageProperties, storageCredentials.upload.location)
         return ChunkedArtifactFile(monitor, storageProperties, storageCredentials)
+    }
+
+    @BeforeEach
+    fun mock() {
+        mockkObject(SpringContextUtils.Companion)
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
     }
 
     @Test

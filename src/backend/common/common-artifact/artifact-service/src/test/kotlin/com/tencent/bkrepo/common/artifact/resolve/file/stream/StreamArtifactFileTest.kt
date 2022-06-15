@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
 import com.tencent.bkrepo.common.api.constant.StringPool.randomString
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.core.config.ReceiveProperties
@@ -35,16 +36,18 @@ import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.mockk.every
+import io.mockk.mockkObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
 import java.nio.charset.Charset
 
-// TODO 现在Mockito版本不能mock静态方法，需要升级框架版本
 class StreamArtifactFileTest {
 
     private val tempDir = System.getProperty("java.io.tmpdir")
@@ -70,6 +73,12 @@ class StreamArtifactFileTest {
         )
         val monitor = StorageHealthMonitor(storageProperties, tempDir)
         return StreamArtifactFile(source, monitor, storageProperties, storageCredentials, contentLength)
+    }
+
+    @BeforeEach
+    fun mock() {
+        mockkObject(SpringContextUtils)
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
     }
 
     @Test
