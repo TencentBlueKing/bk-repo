@@ -1,8 +1,5 @@
 server:
   port: 25902
-  undertow:
-    threads:
-      worker: 256
 
 spring.application.name: auth
 
