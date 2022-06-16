@@ -60,6 +60,7 @@
   "code": 0,
   "message": null,
   "data": {
+    "name": "test",
     "taskId": "62a1ae99573ec051504778ee",
     "projectId": "testProjectId",
     "createdBy": "admin",
@@ -139,6 +140,7 @@
 
 | 字段                 | 类型      | 说明                                                         | Description            |
 |--------------------|---------|------------------------------------------------------------|------------------------|
+| name               | string  | 任务名                                                        | task name              |
 | taskId             | string  | 任务id                                                       | task id                |
 | projectId          | string  | 所属项目id                                                     | project id             |
 | createdBy          | string  | 任务创建者                                                      | task creator           |
@@ -237,7 +239,7 @@
 ## 停止扫描
 
 - API: POST /scanner/api/scan/{projectId}/stop
-- API 名称: stop scan
+- API 名称: stop_scan
 - 功能说明：
   - 中文：停止扫描
   - English：stop scan
@@ -249,6 +251,34 @@
 |-----------|--------|------|-----|----------------|----------------------|
 | projectId | string | 是    | 无   | 项目id           | project id           |
 | recordId  | string | 是    | 无   | 属于扫描方案的扫描子任务id | plan scan subtask id |
+
+## 停止扫描任务
+
+- API: POST /scanner/api/scan/{projectId}/tasks/{taskId}/stop
+- API 名称: stop_scan_task
+- 功能说明：
+  - 中文：停止扫描任务
+  - English：stop scan task
+- 请求体 此接口请求体为空
+
+- 请求字段说明
+
+| 字段        | 类型     | 是否必须 | 默认值 | 说明   | Description  |
+|-----------|--------|------|-----|------|--------------|
+| projectId | string | 是    | 无   | 项目id | project id   |
+| taskId    | string | 是    | 无   | 任务id | scan task id |
+
+- 响应体
+
+```json
+{
+  "code": 0,
+  "message": null,
+  "data": true,
+  "traceId": ""
+}
+```
+
 
 ## 获取扫描任务
 

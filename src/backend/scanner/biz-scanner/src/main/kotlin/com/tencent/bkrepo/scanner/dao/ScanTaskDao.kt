@@ -124,11 +124,12 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
     }
 
     fun updateScanningCount(taskId: String, count: Int): UpdateResult {
-        val query = buildQuery(taskId)
+        val criteria = Criteria.where(ID).isEqualTo(taskId)
+            .and(TScanTask::status.name).isEqualTo(ScanTaskStatus.SCANNING_SUBMITTING)
         val update = buildUpdate()
             .inc(TScanTask::scanning.name, count)
             .inc(TScanTask::total.name, count)
-        return updateFirst(query, update)
+        return updateFirst(Query(criteria), update)
     }
 
     /**
@@ -180,10 +181,19 @@ class ScanTaskDao(private val scanPlanDao: ScanPlanDao) : ScannerSimpleMongoDao<
         return find(Query(Criteria.where(ID).inValues(ids)))
     }
 
+    fun findByProjectIdAndId(projectId: String, id: String): TScanTask? {
+        return findOne(
+            Query(
+                TScanTask::projectId.isEqualTo(projectId).and(ID).isEqualTo(id)
+            )
+        )
+    }
+
     fun find(scanTaskQuery: ScanTaskQuery, pageLimit: PageLimit): Page<TScanTask> {
         val criteria = Criteria()
         with(scanTaskQuery) {
             criteria.and(TScanTask::projectId.name).isEqualTo(projectId)
+            namePrefix?.let { criteria.and(TScanTask::name.name).regex("^$it") }
             planId?.let { criteria.and(TScanTask::planId.name).isEqualTo(it) }
             triggerType?.let { criteria.and(TScanTask::triggerType.name).isEqualTo(it) }
             after?.let { criteria.and(TScanTask::createdDate.name).gt(ofTimestamp(it)) }

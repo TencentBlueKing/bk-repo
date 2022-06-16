@@ -33,6 +33,8 @@ import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("扫描任务信息")
 data class ScanTask(
+    @ApiModelProperty("扫描任务名")
+    val name: String? = null,
     @ApiModelProperty("任务id")
     val taskId: String,
     @ApiModelProperty("项目id")
