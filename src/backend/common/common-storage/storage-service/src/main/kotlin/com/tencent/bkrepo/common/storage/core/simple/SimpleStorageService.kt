@@ -37,13 +37,20 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储服务简单实现
  */
 class SimpleStorageService : AbstractStorageService() {
 
-    override fun doStore(path: String, filename: String, artifactFile: ArtifactFile, credentials: StorageCredentials) {
+    override fun doStore(
+        path: String,
+        filename: String,
+        artifactFile: ArtifactFile,
+        credentials: StorageCredentials,
+        cancel: AtomicBoolean?
+    ) {
         when {
             artifactFile.isInMemory() -> {
                 fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)

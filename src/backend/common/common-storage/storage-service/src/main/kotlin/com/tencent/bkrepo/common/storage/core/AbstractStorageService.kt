@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.Throughput
+import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
 import kotlin.system.measureNanoTime
 
@@ -48,7 +49,12 @@ import kotlin.system.measureNanoTime
 @Suppress("TooGenericExceptionCaught")
 abstract class AbstractStorageService : FileBlockSupport() {
 
-    override fun store(digest: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Int {
+    override fun store(
+        digest: String,
+        artifactFile: ArtifactFile,
+        storageCredentials: StorageCredentials?,
+        cancel: AtomicBoolean?
+    ): Int {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
         try {
@@ -57,7 +63,7 @@ abstract class AbstractStorageService : FileBlockSupport() {
                 0
             } else {
                 val size = artifactFile.getSize()
-                val nanoTime = measureNanoTime { doStore(path, digest, artifactFile, credentials) }
+                val nanoTime = measureNanoTime { doStore(path, digest, artifactFile, credentials, cancel) }
                 val throughput = Throughput(size, nanoTime)
                 logger.info("Success to store artifact file [$digest], $throughput.")
                 1
