@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.config
 
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("job.sign-file-cleanup")
 class SignFileCleanupJobProperties(
     var expireOfDays: Int = 15
 ) : MongodbJobProperties()

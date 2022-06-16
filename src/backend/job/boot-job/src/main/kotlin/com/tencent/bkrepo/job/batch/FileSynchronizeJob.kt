@@ -35,11 +35,15 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.FileSynchronizeJobProperties
 import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 
 /**
  * 当文件上传存储失败时，后台任务进行补偿上传
  * */
+@Component
+@EnableConfigurationProperties(FileSynchronizeJobProperties::class)
 class FileSynchronizeJob(
     private val properties: FileSynchronizeJobProperties,
     private val storageCredentialsClient: StorageCredentialsClient,

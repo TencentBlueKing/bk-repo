@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.config
 
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("job.file-synchronize")
 class FileSynchronizeJobProperties(
     var region: String? = null
 ) : BatchJobProperties()
