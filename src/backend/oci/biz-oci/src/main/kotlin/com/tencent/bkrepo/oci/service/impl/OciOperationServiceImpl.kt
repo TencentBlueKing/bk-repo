@@ -752,7 +752,7 @@ class OciOperationServiceImpl(
                     packageName = packageName,
                     version = ociArtifactInfo.reference,
                     size = size,
-                    fullPath = manifestPath,
+                    manifestPath = manifestPath,
                     metadata = metadata,
                     repoType = repoType
                 )
@@ -762,7 +762,7 @@ class OciOperationServiceImpl(
                     ociArtifactInfo = this,
                     version = ociArtifactInfo.reference,
                     size = size,
-                    fullPath = manifestPath,
+                    manifestPath = manifestPath,
                     metadata = metadata,
                     packageKey = packageKey
                 )
