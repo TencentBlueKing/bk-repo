@@ -21,7 +21,7 @@ spec:
         - {{ .Values.gateway.host }}
         - {{ .Values.gateway.dockerHost }}
         - {{ .Values.gateway.helmHost }}
-      secretName: bkrepo-tls
+      secretName: {{ .Values.ingress.tlsName }}
   {{- end }}
   rules:
     - host: {{ .Values.gateway.dockerHost }}
