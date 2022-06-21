@@ -27,16 +27,22 @@
 
 package com.tencent.bkrepo.scanner.event.listener
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.MarkdownMessage
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
+import com.tencent.bkrepo.scanner.extension.ScanResultNotifyContext
+import com.tencent.bkrepo.scanner.extension.ScanResultNotifyExtension
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.devops.plugin.api.PluginManager
+import com.tencent.devops.plugin.api.applyExtension
 import org.springframework.context.event.EventListener
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Async
@@ -46,6 +52,7 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class ScanTaskStatusChangedEventListener(
+    private val pluginManager: PluginManager,
     private val redisTemplate: RedisTemplate<String, String>,
     private val notifyService: NotifyService,
     private val scannerProperties: ScannerProperties
@@ -53,12 +60,8 @@ class ScanTaskStatusChangedEventListener(
     @Async
     @EventListener(ScanTaskStatusChangedEvent::class)
     fun listen(event: ScanTaskStatusChangedEvent) {
-        with(event.task) {
-            if (status == ScanTaskStatus.FINISHED.name) {
-                val message = buildMarkdownMessage(event.task).ifBlank { return }
-                val weworkBot = getWeworkBot(taskId) ?: return
-                send(weworkBot, message)
-            }
+        if (event.task.status == ScanTaskStatus.FINISHED.name) {
+            notify(event.task)
         }
     }
 
@@ -68,11 +71,38 @@ class ScanTaskStatusChangedEventListener(
         redisTemplate.opsForValue().set(key, bot.toJsonString(), DEFAULT_EXPIRED_DAY, TimeUnit.DAYS)
     }
 
-    private fun buildMarkdownMessage(task: ScanTask): String {
-        if (task.projectId == null || task.scanPlan == null) {
-            return ""
+    private fun notify(scanTask: ScanTask) {
+        if (scanTask.projectId == null || scanTask.scanPlan == null) {
+            return
         }
-        val projectId = task.projectId
+
+        applyNotifyPlugin(scanTask)
+        weworkBotNotify(scanTask)
+    }
+
+    private fun applyNotifyPlugin(scanTask: ScanTask) {
+        // 不通知匿名用户和系统用户
+        if (scanTask.createdBy == ANONYMOUS_USER || scanTask.createdBy == SYSTEM_USER) {
+            return
+        }
+
+        val reportUrl = reportUrl(scanTask.projectId!!, scanTask.scanPlan!!.id!!)
+        val context = ScanResultNotifyContext(
+            userIds = setOf(scanTask.createdBy),
+            reportUrl = reportUrl,
+            scanTask = scanTask
+        )
+        pluginManager.applyExtension<ScanResultNotifyExtension> { notify(context) }
+    }
+
+    private fun weworkBotNotify(scanTask: ScanTask) {
+        val weworkBot = getWeworkBot(scanTask.taskId) ?: return
+        val message = buildMarkdownMessage(scanTask)
+        send(weworkBot, message)
+    }
+
+    private fun buildMarkdownMessage(task: ScanTask): String {
+        val projectId = task.projectId!!
         val planId = task.scanPlan!!.id!!
 
         val summary = StringBuilder()
@@ -87,10 +117,13 @@ class ScanTaskStatusChangedEventListener(
             summary.append("\n${key.level.levelName}: **$count**")
         }
 
-        summary.append("\n[detail](${scannerProperties.detailReportUrl}/ui/${projectId}/scanReport/${planId})")
+        summary.append("\n[detail](${reportUrl(projectId, planId)}")
 
         return summary.toString()
     }
+
+    private fun reportUrl(projectId: String, planId: String) =
+        "${scannerProperties.detailReportUrl}/ui/${projectId}/scanReport/${planId}"
 
     private fun send(bot: WeworkBot, message: String) {
         notifyService.sendWeworkBot(bot, MarkdownMessage(message))
