@@ -45,4 +45,5 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
 
     api("com.google.guava:guava")
+    compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
 }

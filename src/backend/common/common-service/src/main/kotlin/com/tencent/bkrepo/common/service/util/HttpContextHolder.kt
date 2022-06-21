@@ -89,7 +89,7 @@ object HttpContextHolder {
         val requestAttributes = RequestContextHolder.getRequestAttributes()
         return if (requestAttributes is ServletRequestAttributes) {
             val request = requestAttributes.request
-            return request.getHeader(HttpHeaders.X_FORWARDED_FOR)
+            return request.getHeader(HttpHeaders.X_FORWARDED_FOR) ?: StringPool.UNKNOWN
         } else StringPool.UNKNOWN
     }
 }

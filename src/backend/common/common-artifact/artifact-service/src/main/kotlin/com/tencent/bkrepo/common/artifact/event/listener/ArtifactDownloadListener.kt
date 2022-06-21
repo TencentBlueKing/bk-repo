@@ -27,18 +27,77 @@
 
 package com.tencent.bkrepo.common.artifact.event.listener
 
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
+import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownHook
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
+import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import java.time.LocalDateTime
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 class ArtifactDownloadListener(
     private val nodeClient: NodeClient,
-    private val operateLogService: OperateLogService
+    private val operateLogService: OperateLogService,
+    private val artifactEventProperties: ArtifactEventProperties
 ) {
+
+    init {
+        ServiceShutdownHook.add { ensureCacheNodeUpdateFinish() }
+    }
+
+    // 更新节点访问时间任务线程池
+    private val updateAccessDateExecutor = ThreadPoolExecutor(
+        4,
+        8,
+        60,
+        TimeUnit.SECONDS,
+        ArrayBlockingQueue(1000),
+        ThreadFactoryBuilder().setNameFormat("update-access-date-%d").build(),
+        ThreadPoolExecutor.CallerRunsPolicy()
+    )
+
+    // 节点下载后将节点信息放入缓存，当缓存失效时更新accessDate
+    private val cache: Cache<Triple<String, String, String>, LocalDateTime> = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .concurrencyLevel(1)
+        .expireAfterWrite(30, TimeUnit.MINUTES)
+        .removalListener<Triple<String, String, String>, LocalDateTime> {
+            updateAccessDateExecutor.execute {
+                updateNodeLastAccessDate(
+                    projectId = it.key!!.first,
+                    repoName = it.key!!.second,
+                    fullPath = it.key!!.third,
+                    accessDate = it.value!!
+                )
+            }
+        }
+        .build()
+
+    private fun ensureCacheNodeUpdateFinish() {
+        val keys = cache.asMap().keys
+        logger.info("${keys.size} node will updating access date")
+        val subKeysList = keys.chunked(keys.size/10 + 1)
+        subKeysList.forEach {
+            cache.invalidateAll(it)
+            while (updateAccessDateExecutor.activeCount > 0) {
+                Thread.sleep(10 * 1000)
+            }
+        }
+        updateAccessDateExecutor.shutdown()
+        logger.info("${keys.size} node update access date finished")
+    }
 
     @EventListener(ArtifactDownloadedEvent::class)
     fun listen(event: ArtifactDownloadedEvent) {
@@ -67,11 +126,32 @@ class ArtifactDownloadListener(
         } else if (node.folder) {
             val nodeList =
                 nodeClient.listNode(projectId, repoName, node.path, includeFolder = false, deep = true).data!!
+            nodeList.forEach {
+                cache.put(Triple(projectId, repoName, it.fullPath), LocalDateTime.now())
+            }
             val eventList = nodeList.map { buildDownloadEvent(NodeDetail(it), userId) }
             operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
         } else {
+            cache.put(Triple(projectId, repoName, node.fullPath), LocalDateTime.now())
             val downloadedEvent = buildDownloadEvent(node, userId)
             operateLogService.saveEventAsync(downloadedEvent, HttpContextHolder.getClientAddress())
+        }
+    }
+
+    private fun updateNodeLastAccessDate(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        accessDate: LocalDateTime
+    ) {
+        if (!artifactEventProperties.updateAccessDate) {
+            return
+        }
+        val updateRequest = NodeUpdateAccessDateRequest(projectId, repoName, fullPath, SYSTEM_USER, accessDate)
+        try {
+            nodeClient.updateNodeAccessDate(updateRequest)
+        } catch (ignore: Exception) {
+            logger.warn("update node access time [$updateRequest] error, ${ignore.message}")
         }
     }
 
@@ -87,6 +167,9 @@ class ArtifactDownloadListener(
             )
         }
         operateLogService.saveEventsAsync(eventList, HttpContextHolder.getClientAddress())
+        event.context.artifacts.forEach {
+            cache.put(Triple(it.projectId, it.repoName, it.getArtifactFullPath()), LocalDateTime.now())
+        }
     }
 
     private fun buildDownloadEvent(
@@ -106,6 +189,7 @@ class ArtifactDownloadListener(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ArtifactDownloadListener::class.java)
         private const val MD5 = "md5"
         private const val SHA256 = "sha256"
     }
