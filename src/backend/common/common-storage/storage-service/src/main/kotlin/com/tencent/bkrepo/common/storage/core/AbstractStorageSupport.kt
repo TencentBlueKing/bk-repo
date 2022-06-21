@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.beans.factory.annotation.Autowired
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 抽象存储服务辅助类
@@ -99,7 +100,8 @@ abstract class AbstractStorageSupport : StorageService {
         path: String,
         filename: String,
         artifactFile: ArtifactFile,
-        credentials: StorageCredentials
+        credentials: StorageCredentials,
+        cancel: AtomicBoolean? = null
     )
 
     /**
