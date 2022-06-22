@@ -22,7 +22,7 @@ function errorHandler (error) {
 request.interceptors.response.use(response => {
     const { data: { data, message }, status } = response
     if (status === 200) {
-        return response.data instanceof Blob ? response.data : data
+        return response.data instanceof Blob ? response.data : (data || response.data)
     } else if (status === 401 || status === 402) {
         if (MODE_CONFIG === 'ci') {
             window.postMessage({

@@ -127,6 +127,8 @@
                             <operation-list
                                 :list="[
                                     { clickEvent: () => handlerDownload(row), label: $t('download') },
+                                    !row.folder && row.name.endsWith('txt') && { clickEvent: () => handlerPreviewBasicsFile(row), label: $t('preview') }, //基本类型文件 eg: txt
+                                    !row.folder && baseCompressedType.includes(row.name.slice(-3)) && { clickEvent: () => handlerPreviewCompressedFile(row), label: $t('preview') }, //压缩文件 eg: rar|zip|gz|tgz|tar|jar
                                     !row.folder && { clickEvent: () => handlerShare(row), label: $t('share') },
                                     { clickEvent: () => showDetail(row), label: $t('detail') },
                                     permission.edit && repoName !== 'pipeline' && { clickEvent: () => renameRes(row), label: $t('rename') },
@@ -158,6 +160,8 @@
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <generic-upload-dialog ref="genericUploadDialog" @update="getArtifactories"></generic-upload-dialog>
+        <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
+        <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
     </div>
 </template>
 <script>
@@ -171,9 +175,12 @@
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
+    import previewBasicFileDialog from './previewBasicFileDialog'
+    import compressedFileTable from './compressedFileTable'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
     import { mapState, mapMutations, mapActions } from 'vuex'
+
     export default {
         name: 'repoGeneric',
         components: {
@@ -186,7 +193,9 @@
             genericUploadDialog,
             genericFormDialog,
             genericShareDialog,
-            genericTreeDialog
+            genericTreeDialog,
+            previewBasicFileDialog,
+            compressedFileTable
         },
         data () {
             return {
@@ -212,7 +221,9 @@
                     current: 1,
                     limit: 20,
                     limitList: [10, 20, 40]
-                }
+                },
+                baseCompressedType: ['rar', 'zip', 'gz', 'tgz', 'tar', 'jar'],
+                compressedData: []
             }
         },
         computed: {
@@ -275,7 +286,10 @@
                 'deleteMultiArtifactory',
                 'getFolderSize',
                 'getFileNumOfFolder',
-                'getMultiFileNumOfFolder'
+                'getMultiFileNumOfFolder',
+                'previewBasicFile',
+                'previewCompressedBasicFile',
+                'previewCompressedFileList'
             ]),
             changeSideBarWidth (sideBarWidth) {
                 if (sideBarWidth > 260) {
@@ -611,6 +625,46 @@
                             })
                         })
                     }
+                })
+            },
+            async handlerPreviewBasicsFile (row) {
+                const res = await this.previewBasicFile({
+                    projectId: row.projectId,
+                    repoName: row.repoName,
+                    path: row.fullPath
+                })
+                this.$refs.previewBasicFileDialog.setData({
+                    show: true,
+                    title: row.name,
+                    basicFileText: res
+                })
+            },
+            async handlerPreviewCompressedFile (row) {
+                this.$refs.compressedFileTable.setData({
+                    show: true,
+                    title: row.name,
+                    isLoading: true
+                })
+                
+                const res = await this.previewCompressedFileList({
+                    projectId: row.projectId,
+                    repoName: row.repoName,
+                    path: row.fullPath
+                })
+                this.compressedData = res
+            },
+            async handleShowPreview (row) {
+                const { projectId, repoName, path, filePath } = row
+                const res = await this.previewCompressedBasicFile({
+                    projectId,
+                    repoName,
+                    path,
+                    filePath
+                })
+                this.$refs.previewBasicFileDialog.setData({
+                    show: true,
+                    title: filePath,
+                    basicFileText: res
                 })
             }
         }

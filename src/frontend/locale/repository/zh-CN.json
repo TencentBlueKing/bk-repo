@@ -201,5 +201,8 @@
     "totalQuota": "仓库配额总量",
     "usedQuotaCapacity": "仓库已使用配额容量",
     "fileNameRule": "支持*通配，比如只允许下载已签名的APK：*_sign.apk",
-    "viewMetadataDocument": "查看元数据规范文档"
+    "viewMetadataDocument": "查看元数据规范文档",
+    "preview": "预览",
+    "unknownSize": "未知大小",
+    "supportPreview": "该文件不支持预览"
 }

@@ -260,5 +260,21 @@ export default {
             `${prefix}/metadata/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`,
             { data: body }
         )
+    },
+    // 预览基本文件
+    previewBasicFile (_, { projectId, repoName, path }) {
+        return Vue.prototype.$ajax.get(
+            `generic/${projectId}/${repoName}${path}?preview=true`
+        )
+    },
+    previewCompressedFileList (_, { projectId, repoName, path }) {
+        return Vue.prototype.$ajax.get(
+            `generic/compressed/list/${projectId}/${repoName}${path}`
+        )
+    },
+    previewCompressedBasicFile (_, { projectId, repoName, path, filePath }) {
+        return Vue.prototype.$ajax.get(
+            `generic/compressed/preview/${projectId}/${repoName}${path}?filePath=${filePath}`
+        )
     }
 }
