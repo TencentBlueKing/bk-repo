@@ -45,7 +45,9 @@
                                 v-bk-tooltips="{ content: task.name, placements: ['top'] }">{{ task.name || '/' }}</div>
                             <div class="mt10 flex-between-center">
                                 <div class="task-time">{{ formatDate(task.triggerDateTime) }}</div>
-                                <span class="stop-task flex-align-center" @click.stop="stopTask(task)">
+                                <span v-if="task.status !== 'STOPPED' && task.status !== 'FINISHED'"
+                                    class="stop-task flex-align-center"
+                                    @click.stop="stopTask(task)">
                                     <Icon class="mr5" name="icon-plus-stop" size="12" />
                                     <span>中止</span>
                                 </span>
@@ -117,7 +119,11 @@
                                 :list="[
                                     { label: '详情', clickEvent: () => showArtiReport(row), disabled: row.status !== 'SUCCESS' },
                                     { label: '中止', clickEvent: () => stopScanHandler(row), disabled: row.status !== 'INIT' && row.status !== 'RUNNING' },
-                                    !baseInfo.readOnly && { label: '扫描', clickEvent: () => startScanSingleHandler(row), disabled: row.status !== 'SUCCESS' && row.status !== 'STOP' && row.status !== 'FAILED' }
+                                    viewType === 'OVERVIEW' && !baseInfo.readOnly && {
+                                        label: '扫描',
+                                        clickEvent: () => startScanSingleHandler(row),
+                                        disabled: row.status !== 'SUCCESS' && row.status !== 'STOP' && row.status !== 'FAILED'
+                                    }
                                 ]"></operation-list>
                         </template>
                     </bk-table-column>
@@ -275,6 +281,8 @@
                     },
                     query: {
                         ...this.$route.query,
+                        viewType: this.viewType,
+                        taskId: this.taskSelected.taskId,
                         scanType: this.baseInfo.planType,
                         artiName: name
                     }

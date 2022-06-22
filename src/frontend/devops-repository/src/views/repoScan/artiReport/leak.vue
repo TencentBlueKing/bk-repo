@@ -119,7 +119,7 @@
     import { formatDate, segmentNumberThree, formatDuration } from '@repository/utils'
     import { leakLevelEnum } from '@repository/store/publicEnum'
     export default {
-        name: 'artiReport',
+        name: 'leak',
         data () {
             return {
                 leakLevelEnum,
@@ -172,7 +172,9 @@
         created () {
             this.artiReportOverview({
                 projectId: this.projectId,
-                recordId: this.recordId
+                recordId: this.recordId,
+                taskId: this.$route.query.taskId,
+                viewType: this.$route.query.viewType
             }).then(res => {
                 this.baseInfo = {
                     ...res,
@@ -200,6 +202,7 @@
                 return this.getLeakList({
                     projectId: this.projectId,
                     recordId: this.recordId,
+                    viewType: this.$route.query.viewType,
                     vulId: this.filter.vulId,
                     severity: this.filter.severity,
                     current: this.pagination.current,

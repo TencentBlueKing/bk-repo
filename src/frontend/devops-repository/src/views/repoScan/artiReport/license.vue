@@ -105,7 +105,7 @@
     import { mapActions } from 'vuex'
     import { formatDate, segmentNumberThree, formatDuration } from '@repository/utils'
     export default {
-        name: 'artiReport',
+        name: 'license',
         data () {
             return {
                 metaBase: [
@@ -144,7 +144,9 @@
         created () {
             this.licenseReportOverview({
                 projectId: this.projectId,
-                recordId: this.recordId
+                recordId: this.recordId,
+                taskId: this.$route.query.taskId,
+                viewType: this.$route.query.viewType
             }).then(res => {
                 this.baseInfo = {
                     ...res,
@@ -171,6 +173,7 @@
                 return this.getLicenseLeakList({
                     projectId: this.projectId,
                     recordId: this.recordId,
+                    viewType: this.$route.query.viewType,
                     licenseId: this.filter.licenseId,
                     current: this.pagination.current,
                     limit: this.pagination.limit

@@ -101,21 +101,29 @@ export default {
         )
     },
     // 制品扫描报告基本信息
-    artiReportOverview (_, { projectId, recordId }) {
-        return Vue.prototype.$ajax.get(
-            `${prefix}/artifact/count/${projectId}/${recordId}`
-        )
+    artiReportOverview (_, { projectId, recordId, viewType, taskId }) {
+        let url = `${prefix}/artifact/count/${projectId}/${recordId}`
+        if (viewType === 'TASKVIEW') {
+            url = `${prefix}/tasks/${taskId}/subtasks/${recordId}`
+        }
+        return Vue.prototype.$ajax.get(url)
     },
     // 许可扫描报告基本信息
-    licenseReportOverview (_, { projectId, recordId }) {
-        return Vue.prototype.$ajax.get(
-            `${prefix}/artifact/license/count/${projectId}/${recordId}`
-        )
+    licenseReportOverview (_, { projectId, recordId, viewType, taskId }) {
+        let url = `${prefix}/artifact/license/count/${projectId}/${recordId}`
+        if (viewType === 'TASKVIEW') {
+            url = `${prefix}/license/tasks/${taskId}/subtasks/${recordId}`
+        }
+        return Vue.prototype.$ajax.get(url)
     },
     // 制品扫描报告漏洞列表
-    getLeakList (_, { projectId, recordId, vulId, severity, current = 1, limit = 20 }) {
+    getLeakList (_, { projectId, recordId, viewType, vulId, severity, current = 1, limit = 20 }) {
+        let url = `${prefix}/artifact/leak/${projectId}/${recordId}`
+        if (viewType === 'TASKVIEW') {
+            url = `${prefix}/reports/${recordId}`
+        }
         return Vue.prototype.$ajax.get(
-            `${prefix}/artifact/leak/${projectId}/${recordId}`,
+            url,
             {
                 params: {
                     vulId: vulId || undefined,
@@ -126,10 +134,14 @@ export default {
             }
         )
     },
-    // 制品扫描报告漏洞列表
-    getLicenseLeakList (_, { projectId, recordId, licenseId, current = 1, limit = 20 }) {
+    // 许可扫描报告漏洞列表
+    getLicenseLeakList (_, { projectId, recordId, viewType, licenseId, current = 1, limit = 20 }) {
+        let url = `${prefix}/artifact/license/leak/${projectId}/${recordId}`
+        if (viewType === 'TASKVIEW') {
+            url = `${prefix}/license/reports/${recordId}`
+        }
         return Vue.prototype.$ajax.get(
-            `${prefix}/artifact/license/leak/${projectId}/${recordId}`,
+            url,
             {
                 params: {
                     licenseId: licenseId || undefined,

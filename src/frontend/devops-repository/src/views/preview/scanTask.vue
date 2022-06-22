@@ -170,6 +170,8 @@
                         recordId
                     },
                     query: {
+                        viewType: 'TASKVIEW',
+                        taskId: this.taskId,
                         scanType: this.baseInfo.planType,
                         scanName: this.baseInfo.name,
                         artiName: name
