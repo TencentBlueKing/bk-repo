@@ -321,7 +321,7 @@
                 padding: 20px 20px 10px;
             }
             .version-list {
-                height: calc(100% - 122px);
+                height: calc(100% - 120px);
                 padding: 0 20px 10px;
                 background-color: white;
                 .list-count {

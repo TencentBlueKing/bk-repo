@@ -2,7 +2,7 @@
     <bk-tab class="common-version-container" type="unborder-card" :active.sync="tabName" v-bkloading="{ isLoading }">
         <template #setting>
             <bk-button v-if="repoType !== 'docker'" outline class="mr10" @click="$emit('download')">下载</bk-button>
-            <operation-list class="mr10"
+            <operation-list class="mr20"
                 :list="operationBtns">
                 <bk-button @click.stop="() => {}" icon="ellipsis"></bk-button>
             </operation-list>
@@ -28,7 +28,7 @@
                                 :key="tag">
                                 {{ tag }}
                             </span>
-                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="(detail.systemMetadata || {}).scanStatus"></scan-tag>
+                            <scan-tag v-if="repoType === 'maven'" class="ml10" :status="(detail.metadata || {}).scanStatus"></scan-tag>
                         </template>
                     </span>
                 </div>
@@ -229,8 +229,7 @@
         methods: {
             convertFileSize,
             ...mapActions([
-                'getVersionDetail',
-                'addPackageMetadata'
+                'getVersionDetail'
             ]),
             getDetail () {
                 this.isLoading = true
@@ -259,42 +258,6 @@
                     }
                 }).finally(() => {
                     this.isLoading = false
-                })
-            },
-            showAddMetadata () {
-                this.$refs.metadatForm && this.$refs.metadatForm.clearError()
-                this.metadata = {
-                    show: true,
-                    loading: false,
-                    key: '',
-                    value: ''
-                }
-            },
-            hiddenAddMetadata () {
-                this.metadata.show = false
-                this.$refs.metadatForm.clearError()
-            },
-            async addMetadataHandler () {
-                await this.$refs.metadatForm.validate()
-                this.addPackageMetadata({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    body: {
-                        packageKey: this.packageKey,
-                        version: this.version,
-                        metadata: {
-                            [this.metadata.key]: this.metadata.value
-                        }
-                    }
-                }).then(() => {
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('add') + this.$t('success')
-                    })
-                    this.hiddenAddMetadata()
-                    this.getDetail()
-                }).finally(() => {
-                    this.metadata.loading = false
                 })
             }
         }

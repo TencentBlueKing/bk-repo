@@ -63,6 +63,15 @@ export default {
             }
         )
     },
+    // 许可报告基本信息
+    scanLicenseOverview (_, params) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/plan/license/count`,
+            {
+                params
+            }
+        )
+    },
     // 报告制品列表
     scanReportList (_, { projectId, id, query, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.get(
@@ -79,12 +88,13 @@ export default {
         )
     },
     // 中止扫描
-    stopScan (_, { projectId, recordId }) {
+    stopScan (_, { projectId, id, recordId }) {
         return Vue.prototype.$ajax.post(
             `${prefix}/${projectId}/stop`,
             null,
             {
                 params: {
+                    id,
                     recordId
                 }
             }
@@ -96,6 +106,12 @@ export default {
             `${prefix}/artifact/count/${projectId}/${recordId}`
         )
     },
+    // 许可扫描报告基本信息
+    licenseReportOverview (_, { projectId, recordId }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/artifact/license/count/${projectId}/${recordId}`
+        )
+    },
     // 制品扫描报告漏洞列表
     getLeakList (_, { projectId, recordId, vulId, severity, current = 1, limit = 20 }) {
         return Vue.prototype.$ajax.get(
@@ -104,6 +120,19 @@ export default {
                 params: {
                     vulId: vulId || undefined,
                     leakType: severity || undefined,
+                    pageNumber: current,
+                    pageSize: limit
+                }
+            }
+        )
+    },
+    // 制品扫描报告漏洞列表
+    getLicenseLeakList (_, { projectId, recordId, licenseId, current = 1, limit = 20 }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/artifact/license/leak/${projectId}/${recordId}`,
+            {
+                params: {
+                    licenseId: licenseId || undefined,
                     pageNumber: current,
                     pageSize: limit
                 }
@@ -204,5 +233,66 @@ export default {
     // 更新质量规则
     saveQualityRule (_, { id, body }) {
         return Vue.prototype.$ajax.post(`/scanner/api/scan/quality/${id}`, body)
+    },
+    // 查询任务列表
+    getScanTaskList (_, { projectId, planId, triggerType, namePrefix, current = 1, limit = 20 }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/tasks`,
+            {
+                params: {
+                    projectId,
+                    planId,
+                    triggerType,
+                    namePrefix,
+                    pageNumber: current,
+                    pageSize: limit
+                }
+            }
+        )
+    },
+    // 任务制品列表
+    scanTaskReportList (_, { projectId, taskId, id, query, current = 1, limit = 20 }) {
+        if (!taskId) return Promise.resolve({ records: [], totalRecords: 0 })
+        return Vue.prototype.$ajax.get(
+            `${prefix}/tasks/${taskId}/subtasks`,
+            {
+                params: {
+                    projectId,
+                    id,
+                    ...query,
+                    pageNumber: current,
+                    pageSize: limit
+                }
+            }
+        )
+    },
+    // 任务制品列表
+    stopScanTask (_, { projectId, taskId }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/${projectId}/tasks/${taskId}/stop`
+        )
+    },
+    // 查询许可证列表
+    getLicenseList (_, { name, isTrust, current = 1, limit = 20 }) {
+        return Vue.prototype.$ajax.get(
+            'scanner/api/license/list',
+            {
+                params: {
+                    name,
+                    isTrust,
+                    pageNumber: current,
+                    pageSize: limit
+                }
+            }
+        )
+    },
+    // 设置许可证
+    editLicense (_, { licenseId, isTrust }) {
+        return Vue.prototype.$ajax.post(
+            `scanner/api/license/${licenseId}`,
+            {
+                isTrust
+            }
+        )
     }
 }

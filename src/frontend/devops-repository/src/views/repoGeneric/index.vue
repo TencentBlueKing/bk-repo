@@ -17,7 +17,7 @@
             <div class="repo-generic-side"
                 :style="{ 'flex-basis': `${sideBarWidth}px` }"
                 v-bkloading="{ isLoading: treeLoading }">
-                <div class="p10">
+                <div class="pt10 pb10 pl20 pr20">
                     <bk-input
                         v-model.trim="importantSearch"
                         placeholder="请输入关键字，按Enter键搜索"
@@ -54,7 +54,7 @@
                 @change="changeSideBarWidth"
             />
             <div class="repo-generic-table" v-bkloading="{ isLoading }">
-                <div class="p10 multi-operation flex-between-center">
+                <div class="multi-operation flex-between-center">
                     <bk-input
                         class="w250"
                         v-if="searchFileName"
@@ -80,7 +80,7 @@
                 </div>
                 <bk-table
                     :data="artifactoryList"
-                    height="calc(100% - 102px)"
+                    height="calc(100% - 100px)"
                     :outer-border="false"
                     :row-border="false"
                     size="small"
@@ -94,7 +94,7 @@
                         <template #default="{ row }">
                             <scan-tag class="mr5"
                                 v-if="!row.folder && /\.(ipa)|(apk)|(jar)$/.test(row.name)"
-                                :status="row.systemMetadata.scanStatus"
+                                :status="row.metadata.scanStatus"
                                 repo-type="generic"
                                 :full-path="row.fullPath">
                             </scan-tag>
@@ -354,7 +354,7 @@
                     this.pagination.count = totalRecords
                     this.artifactoryList = records.map(v => {
                         return {
-                            systemMetadata: {},
+                            metadata: {},
                             ...v,
                             // 流水线文件夹名称替换
                             name: v.metadata?.displayName || v.name
@@ -650,7 +650,7 @@
             background-color: white;
             .repo-generic-tree {
                 border-top: 1px solid var(--borderColor);
-                height: calc(100% - 52px);
+                height: calc(100% - 50px);
             }
         }
         .repo-generic-table {
@@ -658,7 +658,8 @@
             height: 100%;
             background-color: white;
             .multi-operation {
-                height: 52px;
+                height: 50px;
+                padding: 10px 20px;
             }
             ::v-deep .selected-header {
                 color: var(--fontPrimaryColor);

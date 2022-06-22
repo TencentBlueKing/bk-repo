@@ -96,7 +96,7 @@ export default {
         )
     },
     // 跨仓库搜索
-    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20 }) {
+    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/query' : 'package/search'}`,
@@ -152,7 +152,8 @@ export default {
                                 value: false,
                                 operation: 'EQ'
                             }]
-                            : [])
+                            : []),
+                        ...extRules
                         
                     ],
                     relation: 'AND'

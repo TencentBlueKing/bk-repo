@@ -12,7 +12,7 @@
         </div>
         <bk-table
             class="mt10 role-table"
-            height="calc(100% - 62px)"
+            height="calc(100% - 60px)"
             :data="filterRoleList"
             :outer-border="false"
             :row-border="false"
@@ -81,7 +81,7 @@
                 </div>
                 <bk-table
                     :data="editRoleUsers.users"
-                    height="calc(100% - 62px)"
+                    height="calc(100% - 60px)"
                     stripe
                     border
                     size="small"

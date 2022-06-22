@@ -76,7 +76,7 @@
             handleClickOutSide () {
                 this.visible = false
             },
-            toReport ({ id, recordId, status }) {
+            toReport ({ planType, id, recordId, status }) {
                 if (status === 'SUCCESS') {
                     this.$router.push({
                         name: 'artiReport',
@@ -86,6 +86,7 @@
                         },
                         query: {
                             repoType: this.repoType,
+                            scanType: planType,
                             ...this.$route.params,
                             ...this.$route.query
                         }
