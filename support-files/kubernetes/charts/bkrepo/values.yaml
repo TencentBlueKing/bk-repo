@@ -49,6 +49,7 @@ bkLogConfig:
 ingress:
   enabled: true
   tls: false
+  tlsName: ""
   crt: ""
   key: ""
   annotations:
