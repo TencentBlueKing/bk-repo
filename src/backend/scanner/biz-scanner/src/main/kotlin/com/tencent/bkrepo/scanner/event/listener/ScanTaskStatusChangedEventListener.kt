@@ -178,7 +178,7 @@ class ScanTaskStatusChangedEventListener(
 
     @Suppress("MaxLineLength")
     private fun reportUrl(projectId: String, taskId: String, scanPlan: ScanPlan) =
-        "${scannerProperties.detailReportUrl}/ui/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
+        "${scannerProperties.detailReportUrl}/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
 
     private fun send(bot: WeworkBot, message: String) {
         notifyService.sendWeworkBot(bot, TextMessage(message))
