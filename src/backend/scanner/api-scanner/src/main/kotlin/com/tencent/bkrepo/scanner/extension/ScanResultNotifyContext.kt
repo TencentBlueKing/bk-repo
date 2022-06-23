@@ -39,6 +39,10 @@ data class ScanResultNotifyContext(
      */
     val reportUrl: String?,
     /**
+     * 消息体，扫描结果预览信息
+     */
+    val body: String,
+    /**
      * 扫描任务信息
      */
     val scanTask: ScanTask

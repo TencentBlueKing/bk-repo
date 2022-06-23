@@ -26,7 +26,7 @@
  
 ### swagger开关
 
-通过配置`swagger.enabled=false`可以关闭`swagger`功能，生产环境中可以关闭。
+通过配置`springfox.documentation.enabled=false`可以关闭`swagger`功能，生产环境中可以关闭。
 
 ### swagger地址
 

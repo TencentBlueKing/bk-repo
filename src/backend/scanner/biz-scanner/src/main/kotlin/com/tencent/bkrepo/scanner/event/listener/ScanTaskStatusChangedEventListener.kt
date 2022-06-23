@@ -34,13 +34,26 @@ import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.MarkdownMessage
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
 import com.tencent.bkrepo.scanner.extension.ScanResultNotifyContext
 import com.tencent.bkrepo.scanner.extension.ScanResultNotifyExtension
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_CRITICAL
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_LOW
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_CVE_MEDIUM
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_DETAIL
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_FAILED
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_SCANNED
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_TITLE
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_TIME
+import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_USER
+import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.TaskMetadata
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
 import org.springframework.context.event.EventListener
@@ -76,54 +89,80 @@ class ScanTaskStatusChangedEventListener(
             return
         }
 
-        applyNotifyPlugin(scanTask)
-        weworkBotNotify(scanTask)
+        val messageBody = buildMarkdownMessage(scanTask)
+
+        applyNotifyPlugin(scanTask, messageBody)
+        weworkBotNotify(scanTask, messageBody)
     }
 
-    private fun applyNotifyPlugin(scanTask: ScanTask) {
+    private fun applyNotifyPlugin(scanTask: ScanTask, message: String) {
         // 不通知匿名用户和系统用户
         if (scanTask.createdBy == ANONYMOUS_USER || scanTask.createdBy == SYSTEM_USER) {
             return
         }
 
-        val reportUrl = reportUrl(scanTask.projectId!!, scanTask.scanPlan!!.id!!)
+        val reportUrl = reportUrl(scanTask.projectId!!, scanTask.taskId, scanTask.scanPlan!!)
         val context = ScanResultNotifyContext(
             userIds = setOf(scanTask.createdBy),
             reportUrl = reportUrl,
-            scanTask = scanTask
+            scanTask = scanTask,
+            body = message
         )
         pluginManager.applyExtension<ScanResultNotifyExtension> { notify(context) }
     }
 
-    private fun weworkBotNotify(scanTask: ScanTask) {
+    private fun weworkBotNotify(scanTask: ScanTask, message: String) {
         val weworkBot = getWeworkBot(scanTask.taskId) ?: return
-        val message = buildMarkdownMessage(scanTask)
         send(weworkBot, message)
     }
 
     private fun buildMarkdownMessage(task: ScanTask): String {
-        val projectId = task.projectId!!
-        val planId = task.scanPlan!!.id!!
+        val metadata = task.metadata.associateBy { it.key }
 
         val summary = StringBuilder()
-
-        summary.append("**${task.total}** artifact scanned.")
-        if (task.failed != 0L) {
-            summary.append("**${task.failed}** failed.")
+        // 标题
+        summary.append(getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_TITLE))
+        val pipelineName = metadata[TaskMetadata.TASK_METADATA_PIPELINE_NAME]
+        val buildNumber = metadata[TaskMetadata.TASK_METADATA_BUILD_NUMBER]
+        if (pipelineName != null && buildNumber != null) {
+            summary.append("${pipelineName.value}(#${buildNumber.value})")
         }
 
-        CveOverviewKey.values().forEach { key ->
-            val count = task.scanResultOverview?.get(key.key) ?: 0L
-            summary.append("\n${key.level.levelName}: **$count**")
+        // 触发用户
+        summary.append(
+            getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_USER, arrayOf(task.createdBy))
+        )
+
+        //触发时间
+        val triggerTime = task.triggerDateTime
+        summary.append(
+            getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_TRIGGER_TIME, arrayOf(triggerTime))
+        )
+
+        // 扫描制品数
+        summary.append(
+            getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_SCANNED, arrayOf(task.scanned))
+        )
+        summary.append(
+            getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_FAILED, arrayOf(task.failed))
+        )
+
+        // 扫描结果预览
+        cveMessageCodeMap.forEach {
+            val count = task.scanResultOverview?.get(it.key.key) ?: 0L
+            summary.append(getLocalizedMessage(it.value, arrayOf(count)))
         }
 
-        summary.append("\n[detail](${reportUrl(projectId, planId)}")
+        //详细报告地址
+        val reportUrl = reportUrl(task.projectId!!, task.taskId, task.scanPlan!!)
+        summary.append(getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_DETAIL, arrayOf(reportUrl)))
 
         return summary.toString()
     }
 
-    private fun reportUrl(projectId: String, planId: String) =
-        "${scannerProperties.detailReportUrl}/ui/${projectId}/scanReport/${planId}"
+    @Suppress("MaxLineLength")
+    private fun reportUrl(projectId: String, taskId: String, scanPlan: ScanPlan) =
+        "${scannerProperties.detailReportUrl}/ui/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
 
     private fun send(bot: WeworkBot, message: String) {
         notifyService.sendWeworkBot(bot, MarkdownMessage(message))
@@ -136,6 +175,12 @@ class ScanTaskStatusChangedEventListener(
     private fun weworkBotKey(scanTaskId: String) = "scanner:taskId:${scanTaskId}:wework:bot"
 
     companion object {
+        private val cveMessageCodeMap = mapOf(
+            CveOverviewKey.CVE_LOW_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_LOW,
+            CveOverviewKey.CVE_MEDIUM_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_MEDIUM,
+            CveOverviewKey.CVE_HIGH_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_HIGH,
+            CveOverviewKey.CVE_CRITICAL_COUNT to SCAN_REPORT_NOTIFY_MESSAGE_CVE_CRITICAL
+        )
         private const val DEFAULT_EXPIRED_DAY = 1L
     }
 }
