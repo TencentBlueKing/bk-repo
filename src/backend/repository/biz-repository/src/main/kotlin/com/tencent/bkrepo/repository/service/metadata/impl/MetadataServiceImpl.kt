@@ -32,8 +32,12 @@
 package com.tencent.bkrepo.repository.service.metadata.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
+import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.dao.NodeDao
 import com.tencent.bkrepo.repository.model.TMetadata
@@ -83,6 +87,31 @@ class MetadataServiceImpl(
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
             logger.info("Save metadata[$metadata] on node[/$projectId/$repoName$fullPath] success.")
+        }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun forbidMetadata(request: MetadataSaveRequest) {
+        with(request) {
+            if (nodeMetadata.isNullOrEmpty()) {
+                logger.info("nodeMetadata is empty, skip saving[$request]")
+                return
+            }
+
+            val forbidMetadata = MetadataUtils.getForbidData(nodeMetadata!!)
+            if (forbidMetadata.isNullOrEmpty()) {
+                logger.info("forbidMetadata is empty, skip saving[$request]")
+                return
+            }
+
+            val fullPath = normalizeFullPath(fullPath)
+            val node = nodeDao.findNode(projectId, repoName, fullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            val oldMetadata = node.metadata ?: ArrayList()
+            node.metadata = MetadataUtils.replaceForbid(oldMetadata, forbidMetadata)
+            nodeDao.save(node)
+            publishEvent(buildMetadataSavedEvent(request))
+            logger.info("Save metadata[${node.metadata}] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
 

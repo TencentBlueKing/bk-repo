@@ -29,18 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.api
+package com.tencent.bkrepo.repository.api
+
+import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
 
 /**
- * 默认构件信息格式
+ * 节点元数据服务接口
  */
-class DefaultArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
-    }
+@Api("节点元数据服务接口")
+@Primary
+@FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageMetadataClient")
+@RequestMapping("/service/metadata/package")
+interface PackageMetadataClient {
+
+    @ApiOperation("创建/更新元数据列表")
+    @PostMapping("/save")
+    fun saveMetadata(@RequestBody request: PackageMetadataSaveRequest): Response<Void>
+
 }

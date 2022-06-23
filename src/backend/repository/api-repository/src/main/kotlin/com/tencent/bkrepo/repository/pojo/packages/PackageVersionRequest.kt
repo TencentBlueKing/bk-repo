@@ -29,18 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.api
+package com.tencent.bkrepo.repository.pojo.packages
 
 /**
- * 默认构件信息格式
+ * 节点请求抽象类
  */
-class DefaultArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
-    }
+interface PackageVersionRequest {
+    val projectId: String
+    val repoName: String
+    val packageKey: String
+    val version: String
 }

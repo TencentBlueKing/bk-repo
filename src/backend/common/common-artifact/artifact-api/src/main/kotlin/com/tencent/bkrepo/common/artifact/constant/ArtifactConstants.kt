@@ -42,6 +42,11 @@ const val REPO_KEY = "repository"
 const val ARTIFACT_INFO_KEY = "artifact"
 
 /**
+ * 构件元数据 attributes的key
+ */
+const val META_DATA = "metadata"
+
+/**
  * 查询构件配置写入request attributes的key
  */
 const val ARTIFACT_CONFIGURER = "artifact-configurer"
@@ -118,3 +123,11 @@ const val PARAM_PREVIEW = "preview"
 // 内存文件
 const val SOURCE_IN_MEMORY = "memory"
 const val SOURCE_IN_REMOTE = "remote"
+
+// 制品禁用信息
+const val FORBID_STATUS = "forbidStatus"
+const val FORBID_USER = "forbidUser"
+const val FORBID_TYPE = "forbidType"
+
+// 制品扫描状态
+const val SCAN_STATUS = "scanStatus"

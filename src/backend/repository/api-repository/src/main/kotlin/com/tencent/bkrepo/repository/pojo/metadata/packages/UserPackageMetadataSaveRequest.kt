@@ -29,18 +29,24 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.api
+package com.tencent.bkrepo.repository.pojo.metadata.packages
+
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 默认构件信息格式
+ * 创建/更新元数据请求
  */
-class DefaultArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
-    }
-}
+@ApiModel("创建或更新元数据请求")
+data class UserPackageMetadataSaveRequest(
+    @ApiModelProperty("包唯一key", required = true)
+    val packageKey: String,
+    @ApiModelProperty("包版本", required = true)
+    val version: String,
+    @ApiModelProperty("元数据key-value数据", required = true)
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("versionMetadata"))
+    val metadata: Map<String, String>? = null,
+    @ApiModelProperty("元数据")
+    val versionMetadata: List<MetadataModel>? = null
+)

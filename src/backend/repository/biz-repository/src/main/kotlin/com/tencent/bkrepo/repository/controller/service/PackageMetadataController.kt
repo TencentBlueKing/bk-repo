@@ -29,18 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.api
+package com.tencent.bkrepo.repository.controller.service
+
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.api.PackageMetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import com.tencent.bkrepo.repository.service.metadata.PackageMetadataService
+import org.springframework.web.bind.annotation.RestController
 
 /**
- * 默认构件信息格式
+ * 元数据服务接口实现类
  */
-class DefaultArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
+@RestController
+class PackageMetadataController(
+    private val packageMetadataService: PackageMetadataService
+) : PackageMetadataClient {
+
+    override fun saveMetadata(request: PackageMetadataSaveRequest): Response<Void> {
+        packageMetadataService.saveMetadata(request)
+        return ResponseBuilder.success()
     }
+
 }

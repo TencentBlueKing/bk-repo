@@ -32,7 +32,12 @@
 package com.tencent.bkrepo.repository.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
+import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
+import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.model.TMetadata
@@ -45,7 +50,7 @@ object MetadataUtils {
     /**
      * 元数据KEY保留字，仅允许系统使用
      */
-    private val RESERVED_KEY = setOf("scanStatus")
+    private val RESERVED_KEY = setOf(SCAN_STATUS, FORBID_STATUS, FORBID_USER, FORBID_TYPE)
 
     /**
      * 用于兼容旧逻辑，优先从[metadataModels]取数据，[metadataModels]不存在时从[metadataMap]取
@@ -99,6 +104,17 @@ object MetadataUtils {
     }
 
     /**
+     * 替换禁用元数据信息
+     */
+    fun replaceForbid(oldMetadata: List<TMetadata>, forbidMetadata: List<TMetadata>): MutableList<TMetadata> {
+        val metadataMap = oldMetadata.associateByTo(
+            HashMap(oldMetadata.size + forbidMetadata.size)
+        ) { it.key }
+        forbidMetadata.forEach { metadataMap[it.key] = it }
+        return metadataMap.values.toMutableList()
+    }
+
+    /**
      * 使用[newMetadata]替换[oldMetadata]
      * [operator]为[SYSTEM_USER]时才能操作system metadata
      */
@@ -122,6 +138,42 @@ object MetadataUtils {
         }
 
         return result.values.toMutableList()
+    }
+
+    fun getForbidData(metadata: List<MetadataModel>): MutableList<TMetadata>? {
+        val forbidMetadata = metadata.filter { it.key == FORBID_STATUS }.map {
+            TMetadata(
+                key = it.key,
+                value = it.value,
+                system = true,
+                description = it.description
+            )
+        }.toMutableList()
+        if (forbidMetadata.isEmpty()) {
+            return null
+        }
+        addForbidUserAndType(forbidMetadata)
+        return forbidMetadata
+    }
+
+    /**
+     * 添加禁用操作用户和类型
+     */
+    private fun addForbidUserAndType(forbidMetadata: MutableList<TMetadata>) {
+        forbidMetadata.addAll(
+            listOf(
+                TMetadata(
+                    key = FORBID_USER,
+                    value = SecurityUtils.getUserId(),
+                    system = true
+                ),
+                TMetadata(
+                    key = FORBID_TYPE,
+                    value = "MANUAL",
+                    system = true
+                )
+            )
+        )
     }
 
     fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {

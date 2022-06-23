@@ -29,18 +29,33 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.api
+package com.tencent.bkrepo.repository.pojo.metadata.packages
+
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersionRequest
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
 
 /**
- * 默认构件信息格式
+ * 包创建/更新元数据请求
  */
-class DefaultArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
-    }
-}
+@ApiModel("依赖源包创建或更新元数据请求")
+data class PackageMetadataSaveRequest(
+    @ApiModelProperty("项目id", required = true)
+    override val projectId: String,
+    @ApiModelProperty("仓库名称", required = true)
+    override val repoName: String,
+    @ApiModelProperty("包唯一key", required = true)
+    override val packageKey: String,
+    @ApiModelProperty("包版本", required = true)
+    override val version: String,
+    @ApiModelProperty("元数据key-value数据", required = true)
+    @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("versionMetadata"))
+    val metadata: Map<String, Any>? = null,
+    @ApiModelProperty("需要创建或更新的元数据", required = true)
+    val versionMetadata: List<MetadataModel>? = null,
+    @ApiModelProperty("操作用户")
+    override val operator: String = SYSTEM_USER
+) : PackageVersionRequest, ServiceRequest

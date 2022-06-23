@@ -31,11 +31,16 @@
 
 package com.tencent.bkrepo.common.artifact.repository.local
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
+import com.tencent.bkrepo.common.artifact.constant.META_DATA
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 
 /**
@@ -48,6 +53,25 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             val nodeCreateRequest = buildNodeCreateRequest(this)
             storageManager.storeArtifactFile(nodeCreateRequest, getArtifactFile(), storageCredentials)
         }
+    }
+
+    override fun onDownloadBefore(context: ArtifactDownloadContext) {
+        if (isForbidden(context)) {
+            throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_FORBIDDEN, context.artifactInfo.getArtifactFullPath())
+        }
+        super.onDownloadBefore(context)
+    }
+
+    /**
+     * 制品是否禁用
+     */
+    private fun isForbidden(context: ArtifactDownloadContext): Boolean {
+        context.getAttribute<List<MetadataModel>>(META_DATA)?.forEach {
+            if (it.key == FORBID_STATUS && it.value == true) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {

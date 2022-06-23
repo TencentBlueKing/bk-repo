@@ -29,18 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.api
+package com.tencent.bkrepo.repository.service.metadata
+
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 
 /**
- * 默认构件信息格式
+ * 包元数据服务接口
  */
-class DefaultArtifactInfo(
-    projectId: String,
-    repoName: String,
-    artifactUri: String
-) : ArtifactInfo(projectId, repoName, artifactUri) {
-    companion object {
-        const val DEFAULT_MAPPING_URI = "/{projectId}/{repoName}/**"
-        const val FORBID_MAPPING_URI = "/forbid/{projectId}/{repoName}/**"
-    }
+interface PackageMetadataService {
+
+    /**
+     * 根据请求[request]保存或者更新元数据
+     *
+     * 如果元数据`key`已经存在则更新，否则创建新的
+     */
+    fun saveMetadata(request: PackageMetadataSaveRequest)
+
+    /**
+     * 根据请求[request]保存或者更新禁用元数据
+     *
+     * 如果元数据`key`已经存在则更新，否则创建新的
+     */
+    fun forbidMetadata(request: PackageMetadataSaveRequest)
+
 }
