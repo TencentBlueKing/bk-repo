@@ -59,6 +59,10 @@ allprojects {
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
             dependency("org.mockito.kotlin:mockito-kotlin:${Versions.MockitoKotlin}")
             dependency("io.mockk:mockk:${Versions.Mockk}")
+            dependencySet("io.swagger:${Versions.Swagger}") {
+                entry("swagger-annotations")
+                entry("swagger-models")
+            }
         }
     }
     ext["netty.version"] = Versions.Netty
