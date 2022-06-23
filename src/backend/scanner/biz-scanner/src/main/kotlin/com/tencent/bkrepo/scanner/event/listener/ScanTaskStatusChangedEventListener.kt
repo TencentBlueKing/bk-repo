@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
-import com.tencent.bkrepo.common.notify.api.message.weworkbot.MarkdownMessage
+import com.tencent.bkrepo.common.notify.api.message.weworkbot.TextMessage
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
@@ -165,7 +165,7 @@ class ScanTaskStatusChangedEventListener(
         "${scannerProperties.detailReportUrl}/ui/${projectId}/preview/scanTask/${scanPlan.id!!}/${taskId}?scanType=${scanPlan.type}"
 
     private fun send(bot: WeworkBot, message: String) {
-        notifyService.sendWeworkBot(bot, MarkdownMessage(message))
+        notifyService.sendWeworkBot(bot, TextMessage(message))
     }
 
     private fun getWeworkBot(scanTaskId: String): WeworkBot? {
