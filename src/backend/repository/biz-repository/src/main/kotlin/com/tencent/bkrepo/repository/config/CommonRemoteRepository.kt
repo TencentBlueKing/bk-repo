@@ -35,12 +35,9 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
-import com.tencent.bkrepo.common.artifact.util.FileNameParser
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.service.packages.PackageService
-import org.apache.logging.log4j.util.Strings
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -58,30 +55,11 @@ class CommonRemoteRepository(
         logger.info("Will prepare to create remote download url...")
         val type = context.repositoryDetail.type
         // 当前在repository中下载remote类型仓库只支持helm，因为helm将对应chart包信息已经放入packageversion的metadata中
-        if (RepositoryType.HELM != type) {
-            return super.createRemoteDownloadUrl(context)
+        return if (RepositoryType.HELM != type) {
+            super.createRemoteDownloadUrl(context)
         } else {
             val remoteConfiguration = context.getRemoteConfiguration()
-            val map = FileNameParser.parseNameAndVersionWithRegex(context.artifactInfo.getArtifactFullPath())
-            val name = map["name"] as String
-            val version = map["version"] as String
-            if (name.isBlank() || version.isBlank()) return Strings.EMPTY
-            val packageKey = PackageKeys.ofName(type.name.toLowerCase(), name)
-            val packageVersion = packageService.findVersionByName(
-                projectId = context.projectId,
-                repoName = context.repoName,
-                packageKey = packageKey,
-                versionName = version
-            ) ?: return Strings.EMPTY
-            val metadata = packageVersion.metadata.toMutableMap()
-            metadata["proxyUrl"] = remoteConfiguration.url
-            context.putAttribute("meta_detail", metadata)
-            val url = (metadata["urls"] as List<String>).first()
-            return if (checkUrl(url)) {
-                url
-            } else {
-                remoteConfiguration.url.trimEnd('/') + "/" + url
-            }
+            CHART_REQUEST_URL.format(remoteConfiguration.url, context.artifactInfo.getArtifactFullPath())
         }
     }
 
@@ -125,5 +103,6 @@ class CommonRemoteRepository(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(CommonRemoteRepository::class.java)
+        const val CHART_REQUEST_URL = "%s/charts%s"
     }
 }
