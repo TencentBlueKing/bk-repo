@@ -31,7 +31,7 @@ import com.tencent.bkrepo.scanner.pojo.ScanTask
 
 data class ScanResultNotifyContext(
     /**
-     * 触发扫描的用户
+     * 需要通知的用户
      */
     val userIds: Set<String>,
     /**

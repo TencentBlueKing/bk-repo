@@ -466,9 +466,9 @@ class ScanServiceImpl @Autowired constructor(
         return when (triggerType) {
             ScanTriggerType.PIPELINE -> {
                 val metadataMap = metadata.associateBy { it.key }
-                val pipelineName = metadataMap[TASK_METADATA_PIPELINE_NAME] ?: ""
-                val buildNo = metadataMap[TASK_METADATA_BUILD_NUMBER] ?: ""
-                val pluginName = metadataMap[TASK_METADATA_PLUGIN_NAME] ?: ""
+                val pipelineName = metadataMap[TASK_METADATA_PIPELINE_NAME]?.value ?: ""
+                val buildNo = metadataMap[TASK_METADATA_BUILD_NUMBER]?.value ?: ""
+                val pluginName = metadataMap[TASK_METADATA_PLUGIN_NAME]?.value ?: ""
                 "$pipelineName-$buildNo-$pluginName"
             }
             ScanTriggerType.MANUAL_SINGLE -> getLocalizedMessage(ScannerMessageCode.SCAN_TASK_NAME_SINGLE_SCAN)
