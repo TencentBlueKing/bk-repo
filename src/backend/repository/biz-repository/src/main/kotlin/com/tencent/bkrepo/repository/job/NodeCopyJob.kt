@@ -48,16 +48,12 @@ class NodeCopyJob(
     override fun run() {
         val mongoTemplate = nodeDao.determineMongoTemplate()
         val jobContext = JobContext()
-        val completableFutures = arrayOfNulls<CompletableFuture<Void>>(SHARDING_COUNT)
         val processed = AtomicInteger()
         for (sequence in 0 until SHARDING_COUNT) {
-            CompletableFuture.runAsync {
-                doCopyTaskForEachCollection(sequence, mongoTemplate, jobContext)
-                processed.incrementAndGet()
-                logger.info("Process Info: $processed/$SHARDING_COUNT processed/sum Tables")
-            }.apply { completableFutures[sequence] = this }
+            doCopyTaskForEachCollection(sequence, mongoTemplate, jobContext)
+            processed.incrementAndGet()
+            logger.info("Process Info: $processed/$SHARDING_COUNT processed/sum Tables")
         }
-        CompletableFutureKotlin.allOf(completableFutures).join()
         logProcess(jobContext)
     }
 
