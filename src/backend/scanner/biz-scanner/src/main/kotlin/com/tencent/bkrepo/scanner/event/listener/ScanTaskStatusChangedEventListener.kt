@@ -28,13 +28,14 @@
 package com.tencent.bkrepo.scanner.event.listener
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.TextMessage
 import com.tencent.bkrepo.common.notify.api.message.weworkbot.WeworkBot
 import com.tencent.bkrepo.common.scanner.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.service.util.LocaleMessageUtils.getLocalizedMessage
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.scanner.configuration.ScannerProperties
 import com.tencent.bkrepo.scanner.event.ScanTaskStatusChangedEvent
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.scanner.message.ScannerMessageCode.SCAN_REPORT_NOTIFY_
 import com.tencent.bkrepo.scanner.pojo.ScanPlan
 import com.tencent.bkrepo.scanner.pojo.ScanTask
 import com.tencent.bkrepo.scanner.pojo.ScanTaskStatus
+import com.tencent.bkrepo.scanner.pojo.ScanTriggerType
 import com.tencent.bkrepo.scanner.pojo.TaskMetadata
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
@@ -60,6 +62,7 @@ import org.springframework.context.event.EventListener
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 
@@ -96,6 +99,11 @@ class ScanTaskStatusChangedEventListener(
     }
 
     private fun applyNotifyPlugin(scanTask: ScanTask, message: String) {
+        // 由于制品库存在独立用户，用户id不统一，暂时只对流水线触发的扫描进行通知
+        if (scanTask.triggerType != ScanTriggerType.PIPELINE.name) {
+            return
+        }
+
         // 不通知匿名用户和系统用户
         if (scanTask.createdBy == ANONYMOUS_USER || scanTask.createdBy == SYSTEM_USER) {
             return
@@ -158,6 +166,14 @@ class ScanTaskStatusChangedEventListener(
         summary.append(getLocalizedMessage(SCAN_REPORT_NOTIFY_MESSAGE_DETAIL, arrayOf(reportUrl)))
 
         return summary.toString()
+    }
+
+    private fun getLocalizedMessage(
+        messageCode: MessageCode,
+        params: Array<out Any>? = null,
+        locale: Locale = Locale.SIMPLIFIED_CHINESE
+    ): String {
+        return LocaleMessageUtils.getLocalizedMessage(messageCode, params, locale)
     }
 
     @Suppress("MaxLineLength")
