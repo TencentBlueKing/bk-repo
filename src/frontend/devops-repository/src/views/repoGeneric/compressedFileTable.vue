@@ -4,14 +4,14 @@
         :show-footer="false"
         :title="($t('preview') + '-' + previewDialog.title)">
         <span
-            v-for="(item, index) in list"
+            v-for="(item, index) in breadcrumbList"
             :key="item.name"
             class="breadcrumb-list"
         >
             <span
-                :class="{ 'breadcrumb-item': true, 'hover-cursor': index !== list.length - 1 }"
+                :class="{ 'breadcrumb-item': true, 'hover-cursor': index !== breadcrumbList.length - 1 }"
                 @click="handleBreadcrumbItemClick(item, index)">{{ item.name }} </span>
-            <span v-if="index !== list.length - 1" class="mr10">/</span>
+            <span v-if="index !== breadcrumbList.length - 1" class="mr10">/</span>
         </span>
         <bk-table
             v-bkloading="{ isLoading: previewDialog.isLoading }"
@@ -68,7 +68,7 @@
         },
         data () {
             return {
-                list: [],
+                breadcrumbList: [],
                 cacheData: [],
                 cacheFatherData: [],
                 curData: [],
@@ -100,7 +100,7 @@
                     this.pagination.current = 1
                     this.pagination.count = val.length
                     this.curData = this.getDataByPage(this.data, this.pagination.current)
-                    this.list = [{
+                    this.breadcrumbList = [{
                         name: this.previewDialog.title,
                         index: -1,
                         data: this.curData
@@ -119,7 +119,7 @@
                 this.previewDialog = {
                     ...data
                 }
-                this.list = []
+                this.breadcrumbList = []
                 this.curData = []
                 this.pagination.count = 0
             },
@@ -140,7 +140,7 @@
 
             handlePageChange (page) {
                 this.pagination.current = page
-                const list = this.list.length === 1 ? this.data : this.cacheData
+                const list = this.breadcrumbList.length === 1 ? this.data : this.cacheData
                 this.curData = this.getDataByPage(list, page)
             },
 
@@ -157,7 +157,7 @@
                 this.cacheFatherData = this.curData
                 this.cacheData = this.curData[rowIndex].children
                 this.curData = this.getDataByPage(this.cacheData, this.pagination.current)
-                this.list.push({
+                this.breadcrumbList.push({
                     name: row.name,
                     index: rowIndex,
                     data: this.curData
@@ -167,13 +167,13 @@
                 this.pagination.current = 1
                 if (row.index === -1) {
                     this.curData = this.getDataByPage(this.data, 1)
-                    this.list = [{
+                    this.breadcrumbList = [{
                         name: this.previewDialog.title,
                         index: -1
                     }]
                 } else {
                     this.curData = row.data
-                    this.list = this.list.slice(0, index + 1)
+                    this.breadcrumbList = this.breadcrumbList.slice(0, index + 1)
                 }
             }
         }
